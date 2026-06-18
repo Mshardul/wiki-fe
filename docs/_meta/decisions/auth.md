@@ -1,11 +1,17 @@
 # Auth & Personal Layer — Decisions
 
-Decisions for adding login + per-user personal features to the wiki.
-Status: **design locked, not yet implemented.** Source of truth until superseded.
+The **what & why** of adding login + per-user personal features to the wiki: product model,
+roadmap, tech choices, data model, and the contracts (password policy, session/cookie shape,
+error codes, security guards) that the implementation must match.
+
+For **how** auth wires into the existing frontend SPA, see
+[auth-integration.md](./auth-integration.md). Status of the overall effort lives there too.
+
+Status: **design locked.** Source of truth for these decisions until superseded.
 
 ---
 
-## 1. Product model
+## Product model
 
 - **Public wiki, optional account.** Anonymous users keep full read + offline experience unchanged.
 - Login unlocks a **personal layer only** (notes, highlights, synced bookmarks). Never gates reading.
@@ -14,7 +20,7 @@ Status: **design locked, not yet implemented.** Source of truth until superseded
 
 ---
 
-## 2. Feature roadmap
+## Feature roadmap
 
 | Version | Features                                                                                                                        |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -29,7 +35,7 @@ Status: **design locked, not yet implemented.** Source of truth until superseded
 
 ---
 
-## 3. Core architecture split
+## Core architecture split
 
 Two stores, each the right tool — **no content in the DB.**
 
@@ -39,11 +45,11 @@ Two stores, each the right tool — **no content in the DB.**
 | Users, sessions, notes, highlights | **DB**       | Dynamic, private, per-user; git is wrong tool for runtime data |
 
 - Rejected: "DB mirrors content from GitHub." Adds a sync job, two sources of truth, sync bugs — buys nothing (app already reads `.md` from repo for free).
-- Article identity in the DB = `(wiki_id, path)`, **not a foreign key** — articles aren't in the DB. See §5 for column detail.
+- Article identity in the DB = `(wiki_id, path)`, **not a foreign key** — articles aren't in the DB. See DB schema below for column detail.
 
 ---
 
-## 4. Tech stack
+## Tech stack
 
 | Layer      | Choice                                            | Why                                                                                                                                                                                |
 | ---------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -61,7 +67,7 @@ Two stores, each the right tool — **no content in the DB.**
 
 ---
 
-## 5. DB schema
+## DB schema
 
 Star shape — all user data hangs off `users`.
 
@@ -97,7 +103,7 @@ Scroll position stays **local-only** (ephemeral, device-specific, capped at 50) 
 
 ---
 
-## 6. Session model
+## Session model
 
 - **Server sessions** (opaque random token), **not JWT** — instant revoke/logout, simpler, per-request DB lookup is free on local SQLite. JWT is overkill at this scale.
 - Cookie name `session`: **httpOnly + Secure + SameSite=None** (None required — FE and BE are different domains; forces Secure).
@@ -105,7 +111,7 @@ Scroll position stays **local-only** (ephemeral, device-specific, capped at 50) 
 
 ---
 
-## 7. Password policy
+## Password policy
 
 **Mandatory — all 5 must pass:**
 
@@ -127,7 +133,7 @@ Special-char hint set shown in UI (subset, keyboard-safe, no escaping headaches)
 
 ---
 
-## 8. Auth + email-verify flow
+## Auth + email-verify flow
 
 Base path `/api/v1`. All JSON.
 
@@ -144,7 +150,7 @@ Base path `/api/v1`. All JSON.
 
 ---
 
-## 9. Sync endpoints
+## Sync endpoints
 
 All require session (`401` if absent). User comes from session, never request body. Per-item ops take JSON body `{wiki_id, path}` (DELETE too — symmetric, avoids URL-encoding the slashed `path`). Adds are **idempotent** (dup → `200`, no error).
 
@@ -175,7 +181,7 @@ POST   /api/v1/sync/import    {bookmarks[], reads[], recents[]}  → 200 {merged
 
 ---
 
-## 9a. Email (Resend)
+## Email (Resend)
 
 **Provider:** Resend. API key in BE env `RESEND_API_KEY`.
 
@@ -188,7 +194,7 @@ POST   /api/v1/sync/import    {bookmarks[], reads[], recents[]}  → 200 {merged
 - Inline HTML string (one email — no template engine; Jinja later if emails multiply).
 - Verify link hits BE → BE redirects to FE home after marking verified.
 
-**Send strategy — best-effort async:** register returns `201` immediately; email sends in background. If Resend is slow/down, registration never hangs or 500s. Failed send → user recovers via **resend-verification** (§8.6), which is the safety net. Resend endpoint gates on `email_verified=0`; abuse rate-limiting deferred to v2 track.
+**Send strategy — best-effort async:** register returns `201` immediately; email sends in background. If Resend is slow/down, registration never hangs or 500s. Failed send → user recovers via **resend-verification** (in the auth flow above), which is the safety net. Resend endpoint gates on `email_verified=0`; abuse rate-limiting deferred to v2 track.
 
 **Password reset:** v1 (adds a second email + endpoints). v0 has no reset — sole early user can fix via DB.
 
@@ -196,84 +202,7 @@ POST   /api/v1/sync/import    {bookmarks[], reads[], recents[]}  → 200 {merged
 
 ---
 
-## 10. Frontend ↔ backend + caching
-
-App stays vanilla-JS SPA, hash router, no build, no framework. All FE auth UI = **modals** (matches existing ⌘K / settings patterns; no new view plumbing).
-
-### Caching model — cache-through (Model B)
-
-- **API = source of truth.** **localStorage = cache** (+ existing service-worker article cache, kept).
-- Persistence stays centralized in `storage.js`. Sync hooks inject **inside** the existing save functions — callers (`Bookmarks.toggle`, `markRead`, …) unchanged, minimal blast radius.
-  - `get*()` → read localStorage (instant, unchanged).
-  - `save*()` → write localStorage **+** if logged in, fire API call.
-  - **On login / boot (logged in):** pull from API → merge into localStorage → re-render.
-  - **Anon:** exactly today's behavior, zero API.
-- **Writes = fire-and-forget:** write localStorage, async POST/DELETE, don't await, ignore transient failures — next load-time pull reconciles drift. UI stays instant.
-
-### Session state (FE)
-
-- Cookie (httpOnly) = real auth, **JS cannot read it**. JS needs its own "logged-in?" signal.
-- **`state.session = { user: null|{id,email}, status: "loading"|"in"|"out" }`**, held **in memory** in `state.js`.
-- Boot calls **`GET /auth/me`** once → sets `state.session`. **Identity is NOT cached in localStorage** (one source of truth = cookie/BE).
-- **SPA navigation (article→article) = zero re-calls** — JS instance stays alive, memory persists. `/auth/me` fires only on a real page load (refresh / first open) → ~1 call per app open, not per article.
-- In-memory state lives as long as the tab is open; the cookie (30-day sliding, §6) is always the authority.
-- **Staleness handled lazily (Option A):** any API call returning **401** → global handler flips `state.session` to logged-out, prompts re-login. No polling, no focus re-check (add later if stale-tab UX warrants).
-- User-data cache (bookmarks etc) still lives in localStorage; only _identity_ is never cached.
-
-### API client (`js/api.js`)
-
-New module — single wrapper all BE calls go through (no existing module owns "talk to backend").
-
-- **Base URL** from a config constant (`BACKEND_URL`). No build step → no FE `.env`. **Hostname-detect:** `localhost → local BE, else → prod fly.dev`. The BE URL is **public by nature** (browser must call it) — not a secret; security = CORS + cookie + BE validation, not URL obscurity.
-- `credentials: "include"` on every call (set once here).
-- JSON in/out; throws `ApiError(code, message, status)` on non-2xx (parsed from the error envelope) → callers `catch` and switch on `code`.
-- **Global 401 handler:** any 401 → flip `state.session` to logged-out, emit `wiki:session-expired` → UI reacts (Option A). Callers never repeat 401 logic.
-- Thin helpers `api.get/post/del`. Storage sync uses fire-and-forget (`.catch(()=>{})`); failed writes are **dropped, not queued** in v0 — load-time pull reconciles (retry-queue = v3).
-
-**Same-origin later:** when a custom domain is bought, switch the base to relative `/api/...` (no BE URL in code, `SameSite=Lax`). Same-origin = DNS/routing (e.g. Cloudflare free), **not vendor lock-in**; deferred only because no domain yet.
-
-### Anon → login migration
-
-On login, if **local anon data exists**, show one prompt (generic copy — scales to future data types: highlights, notes):
-
-> "You have unsaved items on this device from browsing signed out. Keep them in your account, or discard?" **[Keep them] [Discard]**
-
-- **Keep** → `POST /sync/import` (merge/union all categories) → then pull server set.
-- **Discard** → drop local → pull server set.
-- **No local data** → no prompt, just pull server set.
-- Never blocks login; no "merge" jargon — plain keep/discard.
-
-**Post-login sequence:** (optional import) → `GET` all lists → overwrite localStorage with server truth → re-render. After first sync on a device, local IS the synced cache → no more prompts.
-
-### Logout
-
-- **Always succeeds, never blocked** on sync. `POST /auth/logout` (kill session) + clear user-data cache.
-- **B-lite flush:** logout first fires a quick best-effort flush of any known-unsynced items (short timeout, no long await), then clears cache + logs out **regardless of result**. With fire-and-forget writes, most items already synced per-action, so this is usually instant; it just minimizes loss of a last unsynced write. Rare loss accepted (low-stakes data).
-- Clearing cache on logout keeps the next login clean (migration prompt only triggers on genuinely anon data, not another account's leftovers).
-
-### UI affordances (auth scope only)
-
-Auth adds exactly one visible control + one modal. Broader topbar declutter is **WIKI-240** (separate refactor, not auth).
-
-- **Login/logout icon button** in the topbar — the _only_ new auth UI in the topbar. Logged out → "Login"; logged in → "Logout". Account/email shown inside the **preferences panel** (panel renamed "Settings" → "Preferences" under WIKI-240).
-- **Auth modal — one modal, swapped content** (reuses existing modal pattern): login ↔ register ↔ verify-pending ↔ session-expired. Minimal.
-  - **Register** panel: email, password + **live 5-rule checklist** (§7), submit disabled until all green, toggle to login.
-  - **Verify-pending** panel: "Check your email to verify" + **Resend** button (`/auth/resend-verification`). Stays in-modal (flow contained).
-- **401 / session-expired:** global handler → toast ("Session expired, please log in") + **reopen the login modal**.
-
-### Offline
-
-- Articles stay readable (SW cache). v0 may require online for user-data writes; offline write-queue is a v3 nicety.
-
----
-
-## 11. Repo migration
-
-See [fe-be-split.md](./fe-be-split.md).
-
----
-
-## 12. Security guards (enforced in CI + pre-commit)
+## Security guards (enforced in CI + pre-commit)
 
 The BE URL is public; real protection = these invariants, gated automatically so they can't regress.
 
@@ -298,7 +227,8 @@ The BE URL is public; real protection = these invariants, gated automatically so
 
 ---
 
-## 13. Deferred to implementation (non-blocking)
+## Deferred (non-blocking decisions)
 
 - Highlight text-anchoring strategy (v1's hard problem).
 - Infra/deploy specifics (Fly volume, SQLite backup, spend limit, cross-origin verify) — see [infra-deploy.md](./infra-deploy.md).
+- Rate limiting (v2), password reset (v1) — noted in the flows above.

@@ -1,5 +1,9 @@
 # Wiki App — Claude Instructions
 
+**Coding standards live in [CONVENTIONS.md](./CONVENTIONS.md) — read it before writing or changing
+code.** This file is operational: how to classify a task, which skill to invoke, where code lives.
+CONVENTIONS.md is prescriptive: how the code must be written.
+
 ## SESSION START PROTOCOL
 
 Do this before any file reads or skill invocations — every session:
@@ -75,7 +79,9 @@ Do this before any file reads or skill invocations — every session:
 | `content.js` | Content post-processing after markdown→HTML: copy buttons, callouts, prerequisites chips, hover link previews, Mermaid, highlight.js, anchor links, code language labels |
 | `render.js`  | View rendering: home grid, wiki index sections, content layout, TOC, breadcrumbs, related articles, reading progress bar                                                 |
 | `search.js`  | ⌘K modal: open/close lifecycle, search entry loading, fuzzy scoring, result rendering, section-filter mode (>)                                                           |
-| `storage.js` | All localStorage operations: settings r/w, bookmarks, recents, read tracking, offline cache button state                                                                 |
+| `auth.js`    | Auth domain: password-rule validation, auth modal controller (login/register/verify panels), login/register/logout/resend flows, anon→login migration
+| `api.js`     | Single wrapper for all backend (`wiki-be`) calls: base-URL detect, credentials, `ApiError`, global 401 handler, typed endpoint helpers
+| `storage.js` | All localStorage operations: settings r/w, bookmarks, recents, read tracking, offline cache button state; cache-through backend sync hooks (`Sync`) when logged in                                                                 |
 
 ### CSS (`css/`)
 
@@ -85,6 +91,7 @@ Do this before any file reads or skill invocations — every session:
 | `base.css`         | Global reset and base styles: body, headings, inline code, scrollbar, text selection                                                                  |
 | `themes.css`       | Per-theme CSS token overrides for dark, light, matrix, terminal, amber-term via `data-theme` attribute                                                |
 | `components.css`   | Shared UI components: breadcrumb, back button, topbar layout, scroll-to-top, settings panel, hover preview panel                                      |
+| `components-auth.css` | Auth modal + topbar auth button styles (tokens only)                                                                                              |
 | `view-home.css`    | Home view: background grid/glow, wiki card grid, home topbar, hero section                                                                            |
 | `view-index.css`   | Index view: hero, section headers, index card grid, recents strip, bookmarks strip                                                                    |
 | `view-content.css` | Content view: two-column layout, TOC sidebar, markdown body, callouts, code blocks, reading time badge, related articles                              |
@@ -102,7 +109,8 @@ Do this before any file reads or skill invocations — every session:
 | `e2e/test_content.py`                   | Article rendering, markdown, code blocks, math                     |
 | `e2e/test_content_enhancements.py`      | Copy-code button, line numbers, enhanced content features          |
 | `e2e/test_html_markup.py`               | HTML markup rendering correctness                                  |
-| `e2e/test_bookmarks.py`                 | Bookmark add / remove / persist                                    |
+| `e2e/test_bookmarks.py`                 | Bookmark add / remove / persist; anon-no-API-call invariant        |
+| `e2e/test_auth.py`                      | Auth modal, password checklist, login/register/verify, error states |
 | `e2e/test_recents.py`                   | Recent articles list                                               |
 | `e2e/test_settings.py`                  | Theme, font, content width settings                                |
 | `e2e/test_routing_pathing.py`           | URL routing, direct links, 404                                     |
@@ -132,6 +140,9 @@ Do this before any file reads or skill invocations — every session:
 | `docs/_meta/ai-instructions/devops-tools.md`       | Writing DevOps tool article (after \_base.md)                                           |
 | `docs/_meta/ai-instructions/devops-cheatsheets.md` | Writing DevOps cheatsheet — self-contained, skip \_base.md                              |
 | `docs/_meta/decisions/ui-ux.md`                    | UI / UX decision needed                                                                 |
+| `docs/_meta/decisions/auth.md`                     | Auth/personal-layer decisions — product model, tech, DB schema, password/session/error contracts |
+| `docs/_meta/decisions/auth-integration.md`         | How auth wires into the FE SPA — api.js, state.session, caching, auth modal, migration   |
+| `docs/_meta/plans/fe-be-integration.md` | Step-by-step plan for the FE auth+sync integration work                          |
 | `docs/tasks.md`                                    | Context on recently completed work or implementation notes                              |
 | `docs/changelog.md`                                | Context on recent feature history or what changed                                       |
 
@@ -145,6 +156,7 @@ Do this before any file reads or skill invocations — every session:
 | Rendering / markdown bug  | `js/render.js`, `js/content.js`                                                                 |
 | Navigation / routing bug  | `js/app.js`, `js/state.js`                                                                      |
 | Bookmark / recents bug    | `js/storage.js`, `js/state.js`                                                                  |
+| Auth / sync bug           | `js/api.js`, `js/auth.js`, `js/storage.js`, `js/state.js`                                       |
 | Settings bug              | `js/storage.js`, `css/themes.css`, `css/tokens.css`                                             |
 | UI / visual bug           | `css/tokens.css` + relevant view CSS                                                            |
 | New CSS feature           | `css/tokens.css` first, then target view CSS                                                    |
@@ -156,17 +168,8 @@ Do this before any file reads or skill invocations — every session:
 
 ## APP ARCHITECTURE
 
-Single-page app. No build step, no framework, no TypeScript.
-
-**Boot:** `index.html` → `wiki.css` → `app.js` → registers service worker → reads state → routes to correct view.
-
-**Views:** `#view-home`, `#view-index`, `#view-content` — one active at a time. State managed in `state.js`.
-
-**Content loading:** `content.js` fetches `.md` files from `content/` via HTTP → parses front matter → builds search index. `render.js` converts markdown to DOM.
-
-**Persistence:** `storage.js` → `localStorage` only. No server, no database.
-
-**Service worker (`wiki-sw.js`):** Caches assets for offline use. Any change to this file **requires a cache version bump** — never skip this.
+See **[CONVENTIONS.md](./CONVENTIONS.md) → Architecture** for the boot sequence, view model,
+content-loading flow, persistence model, and the module-map-as-contract.
 
 ---
 
@@ -181,13 +184,9 @@ Single-page app. No build step, no framework, no TypeScript.
 
 ## TEST PATTERNS
 
-- Always read `tests/conftest.py` before writing any test — it defines all shared fixtures and navigation helpers
-- Add tests to the existing file matching the feature (use the test map above) — never create a new test file unless the feature genuinely has no existing home
-- Match the existing test structure in that file (function-based, class-based, fixture usage)
-- Playwright: use `page.locator()` + `expect()` assertions; avoid `page.query_selector()`
-- Never add new fixtures or conftest helpers — use what already exists
-- Tests are e2e only: test behaviour through the UI, not JS functions directly
-- Never run tests — write correct code, user runs them
+Prescriptive test rules live in **[CONVENTIONS.md](./CONVENTIONS.md) → Testing** (e2e-only,
+`conftest.py` first, no new fixtures, happy + error path, never run). Use the **test file map**
+above to pick which file a test belongs in.
 
 ---
 
@@ -196,7 +195,7 @@ Single-page app. No build step, no framework, no TypeScript.
 **App dev tasks:**
 
 - Never read `content/**/*.md` — irrelevant to app code
-- Never read all 6 JS files — use the module map above to pick the right one
+- Never read all 8 JS files — use the module map above to pick the right one
 - Never read all CSS files — always start with `tokens.css`
 
 **Content tasks:**
@@ -214,9 +213,10 @@ Single-page app. No build step, no framework, no TypeScript.
 
 ## CONVENTIONS
 
-- Vanilla JS, ES6 modules, no TypeScript, no build step
-- All design tokens live in `tokens.css` — never duplicate values in other CSS files
-- No inline styles except dynamic values set programmatically via JS
-- BEM-adjacent class naming (block-element pattern)
-- Test files: Python + Playwright, pytest conventions
-- Content filenames: lowercase, hyphen-separated, `.md` extension
+Full coding standards: **[CONVENTIONS.md](./CONVENTIONS.md)**. Repeated non-negotiables:
+
+- Never `git add` / `commit` / `push` unless explicitly asked; never add `Co-Authored-By`.
+- Never put `WIKI-xxx` ticket IDs in code comments or CSS section headers.
+- Any `wiki-sw.js` change ⇒ cache-version bump.
+- No `console.*` in committed code.
+- Content filenames: lowercase, hyphen-separated, `.md` extension.
