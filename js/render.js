@@ -3,6 +3,7 @@ import {
   state,
   indexCache,
   readTimeCache,
+  markStubPath,
   STUB_THRESHOLD,
   mdConverter,
   escHtml,
@@ -199,8 +200,10 @@ async function renderIndex(wiki) {
     );
 
     const savedScroll = localStorage.getItem(`wiki-index-scroll-${wiki.id}`);
-    if (savedScroll)
+    if (savedScroll) {
+      void document.documentElement.scrollHeight;
       window.scrollTo({ top: parseInt(savedScroll, 10), behavior: "instant" });
+    }
   } catch (err) {
     sectionsEl.innerHTML = `<p class="error">Failed to load index. (${escHtml(err.message)})</p>`;
   }
@@ -292,13 +295,14 @@ async function populateIndexReadTimes() {
 
   await Promise.all(
     badges.map(async (badge) => {
-      const path = badge.dataset.path;
-      if (!path) return;
+      const rawPath = badge.dataset.path;
+      if (!rawPath) return;
+      const path = normalizePath(rawPath);
       try {
         if (readTimeCache[path] === undefined) {
-          const md = await fetchText(path);
-          readTimeCache[path] =
-            md.length < STUB_THRESHOLD ? null : readingTime(md);
+          const md = await fetchText(rawPath);
+          if (md.length < STUB_THRESHOLD) markStubPath(path);
+          else readTimeCache[path] = readingTime(md);
         }
         const isStub = readTimeCache[path] === null;
         const card = badge.closest(".index-card");
@@ -535,7 +539,7 @@ async function renderContent(
           <p class="content-stub-msg">This article hasn't been written yet.</p>
         </div>`;
       if (readTimeBadge) readTimeBadge.textContent = "";
-      readTimeCache[filePath] = null;
+      markStubPath(filePath);
       buildTOC(body);
       body.dataset.renderDone = "1";
       return;
@@ -670,9 +674,10 @@ async function renderContent(
         const _targetY = parseInt(_saved, 10);
         document.fonts.ready.then(() =>
           requestAnimationFrame(() =>
-            requestAnimationFrame(() =>
-              window.scrollTo({ top: _targetY, behavior: "instant" })
-            )
+            requestAnimationFrame(() => {
+              if (gen !== _renderGen || state.currentView !== "content") return;
+              window.scrollTo({ top: _targetY, behavior: "instant" });
+            })
           )
         );
       }
@@ -1037,6 +1042,7 @@ function showToast(message, durationMs = 3000, onUndo = null, actionLabel = "Und
 }
 
 export {
+  normalizePath,
   progressBar,
   showToast,
   showView,

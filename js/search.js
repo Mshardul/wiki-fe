@@ -5,7 +5,7 @@ import {
   escHtml,
   fuzzyMatch,
 } from "./state.js";
-import { fetchWikiIndex, navigateToContent } from "./render.js";
+import { fetchWikiIndex, navigateToContent, normalizePath } from "./render.js";
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL SEARCH (⌘K)
@@ -32,7 +32,7 @@ async function loadAllSearchEntries() {
         }
       }
       for (const entry of entries) {
-        if (readTimeCache[entry.path] !== null) {
+        if (readTimeCache[normalizePath(entry.path)] !== null) {
           allSearchCache.entries.push(entry);
         }
       }

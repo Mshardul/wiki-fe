@@ -117,6 +117,26 @@ const state = {
 const readTimeCache = {};
 const indexCache = {};
 const allSearchCache = { loaded: false, loading: false, entries: [] };
+
+const STUB_PATHS_KEY = "wiki-stub-paths";
+function loadStubPaths() {
+  try {
+    return new Set(JSON.parse(sessionStorage.getItem(STUB_PATHS_KEY) || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+function markStubPath(normalizedPath) {
+  readTimeCache[normalizedPath] = null;
+  const set = loadStubPaths();
+  if (!set.has(normalizedPath)) {
+    set.add(normalizedPath);
+    try {
+      sessionStorage.setItem(STUB_PATHS_KEY, JSON.stringify([...set]));
+    } catch {}
+  }
+}
+for (const p of loadStubPaths()) readTimeCache[p] = null;
 const STUB_THRESHOLD = 5000; // bytes - stubs are template skeletons (~3k of HTML-comment scaffolding); real articles are 8k+
 
 /* ─── Pure utilities (placed here to avoid circular deps between storage/render) ─── */
@@ -147,6 +167,7 @@ export {
   state,
   indexCache,
   readTimeCache,
+  markStubPath,
   allSearchCache,
   STUB_THRESHOLD,
   mdConverter,
