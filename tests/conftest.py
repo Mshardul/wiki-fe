@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).parent.parent.parent
+REPO_ROOT = Path(__file__).parent.parent
 
 
 @pytest.fixture
@@ -35,6 +35,6 @@ def base_url():
 
 @pytest.fixture
 def wiki_page(page, base_url):
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     return page

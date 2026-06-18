@@ -76,7 +76,7 @@ def test_width_button_gets_active_class(wiki_page):
 
 def test_content_width_persists_across_reload(page, base_url):
     """selected content width survives a page reload via localStorage."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
 
     page.locator("[title='Preferences (,)']").first.click()

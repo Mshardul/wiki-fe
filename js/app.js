@@ -2,6 +2,7 @@ import { state, WIKIS, escHtml } from "./state.js";
 import {
   applySettingsToDOM,
   getSettings,
+  initOsThemeListener,
   Settings,
   Bookmarks,
   ReadToggle,
@@ -25,12 +26,17 @@ import {
   toggleSection,
   showToast,
 } from "./render.js";
-import { openGlobalSearch, closeGlobalSearch } from "./search.js";
+import {
+  openGlobalSearch,
+  closeGlobalSearch,
+  retryGlobalSearch,
+} from "./search.js";
 import {
   closeZoomOverlay,
   rerenderMermaidDiagrams,
   toggleFocusMode,
 } from "./content.js";
+import { Auth, AuthModal } from "./auth.js";
 
 /* ═══════════════════════════════════════════════════════════════
    WINDOW GLOBALS - required for onclick strings in dynamically
@@ -44,10 +50,24 @@ window.navigateToContent = navigateToContent;
 window.toggleSection = toggleSection;
 window.clearRecents = clearRecents;
 window.closeGlobalSearch = closeGlobalSearch;
+window.retryGlobalSearch = retryGlobalSearch;
+window.Auth = Auth;
+window.AuthModal = AuthModal;
 
 document.addEventListener("wiki:toast", (e) => {
-  const { message, durationMs, onUndo } = e.detail;
-  showToast(message, durationMs, onUndo);
+  const { message, durationMs, onUndo, actionLabel } = e.detail;
+  showToast(message, durationMs, onUndo, actionLabel);
+});
+
+document.addEventListener("wiki:session-expired", () => {
+  Auth.refreshButtons();
+  showToast("Session expired, please log in", 5000);
+  AuthModal.open("login");
+});
+
+document.addEventListener("wiki:session-changed", () => {
+  // re-render current view so synced data appears
+  route(location.hash.slice(1));
 });
 
 window.confirmClearRecents = (wikiId) => {
@@ -111,6 +131,12 @@ document.addEventListener("click", (e) => {
       break;
     case "import-trigger":
       document.getElementById("import-upload").click();
+      break;
+    case "auth-toggle":
+      Auth.toggle();
+      break;
+    case "auth-close":
+      AuthModal.close();
       break;
   }
 });
@@ -234,6 +260,10 @@ document
   .getElementById("prefs-backdrop")
   .addEventListener("click", () => Settings.close());
 
+document
+  .getElementById("auth-backdrop")
+  .addEventListener("click", () => AuthModal.close());
+
 document.addEventListener("keydown", (e) => {
   // ⌘K: Global Search
   if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -271,6 +301,8 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (document.getElementById("zoom-overlay")?.classList.contains("open")) {
       closeZoomOverlay();
+    } else if (AuthModal.isOpen()) {
+      AuthModal.close();
     } else if (
       !document
         .getElementById("global-search-modal")
@@ -422,6 +454,11 @@ function mountDebugOverlay() {
 (function init() {
   history.scrollRestoration = "manual";
   applySettingsToDOM(getSettings());
+  initOsThemeListener();
+
+  // async; fires GET /auth/me, pulls data, refreshes UI + re-renders when done.
+  // Not awaited — boot/render proceeds anonymously, re-renders on wiki:session-changed.
+  Auth.init();
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./wiki-sw.js").catch(() => {});

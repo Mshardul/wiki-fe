@@ -14,7 +14,7 @@
 def _load_mock_article(page, base_url, content, slug="mock"):
     """Navigate to a mocked article via JS, bypassing index slug resolution.
     Waits until the loading indicator is replaced by actual content."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
     page.evaluate(f"""() => navigateToContent(
@@ -33,7 +33,7 @@ def _load_mock_article(page, base_url, content, slug="mock"):
 
 def test_copy_buttons_on_code_blocks(page, base_url):
     """every <pre> block in article body has a .copy-btn child."""
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_selector("#markdown-body pre", timeout=8_000)
 
@@ -52,7 +52,7 @@ def test_copy_buttons_on_code_blocks(page, base_url):
 def test_copy_button_writes_to_clipboard(page, base_url):
     """clicking .copy-btn copies block text to clipboard."""
     page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#markdown-body pre .copy-btn", timeout=10_000)
 
     pre_text = page.evaluate(
@@ -122,7 +122,7 @@ def test_topbar_title_appears_after_scroll(page, base_url):
 
 def test_topbar_title_text_matches_article(page, base_url):
     """#topbar-title text matches the loaded article title."""
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_selector("#markdown-body h1", timeout=8_000)
 
@@ -216,7 +216,7 @@ def test_toc_h3_items_have_indent_class(page, base_url):
 
 def test_toc_item_click_does_not_break_hash(page, base_url):
     """TOC: clicking a TOC item updates ?a= param and preserves the article hash."""
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#toc-nav .toc-item", timeout=10_000)
 
     page.locator("#toc-nav .toc-item").first.click()
@@ -314,3 +314,63 @@ def test_lede_paragraph_has_heading_color(page, base_url):
     assert result["lede"] != result["body"], (
         f"Lede color must differ from body paragraph color (both got '{result['lede']}')"
     )
+
+
+# ── Swipe down to close zoom overlay ───────────────────────────
+
+
+def _open_zoom_overlay(page, base_url):
+    """Load an article with an image and open the zoom overlay by clicking it."""
+    img_src = (
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2j"
+        "AAAAJklEQVR42u3NMQ0AAAwDoMqv7KrYsQQMkB6LQCAQCAQCgUAg+BIMT/hgWyc3vW"
+        "AAAAAASUVORK5CYII="
+    )
+    _load_mock_article(
+        page,
+        base_url,
+        f"# Pic\n\n![diagram]({img_src})\n",
+        slug="zoompic",
+    )
+    page.wait_for_selector(".zoomable-img", timeout=8_000)
+    page.locator(".zoomable-img").first.click()
+    page.wait_for_selector("#zoom-overlay.open", timeout=5_000)
+
+
+def test_swipe_down_closes_zoom_overlay(page, base_url):
+    """A downward swipe (>80px) on the overlay closes it on touch devices."""
+    _open_zoom_overlay(page, base_url)
+
+    # Synthesize a downward touch swipe on the overlay.
+    closed = page.evaluate("""() => {
+        const overlay = document.getElementById('zoom-overlay');
+        const touch = (y) =>
+            new Touch({ identifier: 1, target: overlay, clientX: 0, clientY: y });
+        overlay.dispatchEvent(new TouchEvent('touchstart', {
+            bubbles: true, touches: [touch(100)], changedTouches: [touch(100)],
+        }));
+        overlay.dispatchEvent(new TouchEvent('touchend', {
+            bubbles: true, touches: [], changedTouches: [touch(300)],
+        }));
+        return !overlay.classList.contains('open');
+    }""")
+    assert closed, "Downward swipe >80px should close the zoom overlay"
+
+
+def test_small_swipe_does_not_close_zoom_overlay(page, base_url):
+    """A small vertical move (<80px) must not dismiss the overlay."""
+    _open_zoom_overlay(page, base_url)
+
+    still_open = page.evaluate("""() => {
+        const overlay = document.getElementById('zoom-overlay');
+        const touch = (y) =>
+            new Touch({ identifier: 1, target: overlay, clientX: 0, clientY: y });
+        overlay.dispatchEvent(new TouchEvent('touchstart', {
+            bubbles: true, touches: [touch(100)], changedTouches: [touch(100)],
+        }));
+        overlay.dispatchEvent(new TouchEvent('touchend', {
+            bubbles: true, touches: [], changedTouches: [touch(130)],
+        }));
+        return overlay.classList.contains('open');
+    }""")
+    assert still_open, "A <80px swipe must not close the overlay"

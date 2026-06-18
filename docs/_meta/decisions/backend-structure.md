@@ -8,7 +8,7 @@ Status: **design locked, not yet implemented.** See [auth.md](./auth.md) for the
 ## Tooling
 
 - **Package manager: `uv`** — fast, modern, current direction. `pyproject.toml`.
-- **Framework:** FastAPI. **ORM:** SQLAlchemy 2.0 + Alembic. **DB:** SQLite. (See auth.md §4.)
+- **Framework:** FastAPI. **ORM:** SQLAlchemy 2.0 + Alembic. **DB:** SQLite. (See Tech stack in [auth.md](./auth.md).)
 - **Config:** `pydantic-settings`, env-driven.
 
 ---
@@ -77,7 +77,7 @@ routers/auth.py  →  services/auth.py  →  repositories/user.py  →  db/model
 
 ### Why this shape
 
-- `schemas/` is a **peer folder**, not inside `db/` — schemas are the API contract, deliberately distinct from DB models (the reason we chose SQLAlchemy over SQLModel; see auth.md §4).
+- `schemas/` is a **peer folder**, not inside `db/` — schemas are the API contract, deliberately distinct from DB models (the reason we chose SQLAlchemy over SQLModel; see Tech stack in [auth.md](./auth.md)).
 - `models/` split by domain (`user.py`, `sync.py`) — same split-by-domain rule as every other tier.
 - `core/` + `comms/` sit **outside** the per-domain tiers — cross-cutting infra, shared by all domains.
 - `main.py` + `config.py` stay flat at `app/` root — entry + settings, not part of any group.
@@ -106,7 +106,7 @@ FE and BE are different origins in v0 → CORS required. With cookies the config
 
 - **BE** (`CORSMiddleware`): `allow_origins=[FRONTEND_URL]` (**exact origin, never `*` with credentials**), `allow_credentials=True`, `allow_methods=["GET","POST","DELETE","OPTIONS"]`, `allow_headers=["Content-Type"]`.
 - **FE:** every fetch uses `credentials: "include"`.
-- **Cookie:** `SameSite=None; Secure` (auth.md §6).
+- **Cookie:** `SameSite=None; Secure` (see Session model in [auth.md](./auth.md)).
 
 **v0 = CORS** (zero infra, dev/single-user, no domain yet). **Target once a custom domain is bought: consolidate to same-origin** (FE at `wiki.com`, BE at `wiki.com/api` via rewrite) → eliminates CORS entirely, `SameSite=Lax` works, simpler cookies. The domain is needed anyway for real-user email, so migrate then.
 

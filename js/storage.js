@@ -1,9 +1,34 @@
 import { state, WIKIS, escHtml } from "./state.js";
+import { api } from "./api.js";
 
 function _toast(message, durationMs = 3000, onUndo = null) {
   document.dispatchEvent(
     new CustomEvent("wiki:toast", { detail: { message, durationMs, onUndo } })
   );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BACKEND SYNC (cache-through / Model B)
+   Anon users (status !== "in") never hit these paths.
+   ═══════════════════════════════════════════════════════════════ */
+function _loggedIn() {
+  return state.session?.status === "in";
+}
+
+function _titleFromPath(path) {
+  return path.split("/").pop().replace(/\.md$/, "");
+}
+
+function _deriveBookmark(wikiId, path) {
+  const wiki = WIKIS.find((w) => w.id === wikiId);
+  const name = _titleFromPath(path);
+  return { wikiId, path, slug: name, title: name, wikiTitle: wiki?.title || "" };
+}
+
+function _deriveRecent(wikiId, path) {
+  const wiki = WIKIS.find((w) => w.id === wikiId);
+  const name = _titleFromPath(path);
+  return { wikiId, path, slug: name, title: name, wikiTitle: wiki?.title || "" };
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -42,6 +67,21 @@ function getBookmarks() {
 }
 
 function saveBookmarks(arr) {
+  if (_loggedIn()) {
+    const prev = getBookmarks();
+    const prevKeys = new Set(prev.map((b) => `${b.wikiId}|${b.path}`));
+    const nextKeys = new Set(arr.map((b) => `${b.wikiId}|${b.path}`));
+    for (const b of arr) {
+      if (!prevKeys.has(`${b.wikiId}|${b.path}`)) {
+        api.bookmarks.add(b.wikiId, b.path).catch(() => {});
+      }
+    }
+    for (const b of prev) {
+      if (!nextKeys.has(`${b.wikiId}|${b.path}`)) {
+        api.bookmarks.remove(b.wikiId, b.path).catch(() => {});
+      }
+    }
+  }
   localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(arr));
 }
 
@@ -129,12 +169,18 @@ const Bookmarks = {
     updateBookmarkBtn();
   },
   clearAll() {
-    saveBookmarks([]);
+    if (_loggedIn()) api.bookmarks.clear().catch(() => {});
+    // write directly to skip saveBookmarks' per-item diff (avoids double-fire)
+    localStorage.setItem(BOOKMARKS_KEY, JSON.stringify([]));
     const wiki = WIKIS.find((w) => w.id === state.currentWikiId);
     if (wiki) renderBookmarksSection(wiki);
   },
   clearWiki(wikiId) {
-    saveBookmarks(getBookmarks().filter((b) => b.wikiId !== wikiId));
+    if (_loggedIn()) api.bookmarks.clear(wikiId).catch(() => {});
+    localStorage.setItem(
+      BOOKMARKS_KEY,
+      JSON.stringify(getBookmarks().filter((b) => b.wikiId !== wikiId))
+    );
     document.getElementById("bookmarks-section")?.classList.add("hidden");
   },
 };
@@ -158,6 +204,7 @@ function addToRecents(entry) {
   recents.unshift(entry);
   if (recents.length > RECENTS_MAX) recents = recents.slice(0, RECENTS_MAX);
   localStorage.setItem(RECENTS_KEY, JSON.stringify(recents));
+  if (_loggedIn()) api.recents.add(entry.wikiId, entry.path).catch(() => {});
 }
 
 function saveRecents(arr) {
@@ -165,6 +212,7 @@ function saveRecents(arr) {
 }
 
 function clearRecents(wikiId) {
+  if (_loggedIn()) api.recents.clear(wikiId).catch(() => {});
   const remaining = getRecents().filter((r) => r.wikiId !== wikiId);
   saveRecents(remaining);
   document.getElementById("recents-section")?.classList.add("hidden");
@@ -223,6 +271,8 @@ function markRead(path) {
   if (read.has(path)) return;
   read.add(path);
   localStorage.setItem(_readKey(), JSON.stringify([...read]));
+  // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
+  if (_loggedIn()) api.reads.add(state.currentWikiId, path).catch(() => {});
   document.querySelectorAll(`.index-card-read-dot`).forEach((dot) => {
     const card = dot.closest(".index-card");
     const timeBadge = card?.querySelector(".index-card-read-time");
@@ -235,6 +285,8 @@ function markUnread(path) {
   if (!read.has(path)) return;
   read.delete(path);
   localStorage.setItem(_readKey(), JSON.stringify([...read]));
+  // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
+  if (_loggedIn()) api.reads.remove(state.currentWikiId, path).catch(() => {});
   document.querySelectorAll(`.index-card-read-dot`).forEach((dot) => {
     const card = dot.closest(".index-card");
     const timeBadge = card?.querySelector(".index-card-read-time");
@@ -327,6 +379,21 @@ const FONT_OPTIONS = [
   { id: "Source Serif 4", label: "Source Serif" },
   { id: "JetBrains Mono", label: "Mono" },
 ];
+
+const _NON_DEFAULT_FONTS_HREF =
+  "https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700" +
+  "&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500" +
+  "&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400" +
+  "&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap";
+
+function loadAllFonts() {
+  if (document.getElementById("font-extras")) return;
+  const link = document.createElement("link");
+  link.id = "font-extras";
+  link.rel = "stylesheet";
+  link.href = _NON_DEFAULT_FONTS_HREF;
+  document.head.appendChild(link);
+}
 
 const DARK_BACKGROUNDS = [
   {
@@ -491,6 +558,15 @@ function _isDark(backgroundId) {
   return !backgroundId.startsWith("light-");
 }
 
+function _hasStoredSettings() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
+    return Boolean(stored?.backgroundId);
+  } catch {
+    return false;
+  }
+}
+
 function getSettings() {
   try {
     const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
@@ -556,6 +632,7 @@ function applySettingsToDOM(s) {
   root.setProperty("--accent-glow", accent.glow);
 
   const font = s.font || "Inter";
+  if (font !== "Inter") loadAllFonts(); // non-default font must actually render
   const isSerif = font === "Lora" || font === "Source Serif 4";
   const isMono = font === "JetBrains Mono";
   const fallback = isSerif
@@ -586,6 +663,15 @@ function applySettingsToDOM(s) {
   );
 }
 
+// Follow OS dark/light changes live
+function initOsThemeListener() {
+  const mq = window.matchMedia?.("(prefers-color-scheme: light)");
+  mq?.addEventListener?.("change", () => {
+    if (_hasStoredSettings()) return;
+    applySettingsToDOM(getSettings());
+  });
+}
+
 const BACKUP_SCHEMA = {
   bookmarks: (v) => v === null || typeof v === "string",
   recents: (v) => v === null || typeof v === "string",
@@ -606,6 +692,7 @@ const Settings = {
   _shortcutsCache: null,
 
   open(tab = "general") {
+    loadAllFonts(); // user may pick any font here — make all previews available
     this._lastFocus = document.activeElement;
     const modal = document.getElementById("prefs-modal");
     modal.classList.remove("hidden");
@@ -1041,6 +1128,62 @@ const Theme = {
   },
 };
 
+/* ═══════════════════════════════════════════════════════════════
+   SYNC — pull/merge on login & boot; cache clear on logout
+   ═══════════════════════════════════════════════════════════════ */
+const Sync = {
+  // Pull all server lists and overwrite localStorage with server truth.
+  async pullAll() {
+    const [bm, rd, rc] = await Promise.all([
+      api.bookmarks.list().catch(() => []),
+      api.reads.list().catch(() => []),
+      api.recents.list().catch(() => []),
+    ]);
+
+    // Bookmarks → FE shape (server order preserved as returned)
+    localStorage.setItem(
+      BOOKMARKS_KEY,
+      JSON.stringify((bm || []).map((r) => _deriveBookmark(r.wiki_id, r.path)))
+    );
+
+    // Reads → per-wiki Sets
+    const byWiki = {};
+    for (const r of rd || []) {
+      (byWiki[r.wiki_id] ||= new Set()).add(r.path);
+    }
+    for (const wiki of WIKIS) {
+      const set = byWiki[wiki.id];
+      if (set) {
+        localStorage.setItem(`wiki-read-${wiki.id}`, JSON.stringify([...set]));
+      } else {
+        localStorage.removeItem(`wiki-read-${wiki.id}`);
+      }
+    }
+
+    // Recents → FE shape, ≤6 (BE already trims; respect server order)
+    localStorage.setItem(
+      RECENTS_KEY,
+      JSON.stringify(
+        (rc || [])
+          .slice(0, RECENTS_MAX)
+          .map((r) => _deriveRecent(r.wiki_id, r.path))
+      )
+    );
+  },
+
+  clearUserDataCache() {
+    localStorage.removeItem(BOOKMARKS_KEY);
+    localStorage.removeItem(RECENTS_KEY);
+    for (const wiki of WIKIS) localStorage.removeItem(`wiki-read-${wiki.id}`);
+  },
+
+  // Logout B-lite flush. Fire-and-forget writes already synced per-action,
+  // so this is effectively a no-op safety net; returns immediately.
+  flushBestEffort() {
+    return Promise.resolve();
+  },
+};
+
 export {
   saveScrollPos,
   getBookmarks,
@@ -1068,6 +1211,8 @@ export {
   getSettings,
   saveSettings,
   applySettingsToDOM,
+  initOsThemeListener,
   Settings,
   Theme,
+  Sync,
 };

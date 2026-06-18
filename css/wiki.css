@@ -1,6 +1,7 @@
 @import "./tokens.css";
 @import "./base.css";
 @import "./components.css";
+@import "./components-auth.css";
 @import "./view-home.css";
 @import "./view-index.css";
 @import "./view-content.css";

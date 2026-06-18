@@ -171,7 +171,7 @@ def test_data_action_settings_export_works(wiki_page):
 
 def test_data_action_wiki_home_navigates_home(page, base_url):
     """Clicking [data-action=wiki-home] from index view returns to home."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
 
     # Navigate into a wiki first

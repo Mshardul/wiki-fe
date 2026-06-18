@@ -3,6 +3,7 @@ import {
   state,
   indexCache,
   readTimeCache,
+  markStubPath,
   STUB_THRESHOLD,
   mdConverter,
   escHtml,
@@ -199,10 +200,12 @@ async function renderIndex(wiki) {
     );
 
     const savedScroll = localStorage.getItem(`wiki-index-scroll-${wiki.id}`);
-    if (savedScroll)
+    if (savedScroll) {
+      void document.documentElement.scrollHeight;
       window.scrollTo({ top: parseInt(savedScroll, 10), behavior: "instant" });
+    }
   } catch (err) {
-    sectionsEl.innerHTML = `<p class="error">Failed to load index. (${err.message})</p>`;
+    sectionsEl.innerHTML = `<p class="error">Failed to load index. (${escHtml(err.message)})</p>`;
   }
 }
 
@@ -237,6 +240,7 @@ function renderIndexSections(sections, wiki) {
           <div class="index-card"
                data-title="${escHtml(card.title)}"
                data-desc="${escHtml(card.description)}"
+               aria-label="${escHtml(card.title)}"
                onclick="navigateToContent('${wiki.id}', '${encodeURIComponent(
               card.path
             )}', '${encodeURIComponent(card.title)}', '${card.slug}')"
@@ -291,13 +295,14 @@ async function populateIndexReadTimes() {
 
   await Promise.all(
     badges.map(async (badge) => {
-      const path = badge.dataset.path;
-      if (!path) return;
+      const rawPath = badge.dataset.path;
+      if (!rawPath) return;
+      const path = normalizePath(rawPath);
       try {
         if (readTimeCache[path] === undefined) {
-          const md = await fetchText(path);
-          readTimeCache[path] =
-            md.length < STUB_THRESHOLD ? null : readingTime(md);
+          const md = await fetchText(rawPath);
+          if (md.length < STUB_THRESHOLD) markStubPath(path);
+          else readTimeCache[path] = readingTime(md);
         }
         const isStub = readTimeCache[path] === null;
         const card = badge.closest(".index-card");
@@ -534,7 +539,9 @@ async function renderContent(
           <p class="content-stub-msg">This article hasn't been written yet.</p>
         </div>`;
       if (readTimeBadge) readTimeBadge.textContent = "";
+      markStubPath(filePath);
       buildTOC(body);
+      body.dataset.renderDone = "1";
       return;
     }
 
@@ -667,9 +674,10 @@ async function renderContent(
         const _targetY = parseInt(_saved, 10);
         document.fonts.ready.then(() =>
           requestAnimationFrame(() =>
-            requestAnimationFrame(() =>
-              window.scrollTo({ top: _targetY, behavior: "instant" })
-            )
+            requestAnimationFrame(() => {
+              if (gen !== _renderGen || state.currentView !== "content") return;
+              window.scrollTo({ top: _targetY, behavior: "instant" });
+            })
           )
         );
       }
@@ -677,7 +685,7 @@ async function renderContent(
 
     body.dataset.renderDone = "1";
   } catch (err) {
-    body.innerHTML = `<p class="error">Failed to load content. (${err.message})</p>`;
+    body.innerHTML = `<p class="error">Failed to load content. (${escHtml(err.message)})</p>`;
     body.dataset.renderDone = "1";
   }
 }
@@ -686,6 +694,16 @@ async function renderContent(
 let hoverPreviewTimer;
 let _previewAbortController = null;
 let _previewGeneration = 0;
+
+// Whether the most recent pointer interaction came from touch (vs mouse).
+let _lastPointerWasTouch = false;
+window.addEventListener(
+  "pointerdown",
+  (e) => {
+    _lastPointerWasTouch = e.pointerType !== "mouse";
+  },
+  { capture: true }
+);
 
 function interceptMdLinks(contentEl, wiki, currentFilePath) {
   const baseDir = dirOf(currentFilePath);
@@ -735,8 +753,9 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
       if (previewEl) previewEl.classList.remove("visible");
     });
 
-    // Hover logic
+    // Hover logic — skip on touch
     link.addEventListener("mouseenter", () => {
+      if (_lastPointerWasTouch) return;
       hoverPreviewTimer = setTimeout(
         () => showHoverPreview(link, resolvedPath),
         400
@@ -882,7 +901,7 @@ async function fetchText(path, signal) {
     );
   } catch (err) {
     if (err.name === "AbortError") throw err;
-    throw new Error("Network error — check your connection");
+    throw new Error(`Network error — check your connection (${err.message})`);
   }
   if (res.status === 404) throw new Error("Page not found (404)");
   if (!res.ok) throw new Error(`Server error (${res.status})`);
@@ -974,11 +993,11 @@ let _toastBusy = false;
 function _drainToastQueue() {
   if (_toastBusy || !_toastQueue.length) return;
   _toastBusy = true;
-  const { message, durationMs, onUndo } = _toastQueue.shift();
-  _showToastNow(message, durationMs, onUndo);
+  const { message, durationMs, onUndo, actionLabel } = _toastQueue.shift();
+  _showToastNow(message, durationMs, onUndo, actionLabel);
 }
 
-function _showToastNow(message, durationMs, onUndo) {
+function _showToastNow(message, durationMs, onUndo, actionLabel = "Undo") {
   let toast = document.getElementById("wiki-toast");
   if (!toast) {
     toast = document.createElement("div");
@@ -1001,7 +1020,7 @@ function _showToastNow(message, durationMs, onUndo) {
     text.textContent = message;
     const btn = document.createElement("button");
     btn.className = "toast-undo-btn";
-    btn.textContent = "Undo";
+    btn.textContent = actionLabel;
     btn.addEventListener("click", () => {
       clearTimeout(toast._timer);
       onUndo();
@@ -1017,12 +1036,13 @@ function _showToastNow(message, durationMs, onUndo) {
   toast._timer = setTimeout(advance, durationMs);
 }
 
-function showToast(message, durationMs = 3000, onUndo = null) {
-  _toastQueue.push({ message, durationMs, onUndo });
+function showToast(message, durationMs = 3000, onUndo = null, actionLabel = "Undo") {
+  _toastQueue.push({ message, durationMs, onUndo, actionLabel });
   _drainToastQueue();
 }
 
 export {
+  normalizePath,
   progressBar,
   showToast,
   showView,

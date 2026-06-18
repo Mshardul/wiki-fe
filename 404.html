@@ -232,6 +232,7 @@
         align-items: center;
         gap: 8px;
         cursor: pointer;
+        text-decoration: none;
         padding: 8px 14px;
         margin-top: 4px;
         border: 1px solid var(--border-solid);
@@ -334,12 +335,12 @@
           request to contribute.
         </div>
 
-        <div class="back-line" id="back-btn">
+        <a class="back-line" id="back-btn" href="./">
           <span class="prompt">$</span>
           <span class="back-cmd">cd <span class="arg">../</span></span>
           <span class="cursor"></span>
           <span class="enter-hint">↵ enter</span>
-        </div>
+        </a>
       </div>
     </div>
 
@@ -352,21 +353,25 @@
         document.title = title + " - Not Written Yet";
       }
 
-      function goBack() {
+      const backBtn = document.getElementById("back-btn");
+
+      function goBack(e) {
         if (
-          !document.referrer ||
-          !document.referrer.startsWith(location.origin)
+          document.referrer &&
+          document.referrer.startsWith(location.origin)
         ) {
-          location.href = "./";
-        } else {
+          if (e) e.preventDefault();
           history.back();
         }
+        // else: let the anchor navigate to ./ natively
       }
 
-      document.getElementById("back-btn").addEventListener("click", goBack);
+      backBtn.addEventListener("click", goBack);
 
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") goBack();
+        if (e.key === "Enter" && document.activeElement !== backBtn) {
+          backBtn.click();
+        }
       });
     </script>
   </body>

@@ -15,7 +15,7 @@ def test_scroll_position_saved_and_restored(page, base_url):
     (read from state.currentFilePath) to avoid relying on headless scroll events
     for the save path. Tests the restore path in isolation.
     """
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#markdown-body pre", timeout=10_000)
 
     # Read the actual localStorage key the app uses, then write 600 directly.
@@ -33,9 +33,9 @@ def test_scroll_position_saved_and_restored(page, base_url):
     )
 
     # Navigate away then back.
-    page.goto(f"{base_url}/wiki/#system-design")
+    page.goto(f"{base_url}/#system-design")
     page.wait_for_selector("#view-index.active", timeout=5_000)
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#markdown-body pre", timeout=10_000)
 
     # Wait until scroll is actually restored (fires at ~150ms) rather than a fixed sleep.
@@ -50,7 +50,7 @@ def test_scroll_position_saved_and_restored(page, base_url):
 def test_scroll_position_not_restored_with_anchor(page, base_url):
     """?a= anchor param takes priority over saved scroll position."""
     # First visit and scroll to persist a position.
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#markdown-body pre", timeout=10_000)
     file_path = page.evaluate(
         "() => (typeof state !== 'undefined' ? state.currentFilePath : null)"
@@ -72,7 +72,7 @@ def test_scroll_position_not_restored_with_anchor(page, base_url):
     if not first_heading:
         return  # no headings to anchor to; skip
 
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.evaluate(
         f"() => history.replaceState(null, '', location.href.split('?')[0] + '?a={first_heading}')"
     )
@@ -89,7 +89,7 @@ def test_scroll_position_not_restored_with_anchor(page, base_url):
 def test_toc_visible_on_desktop(page, base_url):
     """TOC sidebar is visible on large screens."""
     page.set_viewport_size({"width": 1280, "height": 800})
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
     sidebar = page.locator("#toc-sidebar")
@@ -99,7 +99,7 @@ def test_toc_visible_on_desktop(page, base_url):
 def test_toc_hidden_on_mobile(page, base_url):
     """TOC sidebar is hidden by default on mobile viewports."""
     page.set_viewport_size({"width": 375, "height": 812})
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
     sidebar = page.locator("#toc-sidebar")
@@ -109,7 +109,7 @@ def test_toc_hidden_on_mobile(page, base_url):
 def test_mobile_toc_closes_on_link_tap(page, base_url):
     """Tapping a TOC link closes the mobile drawer without needing the overlay."""
     page.set_viewport_size({"width": 375, "height": 812})
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
@@ -136,7 +136,7 @@ def test_mobile_toc_closes_on_link_tap(page, base_url):
 def test_toc_sticky_does_not_scroll_away(page, base_url):
     """TOC sidebar stays in viewport after scrolling down."""
     page.set_viewport_size({"width": 1280, "height": 800})
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#markdown-body pre", timeout=8_000)
 
     page.evaluate("() => window.scrollTo(0, 1500)")
@@ -153,7 +153,7 @@ def test_toc_sticky_does_not_scroll_away(page, base_url):
 
 def test_sticky_section_header_element_exists(page, base_url):
     """#sticky-section-header element is present in the DOM in content view."""
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
     exists = page.evaluate("() => !!document.getElementById('sticky-section-header')")
@@ -163,7 +163,7 @@ def test_sticky_section_header_element_exists(page, base_url):
 def test_sticky_section_header_shows_section_on_scroll(page, base_url):
     """Scrolling past an h2 populates the sticky section header with the section name."""
     page.set_viewport_size({"width": 1280, "height": 800})
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
         timeout=10_000,
@@ -191,7 +191,7 @@ def test_sticky_section_header_shows_section_on_scroll(page, base_url):
 def test_mobile_toc_open_locks_body_scroll(page, base_url):
     """opening mobile TOC adds toc-open class to body."""
     page.set_viewport_size({"width": 375, "height": 812})
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
     page.locator("#toc-mobile-btn").click()
@@ -204,7 +204,7 @@ def test_mobile_toc_open_locks_body_scroll(page, base_url):
 def test_mobile_toc_close_via_overlay_unlocks_scroll(page, base_url):
     """closing mobile TOC via overlay removes toc-open from body."""
     page.set_viewport_size({"width": 375, "height": 812})
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
     page.locator("#toc-mobile-btn").click()

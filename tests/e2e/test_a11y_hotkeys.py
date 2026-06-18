@@ -10,7 +10,7 @@ Accessibility and hotkey fixes:
 
 
 def _go_to_article(page, base_url, slug="system-design/caching"):
-    page.goto(f"{base_url}/wiki/#{slug}")
+    page.goto(f"{base_url}/#{slug}")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
@@ -86,7 +86,7 @@ def test_space_activates_wiki_card(wiki_page):
 
 def test_space_activates_index_card(page, base_url):
     """Space key on an index-card navigates to its content view."""
-    page.goto(f"{base_url}/wiki/#system-design")
+    page.goto(f"{base_url}/#system-design")
     page.wait_for_selector(".index-card", timeout=10_000)
     page.evaluate("() => document.querySelector('.index-card').focus()")
     page.keyboard.press(" ")
@@ -144,7 +144,7 @@ def test_content_scroll_restored_after_navigation(page, base_url):
     assert saved_y > 0, "Could not scroll article (content may be too short)"
 
     # Navigate away then back
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_selector("#view-home.active", timeout=5_000)
     page.go_back()
     page.wait_for_selector("#view-content.active", timeout=10_000)
@@ -202,3 +202,40 @@ def test_search_index_cache_is_valid_json(wiki_page):
     assert result is not None, "No wiki-index-* keys found in sessionStorage"
     assert result != -1, "A sessionStorage index is not a valid JSON array"
     assert max(result) > 0, f"No non-empty index cached (section counts: {result})"
+
+
+# ── Missing aria on interactive elements ────────────────────────────
+
+
+def test_search_dialog_has_aria_modal(wiki_page):
+    """The global search dialog is marked aria-modal for assistive tech."""
+    _open_search(wiki_page)
+    dialog = wiki_page.locator(".gsearch-dialog")
+    assert dialog.get_attribute("role") == "dialog"
+    assert dialog.get_attribute("aria-modal") == "true"
+
+
+def test_breadcrumb_nav_has_aria_label(page, base_url):
+    """Breadcrumb navs expose aria-label='Breadcrumb' on index and content views."""
+    page.goto(f"{base_url}/#system-design")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+    assert (
+        page.locator("#index-breadcrumb").get_attribute("aria-label") == "Breadcrumb"
+    )
+
+    _go_to_article(page, base_url)
+    assert (
+        page.locator("#content-breadcrumb").get_attribute("aria-label") == "Breadcrumb"
+    )
+
+
+def test_index_cards_have_aria_label(page, base_url):
+    """Index cards (role=button) carry an aria-label so they read as named buttons."""
+    page.goto(f"{base_url}/#system-design")
+    page.wait_for_selector(".index-card", timeout=10_000)
+
+    missing = page.evaluate("""() => {
+        const cards = [...document.querySelectorAll('.index-card')];
+        return cards.filter(c => !(c.getAttribute('aria-label') || '').trim()).length;
+    }""")
+    assert missing == 0, f"{missing} index-card(s) missing aria-label"

@@ -24,6 +24,26 @@ function getZoomOverlay() {
     overlay
       .querySelector(".zoom-overlay-close")
       .addEventListener("click", closeZoomOverlay);
+
+    // Mobile: swipe down to dismiss.
+    let touchStartY = null;
+    overlay.addEventListener(
+      "touchstart",
+      (e) => {
+        touchStartY = e.touches[0]?.clientY ?? null;
+      },
+      { passive: true }
+    );
+    overlay.addEventListener(
+      "touchend",
+      (e) => {
+        if (touchStartY === null) return;
+        const dy = (e.changedTouches[0]?.clientY ?? touchStartY) - touchStartY;
+        if (dy > 80) closeZoomOverlay();
+        touchStartY = null;
+      },
+      { passive: true }
+    );
   }
   return overlay;
 }

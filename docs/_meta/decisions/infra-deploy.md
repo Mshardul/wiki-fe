@@ -19,14 +19,14 @@ Status: **design locked, not yet executed.** See [auth.md](./auth.md), [backend-
 - **Containerized:** `Dockerfile` (Python + uv + FastAPI + uvicorn) + `fly.toml`.
 - **Persistent volume for SQLite** — mount at `/data`, `DATABASE_URL=sqlite:////data/wiki.db`. **Mandatory** — without a volume SQLite resets every deploy.
 - **Secrets** via `fly secrets set` (never in repo/image), injected as env: `RESEND_API_KEY`, `SESSION_SECRET`.
-- **HTTPS** free on `*.fly.dev`. App enforces redirect + `Secure` cookie in prod (auth.md §12).
+- **HTTPS** free on `*.fly.dev`. App enforces redirect + `Secure` cookie in prod (see Security guards in [auth.md](./auth.md)).
 - **Migrations:** Alembic runs on deploy via Fly **release command**, before the app starts.
 - **Single region, single machine** (free allowance). Known ceiling: SQLite + single volume binds to one machine — can't scale horizontally. Fine at this scale.
 
 ## FE deploy — GitHub Pages
 
 - Static, no build → Pages serves repo files as-is. Free, repo-native. (Netlify possible later; Pages to begin.)
-- `BACKEND_URL` hostname-detects prod fly.dev (auth.md §10).
+- `BACKEND_URL` hostname-detects prod fly.dev (see API client in [auth-integration.md](./auth-integration.md)).
 - **Service worker:** bump cache version on any asset-changing deploy (existing project rule) — auth adds `js/api.js` etc, so bump on first auth deploy. Also add a **proper cache expiration policy** for the SW cache (not just version-bump invalidation).
 
 ## Cross-origin cookie — verify end-to-end (not just configured)
@@ -52,5 +52,5 @@ Both origins are HTTPS (Pages + Fly) → `SameSite=None; Secure` works. Confirm 
 
 ## Deferred
 
-- Custom domain → enables same-origin (auth.md §10) + real-user email (auth.md §9a).
+- Custom domain → enables same-origin (see API client in [auth-integration.md](./auth-integration.md)) + real-user email (see Email in [auth.md](./auth.md)).
 - Litestream / richer backup; multi-region (only if scale ever demands — unlikely).

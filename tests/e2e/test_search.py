@@ -1,8 +1,10 @@
 """
 - ↑/↓ keyboard navigation in search results + Enter to select
-- stub articles (< 200 chars) excluded from ⌘K results
+- visited stubs excluded from ⌘K results (search no longer fetches articles on load)
 - search input debounce (150ms)
-- result count badge (WIKI-166)
+- result count badge
+- load-failure error state + retry
+- section-filter mode indicator
 """
 
 
@@ -54,18 +56,47 @@ def test_enter_navigates_to_article(wiki_page):
     wiki_page.wait_for_selector("#view-content.active", timeout=8_000)
 
 
-def test_stubs_excluded_from_search(wiki_page):
-    """known stub articles (< 200 chars) do not appear in search results."""
-    _open_search(wiki_page)
-    # "api gateway" matches the stub api-gateway.md (14 bytes) by title,
-    # but the stub filter should exclude it from results.
-    wiki_page.fill("#gsearch-input", "api gateway")
-    wiki_page.wait_for_timeout(1_500)
+def test_visited_stub_excluded_from_search(wiki_page, base_url):
+    """A stub becomes excludable once visited (readTimeCache marks it null)."""
+    # Visit the known stub so its readTimeCache entry is set to null.
+    wiki_page.goto(f"{base_url}/#system-design/api-gateway")
+    wiki_page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    wiki_page.goto(f"{base_url}/")
+    wiki_page.wait_for_selector("#view-home.active", timeout=5_000)
 
-    results = wiki_page.locator(".gsearch-result").all()
-    titles = [r.inner_text() for r in results]
-    assert all("api gateway" not in t.lower() or len(t) > 200 for t in titles), (
-        f"Stub article appeared in results: {titles}"
+    _open_search(wiki_page)
+    wiki_page.fill("#gsearch-input", "api gateway")
+    wiki_page.wait_for_timeout(1_000)
+
+    titles = [r.inner_text() for r in wiki_page.locator(".gsearch-result").all()]
+    assert all("api gateway" not in t.lower() for t in titles), (
+        f"Visited stub still appeared in results: {titles}"
+    )
+
+
+def test_search_does_not_fetch_articles_for_stub_detection(wiki_page):
+    """WIKI-222: opening search must not fetch article .md bodies just to detect stubs."""
+    wiki_page.evaluate("""() => {
+        window._articleFetches = [];
+        const orig = window.fetch;
+        window.fetch = (url, ...rest) => {
+            const u = typeof url === 'string' ? url : url?.url ?? '';
+            if (u.endsWith('.md') && !u.endsWith('index.md')) {
+                window._articleFetches.push(u);
+            }
+            return orig(url, ...rest);
+        };
+    }""")
+    _open_search(wiki_page)
+    wiki_page.fill("#gsearch-input", "caching")
+    wiki_page.wait_for_selector(".gsearch-result", timeout=8_000)
+
+    article_fetches = wiki_page.evaluate("() => window._articleFetches")
+    assert article_fetches == [], (
+        f"Search fetched article bodies for stub detection: {article_fetches}"
     )
 
 
@@ -178,4 +209,84 @@ def test_result_count_clears_on_modal_reopen(wiki_page):
     )
     assert not count_text.strip(), (
         f"Count badge must be empty on modal reopen, got '{count_text}'"
+    )
+
+
+# ── Load failure error state + retry ─────────────────────────────────
+
+
+def test_search_load_failure_shows_retry(page, base_url):
+    """When every wiki index fails to load, search shows an error with a Retry button."""
+    # Fail all index.md requests so loadAllSearchEntries finds no usable cache.
+    page.route("**/index.md", lambda route: route.abort())
+    page.goto(f"{base_url}/")
+    page.wait_for_load_state("networkidle")
+
+    page.keyboard.press("Meta+k")
+    page.wait_for_selector("#global-search-modal:not(.hidden)")
+
+    page.wait_for_selector(".gsearch-error", timeout=8_000)
+    assert page.locator(".gsearch-retry").count() == 1, (
+        "Retry button must be present in the search error state"
+    )
+
+
+def test_search_retry_recovers_after_failure(page, base_url):
+    """Retry re-runs the load; once requests succeed, results become available."""
+    failing = {"on": True}
+
+    def handler(route):
+        if failing["on"]:
+            route.abort()
+        else:
+            route.continue_()
+
+    page.route("**/index.md", handler)
+    page.goto(f"{base_url}/")
+    page.wait_for_load_state("networkidle")
+
+    page.keyboard.press("Meta+k")
+    page.wait_for_selector(".gsearch-error", timeout=8_000)
+
+    # Let the network recover, then hit Retry.
+    failing["on"] = False
+    page.locator(".gsearch-retry").click()
+
+    page.fill("#gsearch-input", "caching")
+    page.wait_for_selector(".gsearch-result", timeout=8_000)
+    assert page.locator(".gsearch-result").count() > 0
+
+
+# ── Section-filter mode indicator ────────────────────────────────────
+
+
+def test_section_filter_mode_shows_badge(wiki_page):
+    """Typing '>' switches to section-filter mode and shows the mode badge."""
+    _open_search(wiki_page)
+    wiki_page.fill("#gsearch-input", ">")
+    wiki_page.wait_for_timeout(300)  # past debounce
+
+    dialog = wiki_page.locator(".gsearch-dialog")
+    assert "section-mode" in (dialog.get_attribute("class") or ""), (
+        "Dialog must carry .section-mode class in section-filter mode"
+    )
+    assert wiki_page.locator(".gsearch-mode-badge").is_visible(), (
+        "Section-filter mode badge must be visible"
+    )
+
+
+def test_section_filter_mode_clears_on_normal_query(wiki_page):
+    """Removing the leading '>' exits section-filter mode and hides the badge."""
+    _open_search(wiki_page)
+    wiki_page.fill("#gsearch-input", ">")
+    wiki_page.wait_for_timeout(300)
+    wiki_page.fill("#gsearch-input", "caching")
+    wiki_page.wait_for_timeout(300)
+
+    dialog = wiki_page.locator(".gsearch-dialog")
+    assert "section-mode" not in (dialog.get_attribute("class") or ""), (
+        "Dialog must drop .section-mode for a normal query"
+    )
+    assert not wiki_page.locator(".gsearch-mode-badge").is_visible(), (
+        "Mode badge must be hidden for a normal query"
     )

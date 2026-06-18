@@ -44,7 +44,7 @@ Some text.
 
 
 def _load_mock_article(page, base_url, content, slug="mock"):
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
     page.evaluate(f"""() => navigateToContent(
@@ -671,7 +671,7 @@ ARTICLE_WITH_BROKEN_IMAGE = """\
 
 ## Section
 
-![Missing image](/wiki/content/broken-test-image-404-xyz.png)
+![Missing image](/content/broken-test-image-404-xyz.png)
 
 Some text after the image.
 """
