@@ -202,7 +202,7 @@ async function renderIndex(wiki) {
     if (savedScroll)
       window.scrollTo({ top: parseInt(savedScroll, 10), behavior: "instant" });
   } catch (err) {
-    sectionsEl.innerHTML = `<p class="error">Failed to load index. (${err.message})</p>`;
+    sectionsEl.innerHTML = `<p class="error">Failed to load index. (${escHtml(err.message)})</p>`;
   }
 }
 
@@ -237,6 +237,7 @@ function renderIndexSections(sections, wiki) {
           <div class="index-card"
                data-title="${escHtml(card.title)}"
                data-desc="${escHtml(card.description)}"
+               aria-label="${escHtml(card.title)}"
                onclick="navigateToContent('${wiki.id}', '${encodeURIComponent(
               card.path
             )}', '${encodeURIComponent(card.title)}', '${card.slug}')"
@@ -534,7 +535,9 @@ async function renderContent(
           <p class="content-stub-msg">This article hasn't been written yet.</p>
         </div>`;
       if (readTimeBadge) readTimeBadge.textContent = "";
+      readTimeCache[filePath] = null;
       buildTOC(body);
+      body.dataset.renderDone = "1";
       return;
     }
 
@@ -677,7 +680,7 @@ async function renderContent(
 
     body.dataset.renderDone = "1";
   } catch (err) {
-    body.innerHTML = `<p class="error">Failed to load content. (${err.message})</p>`;
+    body.innerHTML = `<p class="error">Failed to load content. (${escHtml(err.message)})</p>`;
     body.dataset.renderDone = "1";
   }
 }
@@ -686,6 +689,16 @@ async function renderContent(
 let hoverPreviewTimer;
 let _previewAbortController = null;
 let _previewGeneration = 0;
+
+// Whether the most recent pointer interaction came from touch (vs mouse).
+let _lastPointerWasTouch = false;
+window.addEventListener(
+  "pointerdown",
+  (e) => {
+    _lastPointerWasTouch = e.pointerType !== "mouse";
+  },
+  { capture: true }
+);
 
 function interceptMdLinks(contentEl, wiki, currentFilePath) {
   const baseDir = dirOf(currentFilePath);
@@ -735,8 +748,9 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
       if (previewEl) previewEl.classList.remove("visible");
     });
 
-    // Hover logic
+    // Hover logic — skip on touch
     link.addEventListener("mouseenter", () => {
+      if (_lastPointerWasTouch) return;
       hoverPreviewTimer = setTimeout(
         () => showHoverPreview(link, resolvedPath),
         400
@@ -882,7 +896,7 @@ async function fetchText(path, signal) {
     );
   } catch (err) {
     if (err.name === "AbortError") throw err;
-    throw new Error("Network error — check your connection");
+    throw new Error(`Network error — check your connection (${err.message})`);
   }
   if (res.status === 404) throw new Error("Page not found (404)");
   if (!res.ok) throw new Error(`Server error (${res.status})`);

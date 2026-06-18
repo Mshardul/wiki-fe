@@ -2,16 +2,10 @@ import {
   WIKIS,
   allSearchCache,
   readTimeCache,
-  STUB_THRESHOLD,
   escHtml,
   fuzzyMatch,
 } from "./state.js";
-import {
-  fetchWikiIndex,
-  fetchText,
-  readingTime,
-  navigateToContent,
-} from "./render.js";
+import { fetchWikiIndex, navigateToContent } from "./render.js";
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL SEARCH (⌘K)
@@ -27,6 +21,7 @@ async function loadAllSearchEntries() {
   allSearchCache.loading = true;
   gSearchResults.innerHTML = '<div class="gsearch-loading">Loading…</div>';
 
+  let anySucceeded = false;
   for (const wiki of WIKIS) {
     try {
       const sections = await fetchWikiIndex(wiki);
@@ -36,31 +31,33 @@ async function loadAllSearchEntries() {
           entries.push({ wiki, section: section.heading, ...card });
         }
       }
-      // Detect stubs concurrently - reuse readTimeCache if already populated
-      await Promise.all(
-        entries.map(async (entry) => {
-          if (readTimeCache[entry.path] === undefined) {
-            try {
-              const md = await fetchText(entry.path);
-              readTimeCache[entry.path] =
-                md.length < STUB_THRESHOLD ? null : readingTime(md);
-            } catch {
-              readTimeCache[entry.path] = "";
-            }
-          }
-        })
-      );
       for (const entry of entries) {
         if (readTimeCache[entry.path] !== null) {
           allSearchCache.entries.push(entry);
         }
       }
+      anySucceeded = true;
     } catch {}
+  }
+
+  // Every wiki index failed → no usable cache.
+  if (!anySucceeded) {
+    allSearchCache.loading = false;
+    gSearchResults.innerHTML =
+      '<div class="gsearch-error">Couldn\'t load search index. ' +
+      '<button type="button" class="gsearch-retry" onclick="retryGlobalSearch()">Retry</button></div>';
+    return;
   }
 
   allSearchCache.loaded = true;
   allSearchCache.loading = false;
   applyGlobalSearch(gSearchInput.value);
+}
+
+function retryGlobalSearch() {
+  allSearchCache.loaded = false;
+  allSearchCache.loading = false;
+  loadAllSearchEntries();
 }
 
 let gSearchSelectedIdx = -1;
@@ -221,7 +218,12 @@ function applyGlobalSearch(query) {
 
   const raw = query.trim();
 
-  if (raw.startsWith(">")) {
+  const sectionMode = raw.startsWith(">");
+  gSearchModal
+    .querySelector(".gsearch-dialog")
+    ?.classList.toggle("section-mode", sectionMode);
+
+  if (sectionMode) {
     applySectionFilter(raw.slice(1).trimStart());
     return;
   }
@@ -332,4 +334,4 @@ function highlightMatch(text, query) {
   );
 }
 
-export { openGlobalSearch, closeGlobalSearch };
+export { openGlobalSearch, closeGlobalSearch, retryGlobalSearch };

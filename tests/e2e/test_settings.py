@@ -612,3 +612,91 @@ def test_unrecognized_format_falls_back_to_os_preference(page, base_url):
     assert theme == "light", (
         "Unrecognized format should fall back to OS light preference"
     )
+
+
+# ── OS theme live listener ─────────────────────────────────────
+
+
+def test_os_theme_change_updates_live_when_no_saved_settings(page, base_url):
+    """With no saved settings, switching OS color scheme mid-session flips the theme."""
+    page.emulate_media(color_scheme="dark")
+    page.goto(f"{base_url}/")
+    page.evaluate("() => localStorage.removeItem('wiki-settings')")
+    page.reload()
+    page.wait_for_load_state("networkidle")
+    assert (
+        page.evaluate("() => document.documentElement.getAttribute('data-theme')")
+        == "dark"
+    )
+
+    # OS flips to light mid-session — listener should re-apply without reload.
+    page.emulate_media(color_scheme="light")
+    page.wait_for_function(
+        "() => document.documentElement.getAttribute('data-theme') === 'light'",
+        timeout=3_000,
+    )
+
+
+def test_os_theme_change_ignored_when_user_picked_theme(page, base_url):
+    """An explicit saved theme wins — OS changes must not override it mid-session."""
+    page.emulate_media(color_scheme="dark")
+    page.goto(f"{base_url}/")
+    page.wait_for_load_state("networkidle")
+
+    # User explicitly selects a light background.
+    page.locator("[title='Preferences (,)']").first.click()
+    page.wait_for_selector("#prefs-modal:not(.hidden)")
+    page.locator("#settings-backgrounds .settings-bg-swatch").nth(3).click()  # White
+    assert (
+        page.evaluate("() => document.documentElement.getAttribute('data-theme')")
+        == "light"
+    )
+
+    # OS flips to dark — explicit choice must hold.
+    page.emulate_media(color_scheme="dark")
+    page.wait_for_timeout(500)
+    assert (
+        page.evaluate("() => document.documentElement.getAttribute('data-theme')")
+        == "light"
+    ), "Saved explicit theme must not be overridden by an OS change"
+
+
+# ── Lazy-load non-default fonts  ────────────────────────────────
+
+
+def test_only_default_font_loaded_up_front(page, base_url):
+    """On first paint only Inter (the default) is requested; extras are not yet present."""
+    page.goto(f"{base_url}/")
+    page.wait_for_load_state("networkidle")
+
+    default_href = page.locator("#font-default").get_attribute("href")
+    assert default_href and "Inter" in default_href
+    assert "Lora" not in default_href and "Geist" not in default_href
+    assert page.locator("#font-extras").count() == 0, (
+        "Non-default font stylesheet must not load before it is needed"
+    )
+
+
+def test_opening_settings_loads_extra_fonts(wiki_page):
+    """Opening the settings panel injects the non-default font stylesheet once."""
+    assert wiki_page.locator("#font-extras").count() == 0
+    _open_settings(wiki_page)
+    wiki_page.wait_for_selector("#font-extras", state="attached", timeout=3_000)
+    href = wiki_page.locator("#font-extras").get_attribute("href")
+    assert "Lora" in href and "Geist" in href
+
+
+def test_saved_non_default_font_loads_extras_on_boot(page, base_url):
+    """A saved non-default font must pull the extras stylesheet at startup so it renders."""
+    page.goto(f"{base_url}/")
+    page.wait_for_load_state("networkidle")
+    page.evaluate(
+        """() => localStorage.setItem('wiki-settings',
+        JSON.stringify({backgroundId:'dark-void',textColorId:'text-crisp',
+        accentId:'indigo',font:'Lora',fontSize:'M',contentWidth:'Default'}))"""
+    )
+    page.reload()
+    page.wait_for_load_state("networkidle")
+    assert page.locator("#font-extras").count() == 1, (
+        "Saved non-default font (Lora) should trigger loadAllFonts at boot"
+    )

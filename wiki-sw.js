@@ -1,4 +1,4 @@
-const SHELL_CACHE = "wiki-shell-v4";
+const SHELL_CACHE = "wiki-shell-v6";
 const ARTICLE_CACHE = "wiki-articles-v1";
 
 self.addEventListener("install", (e) => {
@@ -10,9 +10,18 @@ self.addEventListener("install", (e) => {
         cache
           .addAll([
             "./index.html",
-            "./css/wiki.css",
-            "./js/wiki.js",
             "./404.html",
+            "./manifest.json",
+            "./icon.svg",
+            "./css/wiki.css",
+            "./js/app.js",
+            "./js/state.js",
+            "./js/render.js",
+            "./js/content.js",
+            "./js/search.js",
+            "./js/storage.js",
+            "./js/auth.js",
+            "./js/api.js",
           ])
           .catch(() => {})
       )

@@ -24,6 +24,18 @@ const WIKIS = [
   },
 ];
 
+// Duplicate ids - Warn loudly at startup.
+{
+  const seen = new Set();
+  const dupes = WIKIS.map((w) => w.id).filter((id) => seen.size === seen.add(id).size);
+  if (dupes.length) {
+    console.warn(
+      `WIKIS registry has duplicate id(s): ${[...new Set(dupes)].join(", ")}. ` +
+        "Storage keys will collide. Ids must be unique."
+    );
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    SHOWDOWN CONVERTER CONFIG
    ═══════════════════════════════════════════════════════════════ */

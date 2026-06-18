@@ -7,10 +7,15 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <title>Knowledge Base</title>
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <meta name="theme-color" content="#4f46e5" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+      id="font-default"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link
@@ -57,7 +62,12 @@
       aria-hidden="true"
     >
       <div class="gsearch-backdrop" id="gsearch-backdrop"></div>
-      <div class="gsearch-dialog" role="dialog" aria-label="Global search">
+      <div
+        class="gsearch-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Global search"
+      >
         <div class="gsearch-input-wrap">
           <svg class="gsearch-icon" viewBox="0 0 20 20" fill="none">
             <circle
@@ -74,6 +84,9 @@
               stroke-linecap="round"
             />
           </svg>
+          <span class="gsearch-mode-badge" aria-hidden="true"
+            >Filtering sections</span
+          >
           <input
             type="text"
             id="gsearch-input"
@@ -191,7 +204,11 @@
             </svg>
             Home
           </button>
-          <nav id="index-breadcrumb" class="breadcrumb"></nav>
+          <nav
+            id="index-breadcrumb"
+            class="breadcrumb"
+            aria-label="Breadcrumb"
+          ></nav>
           <button
             class="topbar-icon-btn"
             data-action="search-open"
@@ -275,7 +292,11 @@
             </svg>
             Back
           </button>
-          <nav id="content-breadcrumb" class="breadcrumb"></nav>
+          <nav
+            id="content-breadcrumb"
+            class="breadcrumb"
+            aria-label="Breadcrumb"
+          ></nav>
           <div id="topbar-title" class="topbar-title"></div>
           <span id="content-read-time" class="read-time-badge"></span>
           <button

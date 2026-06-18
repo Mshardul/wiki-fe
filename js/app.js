@@ -2,6 +2,7 @@ import { state, WIKIS, escHtml } from "./state.js";
 import {
   applySettingsToDOM,
   getSettings,
+  initOsThemeListener,
   Settings,
   Bookmarks,
   ReadToggle,
@@ -25,7 +26,11 @@ import {
   toggleSection,
   showToast,
 } from "./render.js";
-import { openGlobalSearch, closeGlobalSearch } from "./search.js";
+import {
+  openGlobalSearch,
+  closeGlobalSearch,
+  retryGlobalSearch,
+} from "./search.js";
 import {
   closeZoomOverlay,
   rerenderMermaidDiagrams,
@@ -45,6 +50,7 @@ window.navigateToContent = navigateToContent;
 window.toggleSection = toggleSection;
 window.clearRecents = clearRecents;
 window.closeGlobalSearch = closeGlobalSearch;
+window.retryGlobalSearch = retryGlobalSearch;
 window.Auth = Auth;
 window.AuthModal = AuthModal;
 
@@ -448,6 +454,7 @@ function mountDebugOverlay() {
 (function init() {
   history.scrollRestoration = "manual";
   applySettingsToDOM(getSettings());
+  initOsThemeListener();
 
   // async; fires GET /auth/me, pulls data, refreshes UI + re-renders when done.
   // Not awaited — boot/render proceeds anonymously, re-renders on wiki:session-changed.

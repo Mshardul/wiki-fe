@@ -288,6 +288,7 @@ def test_prefs_keyboard_tab_contains_shortcuts(page, base_url):
     page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.keyboard.press("?")
+    page.wait_for_selector("#prefs-panel-keyboard kbd", timeout=5_000)
     body_text = page.locator("#prefs-panel-keyboard").inner_text()
     assert "⌘K" in body_text or "K" in body_text, (
         "Keyboard tab should mention ⌘K shortcut"

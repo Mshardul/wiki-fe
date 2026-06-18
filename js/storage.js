@@ -380,6 +380,21 @@ const FONT_OPTIONS = [
   { id: "JetBrains Mono", label: "Mono" },
 ];
 
+const _NON_DEFAULT_FONTS_HREF =
+  "https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700" +
+  "&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500" +
+  "&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400" +
+  "&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap";
+
+function loadAllFonts() {
+  if (document.getElementById("font-extras")) return;
+  const link = document.createElement("link");
+  link.id = "font-extras";
+  link.rel = "stylesheet";
+  link.href = _NON_DEFAULT_FONTS_HREF;
+  document.head.appendChild(link);
+}
+
 const DARK_BACKGROUNDS = [
   {
     id: "dark-void",
@@ -543,6 +558,15 @@ function _isDark(backgroundId) {
   return !backgroundId.startsWith("light-");
 }
 
+function _hasStoredSettings() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
+    return Boolean(stored?.backgroundId);
+  } catch {
+    return false;
+  }
+}
+
 function getSettings() {
   try {
     const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
@@ -608,6 +632,7 @@ function applySettingsToDOM(s) {
   root.setProperty("--accent-glow", accent.glow);
 
   const font = s.font || "Inter";
+  if (font !== "Inter") loadAllFonts(); // non-default font must actually render
   const isSerif = font === "Lora" || font === "Source Serif 4";
   const isMono = font === "JetBrains Mono";
   const fallback = isSerif
@@ -638,6 +663,15 @@ function applySettingsToDOM(s) {
   );
 }
 
+// Follow OS dark/light changes live
+function initOsThemeListener() {
+  const mq = window.matchMedia?.("(prefers-color-scheme: light)");
+  mq?.addEventListener?.("change", () => {
+    if (_hasStoredSettings()) return;
+    applySettingsToDOM(getSettings());
+  });
+}
+
 const BACKUP_SCHEMA = {
   bookmarks: (v) => v === null || typeof v === "string",
   recents: (v) => v === null || typeof v === "string",
@@ -658,6 +692,7 @@ const Settings = {
   _shortcutsCache: null,
 
   open(tab = "general") {
+    loadAllFonts(); // user may pick any font here — make all previews available
     this._lastFocus = document.activeElement;
     const modal = document.getElementById("prefs-modal");
     modal.classList.remove("hidden");
@@ -1176,6 +1211,7 @@ export {
   getSettings,
   saveSettings,
   applySettingsToDOM,
+  initOsThemeListener,
   Settings,
   Theme,
   Sync,
