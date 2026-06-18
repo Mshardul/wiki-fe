@@ -96,6 +96,9 @@ const state = {
   indexSections: [],
   tocObserver: null,
   titleObserver: null,
+  // Auth identity — in-memory only, NEVER persisted to localStorage.
+  // status: "loading" until GET /auth/me resolves, then "in" | "out".
+  session: { user: null, status: "loading" },
 };
 
 /* ─── Shared caches (mutated by render.js and search.js - must live here) ─── */

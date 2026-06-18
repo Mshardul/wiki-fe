@@ -1,9 +1,34 @@
 import { state, WIKIS, escHtml } from "./state.js";
+import { api } from "./api.js";
 
 function _toast(message, durationMs = 3000, onUndo = null) {
   document.dispatchEvent(
     new CustomEvent("wiki:toast", { detail: { message, durationMs, onUndo } })
   );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BACKEND SYNC (cache-through / Model B)
+   Anon users (status !== "in") never hit these paths.
+   ═══════════════════════════════════════════════════════════════ */
+function _loggedIn() {
+  return state.session?.status === "in";
+}
+
+function _titleFromPath(path) {
+  return path.split("/").pop().replace(/\.md$/, "");
+}
+
+function _deriveBookmark(wikiId, path) {
+  const wiki = WIKIS.find((w) => w.id === wikiId);
+  const name = _titleFromPath(path);
+  return { wikiId, path, slug: name, title: name, wikiTitle: wiki?.title || "" };
+}
+
+function _deriveRecent(wikiId, path) {
+  const wiki = WIKIS.find((w) => w.id === wikiId);
+  const name = _titleFromPath(path);
+  return { wikiId, path, slug: name, title: name, wikiTitle: wiki?.title || "" };
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -42,6 +67,21 @@ function getBookmarks() {
 }
 
 function saveBookmarks(arr) {
+  if (_loggedIn()) {
+    const prev = getBookmarks();
+    const prevKeys = new Set(prev.map((b) => `${b.wikiId}|${b.path}`));
+    const nextKeys = new Set(arr.map((b) => `${b.wikiId}|${b.path}`));
+    for (const b of arr) {
+      if (!prevKeys.has(`${b.wikiId}|${b.path}`)) {
+        api.bookmarks.add(b.wikiId, b.path).catch(() => {});
+      }
+    }
+    for (const b of prev) {
+      if (!nextKeys.has(`${b.wikiId}|${b.path}`)) {
+        api.bookmarks.remove(b.wikiId, b.path).catch(() => {});
+      }
+    }
+  }
   localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(arr));
 }
 
@@ -129,12 +169,18 @@ const Bookmarks = {
     updateBookmarkBtn();
   },
   clearAll() {
-    saveBookmarks([]);
+    if (_loggedIn()) api.bookmarks.clear().catch(() => {});
+    // write directly to skip saveBookmarks' per-item diff (avoids double-fire)
+    localStorage.setItem(BOOKMARKS_KEY, JSON.stringify([]));
     const wiki = WIKIS.find((w) => w.id === state.currentWikiId);
     if (wiki) renderBookmarksSection(wiki);
   },
   clearWiki(wikiId) {
-    saveBookmarks(getBookmarks().filter((b) => b.wikiId !== wikiId));
+    if (_loggedIn()) api.bookmarks.clear(wikiId).catch(() => {});
+    localStorage.setItem(
+      BOOKMARKS_KEY,
+      JSON.stringify(getBookmarks().filter((b) => b.wikiId !== wikiId))
+    );
     document.getElementById("bookmarks-section")?.classList.add("hidden");
   },
 };
@@ -158,6 +204,7 @@ function addToRecents(entry) {
   recents.unshift(entry);
   if (recents.length > RECENTS_MAX) recents = recents.slice(0, RECENTS_MAX);
   localStorage.setItem(RECENTS_KEY, JSON.stringify(recents));
+  if (_loggedIn()) api.recents.add(entry.wikiId, entry.path).catch(() => {});
 }
 
 function saveRecents(arr) {
@@ -165,6 +212,7 @@ function saveRecents(arr) {
 }
 
 function clearRecents(wikiId) {
+  if (_loggedIn()) api.recents.clear(wikiId).catch(() => {});
   const remaining = getRecents().filter((r) => r.wikiId !== wikiId);
   saveRecents(remaining);
   document.getElementById("recents-section")?.classList.add("hidden");
@@ -223,6 +271,8 @@ function markRead(path) {
   if (read.has(path)) return;
   read.add(path);
   localStorage.setItem(_readKey(), JSON.stringify([...read]));
+  // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
+  if (_loggedIn()) api.reads.add(state.currentWikiId, path).catch(() => {});
   document.querySelectorAll(`.index-card-read-dot`).forEach((dot) => {
     const card = dot.closest(".index-card");
     const timeBadge = card?.querySelector(".index-card-read-time");
@@ -235,6 +285,8 @@ function markUnread(path) {
   if (!read.has(path)) return;
   read.delete(path);
   localStorage.setItem(_readKey(), JSON.stringify([...read]));
+  // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
+  if (_loggedIn()) api.reads.remove(state.currentWikiId, path).catch(() => {});
   document.querySelectorAll(`.index-card-read-dot`).forEach((dot) => {
     const card = dot.closest(".index-card");
     const timeBadge = card?.querySelector(".index-card-read-time");
@@ -1041,6 +1093,62 @@ const Theme = {
   },
 };
 
+/* ═══════════════════════════════════════════════════════════════
+   SYNC — pull/merge on login & boot; cache clear on logout
+   ═══════════════════════════════════════════════════════════════ */
+const Sync = {
+  // Pull all server lists and overwrite localStorage with server truth.
+  async pullAll() {
+    const [bm, rd, rc] = await Promise.all([
+      api.bookmarks.list().catch(() => []),
+      api.reads.list().catch(() => []),
+      api.recents.list().catch(() => []),
+    ]);
+
+    // Bookmarks → FE shape (server order preserved as returned)
+    localStorage.setItem(
+      BOOKMARKS_KEY,
+      JSON.stringify((bm || []).map((r) => _deriveBookmark(r.wiki_id, r.path)))
+    );
+
+    // Reads → per-wiki Sets
+    const byWiki = {};
+    for (const r of rd || []) {
+      (byWiki[r.wiki_id] ||= new Set()).add(r.path);
+    }
+    for (const wiki of WIKIS) {
+      const set = byWiki[wiki.id];
+      if (set) {
+        localStorage.setItem(`wiki-read-${wiki.id}`, JSON.stringify([...set]));
+      } else {
+        localStorage.removeItem(`wiki-read-${wiki.id}`);
+      }
+    }
+
+    // Recents → FE shape, ≤6 (BE already trims; respect server order)
+    localStorage.setItem(
+      RECENTS_KEY,
+      JSON.stringify(
+        (rc || [])
+          .slice(0, RECENTS_MAX)
+          .map((r) => _deriveRecent(r.wiki_id, r.path))
+      )
+    );
+  },
+
+  clearUserDataCache() {
+    localStorage.removeItem(BOOKMARKS_KEY);
+    localStorage.removeItem(RECENTS_KEY);
+    for (const wiki of WIKIS) localStorage.removeItem(`wiki-read-${wiki.id}`);
+  },
+
+  // Logout B-lite flush. Fire-and-forget writes already synced per-action,
+  // so this is effectively a no-op safety net; returns immediately.
+  flushBestEffort() {
+    return Promise.resolve();
+  },
+};
+
 export {
   saveScrollPos,
   getBookmarks,
@@ -1070,4 +1178,5 @@ export {
   applySettingsToDOM,
   Settings,
   Theme,
+  Sync,
 };

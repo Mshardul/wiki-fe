@@ -14,7 +14,7 @@
 def _load_mock_article(page, base_url, content, slug="mock"):
     """Navigate to a mocked article via JS, bypassing index slug resolution.
     Waits until the loading indicator is replaced by actual content."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
     page.evaluate(f"""() => navigateToContent(
@@ -33,7 +33,7 @@ def _load_mock_article(page, base_url, content, slug="mock"):
 
 def test_copy_buttons_on_code_blocks(page, base_url):
     """every <pre> block in article body has a .copy-btn child."""
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_selector("#markdown-body pre", timeout=8_000)
 
@@ -52,7 +52,7 @@ def test_copy_buttons_on_code_blocks(page, base_url):
 def test_copy_button_writes_to_clipboard(page, base_url):
     """clicking .copy-btn copies block text to clipboard."""
     page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#markdown-body pre .copy-btn", timeout=10_000)
 
     pre_text = page.evaluate(
@@ -122,7 +122,7 @@ def test_topbar_title_appears_after_scroll(page, base_url):
 
 def test_topbar_title_text_matches_article(page, base_url):
     """#topbar-title text matches the loaded article title."""
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_selector("#markdown-body h1", timeout=8_000)
 
@@ -216,7 +216,7 @@ def test_toc_h3_items_have_indent_class(page, base_url):
 
 def test_toc_item_click_does_not_break_hash(page, base_url):
     """TOC: clicking a TOC item updates ?a= param and preserves the article hash."""
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#toc-nav .toc-item", timeout=10_000)
 
     page.locator("#toc-nav .toc-item").first.click()

@@ -1,0 +1,106 @@
+import { state } from "./state.js";
+
+/* Base URL: localhost → local BE; else prod. BE URL is public by nature
+   (browser must reach it) — not a secret. Security = CORS + cookie + BE validation. */
+const _isLocal =
+  location.hostname === "localhost" || location.hostname === "127.0.0.1";
+const BACKEND_URL = _isLocal
+  ? "http://localhost:8001"
+  : "https://wiki-be.fly.dev"; // matches BE prod host; update when custom domain bought
+const API = `${BACKEND_URL}/api/v1`;
+
+class ApiError extends Error {
+  constructor(code, message, status) {
+    super(message || code);
+    this.name = "ApiError";
+    this.code = code;
+    this.status = status;
+  }
+}
+
+let _sessionExpiredFired = false;
+
+async function _request(method, path, body, { silent401 = false } = {}) {
+  let res;
+  try {
+    res = await fetch(`${API}${path}`, {
+      method,
+      credentials: "include",
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (networkErr) {
+    throw new ApiError("NETWORK", networkErr.message, 0);
+  }
+
+  if (res.status === 401 && !silent401) {
+    // silent401 routes (boot probe, login) handle their own 401 below via the
+    // normal envelope parse. Everything else: a 401 means the session expired
+    // mid-use → global staleness handler (Option A), fired once.
+    if (!_sessionExpiredFired) {
+      _sessionExpiredFired = true;
+      state.session = { user: null, status: "out" };
+      document.dispatchEvent(new CustomEvent("wiki:session-expired"));
+      // allow future 401s to fire again after the user re-auths
+      setTimeout(() => (_sessionExpiredFired = false), 0);
+    }
+    throw new ApiError("UNAUTHORIZED", "Session expired", 401);
+  }
+
+  if (res.status === 204) return null;
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    data = null;
+  }
+
+  if (!res.ok) {
+    const env = data?.error || {};
+    throw new ApiError(
+      env.code || "ERROR",
+      env.message || res.statusText,
+      res.status
+    );
+  }
+  return data;
+}
+
+const api = {
+  get: (p) => _request("GET", p),
+  post: (p, b) => _request("POST", p, b),
+  del: (p, b) => _request("DELETE", p, b),
+
+  auth: {
+    // boot probe: 401 = anonymous, must not trigger the global session-expired flow
+    me: () => _request("GET", "/auth/me", undefined, { silent401: true }),
+    register: (email, password) =>
+      api.post("/auth/register", { email, password }),
+    // login 401 = bad credentials (a normal auth failure), not an expired
+    // session — bypass the global handler so the real error reaches the caller
+    login: (email, password) =>
+      _request("POST", "/auth/login", { email, password }, { silent401: true }),
+    logout: () => api.post("/auth/logout"),
+    resend: (email) => api.post("/auth/resend-verification", { email }),
+  },
+  bookmarks: {
+    list: () => api.get("/bookmarks"),
+    add: (wiki_id, path) => api.post("/bookmarks", { wiki_id, path }),
+    remove: (wiki_id, path) => api.del("/bookmarks", { wiki_id, path }),
+    clear: (wiki_id) => api.del("/bookmarks/all", wiki_id ? { wiki_id } : {}),
+  },
+  reads: {
+    list: () => api.get("/reads"),
+    add: (wiki_id, path) => api.post("/reads", { wiki_id, path }),
+    remove: (wiki_id, path) => api.del("/reads", { wiki_id, path }),
+  },
+  recents: {
+    list: () => api.get("/recents"),
+    add: (wiki_id, path) => api.post("/recents", { wiki_id, path }),
+    clear: (wiki_id) => api.del("/recents/all", wiki_id ? { wiki_id } : {}),
+  },
+  importAll: (payload) => api.post("/sync/import", payload),
+};
+
+export { api, ApiError, BACKEND_URL };

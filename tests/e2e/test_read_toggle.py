@@ -6,10 +6,10 @@ ARTICLE_HASH = "system-design/caching"
 
 
 def _go_to_article(page, base_url):
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.evaluate("() => localStorage.removeItem('wiki-read-system-design')")
-    page.goto(f"{base_url}/wiki/#{ARTICLE_HASH}")
+    page.goto(f"{base_url}/#{ARTICLE_HASH}")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_selector("#markdown-body h1, #markdown-body h2", timeout=8_000)
 
@@ -119,3 +119,28 @@ def test_read_state_persists_on_revisit(page, base_url):
 
     cls = page.locator("#content-read-btn").get_attribute("class")
     assert "active" in cls
+
+
+def test_anon_read_makes_no_api_call(page, base_url):
+    """logged-out users hit zero sync endpoints when marking read."""
+    calls = []
+    page.route(
+        "**/api/v1/auth/me",
+        lambda r: r.fulfill(
+            status=401,
+            content_type="application/json",
+            body='{"error":{"code":"UNAUTHORIZED","message":"x"}}',
+        ),
+    )
+    page.route(
+        "**/api/v1/reads",
+        lambda r: (calls.append(r.request.url), r.abort()),
+    )
+
+    _go_to_article(page, base_url)
+    btn = page.locator("#content-read-btn")
+    btn.wait_for(state="visible")
+    if "active" not in (btn.get_attribute("class") or ""):
+        btn.click()
+    page.wait_for_timeout(300)
+    assert all("/reads" not in u for u in calls)

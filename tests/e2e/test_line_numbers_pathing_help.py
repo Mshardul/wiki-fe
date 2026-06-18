@@ -8,7 +8,7 @@ Line numbers, multi-level pathing, clear-all confirmation, preferences modal:
 
 
 def _go_to_article(page, base_url, slug="system-design/caching"):
-    page.goto(f"{base_url}/wiki/#{slug}")
+    page.goto(f"{base_url}/#{slug}")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
@@ -103,7 +103,7 @@ def test_link_with_fragment_is_intercepted(page, base_url):
         lambda r: r.fulfill(body="# Target\n\nContent."),
     )
 
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.evaluate(
         """() => navigateToContent(
@@ -134,7 +134,7 @@ def test_excess_dotdot_does_not_crash(page, base_url):
     )
     page.route("**/target.md", lambda r: r.fulfill(body="# Target\n\nOK."))
 
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.evaluate(
         """() => navigateToContent(
@@ -161,7 +161,7 @@ def test_excess_dotdot_does_not_crash(page, base_url):
 def _seed_recents(page, base_url):
     """Navigate to an article so recents has at least one entry."""
     _go_to_article(page, base_url)
-    page.goto(f"{base_url}/wiki/#system-design")
+    page.goto(f"{base_url}/#system-design")
     page.wait_for_selector("#view-index.active", timeout=8_000)
     page.wait_for_selector("#recents-section:not(.hidden)", timeout=8_000)
 
@@ -204,7 +204,7 @@ def test_clear_bookmarks_shows_undo_toast(page, base_url):
     # Bookmark the article
     page.keyboard.press("b")
     # Go to index
-    page.goto(f"{base_url}/wiki/#system-design")
+    page.goto(f"{base_url}/#system-design")
     page.wait_for_selector("#view-index.active", timeout=8_000)
     page.wait_for_selector("#bookmarks-section:not(.hidden)", timeout=8_000)
 
@@ -223,7 +223,7 @@ def test_clear_bookmarks_shows_undo_toast(page, base_url):
 
 def test_prefs_modal_hidden_on_load(page, base_url):
     """Prefs modal starts hidden."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     modal = page.locator("#prefs-modal")
     assert modal.count() > 0, "Prefs modal should exist in DOM"
@@ -234,7 +234,7 @@ def test_prefs_modal_hidden_on_load(page, base_url):
 
 def test_question_mark_opens_prefs_keyboard_tab(page, base_url):
     """Pressing ? opens the prefs modal with Keyboard tab active."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.keyboard.press("?")
     modal = page.locator("#prefs-modal")
@@ -249,7 +249,7 @@ def test_question_mark_opens_prefs_keyboard_tab(page, base_url):
 
 def test_escape_closes_prefs_modal(page, base_url):
     """Pressing Escape closes the prefs modal."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.keyboard.press("?")
     page.keyboard.press("Escape")
@@ -261,7 +261,7 @@ def test_escape_closes_prefs_modal(page, base_url):
 
 def test_prefs_close_btn_closes_modal(page, base_url):
     """Clicking the close button hides the prefs modal."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.keyboard.press("?")
     page.locator("[data-action='prefs-close']").click()
@@ -273,7 +273,7 @@ def test_prefs_close_btn_closes_modal(page, base_url):
 
 def test_prefs_backdrop_closes_modal(page, base_url):
     """Clicking the backdrop closes the prefs modal."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.keyboard.press("?")
     page.locator("#prefs-backdrop").click(position={"x": 5, "y": 5})
@@ -285,7 +285,7 @@ def test_prefs_backdrop_closes_modal(page, base_url):
 
 def test_prefs_keyboard_tab_contains_shortcuts(page, base_url):
     """Keyboard tab lists at least the ⌘K and ? shortcuts."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.keyboard.press("?")
     body_text = page.locator("#prefs-panel-keyboard").inner_text()
@@ -297,7 +297,7 @@ def test_prefs_keyboard_tab_contains_shortcuts(page, base_url):
 
 def test_prefs_focus_trapped_on_open(page, base_url):
     """Focus is inside the prefs modal when opened via ? key."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.keyboard.press("?")
     focused_inside = page.evaluate("""() => {

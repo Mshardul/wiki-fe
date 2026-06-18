@@ -151,6 +151,14 @@
             />
           </svg>
         </button>
+        <button
+          class="topbar-icon-btn topbar-auth-btn"
+          id="auth-btn-home"
+          data-action="auth-toggle"
+          title="Login"
+        >
+          <span class="auth-btn-label">Login</span>
+        </button>
       </div>
       <header class="home-header">
         <div class="home-eyebrow">Documentation</div>
@@ -225,6 +233,14 @@
                 stroke-width="1.4"
               />
             </svg>
+          </button>
+          <button
+            class="topbar-icon-btn topbar-auth-btn"
+            id="auth-btn-index"
+            data-action="auth-toggle"
+            title="Login"
+          >
+            <span class="auth-btn-label">Login</span>
           </button>
         </div>
       </div>
@@ -393,6 +409,14 @@
                 stroke-width="1.4"
               />
             </svg>
+          </button>
+          <button
+            class="topbar-icon-btn topbar-auth-btn"
+            id="auth-btn-content"
+            data-action="auth-toggle"
+            title="Login"
+          >
+            <span class="auth-btn-label">Login</span>
           </button>
         </div>
       </div>
@@ -626,6 +650,102 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+       AUTH MODAL — login / register / verify-pending
+  ══════════════════════════════════════ -->
+    <div
+      id="auth-modal"
+      class="auth-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Account"
+      aria-hidden="true"
+    >
+      <div id="auth-backdrop" class="auth-backdrop"></div>
+      <div class="auth-dialog">
+        <button
+          id="auth-close"
+          class="auth-close"
+          data-action="auth-close"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+
+        <!-- LOGIN -->
+        <div id="auth-panel-login" class="auth-panel active">
+          <h2 class="auth-title">Log in</h2>
+          <label class="auth-field"
+            ><span>Email</span>
+            <input
+              id="auth-login-email"
+              type="email"
+              autocomplete="email"
+            /> </label
+          ><label class="auth-field"
+            ><span>Password</span>
+            <input
+              id="auth-login-password"
+              type="password"
+              autocomplete="current-password"
+          /></label>
+          <p id="auth-login-error" class="auth-error" hidden></p>
+          <button id="auth-login-submit" class="auth-submit">Log in</button>
+          <p class="auth-swap">
+            No account?
+            <button id="auth-to-register" class="auth-link" type="button">
+              Register
+            </button>
+          </p>
+        </div>
+
+        <!-- REGISTER -->
+        <div id="auth-panel-register" class="auth-panel">
+          <h2 class="auth-title">Create account</h2>
+          <label class="auth-field"
+            ><span>Email</span>
+            <input id="auth-reg-email" type="email" autocomplete="email" /> </label
+          ><label class="auth-field"
+            ><span>Password</span>
+            <input
+              id="auth-reg-password"
+              type="password"
+              autocomplete="new-password"
+          /></label>
+          <ul
+            id="auth-pw-checklist"
+            class="auth-pw-checklist"
+            aria-live="polite"
+          ></ul>
+          <p id="auth-reg-error" class="auth-error" hidden></p>
+          <button id="auth-reg-submit" class="auth-submit" disabled>
+            Create account
+          </button>
+          <p class="auth-swap">
+            Have an account?
+            <button id="auth-to-login" class="auth-link" type="button">
+              Log in
+            </button>
+          </p>
+        </div>
+
+        <!-- VERIFY PENDING -->
+        <div id="auth-panel-verify" class="auth-panel">
+          <h2 class="auth-title">Check your email</h2>
+          <p class="auth-verify-copy">
+            We sent a verification link to your inbox. Click it to finish signing
+            up.
+          </p>
+          <button id="auth-resend-btn" class="auth-submit">Resend email</button>
+          <p class="auth-swap">
+            <button id="auth-verify-to-login" class="auth-link" type="button">
+              Back to log in
+            </button>
+          </p>
         </div>
       </div>
     </div>

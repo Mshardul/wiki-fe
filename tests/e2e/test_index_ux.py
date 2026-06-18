@@ -7,7 +7,7 @@
 
 
 def _go_to_index(page, base_url):
-    page.goto(f"{base_url}/wiki/#system-design")
+    page.goto(f"{base_url}/#system-design")
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
 
@@ -116,9 +116,9 @@ def test_section_collapse_restored_on_revisit(page, base_url):
     page.locator(".section-header").first.click()  # collapse
 
     # Navigate away then back
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_selector("#view-home.active", timeout=5_000)
-    page.goto(f"{base_url}/wiki/#system-design")
+    page.goto(f"{base_url}/#system-design")
     page.wait_for_selector(
         "#index-sections:not(.index-sections--loading)", timeout=15_000
     )

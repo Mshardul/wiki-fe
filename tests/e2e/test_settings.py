@@ -498,7 +498,7 @@ def test_size_l_increases_font_size(wiki_page):
 
 def test_settings_persist_across_reload(page, base_url):
     """settings saved to localStorage survive a page reload."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
 
     page.locator("[title='Preferences (,)']").first.click()
@@ -519,7 +519,7 @@ def test_settings_persist_across_reload(page, base_url):
 
 def test_font_persists_across_reload(page, base_url):
     """selected font survives a page reload via localStorage."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
 
     page.locator("[title='Preferences (,)']").first.click()
@@ -557,7 +557,7 @@ def test_background_id_persists_to_localstorage(wiki_page):
 def test_os_light_preference_sets_light_theme(page, base_url):
     """on first visit with no saved settings and prefers-color-scheme:light, data-theme=light."""
     page.emulate_media(color_scheme="light")
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.evaluate("() => localStorage.removeItem('wiki-settings')")
     page.evaluate("() => localStorage.removeItem('wiki-theme')")
     page.reload()
@@ -570,7 +570,7 @@ def test_os_light_preference_sets_light_theme(page, base_url):
 def test_os_dark_preference_sets_dark_theme(page, base_url):
     """on first visit with no saved settings and prefers-color-scheme:dark, data-theme=dark."""
     page.emulate_media(color_scheme="dark")
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.evaluate("() => localStorage.removeItem('wiki-settings')")
     page.evaluate("() => localStorage.removeItem('wiki-theme')")
     page.reload()
@@ -583,7 +583,7 @@ def test_os_dark_preference_sets_dark_theme(page, base_url):
 def test_saved_settings_override_os_preference(page, base_url):
     """saved localStorage settings take priority over OS color scheme."""
     page.emulate_media(color_scheme="light")
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
 
     page.evaluate("""() => localStorage.setItem('wiki-settings',
@@ -599,7 +599,7 @@ def test_saved_settings_override_os_preference(page, base_url):
 def test_unrecognized_format_falls_back_to_os_preference(page, base_url):
     """unrecognized localStorage format (no backgroundId) falls back to OS preference."""
     page.emulate_media(color_scheme="light")
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
 
     page.evaluate("""() => localStorage.setItem('wiki-settings',

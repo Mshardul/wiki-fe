@@ -6,7 +6,7 @@ Persist and restore wiki index scroll position.
 
 
 def _go_to_article(page, base_url):
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
 
@@ -94,7 +94,7 @@ def test_toc_pulse_on_click(page, base_url):
 def test_index_scroll_persistence(page, base_url):
     """Scroll position on wiki index is restored when revisiting."""
     # 1. Go to index and scroll down
-    page.goto(f"{base_url}/wiki/#system-design")
+    page.goto(f"{base_url}/#system-design")
     page.wait_for_selector(
         ".index-card", timeout=10_000
     )  # Content loaded → page is scrollable
@@ -116,7 +116,7 @@ def test_index_scroll_persistence(page, base_url):
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
     # 3. Go back to index
-    page.goto(f"{base_url}/wiki/#system-design")
+    page.goto(f"{base_url}/#system-design")
     page.wait_for_selector(
         ".index-card", timeout=10_000
     )  # Content loaded → scroll restored

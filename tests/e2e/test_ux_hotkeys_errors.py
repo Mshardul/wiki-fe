@@ -9,7 +9,7 @@ UX, hotkeys, and error handling:
 
 
 def _go_to_article(page, base_url, slug="system-design/caching"):
-    page.goto(f"{base_url}/wiki/#{slug}")
+    page.goto(f"{base_url}/#{slug}")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
@@ -22,7 +22,7 @@ def _go_to_article(page, base_url, slug="system-design/caching"):
 
 def test_404_shows_not_found_message(page, base_url):
     """A 404 response shows 'not found' in the error message, not a generic HTTP error."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.route("**/nonexistent.md", lambda r: r.fulfill(status=404, body=""))
     page.evaluate("""() => navigateToContent(
@@ -45,7 +45,7 @@ def test_404_shows_not_found_message(page, base_url):
 
 def test_network_error_shows_connection_message(page, base_url):
     """A network failure shows a connection-error message, not a generic HTTP error."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.route("**/offline.md", lambda r: r.abort("failed"))
     page.evaluate("""() => navigateToContent(
@@ -71,7 +71,7 @@ def test_network_error_shows_connection_message(page, base_url):
 
 def test_broken_slug_shows_toast(page, base_url):
     """Navigating to an unknown slug shows a toast before redirecting home."""
-    page.goto(f"{base_url}/wiki/#system-design/this-slug-does-not-exist-xyz")
+    page.goto(f"{base_url}/#system-design/this-slug-does-not-exist-xyz")
     page.wait_for_selector("#view-home.active", timeout=10_000)
 
     toast = page.locator("#wiki-toast")
@@ -82,7 +82,7 @@ def test_broken_slug_shows_toast(page, base_url):
 
 def test_broken_slug_redirects_home(page, base_url):
     """After a broken slug, the home view is shown."""
-    page.goto(f"{base_url}/wiki/#system-design/no-such-article-abc123")
+    page.goto(f"{base_url}/#system-design/no-such-article-abc123")
     page.wait_for_selector("#view-home.active", timeout=10_000)
 
 
@@ -238,7 +238,7 @@ def test_distraction_free_clears_on_navigation(page, base_url):
 
     assert page.evaluate("() => document.body.classList.contains('distraction-free')")
 
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_selector("#view-home.active", timeout=5_000)
     # Navigate to article again
     page.locator(".wiki-card").first.click()

@@ -6,19 +6,19 @@
 
 
 def _go_to_article(page, base_url):
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
 
 def test_hash_url_no_404(page, base_url):
     """fresh load of wiki index hash URL returns 200."""
-    response = page.goto(f"{base_url}/wiki/#system-design")
+    response = page.goto(f"{base_url}/#system-design")
     assert response is not None and response.status == 200
 
 
 def test_hash_url_content_no_404(page, base_url):
     """fresh load of article hash URL returns 200."""
-    response = page.goto(f"{base_url}/wiki/#system-design/caching")
+    response = page.goto(f"{base_url}/#system-design/caching")
     assert response is not None and response.status == 200
 
 

@@ -39,7 +39,7 @@ def test_article_count_updates_to_nonzero(wiki_page):
 
 def test_theme_applied_before_module_js_loads(page, base_url):
     """inline head script sets data-theme before app.js module executes."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.evaluate(
         """() => localStorage.setItem('wiki-settings',
@@ -47,7 +47,7 @@ def test_theme_applied_before_module_js_loads(page, base_url):
         accentId:'indigo',font:'Inter',fontSize:'M',contentWidth:'Default'}))"""
     )
     # DOMContentLoaded fires after inline scripts but before ES modules
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("domcontentloaded")
     theme = page.evaluate("() => document.documentElement.getAttribute('data-theme')")
     assert theme == "light", (
@@ -57,7 +57,7 @@ def test_theme_applied_before_module_js_loads(page, base_url):
 
 def test_active_wiki_card_marked_after_navigation(page, base_url):
     """returning home after visiting a wiki marks that wiki's card .active."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
 
     first_card = page.locator(".wiki-card").first
@@ -76,7 +76,7 @@ def test_active_wiki_card_marked_after_navigation(page, base_url):
 
 def test_no_active_card_on_fresh_load(page, base_url):
     """on first load with no prior navigation, no wiki card is marked active."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     active_count = page.locator(".wiki-card.active").count()
     assert active_count == 0

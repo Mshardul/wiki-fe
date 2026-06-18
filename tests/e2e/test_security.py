@@ -5,7 +5,7 @@ CDN script Subresource Integrity (SRI) attributes
 
 def test_cdn_scripts_have_integrity_attribute(page, base_url):
     """Every CDN <script> tag carries a sha-based integrity (SRI) hash."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("domcontentloaded")
 
     cdn_scripts = page.evaluate(
@@ -27,7 +27,7 @@ def test_cdn_scripts_have_integrity_attribute(page, base_url):
 
 def test_cdn_scripts_have_crossorigin_anonymous(page, base_url):
     """Every CDN <script> tag has crossorigin=anonymous so SRI checks can run."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("domcontentloaded")
 
     cdn_scripts = page.evaluate(

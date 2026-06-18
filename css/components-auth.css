@@ -1,0 +1,139 @@
+/* Auth modal + topbar auth button. Tokens only — see tokens.css. */
+.auth-modal.hidden {
+  display: none;
+}
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+.auth-dialog {
+  position: relative;
+  width: min(420px, calc(100vw - 2rem));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-lg);
+}
+.auth-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--text-body);
+  cursor: pointer;
+  font-size: 1rem;
+}
+.auth-panel {
+  display: none;
+}
+.auth-panel.active {
+  display: block;
+}
+.auth-title {
+  margin: 0 0 1.25rem;
+  color: var(--text-heading);
+  font-size: 1.25rem;
+}
+.auth-field {
+  display: block;
+  margin-bottom: 1rem;
+}
+.auth-field > span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--text-body);
+  font-size: 0.85rem;
+}
+.auth-field input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text-heading);
+  font: inherit;
+}
+.auth-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.auth-pw-checklist {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  font-size: 0.8rem;
+}
+.auth-pw-checklist li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--text-body);
+  margin-bottom: 0.25rem;
+}
+.auth-pw-checklist li::before {
+  content: "✗";
+  color: #e5484d;
+  font-weight: 700;
+}
+.auth-pw-checklist li.ok::before {
+  content: "✓";
+  color: var(--accent);
+}
+.auth-error {
+  color: #e5484d;
+  font-size: 0.8rem;
+  margin: 0 0 0.75rem;
+}
+.auth-submit {
+  width: 100%;
+  padding: 0.7rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--r);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.auth-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.auth-swap {
+  margin: 1rem 0 0;
+  text-align: center;
+  color: var(--text-body);
+  font-size: 0.85rem;
+}
+.auth-verify-copy {
+  margin: 0 0 1.25rem;
+  color: var(--text-body);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.auth-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+}
+.topbar-auth-btn {
+  width: auto;
+  padding: 0 0.75rem;
+}
+.auth-btn-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}

@@ -10,7 +10,7 @@ import re
 
 
 def _go_to_article(page, base_url):
-    page.goto(f"{base_url}/wiki/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
 
@@ -24,7 +24,7 @@ def test_title_updates_on_home(wiki_page):
 
 def test_title_updates_on_index(page, base_url):
     """Wiki index view sets document.title to the wiki name."""
-    page.goto(f"{base_url}/wiki/#system-design")
+    page.goto(f"{base_url}/#system-design")
     page.wait_for_selector("#view-index.active", timeout=5_000)
     title = page.title()
     assert "System Design" in title
@@ -50,7 +50,7 @@ def test_deep_path_resolution(page, base_url):
     page.route("**/target.md", lambda r: r.fulfill(body="# Target Article\n\nContent."))
 
     # Navigate to mock article
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     page.evaluate("""() => navigateToContent(
         'system-design',
@@ -73,7 +73,7 @@ def test_deep_path_resolution(page, base_url):
 def test_404_fallback_on_bad_wiki(page, base_url):
     """Bad wiki ID on fresh load redirects to Home and cleans URL."""
     # Fresh load with non-existent wiki
-    page.goto(f"{base_url}/wiki/#non-existent-wiki")
+    page.goto(f"{base_url}/#non-existent-wiki")
     page.wait_for_load_state("networkidle")
 
     # Should render home view
@@ -84,7 +84,7 @@ def test_404_fallback_on_bad_wiki(page, base_url):
 
 def test_404_fallback_on_bad_article(page, base_url):
     """Valid wiki + bad article slug on fresh load redirects to Home."""
-    page.goto(f"{base_url}/wiki/#system-design/this-does-not-exist")
+    page.goto(f"{base_url}/#system-design/this-does-not-exist")
     page.wait_for_load_state("networkidle")
 
     assert page.locator("#view-home.active").count() == 1
@@ -96,11 +96,11 @@ def test_404_fallback_on_bad_article(page, base_url):
 
 def test_404_back_btn_redirects_when_no_history(page, base_url):
     """404.html back button redirects to wiki home when history is empty."""
-    page.goto(f"{base_url}/wiki/404.html")
+    page.goto(f"{base_url}/404.html")
     page.wait_for_load_state("domcontentloaded")
 
     page.click("#back-btn")
-    page.wait_for_url(re.compile(r".*/wiki/?(?:#.*)?$"), timeout=5_000)
+    page.wait_for_url(re.compile(r"https?://[^/]+/(?:#.*)?$"), timeout=5_000)
 
 
 # ── fetchText absolute URL ──────────────────────────────────────────
@@ -109,7 +109,7 @@ def test_404_back_btn_redirects_when_no_history(page, base_url):
 def test_fetch_produces_absolute_url(page, base_url):
     """fetchText resolves relative .md paths to absolute URLs via new URL(path, location.origin)."""
     with page.expect_response("**/caching.md") as resp_info:
-        page.goto(f"{base_url}/wiki/#system-design/caching")
+        page.goto(f"{base_url}/#system-design/caching")
         page.wait_for_selector("#view-content.active", timeout=10_000)
 
     response = resp_info.value
@@ -125,7 +125,7 @@ def test_fetch_produces_absolute_url(page, base_url):
 
 def test_back_forward_does_not_double_render(page, base_url):
     """Back+forward navigation fires route handler once; popstate+hashchange both call route() but dedup fires _execRoute once."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
 
     # Push article to history via in-app navigate (uses history.pushState)

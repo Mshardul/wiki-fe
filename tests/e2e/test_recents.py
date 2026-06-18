@@ -6,12 +6,12 @@
 
 
 def _visit_article(page, base_url, slug="caching"):
-    page.goto(f"{base_url}/wiki/#system-design/{slug}")
+    page.goto(f"{base_url}/#system-design/{slug}")
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
 
 def _go_to_index(page, base_url):
-    page.goto(f"{base_url}/wiki/#system-design")
+    page.goto(f"{base_url}/#system-design")
     page.wait_for_selector("#view-index.active", timeout=5_000)
 
 
@@ -74,7 +74,7 @@ def _inject_recents(page, count):
 
 def test_show_more_appears_when_recents_overflow(page, base_url):
     """show-more button appears when recents count exceeds CHIP_VISIBLE_MAX (4)."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     _inject_recents(page, 5)
     _go_to_index(page, base_url)
@@ -92,7 +92,7 @@ def test_show_more_appears_when_recents_overflow(page, base_url):
 
 def test_show_more_absent_when_chips_within_limit(page, base_url):
     """no show-more button when recents count <= CHIP_VISIBLE_MAX (4)."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     _inject_recents(page, 3)
     _go_to_index(page, base_url)
@@ -107,7 +107,7 @@ def test_show_more_absent_when_chips_within_limit(page, base_url):
 
 def test_show_more_click_expands_strip(page, base_url):
     """clicking show-more expands strip and reveals hidden chips."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     _inject_recents(page, 5)
     _go_to_index(page, base_url)
@@ -123,3 +123,24 @@ def test_show_more_click_expands_strip(page, base_url):
     assert expanded, (
         "strip must have recents-strip-expanded class after show-more click"
     )
+
+
+def test_anon_recent_makes_no_api_call(page, base_url):
+    """logged-out users hit zero sync endpoints when visiting an article."""
+    calls = []
+    page.route(
+        "**/api/v1/auth/me",
+        lambda r: r.fulfill(
+            status=401,
+            content_type="application/json",
+            body='{"error":{"code":"UNAUTHORIZED","message":"x"}}',
+        ),
+    )
+    page.route(
+        "**/api/v1/recents",
+        lambda r: (calls.append(r.request.url), r.abort()),
+    )
+
+    _visit_article(page, base_url)
+    page.wait_for_timeout(300)
+    assert all("/recents" not in u for u in calls)

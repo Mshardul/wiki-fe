@@ -19,7 +19,7 @@ def _open_settings(page):
 
 def test_export_button_triggers_download(page, base_url):
     """Clicking 'Export Backup' triggers a file download."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     _open_settings(page)
 
@@ -33,7 +33,7 @@ def test_export_button_triggers_download(page, base_url):
 
 def test_export_json_contains_expected_keys(page, base_url):
     """Exported JSON contains version, bookmarks, recents, settings keys."""
-    page.goto(f"{base_url}/wiki/")
+    page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     _open_settings(page)
 
@@ -80,7 +80,7 @@ def test_import_restores_settings(page, base_url):
         tmp_path = tmp.name
 
     try:
-        page.goto(f"{base_url}/wiki/")
+        page.goto(f"{base_url}/")
         page.wait_for_load_state("networkidle")
         _open_settings(page)
 
@@ -109,7 +109,7 @@ def test_import_invalid_file_shows_toast(page, base_url):
         tmp_path = tmp.name
 
     try:
-        page.goto(f"{base_url}/wiki/")
+        page.goto(f"{base_url}/")
         page.wait_for_load_state("networkidle")
         _open_settings(page)
 
@@ -141,7 +141,7 @@ def test_import_version_mismatch_shows_warning_toast(page, base_url):
         tmp_path = tmp.name
 
     try:
-        page.goto(f"{base_url}/wiki/")
+        page.goto(f"{base_url}/")
         page.wait_for_load_state("networkidle")
         _open_settings(page)
 
