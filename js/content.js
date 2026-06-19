@@ -1,4 +1,5 @@
-import { state } from "./state.js";
+import { state, WIKIS } from "./state.js";
+import { getSettings, recordReveal } from "./storage.js";
 
 /* ─── Zoom Overlay (shared by image lightbox + diagram zoom) ─── */
 function getZoomOverlay() {
@@ -82,6 +83,31 @@ function writeToClipboard(text) {
   }
 }
 
+/* Languages that use # for line comments; everything else gets // */
+const HASH_COMMENT_LANGS = new Set([
+  "python",
+  "py",
+  "ruby",
+  "rb",
+  "bash",
+  "sh",
+  "shell",
+  "yaml",
+  "yml",
+  "r",
+  "perl",
+]);
+
+function buildSourceHeader(lang) {
+  if (!getSettings().copySourceHeader) return "";
+  const title = state.currentTitle;
+  if (!title) return "";
+  const wiki = WIKIS.find((w) => w.id === state.currentWikiId);
+  const origin = wiki ? `${title} · ${wiki.title} wiki` : `${title} · wiki`;
+  const prefix = HASH_COMMENT_LANGS.has((lang || "").toLowerCase()) ? "#" : "//";
+  return `${prefix} from: ${origin}\n`;
+}
+
 /* ─── Code Block Header (traffic lights + lang label + copy button) ─── */
 function addCodeBlockHeader(contentEl, onCopyError = () => {}) {
   contentEl.querySelectorAll("pre").forEach((pre) => {
@@ -119,7 +145,8 @@ function addCodeBlockHeader(contentEl, onCopyError = () => {}) {
     btn.setAttribute("aria-label", "Copy code");
     btn.textContent = "⧉";
     btn.addEventListener("click", () => {
-      const text = code ? code.textContent : pre.textContent;
+      const raw = code ? code.textContent : pre.textContent;
+      const text = buildSourceHeader(langMatch?.[1]) + raw;
       writeToClipboard(text)
         .then(() => {
           btn.textContent = "✓";
@@ -139,6 +166,60 @@ function addCodeBlockHeader(contentEl, onCopyError = () => {}) {
 function addCopyButtons(contentEl, onCopyError = () => {}) {
   addCodeBlockHeader(contentEl, onCopyError);
 }
+
+/* ─── Quiz-me mode for complexity tables ─── */
+
+const COMPLEXITY_HEADER_RE = /\b(time|space|complexity|best|worst|average)\b/i;
+const BIG_O_RE = /[OΘΩ]\s*\(/;
+
+function _isQuizzableTable(table) {
+  const headText = table.querySelector("thead, tr")?.textContent || "";
+  if (COMPLEXITY_HEADER_RE.test(headText)) return true;
+  return [...table.querySelectorAll("td")].some((td) =>
+    BIG_O_RE.test(td.textContent)
+  );
+}
+
+function addQuizTables(contentEl) {
+  contentEl.querySelectorAll("table").forEach((table) => {
+    if (!_isQuizzableTable(table)) return;
+    table.classList.add("quiz-table");
+    table.querySelectorAll("tbody tr, tr").forEach((row) => {
+      const cells = [...row.querySelectorAll("td")];
+      cells.slice(1).forEach((td) => td.classList.add("quiz-cell"));
+    });
+  });
+}
+
+function _revealQuizCell(td) {
+  if (!td.classList.contains("quiz-blurred")) return;
+  td.classList.remove("quiz-blurred");
+  recordReveal(state.currentFilePath);
+}
+
+const QuizMode = {
+  active: false,
+
+  toggle() {
+    const tables = document.querySelectorAll("#markdown-body .quiz-table");
+    if (!tables.length) return;
+    this.active = !this.active;
+    document.querySelectorAll("#markdown-body .quiz-cell").forEach((td) => {
+      td.classList.toggle("quiz-blurred", this.active);
+    });
+  },
+
+  bind(contentEl) {
+    contentEl.addEventListener("click", (e) => {
+      const td = e.target.closest(".quiz-cell.quiz-blurred");
+      if (td) _revealQuizCell(td);
+    });
+  },
+
+  reset() {
+    this.active = false;
+  },
+};
 
 /* ─── Callout Styling ─── */
 function styleCallouts(contentEl) {
@@ -654,6 +735,8 @@ export {
   addDiagramZoom,
   rerenderMermaidDiagrams,
   addTableScrollCues,
+  addQuizTables,
+  QuizMode,
   toggleFocusMode,
   cleanupFocusMode,
   addStickySection,

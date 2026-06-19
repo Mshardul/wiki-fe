@@ -35,6 +35,7 @@ import {
   closeZoomOverlay,
   rerenderMermaidDiagrams,
   toggleFocusMode,
+  QuizMode,
 } from "./content.js";
 import { Auth, AuthModal } from "./auth.js";
 
@@ -126,6 +127,12 @@ document.addEventListener("click", (e) => {
     case "offline-toggle":
       Offline.toggle();
       break;
+    case "print-article":
+      printArticle();
+      break;
+    case "copy-source-toggle":
+      Settings._toggleCopySourceHeader();
+      break;
     case "settings-export":
       Settings.exportData();
       break;
@@ -144,6 +151,13 @@ document.addEventListener("click", (e) => {
 document
   .getElementById("import-upload")
   .addEventListener("change", (e) => Settings.importData(e));
+
+function printArticle() {
+  document
+    .getElementById("markdown-body")
+    ?.setAttribute("data-print-url", location.href);
+  window.print();
+}
 
 /* ═══════════════════════════════════════════════════════════════
    TOC COLLAPSE & MOBILE TOC
@@ -359,6 +373,10 @@ document.addEventListener("keydown", (e) => {
       }
       if (e.key === "d" || e.key === "D") {
         toggleDistractionFree();
+        e.preventDefault();
+      }
+      if (e.key === "q" || e.key === "Q") {
+        QuizMode.toggle();
         e.preventDefault();
       }
     }

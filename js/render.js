@@ -33,6 +33,8 @@ import {
   addImageLightbox,
   addDiagramZoom,
   addTableScrollCues,
+  addQuizTables,
+  QuizMode,
   cleanupFocusMode,
   addStickySection,
   cleanupStickySection,
@@ -580,6 +582,11 @@ async function renderContent(
     );
     styleCallouts(body);
     addCollapsibleCallouts(body);
+
+    // Quiz-me mode
+    addQuizTables(body);
+    QuizMode.reset();
+    QuizMode.bind(body);
 
     // Prerequisites Chips
     renderPrerequisites(body);

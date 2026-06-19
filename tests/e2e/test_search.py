@@ -290,3 +290,51 @@ def test_section_filter_mode_clears_on_normal_query(wiki_page):
     assert not wiki_page.locator(".gsearch-mode-badge").is_visible(), (
         "Mode badge must be hidden for a normal query"
     )
+
+
+# ── ⌘K placeholder teaches its own grammar ──────────────────────────────────────
+
+# The placeholder rotates every 2.8s while the input is empty.
+_PLACEHOLDER_ROTATE_MS = 2800
+
+
+def test_placeholder_rotates_hint_when_empty(wiki_page):
+    """While the ⌘K input is empty, the placeholder cycles to an example query."""
+    _open_search(wiki_page)
+    default = wiki_page.locator("#gsearch-input").get_attribute("placeholder")
+    # Wait past one rotation tick (plus margin).
+    wiki_page.wait_for_function(
+        "(d) => document.getElementById('gsearch-input').placeholder !== d",
+        arg=default,
+        timeout=_PLACEHOLDER_ROTATE_MS + 2_000,
+    )
+    rotated = wiki_page.locator("#gsearch-input").get_attribute("placeholder")
+    assert rotated.startswith("try:"), f"Expected a 'try:' hint, got '{rotated}'"
+
+
+def test_placeholder_does_not_rotate_while_typing(wiki_page):
+    """Hints never overwrite the placeholder once the user has typed text."""
+    _open_search(wiki_page)
+    wiki_page.fill("#gsearch-input", "cache")
+    wiki_page.wait_for_timeout(_PLACEHOLDER_ROTATE_MS + 500)
+    placeholder = wiki_page.locator("#gsearch-input").get_attribute("placeholder")
+    assert not placeholder.startswith("try:"), (
+        "Placeholder should not rotate to a hint while the input has a value"
+    )
+
+
+def test_placeholder_resets_to_default_on_close(wiki_page):
+    """Closing the modal restores the static default placeholder."""
+    _open_search(wiki_page)
+    wiki_page.wait_for_function(
+        "() => document.getElementById('gsearch-input').placeholder.startsWith('try:')",
+        timeout=_PLACEHOLDER_ROTATE_MS + 2_000,
+    )
+    wiki_page.keyboard.press("Escape")
+    wiki_page.wait_for_selector(
+        "#global-search-modal.hidden", state="attached", timeout=2_000
+    )
+    placeholder = wiki_page.locator("#gsearch-input").get_attribute("placeholder")
+    assert placeholder == "Search all wikis…", (
+        f"Default placeholder not restored on close, got '{placeholder}'"
+    )

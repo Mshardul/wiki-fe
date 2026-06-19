@@ -302,6 +302,32 @@ function updateReadBtn() {
   btn.title = read ? "Mark as unread" : "Mark as read";
 }
 
+/* Quiz-mode reveal tracking — a lightweight confidence signal. */
+const REVEAL_KEY_PREFIX = "wiki-reveals";
+
+function _revealKey() {
+  return `${REVEAL_KEY_PREFIX}-${state.currentWikiId || "default"}`;
+}
+
+function _getRevealMap() {
+  try {
+    return JSON.parse(localStorage.getItem(_revealKey()) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function recordReveal(path) {
+  if (!path) return;
+  const map = _getRevealMap();
+  map[path] = (map[path] || 0) + 1;
+  localStorage.setItem(_revealKey(), JSON.stringify(map));
+}
+
+function getRevealCount(path) {
+  return _getRevealMap()[path] || 0;
+}
+
 const ReadToggle = {
   toggle() {
     const path = state.currentFilePath;
@@ -552,6 +578,7 @@ const DEFAULT_SETTINGS = {
   contentWidth: "Default",
   lineHeight: "Normal",
   paraSpacing: "Normal",
+  copySourceHeader: false,
 };
 
 function _isDark(backgroundId) {
@@ -642,8 +669,8 @@ function applySettingsToDOM(s) {
     : '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   root.setProperty("--font", `"${font}", ${fallback}`);
 
-  const sizes = { S: "14px", M: "16px", L: "18px" };
-  document.documentElement.style.fontSize = sizes[s.fontSize] || "16px";
+  const sizes = { S: "87.5%", M: "100%", L: "112.5%" };
+  document.documentElement.style.fontSize = sizes[s.fontSize] || "100%";
 
   const widths = { Narrow: "20%", Default: "10%", Wide: "5%" };
   root.setProperty("--layout-padding", widths[s.contentWidth] || "10%");
@@ -816,6 +843,16 @@ const Settings = {
     this._renderWidths(s);
     this._renderLineHeights(s);
     this._renderParaSpacings(s);
+    this._renderToggles(s);
+  },
+
+  _renderToggles(s) {
+    const btn = document.getElementById("settings-copy-source");
+    if (!btn) return;
+    const on = Boolean(s.copySourceHeader);
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-pressed", String(on));
+    btn.textContent = on ? "On" : "Off";
   },
 
   _renderBackgrounds(s) {
@@ -999,6 +1036,12 @@ const Settings = {
     const s = { ...getSettings(), contentWidth };
     saveSettings(s);
     applySettingsToDOM(s);
+    this._render();
+  },
+
+  _toggleCopySourceHeader() {
+    const s = getSettings();
+    saveSettings({ ...s, copySourceHeader: !s.copySourceHeader });
     this._render();
   },
 
@@ -1202,6 +1245,8 @@ export {
   markRead,
   markUnread,
   updateReadBtn,
+  recordReveal,
+  getRevealCount,
   ReadToggle,
   downloadArticle,
   removeArticleDownload,

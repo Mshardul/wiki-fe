@@ -64,6 +64,37 @@ let gSearchSelectedIdx = -1;
 let _searchOpener = null;
 let _searchFocusTrapHandler = null;
 
+/* Rotating placeholder hints teach the search grammar one example at a time*/
+const PLACEHOLDER_HINTS = [
+  "try: trees",
+  "try: heap",
+  "try: bigO",
+  "try: > graphs",
+  "try: dynamic programming",
+];
+const PLACEHOLDER_DEFAULT = "Search all wikis…";
+const PLACEHOLDER_ROTATE_MS = 2800;
+let _placeholderTimer = null;
+let _placeholderIdx = 0;
+
+function startPlaceholderHints() {
+  stopPlaceholderHints();
+  _placeholderIdx = 0;
+  _placeholderTimer = setInterval(() => {
+    if (gSearchInput.value) return; // user is typing — leave it be
+    gSearchInput.setAttribute("placeholder", PLACEHOLDER_HINTS[_placeholderIdx]);
+    _placeholderIdx = (_placeholderIdx + 1) % PLACEHOLDER_HINTS.length;
+  }, PLACEHOLDER_ROTATE_MS);
+}
+
+function stopPlaceholderHints() {
+  if (_placeholderTimer) {
+    clearInterval(_placeholderTimer);
+    _placeholderTimer = null;
+  }
+  gSearchInput.setAttribute("placeholder", PLACEHOLDER_DEFAULT);
+}
+
 function gSearchItems() {
   return [...gSearchResults.querySelectorAll(".gsearch-result")];
 }
@@ -90,6 +121,7 @@ function openGlobalSearch() {
   gSearchCount.textContent = "";
   gSearchSelectedIdx = -1;
   gSearchInput.focus();
+  startPlaceholderHints();
 
   _searchFocusTrapHandler = (e) => {
     if (e.key !== "Tab") return;
@@ -125,6 +157,7 @@ function openGlobalSearch() {
 function closeGlobalSearch() {
   gSearchModal.classList.add("hidden");
   gSearchModal.setAttribute("aria-hidden", "true");
+  stopPlaceholderHints();
   if (_searchFocusTrapHandler) {
     gSearchModal.removeEventListener("keydown", _searchFocusTrapHandler);
     _searchFocusTrapHandler = null;

@@ -631,6 +631,23 @@ pre.has-line-numbers {
   background: var(--surface-2);
 }
 
+/* Quiz-me mode — blanked complexity cells, tap to reveal */
+.markdown-body .quiz-cell.quiz-blurred {
+  color: transparent;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--t-fast);
+}
+.markdown-body .quiz-cell.quiz-blurred:hover {
+  background: var(--surface-3);
+}
+.markdown-body .quiz-cell.quiz-blurred::after {
+  content: "?";
+  color: var(--text-subtle);
+}
+
 /* Blockquotes - default */
 .markdown-body blockquote {
   border-left: 3px solid var(--border-2);

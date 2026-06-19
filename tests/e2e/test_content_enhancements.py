@@ -688,3 +688,222 @@ def test_broken_image_shows_error_placeholder(page, base_url):
         "() => document.querySelectorAll('#markdown-body .img-error-placeholder').length"
     )
     assert count > 0, "No .img-error-placeholder found — broken image not replaced"
+
+
+# ── Copy code with source-context header ────────────────────────────────────────
+
+_CLIPBOARD_SPY = """() => {
+    window.__copied = null;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText = (t) => { window.__copied = t; return Promise.resolve(); };
+    }
+}"""
+
+
+def _set_copy_source_header(page, on):
+    # getSettings() only honours a stored object that carries backgroundId.
+    page.evaluate(
+        """(on) => {
+            const base = JSON.parse(localStorage.getItem('wiki-settings') || 'null') || {};
+            const s = {
+                backgroundId: 'dark-void',
+                textColorId: 'text-crisp-dark',
+                accentId: 'indigo',
+                font: 'Inter',
+                fontSize: 'M',
+                contentWidth: 'Default',
+                ...base,
+                copySourceHeader: on,
+            };
+            localStorage.setItem('wiki-settings', JSON.stringify(s));
+        }""",
+        on,
+    )
+
+
+def test_copy_without_source_header_setting_off(page, base_url):
+    """With the setting off, copied code carries no // from: header (default)."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CODE, slug="copy-src-off")
+    _set_copy_source_header(page, False)
+    page.evaluate(_CLIPBOARD_SPY)
+    page.click("#markdown-body pre .copy-btn")
+    page.wait_for_function("() => window.__copied !== null", timeout=3_000)
+
+    copied = page.evaluate("() => window.__copied")
+    assert "from:" not in copied, f"Header leaked while setting off: {copied!r}"
+    assert copied.startswith("def greet"), copied
+
+
+def test_copy_with_source_header_setting_on(page, base_url):
+    """With the setting on, copied code is prefixed with a // from: comment."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CODE, slug="copy-src-on")
+    _set_copy_source_header(page, True)
+    page.evaluate(_CLIPBOARD_SPY)
+    page.click("#markdown-body pre .copy-btn")
+    page.wait_for_function("() => window.__copied !== null", timeout=3_000)
+
+    copied = page.evaluate("() => window.__copied")
+    first_line = copied.splitlines()[0]
+    assert first_line.startswith("# from:"), first_line
+    assert "wiki" in first_line, first_line
+    assert "def greet" in copied, copied
+
+
+def test_copy_source_toggle_persists(wiki_page):
+    """Clicking the Advanced-panel toggle flips copySourceHeader in localStorage."""
+    wiki_page.locator("[title='Preferences (,)']").first.click()
+    wiki_page.wait_for_function(
+        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    wiki_page.locator("[data-action='prefs-tab'][aria-controls='prefs-panel-advanced']").click()
+    btn = wiki_page.locator("#settings-copy-source")
+    before = wiki_page.evaluate(
+        "() => (JSON.parse(localStorage.getItem('wiki-settings')||'{}').copySourceHeader) === true"
+    )
+    btn.click()
+    after = wiki_page.evaluate(
+        "() => (JSON.parse(localStorage.getItem('wiki-settings')||'{}').copySourceHeader) === true"
+    )
+    assert after != before, "Toggle did not flip the stored copySourceHeader value"
+    assert ("active" in (btn.get_attribute("class") or "")) == after
+
+
+# ── Quiz-me blur mode on complexity tables ──────────────────────────────────────
+
+ARTICLE_WITH_COMPLEXITY_TABLE = """\
+# Complexity Test
+
+## Section
+
+| Operation | Time   | Space |
+| --------- | ------ | ----- |
+| Access    | O(1)   | O(1)  |
+| Search    | O(n)   | O(1)  |
+| Insert    | O(n)   | O(n)  |
+"""
+
+ARTICLE_WITH_PLAIN_TABLE = """\
+# Plain Test
+
+## Section
+
+| Fruit | Colour |
+| ----- | ------ |
+| Apple | Red    |
+| Lime  | Green  |
+"""
+
+
+def test_complexity_table_gets_quiz_class(page, base_url):
+    """A table with Time/Space headers is tagged .quiz-table; its answer cells get .quiz-cell."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_COMPLEXITY_TABLE, slug="quiz-tag")
+    page.wait_for_selector("#markdown-body table", timeout=5_000)
+    result = page.evaluate("""() => {
+        const t = document.querySelector('#markdown-body table');
+        return {
+            isQuiz: t.classList.contains('quiz-table'),
+            cells: t.querySelectorAll('.quiz-cell').length,
+        };
+    }""")
+    assert result["isQuiz"], "Complexity table not tagged .quiz-table"
+    # 3 rows × 2 answer columns (first column is the row label/prompt).
+    assert result["cells"] == 6, f"Expected 6 quiz cells, got {result['cells']}"
+
+
+def test_plain_table_not_quizzable(page, base_url):
+    """A non-complexity table is left untouched (no .quiz-table)."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_PLAIN_TABLE, slug="quiz-plain")
+    page.wait_for_selector("#markdown-body table", timeout=5_000)
+    is_quiz = page.evaluate(
+        "() => document.querySelector('#markdown-body table').classList.contains('quiz-table')"
+    )
+    assert not is_quiz, "Plain prose table should not be tagged quizzable"
+
+
+def test_q_hotkey_blurs_quiz_cells(page, base_url):
+    """Pressing q in content view blanks every answer cell with .quiz-blurred."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_COMPLEXITY_TABLE, slug="quiz-blur")
+    page.wait_for_selector("#markdown-body .quiz-cell", timeout=5_000)
+    page.keyboard.press("q")
+    page.wait_for_selector("#markdown-body .quiz-cell.quiz-blurred", timeout=2_000)
+    blurred = page.evaluate(
+        "() => document.querySelectorAll('#markdown-body .quiz-cell.quiz-blurred').length"
+    )
+    assert blurred == 6, f"Expected all 6 cells blurred, got {blurred}"
+
+
+def test_q_hotkey_toggles_off(page, base_url):
+    """Pressing q twice reveals all cells again."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_COMPLEXITY_TABLE, slug="quiz-toggle")
+    page.wait_for_selector("#markdown-body .quiz-cell", timeout=5_000)
+    page.keyboard.press("q")
+    page.wait_for_selector("#markdown-body .quiz-cell.quiz-blurred", timeout=2_000)
+    page.keyboard.press("q")
+    blurred = page.evaluate(
+        "() => document.querySelectorAll('#markdown-body .quiz-cell.quiz-blurred').length"
+    )
+    assert blurred == 0, f"Second q should clear blur, still {blurred} blurred"
+
+
+def test_tap_reveals_cell_and_records(page, base_url):
+    """Tapping a blurred cell un-blurs it and increments the reveal count."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_COMPLEXITY_TABLE, slug="quiz-reveal")
+    page.wait_for_selector("#markdown-body .quiz-cell", timeout=5_000)
+    page.keyboard.press("q")
+    page.wait_for_selector("#markdown-body .quiz-cell.quiz-blurred", timeout=2_000)
+
+    page.click("#markdown-body .quiz-cell.quiz-blurred >> nth=0")
+    remaining = page.evaluate(
+        "() => document.querySelectorAll('#markdown-body .quiz-cell.quiz-blurred').length"
+    )
+    assert remaining == 5, f"Tapped cell should reveal, {remaining} still blurred"
+
+    reveals = page.evaluate(
+        """() => {
+            const k = Object.keys(localStorage).find((x) => x.startsWith('wiki-reveals-'));
+            if (!k) return 0;
+            const map = JSON.parse(localStorage.getItem(k));
+            return Object.values(map).reduce((a, b) => a + b, 0);
+        }"""
+    )
+    assert reveals >= 1, "Reveal was not recorded to localStorage"
+
+
+# ── Print / PDF study sheet ─────────────────────────────────────────────────────
+
+
+def test_print_button_present_in_content_topbar(page, base_url):
+    """Content topbar exposes a print action button."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CODE, slug="print-btn")
+    btn = page.locator(".content-topbar [data-action='print-article']")
+    assert btn.count() == 1, "Print button missing from content topbar"
+
+
+def test_print_button_stamps_source_url(page, base_url):
+    """Triggering print stamps the canonical URL onto #markdown-body for the footer."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CODE, slug="print-url")
+    # Suppress the actual print dialog so the test doesn't block.
+    page.evaluate("() => { window.print = () => {}; }")
+    page.click(".content-topbar [data-action='print-article']")
+    url = page.evaluate(
+        "() => document.getElementById('markdown-body').getAttribute('data-print-url')"
+    )
+    assert url and url.startswith("http"), f"data-print-url not stamped, got {url!r}"
+
+
+def test_print_stylesheet_loaded(wiki_page):
+    """The print stylesheet is imported via the CSS aggregator."""
+    has_print = wiki_page.evaluate(
+        """() => {
+            for (const sheet of document.styleSheets) {
+                try {
+                    for (const rule of sheet.cssRules) {
+                        if (rule.media && String(rule.media).includes('print')) return true;
+                        if (rule.href && rule.href.includes('print.css')) return true;
+                    }
+                } catch (e) { /* cross-origin sheet — skip */ }
+            }
+            return false;
+        }"""
+    )
+    assert has_print, "No @media print rules found — print.css not loaded"

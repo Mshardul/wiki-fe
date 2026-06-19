@@ -391,6 +391,21 @@
           </button>
           <button
             class="topbar-icon-btn"
+            data-action="print-article"
+            title="Print / save as PDF"
+            aria-label="Print article"
+          >
+            <svg viewBox="0 0 20 20" fill="none">
+              <path
+                d="M6 7V3h8v4M6 15H4v-5a2 2 0 012-2h8a2 2 0 012 2v5h-2M6 12h8v5H6z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="topbar-icon-btn"
             data-action="search-open"
             title="Search all (⌘K)"
           >
@@ -652,6 +667,20 @@
             role="tabpanel"
             aria-hidden="true"
           >
+            <div class="prefs-section">
+              <div class="prefs-section-label">Copy code with source</div>
+              <div class="settings-size-row">
+                <button
+                  id="settings-copy-source"
+                  class="settings-size-btn"
+                  data-action="copy-source-toggle"
+                  aria-pressed="false"
+                  title="Prepend a // from: comment when copying code blocks"
+                >
+                  Off
+                </button>
+              </div>
+            </div>
             <div class="prefs-section">
               <div class="prefs-section-label">Data</div>
               <div class="settings-size-row">

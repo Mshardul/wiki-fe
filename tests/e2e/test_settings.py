@@ -700,3 +700,30 @@ def test_saved_non_default_font_loads_extras_on_boot(page, base_url):
     assert page.locator("#font-extras").count() == 1, (
         "Saved non-default font (Lora) should trigger loadAllFonts at boot"
     )
+
+
+# ── rem root font honours browser/OS zoom ───────────────────────────────────────
+
+
+def test_root_font_size_base_is_percentage(page, base_url):
+    """The CSS root base is a percentage, not a fixed px, so OS zoom is honoured."""
+    page.goto(f"{base_url}/")
+    page.evaluate("() => localStorage.removeItem('wiki-settings')")
+    page.reload()
+    page.wait_for_load_state("networkidle")
+
+    inline = page.evaluate("() => document.documentElement.style.fontSize")
+    assert inline.endswith("%"), f"Root inline font-size should be a %, got '{inline}'"
+    computed = page.evaluate(
+        "() => parseFloat(getComputedStyle(document.documentElement).fontSize)"
+    )
+    assert abs(computed - 16) < 0.5, f"Expected ~16px computed base, got {computed}"
+
+
+def test_size_setting_uses_percentage_units(wiki_page):
+    """Each S/M/L size writes a percentage (not px) so it scales with OS zoom."""
+    _open_settings(wiki_page)
+    for idx, expected in [(0, "87.5%"), (1, "100%"), (2, "112.5%")]:
+        wiki_page.locator("#settings-sizes .settings-size-btn").nth(idx).click()
+        val = wiki_page.evaluate("() => document.documentElement.style.fontSize")
+        assert val == expected, f"size idx {idx}: expected {expected}, got {val}"

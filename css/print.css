@@ -1,0 +1,161 @@
+/* ═══════════════════════════════════════════════
+   PRINT — study-sheet output, not a screen dump
+   Strips all chrome, expands collapsed regions, forces
+   grayscale-safe text, and footers the source URL.
+   ═══════════════════════════════════════════════ */
+@media print {
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  /* Force a light, ink-friendly base regardless of theme */
+  html {
+    font-size: 100%;
+  }
+
+  body {
+    background: #fff !important;
+    background-image: none !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: economy;
+    print-color-adjust: economy;
+  }
+
+  /* Strip every layer of app chrome */
+  .vignette-layer,
+  .home-glow,
+  .reading-progress,
+  .content-topbar,
+  .toc-sidebar,
+  .toc-mobile-btn,
+  .toc-mobile-overlay,
+  .sticky-section-header,
+  .article-hero,
+  .related-articles,
+  .skip-to-content,
+  .copy-btn,
+  .code-traffic-lights,
+  .scroll-to-top,
+  #global-search-modal,
+  #prefs-modal,
+  #auth-modal,
+  #zoom-overlay {
+    display: none !important;
+  }
+
+  /* Let the article fill the page */
+  .content-layout {
+    display: block !important;
+  }
+
+  .markdown-body {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #000 !important;
+  }
+
+  .markdown-body h1,
+  .markdown-body h2,
+  .markdown-body h3,
+  .markdown-body h4 {
+    color: #000 !important;
+    page-break-after: avoid;
+  }
+
+  .markdown-body a {
+    color: #000 !important;
+    text-decoration: underline;
+  }
+
+  /* Expand anything the screen collapses */
+  details {
+    display: block !important;
+  }
+
+  details > summary {
+    list-style: none;
+    font-weight: 600;
+  }
+
+  details > *:not(summary) {
+    display: revert !important;
+  }
+
+  /* Code: grayscale-safe, bordered, never clipped */
+  .markdown-body pre,
+  .markdown-body code {
+    color: #000 !important;
+    background: #f4f4f4 !important;
+    border: 1px solid #999 !important;
+  }
+
+  .markdown-body pre {
+    white-space: pre-wrap !important;
+    word-break: break-word;
+    page-break-inside: avoid;
+  }
+
+  .markdown-body pre code {
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Syntax highlight tokens flattened to ink */
+  .markdown-body pre code [class*="hljs-"],
+  .markdown-body pre code span {
+    color: #000 !important;
+    background: transparent !important;
+  }
+
+  .markdown-body .code-header,
+  .markdown-body .code-lang-label {
+    color: #000 !important;
+    background: #e8e8e8 !important;
+  }
+
+  /* Tables boxed for revision */
+  .markdown-body table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  .markdown-body th,
+  .markdown-body td {
+    border: 1px solid #000 !important;
+    padding: 4px 8px !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  .markdown-body thead th {
+    background: #ddd !important;
+  }
+
+  /* Callouts stay legible without their tinted fills */
+  .callout {
+    border: 1px solid #000 !important;
+    background: #fff !important;
+    color: #000 !important;
+    page-break-inside: avoid;
+  }
+
+  /* Images shouldn't spill past the page */
+  .markdown-body img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Footer the canonical source on every printout */
+  .markdown-body::after {
+    content: "Source: " attr(data-print-url);
+    display: block;
+    margin-top: 2rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #999;
+    font-size: 0.75rem;
+    color: #333 !important;
+  }
+}
