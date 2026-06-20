@@ -905,5 +905,26 @@
     ></script>
 
     <script type="module" src="./js/app.js"></script>
+
+    <!-- ══════════════════════════════════════
+       WIKI SWITCHER MODAL
+  ══════════════════════════════════════ -->
+    <div
+      id="wiki-switcher-modal"
+      class="wiki-switcher-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Switch wiki"
+      aria-hidden="true"
+    >
+      <div id="wiki-switcher-overlay" class="wiki-switcher-overlay"></div>
+      <div class="wiki-switcher-dialog">
+        <div class="wiki-switcher-header">
+          <span class="wiki-switcher-title">Switch Wiki</span>
+          <kbd class="wiki-switcher-hint">W</kbd>
+        </div>
+        <div class="wiki-switcher-list" id="wiki-switcher-list"></div>
+      </div>
+    </div>
   </body>
 </html>

@@ -83,6 +83,9 @@ their own parallel globals.
   line**, not a paragraph. Never narrate *what* the next lines do (the code shows that), never restate
   the function name, never write multi-line block comments explaining mechanics. Section-divider
   banners (`/* ─── X ─── */`) are fine; prose explanations of straightforward code are not.
+- **Comments are project-level, never ticket- or task-level.** Never reference a ticket number
+  (`WIKI-xxx`), task number, PR number, or branch name in a code comment or CSS section header.
+  Those belong in the commit message or PR description — not in the source file, where they rot.
 
 ---
 

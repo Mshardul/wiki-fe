@@ -412,6 +412,41 @@ document.getElementById("prefs-backdrop").addEventListener("click", () => Settin
 
 document.getElementById("auth-backdrop").addEventListener("click", () => AuthModal.close());
 
+document.getElementById("wiki-switcher-overlay").addEventListener("click", closeWikiSwitcher);
+
+function openWikiSwitcher() {
+  const modal = document.getElementById("wiki-switcher-modal");
+  const list = document.getElementById("wiki-switcher-list");
+  list.innerHTML = WIKIS.map(
+    (w) => `
+    <button class="wiki-switcher-card${w.id === state.currentWikiId ? " wiki-switcher-card--active" : ""}"
+      data-wiki-id="${escHtml(w.id)}" type="button">
+      <span class="wiki-switcher-card-icon">${escHtml(w.icon || "📖")}</span>
+      <span class="wiki-switcher-card-body">
+        <span class="wiki-switcher-card-name">${escHtml(w.name)}</span>
+        ${w.description ? `<span class="wiki-switcher-card-desc">${escHtml(w.description)}</span>` : ""}
+      </span>
+    </button>`,
+  ).join("");
+  list.querySelectorAll(".wiki-switcher-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      closeWikiSwitcher();
+      navigate(card.dataset.wikiId);
+    });
+  });
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  const active =
+    list.querySelector(".wiki-switcher-card--active") || list.querySelector(".wiki-switcher-card");
+  active?.focus();
+}
+
+function closeWikiSwitcher() {
+  const modal = document.getElementById("wiki-switcher-modal");
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+}
+
 document.addEventListener("keydown", (e) => {
   // ⌘K: Global Search
   if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -449,7 +484,9 @@ document.addEventListener("keydown", (e) => {
 
   // Escape: Close modals or navigate back from content
   if (e.key === "Escape") {
-    if (ArticleFind.isOpen()) {
+    if (!document.getElementById("wiki-switcher-modal").classList.contains("hidden")) {
+      closeWikiSwitcher();
+    } else if (ArticleFind.isOpen()) {
       ArticleFind.close();
     } else if (document.getElementById("zoom-overlay")?.classList.contains("open")) {
       closeZoomOverlay();
@@ -514,6 +551,19 @@ document.addEventListener("keydown", (e) => {
       if (e.key === "q" || e.key === "Q") {
         QuizMode.toggle();
         e.preventDefault();
+      }
+    }
+  }
+
+  // W: Wiki switcher (content + index views only, not in inputs)
+  if (e.key === "w" || e.key === "W") {
+    if (state.currentView === "content" || state.currentView === "index") {
+      const tag = document.activeElement.tagName;
+      const isInput =
+        tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable;
+      if (!isInput) {
+        e.preventDefault();
+        openWikiSwitcher();
       }
     }
   }

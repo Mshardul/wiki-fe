@@ -16,6 +16,7 @@ import {
   buildTOC,
   cleanupFocusMode,
   cleanupStickySection,
+  injectHeadingCollapseToggles,
   renderMermaidDiagrams,
   renderPrerequisites,
   styleCallouts,
@@ -41,6 +42,7 @@ import {
   markUnread,
   renderBookmarksSection,
   renderRecentsSection,
+  toggleCollapse,
   updateBookmarkBtn,
   updateOfflineBtn,
   updateReadBtn,
@@ -229,6 +231,8 @@ async function renderIndex(wiki) {
     const basePath = dirOf(wiki.indexPath);
     state.indexSections = parseIndexMd(md, basePath);
     renderIndexSections(state.indexSections, wiki);
+    renderIndexControls(wiki);
+    attachIndexCardKeyNav();
     IndexFilter.apply();
 
     sectionsEl.classList.add("index-sections--loading");
@@ -304,6 +308,94 @@ function renderIndexSections(sections, wiki) {
   `;
     })
     .join("");
+}
+
+function renderIndexControls(wiki) {
+  document.getElementById("index-controls")?.remove();
+
+  const subtitle = document.getElementById("index-subtitle");
+  if (!subtitle) return;
+
+  const controls = document.createElement("div");
+  controls.id = "index-controls";
+  controls.className = "index-controls";
+
+  controls.innerHTML = `
+    <button id="index-collapse-all" class="index-ctrl-btn" title="Collapse all sections" aria-label="Collapse all sections">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="2" y1="3" x2="12" y2="3"/>
+        <line x1="2" y1="7" x2="12" y2="7"/>
+        <line x1="2" y1="11" x2="12" y2="11"/>
+        <polyline points="5,13 7,11 9,13"/>
+        <polyline points="5,1 7,3 9,1"/>
+      </svg>
+    </button>
+    <button id="index-expand-all" class="index-ctrl-btn" title="Expand all sections" aria-label="Expand all sections">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="2" y1="3" x2="12" y2="3"/>
+        <line x1="2" y1="7" x2="12" y2="7"/>
+        <line x1="2" y1="11" x2="12" y2="11"/>
+        <polyline points="5,5 7,3 9,5"/>
+        <polyline points="5,9 7,11 9,9"/>
+      </svg>
+    </button>
+  `;
+
+  subtitle.insertAdjacentElement("afterend", controls);
+
+  controls.querySelector("#index-collapse-all").addEventListener("click", () => {
+    document.querySelectorAll(".index-section").forEach((section) => {
+      const heading = section.dataset.section;
+      const key = `wiki-section-collapsed-${wiki.id}-${heading}`;
+      toggleCollapse(key, section, true);
+    });
+  });
+
+  controls.querySelector("#index-expand-all").addEventListener("click", () => {
+    document.querySelectorAll(".index-section").forEach((section) => {
+      const heading = section.dataset.section;
+      const key = `wiki-section-collapsed-${wiki.id}-${heading}`;
+      toggleCollapse(key, section, false);
+    });
+  });
+}
+
+function attachIndexCardKeyNav() {
+  const container = document.getElementById("index-sections");
+  if (!container) return;
+
+  if (container._cardKeyNav) {
+    container.removeEventListener("keydown", container._cardKeyNav);
+  }
+
+  container._cardKeyNav = (e) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Enter") return;
+
+    const card = e.target.closest(".index-card");
+    if (!card) return;
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      card.click();
+      return;
+    }
+
+    e.preventDefault();
+    const section = card.closest(".index-section");
+    if (!section) return;
+
+    const cards = Array.from(section.querySelectorAll(".index-card:not(.index-card--unavailable)"));
+    const idx = cards.indexOf(card);
+    if (idx === -1) return;
+
+    if (e.key === "ArrowDown" && idx < cards.length - 1) {
+      cards[idx + 1].focus();
+    } else if (e.key === "ArrowUp" && idx > 0) {
+      cards[idx - 1].focus();
+    }
+  };
+
+  container.addEventListener("keydown", container._cardKeyNav);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -488,13 +580,8 @@ function bindIndexCardSwipe(wiki) {
 
 function toggleSection(headerEl, wikiId, heading) {
   const section = headerEl.closest(".index-section");
-  const isCollapsed = section.classList.toggle("section--collapsed");
   const key = `wiki-section-collapsed-${wikiId}-${heading}`;
-  if (isCollapsed) {
-    localStorage.setItem(key, "1");
-  } else {
-    localStorage.removeItem(key);
-  }
+  toggleCollapse(key, section);
 }
 
 /* ─── Reading time ─── */
@@ -702,6 +789,11 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     state.tocObserver.disconnect();
     state.tocObserver = null;
   }
+  const tocSidebar = document.getElementById("toc-sidebar");
+  if (tocSidebar?._tocScrollHandler) {
+    tocSidebar.removeEventListener("scroll", tocSidebar._tocScrollHandler);
+    tocSidebar._tocScrollHandler = null;
+  }
   cleanupFocusMode();
   cleanupStickySection();
   ArticleFind.close();
@@ -737,7 +829,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
         </div>`;
       if (readTimeBadge) readTimeBadge.textContent = "";
       markStubPath(filePath);
-      buildTOC(body);
+      buildTOC(body, wiki.id, filePath);
       body.dataset.renderDone = "1";
       return;
     }
@@ -805,8 +897,11 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
         }
       }
 
+      // Per-heading collapse toggles (must run before TOC so h2 IDs are stable)
+      injectHeadingCollapseToggles(body, wiki.id, filePath);
+
       // TOC
-      buildTOC(body);
+      buildTOC(body, wiki.id, filePath);
       addStickySection(body);
 
       // Code language labels + collapsible long blocks

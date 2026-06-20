@@ -1176,6 +1176,34 @@ const Sync = {
   },
 };
 
+/* ─── Collapse Helpers ─── */
+function toggleCollapse(key, el, collapsed) {
+  const next = collapsed !== undefined ? collapsed : !el.classList.contains("section--collapsed");
+  if (next) {
+    el.classList.add("section--collapsed");
+    localStorage.setItem(key, "1");
+  } else {
+    el.classList.remove("section--collapsed");
+    localStorage.removeItem(key);
+  }
+  return next;
+}
+
+function getCollapsed(key) {
+  return !!localStorage.getItem(key);
+}
+
+/* ─── TOC Scroll Persistence ─── */
+function saveTOCScroll(wikiId, articlePath, offset) {
+  const key = `wiki-toc-scroll-${wikiId}-${articlePath.replace(/\//g, "-")}`;
+  localStorage.setItem(key, String(offset));
+}
+
+function restoreTOCScroll(wikiId, articlePath) {
+  const key = `wiki-toc-scroll-${wikiId}-${articlePath.replace(/\//g, "-")}`;
+  return Number.parseInt(localStorage.getItem(key) || "0", 10);
+}
+
 export {
   saveScrollPos,
   getBookmarks,
@@ -1209,4 +1237,8 @@ export {
   Settings,
   Theme,
   Sync,
+  toggleCollapse,
+  getCollapsed,
+  saveTOCScroll,
+  restoreTOCScroll,
 };

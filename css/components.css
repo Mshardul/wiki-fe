@@ -981,3 +981,111 @@
   white-space: nowrap;
   max-width: 160px;
 }
+
+/* ═══════════════════════════════════════════════
+   WIKI SWITCHER MODAL
+   ═══════════════════════════════════════════════ */
+.wiki-switcher-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 8500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wiki-switcher-modal.hidden {
+  display: none;
+}
+.wiki-switcher-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.wiki-switcher-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(480px, 92vw);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  overflow: hidden;
+}
+.wiki-switcher-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--glass-border);
+}
+.wiki-switcher-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-heading);
+  letter-spacing: 0.02em;
+}
+.wiki-switcher-hint {
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+}
+.wiki-switcher-list {
+  padding: var(--s3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.wiki-switcher-card {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-2);
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+  text-decoration: none;
+  color: inherit;
+}
+.wiki-switcher-card:hover,
+.wiki-switcher-card:focus-visible {
+  border-color: var(--accent);
+  background: var(--surface-2);
+  outline: none;
+}
+.wiki-switcher-card--active {
+  border-color: var(--accent);
+}
+.wiki-switcher-card-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  width: 2rem;
+  text-align: center;
+}
+.wiki-switcher-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.wiki-switcher-card-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-heading);
+}
+.wiki-switcher-card-desc {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

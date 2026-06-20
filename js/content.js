@@ -1,5 +1,12 @@
 import { WIKIS, state } from "./state.js";
-import { getSettings, recordReveal } from "./storage.js";
+import {
+  getCollapsed,
+  getSettings,
+  recordReveal,
+  restoreTOCScroll,
+  saveTOCScroll,
+  toggleCollapse,
+} from "./storage.js";
 
 /* ─── Zoom Overlay (shared by image lightbox + diagram zoom) ─── */
 function getZoomOverlay() {
@@ -377,10 +384,10 @@ function renderPrerequisites(contentEl) {
 }
 
 /* ─── TOC Builder ─── */
-function buildTOC(contentEl) {
+function buildTOC(contentEl, wikiId, articlePath) {
   const tocNav = document.getElementById("toc-nav");
   const sidebar = document.getElementById("toc-sidebar");
-  const headings = Array.from(contentEl.querySelectorAll("h2, h3"));
+  const headings = Array.from(contentEl.querySelectorAll("h2, h3, h4"));
 
   if (headings.length === 0) {
     sidebar.style.display = "none";
@@ -389,55 +396,112 @@ function buildTOC(contentEl) {
   sidebar.style.display = "";
   tocNav.innerHTML = "";
 
+  let currentGroup = null;
+
   headings.forEach((h) => {
     const a = document.createElement("a");
-    a.className = `toc-item ${h.tagName === "H3" ? "toc-h3" : "toc-h2"}`;
+    const tag = h.tagName;
+    a.className = `toc-item ${tag === "H3" ? "toc-h3" : tag === "H4" ? "toc-h4" : "toc-h2"}`;
     a.textContent = h.textContent.replace(/[#]+$/, "").trim();
     a.href = `#${h.id}`;
 
     a.addEventListener("click", (e) => {
       e.preventDefault();
       h.scrollIntoView({ behavior: "smooth", block: "start" });
-
-      // Visual pulse on target heading
       h.classList.add("toc-heading-pulse");
       setTimeout(() => h.classList.remove("toc-heading-pulse"), 600);
-
       const url = new URL(location.href);
       url.searchParams.set("a", h.id);
       history.replaceState(history.state, "", url.toString());
     });
 
-    tocNav.appendChild(a);
+    if (tag === "H2") {
+      currentGroup = document.createElement("div");
+      currentGroup.className = "toc-h2-group";
+      currentGroup.dataset.h2Id = h.id;
+
+      const collapseKey = `wiki-toc-h2-${wikiId}-${h.id}`;
+      if (getCollapsed(collapseKey)) {
+        currentGroup.classList.add("section--collapsed");
+      }
+
+      const chevron = document.createElement("button");
+      chevron.className = "toc-group-chevron";
+      chevron.setAttribute("aria-label", "Toggle section");
+      chevron.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,3 5,7 8,3"/></svg>`;
+      chevron.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleCollapse(collapseKey, currentGroup);
+      });
+
+      const h2Row = document.createElement("div");
+      h2Row.className = "toc-h2-row";
+      h2Row.appendChild(a);
+      h2Row.appendChild(chevron);
+      currentGroup.appendChild(h2Row);
+      tocNav.appendChild(currentGroup);
+    } else {
+      if (currentGroup) {
+        currentGroup.appendChild(a);
+      } else {
+        tocNav.appendChild(a);
+      }
+    }
   });
 
-  // IntersectionObserver for active highlight
-  const tocLinks = tocNav.querySelectorAll(".toc-item");
-
+  // IntersectionObserver for active highlight + breathing states
   state.tocObserver = new IntersectionObserver(
     (entries) => {
-      let topmost = null;
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          if (!topmost || entry.boundingClientRect.top < topmost.boundingClientRect.top) {
-            topmost = entry;
-          }
-        }
+        const link = tocNav.querySelector(`a[href="#${entry.target.id}"]`);
+        if (link) link._intersecting = entry.isIntersecting;
       });
-      if (topmost) {
-        tocLinks.forEach((l) => l.classList.remove("active"));
-        const active = tocNav.querySelector(`a[href="#${topmost.target.id}"]`);
-        if (active) {
-          active.classList.add("active");
-          // Scroll active TOC item into view within sidebar
-          active.scrollIntoView({ block: "nearest" });
+
+      let topmostEl = null;
+      for (const h of headings) {
+        if (h._tocLink?._intersecting) {
+          topmostEl = h;
+          break;
+        }
+      }
+
+      let foundCurrent = false;
+      for (const h of headings) {
+        const link = tocNav.querySelector(`a[href="#${h.id}"]`);
+        if (!link) continue;
+        if (h === topmostEl) {
+          link.classList.remove("toc-passed");
+          link.classList.add("toc-current");
+          foundCurrent = true;
+          link.scrollIntoView({ block: "nearest" });
+        } else if (!foundCurrent) {
+          link.classList.add("toc-passed");
+          link.classList.remove("toc-current");
+        } else {
+          link.classList.remove("toc-passed", "toc-current");
         }
       }
     },
     { rootMargin: "0px 0px -60% 0px", threshold: 0 },
   );
 
-  headings.forEach((h) => state.tocObserver.observe(h));
+  headings.forEach((h) => {
+    h._tocLink = tocNav.querySelector(`a[href="#${h.id}"]`);
+    state.tocObserver.observe(h);
+  });
+
+  if (wikiId && articlePath) {
+    const offset = restoreTOCScroll(wikiId, articlePath);
+    if (offset > 0) sidebar.scrollTop = offset;
+
+    let _scrollTimer = null;
+    sidebar._tocScrollHandler = () => {
+      clearTimeout(_scrollTimer);
+      _scrollTimer = setTimeout(() => saveTOCScroll(wikiId, articlePath, sidebar.scrollTop), 300);
+    };
+    sidebar.addEventListener("scroll", sidebar._tocScrollHandler);
+  }
 }
 
 /* ─── Heading Anchor Links ─── */
@@ -764,6 +828,46 @@ function _cleanupFocusObserver(contentEl) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   PER-HEADING COLLAPSE TOGGLES (H2 on content page)
+   ═══════════════════════════════════════════════════════════════ */
+function injectHeadingCollapseToggles(contentEl, wikiId, articlePath) {
+  const slugBase = articlePath.replace(/\//g, "-");
+  contentEl.querySelectorAll("h2").forEach((h2) => {
+    if (h2.querySelector(".heading-collapse-btn")) return;
+
+    const key = `wiki-heading-collapsed-${wikiId}-${slugBase}-${h2.id}`;
+
+    const btn = document.createElement("button");
+    btn.className = "heading-collapse-btn";
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Toggle section");
+    btn.innerHTML =
+      '<svg viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    h2.appendChild(btn);
+
+    const body = document.createElement("div");
+    body.className = "heading-body";
+
+    let next = h2.nextElementSibling;
+    while (next && !/^H[12]$/.test(next.tagName)) {
+      const toMove = next;
+      next = next.nextElementSibling;
+      body.appendChild(toMove);
+    }
+    h2.insertAdjacentElement("afterend", body);
+
+    if (getCollapsed(key)) {
+      h2.classList.add("section--collapsed");
+    }
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleCollapse(key, h2);
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
    STICKY CURRENT SECTION HEADER
    ═══════════════════════════════════════════════════════════════ */
 function addStickySection(contentEl) {
@@ -984,5 +1088,6 @@ export {
   cleanupFocusMode,
   addStickySection,
   cleanupStickySection,
+  injectHeadingCollapseToggles,
   ArticleFind,
 };

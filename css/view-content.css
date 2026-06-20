@@ -180,6 +180,75 @@ body.distraction-free .sticky-section-header {
   padding-left: 20px;
   font-size: 0.73rem;
 }
+.toc-item.toc-h4 {
+  padding-left: 2rem;
+  font-size: 0.7rem;
+  opacity: 0.85;
+}
+
+/* H2 group container */
+.toc-h2-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.toc-h2-row .toc-h2 {
+  flex: 1;
+  min-width: 0;
+}
+.toc-group-chevron {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  border-radius: 3px;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.toc-group-chevron:hover {
+  color: var(--accent);
+  background: var(--glass-bg);
+}
+.toc-group-chevron svg {
+  transition: transform 0.2s;
+}
+.toc-h2-group.section--collapsed .toc-group-chevron svg {
+  transform: rotate(-90deg);
+}
+.toc-h2-group.section--collapsed .toc-h3,
+.toc-h2-group.section--collapsed .toc-h4 {
+  display: none;
+}
+
+/* Breathing TOC dots */
+.toc-item::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  margin-right: 6px;
+  vertical-align: middle;
+  flex-shrink: 0;
+  transition: background var(--t-fast), opacity var(--t-fast);
+}
+.toc-item.toc-passed {
+  opacity: 0.45;
+}
+.toc-item.toc-passed::before {
+  background: var(--accent);
+  opacity: 0.3;
+  border-color: var(--accent);
+}
+.toc-item.toc-current::before {
+  background: var(--accent);
+  opacity: 1;
+  border-color: var(--accent);
+}
 
 /* toc heading jump pulse */
 @keyframes tocHeadingPulse {
@@ -1354,4 +1423,51 @@ body.distraction-free .content-layout {
 .markdown-body mark.article-find-hit--current {
   background: var(--accent);
   color: #fff;
+}
+
+/* ═══════════════════════════════════════════════
+   PER-HEADING COLLAPSE (content page H2)
+   ═══════════════════════════════════════════════ */
+.markdown-body h2 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+}
+.heading-collapse-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  color: var(--text-subtle);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
+  vertical-align: middle;
+}
+.heading-collapse-btn:hover {
+  background: var(--glass-bg-2);
+  color: var(--accent);
+}
+.heading-collapse-btn svg {
+  width: 10px;
+  height: 10px;
+  transition: transform var(--t-fast);
+}
+.markdown-body h2.section--collapsed .heading-collapse-btn svg {
+  transform: rotate(-90deg);
+}
+.heading-body {
+  overflow: hidden;
+  max-height: 9999px;
+  transition: max-height 0.25s ease;
+}
+.markdown-body h2.section--collapsed + .heading-body {
+  max-height: 0;
 }
