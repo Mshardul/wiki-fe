@@ -2,8 +2,9 @@
 VENV := .venv
 PY := $(VENV)/bin/python
 PYTEST := $(VENV)/bin/pytest
+PRECOMMIT := $(VENV)/bin/pre-commit
 
-.PHONY: help install test test-headed test-debug clean
+.PHONY: help install test test-headed test-debug precommit clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -14,6 +15,10 @@ install: ## Create venv, install test deps + Chromium
 	$(PY) -m pip install --upgrade pip
 	$(PY) -m pip install -r requirements-dev.txt
 	$(PY) -m playwright install chromium
+	$(PRECOMMIT) install
+
+precommit: ## Run all pre-commit hooks against all files
+	$(PRECOMMIT) run --all-files
 
 test: ## Run the e2e test suite (headless)
 	$(PYTEST) tests/ -q

@@ -1,0 +1,36 @@
+# CI pre-commit config — check-only, never auto-fix (authoritative gate).
+# Used by .github/workflows/ci.yml. Local devs use .pre-commit-config.yaml,
+# which auto-fixes; CI must only report and fail, never rewrite files.
+#
+# The fixer hooks (end-of-file-fixer, trailing-whitespace) exit non-zero when
+# they would change a file, which fails the CI job without committing changes —
+# that is the intended check-only behaviour. codespell runs without -w (report
+# only). No JS/CSS linting by design — repo is build-free with no node toolchain.
+
+exclude: '^(content/|\.venv/|docs/superpowers/|\.pytest_cache/)'
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.2
+    hooks:
+      - id: codespell
+        # pres = plural of <pre> elements; couldn = "couldn't" w/ escaped apostrophe.
+        args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn"]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: check-merge-conflict
+      - id: check-case-conflict

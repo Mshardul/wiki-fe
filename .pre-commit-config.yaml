@@ -1,0 +1,40 @@
+# Pre-commit hooks — local guardrails for the FE (vanilla JS static site, no node).
+# CI (.github/workflows/ci.yml) is the authoritative gate.
+# Install once:  make install   (or: .venv/bin/pre-commit install)
+# Run on all files:  make precommit
+#
+# Tests are NOT run on commit (playwright suite is slow); CI runs the full suite.
+# No JS/CSS linting here by design — repo is build-free with no node toolchain.
+
+# content/ is 1.5M of authored markdown — excluded from prose/whitespace/spell hooks.
+exclude: '^(content/|\.venv/|docs/superpowers/|\.pytest_cache/)'
+
+repos:
+  # ── Secrets ─────────────────────────────────────────────────────────────────
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  # ── Spelling (code, comments, project docs) ─────────────────────────────────
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.2
+    hooks:
+      - id: codespell
+        # Authored wiki content is excluded globally; also skip generated/data.
+        # pres = plural of <pre> elements; couldn = "couldn't" w/ escaped apostrophe.
+        args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn"]
+
+  # ── Hygiene ─────────────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: check-merge-conflict
+      - id: check-case-conflict

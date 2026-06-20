@@ -67,6 +67,7 @@ Procedures with correctness intuition. Each page covers the worked example, the 
 | [Bit Manipulation](./algorithms/bit-manipulation.md)                            | Operate on individual bits: masks, shifts, XOR tricks. O(1) set operations and the bitmask-DP enabler.                                                      |
 | [Greedy](./algorithms/greedy.md)                                                | Take the locally best choice each step; prove it's globally optimal by an exchange argument. Interval scheduling, Huffman, MST choices.                     |
 | [String Matching (KMP)](./algorithms/string-matching.md)                        | Find a pattern in a text in O(n + m) via the failure function — slide the pattern on a mismatch without ever rewinding the text. The substring-search workhorse. |
+| [Z-Algorithm](./algorithms/z-algorithm.md)                                      | Computes, for each position, the longest prefix starting there (the Z-array) in O(n) by reusing a sliding match window. KMP's twin; pattern search via `P$T`. |
 
 ---
 
@@ -86,6 +87,7 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 | [Top-K Elements](./patterns/top-k-elements.md)                              | A size-k heap over a stream. K largest/smallest/most-frequent in O(n log k) without sorting everything.                        |
 | [Binary Search on Answer](./patterns/binary-search-on-answer.md)            | Binary search the answer space when feasibility is monotonic. "Minimize the max" / "maximize the min" problems.                |
 | [Subsets & Permutations](./patterns/subsets-permutations.md)                | Backtracking templates for the power set, permutations, and combinations — with dedup for repeats.                             |
+| [Backtracking](./patterns/backtracking.md)                                  | Choose / explore / un-choose over a decision tree, pruning dead branches — the recognition + transfer layer for constraint-satisfaction search. |
 | [Tree & Graph Traversal](./patterns/tree-graph-traversal.md)                | The BFS/DFS skeletons applied as a problem pattern: level-order, path-sum, connected components, flood fill.                   |
 | [DP Patterns](./patterns/dp-patterns.md)                                    | The recurring DP shapes: 0/1 knapsack, unbounded, LIS, LCS, grid paths, interval DP — recognition and the state to pick.       |
 | [Pattern Selection Cheat Sheet](./patterns/pattern-selection-cheatsheet.md) | The aggregator: trigger phrase → which pattern. The fast lookup that ships last, once every pattern exists.                    |
