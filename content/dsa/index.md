@@ -94,3 +94,40 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 | [Tree & Graph Traversal](./patterns/tree-graph-traversal.md)                | The BFS/DFS skeletons applied as a problem pattern: level-order, path-sum, connected components, flood fill.                   |
 | [DP Patterns](./patterns/dp-patterns.md)                                    | The recurring DP shapes: 0/1 knapsack, unbounded, LIS, LCS, grid paths, interval DP — recognition and the state to pick.       |
 | [Pattern Selection Cheat Sheet](./patterns/pattern-selection-cheatsheet.md) | The aggregator: trigger phrase → which pattern. The fast lookup that ships last, once every pattern exists.                    |
+
+---
+
+## New Additions
+
+- Add these to the list later. Discuss the section grouping properly.
+- Data Structures (new)
+    - Bloom Filter
+    - Count-Min Sketch
+    - B+ Tree
+    - Interval Tree / Segment Tree for intervals
+    - Treap / Skip List
+    - Suffix Tree / Suffix Array
+    - Adjacency List and Adjacency Matrix
+    - Fibonacci Heap
+    - Memoize / Memoization Table
+- Algorithms (new)
+    - Strongly Connected Components
+    - Bidirectional BFS
+    - Maximum Flow (Ford-Fulkerson, Edmonds-Karp, Dinic) and Bipartite Matching
+    - Rabin-Karp
+    - Divide and Conquer
+    - Kadane’s Algorithm ← new addition
+- Patterns (new)
+    - Two Heaps
+    - In-place Reversal of a Linked List
+    - Tree BFS vs Tree DFS
+    - 0/1 Knapsack and Unbounded Knapsack
+    - Matrix Traversal / Spiral Matrix
+    - State Machine DP ← new addition
+    - Bitmask DP ← new addition
+    - Frequency Array / Counting as Hashing ← new addition
+- Meta-Additions (new)
+    - Complexity Cheat Sheet
+    - Problem-Solving Framework
+
+---
