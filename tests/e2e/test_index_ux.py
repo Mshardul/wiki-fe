@@ -249,3 +249,112 @@ def test_collapsed_grid_not_display_none(page, base_url):
     assert result["maxHeight"] == "0px", (
         f"Collapsed grid max-height must be 0px, got '{result['maxHeight']}'"
     )
+
+
+# ── Inline index filter ──────────────────────────────────────────────
+
+
+def _visible_card_count(page):
+    return page.evaluate(
+        """() => [...document.querySelectorAll('#index-sections .index-card')]
+              .filter(c => !c.classList.contains('index-card--filtered')).length"""
+    )
+
+
+def test_filter_input_narrows_cards(page, base_url):
+    """Typing in the filter input hides cards whose title/desc don't match."""
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+
+    total = _visible_card_count(page)
+    assert total > 0
+
+    page.fill("#index-filter-input", "zzzznotarealarticle")
+    page.wait_for_timeout(250)  # past 120ms debounce
+    assert _visible_card_count(page) == 0, (
+        "A non-matching query must hide every card"
+    )
+
+
+def test_filter_clears_restores_cards(page, base_url):
+    """Clearing the filter input restores all cards."""
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+    total = _visible_card_count(page)
+
+    page.fill("#index-filter-input", "zzzznotarealarticle")
+    page.wait_for_timeout(250)
+    assert _visible_card_count(page) == 0
+
+    page.fill("#index-filter-input", "")
+    page.wait_for_timeout(250)
+    assert _visible_card_count(page) == total, (
+        "Clearing the filter must restore all cards"
+    )
+
+
+def test_empty_section_hidden_when_no_matches(page, base_url):
+    """Sections with no matching cards get .index-section--no-matches."""
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+
+    page.fill("#index-filter-input", "zzzznotarealarticle")
+    page.wait_for_timeout(250)
+
+    sections = page.locator(".index-section").count()
+    no_match = page.locator(".index-section.index-section--no-matches").count()
+    assert no_match == sections, (
+        "Every section must be marked no-matches when nothing matches"
+    )
+
+
+def test_unread_toggle_filters_read_cards(page, base_url):
+    """Activating 'Unread only' hides cards already marked read."""
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+
+    # Seed first card's path into the read-tracking store -> re-render index for read dot
+    seeded = page.evaluate(
+        """() => {
+            const badge = document.querySelector(
+                '.index-card:not(.index-card--unavailable) .index-card-read-time[data-path]'
+            );
+            if (!badge) return null;
+            const path = badge.dataset.path;
+            const key = 'wiki-read-system-design';
+            const cur = JSON.parse(localStorage.getItem(key) || '[]');
+            if (!cur.includes(path)) cur.push(path);
+            localStorage.setItem(key, JSON.stringify(cur));
+            return path;
+        }"""
+    )
+    assert seeded, "Expected at least one available card to seed as read"
+
+    # Reload so isRead() picks up the seeded value on render.
+    page.goto(f"{base_url}/#system-design")
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+    page.wait_for_selector(".index-card-read-dot.visible", timeout=8_000)
+
+    btn = page.locator("#index-filter-unread")
+    btn.click()
+    page.wait_for_timeout(150)
+    assert "active" in (btn.get_attribute("class") or ""), (
+        "Unread toggle must reflect active state"
+    )
+    # No visible card may contain a visible read-dot.
+    leaked = page.evaluate(
+        """() => [...document.querySelectorAll('#index-sections .index-card')]
+              .filter(c => !c.classList.contains('index-card--filtered'))
+              .filter(c => c.querySelector('.index-card-read-dot.visible')).length"""
+    )
+    assert leaked == 0, "Unread-only filter must hide cards marked read"

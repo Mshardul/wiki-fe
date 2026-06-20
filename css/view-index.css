@@ -57,6 +57,57 @@
   margin: 0 auto;
   padding: var(--s8) var(--s6) var(--s20);
 }
+/* ─── Inline index filter bar ─── */
+.index-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-bottom: var(--s6);
+}
+.index-filter-input {
+  flex: 1;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: var(--s2) var(--s4);
+}
+.index-filter-input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+.index-filter-unread {
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: var(--s2) var(--s4);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--t-fast), color var(--t-fast),
+    border-color var(--t-fast);
+}
+.index-filter-unread:hover,
+.index-filter-unread:focus-visible {
+  background: var(--surface-3);
+  outline: none;
+}
+.index-filter-unread.active {
+  color: var(--accent-light);
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+.index-card.index-card--filtered {
+  display: none;
+}
+.index-section.index-section--no-matches {
+  display: none;
+}
+
 .index-section {
   margin-bottom: var(--s12);
 }

@@ -1,11 +1,26 @@
 import {
   WIKIS,
+  state,
   allSearchCache,
   readTimeCache,
   escHtml,
   fuzzyMatch,
 } from "./state.js";
-import { fetchWikiIndex, navigateToContent, normalizePath } from "./render.js";
+import {
+  fetchWikiIndex,
+  navigateToContent,
+  normalizePath,
+  navigate,
+  showToast,
+  IndexFilter,
+} from "./render.js";
+import {
+  markRead,
+  markUnread,
+  isRead,
+  Settings,
+  Theme,
+} from "./storage.js";
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL SEARCH (⌘K)
@@ -15,6 +30,181 @@ const gSearchInput = document.getElementById("gsearch-input");
 const gSearchResults = document.getElementById("gsearch-results");
 const gSearchBackdrop = document.getElementById("gsearch-backdrop");
 const gSearchCount = document.getElementById("gsearch-count");
+const gSearchDialog = gSearchModal.querySelector(".gsearch-dialog");
+const gSearchModeBadge = gSearchModal.querySelector(".gsearch-mode-badge");
+
+/* null = global ⌘K; a wiki id = ⌘F scoped to that wiki */
+let _searchScope = null;
+
+function scopedEntries() {
+  if (!_searchScope) return allSearchCache.entries;
+  return allSearchCache.entries.filter((e) => e.wiki.id === _searchScope);
+}
+
+function scopedWiki() {
+  return WIKIS.find((w) => w.id === _searchScope) || null;
+}
+
+/* ─── Command palette ("/" prefix) ─── */
+function _contextWikiId() {
+  return _searchScope || state.currentWikiId;
+}
+
+function _contextWiki() {
+  const id = _contextWikiId();
+  return WIKIS.find((w) => w.id === id) || null;
+}
+
+function _entriesForWiki(wikiId) {
+  return allSearchCache.entries.filter((e) => e.wiki.id === wikiId);
+}
+
+const SEARCH_COMMANDS = [
+  {
+    id: "unread",
+    label: "Show only unread",
+    hint: "Filter the index to unread articles",
+    icon: "○",
+    needsWiki: true,
+    run() {
+      const wiki = _contextWiki();
+      if (!wiki) return;
+      IndexFilter.requestUnread();
+      navigate(wiki.id);
+    },
+  },
+  {
+    id: "mark-all-read",
+    label: "Mark all read",
+    hint: "Mark every article in this wiki as read",
+    icon: "●",
+    needsWiki: true,
+    run() {
+      const wiki = _contextWiki();
+      if (!wiki) return;
+      const entries = _entriesForWiki(wiki.id);
+      const changed = entries.filter((e) => !isRead(e.path));
+      changed.forEach((e) => markRead(e.path));
+      showToast(`Marked ${changed.length} read in ${wiki.title}`, 4000, () => {
+        changed.forEach((e) => markUnread(e.path));
+        if (state.currentWikiId === wiki.id) navigate(wiki.id);
+      });
+      if (state.currentWikiId === wiki.id) navigate(wiki.id);
+    },
+  },
+  {
+    id: "mark-all-unread",
+    label: "Mark all unread",
+    hint: "Mark every article in this wiki as unread",
+    icon: "○",
+    needsWiki: true,
+    run() {
+      const wiki = _contextWiki();
+      if (!wiki) return;
+      const entries = _entriesForWiki(wiki.id);
+      const changed = entries.filter((e) => isRead(e.path));
+      changed.forEach((e) => markUnread(e.path));
+      showToast(`Marked ${changed.length} unread in ${wiki.title}`, 4000, () => {
+        changed.forEach((e) => markRead(e.path));
+        if (state.currentWikiId === wiki.id) navigate(wiki.id);
+      });
+      if (state.currentWikiId === wiki.id) navigate(wiki.id);
+    },
+  },
+  {
+    id: "export-bookmarks",
+    label: "Export bookmarks",
+    hint: "Download all app data as a JSON backup",
+    icon: "↓",
+    run() {
+      Settings.exportData();
+    },
+  },
+  {
+    id: "clear-recents",
+    label: "Clear recents",
+    hint: "Remove the recently-visited list for this wiki",
+    icon: "×",
+    needsWiki: true,
+    run() {
+      const id = _contextWikiId();
+      if (id) window.confirmClearRecents(id);
+    },
+  },
+  {
+    id: "clear-bookmarks",
+    label: "Clear bookmarks",
+    hint: "Remove all bookmarks for this wiki",
+    icon: "×",
+    needsWiki: true,
+    run() {
+      const id = _contextWikiId();
+      if (id) window.confirmClearBookmarks(id);
+    },
+  },
+  {
+    id: "toggle-theme",
+    label: "Toggle light / dark theme",
+    hint: "Switch between light and dark",
+    icon: "◐",
+    run() {
+      Theme.toggle();
+    },
+  },
+  {
+    id: "open-settings",
+    label: "Open settings",
+    hint: "Open the preferences panel",
+    icon: "⚙",
+    run() {
+      Settings.openTab("general");
+    },
+  },
+];
+
+function availableCommands() {
+  const hasWiki = !!_contextWikiId();
+  return SEARCH_COMMANDS.filter((c) => !c.needsWiki || hasWiki);
+}
+
+function applyCommandFilter(commandQuery) {
+  const q = commandQuery.toLowerCase();
+  const cmds = availableCommands().filter(
+    (c) => !q || c.label.toLowerCase().includes(q) || fuzzyMatch(q, c.label.toLowerCase())
+  );
+
+  gSearchCount.textContent = cmds.length
+    ? `${cmds.length} command${cmds.length === 1 ? "" : "s"}`
+    : "";
+
+  if (!cmds.length) {
+    gSearchResults.innerHTML = `<div class="gsearch-no-results">No commands matching "<strong>${escHtml(
+      commandQuery
+    )}</strong>"</div>`;
+    return;
+  }
+
+  gSearchResults.innerHTML = cmds
+    .map(
+      (c) => `
+    <div class="gsearch-result gsearch-command" data-command="${c.id}"
+         role="button" tabindex="0"
+         onclick="runSearchCommand('${c.id}')"
+         onkeydown="if(event.key==='Enter')this.click()">
+      <span class="gsearch-command-icon" aria-hidden="true">${c.icon}</span>
+      <span class="gsearch-result-title">${escHtml(c.label)}</span>
+      <span class="gsearch-result-meta">${escHtml(c.hint)}</span>
+    </div>`
+    )
+    .join("");
+}
+
+function runSearchCommand(id) {
+  const cmd = SEARCH_COMMANDS.find((c) => c.id === id);
+  if (!cmd) return;
+  closeGlobalSearch();
+  cmd.run();
+}
 
 async function loadAllSearchEntries() {
   if (allSearchCache.loaded || allSearchCache.loading) return;
@@ -72,6 +262,7 @@ const PLACEHOLDER_HINTS = [
   "try: heap",
   "try: bigO",
   "try: > graphs",
+  "try: / commands",
   "try: dynamic programming",
 ];
 const PLACEHOLDER_DEFAULT = "Search all wikis…";
@@ -115,13 +306,15 @@ function gSearchSelect(idx) {
   items[idx].focus();
 }
 
-function openGlobalSearch() {
+function openGlobalSearch(opts = {}) {
   _searchOpener = document.activeElement;
+  _searchScope = opts.scope || null;
   gSearchModal.classList.remove("hidden");
   gSearchModal.setAttribute("aria-hidden", "false");
   gSearchInput.value = "";
   gSearchCount.textContent = "";
   gSearchSelectedIdx = -1;
+  _syncModeBadge("");
   gSearchInput.focus();
   startPlaceholderHints();
 
@@ -159,6 +352,8 @@ function openGlobalSearch() {
 function closeGlobalSearch() {
   gSearchModal.classList.add("hidden");
   gSearchModal.setAttribute("aria-hidden", "true");
+  _searchScope = null;
+  gSearchDialog?.classList.remove("scope-mode", "command-mode", "section-mode");
   stopPlaceholderHints();
   if (_searchFocusTrapHandler) {
     gSearchModal.removeEventListener("keydown", _searchFocusTrapHandler);
@@ -217,7 +412,7 @@ function applySectionFilter(sectionQuery) {
 
   const ql = sectionQuery.toLowerCase();
   const matched = {};
-  for (const entry of allSearchCache.entries) {
+  for (const entry of scopedEntries()) {
     const sectionLower = entry.section.toLowerCase();
     if (sectionLower.includes(ql) || fuzzyMatch(ql, sectionLower)) {
       const key = `${entry.wiki.id}::${entry.section}`;
@@ -247,18 +442,36 @@ function applySectionFilter(sectionQuery) {
     .join("");
 }
 
+function _syncModeBadge(raw) {
+  const commandMode = raw.startsWith("/");
+  const sectionMode = raw.startsWith(">");
+  gSearchDialog?.classList.toggle("command-mode", commandMode);
+  gSearchDialog?.classList.toggle("section-mode", sectionMode);
+  gSearchDialog?.classList.toggle("scope-mode", !!_searchScope);
+
+  if (commandMode) {
+    gSearchModeBadge.textContent = "Commands";
+  } else if (sectionMode) {
+    gSearchModeBadge.textContent = "Filtering sections";
+  } else if (_searchScope) {
+    const w = scopedWiki();
+    gSearchModeBadge.textContent = w ? `${w.title} only` : "Scoped";
+  }
+}
+
 function applyGlobalSearch(query) {
   gSearchSelectedIdx = -1;
   if (!allSearchCache.loaded) return;
 
   const raw = query.trim();
+  _syncModeBadge(raw);
 
-  const sectionMode = raw.startsWith(">");
-  gSearchModal
-    .querySelector(".gsearch-dialog")
-    ?.classList.toggle("section-mode", sectionMode);
+  if (raw.startsWith("/")) {
+    applyCommandFilter(raw.slice(1).trimStart());
+    return;
+  }
 
-  if (sectionMode) {
+  if (raw.startsWith(">")) {
     applySectionFilter(raw.slice(1).trimStart());
     return;
   }
@@ -266,12 +479,12 @@ function applyGlobalSearch(query) {
   if (!raw) {
     gSearchCount.textContent = "";
     gSearchResults.innerHTML =
-      '<div class="gsearch-empty">Type to search · <kbd class="gsearch-kbd">&gt;</kbd> to filter by section</div>';
+      '<div class="gsearch-empty">Type to search · <kbd class="gsearch-kbd">&gt;</kbd> sections · <kbd class="gsearch-kbd">/</kbd> commands</div>';
     return;
   }
 
   const q = raw;
-  const scored = allSearchCache.entries
+  const scored = scopedEntries()
     .map((e) => ({ entry: e, score: scoreMatch(q, e) }))
     .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score)
@@ -369,4 +582,9 @@ function highlightMatch(text, query) {
   );
 }
 
-export { openGlobalSearch, closeGlobalSearch, retryGlobalSearch };
+export {
+  openGlobalSearch,
+  closeGlobalSearch,
+  retryGlobalSearch,
+  runSearchCommand,
+};

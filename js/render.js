@@ -43,6 +43,7 @@ import {
   cleanupFocusMode,
   addStickySection,
   cleanupStickySection,
+  ArticleFind,
 } from "./content.js";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -224,6 +225,7 @@ async function renderIndex(wiki) {
   bindIndexCardSwipe(wiki);
   renderRecentsSection(wiki);
   renderBookmarksSection(wiki);
+  IndexFilter.reset();
 
   const sectionsEl = document.getElementById("index-sections");
   sectionsEl.innerHTML =
@@ -234,6 +236,7 @@ async function renderIndex(wiki) {
     const basePath = dirOf(wiki.indexPath);
     state.indexSections = parseIndexMd(md, basePath);
     renderIndexSections(state.indexSections, wiki);
+    IndexFilter.apply();
 
     sectionsEl.classList.add("index-sections--loading");
     const scheduleIdle =
@@ -313,6 +316,85 @@ function renderIndexSections(sections, wiki) {
   `;
     })
     .join("");
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INDEX FILTER - live text filter + unread-only toggle
+   ═══════════════════════════════════════════════════════════════ */
+const IndexFilter = {
+  _query: "",
+  _unread: false,
+  _pendingUnread: false,
+  _debounce: null,
+
+  /* applied on the next index render — lets a command arm it before navigating */
+  requestUnread() {
+    this._pendingUnread = true;
+  },
+
+  reset() {
+    this._query = "";
+    this._unread = this._pendingUnread;
+    this._pendingUnread = false;
+    const input = document.getElementById("index-filter-input");
+    if (input) input.value = "";
+    this._syncUnreadBtn();
+  },
+
+  _syncUnreadBtn() {
+    const btn = document.getElementById("index-filter-unread");
+    if (!btn) return;
+    btn.classList.toggle("active", this._unread);
+    btn.setAttribute("aria-pressed", String(this._unread));
+  },
+
+  setQuery(q) {
+    this._query = q.trim().toLowerCase();
+    this.apply();
+  },
+
+  toggleUnread() {
+    this._unread = !this._unread;
+    this._syncUnreadBtn();
+    this.apply();
+  },
+
+  apply() {
+    const sections = document.querySelectorAll("#index-sections .index-section");
+    sections.forEach((sectionEl) => {
+      let visible = 0;
+      sectionEl.querySelectorAll(".index-card").forEach((card) => {
+        const title = (card.dataset.title || "").toLowerCase();
+        const desc = (card.dataset.desc || "").toLowerCase();
+        const path = card.querySelector(".index-card-read-time[data-path]")
+          ?.dataset.path;
+        const matchesText =
+          !this._query || title.includes(this._query) || desc.includes(this._query);
+        const matchesUnread = !this._unread || (path && !isRead(path));
+        const show = matchesText && matchesUnread;
+        card.classList.toggle("index-card--filtered", !show);
+        if (show) visible++;
+      });
+      sectionEl.classList.toggle("index-section--no-matches", visible === 0);
+    });
+  },
+};
+
+const _indexFilterInput = document.getElementById("index-filter-input");
+if (_indexFilterInput) {
+  _indexFilterInput.addEventListener("input", () => {
+    clearTimeout(IndexFilter._debounce);
+    IndexFilter._debounce = setTimeout(
+      () => IndexFilter.setQuery(_indexFilterInput.value),
+      120
+    );
+  });
+}
+const _indexFilterUnreadBtn = document.getElementById("index-filter-unread");
+if (_indexFilterUnreadBtn) {
+  _indexFilterUnreadBtn.addEventListener("click", () =>
+    IndexFilter.toggleUnread()
+  );
 }
 
 /* ─── Index-card swipe: right = bookmark, left = read toggle ─── */
@@ -661,6 +743,7 @@ async function renderContent(
   }
   cleanupFocusMode();
   cleanupStickySection();
+  ArticleFind.close();
   document.body.classList.remove("distraction-free");
   document.getElementById("toc-nav").innerHTML = "";
 
@@ -1407,4 +1490,5 @@ export {
   resolvePath,
   renderRelatedArticles,
   toggleSection,
+  IndexFilter,
 };

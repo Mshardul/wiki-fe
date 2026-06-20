@@ -362,3 +362,224 @@ def test_placeholder_resets_to_default_on_close(wiki_page):
     assert placeholder == "Search all wikis…", (
         f"Default placeholder not restored on close, got '{placeholder}'"
     )
+
+
+# ── ⌘F scoped wiki search ────────────────────────────────────────────
+
+
+def _open_scoped_search(page):
+    """Open ⌘F (wiki-scoped search) from a wiki index/content view."""
+    page.keyboard.press("Meta+f")
+    page.wait_for_selector("#global-search-modal:not(.hidden)")
+    page.wait_for_selector("#gsearch-input")
+
+
+def test_cmd_f_opens_scoped_search_with_badge(page, base_url):
+    """⌘F on a wiki index opens search in scope mode and shows the wiki badge."""
+    page.goto(f"{base_url}/#system-design")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+
+    _open_scoped_search(page)
+    page.wait_for_timeout(300)
+
+    dialog = page.locator(".gsearch-dialog")
+    assert "scope-mode" in (dialog.get_attribute("class") or ""), (
+        "Dialog must carry .scope-mode class when opened via ⌘F"
+    )
+    assert page.locator(".gsearch-mode-badge").is_visible(), (
+        "Scope badge must be visible in scoped search"
+    )
+
+
+def test_cmd_f_results_limited_to_current_wiki(page, base_url):
+    """Scoped search returns results only from the active wiki's group."""
+    page.goto(f"{base_url}/#system-design")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+
+    _open_scoped_search(page)
+    page.fill("#gsearch-input", "a")
+    page.wait_for_selector(".gsearch-result", timeout=8_000)
+
+    # Group labels are per-wiki; scoped search must show exactly one group.
+    labels = page.locator(".gsearch-group-label").count()
+    assert labels <= 1, f"Scoped search must show a single wiki group, got {labels}"
+
+
+def test_cmd_f_on_home_does_not_open_scoped_search(page, base_url):
+    """⌘F on the home view has no wiki to scope to; app must not open scoped mode.
+
+    (The browser's native find may run instead — we only assert our modal
+    does not enter scope-mode.)"""
+    page.goto(f"{base_url}/")
+    page.wait_for_selector("#view-home.active", timeout=5_000)
+
+    page.keyboard.press("Meta+f")
+    page.wait_for_timeout(300)
+
+    dialog = page.locator(".gsearch-dialog")
+    assert "scope-mode" not in (dialog.get_attribute("class") or ""), (
+        "⌘F on home must not enter scoped search mode"
+    )
+
+
+def test_scope_clears_on_close(page, base_url):
+    """Closing a scoped search drops scope-mode; reopening ⌘K is global again."""
+    page.goto(f"{base_url}/#system-design")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+
+    _open_scoped_search(page)
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#global-search-modal.hidden", state="attached")
+
+    _open_search(page)
+    dialog = page.locator(".gsearch-dialog")
+    assert "scope-mode" not in (dialog.get_attribute("class") or ""), (
+        "⌘K after a scoped search must reopen in global (unscoped) mode"
+    )
+
+
+# ── ⌘K command palette ───────────────────────────────────────────────
+
+
+def test_slash_enters_command_mode(page, base_url):
+    """Typing '/' switches ⌘K to command mode and lists commands."""
+    page.goto(f"{base_url}/#system-design")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/")
+    page.wait_for_selector(".gsearch-command", timeout=8_000)
+
+    dialog = page.locator(".gsearch-dialog")
+    assert "command-mode" in (dialog.get_attribute("class") or ""), (
+        "Dialog must carry .command-mode class when query starts with '/'"
+    )
+    assert page.locator(".gsearch-command").count() > 0, (
+        "Command mode must list available commands"
+    )
+
+
+def test_command_filter_narrows_list(page, base_url):
+    """Typing after '/' filters commands by label."""
+    page.goto(f"{base_url}/#system-design")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/export")
+    page.wait_for_selector(".gsearch-command", timeout=8_000)
+
+    labels = [c.inner_text().lower() for c in page.locator(".gsearch-command").all()]
+    assert labels, "Filtered command list must not be empty for '/export'"
+    assert all("export" in lbl for lbl in labels), (
+        f"All filtered commands must match 'export', got {labels}"
+    )
+
+
+def test_wiki_command_hidden_without_wiki_context(page, base_url):
+    """Wiki-scoped commands (e.g. clear recents) are hidden on the home view."""
+    page.goto(f"{base_url}/")
+    page.wait_for_selector("#view-home.active", timeout=5_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/")
+    page.wait_for_selector(".gsearch-command", timeout=8_000)
+
+    ids = [
+        c.get_attribute("data-command") for c in page.locator(".gsearch-command").all()
+    ]
+    assert "clear-recents" not in ids, (
+        "Wiki-scoped command must not appear without a current wiki"
+    )
+    # Global commands still available.
+    assert "export-bookmarks" in ids, "Global commands must remain available on home"
+
+
+def test_mark_all_read_command_marks_articles(page, base_url):
+    """Running 'mark all read' sets read dots on the current wiki's index cards."""
+    page.goto(f"{base_url}/#system-design")
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/mark all read")
+    page.wait_for_selector(".gsearch-command[data-command='mark-all-read']", timeout=8_000)
+    page.locator(".gsearch-command[data-command='mark-all-read']").first.click()
+
+    # Returns to the index; at least one read dot should now be visible.
+    page.wait_for_selector("#view-index.active", timeout=8_000)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+    visible_dots = page.locator(".index-card-read-dot.visible").count()
+    assert visible_dots > 0, "Mark-all-read must mark at least one article read"
+
+
+# ── In-article find bar ──────────────────────────────────────────────
+
+
+def _open_article(page, base_url):
+    page.goto(f"{base_url}/#system-design/caching")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+
+
+def test_slash_opens_article_find_bar(page, base_url):
+    """Pressing '/' in an article opens the in-article find bar focused."""
+    _open_article(page, base_url)
+    page.keyboard.press("/")
+    page.wait_for_selector("#article-find:not(.hidden)", timeout=3_000)
+    focused_id = page.evaluate("() => document.activeElement?.id")
+    assert focused_id == "article-find-input", (
+        f"Find input must be focused on open, active = {focused_id}"
+    )
+
+
+def test_article_find_highlights_matches(page, base_url):
+    """Typing in the find bar wraps matches in mark.article-find-hit."""
+    _open_article(page, base_url)
+    page.keyboard.press("/")
+    page.wait_for_selector("#article-find:not(.hidden)")
+    page.fill("#article-find-input", "cache")
+    page.wait_for_selector("#markdown-body mark.article-find-hit", timeout=3_000)
+    assert page.locator("#markdown-body mark.article-find-hit").count() > 0
+    # One match is the current (focused) hit.
+    assert page.locator("mark.article-find-hit--current").count() == 1
+
+
+def test_article_find_count_and_cycle(page, base_url):
+    """Enter cycles to the next match and the count reflects position."""
+    _open_article(page, base_url)
+    page.keyboard.press("/")
+    page.wait_for_selector("#article-find:not(.hidden)")
+    page.fill("#article-find-input", "cache")
+    page.wait_for_selector("#markdown-body mark.article-find-hit", timeout=3_000)
+
+    count_text = page.locator("#article-find-count").inner_text()
+    assert "/" in count_text, f"Count must read 'i/N', got '{count_text}'"
+    first_pos = count_text.split("/")[0]
+
+    total = int(count_text.split("/")[1])
+    if total > 1:
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(100)
+        new_pos = page.locator("#article-find-count").inner_text().split("/")[0]
+        assert new_pos != first_pos, "Enter must advance the current match index"
+
+
+def test_article_find_escape_closes_and_clears(page, base_url):
+    """Escape closes the find bar and removes all highlight marks."""
+    _open_article(page, base_url)
+    page.keyboard.press("/")
+    page.wait_for_selector("#article-find:not(.hidden)")
+    page.fill("#article-find-input", "cache")
+    page.wait_for_selector("#markdown-body mark.article-find-hit", timeout=3_000)
+
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#article-find.hidden", state="attached", timeout=3_000)
+    assert page.locator("#markdown-body mark.article-find-hit").count() == 0, (
+        "Closing find must strip all highlight marks"
+    )

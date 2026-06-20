@@ -270,7 +270,9 @@
   padding: 2px 8px;
   white-space: nowrap;
 }
-.gsearch-dialog.section-mode .gsearch-mode-badge {
+.gsearch-dialog.section-mode .gsearch-mode-badge,
+.gsearch-dialog.command-mode .gsearch-mode-badge,
+.gsearch-dialog.scope-mode .gsearch-mode-badge {
   display: inline-block;
 }
 .gsearch-results {
@@ -355,6 +357,26 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 1px 5px;
+}
+
+/* ─── Command palette rows ─── */
+.gsearch-command {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: var(--s3);
+  row-gap: 0;
+}
+.gsearch-command .gsearch-command-icon {
+  grid-row: 1 / span 2;
+  font-size: var(--text-base);
+  color: var(--accent-light);
+  text-align: center;
+}
+.gsearch-command .gsearch-result-title,
+.gsearch-command .gsearch-result-meta {
+  grid-column: 2;
 }
 
 @media (max-width: 640px) {

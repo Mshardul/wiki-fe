@@ -30,12 +30,14 @@ import {
   openGlobalSearch,
   closeGlobalSearch,
   retryGlobalSearch,
+  runSearchCommand,
 } from "./search.js";
 import {
   closeZoomOverlay,
   rerenderMermaidDiagrams,
   toggleFocusMode,
   QuizMode,
+  ArticleFind,
 } from "./content.js";
 import { Auth, AuthModal } from "./auth.js";
 
@@ -52,6 +54,7 @@ window.toggleSection = toggleSection;
 window.clearRecents = clearRecents;
 window.closeGlobalSearch = closeGlobalSearch;
 window.retryGlobalSearch = retryGlobalSearch;
+window.runSearchCommand = runSearchCommand;
 window.Auth = Auth;
 window.AuthModal = AuthModal;
 
@@ -442,6 +445,12 @@ document.addEventListener("keydown", (e) => {
     openGlobalSearch();
   }
 
+  // ⌘F: Search scoped to the current wiki (falls back to browser find on home)
+  if ((e.metaKey || e.ctrlKey) && e.key === "f" && state.currentWikiId) {
+    e.preventDefault();
+    openGlobalSearch({ scope: state.currentWikiId });
+  }
+
   // ?: Open preferences on Keyboard tab (when not focused on input/textarea)
   if (e.key === "?") {
     const tag = document.activeElement.tagName;
@@ -470,7 +479,9 @@ document.addEventListener("keydown", (e) => {
 
   // Escape: Close modals or navigate back from content
   if (e.key === "Escape") {
-    if (document.getElementById("zoom-overlay")?.classList.contains("open")) {
+    if (ArticleFind.isOpen()) {
+      ArticleFind.close();
+    } else if (document.getElementById("zoom-overlay")?.classList.contains("open")) {
       closeZoomOverlay();
     } else if (AuthModal.isOpen()) {
       AuthModal.close();
@@ -497,6 +508,10 @@ document.addEventListener("keydown", (e) => {
     if (!isInput) {
       if (e.key === "b" || e.key === "B") {
         Bookmarks.toggle();
+        e.preventDefault();
+      }
+      if (e.key === "/") {
+        ArticleFind.open();
         e.preventDefault();
       }
       if (e.key === "f" || e.key === "F") {

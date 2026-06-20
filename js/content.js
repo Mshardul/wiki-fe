@@ -829,6 +829,165 @@ function cleanupStickySection() {
   if (banner) banner.classList.remove("visible");
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   IN-ARTICLE FIND - "/" find bar over the article body
+   ═══════════════════════════════════════════════════════════════ */
+const ArticleFind = {
+  _open: false,
+  _hits: [],
+  _idx: -1,
+  _query: "",
+
+  _els() {
+    return {
+      bar: document.getElementById("article-find"),
+      input: document.getElementById("article-find-input"),
+      count: document.getElementById("article-find-count"),
+    };
+  },
+
+  open() {
+    const { bar, input } = this._els();
+    if (!bar || !input) return;
+    this._open = true;
+    bar.classList.remove("hidden");
+    input.focus();
+    input.select();
+  },
+
+  close() {
+    const { bar, input } = this._els();
+    this._clearHits();
+    this._open = false;
+    this._query = "";
+    if (bar) bar.classList.add("hidden");
+    if (input) input.value = "";
+    this._updateCount();
+  },
+
+  isOpen() {
+    return this._open;
+  },
+
+  _clearHits() {
+    const body = document.getElementById("markdown-body");
+    if (body) {
+      body.querySelectorAll("mark.article-find-hit").forEach((m) => {
+        const parent = m.parentNode;
+        parent.replaceChild(document.createTextNode(m.textContent), m);
+        parent.normalize();
+      });
+    }
+    this._hits = [];
+    this._idx = -1;
+  },
+
+  setQuery(q) {
+    this._clearHits();
+    this._query = q;
+    if (q.trim().length >= 1) this._highlightAll(q.trim());
+    this._updateCount();
+    if (this._hits.length) this._select(0);
+  },
+
+  /* wraps matches in-place (no innerHTML rebuild) so handlers/widgets survive */
+  _highlightAll(query) {
+    const body = document.getElementById("markdown-body");
+    if (!body) return;
+    const ql = query.toLowerCase();
+
+    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const tag = node.parentNode?.nodeName;
+        if (tag === "SCRIPT" || tag === "STYLE") return NodeFilter.FILTER_REJECT;
+        return node.nodeValue.toLowerCase().includes(ql)
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_REJECT;
+      },
+    });
+
+    const targets = [];
+    let n;
+    while ((n = walker.nextNode())) targets.push(n);
+
+    for (const textNode of targets) {
+      this._wrapMatches(textNode, ql);
+    }
+  },
+
+  _wrapMatches(textNode, ql) {
+    let node = textNode;
+    let lower = node.nodeValue.toLowerCase();
+    let pos = lower.indexOf(ql);
+    while (pos !== -1) {
+      const after = node.splitText(pos);
+      const matchNode = after.splitText(ql.length);
+      const mark = document.createElement("mark");
+      mark.className = "article-find-hit";
+      mark.textContent = after.nodeValue;
+      after.parentNode.replaceChild(mark, after);
+      this._hits.push(mark);
+      node = matchNode;
+      lower = node.nodeValue.toLowerCase();
+      pos = lower.indexOf(ql);
+    }
+  },
+
+  _select(idx) {
+    if (!this._hits.length) return;
+    if (this._idx >= 0 && this._hits[this._idx])
+      this._hits[this._idx].classList.remove("article-find-hit--current");
+    this._idx = (idx + this._hits.length) % this._hits.length;
+    const cur = this._hits[this._idx];
+    cur.classList.add("article-find-hit--current");
+    cur.scrollIntoView({ block: "center", behavior: "smooth" });
+    this._updateCount();
+  },
+
+  next() {
+    if (this._hits.length) this._select(this._idx + 1);
+  },
+
+  prev() {
+    if (this._hits.length) this._select(this._idx - 1);
+  },
+
+  _updateCount() {
+    const { count } = this._els();
+    if (!count) return;
+    if (!this._query.trim()) count.textContent = "";
+    else if (!this._hits.length) count.textContent = "0/0";
+    else count.textContent = `${this._idx + 1}/${this._hits.length}`;
+  },
+};
+
+(function _bindArticleFind() {
+  const input = document.getElementById("article-find-input");
+  const nextBtn = document.getElementById("article-find-next");
+  const prevBtn = document.getElementById("article-find-prev");
+  const closeBtn = document.getElementById("article-find-close");
+  if (!input) return;
+
+  let debounce;
+  input.addEventListener("input", () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => ArticleFind.setQuery(input.value), 120);
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.shiftKey ? ArticleFind.prev() : ArticleFind.next();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      ArticleFind.close();
+    }
+  });
+  nextBtn?.addEventListener("click", () => ArticleFind.next());
+  prevBtn?.addEventListener("click", () => ArticleFind.prev());
+  closeBtn?.addEventListener("click", () => ArticleFind.close());
+})();
+
 export {
   closeZoomOverlay,
   addCodeBlockHeader,
@@ -852,4 +1011,5 @@ export {
   cleanupFocusMode,
   addStickySection,
   cleanupStickySection,
+  ArticleFind,
 };

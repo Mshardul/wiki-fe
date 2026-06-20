@@ -78,6 +78,11 @@ their own parallel globals.
   one-line reason if non-obvious.
 - **No new runtime dependencies** without a deliberate decision — the no-build, offline-first model
   depends on staying lean.
+- **Comments are sparse and short.** A comment earns its place only when the code can't say it
+  itself — the *why*, a non-obvious constraint, a gotcha. Default to none. When you do comment, **one
+  line**, not a paragraph. Never narrate *what* the next lines do (the code shows that), never restate
+  the function name, never write multi-line block comments explaining mechanics. Section-divider
+  banners (`/* ─── X ─── */`) are fine; prose explanations of straightforward code are not.
 
 ---
 

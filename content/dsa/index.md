@@ -20,6 +20,7 @@ Structural references. Each page covers how it works, operations with their comp
 | [Linked List](./data-structures/linked-list.md)                     | Nodes chained by pointers. O(1) insert/delete at a known node, O(n) search — the pointer-manipulation classic.                                        |
 | [Stack](./data-structures/stack.md)                                 | LIFO. O(1) push/pop — function calls, matching, undo, and the monotonic-stack trick.                                                                  |
 | [Queue](./data-structures/queue.md)                                 | FIFO. O(1) enqueue/dequeue — BFS frontier, scheduling, and the deque generalization.                                                                  |
+| [Deque](./data-structures/deque.md)                                 | Double-ended queue. O(1) add/remove at both ends — generalizes stack + queue; engine of sliding-window max/min and 0/1-BFS.                            |
 | [Hash Table](./data-structures/hash-table.md)                       | Key→value via a hash function. Average O(1) insert/lookup/delete — the workhorse map; chaining vs open addressing, load factor, resize.               |
 | [Hash Set](./data-structures/hash-set.md)                           | Membership-only hash structure. Average O(1) contains/add — dedup and seen-set patterns.                                                              |
 | [Binary Tree](./data-structures/binary-tree.md)                     | Each node has up to two children. The traversal orderings and the base for BST, heap, and trie.                                                       |
@@ -65,6 +66,7 @@ Procedures with correctness intuition. Each page covers the worked example, the 
 | [Dynamic Programming](./algorithms/dynamic-programming.md)                      | Solve overlapping subproblems once, reuse via memo or table. Optimal substructure → the recurrence that collapses exponential to polynomial.                |
 | [Bit Manipulation](./algorithms/bit-manipulation.md)                            | Operate on individual bits: masks, shifts, XOR tricks. O(1) set operations and the bitmask-DP enabler.                                                      |
 | [Greedy](./algorithms/greedy.md)                                                | Take the locally best choice each step; prove it's globally optimal by an exchange argument. Interval scheduling, Huffman, MST choices.                     |
+| [String Matching (KMP)](./algorithms/string-matching.md)                        | Find a pattern in a text in O(n + m) via the failure function — slide the pattern on a mismatch without ever rewinding the text. The substring-search workhorse. |
 
 ---
 

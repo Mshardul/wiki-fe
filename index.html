@@ -270,6 +270,25 @@
       <main class="index-main">
         <div id="recents-section" class="recents-section hidden"></div>
         <div id="bookmarks-section" class="recents-section hidden"></div>
+        <div class="index-filter-bar">
+          <input
+            type="text"
+            id="index-filter-input"
+            class="index-filter-input"
+            placeholder="Filter articles…"
+            aria-label="Filter articles in this wiki"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button
+            type="button"
+            id="index-filter-unread"
+            class="index-filter-unread"
+            aria-pressed="false"
+          >
+            Unread only
+          </button>
+        </div>
         <div id="index-sections" class="index-sections"></div>
       </main>
     </div>
@@ -470,6 +489,46 @@
           id="article-hero-ghost"
           aria-hidden="true"
         ></div>
+      </div>
+
+      <div id="article-find" class="article-find hidden" role="search">
+        <input
+          type="text"
+          id="article-find-input"
+          class="article-find-input"
+          placeholder="Find in article…"
+          aria-label="Find in article"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <span id="article-find-count" class="article-find-count" aria-live="polite"></span>
+        <button
+          type="button"
+          id="article-find-prev"
+          class="article-find-btn"
+          title="Previous match"
+          aria-label="Previous match"
+        >
+          ↑
+        </button>
+        <button
+          type="button"
+          id="article-find-next"
+          class="article-find-btn"
+          title="Next match"
+          aria-label="Next match"
+        >
+          ↓
+        </button>
+        <button
+          type="button"
+          id="article-find-close"
+          class="article-find-btn"
+          title="Close"
+          aria-label="Close find"
+        >
+          ✕
+        </button>
       </div>
 
       <div class="content-layout">
