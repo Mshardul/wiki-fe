@@ -511,6 +511,7 @@ def test_mark_all_read_command_marks_articles(page, base_url):
     page.wait_for_selector(
         "#index-sections:not(.index-sections--loading)", timeout=15_000
     )
+    page.wait_for_selector(".index-card", timeout=10_000)
     visible_dots = page.locator(".index-card-read-dot.visible").count()
     assert visible_dots > 0, "Mark-all-read must mark at least one article read"
 
