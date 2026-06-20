@@ -1,4 +1,4 @@
-import { state, WIKIS } from "./state.js";
+import { WIKIS, state } from "./state.js";
 import { getSettings, recordReveal } from "./storage.js";
 
 /* ─── Zoom Overlay (shared by image lightbox + diagram zoom) ─── */
@@ -19,12 +19,8 @@ function getZoomOverlay() {
       </button>
       <div class="zoom-overlay-content"></div>`;
     document.body.appendChild(overlay);
-    overlay
-      .querySelector(".zoom-overlay-backdrop")
-      .addEventListener("click", closeZoomOverlay);
-    overlay
-      .querySelector(".zoom-overlay-close")
-      .addEventListener("click", closeZoomOverlay);
+    overlay.querySelector(".zoom-overlay-backdrop").addEventListener("click", closeZoomOverlay);
+    overlay.querySelector(".zoom-overlay-close").addEventListener("click", closeZoomOverlay);
 
     bindZoomGestures(overlay);
   }
@@ -93,7 +89,7 @@ function bindZoomGestures(overlay) {
         panning = scale > 1;
       }
     },
-    { passive: true }
+    { passive: true },
   );
 
   overlay.addEventListener(
@@ -117,7 +113,7 @@ function bindZoomGestures(overlay) {
         apply();
       }
     },
-    { passive: false }
+    { passive: false },
   );
 
   overlay.addEventListener(
@@ -151,7 +147,7 @@ function bindZoomGestures(overlay) {
       }
       panning = false;
     },
-    { passive: true }
+    { passive: true },
   );
 
   overlay._resetZoom = reset;
@@ -180,10 +176,7 @@ function writeToClipboard(text) {
   try {
     const ta = document.createElement("textarea");
     ta.value = text;
-    ta.setAttribute(
-      "style",
-      "position:fixed;top:-9999px;left:-9999px;opacity:0"
-    );
+    ta.setAttribute("style", "position:fixed;top:-9999px;left:-9999px;opacity:0");
     document.body.appendChild(ta);
     ta.select();
     document.execCommand("copy");
@@ -286,9 +279,7 @@ const BIG_O_RE = /[OΘΩ]\s*\(/;
 function _isQuizzableTable(table) {
   const headText = table.querySelector("thead, tr")?.textContent || "";
   if (COMPLEXITY_HEADER_RE.test(headText)) return true;
-  return [...table.querySelectorAll("td")].some((td) =>
-    BIG_O_RE.test(td.textContent)
-  );
+  return [...table.querySelectorAll("td")].some((td) => BIG_O_RE.test(td.textContent));
 }
 
 function addQuizTables(contentEl) {
@@ -338,11 +329,9 @@ function styleCallouts(contentEl) {
     const text = bq.textContent.trim();
     let calloutClass = null;
     if (text.startsWith("🎯")) calloutClass = "callout-interview";
-    else if (text.startsWith("⚠️") || text.startsWith("⚠"))
-      calloutClass = "callout-warning";
+    else if (text.startsWith("⚠️") || text.startsWith("⚠")) calloutClass = "callout-warning";
     else if (text.startsWith("🧠")) calloutClass = "callout-thought";
-    else if (text.startsWith("⚖️") || text.startsWith("⚖"))
-      calloutClass = "callout-decision";
+    else if (text.startsWith("⚖️") || text.startsWith("⚖")) calloutClass = "callout-decision";
     if (!calloutClass) return;
     bq.classList.add("callout", calloutClass);
 
@@ -360,9 +349,7 @@ function styleCallouts(contentEl) {
 /* ─── Prerequisites Chips ─── */
 function renderPrerequisites(contentEl) {
   const ps = Array.from(contentEl.querySelectorAll("p"));
-  const prereqP = ps.find((p) =>
-    p.textContent.trim().startsWith("Prerequisites:")
-  );
+  const prereqP = ps.find((p) => p.textContent.trim().startsWith("Prerequisites:"));
   if (!prereqP) return;
 
   const links = Array.from(prereqP.querySelectorAll("a"));
@@ -381,7 +368,7 @@ function renderPrerequisites(contentEl) {
   });
 
   const h1 = contentEl.querySelector("h1");
-  if (h1 && h1.nextSibling) {
+  if (h1?.nextSibling) {
     contentEl.insertBefore(container, h1.nextSibling);
   } else {
     contentEl.prepend(container);
@@ -432,10 +419,7 @@ function buildTOC(contentEl) {
       let topmost = null;
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          if (
-            !topmost ||
-            entry.boundingClientRect.top < topmost.boundingClientRect.top
-          ) {
+          if (!topmost || entry.boundingClientRect.top < topmost.boundingClientRect.top) {
             topmost = entry;
           }
         }
@@ -450,18 +434,14 @@ function buildTOC(contentEl) {
         }
       }
     },
-    { rootMargin: "0px 0px -60% 0px", threshold: 0 }
+    { rootMargin: "0px 0px -60% 0px", threshold: 0 },
   );
 
   headings.forEach((h) => state.tocObserver.observe(h));
 }
 
 /* ─── Heading Anchor Links ─── */
-function addAnchorLinks(
-  contentEl,
-  onCopyError = () => {},
-  onCopySuccess = () => {}
-) {
+function addAnchorLinks(contentEl, onCopyError = () => {}, onCopySuccess = () => {}) {
   contentEl.querySelectorAll("h2, h3, h4").forEach((h) => {
     if (!h.id) return;
     const btn = document.createElement("button");
@@ -513,7 +493,7 @@ function addImageLightbox(contentEl) {
         placeholder.appendChild(label);
         img.replaceWith(placeholder);
       },
-      { once: true }
+      { once: true },
     );
     img.loading = "lazy";
     img.classList.add("zoomable-img");
@@ -603,9 +583,7 @@ async function rerenderMermaidDiagrams() {
   if (typeof mermaid === "undefined") return;
   const contentEl = document.getElementById("markdown-body");
   if (!contentEl) return;
-  const diagrams = contentEl.querySelectorAll(
-    ".mermaid-diagram[data-mermaid-src]"
-  );
+  const diagrams = contentEl.querySelectorAll(".mermaid-diagram[data-mermaid-src]");
   if (!diagrams.length) return;
 
   const theme = document.documentElement.getAttribute("data-theme") || "dark";
@@ -686,9 +664,7 @@ function addLineNumbers(contentEl) {
     const lines = code.innerHTML.split("\n");
     if (lines[lines.length - 1] === "") lines.pop();
     if (lines.length < 3) return;
-    code.innerHTML = lines
-      .map((line) => `<span class="code-line">${line}</span>`)
-      .join("\n");
+    code.innerHTML = lines.map((line) => `<span class="code-line">${line}</span>`).join("\n");
     code.parentElement.classList.add("has-line-numbers");
   });
 }
@@ -708,9 +684,7 @@ const APPROX_LINE_HEIGHT_PX = 24;
 
 function addCollapsibleCallouts(contentEl) {
   const isMobile = window.innerWidth < 768;
-  const lineLimit = isMobile
-    ? CALLOUT_COLLAPSE_LINES_MOBILE
-    : CALLOUT_COLLAPSE_LINES_DESKTOP;
+  const lineLimit = isMobile ? CALLOUT_COLLAPSE_LINES_MOBILE : CALLOUT_COLLAPSE_LINES_DESKTOP;
   const heightThreshold = lineLimit * APPROX_LINE_HEIGHT_PX;
 
   contentEl.querySelectorAll("blockquote.callout").forEach((bq) => {
@@ -758,7 +732,7 @@ function toggleFocusMode() {
           entry.target.classList.toggle("focus-para", entry.isIntersecting);
         });
       },
-      { rootMargin: "-35% 0px -35% 0px", threshold: 0 }
+      { rootMargin: "-35% 0px -35% 0px", threshold: 0 },
     );
     contentEl.querySelectorAll(FOCUS_SELECTORS).forEach((el) => {
       _focusObserver.observe(el);
@@ -908,8 +882,7 @@ const ArticleFind = {
     });
 
     const targets = [];
-    let n;
-    while ((n = walker.nextNode())) targets.push(n);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) targets.push(n);
 
     for (const textNode of targets) {
       this._wrapMatches(textNode, ql);

@@ -1,9 +1,9 @@
-import { state, WIKIS, escHtml } from "./state.js";
 import { api } from "./api.js";
+import { WIKIS, escHtml, state } from "./state.js";
 
 function _toast(message, durationMs = 3000, onUndo = null) {
   document.dispatchEvent(
-    new CustomEvent("wiki:toast", { detail: { message, durationMs, onUndo } })
+    new CustomEvent("wiki:toast", { detail: { message, durationMs, onUndo } }),
   );
 }
 
@@ -100,15 +100,12 @@ function updateBookmarkBtn() {
 const CHIP_VISIBLE_MAX = 4;
 
 function _buildChipStrip(chips) {
-  const overflow =
-    chips.length > CHIP_VISIBLE_MAX ? chips.length - CHIP_VISIBLE_MAX : 0;
+  const overflow = chips.length > CHIP_VISIBLE_MAX ? chips.length - CHIP_VISIBLE_MAX : 0;
   const chipHtml = chips
     .map(
       (chip, i) =>
-        `<button class="recent-chip${
-          i >= CHIP_VISIBLE_MAX ? " chip--hidden" : ""
-        }"
-          onclick="${chip.onclick}">${chip.label}</button>`
+        `<button class="recent-chip${i >= CHIP_VISIBLE_MAX ? " chip--hidden" : ""}"
+          onclick="${chip.onclick}">${chip.label}</button>`,
     )
     .join("");
   const moreHtml = overflow
@@ -132,7 +129,7 @@ function renderBookmarksSection(wiki) {
   const chips = bookmarks.map((b) => ({
     label: escHtml(b.title),
     onclick: `navigateToContent('${b.wikiId}','${encodeURIComponent(
-      b.path
+      b.path,
     )}','${encodeURIComponent(b.title)}','${b.slug}')`,
   }));
   section.innerHTML = `
@@ -174,11 +171,7 @@ const Bookmarks = {
   },
   toggle() {
     if (!state.currentFilePath) return;
-    this.togglePath(
-      state.currentWikiId,
-      state.currentFilePath,
-      state.currentTitle
-    );
+    this.togglePath(state.currentWikiId, state.currentFilePath, state.currentTitle);
     updateBookmarkBtn();
   },
   clearAll() {
@@ -192,7 +185,7 @@ const Bookmarks = {
     if (_loggedIn()) api.bookmarks.clear(wikiId).catch(() => {});
     localStorage.setItem(
       BOOKMARKS_KEY,
-      JSON.stringify(getBookmarks().filter((b) => b.wikiId !== wikiId))
+      JSON.stringify(getBookmarks().filter((b) => b.wikiId !== wikiId)),
     );
     document.getElementById("bookmarks-section")?.classList.add("hidden");
   },
@@ -243,7 +236,7 @@ function renderRecentsSection(wiki) {
   const chips = recents.map((r) => ({
     label: escHtml(r.title),
     onclick: `navigateToContent('${r.wikiId}','${encodeURIComponent(
-      r.path
+      r.path,
     )}','${encodeURIComponent(r.title)}','${r.slug}')`,
   }));
   section.innerHTML = `
@@ -286,7 +279,7 @@ function markRead(path) {
   localStorage.setItem(_readKey(), JSON.stringify([...read]));
   // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
   if (_loggedIn()) api.reads.add(state.currentWikiId, path).catch(() => {});
-  document.querySelectorAll(`.index-card-read-dot`).forEach((dot) => {
+  document.querySelectorAll(".index-card-read-dot").forEach((dot) => {
     const card = dot.closest(".index-card");
     const timeBadge = card?.querySelector(".index-card-read-time");
     if (timeBadge?.dataset.path === path) dot.classList.add("visible");
@@ -300,7 +293,7 @@ function markUnread(path) {
   localStorage.setItem(_readKey(), JSON.stringify([...read]));
   // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
   if (_loggedIn()) api.reads.remove(state.currentWikiId, path).catch(() => {});
-  document.querySelectorAll(`.index-card-read-dot`).forEach((dot) => {
+  document.querySelectorAll(".index-card-read-dot").forEach((dot) => {
     const card = dot.closest(".index-card");
     const timeBadge = card?.querySelector(".index-card-read-time");
     if (timeBadge?.dataset.path === path) dot.classList.remove("visible");
@@ -614,9 +607,7 @@ function getSettings() {
   } catch {}
 
   // First visit or unrecognized format: use OS preference
-  const prefersLight = window.matchMedia?.(
-    "(prefers-color-scheme: light)"
-  ).matches;
+  const prefersLight = window.matchMedia?.("(prefers-color-scheme: light)").matches;
   return prefersLight
     ? {
         ...DEFAULT_SETTINGS,
@@ -636,12 +627,12 @@ function applySettingsToDOM(s) {
   const theme = dark ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", theme);
 
-  document
-    .querySelectorAll(".theme-icon-moon")
-    .forEach((el) => (el.style.display = dark ? "" : "none"));
-  document
-    .querySelectorAll(".theme-icon-sun")
-    .forEach((el) => (el.style.display = dark ? "none" : ""));
+  document.querySelectorAll(".theme-icon-moon").forEach((el) => {
+    el.style.display = dark ? "" : "none";
+  });
+  document.querySelectorAll(".theme-icon-sun").forEach((el) => {
+    el.style.display = dark ? "none" : "";
+  });
 
   const bgList = dark ? DARK_BACKGROUNDS : LIGHT_BACKGROUNDS;
   const bg = bgList.find((b) => b.id === s.backgroundId) || bgList[0];
@@ -654,10 +645,7 @@ function applySettingsToDOM(s) {
   root.setProperty("--border-2", bg.border2);
   root.setProperty("--bg-translucent", bg.translucent);
   root.setProperty("--glass-bg", bg.translucent);
-  root.setProperty(
-    "--glass-border",
-    dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)"
-  );
+  root.setProperty("--glass-border", dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)");
 
   const tcList = dark ? DARK_TEXT_COLORS : LIGHT_TEXT_COLORS;
   const tc = tcList.find((t) => t.id === s.textColorId) || tcList[0];
@@ -678,8 +666,8 @@ function applySettingsToDOM(s) {
   const fallback = isSerif
     ? "Georgia, serif"
     : isMono
-    ? "monospace"
-    : '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ? "monospace"
+      : '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   root.setProperty("--font", `"${font}", ${fallback}`);
 
   const sizes = { S: "87.5%", M: "100%", L: "112.5%" };
@@ -698,9 +686,7 @@ function applySettingsToDOM(s) {
   };
   root.setProperty("--para-spacing", paraSpacings[s.paraSpacing] || "0.75rem");
 
-  document.dispatchEvent(
-    new CustomEvent("wiki:themechange", { detail: { theme } })
-  );
+  document.dispatchEvent(new CustomEvent("wiki:themechange", { detail: { theme } }));
 }
 
 // Follow OS dark/light changes live
@@ -805,11 +791,9 @@ const Settings = {
 
   _getFocusable() {
     const modal = document.getElementById("prefs-modal");
-    return [
-      ...modal.querySelectorAll(
-        "button:not([disabled]), input:not([disabled])"
-      ),
-    ].filter((el) => el.offsetParent !== null && el.style.display !== "none");
+    return [...modal.querySelectorAll("button:not([disabled]), input:not([disabled])")].filter(
+      (el) => el.offsetParent !== null && el.style.display !== "none",
+    );
   },
 
   async _renderShortcuts() {
@@ -832,9 +816,7 @@ const Settings = {
             (item) =>
               `<div class="help-row"><kbd>${item.keys
                 .map(escHtml)
-                .join(" / ")}</kbd><span>${escHtml(
-                item.description
-              )}</span></div>`
+                .join(" / ")}</kbd><span>${escHtml(item.description)}</span></div>`,
           )
           .join("")}
       </div>`;
@@ -870,32 +852,19 @@ const Settings = {
 
   _renderBackgrounds(s) {
     const mkSwatch = (bg) =>
-      `<button class="settings-bg-swatch${
-        s.backgroundId === bg.id ? " active" : ""
-      }"` +
+      `<button class="settings-bg-swatch${s.backgroundId === bg.id ? " active" : ""}"` +
       ` style="background:${bg.bg}" title="${bg.label}" aria-label="${bg.label} background"` +
       ` onclick="Settings._setBackground('${bg.id}')"></button>`;
     document.getElementById("settings-backgrounds").innerHTML =
-      DARK_BACKGROUNDS.map(mkSwatch).join("") +
-      `<div class="settings-bg-separator" aria-hidden="true"></div>` +
-      LIGHT_BACKGROUNDS.map(mkSwatch).join("");
+      `${DARK_BACKGROUNDS.map(mkSwatch).join("")}<div class="settings-bg-separator" aria-hidden="true"></div>${LIGHT_BACKGROUNDS.map(mkSwatch).join("")}`;
   },
 
   _renderTextColors(s) {
-    const options = _isDark(s.backgroundId)
-      ? DARK_TEXT_COLORS
-      : LIGHT_TEXT_COLORS;
+    const options = _isDark(s.backgroundId) ? DARK_TEXT_COLORS : LIGHT_TEXT_COLORS;
     document.getElementById("settings-text-colors").innerHTML = options
       .map(
         (tc) =>
-          `<button class="settings-text-swatch${
-            s.textColorId === tc.id ? " active" : ""
-          }"` +
-          ` title="${tc.label}" aria-label="${tc.label} text"` +
-          ` onclick="Settings._setTextColor('${tc.id}')">` +
-          `<div class="settings-text-swatch-head" style="background:${tc.heading}"></div>` +
-          `<div class="settings-text-swatch-body" style="background:${tc.body}"></div>` +
-          `</button>`
+          `<button class="settings-text-swatch${s.textColorId === tc.id ? " active" : ""}" title="${tc.label}" aria-label="${tc.label} text" onclick="Settings._setTextColor('${tc.id}')"><div class="settings-text-swatch-head" style="background:${tc.heading}"></div><div class="settings-text-swatch-body" style="background:${tc.body}"></div></button>`,
       )
       .join("");
   },
@@ -905,11 +874,9 @@ const Settings = {
     document.getElementById("settings-accents").innerHTML = accents
       .map(
         (a) =>
-          `<button class="settings-accent-swatch${
-            s.accentId === a.id ? " active" : ""
-          }"` +
+          `<button class="settings-accent-swatch${s.accentId === a.id ? " active" : ""}"` +
           ` style="background:${a.value}" title="${a.label}" aria-label="${a.label} accent"` +
-          ` onclick="Settings._setAccent('${a.id}')"></button>`
+          ` onclick="Settings._setAccent('${a.id}')"></button>`,
       )
       .join("");
   },
@@ -917,11 +884,9 @@ const Settings = {
   _renderFonts(s) {
     document.getElementById("settings-fonts").innerHTML = FONT_OPTIONS.map(
       (f) =>
-        `<button class="settings-font-chip${
-          s.font === f.id ? " active" : ""
-        }"` +
+        `<button class="settings-font-chip${s.font === f.id ? " active" : ""}"` +
         ` style="font-family:'${f.id}',sans-serif"` +
-        ` onclick="Settings._setFont('${f.id}')">${f.label}</button>`
+        ` onclick="Settings._setFont('${f.id}')">${f.label}</button>`,
     ).join("");
   },
 
@@ -929,54 +894,38 @@ const Settings = {
     document.getElementById("settings-sizes").innerHTML = ["S", "M", "L"]
       .map(
         (sz) =>
-          `<button class="settings-size-btn${
-            s.fontSize === sz ? " active" : ""
-          }"` + ` onclick="Settings._setSize('${sz}')">${sz}</button>`
+          `<button class="settings-size-btn${s.fontSize === sz ? " active" : ""}"` +
+          ` onclick="Settings._setSize('${sz}')">${sz}</button>`,
       )
       .join("");
   },
 
   _renderWidths(s) {
-    document.getElementById("settings-widths").innerHTML = [
-      "Narrow",
-      "Default",
-      "Wide",
-    ]
+    document.getElementById("settings-widths").innerHTML = ["Narrow", "Default", "Wide"]
       .map(
         (w) =>
-          `<button class="settings-size-btn${
-            s.contentWidth === w ? " active" : ""
-          }"` + ` onclick="Settings._setWidth('${w}')">${w}</button>`
+          `<button class="settings-size-btn${s.contentWidth === w ? " active" : ""}"` +
+          ` onclick="Settings._setWidth('${w}')">${w}</button>`,
       )
       .join("");
   },
 
   _renderLineHeights(s) {
-    document.getElementById("settings-line-heights").innerHTML = [
-      "Compact",
-      "Normal",
-      "Relaxed",
-    ]
+    document.getElementById("settings-line-heights").innerHTML = ["Compact", "Normal", "Relaxed"]
       .map(
         (lh) =>
-          `<button class="settings-size-btn${
-            s.lineHeight === lh ? " active" : ""
-          }"` + ` onclick="Settings._setLineHeight('${lh}')">${lh}</button>`
+          `<button class="settings-size-btn${s.lineHeight === lh ? " active" : ""}"` +
+          ` onclick="Settings._setLineHeight('${lh}')">${lh}</button>`,
       )
       .join("");
   },
 
   _renderParaSpacings(s) {
-    document.getElementById("settings-para-spacings").innerHTML = [
-      "Tight",
-      "Normal",
-      "Relaxed",
-    ]
+    document.getElementById("settings-para-spacings").innerHTML = ["Tight", "Normal", "Relaxed"]
       .map(
         (ps) =>
-          `<button class="settings-size-btn${
-            s.paraSpacing === ps ? " active" : ""
-          }"` + ` onclick="Settings._setParaSpacing('${ps}')">${ps}</button>`
+          `<button class="settings-size-btn${s.paraSpacing === ps ? " active" : ""}"` +
+          ` onclick="Settings._setParaSpacing('${ps}')">${ps}</button>`,
       )
       .join("");
   },
@@ -1007,13 +956,8 @@ const Settings = {
     const updated = { ...s, backgroundId, textColorId, accentId };
     saveSettings(updated);
     applySettingsToDOM(updated);
-    const presetKey = nowDark
-      ? "wiki-last-dark-preset"
-      : "wiki-last-light-preset";
-    localStorage.setItem(
-      presetKey,
-      JSON.stringify({ backgroundId, textColorId, accentId })
-    );
+    const presetKey = nowDark ? "wiki-last-dark-preset" : "wiki-last-light-preset";
+    localStorage.setItem(presetKey, JSON.stringify({ backgroundId, textColorId, accentId }));
     this._render();
   },
 
@@ -1098,8 +1042,7 @@ const Settings = {
         }
 
         const doImport = () => {
-          if (data.bookmarks)
-            localStorage.setItem(BOOKMARKS_KEY, data.bookmarks);
+          if (data.bookmarks) localStorage.setItem(BOOKMARKS_KEY, data.bookmarks);
           if (data.recents) localStorage.setItem(RECENTS_KEY, data.recents);
           if (data.settings) localStorage.setItem(SETTINGS_KEY, data.settings);
           for (const wiki of WIKIS) {
@@ -1112,11 +1055,9 @@ const Settings = {
 
         if (data.version !== 1) {
           _toast(
-            `Backup version ${
-              data.version ?? "unknown"
-            } — format may differ. Import anyway?`,
+            `Backup version ${data.version ?? "unknown"} — format may differ. Import anyway?`,
             8000,
-            doImport
+            doImport,
           );
         } else {
           doImport();
@@ -1162,9 +1103,7 @@ const Theme = {
   toggle() {
     const s = getSettings();
     const isDark = _isDark(s.backgroundId);
-    const savedKey = isDark
-      ? "wiki-last-light-preset"
-      : "wiki-last-dark-preset";
+    const savedKey = isDark ? "wiki-last-light-preset" : "wiki-last-dark-preset";
     const saved = JSON.parse(localStorage.getItem(savedKey) || "null");
     const next =
       saved ||
@@ -1199,12 +1138,13 @@ const Sync = {
     // Bookmarks → FE shape (server order preserved as returned)
     localStorage.setItem(
       BOOKMARKS_KEY,
-      JSON.stringify((bm || []).map((r) => _deriveBookmark(r.wiki_id, r.path)))
+      JSON.stringify((bm || []).map((r) => _deriveBookmark(r.wiki_id, r.path))),
     );
 
     // Reads → per-wiki Sets
     const byWiki = {};
     for (const r of rd || []) {
+      // biome-ignore lint/suspicious/noAssignInExpressions: ||= logical-assign idiom
       (byWiki[r.wiki_id] ||= new Set()).add(r.path);
     }
     for (const wiki of WIKIS) {
@@ -1219,11 +1159,7 @@ const Sync = {
     // Recents → FE shape, ≤6 (BE already trims; respect server order)
     localStorage.setItem(
       RECENTS_KEY,
-      JSON.stringify(
-        (rc || [])
-          .slice(0, RECENTS_MAX)
-          .map((r) => _deriveRecent(r.wiki_id, r.path))
-      )
+      JSON.stringify((rc || []).slice(0, RECENTS_MAX).map((r) => _deriveRecent(r.wiki_id, r.path))),
     );
   },
 

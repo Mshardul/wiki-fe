@@ -1,5 +1,5 @@
-import { api, ApiError } from "./api.js";
-import { state, WIKIS } from "./state.js";
+import { ApiError, api } from "./api.js";
+import { WIKIS, state } from "./state.js";
 import { Sync, getBookmarks, getRecents } from "./storage.js";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -43,11 +43,7 @@ function _collectLocalReads() {
 }
 
 function _hasLocalData() {
-  return (
-    getBookmarks().length > 0 ||
-    getRecents().length > 0 ||
-    _collectLocalReads().length > 0
-  );
+  return getBookmarks().length > 0 || getRecents().length > 0 || _collectLocalReads().length > 0;
 }
 
 async function maybeMigrate() {
@@ -70,7 +66,7 @@ async function maybeMigrate() {
           actionLabel: "Keep them",
           onUndo: () => done(true),
         },
-      })
+      }),
     );
     setTimeout(() => done(false), 12500);
   });
@@ -123,8 +119,8 @@ const AuthModal = {
       panel === "login"
         ? "auth-login-email"
         : panel === "register"
-        ? "auth-reg-email"
-        : "auth-resend-btn";
+          ? "auth-reg-email"
+          : "auth-resend-btn";
     document.getElementById(focusId)?.focus();
   },
 
@@ -132,9 +128,7 @@ const AuthModal = {
     const { rules } = validatePassword(pw);
     const ul = document.getElementById("auth-pw-checklist");
     if (!ul) return;
-    ul.innerHTML = rules
-      .map((r) => `<li class="${r.ok ? "ok" : ""}">${r.label}</li>`)
-      .join("");
+    ul.innerHTML = rules.map((r) => `<li class="${r.ok ? "ok" : ""}">${r.label}</li>`).join("");
   },
 
   _clearErrors() {
@@ -176,12 +170,12 @@ const Auth = {
 
   refreshButtons() {
     const loggedIn = state.session.status === "in";
-    document
-      .querySelectorAll(".topbar-auth-btn .auth-btn-label")
-      .forEach((el) => (el.textContent = loggedIn ? "Logout" : "Login"));
-    document
-      .querySelectorAll(".topbar-auth-btn")
-      .forEach((b) => (b.title = loggedIn ? "Logout" : "Login"));
+    document.querySelectorAll(".topbar-auth-btn .auth-btn-label").forEach((el) => {
+      el.textContent = loggedIn ? "Logout" : "Login";
+    });
+    document.querySelectorAll(".topbar-auth-btn").forEach((b) => {
+      b.title = loggedIn ? "Logout" : "Login";
+    });
   },
 
   // Topbar button handler.
@@ -209,7 +203,7 @@ const Auth = {
       } else {
         AuthModal._showError(
           "auth-login-error",
-          e instanceof ApiError ? e.message : "Login failed"
+          e instanceof ApiError ? e.message : "Login failed",
         );
       }
     }
@@ -227,7 +221,7 @@ const Auth = {
     } catch (e) {
       AuthModal._showError(
         "auth-reg-error",
-        e instanceof ApiError ? e.message : "Registration failed"
+        e instanceof ApiError ? e.message : "Registration failed",
       );
     }
   },
@@ -264,21 +258,21 @@ const Auth = {
       ?.addEventListener("click", () =>
         this.login(
           document.getElementById("auth-login-email").value.trim(),
-          document.getElementById("auth-login-password").value
-        )
+          document.getElementById("auth-login-password").value,
+        ),
       );
     document
       .getElementById("auth-reg-submit")
       ?.addEventListener("click", () =>
         this.register(
           document.getElementById("auth-reg-email").value.trim(),
-          document.getElementById("auth-reg-password").value
-        )
+          document.getElementById("auth-reg-password").value,
+        ),
       );
     document
       .getElementById("auth-resend-btn")
       ?.addEventListener("click", () =>
-        this.resend(document.getElementById("auth-reg-email").value.trim())
+        this.resend(document.getElementById("auth-reg-email").value.trim()),
       );
     // panel swaps
     document

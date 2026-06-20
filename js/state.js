@@ -30,8 +30,7 @@ const WIKIS = [
   const dupes = WIKIS.map((w) => w.id).filter((id) => seen.size === seen.add(id).size);
   if (dupes.length) {
     console.warn(
-      `WIKIS registry has duplicate id(s): ${[...new Set(dupes)].join(", ")}. ` +
-        "Storage keys will collide. Ids must be unique."
+      `WIKIS registry has duplicate id(s): ${[...new Set(dupes)].join(", ")}. Storage keys will collide. Ids must be unique.`,
     );
   }
 }
@@ -44,27 +43,23 @@ const mathExtension = () => {
     {
       type: "lang",
       regex: /\$\$([\s\S]+?)\$\$/g, // Block math
-      replace: (match, content) =>
-        "¨D" + btoa(unescape(encodeURIComponent(content))) + "¨D",
+      replace: (match, content) => `¨D${btoa(unescape(encodeURIComponent(content)))}¨D`,
     },
     {
       type: "lang",
       // Inline math: requires non-space characters next to the $ signs to avoid matching bash prompts
       regex: /\$(?!\s)([^$\n]*?\S)\$/g,
-      replace: (match, content) =>
-        "¨d" + btoa(unescape(encodeURIComponent(content))) + "¨d",
+      replace: (match, content) => `¨d${btoa(unescape(encodeURIComponent(content)))}¨d`,
     },
     {
       type: "output",
       regex: /¨D([A-Za-z0-9+/=]+)¨D/g,
-      replace: (match, content) =>
-        "$$" + decodeURIComponent(escape(atob(content))) + "$$",
+      replace: (match, content) => `$$${decodeURIComponent(escape(atob(content)))}$$`,
     },
     {
       type: "output",
       regex: /¨d([A-Za-z0-9+/=]+)¨d/g,
-      replace: (match, content) =>
-        "$" + decodeURIComponent(escape(atob(content))) + "$",
+      replace: (match, content) => `$${decodeURIComponent(escape(atob(content)))}$`,
     },
   ];
 };

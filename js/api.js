@@ -2,11 +2,8 @@ import { state } from "./state.js";
 
 /* Base URL: localhost → local BE; else prod. BE URL is public by nature
    (browser must reach it) — not a secret. Security = CORS + cookie + BE validation. */
-const _isLocal =
-  location.hostname === "localhost" || location.hostname === "127.0.0.1";
-const BACKEND_URL = _isLocal
-  ? "http://localhost:8001"
-  : "https://wiki-be.fly.dev"; // matches BE prod host; update when custom domain bought
+const _isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+const BACKEND_URL = _isLocal ? "http://localhost:8001" : "https://wiki-be.fly.dev"; // matches BE prod host; update when custom domain bought
 const API = `${BACKEND_URL}/api/v1`;
 
 class ApiError extends Error {
@@ -42,7 +39,9 @@ async function _request(method, path, body, { silent401 = false } = {}) {
       state.session = { user: null, status: "out" };
       document.dispatchEvent(new CustomEvent("wiki:session-expired"));
       // allow future 401s to fire again after the user re-auths
-      setTimeout(() => (_sessionExpiredFired = false), 0);
+      setTimeout(() => {
+        _sessionExpiredFired = false;
+      }, 0);
     }
     throw new ApiError("UNAUTHORIZED", "Session expired", 401);
   }
@@ -58,11 +57,7 @@ async function _request(method, path, body, { silent401 = false } = {}) {
 
   if (!res.ok) {
     const env = data?.error || {};
-    throw new ApiError(
-      env.code || "ERROR",
-      env.message || res.statusText,
-      res.status
-    );
+    throw new ApiError(env.code || "ERROR", env.message || res.statusText, res.status);
   }
   return data;
 }
@@ -75,8 +70,7 @@ const api = {
   auth: {
     // boot probe: 401 = anonymous, must not trigger the global session-expired flow
     me: () => _request("GET", "/auth/me", undefined, { silent401: true }),
-    register: (email, password) =>
-      api.post("/auth/register", { email, password }),
+    register: (email, password) => api.post("/auth/register", { email, password }),
     // login 401 = bad credentials (a normal auth failure), not an expired
     // session — bypass the global handler so the real error reaches the caller
     login: (email, password) =>

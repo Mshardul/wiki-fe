@@ -44,21 +44,9 @@ body.distraction-free .sticky-section-header {
 .article-hero-mesh {
   position: absolute;
   inset: -40%;
-  background: radial-gradient(
-      ellipse at 18% 55%,
-      rgba(99, 102, 241, 0.22) 0%,
-      transparent 52%
-    ),
-    radial-gradient(
-      ellipse at 78% 25%,
-      rgba(168, 85, 247, 0.14) 0%,
-      transparent 48%
-    ),
-    radial-gradient(
-      ellipse at 52% 85%,
-      rgba(56, 130, 246, 0.1) 0%,
-      transparent 42%
-    );
+  background: radial-gradient(ellipse at 18% 55%, rgba(99, 102, 241, 0.22) 0%, transparent 52%),
+    radial-gradient(ellipse at 78% 25%, rgba(168, 85, 247, 0.14) 0%, transparent 48%),
+    radial-gradient(ellipse at 52% 85%, rgba(56, 130, 246, 0.1) 0%, transparent 42%);
   animation: heroDrift 22s ease-in-out infinite alternate;
 }
 
@@ -95,11 +83,7 @@ body.distraction-free .sticky-section-header {
 }
 
 .h1-accent {
-  background: linear-gradient(
-    128deg,
-    var(--accent-light) 0%,
-    rgba(168, 85, 247, 0.92) 100%
-  );
+  background: linear-gradient(128deg, var(--accent-light) 0%, rgba(168, 85, 247, 0.92) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -178,8 +162,7 @@ body.distraction-free .sticky-section-header {
   color: var(--text-muted);
   border-left: 2px solid transparent;
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
-  transition: color var(--t-fast), border-color var(--t-fast),
-    background var(--t-fast);
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
   line-height: 1.4;
   cursor: pointer;
 }
@@ -614,8 +597,8 @@ pre.has-line-numbers {
   cursor: pointer;
   opacity: 0;
   pointer-events: auto;
-  transition: color var(--t-fast), border-color var(--t-fast),
-    background var(--t-fast), opacity var(--t-fast);
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast), opacity
+    var(--t-fast);
   z-index: 2;
 }
 .markdown-body pre:hover .copy-btn {
@@ -729,8 +712,8 @@ pre.has-line-numbers {
 .markdown-body blockquote.callout {
   border-radius: var(--r);
   padding: var(--s4) var(--s5) var(--s4) var(--s8);
-  border-left-width: 3px;
   border: 1px solid;
+  border-left-width: 3px;
   backdrop-filter: var(--glass-blur-sm);
   -webkit-backdrop-filter: var(--glass-blur-sm);
   position: relative;
@@ -1134,8 +1117,7 @@ pre.has-line-numbers {
   border-radius: var(--r-full);
   padding: 3px 12px;
   text-decoration: none !important;
-  transition: background var(--t-fast), border-color var(--t-fast),
-    color var(--t-fast);
+  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
 }
 .prereq-chip:hover {
   background: var(--accent-dim);
@@ -1166,8 +1148,7 @@ pre.has-line-numbers {
   color: var(--text-muted);
   cursor: pointer;
   white-space: nowrap;
-  transition: color var(--t-fast), border-color var(--t-fast),
-    background var(--t-fast);
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
 }
 .callout-expand-btn:hover {
   color: var(--text-body);
@@ -1217,8 +1198,7 @@ pre.has-line-numbers {
   cursor: pointer;
   z-index: 1;
   white-space: nowrap;
-  transition: color var(--t-fast), border-color var(--t-fast),
-    background var(--t-fast);
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
 }
 .code-expand-btn:hover {
   color: var(--text-body);

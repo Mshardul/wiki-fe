@@ -66,8 +66,8 @@
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border-bottom: 1px solid transparent;
-  transition: background var(--t), border-color var(--t),
-    backdrop-filter var(--t), -webkit-backdrop-filter var(--t);
+  transition: background var(--t), border-color var(--t), backdrop-filter var(--t),
+    -webkit-backdrop-filter var(--t);
 }
 .page-topbar.topbar--scrolled,
 .content-topbar.topbar--scrolled {
@@ -102,8 +102,8 @@
   opacity: 0;
   pointer-events: none;
   transform: translateY(8px);
-  transition: opacity var(--t), transform var(--t), color var(--t-fast),
-    border-color var(--t-fast), box-shadow var(--t-fast);
+  transition: opacity var(--t), transform var(--t), color var(--t-fast), border-color var(--t-fast),
+    box-shadow var(--t-fast);
   z-index: 200;
   box-shadow: var(--shadow-sm);
 }
@@ -429,8 +429,7 @@
   border: 1px solid var(--border);
   color: var(--text-muted);
   flex-shrink: 0;
-  transition: color var(--t-fast), border-color var(--t-fast),
-    background var(--t-fast);
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
 }
 .topbar-icon-btn svg {
   width: 15px;
@@ -535,8 +534,7 @@
   color: var(--text-body);
   text-align: left;
   cursor: pointer;
-  transition: border-color var(--t-fast), background var(--t-fast),
-    color var(--t-fast);
+  transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -568,8 +566,7 @@
   color: var(--text-muted);
   text-align: center;
   cursor: pointer;
-  transition: border-color var(--t-fast), color var(--t-fast),
-    background var(--t-fast);
+  transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
 }
 .settings-size-btn:hover {
   color: var(--text-body);

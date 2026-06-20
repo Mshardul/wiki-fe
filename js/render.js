@@ -1,50 +1,50 @@
 import {
-  WIKIS,
-  state,
-  indexCache,
-  readTimeCache,
-  markStubPath,
-  getShapeFingerprint,
-  saveShapeFingerprint,
+  ArticleFind,
+  QuizMode,
+  addAnchorLinks,
+  addCodeBlockHeader,
+  addCodeLangLabels,
+  addCollapsibleCallouts,
+  addCollapsibleCodeBlocks,
+  addCopyButtons,
+  addDiagramZoom,
+  addImageLightbox,
+  addLineNumbers,
+  addQuizTables,
+  addStickySection,
+  addTableScrollCues,
+  buildTOC,
+  cleanupFocusMode,
+  cleanupStickySection,
+  renderMermaidDiagrams,
+  renderPrerequisites,
+  styleCallouts,
+} from "./content.js";
+import {
   STUB_THRESHOLD,
-  mdConverter,
+  WIKIS,
   escHtml,
   fuzzyMatch,
+  getShapeFingerprint,
+  indexCache,
+  markStubPath,
+  mdConverter,
+  readTimeCache,
+  saveShapeFingerprint,
+  state,
 } from "./state.js";
 import {
+  Bookmarks,
   addToRecents,
-  updateBookmarkBtn,
-  updateReadBtn,
-  updateOfflineBtn,
-  renderBookmarksSection,
-  renderRecentsSection,
   isRead,
   markRead,
   markUnread,
-  Bookmarks,
+  renderBookmarksSection,
+  renderRecentsSection,
+  updateBookmarkBtn,
+  updateOfflineBtn,
+  updateReadBtn,
 } from "./storage.js";
-import {
-  addCodeBlockHeader,
-  addCopyButtons,
-  styleCallouts,
-  renderPrerequisites,
-  buildTOC,
-  addAnchorLinks,
-  renderMermaidDiagrams,
-  addLineNumbers,
-  addCollapsibleCodeBlocks,
-  addCollapsibleCallouts,
-  addCodeLangLabels,
-  addImageLightbox,
-  addDiagramZoom,
-  addTableScrollCues,
-  addQuizTables,
-  QuizMode,
-  cleanupFocusMode,
-  addStickySection,
-  cleanupStickySection,
-  ArticleFind,
-} from "./content.js";
 
 /* ═══════════════════════════════════════════════════════════════
    VIEW MANAGEMENT
@@ -52,9 +52,7 @@ import {
 const progressBar = document.getElementById("reading-progress");
 
 function showView(id) {
-  document
-    .querySelectorAll(".view")
-    .forEach((v) => v.classList.remove("active"));
+  document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
   document.getElementById(id).classList.add("active");
   state.currentView = id.replace("view-", "");
 
@@ -142,7 +140,7 @@ async function resolveSlugAndRender(wiki, slug) {
         `No "${slug}" — did you mean ${suggestion.title}?`,
         8000,
         () => navigate(`${wiki.id}/${suggestion.slug}`),
-        "Open"
+        "Open",
       );
       return;
     }
@@ -184,9 +182,7 @@ function renderHome() {
     (w) => `
     <div class="wiki-card${
       state.currentWikiId === w.id ? " active" : ""
-    }" data-wiki-id="${w.id}" onclick="navigate('${
-      w.id
-    }')" role="button" tabindex="0"
+    }" data-wiki-id="${w.id}" onclick="navigate('${w.id}')" role="button" tabindex="0"
          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigate('${
            w.id
          }')}">
@@ -200,7 +196,7 @@ function renderHome() {
         <span class="wiki-card-arrow">→</span>
       </div>
     </div>
-  `
+  `,
   ).join("");
 
   showView("view-home");
@@ -214,10 +210,7 @@ async function renderIndex(wiki) {
   state.currentWikiId = wiki.id;
 
   // Breadcrumb & hero
-  setBreadcrumb("index-breadcrumb", [
-    { label: "Home", href: "#" },
-    { label: wiki.title },
-  ]);
+  setBreadcrumb("index-breadcrumb", [{ label: "Home", href: "#" }, { label: wiki.title }]);
   document.getElementById("index-title").textContent = wiki.title;
   document.getElementById("index-subtitle").textContent = wiki.description;
 
@@ -239,18 +232,17 @@ async function renderIndex(wiki) {
     IndexFilter.apply();
 
     sectionsEl.classList.add("index-sections--loading");
-    const scheduleIdle =
-      window.requestIdleCallback ?? ((fn) => setTimeout(fn, 1));
+    const scheduleIdle = window.requestIdleCallback ?? ((fn) => setTimeout(fn, 1));
     scheduleIdle(() =>
       populateIndexReadTimes().finally(() =>
-        sectionsEl.classList.remove("index-sections--loading")
-      )
+        sectionsEl.classList.remove("index-sections--loading"),
+      ),
     );
 
     const savedScroll = localStorage.getItem(`wiki-index-scroll-${wiki.id}`);
     if (savedScroll) {
       void document.documentElement.scrollHeight;
-      window.scrollTo({ top: parseInt(savedScroll, 10), behavior: "instant" });
+      window.scrollTo({ top: Number.parseInt(savedScroll, 10), behavior: "instant" });
     }
   } catch (err) {
     sectionsEl.innerHTML = `<p class="error">Failed to load index. (${escHtml(err.message)})</p>`;
@@ -263,9 +255,7 @@ function renderIndexSections(sections, wiki) {
     .map((section) => {
       const collapseKey = `wiki-section-collapsed-${wiki.id}-${section.heading}`;
       const isCollapsed = !!localStorage.getItem(collapseKey);
-      const escapedHeading = section.heading
-        .replace(/\\/g, "\\\\")
-        .replace(/'/g, "\\'");
+      const escapedHeading = section.heading.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
       return `
     <div class="index-section${
       isCollapsed ? " section--collapsed" : ""
@@ -290,8 +280,8 @@ function renderIndexSections(sections, wiki) {
                data-desc="${escHtml(card.description)}"
                aria-label="${escHtml(card.title)}"
                onclick="navigateToContent('${wiki.id}', '${encodeURIComponent(
-              card.path
-            )}', '${encodeURIComponent(card.title)}', '${card.slug}')"
+                 card.path,
+               )}', '${encodeURIComponent(card.title)}', '${card.slug}')"
                role="button" tabindex="0"
                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
             <div class="index-card-header">
@@ -300,15 +290,13 @@ function renderIndexSections(sections, wiki) {
             </div>
             <p class="index-card-desc">${escHtml(card.description)}</p>
             <div class="index-card-meta">
-              <span class="index-card-read-time" data-path="${escHtml(
-                card.path
-              )}">…</span>
+              <span class="index-card-read-time" data-path="${escHtml(card.path)}">…</span>
               <span class="index-card-read-dot ${
                 isRead(card.path) ? "visible" : ""
               }" title="Read"></span>
             </div>
           </div>
-        `
+        `,
           )
           .join("")}
       </div>
@@ -366,8 +354,7 @@ const IndexFilter = {
       sectionEl.querySelectorAll(".index-card").forEach((card) => {
         const title = (card.dataset.title || "").toLowerCase();
         const desc = (card.dataset.desc || "").toLowerCase();
-        const path = card.querySelector(".index-card-read-time[data-path]")
-          ?.dataset.path;
+        const path = card.querySelector(".index-card-read-time[data-path]")?.dataset.path;
         const matchesText =
           !this._query || title.includes(this._query) || desc.includes(this._query);
         const matchesUnread = !this._unread || (path && !isRead(path));
@@ -384,17 +371,12 @@ const _indexFilterInput = document.getElementById("index-filter-input");
 if (_indexFilterInput) {
   _indexFilterInput.addEventListener("input", () => {
     clearTimeout(IndexFilter._debounce);
-    IndexFilter._debounce = setTimeout(
-      () => IndexFilter.setQuery(_indexFilterInput.value),
-      120
-    );
+    IndexFilter._debounce = setTimeout(() => IndexFilter.setQuery(_indexFilterInput.value), 120);
   });
 }
 const _indexFilterUnreadBtn = document.getElementById("index-filter-unread");
 if (_indexFilterUnreadBtn) {
-  _indexFilterUnreadBtn.addEventListener("click", () =>
-    IndexFilter.toggleUnread()
-  );
+  _indexFilterUnreadBtn.addEventListener("click", () => IndexFilter.toggleUnread());
 }
 
 /* ─── Index-card swipe: right = bookmark, left = read toggle ─── */
@@ -414,8 +396,7 @@ function bindIndexCardSwipe(wiki) {
   let sy = 0;
   let axis = null; // null | "x" | "y"
 
-  const pathOf = (c) =>
-    c.querySelector(".index-card-read-time[data-path]")?.dataset.path || null;
+  const pathOf = (c) => c.querySelector(".index-card-read-time[data-path]")?.dataset.path || null;
 
   const reset = () => {
     if (card) {
@@ -443,7 +424,7 @@ function bindIndexCardSwipe(wiki) {
       axis = null;
       card.style.transition = "";
     },
-    { passive: true }
+    { passive: true },
   );
 
   container.addEventListener(
@@ -453,8 +434,7 @@ function bindIndexCardSwipe(wiki) {
       const dx = e.touches[0].clientX - sx;
       const dy = e.touches[0].clientY - sy;
       if (!axis) {
-        if (Math.abs(dx) < CARD_SWIPE_DEADZONE && Math.abs(dy) < CARD_SWIPE_DEADZONE)
-          return;
+        if (Math.abs(dx) < CARD_SWIPE_DEADZONE && Math.abs(dy) < CARD_SWIPE_DEADZONE) return;
         axis = Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
         if (axis === "x") card.classList.add("card-swiping");
         else {
@@ -469,7 +449,7 @@ function bindIndexCardSwipe(wiki) {
         card.classList.toggle("swipe-left", dx < 0);
       }
     },
-    { passive: false }
+    { passive: false },
   );
 
   container.addEventListener(
@@ -485,7 +465,7 @@ function bindIndexCardSwipe(wiki) {
         const now = Bookmarks.togglePath(
           _swipeWiki.id,
           path,
-          card.querySelector(".index-card-title")?.textContent
+          card.querySelector(".index-card-title")?.textContent,
         );
         renderBookmarksSection(_swipeWiki);
         showToast(now ? "Bookmarked" : "Bookmark removed");
@@ -500,7 +480,7 @@ function bindIndexCardSwipe(wiki) {
       }
       reset();
     },
-    { passive: true }
+    { passive: true },
   );
 
   container.addEventListener("touchcancel", reset, { passive: true });
@@ -525,9 +505,7 @@ function readingTime(text) {
 }
 
 async function populateIndexReadTimes() {
-  const badges = Array.from(
-    document.querySelectorAll(".index-card-read-time[data-path]")
-  );
+  const badges = Array.from(document.querySelectorAll(".index-card-read-time[data-path]"));
 
   await Promise.all(
     badges.map(async (badge) => {
@@ -555,7 +533,7 @@ async function populateIndexReadTimes() {
       } catch {
         badge.textContent = "";
       }
-    })
+    }),
   );
 
   // Update section counts to available (non-stub) articles only
@@ -563,9 +541,7 @@ async function populateIndexReadTimes() {
     const countEl = sectionEl.querySelector(".section-count");
     if (!countEl) return;
     const cards = sectionEl.querySelectorAll(".index-card");
-    const available = sectionEl.querySelectorAll(
-      ".index-card:not(.index-card--unavailable)"
-    );
+    const available = sectionEl.querySelectorAll(".index-card:not(.index-card--unavailable)");
     countEl.textContent = available.length;
 
     // Mark sections where every card is a stub
@@ -596,8 +572,7 @@ async function fetchWikiIndex(wiki) {
     // Quota full: evict all other wiki-index-* entries then retry once
     for (let i = sessionStorage.length - 1; i >= 0; i--) {
       const k = sessionStorage.key(i);
-      if (k && k.startsWith("wiki-index-") && k !== ssKey)
-        sessionStorage.removeItem(k);
+      if (k?.startsWith("wiki-index-") && k !== ssKey) sessionStorage.removeItem(k);
     }
     try {
       sessionStorage.setItem(ssKey, JSON.stringify(sections));
@@ -611,9 +586,7 @@ async function updateArticleCounts() {
     try {
       const sections = await fetchWikiIndex(wiki);
       const count = sections.reduce((sum, s) => sum + s.cards.length, 0);
-      const el = document.querySelector(
-        `[data-wiki-id="${wiki.id}"] .wiki-card-count`
-      );
+      const el = document.querySelector(`[data-wiki-id="${wiki.id}"] .wiki-card-count`);
       if (el) el.textContent = `${count} articles`;
     } catch {}
   }
@@ -642,16 +615,14 @@ function parseIndexMd(markdown, basePath) {
       if (/^\|\s*[-:]+/.test(line)) continue; // separator row
 
       // Match table data rows: | [Title](./path.md) | Description text |
-      const m = line.match(
-        /^\|\s*\[([^\]]+)\]\(([^)]+\.md)\)\s*\|\s*([^|]+?)\s*\|/
-      );
+      const m = line.match(/^\|\s*\[([^\]]+)\]\(([^)]+\.md)\)\s*\|\s*([^|]+?)\s*\|/);
       if (m) {
         const title = m[1].trim();
         const relPath = m[2].trim();
         const description = m[3].trim();
 
         // Resolve relative path: ./components/foo.md → basePath/components/foo.md
-        const fullPath = basePath + "/" + relPath.replace(/^\.\//, "");
+        const fullPath = `${basePath}/${relPath.replace(/^\.\//, "")}`;
         const slug = relPath.split("/").pop().replace(/\.md$/, "");
 
         cards.push({ title, path: fullPath, slug, description });
@@ -689,14 +660,8 @@ function navigateToContent(wikiId, encodedPath, encodedTitle, slug) {
   renderContent(wiki, filePath, title, true, slug);
 }
 
-async function renderContent(
-  wiki,
-  filePath,
-  title,
-  pushNav = true,
-  slug = null
-) {
-  filePath = normalizePath(filePath);
+async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) {
+  const filePath = normalizePath(rawPath);
   const gen = ++_renderGen;
 
   state.currentWikiId = wiki.id;
@@ -708,12 +673,8 @@ async function renderContent(
   const derivedSlug = slug || filePath.split("/").pop().replace(/\.md$/, "");
 
   if (pushNav) {
-    const url = location.pathname + `#${wiki.id}/${derivedSlug}`;
-    history.pushState(
-      { hash: `${wiki.id}/${derivedSlug}`, filePath, title },
-      "",
-      url
-    );
+    const url = `${location.pathname}#${wiki.id}/${derivedSlug}`;
+    history.pushState({ hash: `${wiki.id}/${derivedSlug}`, filePath, title }, "", url);
   }
 
   // Breadcrumb
@@ -759,8 +720,7 @@ async function renderContent(
 
     // Set reading time immediately after fetch
     if (readTimeBadge) {
-      readTimeBadge.textContent =
-        readTimeCache[filePath] || readingTime(markdown);
+      readTimeBadge.textContent = readTimeCache[filePath] || readingTime(markdown);
       readTimeCache[filePath] = readTimeBadge.textContent;
     }
 
@@ -784,8 +744,7 @@ async function renderContent(
 
     // DOMPurify (XSS Protection)
     const rawHtml = mdConverter.makeHtml(markdown);
-    body.innerHTML =
-      typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(rawHtml) : rawHtml;
+    body.innerHTML = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(rawHtml) : rawHtml;
 
     // KaTeX rendering
     if (typeof renderMathInElement !== "undefined") {
@@ -803,9 +762,7 @@ async function renderContent(
 
     // Syntax highlighting
     if (typeof hljs !== "undefined") {
-      body
-        .querySelectorAll("pre code")
-        .forEach((block) => hljs.highlightElement(block));
+      body.querySelectorAll("pre code").forEach((block) => hljs.highlightElement(block));
     }
 
     // Post-processing — enhancements only.
@@ -813,9 +770,7 @@ async function renderContent(
       // Line numbers (after hljs so it runs on highlighted HTML)
       addLineNumbers(body);
 
-      addCodeBlockHeader(body, () =>
-        showToast("Copy failed — clipboard access denied")
-      );
+      addCodeBlockHeader(body, () => showToast("Copy failed — clipboard access denied"));
       styleCallouts(body);
       addCollapsibleCallouts(body);
 
@@ -831,7 +786,7 @@ async function renderContent(
       addAnchorLinks(
         body,
         () => showToast("Copy failed — clipboard access denied"),
-        () => showToast("Link copied")
+        () => showToast("Link copied"),
       );
 
       // Accent first word of h1 with gradient
@@ -845,10 +800,7 @@ async function renderContent(
             const accentSpan = document.createElement("span");
             accentSpan.className = "h1-accent";
             accentSpan.textContent = text.slice(0, spaceIdx);
-            firstNode.replaceWith(
-              accentSpan,
-              document.createTextNode(text.slice(spaceIdx))
-            );
+            firstNode.replaceWith(accentSpan, document.createTextNode(text.slice(spaceIdx)));
           }
         }
       }
@@ -908,10 +860,10 @@ async function renderContent(
             // Show title if h1 is scrolled ABOVE the viewport
             topbarTitle.classList.toggle(
               "visible",
-              !entry.isIntersecting && entry.boundingClientRect.top < 0
+              !entry.isIntersecting && entry.boundingClientRect.top < 0,
             );
           },
-          { rootMargin: "-44px 0px 0px 0px" }
+          { rootMargin: "-44px 0px 0px 0px" },
         );
         state.titleObserver.observe(h1);
       }
@@ -923,22 +875,22 @@ async function renderContent(
       if (target)
         requestAnimationFrame(() =>
           requestAnimationFrame(() =>
-            target.scrollIntoView({ behavior: "smooth", block: "start" })
-          )
+            target.scrollIntoView({ behavior: "smooth", block: "start" }),
+          ),
         );
     }
 
     if (!anchor) {
       const _saved = localStorage.getItem(`scroll-${wiki.id}-${filePath}`);
       if (_saved) {
-        const _targetY = parseInt(_saved, 10);
+        const _targetY = Number.parseInt(_saved, 10);
         document.fonts.ready.then(() =>
           requestAnimationFrame(() =>
             requestAnimationFrame(() => {
               if (gen !== _renderGen || state.currentView !== "content") return;
               window.scrollTo({ top: _targetY, behavior: "instant" });
-            })
-          )
+            }),
+          ),
         );
       }
     }
@@ -962,7 +914,7 @@ window.addEventListener(
   (e) => {
     _lastPointerWasTouch = e.pointerType !== "mouse";
   },
-  { capture: true }
+  { capture: true },
 );
 
 function interceptMdLinks(contentEl, wiki, currentFilePath) {
@@ -1016,10 +968,7 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
     // Hover logic — skip on touch
     link.addEventListener("mouseenter", () => {
       if (_lastPointerWasTouch) return;
-      hoverPreviewTimer = setTimeout(
-        () => showHoverPreview(link, resolvedPath),
-        400
-      );
+      hoverPreviewTimer = setTimeout(() => showHoverPreview(link, resolvedPath), 400);
     });
 
     link.addEventListener("mouseleave", () => {
@@ -1054,7 +1003,7 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
           showHoverPreview(link, resolvedPath, { asSheet: true });
         }, LONGPRESS_MS);
       },
-      { passive: true }
+      { passive: true },
     );
     link.addEventListener(
       "touchmove",
@@ -1068,7 +1017,7 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
           cancelLongPress();
         }
       },
-      { passive: true }
+      { passive: true },
     );
     link.addEventListener("touchend", cancelLongPress, { passive: true });
     link.addEventListener("touchcancel", cancelLongPress, { passive: true });
@@ -1112,7 +1061,7 @@ document.addEventListener(
     if (!previewEl?.classList.contains("hover-preview--sheet-open")) return;
     if (!e.target.closest("#hover-preview")) closePeekSheet();
   },
-  { passive: true }
+  { passive: true },
 );
 
 async function showHoverPreview(link, path, { asSheet = false } = {}) {
@@ -1130,10 +1079,7 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
     previewEl.style.top = "";
     previewEl.style.left = "";
   } else {
-    previewEl.classList.remove(
-      "hover-preview--sheet",
-      "hover-preview--sheet-open"
-    );
+    previewEl.classList.remove("hover-preview--sheet", "hover-preview--sheet-open");
     // Position preview — prefer below, flip above when near viewport bottom
     const rect = link.getBoundingClientRect();
     const PREVIEW_H = 160;
@@ -1152,12 +1098,7 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
   previewEl.innerHTML = '<div class="loading">Loading preview...</div>';
   previewEl.classList.add("visible");
 
-  const SKIP_PREFIXES = [
-    "prerequisites:",
-    "prerequisites",
-    "prerequisite",
-    "table of contents",
-  ];
+  const SKIP_PREFIXES = ["prerequisites:", "prerequisites", "prerequisite", "table of contents"];
 
   try {
     const md = await fetchText(path, signal);
@@ -1167,7 +1108,7 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
 
     // Search whole doc for TLDR section
     const tldrMatch = md.match(/##\s*TL;?DR\s*\n([\s\S]*?)(?=\n##|\n#|$)/i);
-    if (tldrMatch && tldrMatch[1].trim()) {
+    if (tldrMatch?.[1].trim()) {
       extract = tldrMatch[1].trim();
     } else {
       // Fallback: first substantive paragraph that isn't prereqs/TOC/heading
@@ -1178,20 +1119,17 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
           .find((p) => {
             const t = p.trim().toLowerCase();
             return (
-              t.length > 20 &&
-              !t.startsWith("#") &&
-              !SKIP_PREFIXES.some((s) => t.startsWith(s))
+              t.length > 20 && !t.startsWith("#") && !SKIP_PREFIXES.some((s) => t.startsWith(s))
             );
           })
           ?.trim() || "";
     }
 
     if (!extract) throw new Error("Empty");
-    if (extract.length > 350) extract = extract.slice(0, 350) + "...";
+    if (extract.length > 350) extract = `${extract.slice(0, 350)}...`;
 
     const rawHtml = mdConverter.makeHtml(extract);
-    previewEl.innerHTML =
-      typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(rawHtml) : rawHtml;
+    previewEl.innerHTML = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(rawHtml) : rawHtml;
 
     if (typeof renderMathInElement !== "undefined") {
       renderMathInElement(previewEl, {
@@ -1204,8 +1142,7 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
     }
   } catch (err) {
     if (err.name === "AbortError") return;
-    previewEl.innerHTML =
-      '<p style="color:var(--text-muted)">Preview not available.</p>';
+    previewEl.innerHTML = '<p style="color:var(--text-muted)">Preview not available.</p>';
   }
 }
 
@@ -1244,10 +1181,7 @@ function setBreadcrumb(elId, items) {
 async function fetchText(path, signal) {
   let res;
   try {
-    res = await fetch(
-      new URL(path, location.href).href,
-      signal ? { signal } : {}
-    );
+    res = await fetch(new URL(path, location.href).href, signal ? { signal } : {});
   } catch (err) {
     if (err.name === "AbortError") throw err;
     throw new Error(`Network error — check your connection (${err.message})`);
@@ -1273,10 +1207,7 @@ async function inlineSvgImages(contentEl) {
         const clean = DOMPurify.sanitize(raw, {
           USE_PROFILES: { svg: true, svgFilters: true },
         });
-        const doc = new DOMParser().parseFromString(
-          clean,
-          "image/svg+xml"
-        );
+        const doc = new DOMParser().parseFromString(clean, "image/svg+xml");
         const svg = doc.querySelector("svg");
         if (!svg || doc.querySelector("parsererror")) return;
         svg.classList.add("inline-svg");
@@ -1288,7 +1219,7 @@ async function inlineSvgImages(contentEl) {
       } catch {
         /* leave the <img> in place on any failure */
       }
-    })
+    }),
   );
 }
 
@@ -1296,9 +1227,7 @@ async function inlineSvgImages(contentEl) {
 function buildLoadingSkeleton(fingerprint) {
   const line = (w) => `<div class="skeleton-line" style="width:${w}"></div>`;
   const para = () =>
-    `<div class="skeleton-para">${line("100%")}${line("96%")}${line(
-      "88%"
-    )}${line("60%")}</div>`;
+    `<div class="skeleton-para">${line("100%")}${line("96%")}${line("88%")}${line("60%")}</div>`;
 
   if (!fingerprint) {
     return `<div class="skeleton" aria-hidden="true">
@@ -1369,14 +1298,10 @@ async function renderRelatedArticles(wiki, currentPath) {
     let sectionName = "";
 
     for (const section of sections) {
-      const idx = section.cards.findIndex(
-        (c) => normalizePath(c.path) === currentPath
-      );
+      const idx = section.cards.findIndex((c) => normalizePath(c.path) === currentPath);
       if (idx !== -1) {
         sectionName = section.heading;
-        related = section.cards
-          .filter((c) => c.path !== currentPath)
-          .slice(0, 3);
+        related = section.cards.filter((c) => c.path !== currentPath).slice(0, 3);
         break;
       }
     }
@@ -1393,13 +1318,13 @@ async function renderRelatedArticles(wiki, currentPath) {
             (card) => `
           <div class="related-card"
                onclick="navigateToContent('${wiki.id}','${encodeURIComponent(
-              card.path
-            )}','${encodeURIComponent(card.title)}','${card.slug}')"
+                 card.path,
+               )}','${encodeURIComponent(card.title)}','${card.slug}')"
                role="button" tabindex="0"
                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
             <span class="related-card-title">${escHtml(card.title)}</span>
             <span class="related-card-arrow">→</span>
-          </div>`
+          </div>`,
           )
           .join("")}
       </div>`;

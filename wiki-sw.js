@@ -23,8 +23,8 @@ self.addEventListener("install", (e) => {
             "./js/auth.js",
             "./js/api.js",
           ])
-          .catch(() => {})
-      )
+          .catch(() => {}),
+      ),
   );
 });
 
@@ -38,10 +38,10 @@ self.addEventListener("activate", (e) => {
           Promise.all(
             keys
               .filter((k) => k !== SHELL_CACHE && k !== ARTICLE_CACHE)
-              .map((k) => caches.delete(k))
-          )
+              .map((k) => caches.delete(k)),
+          ),
         ),
-    ])
+    ]),
   );
 });
 
@@ -56,9 +56,7 @@ self.addEventListener("fetch", (e) => {
     e.respondWith(
       caches
         .open(ARTICLE_CACHE)
-        .then((cache) =>
-          cache.match(request).then((hit) => hit || fetch(request))
-        )
+        .then((cache) => cache.match(request).then((hit) => hit || fetch(request))),
     );
     return;
   }
@@ -73,6 +71,6 @@ self.addEventListener("fetch", (e) => {
         }
         return res;
       })
-      .catch(() => caches.match(request))
+      .catch(() => caches.match(request)),
   );
 });

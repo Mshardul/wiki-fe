@@ -1,45 +1,45 @@
-import { state, WIKIS, escHtml } from "./state.js";
+import { Auth, AuthModal } from "./auth.js";
 import {
-  applySettingsToDOM,
-  getSettings,
-  initOsThemeListener,
-  Settings,
-  Bookmarks,
-  ReadToggle,
-  Offline,
-  clearRecents,
-  markRead,
-  updateReadBtn,
-  saveScrollPos,
-  getRecents,
-  saveRecents,
-  getBookmarks,
-  saveBookmarks,
-  renderRecentsSection,
-  renderBookmarksSection,
-} from "./storage.js";
-import {
-  progressBar,
-  navigate,
-  route,
-  navigateToContent,
-  toggleSection,
-  showToast,
-} from "./render.js";
-import {
-  openGlobalSearch,
-  closeGlobalSearch,
-  retryGlobalSearch,
-  runSearchCommand,
-} from "./search.js";
-import {
+  ArticleFind,
+  QuizMode,
   closeZoomOverlay,
   rerenderMermaidDiagrams,
   toggleFocusMode,
-  QuizMode,
-  ArticleFind,
 } from "./content.js";
-import { Auth, AuthModal } from "./auth.js";
+import {
+  navigate,
+  navigateToContent,
+  progressBar,
+  route,
+  showToast,
+  toggleSection,
+} from "./render.js";
+import {
+  closeGlobalSearch,
+  openGlobalSearch,
+  retryGlobalSearch,
+  runSearchCommand,
+} from "./search.js";
+import { WIKIS, escHtml, state } from "./state.js";
+import {
+  Bookmarks,
+  Offline,
+  ReadToggle,
+  Settings,
+  applySettingsToDOM,
+  clearRecents,
+  getBookmarks,
+  getRecents,
+  getSettings,
+  initOsThemeListener,
+  markRead,
+  renderBookmarksSection,
+  renderRecentsSection,
+  saveBookmarks,
+  saveRecents,
+  saveScrollPos,
+  updateReadBtn,
+} from "./storage.js";
 
 /* ═══════════════════════════════════════════════════════════════
    WINDOW GLOBALS - required for onclick strings in dynamically
@@ -151,14 +151,10 @@ document.addEventListener("click", (e) => {
   }
 });
 
-document
-  .getElementById("import-upload")
-  .addEventListener("change", (e) => Settings.importData(e));
+document.getElementById("import-upload").addEventListener("change", (e) => Settings.importData(e));
 
 function printArticle() {
-  document
-    .getElementById("markdown-body")
-    ?.setAttribute("data-print-url", location.href);
+  document.getElementById("markdown-body")?.setAttribute("data-print-url", location.href);
   window.print();
 }
 
@@ -211,24 +207,18 @@ window.addEventListener(
       clearTimeout(_scrollSaveTimer);
       _scrollSaveTimer = setTimeout(() => {
         if (state.currentFilePath)
-          saveScrollPos(
-            `scroll-${state.currentWikiId}-${state.currentFilePath}`,
-            window.scrollY
-          );
+          saveScrollPos(`scroll-${state.currentWikiId}-${state.currentFilePath}`, window.scrollY);
       }, 400);
     }
 
     if (state.currentView === "index" && state.currentWikiId) {
       clearTimeout(_indexScrollTimer);
       _indexScrollTimer = setTimeout(() => {
-        saveScrollPos(
-          `wiki-index-scroll-${state.currentWikiId}`,
-          window.scrollY
-        );
+        saveScrollPos(`wiki-index-scroll-${state.currentWikiId}`, window.scrollY);
       }, 300);
     }
   },
-  { passive: true }
+  { passive: true },
 );
 
 scrollTopBtn.addEventListener("click", () => {
@@ -241,20 +231,14 @@ if ("onscrollend" in window) {
     () => {
       if (state.currentView === "content" && state.currentFilePath) {
         clearTimeout(_scrollSaveTimer);
-        saveScrollPos(
-          `scroll-${state.currentWikiId}-${state.currentFilePath}`,
-          window.scrollY
-        );
+        saveScrollPos(`scroll-${state.currentWikiId}-${state.currentFilePath}`, window.scrollY);
       }
       if (state.currentView === "index" && state.currentWikiId) {
         clearTimeout(_indexScrollTimer);
-        saveScrollPos(
-          `wiki-index-scroll-${state.currentWikiId}`,
-          window.scrollY
-        );
+        saveScrollPos(`wiki-index-scroll-${state.currentWikiId}`, window.scrollY);
       }
     },
-    { passive: true }
+    { passive: true },
   );
 }
 
@@ -303,17 +287,11 @@ function closeTopPanel() {
     Settings.close();
     return true;
   }
-  if (
-    !document.getElementById("global-search-modal").classList.contains("hidden")
-  ) {
+  if (!document.getElementById("global-search-modal").classList.contains("hidden")) {
     closeGlobalSearch();
     return true;
   }
-  if (
-    document
-      .getElementById("hover-preview")
-      ?.classList.contains("hover-preview--sheet-open")
-  ) {
+  if (document.getElementById("hover-preview")?.classList.contains("hover-preview--sheet-open")) {
     document.dispatchEvent(new CustomEvent("wiki:close-peek"));
     return true;
   }
@@ -352,7 +330,7 @@ function closeTopPanel() {
       fromRightEdge = sx >= window.innerWidth - EDGE_ZONE;
       tracking = true;
     },
-    { passive: true }
+    { passive: true },
   );
 
   document.addEventListener(
@@ -363,7 +341,7 @@ function closeTopPanel() {
         axis = axisLock(e.touches[0].clientX - sx, e.touches[0].clientY - sy);
       }
     },
-    { passive: true }
+    { passive: true },
   );
 
   document.addEventListener(
@@ -393,7 +371,7 @@ function closeTopPanel() {
         }
       }
     },
-    { passive: true }
+    { passive: true },
   );
 })();
 
@@ -424,19 +402,15 @@ window.addEventListener(
       }
     }, 150);
   },
-  { passive: true }
+  { passive: true },
 );
 
 /* ═══════════════════════════════════════════════════════════════
    MODAL BACKDROP & GLOBAL KEYDOWN
    ═══════════════════════════════════════════════════════════════ */
-document
-  .getElementById("prefs-backdrop")
-  .addEventListener("click", () => Settings.close());
+document.getElementById("prefs-backdrop").addEventListener("click", () => Settings.close());
 
-document
-  .getElementById("auth-backdrop")
-  .addEventListener("click", () => AuthModal.close());
+document.getElementById("auth-backdrop").addEventListener("click", () => AuthModal.close());
 
 document.addEventListener("keydown", (e) => {
   // ⌘K: Global Search
@@ -455,9 +429,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "?") {
     const tag = document.activeElement.tagName;
     const isInput =
-      tag === "INPUT" ||
-      tag === "TEXTAREA" ||
-      document.activeElement.isContentEditable;
+      tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable;
     if (!isInput) {
       e.preventDefault();
       Settings.isOpen() ? Settings.close() : Settings.openTab("keyboard");
@@ -468,9 +440,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === ",") {
     const tag = document.activeElement.tagName;
     const isInput =
-      tag === "INPUT" ||
-      tag === "TEXTAREA" ||
-      document.activeElement.isContentEditable;
+      tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable;
     if (!isInput) {
       e.preventDefault();
       Settings.isOpen() ? Settings.close() : Settings.openTab("general");
@@ -485,11 +455,7 @@ document.addEventListener("keydown", (e) => {
       closeZoomOverlay();
     } else if (AuthModal.isOpen()) {
       AuthModal.close();
-    } else if (
-      !document
-        .getElementById("global-search-modal")
-        .classList.contains("hidden")
-    ) {
+    } else if (!document.getElementById("global-search-modal").classList.contains("hidden")) {
       closeGlobalSearch();
     } else if (Settings.isOpen()) {
       Settings.close();
@@ -502,9 +468,7 @@ document.addEventListener("keydown", (e) => {
   if (state.currentView === "content") {
     const tag = document.activeElement.tagName;
     const isInput =
-      tag === "INPUT" ||
-      tag === "TEXTAREA" ||
-      document.activeElement.isContentEditable;
+      tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable;
     if (!isInput) {
       if (e.key === "b" || e.key === "B") {
         Bookmarks.toggle();
@@ -627,8 +591,8 @@ function mountDebugOverlay() {
       .map(
         ([k, v]) =>
           `<div class="debug-row"><span class="debug-key">${escHtml(
-            k
-          )}</span><span class="debug-val">${escHtml(String(v))}</span></div>`
+            k,
+          )}</span><span class="debug-val">${escHtml(String(v))}</span></div>`,
       )
       .join("");
   }

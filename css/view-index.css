@@ -14,21 +14,9 @@
   content: "";
   position: absolute;
   inset: -40%;
-  background: radial-gradient(
-      ellipse at 15% 60%,
-      rgba(99, 102, 241, 0.18) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse at 80% 20%,
-      rgba(168, 85, 247, 0.12) 0%,
-      transparent 45%
-    ),
-    radial-gradient(
-      ellipse at 50% 90%,
-      rgba(56, 130, 246, 0.08) 0%,
-      transparent 40%
-    );
+  background: radial-gradient(ellipse at 15% 60%, rgba(99, 102, 241, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.12) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 90%, rgba(56, 130, 246, 0.08) 0%, transparent 40%);
   pointer-events: none;
 }
 .page-hero-inner {
@@ -88,8 +76,7 @@
   padding: var(--s2) var(--s4);
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--t-fast), color var(--t-fast),
-    border-color var(--t-fast);
+  transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
 }
 .index-filter-unread:hover,
 .index-filter-unread:focus-visible {
@@ -183,8 +170,7 @@
   flex-direction: column;
   gap: var(--s2);
   contain: layout style;
-  transition: border-color var(--t), background var(--t),
-    transform var(--t-fast), opacity var(--t);
+  transition: border-color var(--t), background var(--t), transform var(--t-fast), opacity var(--t);
 }
 .index-card:hover {
   border-color: var(--accent);
@@ -350,8 +336,7 @@
   color: var(--text-body);
   white-space: nowrap;
   cursor: pointer;
-  transition: border-color var(--t-fast), background var(--t-fast),
-    color var(--t-fast);
+  transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast);
 }
 .recent-chip:hover {
   border-color: var(--accent);

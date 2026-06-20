@@ -1,26 +1,13 @@
 import {
-  WIKIS,
-  state,
-  allSearchCache,
-  readTimeCache,
-  escHtml,
-  fuzzyMatch,
-} from "./state.js";
-import {
+  IndexFilter,
   fetchWikiIndex,
+  navigate,
   navigateToContent,
   normalizePath,
-  navigate,
   showToast,
-  IndexFilter,
 } from "./render.js";
-import {
-  markRead,
-  markUnread,
-  isRead,
-  Settings,
-  Theme,
-} from "./storage.js";
+import { WIKIS, allSearchCache, escHtml, fuzzyMatch, readTimeCache, state } from "./state.js";
+import { Settings, Theme, isRead, markRead, markUnread } from "./storage.js";
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL SEARCH (⌘K)
@@ -170,7 +157,7 @@ function availableCommands() {
 function applyCommandFilter(commandQuery) {
   const q = commandQuery.toLowerCase();
   const cmds = availableCommands().filter(
-    (c) => !q || c.label.toLowerCase().includes(q) || fuzzyMatch(q, c.label.toLowerCase())
+    (c) => !q || c.label.toLowerCase().includes(q) || fuzzyMatch(q, c.label.toLowerCase()),
   );
 
   gSearchCount.textContent = cmds.length
@@ -179,7 +166,7 @@ function applyCommandFilter(commandQuery) {
 
   if (!cmds.length) {
     gSearchResults.innerHTML = `<div class="gsearch-no-results">No commands matching "<strong>${escHtml(
-      commandQuery
+      commandQuery,
     )}</strong>"</div>`;
     return;
   }
@@ -194,7 +181,7 @@ function applyCommandFilter(commandQuery) {
       <span class="gsearch-command-icon" aria-hidden="true">${c.icon}</span>
       <span class="gsearch-result-title">${escHtml(c.label)}</span>
       <span class="gsearch-result-meta">${escHtml(c.hint)}</span>
-    </div>`
+    </div>`,
     )
     .join("");
 }
@@ -336,15 +323,13 @@ function openGlobalSearch(opts = {}) {
       }
     }
   };
-  if (_searchFocusTrapHandler)
-    gSearchModal.removeEventListener("keydown", _searchFocusTrapHandler);
+  if (_searchFocusTrapHandler) gSearchModal.removeEventListener("keydown", _searchFocusTrapHandler);
   gSearchModal.addEventListener("keydown", _searchFocusTrapHandler);
 
   if (allSearchCache.loaded) {
     applyGlobalSearch("");
   } else {
-    gSearchResults.innerHTML =
-      '<div class="gsearch-empty">Start typing to search…</div>';
+    gSearchResults.innerHTML = '<div class="gsearch-empty">Start typing to search…</div>';
     loadAllSearchEntries();
   }
 }
@@ -389,24 +374,20 @@ function renderResultItem(item, highlightQuery) {
          onclick="closeGlobalSearch(); navigateToContent('${
            item.wiki.id
          }', '${encodeURIComponent(item.path)}', '${encodeURIComponent(
-    item.title
-  )}', '${item.slug}')"
+           item.title,
+         )}', '${item.slug}')"
          role="button" tabindex="0"
          onkeydown="if(event.key==='Enter')this.click()">
-      <span class="gsearch-result-title">${highlightMatch(
-        item.title,
-        highlightQuery
-      )}</span>
+      <span class="gsearch-result-title">${highlightMatch(item.title, highlightQuery)}</span>
       <span class="gsearch-result-meta">${escHtml(item.section)} · ${escHtml(
-    item.description.slice(0, 90)
-  )}${item.description.length > 90 ? "…" : ""}</span>
+        item.description.slice(0, 90),
+      )}${item.description.length > 90 ? "…" : ""}</span>
     </div>`;
 }
 
 function applySectionFilter(sectionQuery) {
   if (!sectionQuery) {
-    gSearchResults.innerHTML =
-      '<div class="gsearch-empty">Type a section name to filter…</div>';
+    gSearchResults.innerHTML = '<div class="gsearch-empty">Type a section name to filter…</div>';
     return;
   }
 
@@ -416,15 +397,14 @@ function applySectionFilter(sectionQuery) {
     const sectionLower = entry.section.toLowerCase();
     if (sectionLower.includes(ql) || fuzzyMatch(ql, sectionLower)) {
       const key = `${entry.wiki.id}::${entry.section}`;
-      if (!matched[key])
-        matched[key] = { wiki: entry.wiki, section: entry.section, items: [] };
+      if (!matched[key]) matched[key] = { wiki: entry.wiki, section: entry.section, items: [] };
       matched[key].items.push(entry);
     }
   }
 
   if (!Object.keys(matched).length) {
     gSearchResults.innerHTML = `<div class="gsearch-no-results">No sections matching "<strong>${escHtml(
-      sectionQuery
+      sectionQuery,
     )}</strong>"</div>`;
     return;
   }
@@ -432,12 +412,9 @@ function applySectionFilter(sectionQuery) {
   gSearchResults.innerHTML = Object.values(matched)
     .map(
       (g) => `
-    <div class="gsearch-group-label">${highlightMatch(
-      g.section,
-      sectionQuery
-    )}</div>
+    <div class="gsearch-group-label">${highlightMatch(g.section, sectionQuery)}</div>
     ${g.items.map((item) => renderResultItem(item, "")).join("")}
-  `
+  `,
     )
     .join("");
 }
@@ -493,14 +470,12 @@ function applyGlobalSearch(query) {
   if (!scored.length) {
     gSearchCount.textContent = "";
     gSearchResults.innerHTML = `<div class="gsearch-no-results">No results for "<strong>${escHtml(
-      q
+      q,
     )}</strong>"</div>`;
     return;
   }
 
-  gSearchCount.textContent = `${scored.length} result${
-    scored.length === 1 ? "" : "s"
-  }`;
+  gSearchCount.textContent = `${scored.length} result${scored.length === 1 ? "" : "s"}`;
 
   // Group by wiki, preserving score order within each group
   const grouped = {};
@@ -514,7 +489,7 @@ function applyGlobalSearch(query) {
       (group) => `
     <div class="gsearch-group-label">${escHtml(group.wiki.title)}</div>
     ${group.items.map((item) => renderResultItem(item, q)).join("")}
-  `
+  `,
     )
     .join("");
 }
@@ -522,10 +497,7 @@ function applyGlobalSearch(query) {
 let _searchDebounceTimer;
 gSearchInput.addEventListener("input", () => {
   clearTimeout(_searchDebounceTimer);
-  _searchDebounceTimer = setTimeout(
-    () => applyGlobalSearch(gSearchInput.value),
-    150
-  );
+  _searchDebounceTimer = setTimeout(() => applyGlobalSearch(gSearchInput.value), 150);
 });
 
 gSearchInput.addEventListener("keydown", (e) => {
@@ -533,14 +505,10 @@ gSearchInput.addEventListener("keydown", (e) => {
   if (!items.length) return;
   if (e.key === "ArrowDown") {
     e.preventDefault();
-    gSearchSelect(
-      gSearchSelectedIdx < items.length - 1 ? gSearchSelectedIdx + 1 : 0
-    );
+    gSearchSelect(gSearchSelectedIdx < items.length - 1 ? gSearchSelectedIdx + 1 : 0);
   } else if (e.key === "ArrowUp") {
     e.preventDefault();
-    gSearchSelect(
-      gSearchSelectedIdx > 0 ? gSearchSelectedIdx - 1 : items.length - 1
-    );
+    gSearchSelect(gSearchSelectedIdx > 0 ? gSearchSelectedIdx - 1 : items.length - 1);
   } else if (e.key === "Enter" && gSearchSelectedIdx >= 0) {
     e.preventDefault();
     items[gSearchSelectedIdx].click();
@@ -552,9 +520,7 @@ gSearchResults.addEventListener("keydown", (e) => {
   if (!items.length) return;
   if (e.key === "ArrowDown") {
     e.preventDefault();
-    gSearchSelect(
-      gSearchSelectedIdx < items.length - 1 ? gSearchSelectedIdx + 1 : 0
-    );
+    gSearchSelect(gSearchSelectedIdx < items.length - 1 ? gSearchSelectedIdx + 1 : 0);
   } else if (e.key === "ArrowUp") {
     e.preventDefault();
     if (gSearchSelectedIdx <= 0) {
@@ -573,18 +539,7 @@ function highlightMatch(text, query) {
   if (!query) return escHtml(text);
   const idx = text.toLowerCase().indexOf(query.toLowerCase());
   if (idx === -1) return escHtml(text);
-  return (
-    escHtml(text.slice(0, idx)) +
-    `<mark class="gsearch-highlight">${escHtml(
-      text.slice(idx, idx + query.length)
-    )}</mark>` +
-    escHtml(text.slice(idx + query.length))
-  );
+  return `${escHtml(text.slice(0, idx))}<mark class="gsearch-highlight">${escHtml(text.slice(idx, idx + query.length))}</mark>${escHtml(text.slice(idx + query.length))}`;
 }
 
-export {
-  openGlobalSearch,
-  closeGlobalSearch,
-  retryGlobalSearch,
-  runSearchCommand,
-};
+export { openGlobalSearch, closeGlobalSearch, retryGlobalSearch, runSearchCommand };
