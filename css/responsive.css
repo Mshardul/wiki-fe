@@ -4,7 +4,7 @@
 @media (max-width: 900px) {
   .content-layout {
     flex-direction: column;
-    padding: var(--s5) var(--s4) var(--s16);
+    padding: var(--s5) var(--layout-padding, 10%) var(--s16);
   }
   .toc-sidebar {
     position: static;

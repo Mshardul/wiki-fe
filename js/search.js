@@ -21,37 +21,39 @@ async function loadAllSearchEntries() {
   allSearchCache.loading = true;
   gSearchResults.innerHTML = '<div class="gsearch-loading">Loading…</div>';
 
-  let anySucceeded = false;
-  for (const wiki of WIKIS) {
-    try {
-      const sections = await fetchWikiIndex(wiki);
-      const entries = [];
-      for (const section of sections) {
-        for (const card of section.cards) {
-          entries.push({ wiki, section: section.heading, ...card });
+  try {
+    let anySucceeded = false;
+    for (const wiki of WIKIS) {
+      try {
+        const sections = await fetchWikiIndex(wiki);
+        const entries = [];
+        for (const section of sections) {
+          for (const card of section.cards) {
+            entries.push({ wiki, section: section.heading, ...card });
+          }
         }
-      }
-      for (const entry of entries) {
-        if (readTimeCache[normalizePath(entry.path)] !== null) {
-          allSearchCache.entries.push(entry);
+        for (const entry of entries) {
+          if (readTimeCache[normalizePath(entry.path)] !== null) {
+            allSearchCache.entries.push(entry);
+          }
         }
-      }
-      anySucceeded = true;
-    } catch {}
-  }
+        anySucceeded = true;
+      } catch {}
+    }
 
-  // Every wiki index failed → no usable cache.
-  if (!anySucceeded) {
+    // Every wiki index failed → no usable cache.
+    if (!anySucceeded) {
+      gSearchResults.innerHTML =
+        '<div class="gsearch-error">Couldn\'t load search index. ' +
+        '<button type="button" class="gsearch-retry" onclick="retryGlobalSearch()">Retry</button></div>';
+      return;
+    }
+
+    allSearchCache.loaded = true;
+    applyGlobalSearch(gSearchInput.value);
+  } finally {
     allSearchCache.loading = false;
-    gSearchResults.innerHTML =
-      '<div class="gsearch-error">Couldn\'t load search index. ' +
-      '<button type="button" class="gsearch-retry" onclick="retryGlobalSearch()">Retry</button></div>';
-    return;
   }
-
-  allSearchCache.loaded = true;
-  allSearchCache.loading = false;
-  applyGlobalSearch(gSearchInput.value);
 }
 
 function retryGlobalSearch() {

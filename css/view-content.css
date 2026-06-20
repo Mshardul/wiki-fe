@@ -276,13 +276,15 @@ body.distraction-free .sticky-section-header {
 }
 
 /* ─── Markdown Body ─── */
-.markdown-body {
+.content-main {
   flex: 1;
   min-width: 0;
+  order: 1;
+}
+.markdown-body {
   overflow-x: hidden;
   overflow-wrap: break-word;
   word-break: break-word;
-  order: 1;
   color: var(--text-body);
   font-size: var(--text-base);
   line-height: var(--line-height-body);
@@ -296,6 +298,62 @@ body.distraction-free .sticky-section-header {
   padding: var(--s16);
   color: var(--text-muted);
   font-size: var(--text-sm);
+}
+
+/* Shape-matched loading skeleton */
+.skeleton {
+  padding-top: var(--s2);
+}
+.skeleton-heading,
+.skeleton-line,
+.skeleton-code {
+  background: var(--surface-hover);
+  border-radius: var(--r-sm);
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-heading,
+.skeleton-line,
+.skeleton-code {
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+.skeleton-heading {
+  height: 1.5em;
+  width: 45%;
+  margin: var(--s8) 0 var(--s4);
+}
+.skeleton-heading--h1 {
+  height: 2.2em;
+  width: 65%;
+  margin: 0 0 var(--s6);
+}
+.skeleton-para {
+  margin: 0 0 var(--s5);
+}
+.skeleton-line {
+  height: 0.85em;
+  margin-bottom: var(--s3);
+}
+.skeleton-code {
+  height: 7em;
+  margin: var(--s4) 0 var(--s6);
+}
+@keyframes skeletonShimmer {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-heading,
+  .skeleton-line,
+  .skeleton-code {
+    animation: none;
+    opacity: 0.7;
+  }
 }
 .markdown-body .error {
   color: #ef4444;
@@ -768,6 +826,14 @@ pre.has-line-numbers {
   cursor: zoom-in;
 }
 
+.markdown-body svg.inline-svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: var(--s5) auto;
+  color: var(--text-body);
+}
+
 /* ═══════════════════════════════════════════════
    IMAGE ERROR FALLBACK
    ═══════════════════════════════════════════════ */
@@ -863,6 +929,11 @@ pre.has-line-numbers {
   border-radius: var(--r);
   object-fit: contain;
   display: block;
+}
+.zoom-overlay-content > * {
+  transform-origin: center center;
+  will-change: transform;
+  touch-action: none;
 }
 .zoom-diagram-svg {
   max-width: 90vw;
@@ -989,6 +1060,28 @@ pre.has-line-numbers {
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
+}
+
+.hover-preview--sheet {
+  position: fixed;
+  top: auto;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-height: 45vh;
+  overflow-y: auto;
+  border-radius: var(--r-lg, 16px) var(--r-lg, 16px) 0 0;
+  border-bottom: none;
+  padding-bottom: calc(var(--s5) + env(safe-area-inset-bottom, 0px));
+  transform: translateY(100%);
+}
+.hover-preview--sheet.visible {
+  transform: translateY(0);
+}
+.hover-preview--sheet p {
+  -webkit-line-clamp: unset;
+  display: block;
 }
 .hover-preview h1,
 .hover-preview h2,

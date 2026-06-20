@@ -4,6 +4,8 @@ import {
   indexCache,
   readTimeCache,
   markStubPath,
+  getShapeFingerprint,
+  saveShapeFingerprint,
   STUB_THRESHOLD,
   mdConverter,
   escHtml,
@@ -17,6 +19,9 @@ import {
   renderBookmarksSection,
   renderRecentsSection,
   isRead,
+  markRead,
+  markUnread,
+  Bookmarks,
 } from "./storage.js";
 import {
   addCodeBlockHeader,
@@ -116,20 +121,57 @@ async function resolveSlugAndRender(wiki, slug) {
     const md = await fetchText(wiki.indexPath);
     const basePath = dirOf(wiki.indexPath);
     const sections = parseIndexMd(md, basePath);
+    const cards = [];
     for (const section of sections) {
-      const card = section.cards.find((c) => c.slug === slug);
-      if (card) {
-        renderContent(wiki, card.path, card.title, false);
-        return;
+      for (const card of section.cards) {
+        if (card.slug === slug) {
+          renderContent(wiki, card.path, card.title, false);
+          return;
+        }
+        cards.push(card);
       }
+    }
+
+    const suggestion = nearestSlugMatch(slug, cards);
+    if (suggestion) {
+      updatePageTitle("Not Found");
+      history.replaceState(null, "", location.pathname);
+      renderHome();
+      showToast(
+        `No "${slug}" — did you mean ${suggestion.title}?`,
+        8000,
+        () => navigate(`${wiki.id}/${suggestion.slug}`),
+        "Open"
+      );
+      return;
     }
   } catch {}
 
-  // Slug not found fallback
+  // Slug not found, no near match
   updatePageTitle("Not Found");
   showToast(`Article not found: "${slug}"`);
   history.replaceState(null, "", location.pathname);
   renderHome();
+}
+
+/* Rank index cards against a bad slug; return the closest, or null */
+function nearestSlugMatch(slug, cards) {
+  const q = slug.toLowerCase();
+  let best = null;
+  let bestScore = 0;
+  for (const card of cards) {
+    const cardSlug = (card.slug || "").toLowerCase();
+    const cardTitle = (card.title || "").toLowerCase();
+    let score = 0;
+    if (cardSlug.includes(q) || q.includes(cardSlug)) score = 90;
+    else if (fuzzyMatch(q, cardSlug)) score = 60;
+    else if (fuzzyMatch(q, cardTitle)) score = 30;
+    if (score > bestScore) {
+      bestScore = score;
+      best = card;
+    }
+  }
+  return best;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -179,6 +221,7 @@ async function renderIndex(wiki) {
   document.getElementById("index-subtitle").textContent = wiki.description;
 
   showView("view-index");
+  bindIndexCardSwipe(wiki);
   renderRecentsSection(wiki);
   renderBookmarksSection(wiki);
 
@@ -270,6 +313,115 @@ function renderIndexSections(sections, wiki) {
   `;
     })
     .join("");
+}
+
+/* ─── Index-card swipe: right = bookmark, left = read toggle ─── */
+const CARD_SWIPE_THRESHOLD = 50;
+const CARD_SWIPE_DEADZONE = 8;
+let _cardSwipeBound = false;
+let _swipeWiki = null; // current wiki for the delegated index-card swipe
+
+function bindIndexCardSwipe(wiki) {
+  _swipeWiki = wiki;
+  const container = document.getElementById("index-sections");
+  if (!container || _cardSwipeBound) return;
+  _cardSwipeBound = true;
+
+  let card = null;
+  let sx = 0;
+  let sy = 0;
+  let axis = null; // null | "x" | "y"
+
+  const pathOf = (c) =>
+    c.querySelector(".index-card-read-time[data-path]")?.dataset.path || null;
+
+  const reset = () => {
+    if (card) {
+      card.style.transition = "transform 180ms ease";
+      card.style.transform = "";
+      card.classList.remove("card-swiping", "swipe-right", "swipe-left");
+      const c = card;
+      setTimeout(() => {
+        c.style.transition = "";
+      }, 200);
+    }
+    card = null;
+    axis = null;
+  };
+
+  container.addEventListener(
+    "touchstart",
+    (e) => {
+      if (e.touches.length !== 1) return;
+      const el = e.target.closest(".index-card");
+      if (!el || el.classList.contains("index-card--unavailable")) return;
+      card = el;
+      sx = e.touches[0].clientX;
+      sy = e.touches[0].clientY;
+      axis = null;
+      card.style.transition = "";
+    },
+    { passive: true }
+  );
+
+  container.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!card || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - sx;
+      const dy = e.touches[0].clientY - sy;
+      if (!axis) {
+        if (Math.abs(dx) < CARD_SWIPE_DEADZONE && Math.abs(dy) < CARD_SWIPE_DEADZONE)
+          return;
+        axis = Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
+        if (axis === "x") card.classList.add("card-swiping");
+        else {
+          card = null; // vertical → let the page scroll, abandon swipe
+          return;
+        }
+      }
+      if (axis === "x") {
+        e.preventDefault(); // claim the horizontal gesture
+        card.style.transform = `translateX(${dx}px)`;
+        card.classList.toggle("swipe-right", dx > 0);
+        card.classList.toggle("swipe-left", dx < 0);
+      }
+    },
+    { passive: false }
+  );
+
+  container.addEventListener(
+    "touchend",
+    (e) => {
+      if (!card || axis !== "x") {
+        reset();
+        return;
+      }
+      const dx = (e.changedTouches[0]?.clientX ?? sx) - sx;
+      const path = pathOf(card);
+      if (path && dx > CARD_SWIPE_THRESHOLD) {
+        const now = Bookmarks.togglePath(
+          _swipeWiki.id,
+          path,
+          card.querySelector(".index-card-title")?.textContent
+        );
+        renderBookmarksSection(_swipeWiki);
+        showToast(now ? "Bookmarked" : "Bookmark removed");
+      } else if (path && dx < -CARD_SWIPE_THRESHOLD) {
+        if (isRead(path)) {
+          markUnread(path);
+          showToast("Marked unread");
+        } else {
+          markRead(path);
+          showToast("Marked read");
+        }
+      }
+      reset();
+    },
+    { passive: true }
+  );
+
+  container.addEventListener("touchcancel", reset, { passive: true });
 }
 
 function toggleSection(headerEl, wikiId, heading) {
@@ -500,7 +652,7 @@ async function renderContent(
 
   const body = document.getElementById("markdown-body");
   delete body.dataset.renderDone;
-  body.innerHTML = '<div class="loading">Loading…</div>';
+  body.innerHTML = buildLoadingSkeleton(getShapeFingerprint(filePath));
 
   // Clear old observers and modes
   if (state.tocObserver) {
@@ -573,70 +725,88 @@ async function renderContent(
         .forEach((block) => hljs.highlightElement(block));
     }
 
-    // Line numbers (after hljs so it runs on highlighted HTML)
-    addLineNumbers(body);
+    // Post-processing — enhancements only.
+    try {
+      // Line numbers (after hljs so it runs on highlighted HTML)
+      addLineNumbers(body);
 
-    // Post-processing
-    addCodeBlockHeader(body, () =>
-      showToast("Copy failed — clipboard access denied")
-    );
-    styleCallouts(body);
-    addCollapsibleCallouts(body);
+      addCodeBlockHeader(body, () =>
+        showToast("Copy failed — clipboard access denied")
+      );
+      styleCallouts(body);
+      addCollapsibleCallouts(body);
 
-    // Quiz-me mode
-    addQuizTables(body);
-    QuizMode.reset();
-    QuizMode.bind(body);
+      // Quiz-me mode
+      addQuizTables(body);
+      QuizMode.reset();
+      QuizMode.bind(body);
 
-    // Prerequisites Chips
-    renderPrerequisites(body);
+      // Prerequisites Chips
+      renderPrerequisites(body);
 
-    interceptMdLinks(body, wiki, filePath);
-    addAnchorLinks(
-      body,
-      () => showToast("Copy failed — clipboard access denied"),
-      () => showToast("Link copied")
-    );
+      interceptMdLinks(body, wiki, filePath);
+      addAnchorLinks(
+        body,
+        () => showToast("Copy failed — clipboard access denied"),
+        () => showToast("Link copied")
+      );
 
-    // Accent first word of h1 with gradient
-    const h1El = body.querySelector("h1");
-    if (h1El && h1El.childNodes.length > 0) {
-      const firstNode = h1El.childNodes[0];
-      if (firstNode.nodeType === Node.TEXT_NODE) {
-        const text = firstNode.textContent;
-        const spaceIdx = text.indexOf(" ");
-        if (spaceIdx > 0) {
-          const accentSpan = document.createElement("span");
-          accentSpan.className = "h1-accent";
-          accentSpan.textContent = text.slice(0, spaceIdx);
-          firstNode.replaceWith(
-            accentSpan,
-            document.createTextNode(text.slice(spaceIdx))
-          );
+      // Accent first word of h1 with gradient
+      const h1El = body.querySelector("h1");
+      if (h1El && h1El.childNodes.length > 0) {
+        const firstNode = h1El.childNodes[0];
+        if (firstNode.nodeType === Node.TEXT_NODE) {
+          const text = firstNode.textContent;
+          const spaceIdx = text.indexOf(" ");
+          if (spaceIdx > 0) {
+            const accentSpan = document.createElement("span");
+            accentSpan.className = "h1-accent";
+            accentSpan.textContent = text.slice(0, spaceIdx);
+            firstNode.replaceWith(
+              accentSpan,
+              document.createTextNode(text.slice(spaceIdx))
+            );
+          }
         }
       }
+
+      // TOC
+      buildTOC(body);
+      addStickySection(body);
+
+      // Code language labels + collapsible long blocks
+      addCodeLangLabels(body);
+      addCollapsibleCodeBlocks(body);
+
+      // Inline SVG diagrams (must run before lightbox/zoom claim them)
+      await inlineSvgImages(body);
+
+      // Lazy-load remaining raster images
+      body
+        .querySelectorAll("img:not([loading])")
+        .forEach((img) => img.setAttribute("loading", "lazy"));
+
+      // Image lightbox + diagram zoom + table scroll cues
+      addImageLightbox(body);
+      addDiagramZoom(body);
+      addTableScrollCues(body);
+
+      // Related articles
+      renderRelatedArticles(wiki, filePath);
+
+      // Topbar button states
+      updateBookmarkBtn();
+      updateReadBtn();
+      updateOfflineBtn();
+    } catch {
+      showToast("Some content enhancements failed to load");
     }
 
-    // TOC
-    buildTOC(body);
-    addStickySection(body);
-
-    // Code language labels + collapsible long blocks
-    addCodeLangLabels(body);
-    addCollapsibleCodeBlocks(body);
-
-    // Image lightbox + diagram zoom + table scroll cues
-    addImageLightbox(body);
-    addDiagramZoom(body);
-    addTableScrollCues(body);
-
-    // Related articles
-    renderRelatedArticles(wiki, filePath);
-
-    // Topbar button states
-    updateBookmarkBtn();
-    updateReadBtn();
-    updateOfflineBtn();
+    // Record this article's shape so the next visit can render a mirror skeleton
+    saveShapeFingerprint(filePath, {
+      headings: body.querySelectorAll("h2, h3").length,
+      codeBlocks: body.querySelectorAll("pre").length,
+    });
 
     // Topbar Title Observer
     if (state.titleObserver) {
@@ -781,10 +951,88 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
         previewEl.textContent = "";
       }
     });
+
+    // Touch long-press → bottom-sheet peek (mobile parity for hover preview).
+    let _lpTimer = null;
+    let _lpX = 0;
+    let _lpY = 0;
+    const cancelLongPress = () => {
+      clearTimeout(_lpTimer);
+      _lpTimer = null;
+    };
+    link.addEventListener(
+      "touchstart",
+      (e) => {
+        if (!_lastPointerWasTouch || e.touches.length !== 1) return;
+        _lpX = e.touches[0].clientX;
+        _lpY = e.touches[0].clientY;
+        _lpTimer = setTimeout(() => {
+          _peekSuppressClick = true;
+          showHoverPreview(link, resolvedPath, { asSheet: true });
+        }, LONGPRESS_MS);
+      },
+      { passive: true }
+    );
+    link.addEventListener(
+      "touchmove",
+      (e) => {
+        const t = e.touches[0];
+        if (
+          !t ||
+          Math.abs(t.clientX - _lpX) > LONGPRESS_MOVE_CANCEL ||
+          Math.abs(t.clientY - _lpY) > LONGPRESS_MOVE_CANCEL
+        ) {
+          cancelLongPress();
+        }
+      },
+      { passive: true }
+    );
+    link.addEventListener("touchend", cancelLongPress, { passive: true });
+    link.addEventListener("touchcancel", cancelLongPress, { passive: true });
+
+    // Suppress synthetic click that follows a long-press so peek doesn't navigate.
+    link.addEventListener("click", (e) => {
+      if (_peekSuppressClick) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        _peekSuppressClick = false;
+      }
+    });
   });
 }
 
-async function showHoverPreview(link, path) {
+/* ─── Long-press peek state + dismissal ─── */
+const LONGPRESS_MS = 450;
+const LONGPRESS_MOVE_CANCEL = 10;
+let _peekSuppressClick = false;
+
+function closePeekSheet() {
+  const previewEl = document.getElementById("hover-preview");
+  if (!previewEl) return;
+  if (_previewAbortController) {
+    _previewAbortController.abort();
+    _previewAbortController = null;
+  }
+  _previewGeneration++;
+  previewEl.classList.remove("visible", "hover-preview--sheet-open");
+  previewEl.textContent = "";
+}
+
+// Swipe-down close (app.js panel registry) routes here.
+document.addEventListener("wiki:close-peek", closePeekSheet);
+
+// Tap outside an open sheet dismisses it.
+document.addEventListener(
+  "touchstart",
+  (e) => {
+    const previewEl = document.getElementById("hover-preview");
+    if (!previewEl?.classList.contains("hover-preview--sheet-open")) return;
+    if (!e.target.closest("#hover-preview")) closePeekSheet();
+  },
+  { passive: true }
+);
+
+async function showHoverPreview(link, path, { asSheet = false } = {}) {
   const previewEl = document.getElementById("hover-preview");
 
   // Cancel any in-flight fetch from a previous hover
@@ -793,19 +1041,30 @@ async function showHoverPreview(link, path) {
   const { signal } = _previewAbortController;
   const gen = ++_previewGeneration;
 
-  // Position preview — prefer below, flip above when near viewport bottom
-  const rect = link.getBoundingClientRect();
-  const PREVIEW_H = 160;
-  const spaceBelow = window.innerHeight - rect.bottom;
-  const topPos =
-    spaceBelow >= PREVIEW_H + 8
-      ? window.scrollY + rect.bottom + 8
-      : window.scrollY + rect.top - PREVIEW_H - 8;
-  previewEl.style.top = `${Math.max(window.scrollY + 8, topPos)}px`;
+  if (asSheet) {
+    // Mobile bottom sheet: CSS handles placement; clear desktop anchoring.
+    previewEl.classList.add("hover-preview--sheet", "hover-preview--sheet-open");
+    previewEl.style.top = "";
+    previewEl.style.left = "";
+  } else {
+    previewEl.classList.remove(
+      "hover-preview--sheet",
+      "hover-preview--sheet-open"
+    );
+    // Position preview — prefer below, flip above when near viewport bottom
+    const rect = link.getBoundingClientRect();
+    const PREVIEW_H = 160;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const topPos =
+      spaceBelow >= PREVIEW_H + 8
+        ? window.scrollY + rect.bottom + 8
+        : window.scrollY + rect.top - PREVIEW_H - 8;
+    previewEl.style.top = `${Math.max(window.scrollY + 8, topPos)}px`;
 
-  let leftPos = rect.left;
-  if (leftPos + 340 > window.innerWidth) leftPos = window.innerWidth - 360;
-  previewEl.style.left = `${Math.max(8, leftPos)}px`;
+    let leftPos = rect.left;
+    if (leftPos + 340 > window.innerWidth) leftPos = window.innerWidth - 360;
+    previewEl.style.left = `${Math.max(8, leftPos)}px`;
+  }
 
   previewEl.innerHTML = '<div class="loading">Loading preview...</div>';
   previewEl.classList.add("visible");
@@ -911,8 +1170,81 @@ async function fetchText(path, signal) {
     throw new Error(`Network error — check your connection (${err.message})`);
   }
   if (res.status === 404) throw new Error("Page not found (404)");
+  if (res.status === 403) throw new Error("Access denied (403)");
+  if (res.status >= 500) throw new Error(`Server unavailable (${res.status})`);
   if (!res.ok) throw new Error(`Server error (${res.status})`);
   return res.text();
+}
+
+/* ─── Inline SVG diagrams ─── */
+async function inlineSvgImages(contentEl) {
+  const imgs = [...contentEl.querySelectorAll('img[src$=".svg"]')];
+  if (!imgs.length || typeof DOMPurify === "undefined") return;
+
+  await Promise.all(
+    imgs.map(async (img) => {
+      try {
+        const res = await fetch(new URL(img.src, location.href).href);
+        if (!res.ok) return;
+        const raw = await res.text();
+        const clean = DOMPurify.sanitize(raw, {
+          USE_PROFILES: { svg: true, svgFilters: true },
+        });
+        const doc = new DOMParser().parseFromString(
+          clean,
+          "image/svg+xml"
+        );
+        const svg = doc.querySelector("svg");
+        if (!svg || doc.querySelector("parsererror")) return;
+        svg.classList.add("inline-svg");
+        if (img.alt && !svg.getAttribute("aria-label")) {
+          svg.setAttribute("role", "img");
+          svg.setAttribute("aria-label", img.alt);
+        }
+        img.replaceWith(svg);
+      } catch {
+        /* leave the <img> in place on any failure */
+      }
+    })
+  );
+}
+
+/* ─── Loading skeleton ─── */
+function buildLoadingSkeleton(fingerprint) {
+  const line = (w) => `<div class="skeleton-line" style="width:${w}"></div>`;
+  const para = () =>
+    `<div class="skeleton-para">${line("100%")}${line("96%")}${line(
+      "88%"
+    )}${line("60%")}</div>`;
+
+  if (!fingerprint) {
+    return `<div class="skeleton" aria-hidden="true">
+      <div class="skeleton-heading skeleton-heading--h1"></div>
+      ${para()}${para()}
+    </div>`;
+  }
+
+  const headings = Math.min(Math.max(fingerprint.headings || 0, 0), 12);
+  const codeBlocks = Math.min(Math.max(fingerprint.codeBlocks || 0, 0), 8);
+
+  let blocks = "";
+  for (let i = 0; i < headings; i++) {
+    blocks += `<div class="skeleton-heading"></div>${para()}`;
+    if (codeBlocks > 0 && i % 2 === 1) {
+      blocks += `<div class="skeleton-code"></div>`;
+    }
+  }
+  // Any code blocks not interleaved above, appended at the end.
+  const placed = Math.floor(headings / 2);
+  for (let i = placed; i < codeBlocks; i++) {
+    blocks += `<div class="skeleton-code"></div>`;
+  }
+  if (!blocks) blocks = `${para()}${para()}`;
+
+  return `<div class="skeleton" aria-hidden="true">
+    <div class="skeleton-heading skeleton-heading--h1"></div>
+    ${blocks}
+  </div>`;
 }
 
 function dirOf(filePath) {

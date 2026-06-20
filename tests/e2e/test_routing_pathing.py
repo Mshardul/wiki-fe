@@ -91,6 +91,44 @@ def test_404_fallback_on_bad_article(page, base_url):
     assert "this-does-not-exist" not in page.url
 
 
+# ── 404 "did you mean" search rescue ────────────────────────────────
+
+
+def test_404_near_miss_offers_suggestion(page, base_url):
+    """A near-miss slug offers the closest article via a toast action button."""
+    page.goto(f"{base_url}/#system-design/cachng")
+    page.wait_for_load_state("networkidle")
+
+    # Falls back to home, but surfaces a suggestion toast first.
+    assert page.locator("#view-home.active").count() == 1
+    toast = page.locator("#wiki-toast")
+    toast.wait_for(state="visible", timeout=5_000)
+    assert "Caching" in toast.inner_text()
+
+
+def test_404_near_miss_open_navigates_to_match(page, base_url):
+    """Clicking the suggestion's Open button routes to the matched article."""
+    page.goto(f"{base_url}/#system-design/cachng")
+    page.wait_for_load_state("networkidle")
+
+    page.locator("#wiki-toast .toast-undo-btn").click()
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    assert page.url.endswith("#system-design/caching")
+
+
+def test_404_unrelated_slug_shows_plain_message(page, base_url):
+    """A slug with no near match falls back to the plain not-found toast."""
+    page.goto(f"{base_url}/#system-design/zzzqqqxxx")
+    page.wait_for_load_state("networkidle")
+
+    assert page.locator("#view-home.active").count() == 1
+    toast = page.locator("#wiki-toast")
+    toast.wait_for(state="visible", timeout=5_000)
+    assert "not found" in toast.inner_text().lower()
+    # No suggestion action button on the plain not-found path.
+    assert page.locator("#wiki-toast .toast-undo-btn").count() == 0
+
+
 # ── 404.html back-button history fallback ───────────────────────────
 
 
@@ -145,7 +183,7 @@ def test_back_forward_does_not_double_render(page, base_url):
         """() => {
         window._loadCount = 0;
         const obs = new MutationObserver(() => {
-            if (document.querySelector('#markdown-body > .loading')) window._loadCount++;
+            if (document.querySelector('#markdown-body > .skeleton')) window._loadCount++;
         });
         obs.observe(document.getElementById('markdown-body'), { childList: true });
         window._routeObs = obs;

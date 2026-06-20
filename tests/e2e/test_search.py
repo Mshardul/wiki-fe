@@ -257,6 +257,30 @@ def test_search_retry_recovers_after_failure(page, base_url):
     assert page.locator(".gsearch-result").count() > 0
 
 
+def test_search_recovers_on_reopen_after_failure(page, base_url):
+    """A failed first load must not wedge search for later opens."""
+    failing = {"on": True}
+    page.route(
+        "**/index.md",
+        lambda route: route.abort() if failing["on"] else route.continue_(),
+    )
+    page.goto(f"{base_url}/")
+    page.wait_for_load_state("networkidle")
+
+    # First open fails.
+    page.keyboard.press("Meta+k")
+    page.wait_for_selector(".gsearch-error", timeout=8_000)
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#global-search-modal.hidden")
+
+    # Network heals; reopening re-attempts the load (proves flag was cleared).
+    failing["on"] = False
+    page.keyboard.press("Meta+k")
+    page.fill("#gsearch-input", "caching")
+    page.wait_for_selector(".gsearch-result", timeout=8_000)
+    assert page.locator(".gsearch-result").count() > 0
+
+
 # ── Section-filter mode indicator ────────────────────────────────────
 
 

@@ -139,6 +139,26 @@ function markStubPath(normalizedPath) {
 for (const p of loadStubPaths()) readTimeCache[p] = null;
 const STUB_THRESHOLD = 5000; // bytes - stubs are template skeletons (~3k of HTML-comment scaffolding); real articles are 8k+
 
+/* ─── Article shape fingerprints (heading/code-block counts) ─── */
+const SHAPE_FINGERPRINTS_KEY = "wiki-shape-fingerprints";
+function loadShapeFingerprints() {
+  try {
+    return JSON.parse(sessionStorage.getItem(SHAPE_FINGERPRINTS_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+function getShapeFingerprint(normalizedPath) {
+  return loadShapeFingerprints()[normalizedPath] || null;
+}
+function saveShapeFingerprint(normalizedPath, fingerprint) {
+  const all = loadShapeFingerprints();
+  all[normalizedPath] = fingerprint;
+  try {
+    sessionStorage.setItem(SHAPE_FINGERPRINTS_KEY, JSON.stringify(all));
+  } catch {}
+}
+
 /* ─── Pure utilities (placed here to avoid circular deps between storage/render) ─── */
 function escHtml(str) {
   return String(str)
@@ -168,6 +188,8 @@ export {
   indexCache,
   readTimeCache,
   markStubPath,
+  getShapeFingerprint,
+  saveShapeFingerprint,
   allSearchCache,
   STUB_THRESHOLD,
   mdConverter,

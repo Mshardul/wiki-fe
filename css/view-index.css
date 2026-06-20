@@ -151,6 +151,42 @@
 .index-card--unavailable .index-card-arrow {
   display: none;
 }
+
+.index-card {
+  touch-action: pan-y;
+}
+.index-card.card-swiping {
+  cursor: grabbing;
+  user-select: none;
+  z-index: 2;
+  position: relative;
+}
+.index-card.card-swiping::before,
+.index-card.card-swiping::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  font-size: var(--text-lg);
+  opacity: 0;
+  transition: opacity var(--t-fast);
+  pointer-events: none;
+}
+.index-card.card-swiping::before {
+  content: "🔖";
+  left: var(--s4);
+}
+.index-card.card-swiping::after {
+  content: "👁";
+  right: var(--s4);
+}
+.index-card.swipe-right::before {
+  opacity: 1;
+}
+.index-card.swipe-left::after {
+  opacity: 1;
+}
 .index-card-header {
   display: flex;
   align-items: flex-start;

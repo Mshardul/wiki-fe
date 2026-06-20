@@ -56,20 +56,32 @@ body {
 }
 
 .vignette-layer {
-  display: none;
-}
-
-body.distraction-free .vignette-layer,
-body.focus-mode .vignette-layer {
   display: block;
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
   background: radial-gradient(
+    ellipse 120% 95% at 50% 0%,
+    transparent 58%,
+    rgba(6, 7, 14, 0.35) 100%
+  );
+}
+
+body.distraction-free .vignette-layer,
+body.focus-mode .vignette-layer {
+  background: radial-gradient(
     ellipse 110% 85% at 50% 0%,
     transparent 42%,
     rgba(6, 7, 14, 0.55) 100%
+  );
+}
+
+[data-theme="light"] .vignette-layer {
+  background: radial-gradient(
+    ellipse 120% 95% at 50% 0%,
+    transparent 58%,
+    rgba(220, 225, 235, 0.28) 100%
   );
 }
 

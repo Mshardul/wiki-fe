@@ -148,24 +148,37 @@ function renderBookmarksSection(wiki) {
 }
 
 const Bookmarks = {
-  toggle() {
-    const path = state.currentFilePath;
-    if (!path) return;
+  // Path-based core: add/remove a bookmark for any wiki+path.
+  togglePath(wikiId, path, title) {
+    if (!path) return false;
     const bookmarks = getBookmarks();
     const idx = bookmarks.findIndex((b) => b.path === path);
+    let bookmarked;
     if (idx >= 0) {
       bookmarks.splice(idx, 1);
+      bookmarked = false;
     } else {
-      const wiki = WIKIS.find((w) => w.id === state.currentWikiId);
+      const wiki = WIKIS.find((w) => w.id === wikiId);
+      const name = path.split("/").pop().replace(/\.md$/, "");
       bookmarks.unshift({
-        wikiId: state.currentWikiId,
+        wikiId,
         path,
-        slug: path.split("/").pop().replace(/\.md$/, ""),
-        title: state.currentTitle || path.split("/").pop().replace(/\.md$/, ""),
+        slug: name,
+        title: title || name,
         wikiTitle: wiki?.title || "",
       });
+      bookmarked = true;
     }
     saveBookmarks(bookmarks);
+    return bookmarked;
+  },
+  toggle() {
+    if (!state.currentFilePath) return;
+    this.togglePath(
+      state.currentWikiId,
+      state.currentFilePath,
+      state.currentTitle
+    );
     updateBookmarkBtn();
   },
   clearAll() {
