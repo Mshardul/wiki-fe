@@ -22,6 +22,13 @@ repos:
         # pres = plural of <pre> elements; couldn = "couldn't" w/ escaped apostrophe.
         args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn"]
 
+  # JS/CSS lint + format — check-only (CI mode, never writes).
+  - repo: https://github.com/biomejs/pre-commit
+    rev: v0.6.1
+    hooks:
+      - id: biome-ci
+        additional_dependencies: ["@biomejs/biome@1.9.4"]
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
