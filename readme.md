@@ -28,6 +28,17 @@ Each vertical is one entry in the `WIKIS` array in `js/state.js` — that single
 
 ---
 
+## Dev setup
+
+```bash
+brew install lychee   # one-time: needed for the dead-link pre-commit hook
+make install          # creates .venv, installs test deps + Chromium, wires pre-commit
+```
+
+`make install` will warn if lychee is missing.
+
+---
+
 ## How to run
 
 No build. The app fetches `.md` files over HTTP, so it must be served — opening `index.html` from `file://` won't load content.

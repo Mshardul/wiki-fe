@@ -16,6 +16,7 @@ install: ## Create venv, install test deps + Chromium
 	$(PY) -m pip install -r requirements-dev.txt
 	$(PY) -m playwright install chromium
 	$(PRECOMMIT) install
+	@command -v lychee >/dev/null 2>&1 || echo "⚠️  lychee not found — run: brew install lychee (needed for dead-link pre-commit hook)"
 
 precommit: ## Run all pre-commit hooks against all files (auto-fixes in place)
 	$(PRECOMMIT) run --all-files

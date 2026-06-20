@@ -34,6 +34,17 @@ repos:
         # Lints + formats JS/CSS, applies safe fixes in place (review unstaged).
         additional_dependencies: ["@biomejs/biome@1.9.4"]
 
+  # ── Dead links (lychee — requires: brew install lychee) ─────────────────────
+  - repo: local
+    hooks:
+      - id: lychee
+        name: lychee (dead link check)
+        language: system
+        entry: lychee
+        args: [--offline, --no-progress, --root-dir, ".", --exclude-path, content]
+        types: [markdown]
+        pass_filenames: true
+
   # ── Hygiene ─────────────────────────────────────────────────────────────────
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
