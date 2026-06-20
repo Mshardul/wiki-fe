@@ -271,7 +271,7 @@ def test_search_recovers_on_reopen_after_failure(page, base_url):
     page.keyboard.press("Meta+k")
     page.wait_for_selector(".gsearch-error", timeout=8_000)
     page.keyboard.press("Escape")
-    page.wait_for_selector("#global-search-modal.hidden")
+    page.wait_for_selector("#global-search-modal.hidden", state="attached")
 
     # Network heals; reopening re-attempts the load (proves flag was cleared).
     failing["on"] = False

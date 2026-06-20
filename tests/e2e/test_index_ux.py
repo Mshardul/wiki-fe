@@ -226,15 +226,23 @@ def test_collapsed_grid_not_display_none(page, base_url):
     )
 
     page.locator(".section-header").first.click()
-    page.wait_for_timeout(300)  # let 200ms max-height transition complete
+
+    # Poll until the 200ms max-height transition has settled — a fixed wait
+    # flakes when the machine is under load and the transition runs long.
+    page.wait_for_function(
+        """() => {
+            const grid = document.querySelector('.index-section.section--collapsed .index-card-grid');
+            if (!grid) return false;
+            return window.getComputedStyle(grid).maxHeight === '0px';
+        }""",
+        timeout=5_000,
+    )
 
     result = page.evaluate("""() => {
         const grid = document.querySelector('.index-section.section--collapsed .index-card-grid');
-        if (!grid) return null;
         const style = window.getComputedStyle(grid);
         return { display: style.display, maxHeight: style.maxHeight };
     }""")
-    assert result is not None, "No .index-card-grid found"
     assert result["display"] != "none", (
         "Collapsed grid must not use display:none — must use max-height transition"
     )
