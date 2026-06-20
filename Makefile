@@ -4,7 +4,7 @@ PY := $(VENV)/bin/python
 PYTEST := $(VENV)/bin/pytest
 PRECOMMIT := $(VENV)/bin/pre-commit
 
-.PHONY: help install test test-headed test-debug precommit clean
+.PHONY: help install test test-headed test-debug precommit precommit-ci clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -17,8 +17,11 @@ install: ## Create venv, install test deps + Chromium
 	$(PY) -m playwright install chromium
 	$(PRECOMMIT) install
 
-precommit: ## Run all pre-commit hooks against all files
+precommit: ## Run all pre-commit hooks against all files (auto-fixes in place)
 	$(PRECOMMIT) run --all-files
+
+precommit-ci: ## Run the CI gate locally (check-only, never writes; mirrors CI)
+	$(PRECOMMIT) run --all-files --config .pre-commit-config.ci.yaml
 
 test: ## Run the e2e test suite (headless)
 	$(PYTEST) tests/ -q
