@@ -70,6 +70,7 @@ Procedures with correctness intuition. Each page covers the worked example, the 
 | [Greedy](./algorithms/greedy.md)                                                | Take the locally best choice each step; prove it's globally optimal by an exchange argument. Interval scheduling, Huffman, MST choices.                     |
 | [String Matching (KMP)](./algorithms/string-matching.md)                        | Find a pattern in a text in O(n + m) via the failure function — slide the pattern on a mismatch without ever rewinding the text. The substring-search workhorse. |
 | [Z-Algorithm](./algorithms/z-algorithm.md)                                      | Computes, for each position, the longest prefix starting there (the Z-array) in O(n) by reusing a sliding match window. KMP's twin; pattern search via `P$T`. |
+| [Number Theory](./algorithms/number-theory.md)                                  | **Hub** — survey + decision layer for the contest math toolkit: GCD, modular exponentiation, the sieve. Routes to each member; ties them together via mod-prime arithmetic. |
 
 ---
 
