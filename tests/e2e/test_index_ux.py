@@ -2,7 +2,7 @@
 - Index cards must not be clickable before stub detection completes.
 - Index section headers collapse/expand card grids; state persists in localStorage.
 - Unavailable cards have tooltip title and allow pointer events.
-- Section collapse uses max-height transition, not display:none (WIKI-160).
+- Section collapse uses max-height transition, not display:none.
 """
 
 
@@ -198,7 +198,7 @@ def test_unavailable_card_has_tooltip_title(page, base_url):
     )
 
 
-# ── Section collapse animation (WIKI-160) ─────────────────────────
+# ── Section collapse animation ────────────────────────────────────
 
 
 def test_section_grid_has_css_transition(page, base_url):
@@ -248,6 +248,66 @@ def test_collapsed_grid_not_display_none(page, base_url):
     )
     assert result["maxHeight"] == "0px", (
         f"Collapsed grid max-height must be 0px, got '{result['maxHeight']}'"
+    )
+
+
+# ── Index card hover preview ──────────────────────────────────────
+
+
+def test_index_card_hover_shows_preview(page, base_url):
+    """Hovering an available index card shows the hover-preview panel."""
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+
+    card = page.locator(".index-card:not(.index-card--unavailable)").first
+    card.hover()
+
+    preview = page.locator("#hover-preview")
+    preview.wait_for(state="visible", timeout=2_000)
+    assert preview.is_visible(), "hover-preview must become visible after hovering an index card"
+
+
+def test_index_card_hover_preview_hidden_on_leave(page, base_url):
+    """Moving pointer away from an index card hides the hover-preview panel."""
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+
+    card = page.locator(".index-card:not(.index-card--unavailable)").first
+    card.hover()
+    page.locator("#hover-preview").wait_for(state="visible", timeout=2_000)
+
+    # Move pointer to a neutral position away from any card or preview
+    page.mouse.move(0, 0)
+    page.wait_for_timeout(300)
+
+    preview = page.locator("#hover-preview")
+    assert not preview.is_visible(), "hover-preview must hide after pointer leaves the index card"
+
+
+def test_unavailable_index_card_no_hover_preview(page, base_url):
+    """Hovering an unavailable index card must not show the hover-preview panel."""
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+
+    has_stub = page.evaluate(
+        "() => !!document.querySelector('.index-card--unavailable')"
+    )
+    if not has_stub:
+        return  # no stub cards in this wiki; test is vacuously satisfied
+
+    card = page.locator(".index-card--unavailable").first
+    card.hover()
+    page.wait_for_timeout(600)  # longer than the 400ms show-delay
+
+    preview = page.locator("#hover-preview")
+    assert not preview.is_visible(), (
+        "hover-preview must not appear when hovering an unavailable index card"
     )
 
 

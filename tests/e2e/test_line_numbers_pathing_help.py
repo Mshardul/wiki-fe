@@ -296,6 +296,24 @@ def test_prefs_keyboard_tab_contains_shortcuts(page, base_url):
     assert "?" in body_text, "Keyboard tab should mention ? shortcut"
 
 
+def test_prefs_keyboard_tab_shows_index_and_content_groups(page, base_url):
+    """Keyboard tab renders Index and Content context groups from shortcuts.json."""
+    page.goto(f"{base_url}/")
+    page.wait_for_load_state("networkidle")
+    page.keyboard.press("?")
+    page.wait_for_selector("#prefs-panel-keyboard kbd", timeout=5_000)
+    body_text = page.locator("#prefs-panel-keyboard").inner_text().upper()
+    assert "INDEX" in body_text, (
+        "Keyboard shortcuts panel must include an 'Index' context group"
+    )
+    assert "CONTENT" in body_text, (
+        "Keyboard shortcuts panel must include a 'Content' context group"
+    )
+    assert "GLOBAL" in body_text, (
+        "Keyboard shortcuts panel must include a 'Global' context group"
+    )
+
+
 def test_prefs_focus_trapped_on_open(page, base_url):
     """Focus is inside the prefs modal when opened via ? key."""
     page.goto(f"{base_url}/")

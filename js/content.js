@@ -611,6 +611,27 @@ function addDiagramZoom(contentEl) {
       clone.classList.add("zoom-diagram-svg");
       openZoomOverlay(clone);
     });
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "copy-btn mermaid-copy-btn";
+    copyBtn.title = "Copy diagram as SVG";
+    copyBtn.setAttribute("aria-label", "Copy diagram as SVG");
+    copyBtn.textContent = "⧉";
+    copyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const svgEl = diagram.querySelector("svg");
+      if (!svgEl) return;
+      const svgText = new XMLSerializer().serializeToString(svgEl);
+      writeToClipboard(svgText).then(() => {
+        copyBtn.textContent = "✓";
+        copyBtn.classList.add("copied");
+        setTimeout(() => {
+          copyBtn.textContent = "⧉";
+          copyBtn.classList.remove("copied");
+        }, 2000);
+      });
+    });
+    diagram.appendChild(copyBtn);
   });
 }
 
@@ -676,6 +697,105 @@ async function rerenderMermaidDiagrams() {
   }
 }
 
+/* ─── Table Column Sort ─── */
+function addTableSort(contentEl) {
+  contentEl.querySelectorAll("table").forEach((table) => {
+    const thead = table.querySelector("thead");
+    if (!thead) return;
+    const ths = Array.from(thead.querySelectorAll("th"));
+    if (!ths.length) return;
+
+    let sortCol = -1;
+    let sortAsc = true;
+
+    ths.forEach((th, colIdx) => {
+      th.classList.add("sortable-th");
+      th.setAttribute("role", "button");
+      th.setAttribute("tabindex", "0");
+      th.setAttribute("aria-label", `Sort by ${th.textContent.trim()}`);
+
+      const doSort = () => {
+        if (sortCol === colIdx) {
+          sortAsc = !sortAsc;
+        } else {
+          sortCol = colIdx;
+          sortAsc = true;
+        }
+        ths.forEach((h, i) => {
+          h.classList.toggle("sort-asc", i === colIdx && sortAsc);
+          h.classList.toggle("sort-desc", i === colIdx && !sortAsc);
+        });
+
+        const tbody = table.querySelector("tbody") || table;
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        rows.sort((a, b) => {
+          const aText = a.cells[colIdx]?.textContent.trim() ?? "";
+          const bText = b.cells[colIdx]?.textContent.trim() ?? "";
+          const aNum = Number.parseFloat(aText);
+          const bNum = Number.parseFloat(bText);
+          const cmp =
+            !Number.isNaN(aNum) && !Number.isNaN(bNum)
+              ? aNum - bNum
+              : aText.localeCompare(bText, undefined, { numeric: true });
+          return sortAsc ? cmp : -cmp;
+        });
+        rows.forEach((r) => tbody.appendChild(r));
+      };
+
+      th.addEventListener("click", doSort);
+      th.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          doSort();
+        }
+      });
+    });
+  });
+}
+
+/* ─── LaTeX Copy Buttons ─── */
+function addLatexCopyButtons(contentEl, onCopyError = () => {}) {
+  contentEl.querySelectorAll(".katex-display").forEach((block) => {
+    const annotation = block.querySelector("annotation[encoding='application/x-tex']");
+    if (!annotation) return;
+    const latex = annotation.textContent.trim();
+
+    const btn = document.createElement("button");
+    btn.className = "copy-btn latex-copy-btn";
+    btn.title = "Copy LaTeX";
+    btn.setAttribute("aria-label", "Copy LaTeX");
+    btn.textContent = "⧉";
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      writeToClipboard(latex)
+        .then(() => {
+          btn.textContent = "✓";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "⧉";
+            btn.classList.remove("copied");
+          }, 2000);
+        })
+        .catch(() => onCopyError());
+    });
+    block.style.position = "relative";
+    block.appendChild(btn);
+  });
+}
+
+/* ─── hljs Theme Sync ─── */
+const HLJS_DARK =
+  "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css";
+const HLJS_LIGHT =
+  "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css";
+
+function syncHljsTheme() {
+  const link = document.getElementById("hljs-theme-css");
+  if (!link) return;
+  const theme = document.documentElement.getAttribute("data-theme") || "dark";
+  link.href = theme === "light" ? HLJS_LIGHT : HLJS_DARK;
+}
+
 /* ─── Table Scroll Cue ─── */
 function addTableScrollCues(contentEl) {
   contentEl.querySelectorAll("table").forEach((table) => {
@@ -691,7 +811,9 @@ function addTableScrollCues(contentEl) {
     };
 
     wrap.addEventListener("scroll", updateCue, { passive: true });
-    new ResizeObserver(updateCue).observe(wrap);
+    const ro = new ResizeObserver(updateCue);
+    ro.observe(wrap);
+    state.tableResizeObservers.push(ro);
     updateCue();
   });
 }
@@ -830,12 +952,27 @@ function _cleanupFocusObserver(contentEl) {
 /* ═══════════════════════════════════════════════════════════════
    PER-HEADING COLLAPSE TOGGLES (H2 on content page)
    ═══════════════════════════════════════════════════════════════ */
+function _setSectionCollapsed(h2, collapsed) {
+  if (collapsed) {
+    h2.classList.add("section--collapsed");
+  } else {
+    h2.classList.remove("section--collapsed");
+  }
+  const sectionId = h2.dataset.sectionId;
+  if (!sectionId) return;
+  h2.parentElement?.querySelectorAll(`[data-h2-body="${sectionId}"]`).forEach((el) => {
+    el.hidden = collapsed;
+  });
+}
+
 function injectHeadingCollapseToggles(contentEl, wikiId, articlePath) {
   const slugBase = articlePath.replace(/\//g, "-");
   contentEl.querySelectorAll("h2").forEach((h2) => {
     if (h2.querySelector(".heading-collapse-btn")) return;
 
     const key = `wiki-heading-collapsed-${wikiId}-${slugBase}-${h2.id}`;
+    const sectionId = h2.id || `h2-${Math.random().toString(36).slice(2)}`;
+    h2.dataset.sectionId = sectionId;
 
     const btn = document.createElement("button");
     btn.className = "heading-collapse-btn";
@@ -845,24 +982,24 @@ function injectHeadingCollapseToggles(contentEl, wikiId, articlePath) {
       '<svg viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     h2.appendChild(btn);
 
-    const body = document.createElement("div");
-    body.className = "heading-body";
-
     let next = h2.nextElementSibling;
     while (next && !/^H[12]$/.test(next.tagName)) {
-      const toMove = next;
+      next.dataset.h2Body = sectionId;
       next = next.nextElementSibling;
-      body.appendChild(toMove);
     }
-    h2.insertAdjacentElement("afterend", body);
 
-    if (getCollapsed(key)) {
-      h2.classList.add("section--collapsed");
-    }
+    const isCollapsed = getCollapsed(key);
+    _setSectionCollapsed(h2, isCollapsed);
 
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      toggleCollapse(key, h2);
+      const nowCollapsed = !h2.classList.contains("section--collapsed");
+      if (nowCollapsed) {
+        localStorage.setItem(key, "1");
+      } else {
+        localStorage.removeItem(key);
+      }
+      _setSectionCollapsed(h2, nowCollapsed);
     });
   });
 }
@@ -1066,6 +1203,9 @@ const ArticleFind = {
 })();
 
 export {
+  syncHljsTheme,
+  addLatexCopyButtons,
+  addTableSort,
   closeZoomOverlay,
   addCodeBlockHeader,
   addCopyButtons,

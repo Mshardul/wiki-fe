@@ -5,9 +5,8 @@ Mobile touch gestures (Group 5):
 - Swipe-right from left edge in content view → back to index.
 
 Deterministic gestures are asserted by dispatching synthetic TouchEvents in the
-page. Pinch-to-zoom (WIKI-150) and orientation re-fit (WIKI-238) are not
-reliably reproducible via dispatched events and are covered by manual verify —
-see the note at the bottom of this module.
+page. Pinch-to-zoom and orientation re-fit are not reliably reproducible via dispatched
+events and are covered by manual verify — see the note at the bottom of this module.
 """
 
 import pytest

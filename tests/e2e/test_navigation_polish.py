@@ -156,7 +156,7 @@ def test_escape_closes_switcher(page, base_url):
     page.keyboard.press("w")
     page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
     page.keyboard.press("Escape")
-    page.wait_for_selector("#wiki-switcher-modal.hidden", timeout=2_000)
+    page.wait_for_selector("#wiki-switcher-modal.hidden", state="attached", timeout=2_000)
 
 
 def test_wiki_switcher_shows_wiki_cards(page, base_url):
@@ -173,5 +173,5 @@ def test_overlay_click_closes_switcher(page, base_url):
     _go_to_article(page, base_url)
     page.keyboard.press("w")
     page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
-    page.locator("#wiki-switcher-overlay").click()
-    page.wait_for_selector("#wiki-switcher-modal.hidden", timeout=2_000)
+    page.locator("#wiki-switcher-overlay").click(position={"x": 5, "y": 5})
+    page.wait_for_selector("#wiki-switcher-modal.hidden", state="attached", timeout=2_000)

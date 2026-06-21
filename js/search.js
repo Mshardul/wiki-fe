@@ -261,7 +261,10 @@ function startPlaceholderHints() {
   stopPlaceholderHints();
   _placeholderIdx = 0;
   _placeholderTimer = setInterval(() => {
-    if (gSearchInput.value) return; // user is typing — leave it be
+    if (gSearchInput.value) {
+      stopPlaceholderHints();
+      return;
+    }
     gSearchInput.setAttribute("placeholder", PLACEHOLDER_HINTS[_placeholderIdx]);
     _placeholderIdx = (_placeholderIdx + 1) % PLACEHOLDER_HINTS.length;
   }, PLACEHOLDER_ROTATE_MS);

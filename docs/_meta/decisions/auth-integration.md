@@ -82,9 +82,9 @@ On login, if **local anon data exists**, show one prompt (generic copy — scale
 
 ### UI affordances (auth scope only)
 
-Auth adds exactly one visible control + one modal. Broader topbar declutter is **WIKI-240** (separate refactor, not auth).
+Auth adds exactly one visible control + one modal. Broader topbar declutter is a separete ticket (separate refactor, not auth).
 
-- **Login/logout icon button** in the topbar — the _only_ new auth UI in the topbar. Logged out → "Login"; logged in → "Logout". Account/email shown inside the **preferences panel** (panel renamed "Settings" → "Preferences" under WIKI-240).
+- **Login/logout icon button** in the topbar — the _only_ new auth UI in the topbar. Logged out → "Login"; logged in → "Logout". Account/email shown inside the **preferences panel** (panel renamed "Settings" → "Preferences" under another ticket).
 - **Auth modal — one modal, swapped content** (reuses existing modal pattern): login ↔ register ↔ verify-pending ↔ session-expired. Minimal.
   - **Register** panel: email, password + **live 5-rule checklist** (see Password policy in [auth.md](./auth.md)), submit disabled until all green, toggle to login.
   - **Verify-pending** panel: "Check your email to verify" + **Resend** button (`/auth/resend-verification`). Stays in-modal (flow contained).

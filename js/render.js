@@ -9,10 +9,12 @@ import {
   addCopyButtons,
   addDiagramZoom,
   addImageLightbox,
+  addLatexCopyButtons,
   addLineNumbers,
   addQuizTables,
   addStickySection,
   addTableScrollCues,
+  addTableSort,
   buildTOC,
   cleanupFocusMode,
   cleanupStickySection,
@@ -201,6 +203,9 @@ function renderHome() {
   `,
   ).join("");
 
+  state.tableResizeObservers.forEach((ro) => ro.disconnect());
+  state.tableResizeObservers = [];
+
   showView("view-home");
   updateArticleCounts();
 }
@@ -233,6 +238,7 @@ async function renderIndex(wiki) {
     renderIndexSections(state.indexSections, wiki);
     renderIndexControls(wiki);
     attachIndexCardKeyNav();
+    attachIndexCardHoverPreview();
     IndexFilter.apply();
 
     sectionsEl.classList.add("index-sections--loading");
@@ -361,18 +367,20 @@ function renderIndexControls(wiki) {
 }
 
 function attachIndexCardKeyNav() {
-  const container = document.getElementById("index-sections");
-  if (!container) return;
-
-  if (container._cardKeyNav) {
-    container.removeEventListener("keydown", container._cardKeyNav);
+  if (document._indexCardKeyNav) {
+    document.removeEventListener("keydown", document._indexCardKeyNav);
   }
 
-  container._cardKeyNav = (e) => {
+  document._indexCardKeyNav = (e) => {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Enter") return;
 
-    const card = e.target.closest(".index-card");
+    const focused = document.activeElement;
+    if (!focused) return;
+    const card = focused.closest(".index-card");
     if (!card) return;
+
+    const container = document.getElementById("index-sections");
+    if (!container || !container.contains(card)) return;
 
     if (e.key === "Enter") {
       e.preventDefault();
@@ -383,19 +391,52 @@ function attachIndexCardKeyNav() {
     e.preventDefault();
     const section = card.closest(".index-section");
     if (!section) return;
-
-    const cards = Array.from(section.querySelectorAll(".index-card:not(.index-card--unavailable)"));
-    const idx = cards.indexOf(card);
+    const sectionCards = Array.from(section.querySelectorAll(".index-card"));
+    const idx = sectionCards.indexOf(card);
     if (idx === -1) return;
 
-    if (e.key === "ArrowDown" && idx < cards.length - 1) {
-      cards[idx + 1].focus();
+    if (e.key === "ArrowDown" && idx < sectionCards.length - 1) {
+      sectionCards[idx + 1].focus();
     } else if (e.key === "ArrowUp" && idx > 0) {
-      cards[idx - 1].focus();
+      sectionCards[idx - 1].focus();
     }
   };
 
-  container.addEventListener("keydown", container._cardKeyNav);
+  document.addEventListener("keydown", document._indexCardKeyNav);
+}
+
+function attachIndexCardHoverPreview() {
+  const container = document.getElementById("index-sections");
+  if (!container) return;
+
+  if (container._cardHoverPreview) {
+    container.removeEventListener("mouseenter", container._cardHoverPreview, true);
+    container.removeEventListener("mouseleave", container._cardHoverLeave, true);
+  }
+
+  container._cardHoverPreview = (e) => {
+    if (_lastPointerWasTouch) return;
+    const card = e.target.closest(".index-card:not(.index-card--unavailable)");
+    if (!card) return;
+    const path = card.querySelector(".index-card-read-time[data-path]")?.dataset.path;
+    if (!path) return;
+    clearTimeout(_indexCardHoverTimer);
+    _indexCardHoverTimer = setTimeout(() => showHoverPreview(card, path), 400);
+  };
+
+  container._cardHoverLeave = (e) => {
+    const relTarget = e.relatedTarget;
+    if (relTarget && container.contains(relTarget)) return;
+    clearTimeout(_indexCardHoverTimer);
+    const previewEl = document.getElementById("hover-preview");
+    if (!previewEl) return;
+    previewEl.classList.remove("visible");
+    previewEl.classList.add("hidden");
+    previewEl.textContent = "";
+  };
+
+  container.addEventListener("mouseenter", container._cardHoverPreview, true);
+  container.addEventListener("mouseleave", container._cardHoverLeave, true);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -610,7 +651,6 @@ async function populateIndexReadTimes() {
         if (isStub && card) {
           card.classList.add("index-card--unavailable");
           card.removeAttribute("onclick");
-          card.removeAttribute("tabindex");
           card.setAttribute("aria-disabled", "true");
           card.title = "Coming soon — this article hasn't been written yet";
           const dot = card.querySelector(".index-card-read-dot");
@@ -794,6 +834,8 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     tocSidebar.removeEventListener("scroll", tocSidebar._tocScrollHandler);
     tocSidebar._tocScrollHandler = null;
   }
+  state.tableResizeObservers.forEach((ro) => ro.disconnect());
+  state.tableResizeObservers = [];
   cleanupFocusMode();
   cleanupStickySection();
   ArticleFind.close();
@@ -920,6 +962,8 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       addImageLightbox(body);
       addDiagramZoom(body);
       addTableScrollCues(body);
+      addTableSort(body);
+      addLatexCopyButtons(body, () => showToast("Copy failed — clipboard access denied"));
 
       // Related articles
       renderRelatedArticles(wiki, filePath);
@@ -999,6 +1043,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
 
 /* ─── Internal .md link interception & Hover Previews ─── */
 let hoverPreviewTimer;
+let _indexCardHoverTimer;
 let _previewAbortController = null;
 let _previewGeneration = 0;
 
@@ -1057,7 +1102,10 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
       e.preventDefault();
       const title = link.textContent.trim();
       renderContent(wiki, resolvedPath, title);
-      if (previewEl) previewEl.classList.remove("visible");
+      if (previewEl) {
+        previewEl.classList.remove("visible");
+        previewEl.classList.add("hidden");
+      }
     });
 
     // Hover logic — skip on touch
@@ -1075,6 +1123,7 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
       _previewGeneration++;
       if (previewEl) {
         previewEl.classList.remove("visible");
+        previewEl.classList.add("hidden");
         previewEl.textContent = "";
       }
     });
@@ -1142,6 +1191,7 @@ function closePeekSheet() {
   }
   _previewGeneration++;
   previewEl.classList.remove("visible", "hover-preview--sheet-open");
+  previewEl.classList.add("hidden");
   previewEl.textContent = "";
 }
 
@@ -1191,6 +1241,7 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
   }
 
   previewEl.innerHTML = '<div class="loading">Loading preview...</div>';
+  previewEl.classList.remove("hidden");
   previewEl.classList.add("visible");
 
   const SKIP_PREFIXES = ["prerequisites:", "prerequisites", "prerequisite", "table of contents"];

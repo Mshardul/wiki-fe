@@ -1,7 +1,7 @@
 """
 - scroll position persisted per article in localStorage
 - TOC sidebar sticky on desktop, hidden on mobile
-- Sticky section header updates on scroll (WIKI-174)
+- Sticky section header updates on scroll
 """
 
 
@@ -148,7 +148,7 @@ def test_toc_sticky_does_not_scroll_away(page, base_url):
     assert box["y"] >= 0 and box["y"] < page.viewport_size["height"]
 
 
-# ── Sticky section header (WIKI-174) ───────────────────────────────────────────
+# ── Sticky section header ──────────────────────────────────────────────────────
 
 
 def test_sticky_section_header_element_exists(page, base_url):

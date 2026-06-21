@@ -36,6 +36,11 @@ Structural references. Each page covers how it works, operations with their comp
 | [Fenwick Tree (BIT)](./data-structures/fenwick-tree.md)             | Binary-indexed tree for prefix sums. O(log n) update + prefix query with tiny code — lighter than a segment tree.                                     |
 | [Union-Find (DSU)](./data-structures/union-find.md)                 | Disjoint-set forest with path compression + union by rank. Near-O(1) connectivity — Kruskal's MST, cycle detection, grouping.                         |
 | [Graph](./data-structures/graph.md)                                 | Nodes + edges. Adjacency list vs matrix, directed/weighted variants — the substrate every traversal algorithm walks.                                  |
+| [Bloom Filter](./data-structures/bloom-filter.md)                   | **[stub]** Probabilistic membership structure — never false negatives, tunable false-positive rate. O(k) insert/lookup, O(m) space for m bits and k hash functions. |
+| [B+ Tree](./data-structures/b-plus-tree.md)                         | **[stub]** B-tree variant with all values at leaves, internal nodes as pure routing keys, leaves linked for range scans — the structure behind MySQL InnoDB indexes. |
+| [Interval Tree](./data-structures/interval-tree.md)                 | **[stub]** Augmented BST storing intervals; O(log n + k) stabbing and overlap queries — the structure for sweep-line and scheduling problems.          |
+| [Treap](./data-structures/treap.md)                                 | **[stub]** BST on keys + heap on random priorities — dual invariant gives expected O(log n) height without deterministic rotations.                    |
+| [Suffix Array](./data-structures/suffix-array.md)                   | **[stub]** Sorted array of suffix indices. O(n log n) build, O(m log n) pattern search — lighter than a suffix tree; the CP string workhorse.         |
 
 ---
 
@@ -64,6 +69,7 @@ Procedures with correctness intuition. Each page covers the worked example, the 
 | [Floyd-Warshall](./algorithms/floyd-warshall.md)                                | All-pairs shortest paths by DP over intermediates. O(V³) — dense graphs, small V, transitive closure.                                                       |
 | [Minimum Spanning Tree (Kruskal / Prim)](./algorithms/minimum-spanning-tree.md) | Cheapest tree connecting all nodes. Kruskal (sort + DSU) or Prim (PQ) — network design.                                                                     |
 | [Recursion](./algorithms/recursion.md)                                          | A function defined in terms of itself: base case + recursive case. The substrate under divide-and-conquer, backtracking, and DP.                            |
+| [Divide and Conquer](./algorithms/divide-and-conquer.md)                        | Split into independent subproblems, solve each recursively, combine. The paradigm behind merge sort, Karatsuba, and closest pair — O(n log n) via the Master Theorem. |
 | [Backtracking](./algorithms/backtracking.md)                                    | Build candidates incrementally, abandon dead ends (prune). The systematic search for subsets, permutations, and constraint problems.                        |
 | [Dynamic Programming](./algorithms/dynamic-programming.md)                      | Solve overlapping subproblems once, reuse via memo or table. Optimal substructure → the recurrence that collapses exponential to polynomial.                |
 | [Bit Manipulation](./algorithms/bit-manipulation.md)                            | Operate on individual bits: masks, shifts, XOR tricks. O(1) set operations and the bitmask-DP enabler.                                                      |
@@ -71,6 +77,13 @@ Procedures with correctness intuition. Each page covers the worked example, the 
 | [String Matching (KMP)](./algorithms/string-matching.md)                        | Find a pattern in a text in O(n + m) via the failure function — slide the pattern on a mismatch without ever rewinding the text. The substring-search workhorse. |
 | [Z-Algorithm](./algorithms/z-algorithm.md)                                      | Computes, for each position, the longest prefix starting there (the Z-array) in O(n) by reusing a sliding match window. KMP's twin; pattern search via `P$T`. |
 | [Number Theory](./algorithms/number-theory.md)                                  | **Hub** — survey + decision layer for the contest math toolkit: GCD, modular exponentiation, the sieve. Routes to each member; ties them together via mod-prime arithmetic. |
+| [Strongly Connected Components](./algorithms/strongly-connected-components.md)  | **[stub]** Find all SCCs in a directed graph. Kosaraju (two-pass DFS + transpose) or Tarjan (single-pass, low-link values) — both O(V + E).           |
+| [Maximum Flow](./algorithms/maximum-flow.md)                                    | **[Hub][stub]** Survey + decision layer for max-flow algorithms: Ford-Fulkerson, Edmonds-Karp, Dinic, and the bipartite-matching reduction.            |
+| [Ford-Fulkerson](./algorithms/ford-fulkerson.md)                                | **[stub]** Augment flow along any path in the residual graph. O(E·\|max_flow\|) — can fail to terminate on irrational capacities; the conceptual baseline. |
+| [Edmonds-Karp](./algorithms/edmonds-karp.md)                                    | **[stub]** Ford-Fulkerson with BFS for shortest augmenting paths. O(VE²) — polynomial regardless of capacity values.                                   |
+| [Dinic's Algorithm](./algorithms/dinic.md)                                      | **[stub]** Level graph + blocking flows. O(V²E); O(E√V) on unit-capacity graphs — the practical choice for dense graphs and bipartite matching.         |
+| [Rabin-Karp](./algorithms/rabin-karp.md)                                        | **[stub]** Rolling hash over a sliding window. O(n + m) average pattern search; O(nm) worst case — shines on multi-pattern search.                     |
+| [Kadane's Algorithm](./algorithms/kadane.md)                                    | **[stub]** Maximum subarray in O(n) via a single greedy pass — extend or restart based on running sum. The canonical linear-scan DP.                   |
 
 ---
 
@@ -94,40 +107,27 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 | [Tree & Graph Traversal](./patterns/tree-graph-traversal.md)                | The BFS/DFS skeletons applied as a problem pattern: level-order, path-sum, connected components, flood fill.                   |
 | [DP Patterns](./patterns/dp-patterns.md)                                    | The recurring DP shapes: 0/1 knapsack, unbounded, LIS, LCS, grid paths, interval DP — recognition and the state to pick.       |
 | [Pattern Selection Cheat Sheet](./patterns/pattern-selection-cheatsheet.md) | The aggregator: trigger phrase → which pattern. The fast lookup that ships last, once every pattern exists.                    |
+| [Two Heaps](./patterns/two-heaps.md)                                        | **[stub]** A max-heap of the lower half + min-heap of the upper half. Median of a stream and sliding-window median in O(log n) per element.           |
+| [In-place Reversal of a Linked List](./patterns/in-place-reversal.md)       | **[stub]** Rewire next pointers with three variables (prev, curr, next). Reverse a list, reverse k-groups, palindrome check — O(n) time, O(1) space.  |
+| [Matrix Traversal](./patterns/matrix-traversal.md)                          | **[stub]** BFS/DFS on a 2D grid with direction vectors. Island count, flood fill, shortest path in grid — the implicit-graph pattern.                  |
+| [State Machine DP](./patterns/state-machine-dp.md)                          | **[stub]** Model decisions as states with transitions; DP over (index, state). Stock buy/sell with cooldown, k-transaction problems.                   |
+| [Bitmask DP](./patterns/bitmask-dp.md)                                      | **[stub]** Use an integer bitmask to represent a subset as DP state. n ≤ 20 signal; TSP, assignment, covered-nodes problems — O(2ⁿ · n).              |
+| [Frequency Array](./patterns/frequency-array.md)                            | **[stub]** Array indexed by value as a hash map for bounded keys. O(1) increment/lookup, cache-friendly — anagram detection, character frequency.      |
 
 ---
 
-## New Additions
+## Deferred / Not yet filed
 
-- Add these to the list later. Discuss the section grouping properly.
-- Data Structures (new)
-    - Bloom Filter
-    - Count-Min Sketch
-    - B+ Tree
-    - Interval Tree / Segment Tree for intervals
-    - Treap / Skip List
-    - Suffix Tree / Suffix Array
-    - Adjacency List and Adjacency Matrix
-    - Fibonacci Heap
-    - Memoize / Memoization Table
-- Algorithms (new)
-    - Strongly Connected Components
-    - Bidirectional BFS
-    - Maximum Flow (Ford-Fulkerson, Edmonds-Karp, Dinic) and Bipartite Matching
-    - Rabin-Karp
-    - Divide and Conquer
-    - Kadane’s Algorithm ← new addition
-- Patterns (new)
-    - Two Heaps
-    - In-place Reversal of a Linked List
-    - Tree BFS vs Tree DFS
-    - 0/1 Knapsack and Unbounded Knapsack
-    - Matrix Traversal / Spiral Matrix
-    - State Machine DP ← new addition
-    - Bitmask DP ← new addition
-    - Frequency Array / Counting as Hashing ← new addition
-- Meta-Additions (new)
-    - Complexity Cheat Sheet
-    - Problem-Solving Framework
+- Count-Min Sketch — probabilistic frequency sketch; better fits system-design vertical
+- Skip List — randomized ordered map; defer until treap is written
+- Suffix Tree — suffix array covers 90% of interview need; suffix tree deferred
+- Bidirectional BFS — will live as a section inside bfs.md
+- Tree BFS vs Tree DFS — will live as a section inside tree-graph-traversal.md
+- 0/1 Knapsack / Unbounded Knapsack — covered in dp-patterns.md
+- Fibonacci Heap — one sentence in dijkstra.md suffices
+- Memoization Table — technique inside dynamic-programming.md, not a standalone DS
+- Adjacency List / Matrix — covered in graph.md (Representations section)
+- Complexity Cheat Sheet — meta article, non-standard format; pending
+- Problem-Solving Framework — meta article, non-standard format; pending
 
 ---

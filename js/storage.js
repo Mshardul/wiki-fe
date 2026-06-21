@@ -820,11 +820,12 @@ const Settings = {
           )
           .join("")}
       </div>`;
+    const ORDER = ["global", "home", "index", "content", "search"];
     const list = document.createElement("div");
     list.className = "prefs-shortcuts-list";
-    list.innerHTML =
-      renderGroup("Global", this._shortcutsCache.global) +
-      renderGroup("Content", this._shortcutsCache.content);
+    list.innerHTML = ORDER.filter((k) => this._shortcutsCache[k]?.length)
+      .map((k) => renderGroup(k.charAt(0).toUpperCase() + k.slice(1), this._shortcutsCache[k]))
+      .join("");
     container.replaceChildren(list);
   },
 

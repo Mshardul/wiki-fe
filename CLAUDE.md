@@ -182,6 +182,15 @@ content-loading flow, persistence model, and the module-map-as-contract.
 
 ---
 
+## COMPLETION CHECKLIST
+
+After finishing any coding task:
+
+1. **Tests** — decide if new behaviour needs coverage. Add tests if: a new user-visible interaction was added, a bug was fixed (regression test), or a new code path exists that existing tests don't reach. Use the test file map below to pick the right file. Never run tests — write correct test code only.
+2. **Ticket closure** — if the task came from a ticket (`WIKI-xxx`), update its row in `docs/tickets.md`: set Status = `Done` and Impl. Date = today's date (YYYY-MM-DD).
+
+---
+
 ## TEST PATTERNS
 
 Prescriptive test rules live in **[CONVENTIONS.md](./CONVENTIONS.md) → Testing** (e2e-only,

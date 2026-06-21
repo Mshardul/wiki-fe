@@ -78,7 +78,7 @@ def test_visited_stub_excluded_from_search(wiki_page, base_url):
 
 
 def test_search_does_not_fetch_articles_for_stub_detection(wiki_page):
-    """WIKI-222: opening search must not fetch article .md bodies just to detect stubs."""
+    """opening search must not fetch article .md bodies just to detect stubs."""
     wiki_page.evaluate("""() => {
         window._articleFetches = [];
         const orig = window.fetch;
@@ -157,7 +157,7 @@ def test_search_debounce_suppresses_intermediate_updates(wiki_page):
     assert updates < 7, f"Expected debounced updates (<7) but got {updates}"
 
 
-# ── Result count badge (WIKI-166) ─────────────────────────────────
+# ── Result count badge ────────────────────────────────────────────
 
 
 def test_result_count_shows_on_results(wiki_page):

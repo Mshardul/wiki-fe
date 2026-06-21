@@ -27,6 +27,9 @@ precommit-ci: ## Run the CI gate locally (check-only, never writes; mirrors CI)
 test: ## Run the e2e test suite (headless)
 	$(PYTEST) tests/ -q
 
+test-parallel: ## Run tests in parallel (N=<number of processes>, default: auto)
+	$(PYTEST) tests/ -q -n $${N:-auto}
+
 test-headed: ## Run tests with a visible browser
 	$(PYTEST) tests/ --headed
 

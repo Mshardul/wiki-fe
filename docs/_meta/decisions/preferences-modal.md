@@ -1,4 +1,4 @@
-# Preferences Modal (WIKI-239)
+# Preferences Modal
 
 Replace `#settings-panel` (drawer) and `#help-modal` with a single tabbed modal `#prefs-modal`.
 

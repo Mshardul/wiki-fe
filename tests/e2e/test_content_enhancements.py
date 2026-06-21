@@ -4,12 +4,12 @@ Content view enhancements:
 - Image lightbox zoom (#zoom-overlay, .zoomable-img)
 - Mermaid diagram zoom (click .mermaid-diagram → overlay svg)
 - Diagram theme sync (SVG re-renders on theme change)
-- Anchor link toast confirmation (WIKI-178)
-- Reading progress bar glow (WIKI-140)
-- Code block header with traffic lights and copy button (WIKI-139)
-- Diff block addition/deletion highlighting (WIKI-158)
-- Collapsible tall callouts (WIKI-180)
-- Broken image error placeholder (WIKI-196)
+- Anchor link toast confirmation
+- Reading progress bar glow
+- Code block header with traffic lights and copy button
+- Diff block addition/deletion highlighting
+- Collapsible tall callouts
+- Broken image error placeholder
 """
 
 ARTICLE_WITH_TABLE = """\
@@ -367,7 +367,7 @@ def test_diagram_src_preserved_after_theme_change(page, base_url):
     )
 
 
-# ── Anchor link toast (WIKI-178) ──────────────────────────────────
+# ── Anchor link toast ─────────────────────────────────────────────
 
 ARTICLE_WITH_SECTIONS = """\
 # Toast Test
@@ -411,7 +411,7 @@ def test_anchor_link_toast_does_not_show_on_page_load(page, base_url):
     assert not toast_visible, "Toast must not be visible on article load"
 
 
-# ── Reading progress bar glow (WIKI-140) ─────────────────────────
+# ── Reading progress bar glow ────────────────────────────────────
 
 
 def test_reading_progress_bar_has_box_shadow(page, base_url):
@@ -438,7 +438,7 @@ def test_reading_progress_bar_visible_in_content_view(page, base_url):
     assert is_visible, "reading-progress must have .visible class in content view"
 
 
-# ── Code block header (WIKI-139) ──────────────────────────────────
+# ── Code block header ─────────────────────────────────────────────
 
 ARTICLE_WITH_CODE = """\
 # Code Block Test
@@ -514,7 +514,7 @@ plain code block with no language tag
 """
 
 
-# ── Code block has-lang-label class (WIKI-230) ────────────────────
+# ── Code block has-lang-label class ───────────────────────────────
 
 
 def test_code_block_with_lang_has_has_lang_label_class(page, base_url):
@@ -543,7 +543,7 @@ def test_code_block_without_lang_lacks_has_lang_label_class(page, base_url):
     )
 
 
-# ── Diff block highlighting (WIKI-158) ────────────────────────────
+# ── Diff block highlighting ───────────────────────────────────────
 
 
 def test_diff_css_rules_for_additions_and_deletions(page, base_url):
@@ -577,7 +577,7 @@ def test_diff_css_rules_for_additions_and_deletions(page, base_url):
     )
 
 
-# ── Collapsible callouts (WIKI-180) ───────────────────────────────
+# ── Collapsible callouts ──────────────────────────────────────────
 
 ARTICLE_WITH_LONG_CALLOUT = """\
 # Callout Test
@@ -664,7 +664,7 @@ def test_callout_expand_btn_toggles_expanded(page, base_url):
     )
 
 
-# ── Broken image placeholder (WIKI-196) ──────────────────────────
+# ── Broken image placeholder ─────────────────────────────────────
 
 ARTICLE_WITH_BROKEN_IMAGE = """\
 # Broken Image Test
@@ -907,3 +907,156 @@ def test_print_stylesheet_loaded(wiki_page):
         }"""
     )
     assert has_print, "No @media print rules found — print.css not loaded"
+
+
+# ── Table column sort ───────────────────────────────────────────────────────────
+
+ARTICLE_WITH_SORTABLE_TABLE = """\
+# Sort Test
+
+## Section
+
+| Name    | Score |
+| ------- | ----- |
+| Charlie | 30    |
+| Alice   | 10    |
+| Bob     | 20    |
+"""
+
+
+def test_table_headers_get_sortable_class(page, base_url):
+    """Every <th> in a table with <thead> gets .sortable-th after render."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SORTABLE_TABLE, slug="sort-class")
+    page.wait_for_selector("#markdown-body table", timeout=5_000)
+    count = page.evaluate(
+        "() => document.querySelectorAll('#markdown-body th.sortable-th').length"
+    )
+    assert count == 2, f"Expected 2 sortable headers, got {count}"
+
+
+def test_table_sort_asc_on_first_click(page, base_url):
+    """Clicking a <th> sorts rows ascending; first row becomes alphabetically first."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SORTABLE_TABLE, slug="sort-asc")
+    page.wait_for_selector("#markdown-body th.sortable-th", timeout=5_000)
+    page.locator("#markdown-body th.sortable-th").first.click()
+    first_cell = page.evaluate(
+        "() => document.querySelector('#markdown-body tbody tr:first-child td').textContent.trim()"
+    )
+    assert first_cell == "Alice", f"Expected Alice first after asc sort, got {first_cell!r}"
+
+
+def test_table_sort_desc_on_second_click(page, base_url):
+    """Clicking the same <th> twice reverses the sort to descending."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SORTABLE_TABLE, slug="sort-desc")
+    page.wait_for_selector("#markdown-body th.sortable-th", timeout=5_000)
+    th = page.locator("#markdown-body th.sortable-th").first
+    th.click()
+    th.click()
+    first_cell = page.evaluate(
+        "() => document.querySelector('#markdown-body tbody tr:first-child td').textContent.trim()"
+    )
+    assert first_cell == "Charlie", f"Expected Charlie first after desc sort, got {first_cell!r}"
+
+
+def test_table_sort_indicator_classes(page, base_url):
+    """Active sort column gets .sort-asc or .sort-desc; non-active columns have neither."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SORTABLE_TABLE, slug="sort-indicator")
+    page.wait_for_selector("#markdown-body th.sortable-th", timeout=5_000)
+    page.locator("#markdown-body th.sortable-th").first.click()
+    result = page.evaluate("""() => {
+        const ths = [...document.querySelectorAll('#markdown-body th.sortable-th')];
+        return {
+            firstAsc: ths[0].classList.contains('sort-asc'),
+            secondAsc: ths[1].classList.contains('sort-asc'),
+            secondDesc: ths[1].classList.contains('sort-desc'),
+        };
+    }""")
+    assert result["firstAsc"], "Clicked column should have .sort-asc"
+    assert not result["secondAsc"], "Non-clicked column must not have .sort-asc"
+    assert not result["secondDesc"], "Non-clicked column must not have .sort-desc"
+
+
+# ── Mermaid copy as SVG ─────────────────────────────────────────────────────────
+
+ARTICLE_WITH_MERMAID_FOR_COPY = """\
+# Mermaid Copy Test
+
+## Section
+
+```mermaid
+graph LR
+  A[Start] --> B[End]
+```
+"""
+
+
+def test_mermaid_diagram_has_copy_button(page, base_url):
+    """A rendered .mermaid-diagram contains a .mermaid-copy-btn button."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_FOR_COPY, slug="mermaid-copy-btn")
+    page.wait_for_selector(".mermaid-diagram", timeout=8_000)
+    count = page.evaluate(
+        "() => document.querySelectorAll('.mermaid-diagram .mermaid-copy-btn').length"
+    )
+    assert count >= 1, "No .mermaid-copy-btn found inside .mermaid-diagram"
+
+
+def test_mermaid_copy_btn_copies_svg(page, base_url):
+    """Clicking .mermaid-copy-btn writes SVG markup to the clipboard."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_FOR_COPY, slug="mermaid-copy-svg")
+    page.wait_for_selector(".mermaid-diagram", timeout=8_000)
+    page.evaluate(
+        "() => { navigator.clipboard.writeText = (t) => { window.__svgCopied = t; return Promise.resolve(); }; }"
+    )
+    page.locator(".mermaid-copy-btn").first.click()
+    page.wait_for_function("() => !!window.__svgCopied", timeout=3_000)
+    copied = page.evaluate("() => window.__svgCopied")
+    assert "<svg" in copied, f"Copied text does not look like SVG: {copied[:80]!r}"
+
+
+# ── hljs theme sync ─────────────────────────────────────────────────────────────
+
+
+def test_hljs_stylesheet_swaps_on_theme_change(page, base_url):
+    """Toggling the theme swaps the hljs CSS href between dark and light variants."""
+    page.goto(f"{base_url}/")
+    page.wait_for_load_state("networkidle")
+
+    initial_href = page.evaluate(
+        "() => document.getElementById('hljs-theme-css')?.href ?? ''"
+    )
+    assert initial_href, "hljs-theme-css link not found"
+
+    page.evaluate("() => document.querySelector('[data-action=\"toggle-theme\"]')?.click()")
+    page.wait_for_timeout(300)
+
+    new_href = page.evaluate(
+        "() => document.getElementById('hljs-theme-css')?.href ?? ''"
+    )
+    assert new_href != initial_href, (
+        f"hljs stylesheet href did not change after theme toggle: {new_href!r}"
+    )
+    assert "atom-one" in new_href, f"Unexpected hljs stylesheet: {new_href!r}"
+
+
+# ── ResizeObserver cleanup ──────────────────────────────────────────────────────
+
+
+def test_resize_observers_cleared_on_navigation(page, base_url):
+    """Navigating away from an article resets state.tableResizeObservers to []."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_TABLE, slug="ro-cleanup")
+    page.wait_for_selector(".table-scroll-wrap", timeout=5_000)
+
+    count_before = page.evaluate(
+        "() => (window.state?.tableResizeObservers ?? []).length"
+    )
+    assert count_before >= 1, f"Expected ≥1 observer after render, got {count_before}"
+
+    page.evaluate("() => navigateHome()")
+    page.wait_for_selector("#view-home.active", timeout=5_000)
+
+    count_after = page.evaluate(
+        "() => (window.state?.tableResizeObservers ?? []).length"
+    )
+    assert count_after == 0, (
+        f"tableResizeObservers not cleared after navigation, still {count_after}"
+    )

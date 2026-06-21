@@ -4,6 +4,7 @@ import {
   QuizMode,
   closeZoomOverlay,
   rerenderMermaidDiagrams,
+  syncHljsTheme,
   toggleFocusMode,
 } from "./content.js";
 import {
@@ -26,6 +27,7 @@ import {
   Offline,
   ReadToggle,
   Settings,
+  Theme,
   applySettingsToDOM,
   clearRecents,
   getBookmarks,
@@ -49,6 +51,7 @@ window.state = state;
 window.Settings = Settings;
 window.Bookmarks = Bookmarks;
 window.navigate = navigate;
+window.navigateHome = () => navigate("");
 window.navigateToContent = navigateToContent;
 window.toggleSection = toggleSection;
 window.clearRecents = clearRecents;
@@ -129,6 +132,9 @@ document.addEventListener("click", (e) => {
       break;
     case "offline-toggle":
       Offline.toggle();
+      break;
+    case "toggle-theme":
+      Theme.toggle();
       break;
     case "print-article":
       printArticle();
@@ -585,6 +591,7 @@ let _mermaidRerenderTimer = null;
 document.addEventListener("wiki:themechange", () => {
   clearTimeout(_mermaidRerenderTimer);
   _mermaidRerenderTimer = setTimeout(rerenderMermaidDiagrams, 150);
+  syncHljsTheme();
 });
 
 /* ═══════════════════════════════════════════════════════════════
@@ -658,6 +665,7 @@ function mountDebugOverlay() {
 (function init() {
   history.scrollRestoration = "manual";
   applySettingsToDOM(getSettings());
+  syncHljsTheme();
   initOsThemeListener();
 
   // async; fires GET /auth/me, pulls data, refreshes UI + re-renders when done.

@@ -3,13 +3,21 @@
     { "keys": ["⌘K"], "description": "Open search" },
     { "keys": ["?"], "description": "Open keyboard shortcuts" },
     { "keys": [","], "description": "Open preferences" },
+    { "keys": ["W"], "description": "Switch wiki (index + content views)" },
     { "keys": ["ESC"], "description": "Close / go back" }
+  ],
+  "index": [
+    { "keys": ["↑ / ↓"], "description": "Move between article cards" },
+    { "keys": ["Enter"], "description": "Open focused article" }
   ],
   "content": [
     { "keys": ["B"], "description": "Toggle bookmark" },
     { "keys": ["F"], "description": "Toggle focus mode" },
     { "keys": ["D"], "description": "Distraction-free mode" },
+    { "keys": ["Q"], "description": "Quiz mode" },
     { "keys": ["T"], "description": "Focus table of contents" },
+    { "keys": ["/"], "description": "Search within article" },
+    { "keys": ["⌘F"], "description": "Search within wiki" },
     { "keys": ["="], "description": "Increase font size" },
     { "keys": ["-"], "description": "Decrease font size" }
   ]

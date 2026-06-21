@@ -244,10 +244,20 @@ body.distraction-free .sticky-section-header {
   opacity: 0.3;
   border-color: var(--accent);
 }
+@keyframes tocDotPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
 .toc-item.toc-current::before {
   background: var(--accent);
   opacity: 1;
   border-color: var(--accent);
+  animation: tocDotPulse 2s ease-in-out infinite;
 }
 
 /* toc heading jump pulse */
@@ -740,6 +750,27 @@ pre.has-line-numbers {
 .markdown-body thead tr:hover th {
   background: var(--surface-2);
 }
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.sortable-th::after {
+  content: " ⇅";
+  opacity: 0.35;
+  font-size: 0.75em;
+}
+.sortable-th.sort-asc::after {
+  content: " ↑";
+  opacity: 1;
+}
+.sortable-th.sort-desc::after {
+  content: " ↓";
+  opacity: 1;
+}
+.sortable-th:hover {
+  background: var(--surface-hover);
+}
 
 /* Quiz-me mode — blanked complexity cells, tap to reveal */
 .markdown-body .quiz-cell.quiz-blurred {
@@ -849,6 +880,7 @@ pre.has-line-numbers {
    MERMAID DIAGRAMS
    ═══════════════════════════════════════════════ */
 .mermaid-diagram {
+  position: relative;
   margin: var(--s5) 0;
   padding: var(--s6);
   background: var(--surface);
@@ -857,6 +889,12 @@ pre.has-line-numbers {
   overflow-x: auto;
   text-align: center;
   cursor: zoom-in;
+}
+.mermaid-diagram:hover .mermaid-copy-btn {
+  opacity: 1;
+}
+.katex-display:hover .latex-copy-btn {
+  opacity: 1;
 }
 .mermaid-diagram svg {
   max-width: 100%;
@@ -1107,6 +1145,9 @@ pre.has-line-numbers {
   transform: translateY(4px) scale(0.98);
   transition: opacity 0.15s ease, transform 0.15s ease;
   pointer-events: none;
+}
+.hover-preview.hidden {
+  display: none;
 }
 .hover-preview.visible {
   opacity: 1;
@@ -1463,11 +1504,16 @@ body.distraction-free .content-layout {
 .markdown-body h2.section--collapsed .heading-collapse-btn svg {
   transform: rotate(-90deg);
 }
-.heading-body {
-  overflow: hidden;
-  max-height: 9999px;
-  transition: max-height 0.25s ease;
+[data-h2-body] {
+  transition: opacity 0.2s ease;
 }
-.markdown-body h2.section--collapsed + .heading-body {
-  max-height: 0;
+[data-h2-body][hidden] {
+  display: none !important;
+}
+
+/* ── Lede paragraph ── */
+.markdown-body > p:first-of-type {
+  font-size: calc(var(--text-base) * 1.125);
+  color: var(--text-heading);
+  line-height: 1.7;
 }

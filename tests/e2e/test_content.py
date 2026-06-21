@@ -7,7 +7,7 @@
 - TOC items rendered in sidebar
 - Article hero presence + ghost text
 - H1 first-word accent span
-- Lede paragraph styling (WIKI-138)
+- Lede paragraph styling
 """
 
 
@@ -263,7 +263,7 @@ def test_h1_first_word_wrapped_in_accent_span(page, base_url):
     assert full_text == "Distributed Systems", f"h1 full text altered: '{full_text}'"
 
 
-# ── Lede paragraph (WIKI-138) ─────────────────────────────────────
+# ── Lede paragraph ────────────────────────────────────────────────
 
 
 def test_lede_paragraph_has_larger_font_than_body(page, base_url):
