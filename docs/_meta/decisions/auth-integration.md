@@ -82,7 +82,7 @@ On login, if **local anon data exists**, show one prompt (generic copy — scale
 
 ### UI affordances (auth scope only)
 
-Auth adds exactly one visible control + one modal. Broader topbar declutter is a separete ticket (separate refactor, not auth).
+Auth adds exactly one visible control + one modal. Broader topbar declutter is a separate ticket (separate refactor, not auth).
 
 - **Login/logout icon button** in the topbar — the _only_ new auth UI in the topbar. Logged out → "Login"; logged in → "Logout". Account/email shown inside the **preferences panel** (panel renamed "Settings" → "Preferences" under another ticket).
 - **Auth modal — one modal, swapped content** (reuses existing modal pattern): login ↔ register ↔ verify-pending ↔ session-expired. Minimal.

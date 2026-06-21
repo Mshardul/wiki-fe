@@ -410,23 +410,28 @@ function attachIndexCardHoverPreview() {
   if (!container) return;
 
   if (container._cardHoverPreview) {
-    container.removeEventListener("mouseenter", container._cardHoverPreview, true);
-    container.removeEventListener("mouseleave", container._cardHoverLeave, true);
+    container.removeEventListener("pointerover", container._cardHoverPreview);
+    container.removeEventListener("pointerleave", container._cardHoverLeave);
   }
+
+  let _activeCard = null;
 
   container._cardHoverPreview = (e) => {
     if (_lastPointerWasTouch) return;
     const card = e.target.closest(".index-card:not(.index-card--unavailable)");
+    if (card === _activeCard) return;
+    _activeCard = card;
+    clearTimeout(_indexCardHoverTimer);
     if (!card) return;
     const path = card.querySelector(".index-card-read-time[data-path]")?.dataset.path;
     if (!path) return;
-    clearTimeout(_indexCardHoverTimer);
     _indexCardHoverTimer = setTimeout(() => showHoverPreview(card, path), 400);
   };
 
   container._cardHoverLeave = (e) => {
     const relTarget = e.relatedTarget;
     if (relTarget && container.contains(relTarget)) return;
+    _activeCard = null;
     clearTimeout(_indexCardHoverTimer);
     const previewEl = document.getElementById("hover-preview");
     if (!previewEl) return;
@@ -435,8 +440,8 @@ function attachIndexCardHoverPreview() {
     previewEl.textContent = "";
   };
 
-  container.addEventListener("mouseenter", container._cardHoverPreview, true);
-  container.addEventListener("mouseleave", container._cardHoverLeave, true);
+  container.addEventListener("pointerover", container._cardHoverPreview);
+  container.addEventListener("pointerleave", container._cardHoverLeave);
 }
 
 /* ═══════════════════════════════════════════════════════════════

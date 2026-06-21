@@ -17,14 +17,14 @@ repos:
       - id: gitleaks
 
   # ── Spelling (code, comments, project docs) ─────────────────────────────────
-  # TEMPORARILY DISABLED — re-enable for the dedicated codespell cleanup commit.
-  # - repo: https://github.com/codespell-project/codespell
-  #   rev: v2.4.2
-  #   hooks:
-  #     - id: codespell
-  #       # Authored wiki content is excluded globally; also skip generated/data.
-  #       # pres = plural of <pre> elements; couldn = "couldn't" w/ escaped apostrophe.
-  #       args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn"]
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.2
+    hooks:
+      - id: codespell
+        # Authored wiki content is excluded globally; also skip generated/data.
+        # pres = plural of <pre> elements; couldn = "couldn't" w/ escaped apostrophe.
+        # ths = table-headers variable (Array.from querySelectorAll th)
+        args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths"]
 
   # ── JS/CSS lint + format (Biome — standalone binary, no node_modules) ───────
   - repo: https://github.com/biomejs/pre-commit
