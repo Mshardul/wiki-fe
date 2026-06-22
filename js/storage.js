@@ -207,7 +207,7 @@ function getRecents() {
 
 function addToRecents(entry) {
   let recents = getRecents().filter((r) => r.path !== entry.path);
-  recents.unshift(entry);
+  recents.unshift({ ...entry, visitedAt: Date.now() });
   if (recents.length > RECENTS_MAX) recents = recents.slice(0, RECENTS_MAX);
   localStorage.setItem(RECENTS_KEY, JSON.stringify(recents));
   if (_loggedIn()) api.recents.add(entry.wikiId, entry.path).catch(() => {});
@@ -224,6 +224,20 @@ function clearRecents(wikiId) {
   document.getElementById("recents-section")?.classList.add("hidden");
 }
 
+function _relativeTime(ts) {
+  if (!ts) return "";
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  const mo = Math.floor(d / 30);
+  return `${mo}mo ago`;
+}
+
 function renderRecentsSection(wiki) {
   const section = document.getElementById("recents-section");
   if (!section) return;
@@ -233,12 +247,18 @@ function renderRecentsSection(wiki) {
     return;
   }
   section.classList.remove("hidden");
-  const chips = recents.map((r) => ({
-    label: escHtml(r.title),
-    onclick: `navigateToContent('${r.wikiId}','${encodeURIComponent(
-      r.path,
-    )}','${encodeURIComponent(r.title)}','${r.slug}')`,
-  }));
+  const chips = recents.map((r) => {
+    const time = _relativeTime(r.visitedAt);
+    const label = time
+      ? `${escHtml(r.title)}<span class="chip-time">${escHtml(time)}</span>`
+      : escHtml(r.title);
+    return {
+      label,
+      onclick: `navigateToContent('${r.wikiId}','${encodeURIComponent(
+        r.path,
+      )}','${encodeURIComponent(r.title)}','${r.slug}')`,
+    };
+  });
   section.innerHTML = `
     <div class="recents-header">
       <span class="recents-label">Recently visited</span>

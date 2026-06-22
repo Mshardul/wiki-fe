@@ -112,7 +112,7 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 | [Matrix Traversal](./patterns/matrix-traversal.md)                          | **[stub]** BFS/DFS on a 2D grid with direction vectors. Island count, flood fill, shortest path in grid — the implicit-graph pattern.                  |
 | [State Machine DP](./patterns/state-machine-dp.md)                          | **[stub]** Model decisions as states with transitions; DP over (index, state). Stock buy/sell with cooldown, k-transaction problems.                   |
 | [Bitmask DP](./patterns/bitmask-dp.md)                                      | **[stub]** Use an integer bitmask to represent a subset as DP state. n ≤ 20 signal; TSP, assignment, covered-nodes problems — O(2ⁿ · n).              |
-| [Frequency Array](./patterns/frequency-array.md)                            | **[stub]** Array indexed by value as a hash map for bounded keys. O(1) increment/lookup, cache-friendly — anagram detection, character frequency.      |
+| [Frequency Array](./patterns/frequency-array.md)                            | Array indexed by value: O(1) increment/lookup for bounded integer or character keys. Replaces a hash map when the key range fits — anagram detection, counting sort, sliding-window distribution matching. |
 
 ---
 

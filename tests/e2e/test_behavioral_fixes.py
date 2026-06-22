@@ -6,7 +6,67 @@
 - Toast queue (FIFO, 200ms gap)
 - parseIndexMd CRLF + malformed row guards
 - Debug overlay via ?debug URL param
+- Hotkey conflict detection (WIKI-207)
+- localStorage key uniqueness (WIKI-208)
 """
+
+import re
+from pathlib import Path
+
+JS_DIR = Path(__file__).parent.parent.parent / "js"
+
+
+def test_no_duplicate_hotkey_bindings():
+    """No two key+modifier combos in app.js keydown handlers share the same binding."""
+    src = (JS_DIR / "app.js").read_text()
+
+    # Extract key bindings: lines matching e.key === "X" with optional modifier checks
+    # Look for patterns like: e.key === "k" or e.key === "K"
+    binding_pattern = re.compile(
+        r'(?:(e\.metaKey|e\.ctrlKey|e\.shiftKey|e\.altKey)[^;]*?&&[^;]*?)?e\.key\s*===\s*["\'](.+?)["\']',
+    )
+
+    seen = {}
+    conflicts = []
+    for m in binding_pattern.finditer(src):
+        modifier = m.group(1) or "none"
+        key = m.group(2)
+        combo = f"{modifier}+{key}"
+        line_no = src[: m.start()].count("\n") + 1
+        if combo in seen:
+            conflicts.append(f"{combo} at lines {seen[combo]} and {line_no}")
+        else:
+            seen[combo] = line_no
+
+    assert not conflicts, f"Duplicate hotkey bindings found:\n" + "\n".join(conflicts)
+
+
+def test_localStorage_keys_are_unique():
+    """All localStorage keys defined in storage.js are unique and article-scoped keys are wiki-prefixed."""
+    src = (JS_DIR / "storage.js").read_text()
+
+    # Extract string constant key names (e.g. "wiki-bookmarks", "wiki-recents", etc.)
+    const_key_pattern = re.compile(r'const\s+\w+_KEY\w*\s*=\s*["\']([^"\']+)["\']')
+    keys = const_key_pattern.findall(src)
+
+    # All static keys must be unique
+    seen = {}
+    dupes = []
+    for k in keys:
+        if k in seen:
+            dupes.append(k)
+        seen[k] = True
+    assert not dupes, f"Duplicate localStorage key constants: {dupes}"
+
+    # Article-scoped key templates must include wiki id
+    template_pattern = re.compile(r'`([^`]*localStorage[^`]*)`|localStorage\.[sg]etItem\(`([^`]+)`')
+    for m in re.finditer(r'localStorage\.\w+\(`([^`]+)`', src):
+        key_template = m.group(1)
+        # If it contains a path variable it must also contain a wiki id variable
+        if "${" in key_template and "path" in key_template.lower():
+            assert "wikiId" in key_template or "wiki.id" in key_template or "currentWikiId" in key_template or "_wikiId" in key_template, (
+                f"Article-scoped key missing wiki prefix: {key_template!r}"
+            )
 
 
 def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):

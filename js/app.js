@@ -209,11 +209,13 @@ window.addEventListener(
         updateReadBtn();
       }
 
-      // Persist scroll position (debounced)
+      // Persist scroll position (debounced) — capture path now, not at fire time
       clearTimeout(_scrollSaveTimer);
+      const _pathAtScroll = state.currentFilePath;
+      const _wikiAtScroll = state.currentWikiId;
       _scrollSaveTimer = setTimeout(() => {
-        if (state.currentFilePath)
-          saveScrollPos(`scroll-${state.currentWikiId}-${state.currentFilePath}`, window.scrollY);
+        if (_pathAtScroll)
+          saveScrollPos(`scroll-${_wikiAtScroll}-${_pathAtScroll}`, window.scrollY);
       }, 400);
     }
 

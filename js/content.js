@@ -473,13 +473,16 @@ function buildTOC(contentEl, wikiId, articlePath) {
         if (h === topmostEl) {
           link.classList.remove("toc-passed");
           link.classList.add("toc-current");
+          link.setAttribute("aria-current", "true");
           foundCurrent = true;
           link.scrollIntoView({ block: "nearest" });
         } else if (!foundCurrent) {
           link.classList.add("toc-passed");
           link.classList.remove("toc-current");
+          link.removeAttribute("aria-current");
         } else {
           link.classList.remove("toc-passed", "toc-current");
+          link.removeAttribute("aria-current");
         }
       }
     },
@@ -902,6 +905,8 @@ function _syncFocusBtn() {
   if (!btn) return;
   btn.classList.toggle("active", _focusMode);
   btn.title = _focusMode ? "Exit focus mode (F)" : "Focus mode (F)";
+  const announcer = document.getElementById("a11y-announcer");
+  if (announcer) announcer.textContent = _focusMode ? "Focus mode on" : "Focus mode off";
 }
 
 function toggleFocusMode() {

@@ -272,6 +272,7 @@ function renderIndexSections(sections, wiki) {
     }" data-section="${escHtml(section.heading)}">
       <div class="section-header"
            role="button" tabindex="0"
+           aria-expanded="${isCollapsed ? "false" : "true"}"
            onclick="toggleSection(this,'${wiki.id}','${escapedHeading}')"
            onkeydown="if(event.key==='Enter'||event.key===' '){toggleSection(this,'${
              wiki.id
@@ -627,7 +628,8 @@ function bindIndexCardSwipe(wiki) {
 function toggleSection(headerEl, wikiId, heading) {
   const section = headerEl.closest(".index-section");
   const key = `wiki-section-collapsed-${wikiId}-${heading}`;
-  toggleCollapse(key, section);
+  const nowCollapsed = toggleCollapse(key, section);
+  headerEl.setAttribute("aria-expanded", nowCollapsed ? "false" : "true");
 }
 
 /* ─── Reading time ─── */
@@ -1438,6 +1440,60 @@ function resolvePath(baseDir, relHref) {
 /* ═══════════════════════════════════════════════════════════════
    RELATED ARTICLES
    ═══════════════════════════════════════════════════════════════ */
+function _rankRelated(current, candidates) {
+  const STOP = new Set([
+    "a",
+    "an",
+    "the",
+    "and",
+    "or",
+    "of",
+    "in",
+    "to",
+    "for",
+    "with",
+    "on",
+    "at",
+    "by",
+    "from",
+    "as",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "that",
+    "this",
+    "it",
+    "its",
+  ]);
+  function keywords(text) {
+    return text
+      .toLowerCase()
+      .split(/\W+/)
+      .filter((w) => w.length > 2 && !STOP.has(w));
+  }
+  const srcKeys = new Set([...keywords(current.title), ...keywords(current.description || "")]);
+  if (!srcKeys.size) return candidates.slice(0, 3);
+
+  const scored = candidates.map((c) => {
+    const cKeys = [...keywords(c.title), ...keywords(c.description || "")];
+    const titleKeys = new Set(keywords(c.title));
+    let score = 0;
+    for (const k of cKeys) {
+      if (srcKeys.has(k)) score += titleKeys.has(k) ? 3 : 1;
+    }
+    return { card: c, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored
+    .filter((s) => s.score > 0)
+    .slice(0, 3)
+    .map((s) => s.card);
+  return top.length ? top : candidates.slice(0, 3);
+}
+
 async function renderRelatedArticles(wiki, currentPath) {
   const container = document.getElementById("related-articles");
   if (!container) return;
@@ -1448,11 +1504,14 @@ async function renderRelatedArticles(wiki, currentPath) {
     let related = [];
     let sectionName = "";
 
+    let currentCard = null;
     for (const section of sections) {
       const idx = section.cards.findIndex((c) => normalizePath(c.path) === currentPath);
       if (idx !== -1) {
         sectionName = section.heading;
-        related = section.cards.filter((c) => c.path !== currentPath).slice(0, 3);
+        currentCard = section.cards[idx];
+        const siblings = section.cards.filter((c) => c.path !== currentPath);
+        related = _rankRelated(currentCard, siblings);
         break;
       }
     }

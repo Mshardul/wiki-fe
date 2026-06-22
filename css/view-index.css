@@ -368,6 +368,14 @@
   color: var(--text-heading);
 }
 
+.chip-time {
+  margin-left: var(--s2);
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
 /* Chip strip row limit + expand */
 .recent-chip.chip--hidden {
   display: none;
