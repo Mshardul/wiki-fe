@@ -14,8 +14,12 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 
 ---
 
+## 2026-06-23
+- `bloom-filter.md` — new article: Bloom Filter (Hash-based DS family; covers false-positive rate derivation, optimal k, counting/cuckoo/scalable variants, at-scale cache behavior, 3 worked practice problems)
+
 ## 2026-06-22
 - `dsa/patterns/frequency-array.md` — expanded
+- `dsa/patterns/matrix-traversal.md` — promoted from stub to full article; expanded: "Skeleton" (added ZERO-ONE-BFS pseudocode), "Variations" (added Dijkstra-on-grid entry), "Constraints & approach" (sharpened cache-behavior note with L2 specifics)
 
 ## 2026-06-21
 - `dsa/algorithms/dinic.md` — new stub

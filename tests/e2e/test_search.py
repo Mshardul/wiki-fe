@@ -586,3 +586,174 @@ def test_article_find_escape_closes_and_clears(page, base_url):
     assert page.locator("#markdown-body mark.article-find-hit").count() == 0, (
         "Closing find must strip all highlight marks"
     )
+
+
+# ── Scope dropdown ────────────────────────────────────────────────────
+
+
+def test_scope_dropdown_exists_in_modal(wiki_page):
+    """⌘K modal has a scope <select> populated with at least one wiki option."""
+    _open_search(wiki_page)
+    sel = wiki_page.locator("#gsearch-scope-select")
+    assert sel.count() == 1, "Scope select must exist in the search modal"
+    options = sel.locator("option").all_text_contents()
+    assert options[0].lower() == "all wikis", f"First option must be 'All wikis', got {options[0]}"
+    assert len(options) > 1, "Scope select must include at least one wiki option"
+
+
+def test_scope_dropdown_filters_results(page, base_url):
+    """Selecting a wiki in the scope dropdown restricts results to that wiki."""
+    page.goto(f"{base_url}/#system-design")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "cache")
+    page.wait_for_selector(".gsearch-result", timeout=8_000)
+    count_all = page.locator(".gsearch-result").count()
+
+    page.select_option("#gsearch-scope-select", "system-design")
+    page.wait_for_timeout(300)
+    count_scoped = page.locator(".gsearch-result").count()
+
+    assert count_scoped <= count_all, (
+        "Scoped results must be a subset of all-wikis results"
+    )
+    labels = [g.inner_text() for g in page.locator(".gsearch-group-label").all()]
+    assert all("system design" in lbl.lower() or lbl == "" for lbl in labels), (
+        f"Scoped search must only show system-design group, got {labels}"
+    )
+
+
+def test_scope_dropdown_all_wikis_restores_full_results(page, base_url):
+    """Switching back to 'All wikis' restores full result set."""
+    page.goto(f"{base_url}/#system-design")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "cache")
+    page.wait_for_selector(".gsearch-result", timeout=8_000)
+    count_all = page.locator(".gsearch-result").count()
+
+    page.select_option("#gsearch-scope-select", "system-design")
+    page.wait_for_timeout(300)
+
+    page.select_option("#gsearch-scope-select", "")
+    page.wait_for_timeout(300)
+    count_restored = page.locator(".gsearch-result").count()
+
+    assert count_restored == count_all, (
+        f"Restoring 'All wikis' must return full count {count_all}, got {count_restored}"
+    )
+
+
+# ── Search result snippets ────────────────────────────────────────────
+
+
+def test_result_snippet_appears(wiki_page):
+    """Search results include a snippet element beneath the title."""
+    _open_search(wiki_page)
+    wiki_page.fill("#gsearch-input", "cache")
+    wiki_page.wait_for_selector(".gsearch-result", timeout=8_000)
+    assert wiki_page.locator(".gsearch-result-snippet").count() > 0, (
+        "At least one result must render a .gsearch-result-snippet"
+    )
+
+
+def test_result_snippet_contains_highlight(wiki_page):
+    """Snippet wraps the matched term in a <mark> element."""
+    _open_search(wiki_page)
+    wiki_page.fill("#gsearch-input", "cache")
+    wiki_page.wait_for_selector(".gsearch-result-snippet", timeout=8_000)
+    marks = wiki_page.locator(".gsearch-result-snippet mark.gsearch-highlight").count()
+    assert marks > 0, "Snippet must highlight the matched term with mark.gsearch-highlight"
+
+
+# ── Recent searches ───────────────────────────────────────────────────
+
+
+def test_recent_searches_shown_on_empty_input(wiki_page):
+    """Injected recent searches appear as chips when input is empty."""
+    wiki_page.evaluate(
+        "localStorage.setItem('wiki-recent-searches', JSON.stringify(['cache', 'tree']))"
+    )
+    _open_search(wiki_page)
+    wiki_page.wait_for_selector(".gsearch-recents", timeout=3_000)
+    chips = wiki_page.locator(".gsearch-recent-query").all_text_contents()
+    assert "cache" in chips and "tree" in chips, (
+        f"Recent chips must show injected queries, got {chips}"
+    )
+
+
+def test_recent_search_chip_click_runs_query(wiki_page):
+    """Clicking a recent chip populates the input and triggers search."""
+    wiki_page.evaluate(
+        "localStorage.setItem('wiki-recent-searches', JSON.stringify(['cache']))"
+    )
+    _open_search(wiki_page)
+    wiki_page.wait_for_selector(".gsearch-recent-query")
+    wiki_page.locator(".gsearch-recent-query").first.click()
+    wiki_page.wait_for_selector(".gsearch-result", timeout=8_000)
+    input_val = wiki_page.input_value("#gsearch-input")
+    assert input_val == "cache", f"Input must be set to chip query, got '{input_val}'"
+    assert wiki_page.locator(".gsearch-result").count() > 0
+
+
+def test_recent_search_remove_button_removes_chip(wiki_page):
+    """Clicking × on a chip removes it from the list and from localStorage."""
+    wiki_page.evaluate(
+        "localStorage.setItem('wiki-recent-searches', JSON.stringify(['cache', 'tree']))"
+    )
+    _open_search(wiki_page)
+    wiki_page.wait_for_selector(".gsearch-recent-remove")
+    wiki_page.locator(".gsearch-recent-remove").first.click()
+    wiki_page.wait_for_timeout(300)
+
+    remaining = wiki_page.locator(".gsearch-recent-query").all_text_contents()
+    assert len(remaining) == 1, f"One chip must remain after remove, got {remaining}"
+
+    stored = wiki_page.evaluate(
+        "JSON.parse(localStorage.getItem('wiki-recent-searches') || '[]')"
+    )
+    assert len(stored) == 1, f"localStorage must reflect removal, got {stored}"
+
+
+def test_recent_searches_hidden_when_typing(wiki_page):
+    """Recent chips are hidden once the user starts typing."""
+    wiki_page.evaluate(
+        "localStorage.setItem('wiki-recent-searches', JSON.stringify(['cache']))"
+    )
+    _open_search(wiki_page)
+    wiki_page.wait_for_selector(".gsearch-recents")
+    wiki_page.fill("#gsearch-input", "tree")
+    wiki_page.wait_for_timeout(300)
+    assert wiki_page.locator(".gsearch-recents").count() == 0, (
+        "Recent chips must disappear once user is typing"
+    )
+
+
+# ── No-results fallback ───────────────────────────────────────────────
+
+
+def test_no_results_fallback_shown(wiki_page):
+    """A query with zero matches shows the no-results message."""
+    _open_search(wiki_page)
+    wiki_page.fill("#gsearch-input", "xyzzy_no_match_ever")
+    wiki_page.wait_for_selector(".gsearch-no-results", timeout=8_000)
+    text = wiki_page.locator(".gsearch-no-results").inner_text()
+    assert "xyzzy_no_match_ever" in text, (
+        f"No-results message must echo the query, got '{text}'"
+    )
+
+
+# ── Synonym expansion ─────────────────────────────────────────────────
+
+
+def test_synonym_expansion_returns_results(wiki_page):
+    """Querying a synonym term returns results via synonym expansion."""
+    _open_search(wiki_page)
+    # 'list' is a synonym of 'array' — should surface DSA/system-design articles
+    wiki_page.fill("#gsearch-input", "list")
+    wiki_page.wait_for_selector(".gsearch-result", timeout=8_000)
+    assert wiki_page.locator(".gsearch-result").count() > 0, (
+        "Synonym query 'list' must return results via synonym expansion"
+    )

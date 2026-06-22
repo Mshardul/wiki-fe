@@ -27,6 +27,7 @@
   - [Number of Islands](#1-number-of-islands-lc-200--dfs-component-counting)
   - [Shortest Path in Binary Matrix](#2-shortest-path-in-binary-matrix-lc-1091--bfs-shortest-path)
   - [Pacific Atlantic Water Flow](#3-pacific-atlantic-water-flow-lc-417--multi-source-bfs)
+  - [Shortest Path with Obstacle Elimination](#4-shortest-path-in-a-grid-with-obstacles-elimination-lc-1293--state-augmented-bfs)
 
 ## What it is
 
@@ -176,6 +177,49 @@ MATRIX-DFS(grid, r, c, visited)
 5      if 0 ≤ nr < rows(grid) and 0 ≤ nc < cols(grid)
 6          and not visited[nr][nc] and grid[nr][nc] is passable
 7              MATRIX-DFS(grid, nr, nc, visited)
+
+ZERO-ONE-BFS(grid, start_r, start_c)
+▷ Edge weight: 0 if same cell value as current, 1 if different
+1  m = rows(grid), n = cols(grid)
+2  dist[0..m-1][0..n-1] = all ∞
+3  dist[start_r][start_c] = 0
+4  dq = empty deque
+5  PUSH-FRONT(dq, (start_r, start_c))
+6  dirs = [(0,1), (0,-1), (1,0), (-1,0)]
+7  while dq ≠ empty
+8      (r, c) = POP-FRONT(dq)
+9      for each (dr, dc) in dirs
+10         nr = r + dr, nc = c + dc
+11         if 0 ≤ nr < m and 0 ≤ nc < n
+12             w = 0 if grid[nr][nc] == grid[r][c] else 1
+13             if dist[r][c] + w < dist[nr][nc]
+14                 dist[nr][nc] = dist[r][c] + w
+15                 if w == 0 then PUSH-FRONT(dq, (nr, nc))
+16                 else PUSH-BACK(dq, (nr, nc))
+17 return dist
+
+MULTI-SOURCE-BFS(grid, is_source)
+▷ is_source(r,c) returns TRUE for seed cells (distance 0)
+1  m = rows(grid), n = cols(grid)
+2  dist[0..m-1][0..n-1] = all ∞
+3  queue = empty
+4  for r = 0 to m-1
+5      for c = 0 to n-1
+6          if is_source(r, c)
+7              dist[r][c] = 0
+8              ENQUEUE(queue, (r, c))
+9  dirs = [(0,1), (0,-1), (1,0), (-1,0)]
+10 while queue ≠ empty
+11     (r, c) = DEQUEUE(queue)
+12     for each (dr, dc) in dirs
+13         nr = r + dr, nc = c + dc
+14         if 0 ≤ nr < m and 0 ≤ nc < n and dist[nr][nc] == ∞ and grid[nr][nc] is passable
+15             dist[nr][nc] = dist[r][c] + 1
+16             ENQUEUE(queue, (nr, nc))
+17 return dist
+▷ Correctness: all sources start at distance 0 simultaneously — equivalent to a
+▷ virtual super-source with 0-weight edges to each seed. BFS monotonicity
+▷ guarantees dist[r][c] = min distance from ANY source to (r,c).
 ```
 
 **Python template — BFS (shortest path / multi-source):**
@@ -195,6 +239,34 @@ def matrix_bfs(grid: list[list[int]], sr: int, sc: int) -> list[list[int]]:
         for dr, dc in dirs:
             nr, nc = r + dr, c + dc
             if 0 <= nr < m and 0 <= nc < n and dist[nr][nc] == -1 and grid[nr][nc] == 0:  # your logic here: passability check
+                dist[nr][nc] = dist[r][c] + 1
+                queue.append((nr, nc))
+
+    return dist
+```
+
+**Python template — multi-source BFS (min distance from any of a set of sources):**
+
+```python
+from collections import deque
+
+def multi_source_bfs_template(grid: list[list[int]]) -> list[list[int]]:
+    m, n = len(grid), len(grid[0])
+    dist = [[float('inf')] * n for _ in range(m)]
+    queue: deque[tuple[int, int]] = deque()
+    dirs = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+
+    for r in range(m):
+        for c in range(n):
+            if grid[r][c] == 0:  # your logic here: seed condition
+                dist[r][c] = 0
+                queue.append((r, c))  # all sources enqueued before the loop starts
+
+    while queue:
+        r, c = queue.popleft()
+        for dr, dc in dirs:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < m and 0 <= nc < n and dist[nr][nc] == float('inf'):
                 dist[nr][nc] = dist[r][c] + 1
                 queue.append((nr, nc))
 
@@ -254,7 +326,7 @@ Every cell is visited at most once; each visit does O(1) work (4 neighbor checks
 
 **When to push OFF this pattern:** if movement has no directional constraint and the problem is about row/column aggregates (max in a row, column prefix sums), it's a linear-scan or DP problem; the implicit-graph framing adds no value.
 
-**Real-world anchor:** game engines (A* / BFS on tile maps), Google Maps routing (road network as implicit graph over discretised space), robotics path planning, and image segmentation (connected-component labelling on pixel grids) all implement variants of this exact pattern. **At scale:** a 10⁴ × 10⁴ grid has 10⁸ cells; a BFS queue holding up to 10⁸ `(r,c)` tuples consumes ~1.6 GB — at that size, switch to a compact bit-array for the visited set and a ring-buffer queue with integer-encoded coordinates rather than Python tuples. **Cache behavior:** BFS processes cells in breadth-first (wave-front) order, which accesses memory in a non-sequential pattern as the frontier spans the grid — cache-hostile for large n. DFS follows one path deeply before backtracking, giving better spatial locality on narrow corridors but still O(mn) random accesses in the worst case.
+**Real-world anchor:** game engines (A* / BFS on tile maps), Google Maps routing (road network as implicit graph over discretised space), robotics path planning, and image segmentation (connected-component labelling on pixel grids) all implement variants of this exact pattern. **At scale:** a 10⁴ × 10⁴ grid has 10⁸ cells; a BFS queue holding up to 10⁸ `(r,c)` tuples consumes ~1.6 GB — at that size, switch to a compact bit-array for the visited set and a ring-buffer queue with integer-encoded coordinates rather than Python tuples. **Cache behavior:** BFS processes cells in wave-front (breadth-first) order — the frontier spans non-contiguous rows simultaneously, so memory accesses jump across cache lines and evict L2 entries before they're reused, making it cache-hostile for large n. DFS dives deep along one corridor first, giving better row-major spatial locality on narrow paths (sequential cell accesses stay in L2), but degrades to O(mn) random hops on wide, fully connected grids. A plain row-major scan is the most cache-friendly access pattern on a grid; BFS/DFS trade that off for traversal correctness.
 
 ## Variations
 
@@ -264,6 +336,7 @@ Every cell is visited at most once; each visit does O(1) work (4 neighbor checks
 - **In-place visited marking:** overwrite the grid with a sentinel (e.g., `'#'`, `2`) instead of a separate `visited` array — saves O(mn) space but mutates the input (restore after if the grid is reused).
 - **Iterative DFS (explicit stack):** push `(r, c)` onto a list; pop and process — same traversal order as recursive DFS but avoids Python's recursion limit. Critical for large grids.
 - **Topological traversal (peeling layers):** BFS from the boundary inward, processing cells with no unvisited neighbors first — used for "surrounded regions" and "remove invalid leaves".
+- **Dijkstra on grid:** when edge weights are arbitrary (cell cost varies per terrain type), replace the BFS queue with a min-heap keyed by distance — O(mn log mn). Completes the continuum: BFS (uniform cost) → 0-1 BFS (binary cost) → Dijkstra (arbitrary cost).
 
 ## CP-primitives
 
@@ -366,13 +439,81 @@ Multi-source BFS handles the "reachable from *any* border cell" semantics in a s
 - Walls and Gates (LC 286) — multi-source BFS from gate cells; fill room distances. No intersection step.
 - Rotting Oranges (LC 994) — multi-source BFS from all rotten oranges; answer is the max distance reached (time to rot all fresh). Same pattern, different termination.
 
+### 4. Shortest Path in a Grid with Obstacles Elimination (LC 1293) — state-augmented BFS
+
+Given an m×n grid of `0`s (empty) and `1`s (obstacles), find the minimum number of steps to walk from `(0,0)` to `(m-1,n-1)`. You can eliminate at most `k` obstacles. `m, n ≤ 40`, `k ≤ mn`.
+
+**Approach:** plain BFS on `(r, c)` is wrong — the optimal path depends on how many obstacles remain eliminable, so two visits to the same cell with different remaining `k` are distinct states. Augment state to `(r, c, remaining_k)`. BFS still finds the shortest path because all edges cost 1 step; the state space is `m × n × (k+1)` and each state is visited at most once. Mark `visited[r][c][rem]` on enqueue.
+
+The key insight separating this from plain BFS: the visited set must key on the full state `(r, c, rem)`, not just `(r, c)`. A cell reached with `rem=3` and again later with `rem=5` should not suppress the second visit — more remaining eliminations means the second path may reach the goal faster via a different obstacle sequence.
+
+```python
+from collections import deque
+
+def shortest_path(grid: list[list[int]], k: int) -> int:
+    m, n = len(grid), len(grid[0])
+    if m == 1 and n == 1:
+        return 0
+    visited = [[[False] * (k + 1) for _ in range(n)] for _ in range(m)]
+    visited[0][0][k] = True
+    queue: deque[tuple[int, int, int, int]] = deque([(0, 0, k, 0)])  # r, c, rem, steps
+    dirs = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+
+    while queue:
+        r, c, rem, steps = queue.popleft()
+        for dr, dc in dirs:
+            nr, nc = r + dr, c + dc
+            if not (0 <= nr < m and 0 <= nc < n):
+                continue
+            new_rem = rem - grid[nr][nc]  # subtract 1 if obstacle, 0 if empty
+            if new_rem < 0:
+                continue
+            if nr == m - 1 and nc == n - 1:
+                return steps + 1
+            if not visited[nr][nc][new_rem]:
+                visited[nr][nc][new_rem] = True
+                queue.append((nr, nc, new_rem, steps + 1))
+    return -1
+```
+
+**Time:** O(mn·k). **Space:** O(mn·k) — visited array dominates.
+
+**Duplicate problems:**
+- Minimum Obstacle Removal to Reach Corner (LC 2290) — same grid, `k` is unlimited; use 0-1 BFS (move to empty cell costs 0, obstacle costs 1) instead of state-augmented BFS. Same augmentation insight, cleaner with deque.
+- Cut Off Trees for Golf Event (LC 675) — BFS repeated between targets with augmented ordering state; same state-extension idea applied to multi-leg pathfinding.
+
 ## Pitfalls
 
 **1. Forgetting the bounds check — the most common silent bug.**
 Every neighbor computation `(nr, nc) = (r + dr, c + dc)` must be guarded by `0 ≤ nr < m and 0 ≤ nc < n` *before* accessing `grid[nr][nc]`. Python raises `IndexError` for out-of-bounds row access but silently wraps negative indices (e.g., `grid[-1][c]` accesses the last row). A check like `nr >= 0` is not optional — `nr = -1` is valid Python indexing but semantically wrong.
 
 **2. Enqueuing/recursing before marking visited — causes exponential re-visits.**
-Mark a cell visited (set `dist[nr][nc]`, flip `visited[nr][nc]`, or overwrite `grid[nr][nc]`) *at the time you enqueue/recurse*, not when you process it. If you mark visited on dequeue instead, the same cell can be enqueued multiple times from different neighbors before it's processed, blowing up the queue to O(2^mn) in the worst case for BFS and causing infinite recursion in DFS.
+Mark a cell visited (set `dist[nr][nc]`, flip `visited[nr][nc]`, or overwrite `grid[nr][nc]`) *at the time you enqueue/recurse*, not when you process it. If you mark visited on dequeue instead, the same cell can be enqueued multiple times from different neighbors before it's processed — exponential blowup.
+
+Concrete example — a fully connected 2×2 grid, mark-on-dequeue (wrong):
+
+```
+Grid: all 0 (all passable). Start: (0,0).
+Cells: A=(0,0), B=(0,1), C=(1,0), D=(1,1).
+
+Step 0: queue = [A:0]
+Dequeue A, mark A visited. Enqueue B, C (neighbors of A).
+queue = [B:1, C:1]
+
+Dequeue B, mark B visited. Enqueue A (already visited, skip), D, C again (not yet dequeued!).
+queue = [C:1, D:2, C:2]    ← C enqueued twice
+
+Dequeue C (first copy), mark C. Enqueue A (skip), B (skip), D again.
+queue = [D:2, C:2, D:3]    ← D enqueued twice
+
+Dequeue D (first copy), mark D. Enqueue B (skip), C (skip).
+queue = [C:2, D:3]
+
+Dequeue C (second copy) — already marked, but was enqueued before marking.
+Dequeue D (second copy) — same.
+```
+
+On a 4×4 fully-connected grid this compounds: each cell can be re-enqueued by up to 4 neighbors before it's dequeued, and each of those re-enqueues triggers further re-enqueues. Mark visited **at enqueue time** — `dist[nr][nc] = dist[r][c] + 1` before `queue.append((nr, nc))` — and none of this happens.
 
 **3. Using DFS for shortest path — gives wrong answer.**
 DFS finds *a* path, not the shortest. For unweighted grids, BFS always gives the minimum number of steps; DFS would require exploring all paths and taking the minimum, which is exponential. If the problem says "minimum steps" or "shortest path", reach for BFS immediately.

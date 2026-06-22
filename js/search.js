@@ -6,8 +6,23 @@ import {
   normalizePath,
   showToast,
 } from "./render.js";
-import { WIKIS, allSearchCache, escHtml, fuzzyMatch, readTimeCache, state } from "./state.js";
-import { Settings, Theme, isRead, markRead, markUnread } from "./storage.js";
+import {
+  expandQuery,
+  extractSnippet,
+  getFallbackSuggestions,
+  renderRecentSearches,
+} from "./search-features.js";
+import {
+  WIKIS,
+  allSearchCache,
+  escHtml,
+  fuzzyMatch,
+  loadSynonyms,
+  readTimeCache,
+  state,
+  synonymCache,
+} from "./state.js";
+import { RecentSearches, Settings, Theme, isRead, markRead, markUnread } from "./storage.js";
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL SEARCH (⌘K)
@@ -19,6 +34,7 @@ const gSearchBackdrop = document.getElementById("gsearch-backdrop");
 const gSearchCount = document.getElementById("gsearch-count");
 const gSearchDialog = gSearchModal.querySelector(".gsearch-dialog");
 const gSearchModeBadge = gSearchModal.querySelector(".gsearch-mode-badge");
+const gSearchScopeSelect = document.getElementById("gsearch-scope-select");
 
 /* null = global ⌘K; a wiki id = ⌘F scoped to that wiki */
 let _searchScope = null;
@@ -31,6 +47,18 @@ function scopedEntries() {
 function scopedWiki() {
   return WIKIS.find((w) => w.id === _searchScope) || null;
 }
+
+function _populateScopeDropdown() {
+  if (!gSearchScopeSelect) return;
+  gSearchScopeSelect.innerHTML = `<option value="">All wikis</option>${WIKIS.map((w) => `<option value="${escHtml(w.id)}">${escHtml(w.title)}</option>`).join("")}`;
+  gSearchScopeSelect.value = _searchScope || "";
+}
+
+gSearchScopeSelect?.addEventListener("change", () => {
+  _searchScope = gSearchScopeSelect.value || null;
+  _syncModeBadge(gSearchInput.value);
+  applyGlobalSearch(gSearchInput.value);
+});
 
 /* ─── Command palette ("/" prefix) ─── */
 function _contextWikiId() {
@@ -197,6 +225,7 @@ async function loadAllSearchEntries() {
   if (allSearchCache.loaded || allSearchCache.loading) return;
   allSearchCache.loading = true;
   gSearchResults.innerHTML = '<div class="gsearch-loading">Loading…</div>';
+  loadSynonyms();
 
   try {
     let anySucceeded = false;
@@ -305,7 +334,11 @@ function openGlobalSearch(opts = {}) {
   gSearchCount.textContent = "";
   gSearchSelectedIdx = -1;
   _syncModeBadge("");
+  // Synchronous focus for iOS (must run in user-gesture call stack).
+  // setTimeout(0) fallback covers non-gesture paths (e.g. iPad bluetooth ⌘K).
   gSearchInput.focus();
+  setTimeout(() => gSearchInput.focus(), 0);
+  _populateScopeDropdown();
   startPlaceholderHints();
 
   _searchFocusTrapHandler = (e) => {
@@ -354,27 +387,33 @@ function closeGlobalSearch() {
 }
 
 function scoreMatch(q, entry) {
-  const ql = q.toLowerCase();
-  const title = entry.title.toLowerCase();
-  const desc = entry.description.toLowerCase();
-  const short = ql.length <= 4;
-
-  if (title === ql) return 100;
-  if (title.startsWith(ql)) return 90;
-  if (title.includes(ql)) return 80;
-  if (fuzzyMatch(ql, title)) return 60;
-  // For short queries, stop here - avoid false positives from desc/section fuzzy
-  if (short) return 0;
-  if (desc.includes(ql)) return 40;
-  if (fuzzyMatch(ql, desc)) return 20;
-  if (fuzzyMatch(ql, entry.section.toLowerCase())) return 10;
-  return 0;
+  const terms = expandQuery(q);
+  let best = 0;
+  for (const term of terms) {
+    const ql = term.toLowerCase();
+    const title = entry.title.toLowerCase();
+    const desc = (entry.description || "").toLowerCase();
+    const short = ql.length <= 4;
+    let score = 0;
+    if (title === ql) score = 100;
+    else if (title.startsWith(ql)) score = 90;
+    else if (title.includes(ql)) score = 80;
+    else if (fuzzyMatch(ql, title)) score = 60;
+    else if (!short && desc.includes(ql)) score = 40;
+    else if (!short && fuzzyMatch(ql, desc)) score = 20;
+    else if (!short && fuzzyMatch(ql, entry.section.toLowerCase())) score = 10;
+    if (score > best) best = score;
+  }
+  return best;
 }
 
 function renderResultItem(item, highlightQuery) {
+  const snippet = highlightQuery ? extractSnippet(item.description || "", highlightQuery) : null;
+  const snippetHtml = snippet ? `<span class="gsearch-result-snippet">${snippet}</span>` : "";
+  const hqs = escHtml(JSON.stringify(highlightQuery || ""));
   return `
     <div class="gsearch-result"
-         onclick="closeGlobalSearch(); navigateToContent('${
+         onclick="saveSearchQuery(${hqs}); closeGlobalSearch(); navigateToContent('${
            item.wiki.id
          }', '${encodeURIComponent(item.path)}', '${encodeURIComponent(
            item.title,
@@ -382,9 +421,8 @@ function renderResultItem(item, highlightQuery) {
          role="button" tabindex="0"
          onkeydown="if(event.key==='Enter')this.click()">
       <span class="gsearch-result-title">${highlightMatch(item.title, highlightQuery)}</span>
-      <span class="gsearch-result-meta">${escHtml(item.section)} · ${escHtml(
-        item.description.slice(0, 90),
-      )}${item.description.length > 90 ? "…" : ""}</span>
+      <span class="gsearch-result-meta">${escHtml(item.section)}</span>
+      ${snippetHtml}
     </div>`;
 }
 
@@ -458,8 +496,10 @@ function applyGlobalSearch(query) {
 
   if (!raw) {
     gSearchCount.textContent = "";
-    gSearchResults.innerHTML =
+    const recentsHtml = renderRecentSearches();
+    const hint =
       '<div class="gsearch-empty">Type to search · <kbd class="gsearch-kbd">&gt;</kbd> sections · <kbd class="gsearch-kbd">/</kbd> commands</div>';
+    gSearchResults.innerHTML = recentsHtml ? recentsHtml + hint : hint;
     return;
   }
 
@@ -472,9 +512,17 @@ function applyGlobalSearch(query) {
 
   if (!scored.length) {
     gSearchCount.textContent = "";
-    gSearchResults.innerHTML = `<div class="gsearch-no-results">No results for "<strong>${escHtml(
-      q,
-    )}</strong>"</div>`;
+    const { fuzzy, didYouMean } = getFallbackSuggestions(q, scopedEntries(), scoreMatch);
+    let fallbackHtml = `<div class="gsearch-no-results">No results for "<strong>${escHtml(q)}</strong>"</div>`;
+    if (didYouMean) {
+      const dymQs = escHtml(JSON.stringify(didYouMean));
+      fallbackHtml += `<div class="gsearch-did-you-mean">Did you mean: <button class="gsearch-suggestion-btn" type="button" onclick="document.getElementById('gsearch-input').value=${dymQs};applyGlobalSearch(${dymQs})">${escHtml(didYouMean)}</button>?</div>`;
+    }
+    if (fuzzy.length) {
+      fallbackHtml += `<div class="gsearch-group-label">You might be looking for</div>`;
+      fallbackHtml += fuzzy.map((item) => renderResultItem(item, "")).join("");
+    }
+    gSearchResults.innerHTML = fallbackHtml;
     return;
   }
 
@@ -545,4 +593,21 @@ function highlightMatch(text, query) {
   return `${escHtml(text.slice(0, idx))}<mark class="gsearch-highlight">${escHtml(text.slice(idx, idx + query.length))}</mark>${escHtml(text.slice(idx + query.length))}`;
 }
 
-export { openGlobalSearch, closeGlobalSearch, retryGlobalSearch, runSearchCommand };
+function saveSearchQuery(query) {
+  if (query) RecentSearches.add(query);
+}
+
+function removeRecentSearchEntry(query) {
+  RecentSearches.remove(query);
+  applyGlobalSearch(gSearchInput.value);
+}
+
+export {
+  openGlobalSearch,
+  closeGlobalSearch,
+  retryGlobalSearch,
+  runSearchCommand,
+  saveSearchQuery,
+  removeRecentSearchEntry,
+  applyGlobalSearch,
+};

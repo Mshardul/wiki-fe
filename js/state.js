@@ -129,6 +129,28 @@ const state = {
 const readTimeCache = {};
 const indexCache = {};
 const allSearchCache = { loaded: false, loading: false, entries: [] };
+const synonymCache = { loaded: false, map: {} };
+
+async function loadSynonyms() {
+  if (synonymCache.loaded) return;
+  try {
+    const res = await fetch("./data/synonyms.json");
+    if (!res.ok) return;
+    const raw = await res.json();
+    const expanded = {};
+    for (const [term, syns] of Object.entries(raw)) {
+      const tl = term.toLowerCase();
+      expanded[tl] = syns.map((s) => s.toLowerCase());
+      for (const syn of syns) {
+        const sl = syn.toLowerCase();
+        if (!expanded[sl]) expanded[sl] = [];
+        if (!expanded[sl].includes(tl)) expanded[sl].push(tl);
+      }
+    }
+    synonymCache.map = expanded;
+    synonymCache.loaded = true;
+  } catch {}
+}
 
 const STUB_PATHS_KEY = "wiki-stub-paths";
 function loadStubPaths() {
@@ -203,6 +225,8 @@ export {
   getShapeFingerprint,
   saveShapeFingerprint,
   allSearchCache,
+  synonymCache,
+  loadSynonyms,
   STUB_THRESHOLD,
   mdConverter,
   escHtml,

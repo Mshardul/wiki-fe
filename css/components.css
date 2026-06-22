@@ -379,6 +379,108 @@
   grid-column: 2;
 }
 
+/* ─── Scope dropdown ─── */
+.gsearch-filter-group {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.gsearch-scope-select {
+  appearance: none;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: var(--text-xs);
+  padding: 2px 20px 2px 6px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 5px center;
+  outline: none;
+  max-width: 110px;
+}
+.gsearch-scope-select:focus-visible {
+  border-color: var(--accent);
+}
+
+/* ─── Snippet ─── */
+.gsearch-result-snippet {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 1px;
+}
+
+/* ─── Recent searches ─── */
+.gsearch-recents {
+  padding-bottom: var(--s2);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--s2);
+}
+.gsearch-recents-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  padding: var(--s2) var(--s5);
+}
+.gsearch-recent-chip {
+  display: flex;
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.gsearch-recent-query {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: var(--text-xs);
+  padding: 3px 6px;
+  cursor: pointer;
+}
+.gsearch-recent-query:hover {
+  color: var(--text-heading);
+}
+.gsearch-recent-remove {
+  background: none;
+  border: none;
+  border-left: 1px solid var(--border);
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  padding: 3px 5px;
+  cursor: pointer;
+  line-height: 1;
+}
+.gsearch-recent-remove:hover {
+  color: var(--text-muted);
+}
+
+/* ─── No-results fallback ─── */
+.gsearch-did-you-mean {
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  padding: var(--s2) var(--s5);
+}
+.gsearch-suggestion-btn {
+  background: none;
+  border: none;
+  color: var(--accent-light);
+  font-family: var(--font);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.gsearch-suggestion-btn:hover {
+  color: var(--accent);
+}
+
 @media (max-width: 640px) {
   .gsearch-modal {
     padding-top: 8vh;

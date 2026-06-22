@@ -16,10 +16,13 @@ import {
   toggleSection,
 } from "./render.js";
 import {
+  applyGlobalSearch,
   closeGlobalSearch,
   openGlobalSearch,
+  removeRecentSearchEntry,
   retryGlobalSearch,
   runSearchCommand,
+  saveSearchQuery,
 } from "./search.js";
 import { WIKIS, escHtml, state } from "./state.js";
 import {
@@ -58,6 +61,9 @@ window.clearRecents = clearRecents;
 window.closeGlobalSearch = closeGlobalSearch;
 window.retryGlobalSearch = retryGlobalSearch;
 window.runSearchCommand = runSearchCommand;
+window.saveSearchQuery = saveSearchQuery;
+window.removeRecentSearchEntry = removeRecentSearchEntry;
+window.applyGlobalSearch = applyGlobalSearch;
 window.Auth = Auth;
 window.AuthModal = AuthModal;
 

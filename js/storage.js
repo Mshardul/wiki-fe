@@ -1227,6 +1227,37 @@ function restoreTOCScroll(wikiId, articlePath) {
   return Number.parseInt(localStorage.getItem(key) || "0", 10);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   RECENT SEARCHES
+   ═══════════════════════════════════════════════════════════════ */
+const RECENT_SEARCHES_KEY = "wiki-recent-searches";
+const RECENT_SEARCHES_MAX = 10;
+
+const RecentSearches = {
+  get() {
+    try {
+      return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || "[]");
+    } catch {
+      return [];
+    }
+  },
+  add(query) {
+    const q = query.trim();
+    if (!q) return;
+    let list = this.get().filter((s) => s !== q);
+    list.unshift(q);
+    if (list.length > RECENT_SEARCHES_MAX) list = list.slice(0, RECENT_SEARCHES_MAX);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(list));
+  },
+  remove(query) {
+    const list = this.get().filter((s) => s !== query);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(list));
+  },
+  clear() {
+    localStorage.removeItem(RECENT_SEARCHES_KEY);
+  },
+};
+
 export {
   saveScrollPos,
   getBookmarks,
@@ -1264,4 +1295,5 @@ export {
   getCollapsed,
   saveTOCScroll,
   restoreTOCScroll,
+  RecentSearches,
 };
