@@ -126,15 +126,19 @@ QUERY(freq, v)
 1  return freq[v]          ▷ O(1)
 
 IS-SAME-DISTRIBUTION(A, B, k)
-1  freq[0..k-1] = all 0
-2  for each element v in A
-3      freq[v] = freq[v] + 1
-4  for each element v in B
-5      freq[v] = freq[v] - 1
-6  for i = 0 to k-1
-7      if freq[i] ≠ 0
-8          return FALSE
-9  return TRUE
+1  if length(A) ≠ length(B)
+2      return FALSE               ▷ fast reject before any allocation
+3  freq[0..k-1] = all 0
+4  for each element v in A
+5      freq[v] = freq[v] + 1
+6  for each element v in B
+7      freq[v] = freq[v] - 1
+8      if freq[v] < 0             ▷ early exit: B has more of v than A ever did
+9          return FALSE
+10 for i = 0 to k-1
+11     if freq[i] ≠ 0
+12         return FALSE
+13 return TRUE
 ```
 
 **Python template:**
@@ -259,28 +263,15 @@ For "find the element that appears an odd number of times", XOR all elements: `r
 
 ## Worked problems
 
-### 1. Find the Difference (LC 389)
+### 1. Longest Substring with At Most K Distinct Characters (LC 340)
 
-String `s` and string `t` (s with one extra random letter added). Find the added letter. `len(s) ≤ 1000`, all lowercase.
+Given a string `s` and integer `k`, return the length of the longest substring containing at most `k` distinct characters. `1 ≤ len(s) ≤ 5 × 10⁴`, `1 ≤ k ≤ 50`.
 
-**Approach:** build freq array for `s` (increment), then for `t` (decrement). The one slot at `-1` is the added letter. Alternatively, XOR all characters (XOR variant of freq parity).
+**Approach:** sliding window with a freq array as the window's character counter. Expand `right`; when the number of distinct characters (non-zero slots) exceeds `k`, shrink from `left` until it's ≤ k again. Track distinct count with a single integer — increment when `freq[c]` goes from 0→1, decrement when it goes 1→0. Window length at each step is a candidate answer.
 
-**Constraint read:** bounded chars, tiny k = 26 — freq array is the natural tool. XOR is O(1) space.
+**Why freq array over a hash map here?** `k ≤ 50` and characters are ASCII — the freq array is 128 integers, fits in cache, and the distinct-count trick (watching zero-crossings) is O(1) per move. A `Counter` would work but adds hashing overhead on a hot inner loop.
 
-```python
-def find_the_difference(s: str, t: str) -> str:
-    freq = [0] * 26
-    for c in s:
-        freq[ord(c) - 97] += 1
-    for c in t:
-        freq[ord(c) - 97] -= 1
-    for i, count in enumerate(freq):
-        if count < 0:
-            return chr(i + 97)
-    return ''
-```
-
-**Time:** O(n). **Space:** O(1) (k = 26 is constant).
+**Time:** O(n). **Space:** O(1) (k = 128 constant).
 
 ### 2. Find All Anagrams in a String (LC 438)
 
@@ -394,6 +385,11 @@ def is_anagram(s: str, t: str) -> bool:
 
 **Time:** O(n). **Space:** O(1) (k = 26 constant).
 
+**Duplicate problems:**
+- Ransom Note (LC 383) — one-directional delta: magazine freq must cover ransom note freq; same increment/decrement mechanic, no length guard needed.
+- Group Anagrams (LC 49) — use the 26-slot freq array as a hashable tuple key to bucket strings by distribution instead of comparing two strings.
+- Check if Two String Arrays are Equivalent (LC 1662) — iterate both arrays as a single implicit string and apply the same all-zero delta check.
+
 ### 2. Find All Anagrams in a String — sliding window + freq array
 
 Given strings `s` and `p`, return a list of all start indices where `p` is an anagram of the substring of `s`. `1 ≤ len(s), len(p) ≤ 3 × 10⁴`, lowercase.
@@ -427,6 +423,10 @@ def find_anagrams(s: str, p: str) -> list[int]:
 
 **Time:** O(n + m). **Space:** O(1).
 
+**Duplicate problems:**
+- Permutation in String (LC 567) — identical mismatch-counter sliding window; returns a boolean instead of all start indices.
+- Minimum Window Substring (LC 76) — same freq-array window but variable-size: shrink from left until the coverage constraint is met.
+
 ### 3. Sort Characters By Frequency (LC 451) — frequency of frequencies
 
 Given a string `s`, sort it so characters appear in decreasing order of frequency. `1 ≤ len(s) ≤ 5 × 10⁵`, ASCII.
@@ -452,3 +452,7 @@ def frequency_sort(s: str) -> str:
 ```
 
 **Time:** O(n). **Space:** O(n + k).
+
+**Duplicate problems:**
+- Top K Frequent Words (LC 692) — same bucket-by-frequency structure; only difference is lexicographic tiebreaking within a frequency bucket.
+- Reorganize String (LC 767) — build freq array, check max freq ≤ ⌈n/2⌉, then greedily interleave using a heap over the freq array.

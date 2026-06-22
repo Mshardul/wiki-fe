@@ -151,17 +151,17 @@ The shrink-by-a-fraction invariant is exactly what divide-and-conquer sorts ([so
 
 ```
 BINARY-SEARCH(A, target)
- 1  lo ← 1
- 2  hi ← A.length
- 3  while lo ≤ hi
- 4      mid ← lo + ⌊(hi − lo) / 2⌋        ▷ overflow-safe midpoint
- 5      if A[mid] = target
- 6          return mid                     ▷ found
- 7      else if A[mid] < target
- 8          lo ← mid + 1                   ▷ discard left half, incl. mid
- 9      else
-10          hi ← mid − 1                   ▷ discard right half, incl. mid
-11  return NIL                             ▷ lo > hi: not present
+lo ← 1
+hi ← A.length
+while lo ≤ hi
+    mid ← lo + ⌊(hi − lo) / 2⌋        ▷ overflow-safe midpoint
+    if A[mid] = target
+        return mid                     ▷ found
+    else if A[mid] < target
+        lo ← mid + 1                   ▷ discard left half, incl. mid
+    else
+        hi ← mid − 1                   ▷ discard right half, incl. mid
+return NIL                             ▷ lo > hi: not present
 ```
 
 **Python** — idiomatic, with the leftmost-boundary variant and the contest-velocity stdlib shortcut:

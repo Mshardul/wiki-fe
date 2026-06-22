@@ -82,24 +82,28 @@ A few params have a hard cap regardless of how good the rest reads — apply the
 - **DS8 / AL9 (comparison)** — must be an actual **table** of this-vs-rivals, not prose duplicating DS4/AL5. Prose-only, or a table with a single row (no rival), **caps at 5** (→ blocker). It must add the scannable view DS4/AL5 don't.
 - **AL10 / PA10 (constraints & approach)** — must map concrete **input sizes → complexity/approach** (`n ≤ 10⁵ → O(n log n)`). Generic "consider the constraints" with no size→approach mapping **caps at 5** (→ blocker).
 - **CP / PA11 (CP-primitives)** — must be **≥2 real, topic-appropriate** contest tools with the "why for CP" line. Filler, a single primitive, or tools that don't actually apply to the structure **caps at 5**. (For DS this only blocks when the family is Linear — see conditional gate.)
+- **DS9a (amortized proof)** — if the structure has amortized behavior (dynamic array, hash table, heap) and the article only asserts "O(1) amortized" without showing the accounting or potential-function argument, **cap at 5** (→ blocker when gated). An n/a is accepted only for structures with no amortized behavior; an unjustified n/a on a dynamic array scores **0–2**.
+- **DS8 (comparison table) crossover condition** — a rival row that states O() but omits the practical crossover condition (the threshold or workload where the rival actually wins) **caps the row's contribution at 6**. A table where every rival row is missing the crossover caps DS8 at **5** (→ blocker).
 - **DS5 (variants) ↔ CP boundary — do not double-penalize.** Per the writer, DS5 lists CP-relevant variants as **one-line structural entries** and defers the technique/diagram to `## CP-primitives`. A variant named in DS5 with its depth in CP-primitives is **full credit** — do **not** score DS5 down for "could go deeper on the CP variant" when that depth correctly lives in CP-primitives. DS5 is judged on naming the structural shapes; CP-primitives is judged on wielding them.
+- **U6 (practice problems) — duplicate-problems gate.** Each worked problem should include a `**Duplicate problems:**` line (title + 1 sentence per entry). **If not a single worked problem has one**, cap U6 at **5** (→ blocker). Having duplicate-problems lists on 3–5 problems raises the score ceiling to 9–10 (advisory); having it on at least 1 is the gated floor. Do not penalize if a problem genuinely has no close duplicates — an n/a with justification is acceptable on individual problems, but at least one problem in the section must carry the list.
 
 ### Weights
 
 | Weight  | Params                                                                                                                                                                            |
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **3**   | PA1 Recognition signals (pattern)                                                                                                                                                 |
-| **2**   | AL4 Complexity derivation · AL1 Intuition · U5 Pseudocode ≠ Python · FB Family block · PA3 Skeleton · AL10 Constraints & approach · PA10 Constraints & approach                   |
-| **1**   | All other section-core params + U1 def · U2 complexity · U3 when-to-use · U4 Python · U6 practice · U12 links · DS8 / AL9 Comparison · CP CP-primitives (DS) · PA11 CP-primitives |
-| **0.5** | U8 Title↔filename · U9 Prerequisites format · U10 TOC · U11 Filename convention · U13 soundbite · U17 real-world · advisory params                                                |
+| **2**   | AL4 Complexity derivation · AL1 Intuition · U5 Pseudocode ≠ Python · FB Family block · PA3 Skeleton · AL10 Constraints & approach · PA10 Constraints & approach · DS9a Amortized proof |
+| **1**   | All other section-core params + U1 def · U2 complexity · U3 when-to-use · U4 Python · U6 practice · U12 links · DS8 / AL9 Comparison · CP CP-primitives (DS) · PA11 CP-primitives · DS9 Interviewer probes |
+| **0.5** | U8 Title↔filename · U9 Prerequisites format · U10 TOC · U11 Filename convention · U13 soundbite · U17 real-world + at-scale · U18 cache behavior · advisory params               |
 
 ### Gate per param
 
 | Gate            | Params                                                                                                                                                                                                                                                                                                                                                                    |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **gated**       | U1–U8, U11, U12 · all DS except DS5 · DS8 · all AL except AL8 · AL9, AL10 · PA1–PA4, PA6–PA8, PA10, PA11 · FB                                                                                                                                                                                                                                                             |
-| **advisory**    | U9, U10, U13, U17 · DS5 · AL8 · PA5, PA9                                                                                                                                                                                                                                                                                                                                  |
+| **gated**       | U1–U8, U11, U12 · all DS except DS5, DS9, DS9a · DS8 · all AL except AL8 · AL9, AL10 · PA1–PA4, PA6–PA8, PA10, PA11 · FB                                                                                                                                                                                                                                                 |
+| **advisory**    | U9, U10, U13, U17, U18 · DS5 · DS9 · AL8 · PA5, PA9                                                                                                                                                                                                                                                                                                                      |
 | **conditional** | **CP (CP-primitives, DS only)** — **gated** when the article's DS family is **Linear** (array, string, linked-list, stack, queue); **advisory** for all other DS families. Determine from the detected family (step 3) and state which applies in the NOTE. Not present on Algorithms or Patterns (Algorithms carry CP via AL10+AL6; Patterns have their own gated PA11). |
+| **conditional** | **DS9a (Amortized proof, DS only)** — **gated** when family is **Linear** (dynamic array) or **Hash-based**; **advisory** when family is **Tree/heap**; **n/a** for Graph and fixed arrays (mark n/a with justification). State which applies in the NOTE. |
 
 ---
 
@@ -116,7 +120,10 @@ DS2 operations table          8/10    1    gate   all ops have O(), missing spac
 DS8 comparison table          7/10    1    gate   table vs linked-list/hash, missing BST row
 CP cp-primitives              5/10    1    gate   Linear family → gated; only prefix-sum, needs ≥2
 FB memory layout              7/10    2    gate   covers cache, misses resize cost
-U17 real-world usage          6/10   0.5   adv    one line present in when-to-use
+U17 real-world + at-scale     6/10   0.5   adv    real-world line present; at-scale failure missing
+U18 cache behavior            7/10   0.5   adv    one line present in memory layout
+DS9 interviewer probes        7/10    1    adv    2 probes present; missing scale probe
+DS9a amortized proof          5/10    2    cond   Linear family → gated; asserts O(1) amort. but no accounting argument
 U9 prerequisites format       6/10   0.5   adv    reason text missing on 2 prereqs
 AL10 constraints & approach   n/a     -     -     (DS article — AL10 is algorithms/patterns only)
 PA1 recognition signals       n/a     -     -     (not a pattern article)

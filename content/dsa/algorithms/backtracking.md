@@ -202,26 +202,26 @@ The full bitmask N-Queens implementation is in [Implementation](#implementation)
 
 ```
 SOLVE-N-QUEENS(n)
-1   cols ← empty array of length n
-2   used-col, used-diag, used-anti ← empty sets
-3   solutions ← empty list
-4   PLACE-QUEEN(0)
-5   return solutions
+cols ← empty array of length n
+used-col, used-diag, used-anti ← empty sets
+solutions ← empty list
+PLACE-QUEEN(0)
+return solutions
 
 PLACE-QUEEN(row)
-1   if row = n                              ▷ all rows filled — complete board
-2       append COPY(cols) to solutions
-3       return
-4   for c ← 0 to n - 1                       ▷ try each column in this row
-5       if c ∉ used-col and (row - c) ∉ used-diag and (row + c) ∉ used-anti
-6           cols[row] ← c                    ▷ choose
-7           insert c into used-col
-8           insert (row - c) into used-diag
-9           insert (row + c) into used-anti
-10          PLACE-QUEEN(row + 1)             ▷ explore
-11          remove c from used-col           ▷ un-choose (backtrack)
-12          remove (row - c) from used-diag
-13          remove (row + c) from used-anti
+if row = n                              ▷ all rows filled — complete board
+    append COPY(cols) to solutions
+    return
+for c ← 0 to n - 1                       ▷ try each column in this row
+    if c ∉ used-col and (row - c) ∉ used-diag and (row + c) ∉ used-anti
+        cols[row] ← c                    ▷ choose
+        insert c into used-col
+        insert (row - c) into used-diag
+        insert (row + c) into used-anti
+        PLACE-QUEEN(row + 1)             ▷ explore
+        remove c from used-col           ▷ un-choose (backtrack)
+        remove (row - c) from used-diag
+        remove (row + c) from used-anti
 ```
 
 **Python (idiomatic, O(1) safety check via diagonal sets):**

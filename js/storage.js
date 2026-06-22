@@ -122,7 +122,8 @@ function renderBookmarksSection(wiki) {
   if (!section) return;
   const bookmarks = getBookmarks().filter((b) => b.wikiId === wiki.id);
   if (!bookmarks.length) {
-    section.classList.add("hidden");
+    section.classList.remove("hidden");
+    section.innerHTML = `<p class="recents-empty">// no bookmarks yet — press <kbd>b</kbd> on any article</p>`;
     return;
   }
   section.classList.remove("hidden");
@@ -243,7 +244,8 @@ function renderRecentsSection(wiki) {
   if (!section) return;
   const recents = getRecents().filter((r) => r.wikiId === wiki.id);
   if (!recents.length) {
-    section.classList.add("hidden");
+    section.classList.remove("hidden");
+    section.innerHTML = `<p class="recents-empty">// nothing visited yet — open any article to start</p>`;
     return;
   }
   section.classList.remove("hidden");

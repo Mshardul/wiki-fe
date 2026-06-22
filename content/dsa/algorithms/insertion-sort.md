@@ -143,13 +143,13 @@ Insertion sort is the canonical **iterative loop-invariant** algorithm rather th
 
 ```
 INSERTION-SORT(A)
- 1  for i = 2 to A.length              ▷ 1-indexed; prefix A[1..i-1] is sorted
- 2      key ← A[i]
- 3      j ← i − 1
- 4      while j > 0 and A[j] > key      ▷ strict > keeps it STABLE
- 5          A[j + 1] ← A[j]            ▷ shift larger element right
- 6          j ← j − 1
- 7      A[j + 1] ← key                 ▷ drop key into the opened slot
+for i = 2 to A.length              ▷ 1-indexed; prefix A[1..i-1] is sorted
+    key ← A[i]
+    j ← i − 1
+    while j > 0 and A[j] > key      ▷ strict > keeps it STABLE
+        A[j + 1] ← A[j]            ▷ shift larger element right
+        j ← j − 1
+    A[j + 1] ← key                 ▷ drop key into the opened slot
 ```
 
 **Python** — idiomatic, plus the binary-insertion variant (fewer comparisons):

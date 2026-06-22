@@ -164,20 +164,20 @@ The **Distribution** family, scaled to wide keys by decomposition:
 
 ```
 RADIX-SORT(A, d, b)                       ▷ d digits, base b
- 1  for i ← 1 to d                         ▷ least-significant digit first
- 2      A ← STABLE-COUNTING-SORT-BY-DIGIT(A, i, b)
- 3  return A
+for i ← 1 to d                         ▷ least-significant digit first
+    A ← STABLE-COUNTING-SORT-BY-DIGIT(A, i, b)
+return A
 
 STABLE-COUNTING-SORT-BY-DIGIT(A, i, b)    ▷ sort A on digit i, base b, stably
- 1  let C[0..b-1] ← 0, B[1..A.length] be new
- 2  for each x in A
- 3      C[digit(x, i, b)] ← C[digit(x, i, b)] + 1
- 4  for v ← 1 to b − 1
- 5      C[v] ← C[v] + C[v − 1]            ▷ prefix sum
- 6  for j ← A.length downto 1            ▷ right-to-left ⇒ STABLE
- 7      d ← digit(A[j], i, b)
- 8      B[C[d]] ← A[j]; C[d] ← C[d] − 1
- 9  return B
+let C[0..b-1] ← 0, B[1..A.length] be new
+for each x in A
+    C[digit(x, i, b)] ← C[digit(x, i, b)] + 1
+for v ← 1 to b − 1
+    C[v] ← C[v] + C[v − 1]            ▷ prefix sum
+for j ← A.length downto 1            ▷ right-to-left ⇒ STABLE
+    d ← digit(A[j], i, b)
+    B[C[d]] ← A[j]; C[d] ← C[d] − 1
+return B
 ```
 
 **Python** — idiomatic LSD radix for non-negative integers, plus the negative-handling note:

@@ -189,6 +189,14 @@ After finishing any coding task:
 1. **Tests** — decide if new behaviour needs coverage. Add tests if: a new user-visible interaction was added, a bug was fixed (regression test), or a new code path exists that existing tests don't reach. Use the test file map below to pick the right file. Never run tests — write correct test code only.
 2. **Ticket closure** — if the task came from a ticket (`WIKI-xxx`), update its row in `docs/tickets.md`: set Status = `Done` and Impl. Date = today's date (YYYY-MM-DD).
 
+After finishing any **content task**:
+
+3. **Content changelog** — update `content/CHANGELOG.md` with an entry under today's date. Log: new article, new section, expanded/rewritten section, new stub. Skip: typo fixes, grammar, cross-reference links. Format:
+   ```
+   ## YYYY-MM-DD
+   - `filename.md` — what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
+   ```
+
 ---
 
 ## TEST PATTERNS

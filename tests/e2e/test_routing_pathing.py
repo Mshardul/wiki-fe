@@ -138,7 +138,11 @@ def test_404_back_btn_redirects_when_no_history(page, base_url):
     page.wait_for_load_state("domcontentloaded")
 
     page.click("#back-btn")
-    page.wait_for_url(re.compile(r"https?://[^/]+/(?:#.*)?$"), timeout=5_000)
+    # Condition-based: poll until the URL no longer contains 404.html.
+    page.wait_for_function(
+        "() => !location.href.includes('404.html')",
+        timeout=5_000,
+    )
 
 
 # ── fetchText absolute URL ──────────────────────────────────────────

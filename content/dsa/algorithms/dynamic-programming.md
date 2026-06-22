@@ -183,17 +183,17 @@ This is the section to write most carefully — defining the state correctly is 
 
 ```
 MIN-COINS(coins, amount)
-1   let dp[0..amount] be a new array
-2   dp[0] ← 0
-3   for a ← 1 to amount
-4       dp[a] ← ∞                          ▷ assume impossible until proven otherwise
-5   for a ← 1 to amount
-6       for each c in coins
-7           if c ≤ a and dp[a - c] + 1 < dp[a]
-8               dp[a] ← dp[a - c] + 1       ▷ relax: one more coin onto a solved subproblem
-9   if dp[amount] = ∞
-10      return -1                            ▷ target unreachable
-11  return dp[amount]
+let dp[0..amount] be a new array
+dp[0] ← 0
+for a ← 1 to amount
+    dp[a] ← ∞                          ▷ assume impossible until proven otherwise
+for a ← 1 to amount
+    for each c in coins
+        if c ≤ a and dp[a - c] + 1 < dp[a]
+            dp[a] ← dp[a - c] + 1       ▷ relax: one more coin onto a solved subproblem
+if dp[amount] = ∞
+    return -1                            ▷ target unreachable
+return dp[amount]
 ```
 
 **Python — top-down (memoization), the backtracking→DP form:**

@@ -170,14 +170,14 @@ Applied to activity selection: `O` is an optimal schedule, `g = a₁` is the ear
 
 ```
 GREEDY-ACTIVITY-SELECT(activities)
-1   sort activities by finish time ascending
-2   chosen ← empty list
-3   last-finish ← −∞
-4   for each act in activities                 ▷ in sorted order
-5       if act.start ≥ last-finish              ▷ compatible with all chosen so far
-6           append act to chosen                ▷ greedy choice: earliest finish
-7           last-finish ← act.finish
-8   return chosen
+sort activities by finish time ascending
+chosen ← empty list
+last-finish ← −∞
+for each act in activities                 ▷ in sorted order
+    if act.start ≥ last-finish              ▷ compatible with all chosen so far
+        append act to chosen                ▷ greedy choice: earliest finish
+        last-finish ← act.finish
+return chosen
 ```
 
 **Python (idiomatic — sort by end, single scan):**

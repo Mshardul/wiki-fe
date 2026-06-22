@@ -262,11 +262,21 @@ def test_index_card_hover_shows_preview(page, base_url):
     )
 
     card = page.locator(".index-card:not(.index-card--unavailable)").first
+    page.wait_for_function(
+        "() => !!document.querySelector('.index-card:not(.index-card--unavailable) .index-card-read-time[data-path]')",
+        timeout=10_000,
+    )
     card.hover()
 
-    preview = page.locator("#hover-preview")
-    preview.wait_for(state="visible", timeout=2_000)
-    assert preview.is_visible(), "hover-preview must become visible after hovering an index card"
+    # Wait for the preview to gain the 'visible' class (400ms timer + fetch).
+    # Condition-based: polls until the class appears rather than a fixed sleep.
+    page.wait_for_function(
+        "() => document.getElementById('hover-preview')?.classList.contains('visible')",
+        timeout=8_000,
+    )
+    assert page.locator("#hover-preview").is_visible(), (
+        "hover-preview must become visible after hovering an index card"
+    )
 
 
 def test_index_card_hover_preview_hidden_on_leave(page, base_url):

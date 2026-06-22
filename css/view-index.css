@@ -375,6 +375,18 @@
   opacity: 0.7;
   pointer-events: none;
 }
+.recents-empty {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-subtle);
+  padding: var(--s2) 0;
+  margin: 0;
+}
+.recents-empty kbd {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  font-size: inherit;
+}
 
 /* Chip strip row limit + expand */
 .recent-chip.chip--hidden {

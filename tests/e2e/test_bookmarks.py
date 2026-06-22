@@ -74,3 +74,15 @@ def test_anon_bookmark_makes_no_api_call(page, base_url):
     _bookmark_current(page)
     page.wait_for_timeout(300)  # give any (erroneous) fire-and-forget POST time to fire
     assert all("/bookmarks" not in u for u in calls)
+
+
+def test_bookmarks_empty_state_shown(page, base_url):
+    page.goto(base_url)
+    page.evaluate("localStorage.removeItem('wiki-bookmarks')")
+    page.reload()
+    page.locator(".wiki-card").first.click()
+    page.wait_for_selector("#bookmarks-section")
+    section = page.locator("#bookmarks-section")
+    assert section.is_visible()
+    assert "no bookmarks yet" in section.inner_text()
+    assert section.locator("kbd").count() > 0

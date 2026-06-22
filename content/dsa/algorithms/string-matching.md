@@ -172,30 +172,30 @@ The signature of KMP is a **monotone, never-rewinding scan pointer** paired with
 
 ```
 COMPUTE-PREFIX-FUNCTION(P)
- 1  m ← P.length
- 2  let π[1..m] be a new array
- 3  π[1] ← 0
- 4  len ← 0                              ▷ length of current longest prefix-suffix
- 5  for j = 2 to m
- 6      while len > 0 and P[len + 1] ≠ P[j]
- 7          len ← π[len]                 ▷ fall back to next-longest prefix-suffix
- 8      if P[len + 1] = P[j]
- 9          len ← len + 1
-10      π[j] ← len
-11  return π
+m ← P.length
+let π[1..m] be a new array
+π[1] ← 0
+len ← 0                              ▷ length of current longest prefix-suffix
+for j = 2 to m
+    while len > 0 and P[len + 1] ≠ P[j]
+        len ← π[len]                 ▷ fall back to next-longest prefix-suffix
+    if P[len + 1] = P[j]
+        len ← len + 1
+    π[j] ← len
+return π
 
 KMP-MATCH(T, P)
- 1  n ← T.length;  m ← P.length
- 2  π ← COMPUTE-PREFIX-FUNCTION(P)
- 3  q ← 0                                ▷ number of pattern chars matched
- 4  for i = 1 to n
- 5      while q > 0 and P[q + 1] ≠ T[i]
- 6          q ← π[q]                     ▷ mismatch: slide pattern, DON'T move i
- 7      if P[q + 1] = T[i]
- 8          q ← q + 1
- 9      if q = m
-10          report match ending at i     ▷ start = i − m + 1
-11          q ← π[q]                     ▷ keep finding overlapping matches
+n ← T.length;  m ← P.length
+π ← COMPUTE-PREFIX-FUNCTION(P)
+q ← 0                                ▷ number of pattern chars matched
+for i = 1 to n
+    while q > 0 and P[q + 1] ≠ T[i]
+        q ← π[q]                     ▷ mismatch: slide pattern, DON'T move i
+    if P[q + 1] = T[i]
+        q ← q + 1
+    if q = m
+        report match ending at i     ▷ start = i − m + 1
+        q ← π[q]                     ▷ keep finding overlapping matches
 ```
 
 **Python** — idiomatic, 0-indexed, returning all match start indices, plus the contest-velocity built-in for when you _don't_ need to hand-roll:

@@ -44,8 +44,8 @@ Some text.
 
 
 def _load_mock_article(page, base_url, content, slug="mock"):
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=10_000)
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
     page.evaluate(f"""() => navigateToContent(
         'system-design',
@@ -1038,6 +1038,166 @@ def test_hljs_stylesheet_swaps_on_theme_change(page, base_url):
     assert "atom-one" in new_href, f"Unexpected hljs stylesheet: {new_href!r}"
 
 
+# ── Formula variable-substitution toggle ────────────────────────────
+
+ARTICLE_WITH_MATH = """\
+# Math Test
+
+## Section
+
+Display formula with known variables:
+
+$$T = 1/\\lambda$$
+
+Some text.
+"""
+
+ARTICLE_WITH_MATH_NO_KNOWN_VARS = """\
+# Math No Vars Test
+
+## Section
+
+$$e = mc^2$$
+
+Some text.
+"""
+
+
+def test_formula_toggle_btn_added_for_known_vars(page, base_url):
+    """A .formula-toggle-btn is injected into .katex-display when it contains mapped vars."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MATH, slug="formula-btn-added")
+    page.wait_for_selector(".katex-display", timeout=5_000)
+    count = page.evaluate(
+        "() => document.querySelectorAll('.katex-display .formula-toggle-btn').length"
+    )
+    assert count >= 1, "No .formula-toggle-btn found in .katex-display with known vars"
+
+
+def test_formula_toggle_btn_absent_when_no_mapped_vars(page, base_url):
+    """No .formula-toggle-btn is added when the formula has no vars in VAR_MAP."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MATH_NO_KNOWN_VARS, slug="formula-btn-absent")
+    page.wait_for_selector(".katex-display", timeout=5_000)
+    count = page.evaluate(
+        "() => document.querySelectorAll('.katex-display .formula-toggle-btn').length"
+    )
+    assert count == 0, ".formula-toggle-btn should not appear when no mapped vars"
+
+
+def test_formula_toggle_btn_click_adds_active_class(page, base_url):
+    """Clicking .formula-toggle-btn adds .active to the button."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MATH, slug="formula-active")
+    page.wait_for_selector(".formula-toggle-btn", timeout=5_000)
+    page.locator(".formula-toggle-btn").first.hover()
+    page.locator(".formula-toggle-btn").first.click()
+    has_active = page.evaluate(
+        "() => document.querySelector('.formula-toggle-btn')?.classList.contains('active')"
+    )
+    assert has_active, ".formula-toggle-btn missing .active after first click"
+
+
+def test_formula_toggle_btn_second_click_removes_active(page, base_url):
+    """Clicking .formula-toggle-btn twice removes .active (back to symbol mode)."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MATH, slug="formula-toggle-back")
+    page.wait_for_selector(".formula-toggle-btn", timeout=5_000)
+    btn = page.locator(".formula-toggle-btn").first
+    btn.hover()
+    btn.click()
+    btn.click()
+    has_active = page.evaluate(
+        "() => document.querySelector('.formula-toggle-btn')?.classList.contains('active')"
+    )
+    assert not has_active, ".formula-toggle-btn still .active after second click"
+
+
+def test_formula_toggle_wrapper_present(page, base_url):
+    """.formula-toggle-wrapper span wraps the katex content after addFormulaToggle."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MATH, slug="formula-wrapper")
+    page.wait_for_selector(".formula-toggle-btn", timeout=5_000)
+    count = page.evaluate(
+        "() => document.querySelectorAll('.katex-display .formula-toggle-wrapper').length"
+    )
+    assert count >= 1, ".formula-toggle-wrapper not found in .katex-display"
+
+
+# ── Mermaid node hover captions ──────────────────────────────────────
+
+ARTICLE_WITH_CAPTIONED_MERMAID = """\
+# Mermaid Caption Test
+
+## Section
+
+```mermaid
+%% node-caption: A "entry point — receives all requests"
+%% node-caption: B "load balancer — fans out to workers"
+graph LR
+  A[Client] --> B[Load Balancer] --> C[Server]
+```
+
+Some text.
+"""
+
+ARTICLE_WITH_UNCAPTIONED_MERMAID = """\
+# Mermaid No Caption Test
+
+## Section
+
+```mermaid
+graph LR
+  A[Start] --> B[End]
+```
+
+Some text.
+"""
+
+
+def test_mermaid_node_caption_parsed_from_src(page, base_url):
+    """data-mermaid-src contains the %% node-caption lines after render."""
+    _load_mock_article(
+        page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-caption-src"
+    )
+    page.wait_for_selector(".mermaid-diagram[data-mermaid-src]", timeout=10_000)
+    src = page.evaluate(
+        "() => document.querySelector('.mermaid-diagram')?.dataset.mermaidSrc ?? ''"
+    )
+    assert "node-caption" in src, "node-caption lines missing from data-mermaid-src"
+
+
+def test_mermaid_tooltip_element_exists(page, base_url):
+    """#mermaid-node-tooltip is injected into the DOM when captions are present."""
+    _load_mock_article(
+        page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-tooltip-el"
+    )
+    page.wait_for_selector(".mermaid-diagram svg", timeout=10_000)
+    exists = page.evaluate(
+        "() => !!document.getElementById('mermaid-node-tooltip')"
+    )
+    assert exists, "#mermaid-node-tooltip not found in DOM"
+
+
+def test_mermaid_tooltip_not_injected_without_captions(page, base_url):
+    """#mermaid-node-tooltip is NOT injected when no %% node-caption lines are present."""
+    _load_mock_article(
+        page, base_url, ARTICLE_WITH_UNCAPTIONED_MERMAID, slug="mermaid-tooltip-absent"
+    )
+    page.wait_for_selector(".mermaid-diagram svg", timeout=10_000)
+    exists = page.evaluate(
+        "() => !!document.getElementById('mermaid-node-tooltip')"
+    )
+    assert not exists, "#mermaid-node-tooltip should not exist when no captions defined"
+
+
+def test_mermaid_tooltip_not_visible_on_load(page, base_url):
+    """#mermaid-node-tooltip does not have .visible class on initial load."""
+    _load_mock_article(
+        page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-tooltip-hidden"
+    )
+    page.wait_for_selector(".mermaid-diagram svg", timeout=10_000)
+    is_visible = page.evaluate(
+        "() => document.getElementById('mermaid-node-tooltip')?.classList.contains('visible') ?? false"
+    )
+    assert not is_visible, "#mermaid-node-tooltip should not be .visible on load"
+
+
 # ── ResizeObserver cleanup ──────────────────────────────────────────────────────
 
 
@@ -1060,3 +1220,53 @@ def test_resize_observers_cleared_on_navigation(page, base_url):
     assert count_after == 0, (
         f"tableResizeObservers not cleared after navigation, still {count_after}"
     )
+
+
+ARTICLE_WITH_TABS = """\
+# Tab Test
+
+## Sorting
+
+<!-- tabs id="sort-test" title="Quicksort" -->
+```python
+def quicksort(arr):
+    if len(arr) <= 1:
+        return arr
+    return quicksort([x for x in arr[1:] if x <= arr[0]]) + [arr[0]] + quicksort([x for x in arr[1:] if x > arr[0]])
+```
+```java
+public static void quicksort(int[] arr) {}
+```
+<!-- /tabs id="sort-test" -->
+"""
+
+
+def test_tabbed_code_blocks_render(page, base_url):
+    _load_mock_article(page, base_url, ARTICLE_WITH_TABS, slug="tab-test")
+    page.wait_for_selector(".code-tabs", timeout=10_000)
+
+    widget = page.locator(".code-tabs").first
+    assert widget.is_visible()
+
+    tabs = widget.locator(".code-tab")
+    assert tabs.count() == 2
+
+    assert "active" in (tabs.nth(0).get_attribute("class") or "")
+
+    tabs.nth(1).click()
+    assert "active" in (tabs.nth(1).get_attribute("class") or "")
+    panels = widget.locator(".code-tab-panel")
+    assert panels.nth(0).is_hidden()
+    assert panels.nth(1).is_visible()
+
+
+def test_tabbed_code_blocks_lang_persistence(page, base_url):
+    _load_mock_article(page, base_url, ARTICLE_WITH_TABS, slug="tab-test-persist")
+    page.wait_for_selector(".code-tabs", timeout=10_000)
+
+    page.locator(".code-tab[data-lang='java']").first.click()
+
+    _load_mock_article(page, base_url, ARTICLE_WITH_TABS, slug="tab-test-persist")
+    page.wait_for_selector(".code-tabs", timeout=10_000)
+    active_tab = page.locator(".code-tab.active").first
+    assert active_tab.get_attribute("data-lang") == "java"

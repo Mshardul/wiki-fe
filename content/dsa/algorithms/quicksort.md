@@ -163,20 +163,20 @@ The **Search/divide** family, doing its work on the way _down_ (partition) rathe
 
 ```
 QUICKSORT(A, lo, hi)
- 1  if lo < hi
- 2      p ← PARTITION(A, lo, hi)            ▷ p = pivot's final index
- 3      QUICKSORT(A, lo, p − 1)             ▷ sort ≤ side
- 4      QUICKSORT(A, p + 1, hi)             ▷ sort > side
+if lo < hi
+    p ← PARTITION(A, lo, hi)            ▷ p = pivot's final index
+    QUICKSORT(A, lo, p − 1)             ▷ sort ≤ side
+    QUICKSORT(A, p + 1, hi)             ▷ sort > side
 
 PARTITION(A, lo, hi)
- 1  pivot ← A[hi]                           ▷ choose last as pivot
- 2  i ← lo − 1                              ▷ boundary of the ≤ zone
- 3  for j ← lo to hi − 1
- 4      if A[j] ≤ pivot
- 5          i ← i + 1
- 6          swap A[i] A[j]                  ▷ grow the ≤ zone
- 7  swap A[i + 1] A[hi]                     ▷ drop pivot between the zones
- 8  return i + 1
+pivot ← A[hi]                           ▷ choose last as pivot
+i ← lo − 1                              ▷ boundary of the ≤ zone
+for j ← lo to hi − 1
+    if A[j] ≤ pivot
+        i ← i + 1
+        swap A[i] A[j]                  ▷ grow the ≤ zone
+swap A[i + 1] A[hi]                     ▷ drop pivot between the zones
+return i + 1
 ```
 
 **Python** — idiomatic, with a randomized pivot (the essential hardening) and the contest-velocity reality:

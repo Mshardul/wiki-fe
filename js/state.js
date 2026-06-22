@@ -64,6 +64,22 @@ const mathExtension = () => {
   ];
 };
 
+const tabsExtension = () => {
+  return [
+    {
+      type: "lang",
+      regex: /<!--\s*tabs\s+id="([^"]+)"(?:\s+title="([^"]*)")?\s*-->/g,
+      replace: (match, id, title) =>
+        `<div data-tabs-id="${id}"${title ? ` data-tabs-title="${title}"` : ""}>`,
+    },
+    {
+      type: "lang",
+      regex: /<!--\s*\/tabs\s+id="([^"]+)"\s*-->/g,
+      replace: () => "</div>",
+    },
+  ];
+};
+
 const mdConverter = new showdown.Converter({
   ghCompatibleHeaderId: true,
   noHeaderId: false,
@@ -72,7 +88,7 @@ const mdConverter = new showdown.Converter({
   simpleLineBreaks: true,
   openLinksInNewWindow: false,
   disableForced4SpacesIndentedSublists: true,
-  extensions: [mathExtension],
+  extensions: [mathExtension, tabsExtension],
 });
 
 if (typeof mermaid !== "undefined") {

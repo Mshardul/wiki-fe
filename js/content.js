@@ -598,6 +598,88 @@ async function renderMermaidDiagrams(contentEl) {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   MERMAID NODE HOVER CAPTIONS
+   ═══════════════════════════════════════════════════════════════ */
+function _parseMermaidCaptions(src) {
+  const map = {};
+  const re = /^%%\s*node-caption:\s*(\S+)\s+"([^"]+)"/gm;
+  for (let m = re.exec(src); m !== null; m = re.exec(src)) {
+    map[m[1].toLowerCase()] = m[2];
+  }
+  return map;
+}
+
+function _getMermaidTooltip() {
+  let tip = document.getElementById("mermaid-node-tooltip");
+  if (!tip) {
+    tip = document.createElement("div");
+    tip.id = "mermaid-node-tooltip";
+    tip.className = "mermaid-node-tooltip";
+    tip.setAttribute("role", "tooltip");
+    tip.setAttribute("aria-live", "polite");
+    document.body.appendChild(tip);
+  }
+  return tip;
+}
+
+function addMermaidNodeCaptions(contentEl) {
+  const diagrams = contentEl.querySelectorAll(".mermaid-diagram[data-mermaid-src]");
+  const hasAnyCaptions = [...diagrams].some((d) => {
+    const src = d.dataset.mermaidSrc || "";
+    return Object.keys(_parseMermaidCaptions(src)).length > 0;
+  });
+  if (!hasAnyCaptions) {
+    document.getElementById("mermaid-node-tooltip")?.remove();
+    return;
+  }
+
+  const tip = _getMermaidTooltip();
+
+  diagrams.forEach((diagram) => {
+    const src = diagram.dataset.mermaidSrc || "";
+    const captions = _parseMermaidCaptions(src);
+    if (!Object.keys(captions).length) return;
+
+    const svg = diagram.querySelector("svg");
+    if (!svg) return;
+
+    // Mermaid renders nodes as <g> with class containing node id, or as <g id="...">
+    svg.querySelectorAll("g[id], g[class]").forEach((el) => {
+      const elId = (el.id || "").toLowerCase();
+      const elClass = (el.className?.baseVal || "").toLowerCase();
+      const labelEl = el.querySelector(".label, text, .nodeLabel");
+      const labelText = labelEl?.textContent?.trim().toLowerCase() || "";
+
+      const fuzzyKey = Object.keys(captions).find((k) => elClass.includes(k) || elId.includes(k));
+      const caption =
+        captions[elId] || captions[labelText] || (fuzzyKey ? captions[fuzzyKey] : null);
+
+      if (!caption) return;
+
+      el.classList.add("has-node-caption");
+      el.addEventListener("mouseenter", (e) => {
+        tip.textContent = caption;
+        tip.classList.add("visible");
+        _positionTooltip(tip, e);
+      });
+      el.addEventListener("mousemove", (e) => _positionTooltip(tip, e));
+      el.addEventListener("mouseleave", () => tip.classList.remove("visible"));
+    });
+  });
+}
+
+function _positionTooltip(tip, e) {
+  const pad = 12;
+  let x = e.clientX + pad;
+  let y = e.clientY + pad;
+  const rect = tip.getBoundingClientRect();
+  if (x + rect.width > window.innerWidth - pad) x = e.clientX - rect.width - pad;
+  if (y + rect.height > window.innerHeight - pad) y = e.clientY - rect.height - pad;
+  tip.style.left = `${x}px`;
+  tip.style.top = `${y}px`;
+}
+
 /* ─── Diagram Zoom ─── */
 function addDiagramZoom(contentEl) {
   contentEl.querySelectorAll(".mermaid-diagram").forEach((diagram) => {
@@ -753,6 +835,99 @@ function addTableSort(contentEl) {
         }
       });
     });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MATH FORMULA VARIABLE-SUBSTITUTION TOGGLE
+   ═══════════════════════════════════════════════════════════════ */
+
+const VAR_MAP = {
+  // Time / rates
+  T: "time",
+  t: "time",
+  λ: "arrival rate",
+  μ: "service rate",
+  τ: "latency",
+  ρ: "utilization",
+  ω: "frequency",
+  // Sizing
+  n: "size",
+  N: "total",
+  m: "count",
+  k: "partitions",
+  B: "block size",
+  b: "bits",
+  W: "width",
+  H: "height",
+  // Probability / stats
+  p: "probability",
+  q: "failure prob",
+  σ: "std dev",
+  α: "alpha",
+  β: "beta",
+  θ: "threshold",
+  // Complexity
+  f: "function",
+  g: "growth",
+  L: "length",
+  S: "space",
+  // Common single-letters that should stay symbolic
+  // (intentionally omitted: e, i, j, x, y, z — too ambiguous)
+};
+
+function _substituteLatex(latex) {
+  // Replace isolated single-letter variables (not inside \commands) with \text{word}
+  return latex.replace(/(?<!\\)([a-zA-Zα-ωΑ-Ω])(?=[^a-zA-Zα-ωΑ-Ω_{]|$)/gu, (match) => {
+    return VAR_MAP[match] ? `\\text{${VAR_MAP[match]}}` : match;
+  });
+}
+
+function addFormulaToggle(contentEl) {
+  if (typeof katex === "undefined") return;
+
+  contentEl.querySelectorAll(".katex-display").forEach((block) => {
+    const annotation = block.querySelector("annotation[encoding='application/x-tex']");
+    if (!annotation) return;
+    const originalLatex = annotation.textContent.trim();
+    const substituted = _substituteLatex(originalLatex);
+    if (substituted === originalLatex) return; // nothing to swap — skip
+
+    let expanded = false;
+    const btn = document.createElement("button");
+    btn.className = "formula-toggle-btn";
+    btn.title = "Toggle variable names";
+    btn.setAttribute("aria-label", "Toggle variable names");
+    btn.textContent = "αβ";
+
+    // Wrap existing katex span so we can swap it without touching buttons
+    const katexSpan = block.querySelector(".katex");
+    if (!katexSpan) return;
+    const wrapper = document.createElement("span");
+    wrapper.className = "formula-toggle-wrapper";
+    katexSpan.parentNode.insertBefore(wrapper, katexSpan);
+    wrapper.appendChild(katexSpan);
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      expanded = !expanded;
+      btn.classList.toggle("active", expanded);
+      btn.title = expanded ? "Show symbols" : "Toggle variable names";
+      const latex = expanded ? substituted : originalLatex;
+      try {
+        const tmp = document.createElement("span");
+        // katex.renderToString is safe — output is generated by the KaTeX library
+        // from a LaTeX string we control (extracted from the page's own annotation node)
+        tmp.innerHTML = katex.renderToString(latex, { displayMode: false, throwOnError: false }); // eslint-disable-line no-unsanitized/property
+        wrapper.replaceChildren(tmp.firstElementChild || tmp);
+      } catch (_) {
+        expanded = !expanded;
+        btn.classList.toggle("active", expanded);
+      }
+    });
+
+    block.style.position = "relative";
+    block.appendChild(btn);
   });
 }
 
@@ -1207,9 +1382,119 @@ const ArticleFind = {
   closeBtn?.addEventListener("click", () => ArticleFind.close());
 })();
 
+/* ═══════════════════════════════════════════════════════════════
+   TABBED CODE BLOCKS
+   ═══════════════════════════════════════════════════════════════ */
+const TABS_LAST_LANG_KEY = "tabs-last-lang";
+
+function _parseBlockId(pre) {
+  const code = pre.querySelector("code");
+  if (!code) return null;
+  const firstLine = code.firstChild;
+  if (!firstLine || firstLine.nodeType !== Node.TEXT_NODE) return null;
+  const match = firstLine.textContent.match(/^(?:#|\/\/)\s*id="([^"]+)"\n?/);
+  if (!match) return null;
+  firstLine.textContent = firstLine.textContent.replace(/^(?:#|\/\/)\s*id="[^"]+"\n?/, "");
+  return match[1];
+}
+
+function _getLang(pre) {
+  const code = pre.querySelector("code");
+  const m = code?.className.match(/language-(\w+)/);
+  return m ? m[1] : "text";
+}
+
+function _buildTabWidget(groupId, title, pres) {
+  const langs = pres.map(_getLang);
+  const blockIds = pres.map(_parseBlockId);
+  const langCounts = langs.reduce((acc, l) => {
+    acc[l] = (acc[l] || 0) + 1;
+    return acc;
+  }, {});
+  const labels = langs.map((lang, i) =>
+    langCounts[lang] > 1 ? blockIds[i] || `${lang}-${i}` : lang,
+  );
+
+  const lastLang = sessionStorage.getItem(TABS_LAST_LANG_KEY);
+  let activeIdx = langs.indexOf(lastLang);
+  if (activeIdx === -1) activeIdx = 0;
+
+  const widget = document.createElement("div");
+  widget.className = "code-tabs";
+  widget.dataset.tabsId = groupId;
+
+  const header = document.createElement("div");
+  header.className = "code-tabs-header";
+
+  if (title) {
+    const titleEl = document.createElement("span");
+    titleEl.className = "code-tabs-title";
+    titleEl.textContent = title;
+    header.appendChild(titleEl);
+  }
+
+  const bar = document.createElement("div");
+  bar.className = "code-tabs-bar";
+  bar.setAttribute("role", "tablist");
+
+  const panels = document.createElement("div");
+  panels.className = "code-tabs-panels";
+
+  pres.forEach((pre, i) => {
+    const btn = document.createElement("button");
+    btn.className = `code-tab${i === activeIdx ? " active" : ""}`;
+    btn.setAttribute("role", "tab");
+    btn.dataset.lang = langs[i];
+    btn.dataset.panel = String(i);
+    btn.textContent = labels[i];
+    bar.appendChild(btn);
+
+    const panel = document.createElement("div");
+    panel.className = `code-tab-panel${i === activeIdx ? " active" : ""}`;
+    panel.dataset.panel = String(i);
+    if (i !== activeIdx) panel.hidden = true;
+    panel.appendChild(pre);
+    panels.appendChild(panel);
+  });
+
+  header.appendChild(bar);
+  widget.appendChild(header);
+  widget.appendChild(panels);
+
+  bar.addEventListener("click", (e) => {
+    const btn = e.target.closest(".code-tab");
+    if (!btn) return;
+    const idx = Number.parseInt(btn.dataset.panel, 10);
+    bar.querySelectorAll(".code-tab").forEach((b) => b.classList.remove("active"));
+    panels.querySelectorAll(".code-tab-panel").forEach((p) => {
+      p.classList.remove("active");
+      p.hidden = true;
+    });
+    btn.classList.add("active");
+    const activePanel = panels.querySelector(`.code-tab-panel[data-panel="${idx}"]`);
+    activePanel.classList.add("active");
+    activePanel.hidden = false;
+    sessionStorage.setItem(TABS_LAST_LANG_KEY, btn.dataset.lang);
+  });
+
+  return widget;
+}
+
+function addTabbedCodeBlocks(contentEl) {
+  contentEl.querySelectorAll("div[data-tabs-id]").forEach((wrapper) => {
+    const groupId = wrapper.dataset.tabsId;
+    const title = wrapper.dataset.tabsTitle || null;
+    const pres = [...wrapper.querySelectorAll("pre")];
+    if (pres.length < 2) return;
+    const widget = _buildTabWidget(groupId, title, pres);
+    wrapper.replaceWith(widget);
+  });
+}
+
 export {
   syncHljsTheme,
   addLatexCopyButtons,
+  addFormulaToggle,
   addTableSort,
   closeZoomOverlay,
   addCodeBlockHeader,
@@ -1225,6 +1510,7 @@ export {
   addCodeLangLabels,
   addImageLightbox,
   addDiagramZoom,
+  addMermaidNodeCaptions,
   rerenderMermaidDiagrams,
   addTableScrollCues,
   addQuizTables,
@@ -1235,4 +1521,5 @@ export {
   cleanupStickySection,
   injectHeadingCollapseToggles,
   ArticleFind,
+  addTabbedCodeBlocks,
 };

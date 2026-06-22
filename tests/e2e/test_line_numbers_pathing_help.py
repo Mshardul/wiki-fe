@@ -134,8 +134,8 @@ def test_excess_dotdot_does_not_crash(page, base_url):
     )
     page.route("**/target.md", lambda r: r.fulfill(body="# Target\n\nOK."))
 
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=10_000)
     page.evaluate(
         """() => navigateToContent(
         'system-design',

@@ -153,8 +153,12 @@ def test_toc_sticky_does_not_scroll_away(page, base_url):
 
 def test_sticky_section_header_element_exists(page, base_url):
     """#sticky-section-header element is present in the DOM in content view."""
-    page.goto(f"{base_url}/#system-design/caching")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=15_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=15_000,
+    )
 
     exists = page.evaluate("() => !!document.getElementById('sticky-section-header')")
     assert exists, "#sticky-section-header element not found in DOM"

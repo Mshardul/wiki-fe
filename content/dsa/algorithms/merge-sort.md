@@ -191,23 +191,23 @@ The **Search/divide** family signature: split the problem into subproblems of a 
 
 ```
 MERGE-SORT(A, lo, hi)
- 1  if lo < hi
- 2      mid ← lo + ⌊(hi − lo) / 2⌋
- 3      MERGE-SORT(A, lo, mid)              ▷ sort left half
- 4      MERGE-SORT(A, mid + 1, hi)          ▷ sort right half
- 5      MERGE(A, lo, mid, hi)               ▷ combine two sorted runs
+if lo < hi
+    mid ← lo + ⌊(hi − lo) / 2⌋
+    MERGE-SORT(A, lo, mid)              ▷ sort left half
+    MERGE-SORT(A, mid + 1, hi)          ▷ sort right half
+    MERGE(A, lo, mid, hi)               ▷ combine two sorted runs
 
 MERGE(A, lo, mid, hi)
- 1  L ← A[lo .. mid]                        ▷ copy out both runs
- 2  R ← A[mid + 1 .. hi]
- 3  i ← 1; j ← 1; k ← lo
- 4  while i ≤ L.length and j ≤ R.length
- 5      if L[i] ≤ R[j]                      ▷ ≤ keeps it STABLE (left wins ties)
- 6          A[k] ← L[i]; i ← i + 1
- 7      else
- 8          A[k] ← R[j]; j ← j + 1
- 9      k ← k + 1
-10  copy any remaining L[i..] / R[j..] into A[k..]
+L ← A[lo .. mid]                        ▷ copy out both runs
+R ← A[mid + 1 .. hi]
+i ← 1; j ← 1; k ← lo
+while i ≤ L.length and j ≤ R.length
+    if L[i] ≤ R[j]                      ▷ ≤ keeps it STABLE (left wins ties)
+        A[k] ← L[i]; i ← i + 1
+    else
+        A[k] ← R[j]; j ← j + 1
+    k ← k + 1
+copy any remaining L[i..] / R[j..] into A[k..]
 ```
 
 **Python** — idiomatic top-down + the contest-velocity reality:

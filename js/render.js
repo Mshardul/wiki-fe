@@ -8,11 +8,14 @@ import {
   addCollapsibleCodeBlocks,
   addCopyButtons,
   addDiagramZoom,
+  addFormulaToggle,
   addImageLightbox,
   addLatexCopyButtons,
   addLineNumbers,
+  addMermaidNodeCaptions,
   addQuizTables,
   addStickySection,
+  addTabbedCodeBlocks,
   addTableScrollCues,
   addTableSort,
   buildTOC,
@@ -908,6 +911,8 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
 
     // Post-processing — enhancements only.
     try {
+      addTabbedCodeBlocks(body);
+
       // Line numbers (after hljs so it runs on highlighted HTML)
       addLineNumbers(body);
 
@@ -968,9 +973,11 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       // Image lightbox + diagram zoom + table scroll cues
       addImageLightbox(body);
       addDiagramZoom(body);
+      addMermaidNodeCaptions(body);
       addTableScrollCues(body);
       addTableSort(body);
       addLatexCopyButtons(body, () => showToast("Copy failed — clipboard access denied"));
+      addFormulaToggle(body);
 
       // Related articles
       renderRelatedArticles(wiki, filePath);

@@ -167,19 +167,19 @@ The signature is a **monotone right-edge `r`** paired with **copy-or-extend reus
 
 ```
 Z-ARRAY(S)
- 1  n ← S.length
- 2  let Z[1..n] be a new array
- 3  Z[1] ← n                                ▷ convention: whole string
- 4  l ← 0;  r ← 0                            ▷ current Z-box (empty)
- 5  for i = 2 to n
- 6      if i ≤ r                             ▷ inside the box: reuse the mirror
- 7          Z[i] ← min(r − i + 1, Z[i − l + 1])
- 8      while i + Z[i] ≤ n and S[Z[i] + 1] = S[i + Z[i]]
- 9          Z[i] ← Z[i] + 1                  ▷ extend by explicit comparison
-10      if i + Z[i] − 1 > r                  ▷ a farther-right box was found
-11          l ← i
-12          r ← i + Z[i] − 1
-13  return Z
+n ← S.length
+let Z[1..n] be a new array
+Z[1] ← n                                ▷ convention: whole string
+l ← 0;  r ← 0                            ▷ current Z-box (empty)
+for i = 2 to n
+    if i ≤ r                             ▷ inside the box: reuse the mirror
+        Z[i] ← min(r − i + 1, Z[i − l + 1])
+    while i + Z[i] ≤ n and S[Z[i] + 1] = S[i + Z[i]]
+        Z[i] ← Z[i] + 1                  ▷ extend by explicit comparison
+    if i + Z[i] − 1 > r                  ▷ a farther-right box was found
+        l ← i
+        r ← i + Z[i] − 1
+return Z
 ```
 
 **Python** — idiomatic, 0-indexed, plus a `pattern_search` built on it and the contest-velocity built-in for when you don't need the array:

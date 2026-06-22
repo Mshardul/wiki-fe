@@ -160,22 +160,22 @@ The clean framing: heapsort is **selection sort with an O(log n) "find max" inst
 
 ```
 HEAPSORT(A, n)
- 1  BUILD-MAX-HEAP(A, n)                   ▷ O(n): heapify all non-leaves bottom-up
- 2  for i ← n − 1 downto 1
- 3      swap A[0] A[i]                      ▷ move current max to the sorted suffix
- 4      MAX-HEAPIFY(A, 0, i)               ▷ heap size shrinks to i; sift new root down
+BUILD-MAX-HEAP(A, n)                   ▷ O(n): heapify all non-leaves bottom-up
+for i ← n − 1 downto 1
+    swap A[0] A[i]                      ▷ move current max to the sorted suffix
+    MAX-HEAPIFY(A, 0, i)               ▷ heap size shrinks to i; sift new root down
 
 BUILD-MAX-HEAP(A, n)
- 1  for i ← ⌊n/2⌋ − 1 downto 0
- 2      MAX-HEAPIFY(A, i, n)
+for i ← ⌊n/2⌋ − 1 downto 0
+    MAX-HEAPIFY(A, i, n)
 
 MAX-HEAPIFY(A, i, heap_size)              ▷ sift A[i] down within A[0..heap_size-1]
- 1  l ← 2i + 1; r ← 2i + 2; largest ← i
- 2  if l < heap_size and A[l] > A[largest]: largest ← l
- 3  if r < heap_size and A[r] > A[largest]: largest ← r
- 4  if largest ≠ i
- 5      swap A[i] A[largest]
- 6      MAX-HEAPIFY(A, largest, heap_size)
+l ← 2i + 1; r ← 2i + 2; largest ← i
+if l < heap_size and A[l] > A[largest]: largest ← l
+if r < heap_size and A[r] > A[largest]: largest ← r
+if largest ≠ i
+    swap A[i] A[largest]
+    MAX-HEAPIFY(A, largest, heap_size)
 ```
 
 **Python** — in-place, iterative sift-down (true O(1) space), plus the contest-velocity `heapq` route:
