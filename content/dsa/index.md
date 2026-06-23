@@ -111,7 +111,7 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 | [In-place Reversal of a Linked List](./patterns/in-place-reversal.md)       | **[stub]** Rewire next pointers with three variables (prev, curr, next). Reverse a list, reverse k-groups, palindrome check — O(n) time, O(1) space.  |
 | [Matrix Traversal](./patterns/matrix-traversal.md)                          | BFS/DFS on a 2D grid with direction vectors. Island count, flood fill, shortest path in grid — the implicit-graph pattern.                  |
 | [State Machine DP](./patterns/state-machine-dp.md)                          | **[stub]** Model decisions as states with transitions; DP over (index, state). Stock buy/sell with cooldown, k-transaction problems.                   |
-| [Bitmask DP](./patterns/bitmask-dp.md)                                      | **[stub]** Use an integer bitmask to represent a subset as DP state. n ≤ 20 signal; TSP, assignment, covered-nodes problems — O(2ⁿ · n).              |
+| [Bitmask DP](./patterns/bitmask-dp.md)                                      | Encode a subset of n ≤ 20 items as an integer bitmask, DP over all 2ⁿ subsets. TSP, optimal assignment, minimum coverage — O(2ⁿ · n) or O(2ⁿ · n²). |
 | [Frequency Array](./patterns/frequency-array.md)                            | Array indexed by value: O(1) increment/lookup for bounded integer or character keys. Replaces a hash map when the key range fits — anagram detection, counting sort, sliding-window distribution matching. |
 
 ---

@@ -1270,3 +1270,181 @@ def test_tabbed_code_blocks_lang_persistence(page, base_url):
     page.wait_for_selector(".code-tabs", timeout=10_000)
     active_tab = page.locator(".code-tab.active").first
     assert active_tab.get_attribute("data-lang") == "java"
+
+
+# ── WIKI-295: zoom overlay caption from alt text ────────────────────────────
+
+ARTICLE_WITH_CAPTIONED_IMAGE = """\
+# Caption Test
+
+## Section
+
+![A descriptive caption](data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7)
+
+Some text.
+"""
+
+ARTICLE_WITH_UNCAPTIONED_IMAGE = """\
+# No Caption Test
+
+## Section
+
+![](data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7)
+
+Some text.
+"""
+
+
+def test_zoom_overlay_shows_caption_when_alt_present(page, base_url):
+    """Clicking an image with alt text shows .zoom-caption in the overlay."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CAPTIONED_IMAGE, slug="caption-img")
+    page.wait_for_selector(".zoomable-img", timeout=5_000)
+    page.locator(".zoomable-img").first.click()
+    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+
+    caption = page.locator(".zoom-caption")
+    assert caption.count() == 1, ".zoom-caption not found in overlay"
+    assert caption.is_visible(), ".zoom-caption not visible"
+    assert caption.inner_text() == "A descriptive caption"
+
+
+def test_zoom_overlay_no_caption_when_alt_empty(page, base_url):
+    """Clicking an image with empty alt text shows no visible .zoom-caption."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_UNCAPTIONED_IMAGE, slug="no-caption-img")
+    page.wait_for_selector(".zoomable-img", timeout=5_000)
+    page.locator(".zoomable-img").first.click()
+    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+
+    caption = page.locator(".zoom-caption")
+    assert caption.count() == 0 or not caption.is_visible(), (
+        ".zoom-caption should not be visible when alt is empty"
+    )
+
+
+# ── WIKI-294: collapsible callouts with + prefix ─────────────────────────────
+
+ARTICLE_WITH_PLUS_CALLOUT = """\
+# Plus Callout Test
+
+## Section
+
+> ⚠️ + This is a collapsible warning
+
+Short callout content that fits in one line.
+"""
+
+ARTICLE_WITHOUT_PLUS_CALLOUT = """\
+# Normal Callout Test
+
+## Section
+
+> ⚠️ This is a normal warning
+
+Short callout content that fits in one line.
+"""
+
+
+def test_plus_prefix_callout_starts_collapsible(page, base_url):
+    """A callout with + prefix gets .callout--collapsible regardless of height."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _load_mock_article(page, base_url, ARTICLE_WITH_PLUS_CALLOUT, slug="plus-callout")
+    page.wait_for_selector(".callout", timeout=5_000)
+
+    result = page.evaluate("""() => {
+        const bq = document.querySelector('.callout');
+        if (!bq) return { found: false };
+        return {
+            found: true,
+            collapsible: bq.classList.contains('callout--collapsible'),
+            hasBtn: !!bq.nextElementSibling?.classList.contains('callout-expand-btn'),
+            plusStripped: !bq.textContent.includes('+'),
+        };
+    }""")
+    assert result["found"], "No .callout found"
+    assert result["collapsible"], ".callout--collapsible missing on + prefix callout"
+    assert result["hasBtn"], ".callout-expand-btn not found after + prefix callout"
+    assert result["plusStripped"], "+ character still visible in callout text"
+
+
+def test_short_callout_without_plus_not_collapsible(page, base_url):
+    """A short callout without + prefix does not get .callout--collapsible."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _load_mock_article(page, base_url, ARTICLE_WITHOUT_PLUS_CALLOUT, slug="no-plus-callout")
+    page.wait_for_selector(".callout", timeout=5_000)
+
+    is_collapsible = page.evaluate(
+        "() => document.querySelector('.callout')?.classList.contains('callout--collapsible')"
+    )
+    assert not is_collapsible, "Short callout without + got .callout--collapsible unexpectedly"
+
+
+def test_plus_callout_expands_on_click(page, base_url):
+    """Clicking the expand button on a + prefix callout adds .callout--expanded."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _load_mock_article(page, base_url, ARTICLE_WITH_PLUS_CALLOUT, slug="plus-expand")
+    page.wait_for_selector(".callout-expand-btn", timeout=5_000)
+
+    page.locator(".callout-expand-btn").first.click()
+    is_expanded = page.evaluate(
+        "() => document.querySelector('.callout')?.classList.contains('callout--expanded')"
+    )
+    assert is_expanded, ".callout--expanded not added after clicking expand button"
+
+
+# ── WIKI-293: glossary term hover popover ────────────────────────────────────
+
+ARTICLE_WITH_ABBR = """\
+# Glossary Test
+
+## Section
+
+The concept of <abbr>amortized</abbr> complexity is important in data structures.
+"""
+
+ARTICLE_WITHOUT_ABBR = """\
+# No Glossary Test
+
+## Section
+
+Some plain text with no abbr tags.
+"""
+
+
+def test_abbr_gets_glossary_term_class(page, base_url):
+    """An <abbr> matching a glossary key gets the .glossary-term class."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-term")
+    page.wait_for_selector("abbr", timeout=5_000)
+    page.wait_for_function(
+        "() => document.querySelector('abbr.glossary-term') !== null",
+        timeout=5_000,
+    )
+    count = page.evaluate(
+        "() => document.querySelectorAll('abbr.glossary-term').length"
+    )
+    assert count > 0, "No abbr.glossary-term found after glossary load"
+
+
+def test_glossary_popover_appears_on_hover(page, base_url):
+    """Hovering a .glossary-term shows #glossary-popover with definition text."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-hover")
+    page.wait_for_function(
+        "() => document.querySelector('abbr.glossary-term') !== null",
+        timeout=5_000,
+    )
+    page.locator("abbr.glossary-term").first.hover()
+    page.wait_for_function(
+        "() => document.getElementById('glossary-popover')?.classList.contains('glossary-popover--visible')",
+        timeout=3_000,
+    )
+    text = page.evaluate("() => document.getElementById('glossary-popover')?.textContent")
+    assert text and len(text) > 10, "Glossary popover text is empty or too short"
+
+
+def test_no_glossary_popover_without_abbr(page, base_url):
+    """An article without <abbr> tags does not create #glossary-popover."""
+    _load_mock_article(page, base_url, ARTICLE_WITHOUT_ABBR, slug="no-glossary")
+    page.wait_for_selector("#markdown-body", timeout=5_000)
+    count = page.evaluate(
+        "() => document.querySelectorAll('abbr.glossary-term').length"
+    )
+    assert count == 0, "glossary-term class added when no abbr tags present"

@@ -1048,6 +1048,24 @@ pre.has-line-numbers {
   object-fit: contain;
   display: block;
 }
+.zoom-caption {
+  position: absolute;
+  bottom: var(--s5);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  max-width: min(600px, 90vw);
+  padding: var(--s2) var(--s4);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: var(--r-sm);
+  color: #fff;
+  font-size: var(--text-sm);
+  text-align: center;
+  line-height: 1.4;
+  pointer-events: none;
+}
 .zoom-overlay-content > * {
   transform-origin: center center;
   will-change: transform;
@@ -1225,6 +1243,38 @@ pre.has-line-numbers {
   color: var(--text-muted);
   text-align: center;
   padding: var(--s4) 0;
+}
+
+/* ═══════════════════════════════════════════════
+   GLOSSARY TERM POPOVERS
+   ═══════════════════════════════════════════════ */
+abbr.glossary-term {
+  text-decoration: underline dotted var(--accent);
+  text-underline-offset: 3px;
+  cursor: help;
+}
+
+#glossary-popover {
+  position: absolute;
+  z-index: 9000;
+  max-width: min(320px, 90vw);
+  padding: var(--s3) var(--s4);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-body);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity var(--t-fast), transform var(--t-fast);
+}
+
+#glossary-popover.glossary-popover--visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ═══════════════════════════════════════════════

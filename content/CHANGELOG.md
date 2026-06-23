@@ -14,7 +14,12 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 
 ---
 
+## 2026-06-24
+- `sliding-window.md` — new article: Sliding Window pattern (fixed + variable + minimum-window templates, monotonic deque + atMost decomposition CP-primitives, 5 worked problems including LC 76/239/340, 3 practice problems)
+- `two-pointers.md` — new article: Two Pointers pattern (opposite-ends, same-direction write-head, three-way partition templates, meet-in-the-middle + kSum CP-primitives, 5 worked problems including 3Sum/Trapping Rain Water, 3 practice problems)
+
 ## 2026-06-23
+- `bitmask-dp.md` — new article: Bitmask DP pattern (recognition signals, TSP skeleton, SOS DP + submask iteration + meet-in-the-middle CP-primitives, 3 fully worked practice problems, 6 pitfalls)
 - `bloom-filter.md` — new article: Bloom Filter (Hash-based DS family; covers false-positive rate derivation, optimal k, counting/cuckoo/scalable variants, at-scale cache behavior, 3 worked practice problems)
 
 ## 2026-06-22

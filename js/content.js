@@ -166,12 +166,26 @@ function closeZoomOverlay() {
   overlay?._resetZoom?.();
 }
 
-function openZoomOverlay(node) {
+function openZoomOverlay(node, caption = "") {
   const overlay = getZoomOverlay();
   const contentEl = overlay.querySelector(".zoom-overlay-content");
   contentEl.innerHTML = "";
   contentEl.appendChild(node);
   overlay._resetZoom?.();
+
+  let cap = overlay.querySelector(".zoom-caption");
+  if (caption) {
+    if (!cap) {
+      cap = document.createElement("p");
+      cap.className = "zoom-caption";
+      overlay.appendChild(cap);
+    }
+    cap.textContent = caption;
+    cap.hidden = false;
+  } else if (cap) {
+    cap.hidden = true;
+  }
+
   overlay.classList.add("open");
 }
 
@@ -348,7 +362,12 @@ function styleCallouts(contentEl) {
       const t = firstP.firstChild.textContent;
       const chars = [...t];
       const skip = chars[1] === "️" ? 2 : 1;
-      firstP.firstChild.textContent = chars.slice(skip).join("").trimStart();
+      let rest = chars.slice(skip).join("").trimStart();
+      if (rest.startsWith("+")) {
+        rest = rest.slice(1).trimStart();
+        bq.dataset.collapsed = "true";
+      }
+      firstP.firstChild.textContent = rest;
     }
   });
 }
@@ -567,7 +586,7 @@ function addImageLightbox(contentEl) {
     img.addEventListener("click", () => {
       const clone = img.cloneNode();
       clone.style.cursor = "";
-      openZoomOverlay(clone);
+      openZoomOverlay(clone, img.alt);
     });
   });
 }
@@ -1052,7 +1071,8 @@ function addCollapsibleCallouts(contentEl) {
   const heightThreshold = lineLimit * APPROX_LINE_HEIGHT_PX;
 
   contentEl.querySelectorAll("blockquote.callout").forEach((bq) => {
-    if (bq.scrollHeight <= heightThreshold) return;
+    const startsCollapsed = bq.dataset.collapsed === "true";
+    if (!startsCollapsed && bq.scrollHeight <= heightThreshold) return;
 
     bq.classList.add("callout--collapsible");
 
@@ -1491,6 +1511,104 @@ function addTabbedCodeBlocks(contentEl) {
   });
 }
 
+/* ─── Glossary Term Hover Popovers ─── */
+let _glossaryCache = null;
+
+function _loadGlossary() {
+  if (!_glossaryCache) {
+    _glossaryCache = fetch("data/glossary.json")
+      .then((r) => r.json())
+      .then((data) => {
+        const map = {};
+        for (const [k, v] of Object.entries(data)) map[k.toLowerCase()] = v;
+        return map;
+      })
+      .catch(() => ({}));
+  }
+  return _glossaryCache;
+}
+
+function _getOrCreateGlossaryPopover() {
+  let pop = document.getElementById("glossary-popover");
+  if (!pop) {
+    pop = document.createElement("div");
+    pop.id = "glossary-popover";
+    pop.className = "glossary-popover";
+    pop.setAttribute("role", "tooltip");
+    document.body.appendChild(pop);
+  }
+  return pop;
+}
+
+function _positionPopover(pop, anchor) {
+  const rect = anchor.getBoundingClientRect();
+  const gap = 8;
+  let top = rect.bottom + gap + window.scrollY;
+  let left = rect.left + window.scrollX;
+
+  pop.style.visibility = "hidden";
+  pop.style.display = "block";
+  const pw = pop.offsetWidth;
+  const ph = pop.offsetHeight;
+  pop.style.display = "";
+  pop.style.visibility = "";
+
+  if (left + pw > window.innerWidth - 12) left = window.innerWidth - pw - 12;
+  if (left < 8) left = 8;
+  if (rect.bottom + gap + ph > window.innerHeight) top = rect.top - ph - gap + window.scrollY;
+
+  pop.style.left = `${left}px`;
+  pop.style.top = `${top}px`;
+}
+
+function addGlossaryTerms(contentEl) {
+  const abbrs = Array.from(contentEl.querySelectorAll("abbr"));
+  if (!abbrs.length) return;
+
+  _loadGlossary().then((glossary) => {
+    const matched = abbrs.filter((el) => glossary[el.textContent.trim().toLowerCase()]);
+    if (!matched.length) return;
+
+    const pop = _getOrCreateGlossaryPopover();
+    let hideTimer = null;
+
+    const show = (el) => {
+      clearTimeout(hideTimer);
+      const def = glossary[el.textContent.trim().toLowerCase()];
+      if (!def) return;
+      pop.textContent = def;
+      _positionPopover(pop, el);
+      pop.classList.add("glossary-popover--visible");
+    };
+
+    const hide = () => {
+      hideTimer = setTimeout(() => pop.classList.remove("glossary-popover--visible"), 120);
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const el = entry.target;
+          if (entry.isIntersecting) {
+            el.addEventListener("mouseenter", () => show(el));
+            el.addEventListener("mouseleave", hide);
+            el.addEventListener("focus", () => show(el));
+            el.addEventListener("blur", hide);
+          } else {
+            el.replaceWith(el.cloneNode(true));
+          }
+        });
+      },
+      { rootMargin: "0px 0px -10% 0px" },
+    );
+
+    matched.forEach((el) => {
+      el.classList.add("glossary-term");
+      observer.observe(el);
+    });
+  });
+}
+
 export {
   syncHljsTheme,
   addLatexCopyButtons,
@@ -1522,4 +1640,5 @@ export {
   injectHeadingCollapseToggles,
   ArticleFind,
   addTabbedCodeBlocks,
+  addGlossaryTerms,
 };

@@ -9,6 +9,7 @@ import {
   addCopyButtons,
   addDiagramZoom,
   addFormulaToggle,
+  addGlossaryTerms,
   addImageLightbox,
   addLatexCopyButtons,
   addLineNumbers,
@@ -972,6 +973,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
 
       // Image lightbox + diagram zoom + table scroll cues
       addImageLightbox(body);
+      addGlossaryTerms(body);
       addDiagramZoom(body);
       addMermaidNodeCaptions(body);
       addTableScrollCues(body);
