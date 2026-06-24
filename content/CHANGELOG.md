@@ -15,6 +15,11 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 ---
 
 ## 2026-06-24
+- `interval-tree.md` — expanded stub to full article: augmented BST invariant + max-endpoint annotation, overlap search correctness proof, all-overlaps O(log n + k) algorithm, comparison table vs segment tree / sorted array / brute force, lazy-deletion and rotation-fixup gotchas, at-scale cache-hostility note, 3 practice problems (LC 253 Meeting Rooms II, LC 729 My Calendar I, LC 352 Data Stream as Disjoint Intervals)
+- `two-heaps.md` — expanded stub to full article: median-stream pattern with max-heap/min-heap partition, skeleton + Python template with negation idiom, sliding window median via lazy deletion, CP-primitives (lazy deletion + SortedList alternative), 3 practice problems (LC 295, LC 480 Sliding Window Median, LC 502 IPO)
+- `kadane.md` — expanded stub to full article: extend-or-restart DP derivation, full trace with diagram, correctness invariant + exchange argument, all-negative/overflow/circular edge cases, 2-D extension and circular array interviewer probes, 3 practice problems (LC 53, LC 918, LC 152 max-product variant)
+- `modified-binary-search.md` — new article: Modified Binary Search pattern (rotated search, peak finding, first/last position, 2D matrix, exponential search + bisect + predicate-template CP-primitives, 3 worked problems LC 33/162/34 + 3 practice problems LC 875/1095/981)
+- `strongly-connected-components.md` — expanded stub to full article: Kosaraju + Tarjan (both algorithms, full pseudocode + Python), correctness invariants, low-link trace, condensation, 2-SAT connection, iterative DFS note for large V, 3 worked problems (LC 547, LC 1192 bridge-finding, LC 952)
 - `sliding-window.md` — new article: Sliding Window pattern (fixed + variable + minimum-window templates, monotonic deque + atMost decomposition CP-primitives, 5 worked problems including LC 76/239/340, 3 practice problems)
 - `two-pointers.md` — new article: Two Pointers pattern (opposite-ends, same-direction write-head, three-way partition templates, meet-in-the-middle + kSum CP-primitives, 5 worked problems including 3Sum/Trapping Rain Water, 3 practice problems)
 
