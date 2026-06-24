@@ -579,7 +579,7 @@ body.distraction-free .sticky-section-header {
   }
 }
 /* right-edge scroll fade — only when no header to show overflow */
-.markdown-body pre:not(.pre--collapsible)::after {
+.markdown-body pre.pre--overflowing:not(.pre--collapsible)::after {
   content: "";
   position: absolute;
   top: 32px; /* below code-header */

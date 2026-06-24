@@ -1038,6 +1038,18 @@ function addCollapsibleCodeBlocks(contentEl) {
   });
 }
 
+function addPreOverflowDetection(contentEl) {
+  contentEl.querySelectorAll("pre").forEach((pre) => {
+    const update = () => {
+      pre.classList.toggle("pre--overflowing", pre.scrollWidth > pre.clientWidth + 1);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(pre);
+    state.preResizeObservers.push(ro);
+  });
+}
+
 /* ═══════════════════════════════════════════════════════════════
    CODE BLOCK LINE NUMBERS
    ═══════════════════════════════════════════════════════════════ */
@@ -1631,6 +1643,7 @@ export {
   addMermaidNodeCaptions,
   rerenderMermaidDiagrams,
   addTableScrollCues,
+  addPreOverflowDetection,
   addQuizTables,
   QuizMode,
   toggleFocusMode,

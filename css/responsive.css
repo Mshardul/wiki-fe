@@ -6,7 +6,7 @@
     flex-direction: column;
     padding: var(--s5) var(--layout-padding, 10%) var(--s16);
   }
-  .toc-sidebar {
+  .toc-sidebar:not(.mobile-open) {
     position: static;
     width: 100%;
     max-height: none;
@@ -80,6 +80,10 @@
     padding-top: var(--s3);
     padding-bottom: var(--s3);
   }
+  .article-find-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
 
   /* breadcrumb truncation on mobile */
   .breadcrumb {
@@ -97,10 +101,30 @@
     flex-shrink: 0;
   }
   .breadcrumb span:last-child {
-    min-width: 0;
+    flex-shrink: 0;
     overflow: hidden;
-    text-overflow: ellipsis;
+    text-overflow: clip;
     white-space: nowrap;
+  }
+
+  .index-filter-input,
+  .index-filter-unread {
+    min-height: 44px;
+  }
+  .recents-clear-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .gsearch-recent-chip {
+    min-height: 44px;
+  }
+  .gsearch-recent-remove {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .home-topbar .topbar-icon-btn {
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .anchor-btn {

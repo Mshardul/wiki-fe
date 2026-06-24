@@ -120,6 +120,7 @@ const state = {
   tocObserver: null,
   titleObserver: null,
   tableResizeObservers: [],
+  preResizeObservers: [],
   // Auth identity — in-memory only, NEVER persisted to localStorage.
   // status: "loading" until GET /auth/me resolves, then "in" | "out".
   session: { user: null, status: "loading" },

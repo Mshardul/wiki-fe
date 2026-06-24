@@ -14,6 +14,7 @@ import {
   addLatexCopyButtons,
   addLineNumbers,
   addMermaidNodeCaptions,
+  addPreOverflowDetection,
   addQuizTables,
   addStickySection,
   addTabbedCodeBlocks,
@@ -209,6 +210,8 @@ function renderHome() {
 
   state.tableResizeObservers.forEach((ro) => ro.disconnect());
   state.tableResizeObservers = [];
+  state.preResizeObservers.forEach((ro) => ro.disconnect());
+  state.preResizeObservers = [];
 
   showView("view-home");
   updateArticleCounts();
@@ -847,6 +850,8 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
   }
   state.tableResizeObservers.forEach((ro) => ro.disconnect());
   state.tableResizeObservers = [];
+  state.preResizeObservers.forEach((ro) => ro.disconnect());
+  state.preResizeObservers = [];
   cleanupFocusMode();
   cleanupStickySection();
   ArticleFind.close();
@@ -977,6 +982,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       addDiagramZoom(body);
       addMermaidNodeCaptions(body);
       addTableScrollCues(body);
+      addPreOverflowDetection(body);
       addTableSort(body);
       addLatexCopyButtons(body, () => showToast("Copy failed — clipboard access denied"));
       addFormulaToggle(body);
