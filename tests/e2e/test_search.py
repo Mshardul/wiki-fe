@@ -757,3 +757,157 @@ def test_synonym_expansion_returns_results(wiki_page):
     assert wiki_page.locator(".gsearch-result").count() > 0, (
         "Synonym query 'list' must return results via synonym expansion"
     )
+
+
+# ── Search input semantics ──────────────────────────────────────────
+
+
+def test_search_input_has_inputmode_search(wiki_page):
+    """gsearch-input must have inputmode=search for mobile keyboard hint."""
+    result = wiki_page.evaluate(
+        "document.getElementById('gsearch-input').getAttribute('inputmode')"
+    )
+    assert result == "search"
+
+
+def test_search_input_has_enterkeyhint_search(wiki_page):
+    """gsearch-input must have enterkeyhint=search."""
+    result = wiki_page.evaluate(
+        "document.getElementById('gsearch-input').getAttribute('enterkeyhint')"
+    )
+    assert result == "search"
+
+
+# ── Find bar overflow on narrow screens ──────────────────────────────
+
+
+def test_article_find_bar_fits_320px(wiki_page, base_url):
+    """Find bar must not overflow viewport at 320px width."""
+    wiki_page.set_viewport_size({"width": 320, "height": 568})
+    wiki_page.goto(f"{base_url}/#system-design/caching")
+    wiki_page.wait_for_selector("#view-content.active", timeout=10_000)
+    wiki_page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    wiki_page.keyboard.press("/")
+    wiki_page.wait_for_selector("#article-find:not(.hidden)")
+
+    bar = wiki_page.locator("#article-find")
+    box = bar.bounding_box()
+    assert box is not None
+    assert box["x"] >= 0, f"Find bar overflows left edge: x={box['x']}"
+    assert box["x"] + box["width"] <= 320, f"Find bar overflows right edge: right={box['x'] + box['width']}"
+
+
+# ── Find bar + sticky header overlap ─────────────────────────────────
+
+
+def test_find_bar_clears_sticky_header(wiki_page, base_url):
+    """Find bar top must be below sticky section header bottom when header is visible."""
+    wiki_page.goto(f"{base_url}/#system-design/caching")
+    wiki_page.wait_for_selector("#view-content.active", timeout=10_000)
+    wiki_page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+
+    wiki_page.keyboard.press("/")
+    wiki_page.wait_for_selector("#article-find:not(.hidden)")
+
+    wiki_page.evaluate("""() => {
+        const banner = document.getElementById('sticky-section-header');
+        if (banner) {
+            banner.textContent = 'Test Section';
+            banner.classList.add('visible');
+            document.body.classList.add('sticky-header-visible');
+        }
+    }""")
+
+    sticky = wiki_page.locator("#sticky-section-header")
+    find_bar = wiki_page.locator("#article-find")
+
+    sticky_box = sticky.bounding_box()
+    find_box = find_bar.bounding_box()
+
+    assert sticky_box is not None and find_box is not None
+    sticky_bottom = sticky_box["y"] + sticky_box["height"]
+    assert find_box["y"] >= sticky_bottom, (
+        f"Find bar top ({find_box['y']}) overlaps sticky header bottom ({sticky_bottom})"
+    )
+
+
+# ── Search modal fits small viewport ─────────────────────────────────
+
+
+def test_search_modal_fits_small_viewport(wiki_page):
+    """Search dialog must not overflow a 375×400 viewport (approx keyboard-up on mobile)."""
+    wiki_page.set_viewport_size({"width": 375, "height": 400})
+    wiki_page.keyboard.press("Meta+k")
+    wiki_page.wait_for_selector("#global-search-modal:not(.hidden)")
+
+    dialog = wiki_page.locator(".gsearch-dialog")
+    box = dialog.bounding_box()
+    assert box is not None
+    assert box["y"] >= 0, f"Dialog above viewport: y={box['y']}"
+    assert box["y"] + box["height"] <= 400, (
+        f"Dialog bottom ({box['y'] + box['height']}) exceeds viewport height (400)"
+    )
+
+
+# ── Search results visible in small viewport ─────────────────────────
+
+
+def test_search_results_visible_small_viewport(wiki_page):
+    """Search results must not clip below a 400px-height viewport."""
+    wiki_page.set_viewport_size({"width": 375, "height": 400})
+    wiki_page.keyboard.press("Meta+k")
+    wiki_page.wait_for_selector("#global-search-modal:not(.hidden)")
+    wiki_page.fill("#gsearch-input", "array")
+    wiki_page.wait_for_selector(".gsearch-result")
+
+    results_el = wiki_page.locator("#gsearch-results")
+    box = results_el.bounding_box()
+    assert box is not None
+    results_bottom = box["y"] + box["height"]
+    assert results_bottom <= 400, (
+        f"Results overflow viewport: bottom={results_bottom}"
+    )
+
+
+# ── Custom scope dropdown ────────────────────────────────────────────
+
+
+def test_scope_custom_dropdown_exists(wiki_page):
+    """Custom scope listbox trigger must exist in DOM."""
+    btn = wiki_page.locator(".gsearch-scope-btn")
+    assert btn.count() == 1
+
+
+def test_scope_custom_dropdown_opens_on_click(wiki_page):
+    """Clicking the custom scope button shows the listbox."""
+    wiki_page.set_viewport_size({"width": 375, "height": 700})
+    wiki_page.keyboard.press("Meta+k")
+    wiki_page.wait_for_selector("#global-search-modal:not(.hidden)")
+
+    wiki_page.click(".gsearch-scope-btn")
+    listbox = wiki_page.locator(".gsearch-scope-listbox")
+    assert listbox.is_visible()
+
+
+def test_scope_custom_dropdown_sets_scope(wiki_page):
+    """Clicking a listbox option scopes search results."""
+    wiki_page.set_viewport_size({"width": 375, "height": 700})
+    wiki_page.keyboard.press("Meta+k")
+    wiki_page.wait_for_selector("#global-search-modal:not(.hidden)")
+    wiki_page.fill("#gsearch-input", "array")
+    wiki_page.wait_for_selector(".gsearch-result")
+
+    wiki_page.click(".gsearch-scope-btn")
+    wiki_page.wait_for_selector(".gsearch-scope-listbox:not(.hidden)")
+    options = wiki_page.locator(".gsearch-scope-option")
+    if options.count() > 1:
+        options.nth(1).click()
+        wiki_page.wait_for_timeout(300)
+        dialog = wiki_page.locator(".gsearch-dialog")
+        assert "scope-mode" in (dialog.get_attribute("class") or "")

@@ -5,14 +5,29 @@
 """
 
 
-def _visit_article(page, base_url, slug="caching"):
-    page.goto(f"{base_url}/#system-design/{slug}")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
+_MOCK_ARTICLE = "# Caching\n\nA simple article for recents testing.\n"
+
+
+def _visit_article(page, base_url, slug="recents-mock"):
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=3_000)
+    page.route(f"**/{slug}.md", lambda r: r.fulfill(body=_MOCK_ARTICLE))
+    page.evaluate(f"""() => navigateToContent(
+        'system-design',
+        encodeURIComponent('../content/system-design/{slug}.md'),
+        encodeURIComponent('Caching'),
+        '{slug}'
+    )""")
+    page.wait_for_selector("#view-content.active", timeout=3_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=3_000,
+    )
 
 
 def _go_to_index(page, base_url):
     page.goto(f"{base_url}/#system-design")
-    page.wait_for_selector("#view-index.active", timeout=5_000)
+    page.wait_for_selector("#view-index.active", timeout=3_000)
 
 
 def test_recently_visited_chips_appear(page, base_url):
@@ -38,7 +53,7 @@ def test_recents_scoped_to_wiki(page, base_url):
     # Clear the actual key the app uses
     page.evaluate("() => localStorage.removeItem('wiki-recents')")
     page.reload()
-    page.wait_for_selector("#view-index.active", timeout=5_000)
+    page.wait_for_selector("#view-index.active", timeout=3_000)
 
     assert section.is_visible()
     assert "nothing visited yet" in section.inner_text()
@@ -143,7 +158,7 @@ def test_anon_recent_makes_no_api_call(page, base_url):
     )
 
     _visit_article(page, base_url)
-    page.wait_for_timeout(300)
+    page.wait_for_function("() => document.readyState === 'complete'", timeout=3_000)
     assert all("/recents" not in u for u in calls)
 
 

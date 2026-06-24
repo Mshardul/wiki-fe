@@ -191,7 +191,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding-top: 15vh;
+  padding: 15dvh var(--s4) var(--s4);
 }
 .gsearch-modal.hidden {
   display: none;
@@ -405,6 +405,90 @@
   border-color: var(--accent);
 }
 
+/* ─── Custom scope picker (mobile) ─── */
+.gsearch-scope-custom {
+  display: none;
+  position: relative;
+}
+
+.gsearch-scope-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: var(--text-xs);
+  padding: 2px var(--s2);
+  cursor: pointer;
+  max-width: 110px;
+}
+
+.gsearch-scope-btn:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.gsearch-scope-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform var(--t-fast);
+}
+
+.gsearch-scope-btn[aria-expanded="true"] .gsearch-scope-chevron {
+  transform: rotate(180deg);
+}
+
+.gsearch-scope-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gsearch-scope-listbox {
+  position: absolute;
+  top: calc(100% + var(--s1));
+  right: 0;
+  min-width: 120px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow);
+  z-index: 10;
+  overflow: hidden;
+}
+
+.gsearch-scope-listbox.hidden {
+  display: none;
+}
+
+.gsearch-scope-option {
+  display: block;
+  width: 100%;
+  padding: var(--s2) var(--s3);
+  font-family: var(--font);
+  font-size: var(--text-xs);
+  color: var(--text);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gsearch-scope-option:hover,
+.gsearch-scope-option[aria-selected="true"] {
+  background: var(--surface-2);
+}
+
+.gsearch-scope-option[aria-selected="true"] {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* ─── Snippet ─── */
 .gsearch-result-snippet {
   font-size: var(--text-xs);
@@ -483,7 +567,30 @@
 
 @media (max-width: 640px) {
   .gsearch-modal {
-    padding-top: 8vh;
+    padding: 8dvh var(--s2) var(--s2);
+    align-items: flex-start;
+  }
+
+  .gsearch-dialog {
+    max-height: calc(100dvh - 8dvh - var(--s2));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .gsearch-results {
+    flex: 1 1 0;
+    max-height: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .gsearch-scope-select {
+    display: none;
+  }
+
+  .gsearch-scope-custom {
+    display: block;
   }
 }
 

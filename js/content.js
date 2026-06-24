@@ -1237,8 +1237,10 @@ function addStickySection(contentEl) {
     if (current) {
       banner.textContent = current.textContent.replace(/#+\s*$/, "").trim();
       banner.classList.add("visible");
+      document.body.classList.add("sticky-header-visible");
     } else {
       banner.classList.remove("visible");
+      document.body.classList.remove("sticky-header-visible");
     }
   };
 
@@ -1253,7 +1255,10 @@ function cleanupStickySection() {
     state.stickySectionHandler = null;
   }
   const banner = document.getElementById("sticky-section-header");
-  if (banner) banner.classList.remove("visible");
+  if (banner) {
+    banner.classList.remove("visible");
+    document.body.classList.remove("sticky-header-visible");
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════

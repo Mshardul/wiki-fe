@@ -1496,6 +1496,9 @@ body.distraction-free .content-layout {
 .article-find.hidden {
   display: none;
 }
+body.sticky-header-visible .article-find {
+  top: 76px;
+}
 .article-find-input {
   font: inherit;
   font-size: var(--text-sm);

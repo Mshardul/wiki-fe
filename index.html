@@ -97,6 +97,8 @@
             aria-label="Search all wikis"
             autocomplete="off"
             spellcheck="false"
+            inputmode="search"
+            enterkeyhint="search"
           />
           <span
             id="gsearch-count"
@@ -111,6 +113,25 @@
             >
               <option value="">All wikis</option>
             </select>
+            <div class="gsearch-scope-custom" aria-hidden="true">
+              <button
+                type="button"
+                class="gsearch-scope-btn"
+                aria-label="Search scope"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+              >
+                <span class="gsearch-scope-label">All wikis</span>
+                <svg class="gsearch-scope-chevron" viewBox="0 0 10 6" width="10" height="6" fill="none">
+                  <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <div
+                class="gsearch-scope-listbox hidden"
+                role="listbox"
+                aria-label="Search scope"
+              ></div>
+            </div>
           </div>
           <kbd class="gsearch-esc-key">ESC</kbd>
         </div>

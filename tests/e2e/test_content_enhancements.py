@@ -45,7 +45,7 @@ Some text.
 
 def _load_mock_article(page, base_url, content, slug="mock"):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=10_000)
+    page.wait_for_selector("#view-home.active", timeout=3_000)
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
     page.evaluate(f"""() => navigateToContent(
         'system-design',
@@ -53,10 +53,10 @@ def _load_mock_article(page, base_url, content, slug="mock"):
         encodeURIComponent('{slug.capitalize()}'),
         '{slug}'
     )""")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_selector("#view-content.active", timeout=3_000)
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
+        timeout=3_000,
     )
 
 
@@ -121,7 +121,6 @@ def test_table_scroll_cue_absent_on_wide_viewport(page, base_url):
     page.set_viewport_size({"width": 1400, "height": 900})
     _load_mock_article(page, base_url, ARTICLE_WITH_TABLE, slug="table-wide")
     page.wait_for_selector(".table-scroll-wrap", timeout=5_000)
-    page.wait_for_timeout(400)
 
     has_cue = page.evaluate(
         "() => document.querySelector('.table-scroll-wrap')?.classList.contains('scroll-cue')"
@@ -260,7 +259,7 @@ def test_escape_after_zoom_stays_in_content_view(page, base_url):
 def test_mermaid_diagram_has_zoom_cursor(page, base_url):
     """.mermaid-diagram element has cursor: zoom-in from CSS."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-cursor")
-    page.wait_for_selector(".mermaid-diagram", timeout=10_000)
+    page.wait_for_selector(".mermaid-diagram", timeout=3_000)
 
     cursor = page.evaluate("""() => {
         const d = document.querySelector('.mermaid-diagram');
@@ -274,7 +273,7 @@ def test_mermaid_diagram_has_zoom_cursor(page, base_url):
 def test_diagram_click_opens_zoom_overlay(page, base_url):
     """Clicking a rendered .mermaid-diagram opens the zoom overlay."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-open")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=10_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=3_000)
 
     page.locator(".mermaid-diagram").first.click()
     page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
@@ -288,7 +287,7 @@ def test_diagram_click_opens_zoom_overlay(page, base_url):
 def test_diagram_zoom_overlay_contains_svg(page, base_url):
     """Zoom overlay content contains an <svg> element after a diagram is clicked."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-svg")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=10_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=3_000)
 
     page.locator(".mermaid-diagram").first.click()
     page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
@@ -309,7 +308,7 @@ def test_diagram_zoom_overlay_contains_svg(page, base_url):
 def test_mermaid_src_stored_on_wrapper(page, base_url):
     """.mermaid-diagram wrappers have data-mermaid-src set after initial render."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-src")
-    page.wait_for_selector(".mermaid-diagram", timeout=10_000)
+    page.wait_for_selector(".mermaid-diagram", timeout=3_000)
 
     has_src = page.evaluate("""() => {
         const wrapper = document.querySelector('.mermaid-diagram');
@@ -321,7 +320,7 @@ def test_mermaid_src_stored_on_wrapper(page, base_url):
 def test_diagram_rerenders_on_theme_change(page, base_url):
     """Switching theme triggers Mermaid re-render; SVG output changes."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-theme")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=10_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=3_000)
 
     svg_before = page.evaluate(
         "() => document.querySelector('.mermaid-diagram svg')?.outerHTML"
@@ -335,7 +334,7 @@ def test_diagram_rerenders_on_theme_change(page, base_url):
             const svg = document.querySelector('.mermaid-diagram svg');
             return svg && svg.outerHTML !== {repr(svg_before)};
         }}""",
-        timeout=10_000,
+        timeout=5_000,
     )
 
     svg_after = page.evaluate(
@@ -349,15 +348,18 @@ def test_diagram_rerenders_on_theme_change(page, base_url):
 def test_diagram_src_preserved_after_theme_change(page, base_url):
     """data-mermaid-src is preserved on wrapper after a theme-triggered re-render."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-src-preserve")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=10_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=3_000)
 
     src_before = page.evaluate(
         "() => document.querySelector('.mermaid-diagram')?.dataset.mermaidSrc"
     )
     page.evaluate("() => Settings._setBackground('light-white')")
 
-    # Wait for re-render to complete (SVG changes)
-    page.wait_for_timeout(2_000)
+    # Wait for re-render: rerenderMermaidDiagrams replaces wrapper.innerHTML
+    page.wait_for_function(
+        "() => !!document.querySelector('.mermaid-diagram svg')",
+        timeout=5_000,
+    )
 
     src_after = page.evaluate(
         "() => document.querySelector('.mermaid-diagram')?.dataset.mermaidSrc"
@@ -993,7 +995,7 @@ graph LR
 def test_mermaid_diagram_has_copy_button(page, base_url):
     """A rendered .mermaid-diagram contains a .mermaid-copy-btn button."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_FOR_COPY, slug="mermaid-copy-btn")
-    page.wait_for_selector(".mermaid-diagram", timeout=8_000)
+    page.wait_for_selector(".mermaid-diagram", timeout=3_000)
     count = page.evaluate(
         "() => document.querySelectorAll('.mermaid-diagram .mermaid-copy-btn').length"
     )
@@ -1003,7 +1005,7 @@ def test_mermaid_diagram_has_copy_button(page, base_url):
 def test_mermaid_copy_btn_copies_svg(page, base_url):
     """Clicking .mermaid-copy-btn writes SVG markup to the clipboard."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_FOR_COPY, slug="mermaid-copy-svg")
-    page.wait_for_selector(".mermaid-diagram", timeout=8_000)
+    page.wait_for_selector(".mermaid-copy-btn", timeout=3_000)
     page.evaluate(
         "() => { navigator.clipboard.writeText = (t) => { window.__svgCopied = t; return Promise.resolve(); }; }"
     )
@@ -1027,7 +1029,6 @@ def test_hljs_stylesheet_swaps_on_theme_change(page, base_url):
     assert initial_href, "hljs-theme-css link not found"
 
     page.evaluate("() => document.querySelector('[data-action=\"toggle-theme\"]')?.click()")
-    page.wait_for_timeout(300)
 
     new_href = page.evaluate(
         "() => document.getElementById('hljs-theme-css')?.href ?? ''"
@@ -1155,7 +1156,7 @@ def test_mermaid_node_caption_parsed_from_src(page, base_url):
     _load_mock_article(
         page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-caption-src"
     )
-    page.wait_for_selector(".mermaid-diagram[data-mermaid-src]", timeout=10_000)
+    page.wait_for_selector(".mermaid-diagram[data-mermaid-src]", timeout=3_000)
     src = page.evaluate(
         "() => document.querySelector('.mermaid-diagram')?.dataset.mermaidSrc ?? ''"
     )
@@ -1167,7 +1168,6 @@ def test_mermaid_tooltip_element_exists(page, base_url):
     _load_mock_article(
         page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-tooltip-el"
     )
-    page.wait_for_selector(".mermaid-diagram svg", timeout=10_000)
     exists = page.evaluate(
         "() => !!document.getElementById('mermaid-node-tooltip')"
     )
@@ -1179,7 +1179,7 @@ def test_mermaid_tooltip_not_injected_without_captions(page, base_url):
     _load_mock_article(
         page, base_url, ARTICLE_WITH_UNCAPTIONED_MERMAID, slug="mermaid-tooltip-absent"
     )
-    page.wait_for_selector(".mermaid-diagram svg", timeout=10_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=3_000)
     exists = page.evaluate(
         "() => !!document.getElementById('mermaid-node-tooltip')"
     )
@@ -1191,7 +1191,7 @@ def test_mermaid_tooltip_not_visible_on_load(page, base_url):
     _load_mock_article(
         page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-tooltip-hidden"
     )
-    page.wait_for_selector(".mermaid-diagram svg", timeout=10_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=3_000)
     is_visible = page.evaluate(
         "() => document.getElementById('mermaid-node-tooltip')?.classList.contains('visible') ?? false"
     )
@@ -1243,7 +1243,7 @@ public static void quicksort(int[] arr) {}
 
 def test_tabbed_code_blocks_render(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_WITH_TABS, slug="tab-test")
-    page.wait_for_selector(".code-tabs", timeout=10_000)
+    page.wait_for_selector(".code-tabs", timeout=3_000)
 
     widget = page.locator(".code-tabs").first
     assert widget.is_visible()
@@ -1262,12 +1262,12 @@ def test_tabbed_code_blocks_render(page, base_url):
 
 def test_tabbed_code_blocks_lang_persistence(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_WITH_TABS, slug="tab-test-persist")
-    page.wait_for_selector(".code-tabs", timeout=10_000)
+    page.wait_for_selector(".code-tabs", timeout=3_000)
 
     page.locator(".code-tab[data-lang='java']").first.click()
 
     _load_mock_article(page, base_url, ARTICLE_WITH_TABS, slug="tab-test-persist")
-    page.wait_for_selector(".code-tabs", timeout=10_000)
+    page.wait_for_selector(".code-tabs", timeout=3_000)
     active_tab = page.locator(".code-tab.active").first
     assert active_tab.get_attribute("data-lang") == "java"
 

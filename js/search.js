@@ -35,6 +35,10 @@ const gSearchCount = document.getElementById("gsearch-count");
 const gSearchDialog = gSearchModal.querySelector(".gsearch-dialog");
 const gSearchModeBadge = gSearchModal.querySelector(".gsearch-mode-badge");
 const gSearchScopeSelect = document.getElementById("gsearch-scope-select");
+const gSearchScopeCustom = document.querySelector(".gsearch-scope-custom");
+const gSearchScopeBtn = document.querySelector(".gsearch-scope-btn");
+const gSearchScopeLabel = document.querySelector(".gsearch-scope-label");
+const gSearchScopeListbox = document.querySelector(".gsearch-scope-listbox");
 
 /* null = global ⌘K; a wiki id = ⌘F scoped to that wiki */
 let _searchScope = null;
@@ -49,15 +53,61 @@ function scopedWiki() {
 }
 
 function _populateScopeDropdown() {
-  if (!gSearchScopeSelect) return;
-  gSearchScopeSelect.innerHTML = `<option value="">All wikis</option>${WIKIS.map((w) => `<option value="${escHtml(w.id)}">${escHtml(w.title)}</option>`).join("")}`;
-  gSearchScopeSelect.value = _searchScope || "";
+  if (gSearchScopeSelect) {
+    gSearchScopeSelect.innerHTML = `<option value="">All wikis</option>${WIKIS.map((w) => `<option value="${escHtml(w.id)}">${escHtml(w.title)}</option>`).join("")}`;
+    gSearchScopeSelect.value = _searchScope || "";
+  }
+  if (gSearchScopeListbox) {
+    const opts = [{ id: "", title: "All wikis" }, ...WIKIS];
+    gSearchScopeListbox.innerHTML = opts
+      .map(
+        (w) =>
+          `<button type="button" class="gsearch-scope-option" role="option" data-scope="${escHtml(w.id)}" aria-selected="${_searchScope === w.id || (!_searchScope && !w.id) ? "true" : "false"}">${escHtml(w.title)}</button>`,
+      )
+      .join("");
+  }
+  if (gSearchScopeLabel) {
+    const active = _searchScope ? WIKIS.find((w) => w.id === _searchScope)?.title : "All wikis";
+    gSearchScopeLabel.textContent = active || "All wikis";
+  }
+}
+
+function _closeScopeListbox() {
+  gSearchScopeListbox?.classList.add("hidden");
+  gSearchScopeBtn?.setAttribute("aria-expanded", "false");
 }
 
 gSearchScopeSelect?.addEventListener("change", () => {
   _searchScope = gSearchScopeSelect.value || null;
   _syncModeBadge(gSearchInput.value);
   applyGlobalSearch(gSearchInput.value);
+});
+
+gSearchScopeBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const isOpen = !gSearchScopeListbox?.classList.contains("hidden");
+  if (isOpen) {
+    _closeScopeListbox();
+  } else {
+    gSearchScopeListbox?.classList.remove("hidden");
+    gSearchScopeBtn.setAttribute("aria-expanded", "true");
+  }
+});
+
+gSearchScopeListbox?.addEventListener("click", (e) => {
+  const opt = e.target.closest(".gsearch-scope-option");
+  if (!opt) return;
+  _searchScope = opt.dataset.scope || null;
+  _closeScopeListbox();
+  _populateScopeDropdown();
+  _syncModeBadge(gSearchInput.value);
+  applyGlobalSearch(gSearchInput.value);
+});
+
+document.addEventListener("click", (e) => {
+  if (gSearchScopeCustom && !gSearchScopeCustom.contains(e.target)) {
+    _closeScopeListbox();
+  }
 });
 
 /* ─── Command palette ("/" prefix) ─── */
@@ -371,6 +421,7 @@ function openGlobalSearch(opts = {}) {
 }
 
 function closeGlobalSearch() {
+  _closeScopeListbox();
   gSearchModal.classList.add("hidden");
   gSearchModal.setAttribute("aria-hidden", "true");
   _searchScope = null;
