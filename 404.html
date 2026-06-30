@@ -226,6 +226,57 @@
         font-size: 12px;
       }
 
+      /* search rescue suggestions */
+      .suggestions-block {
+        margin-bottom: 20px;
+      }
+
+      .suggestions-label {
+        color: var(--text-muted);
+        font-size: 12px;
+        margin-bottom: 10px;
+      }
+
+      .suggestions-label .label-cmd {
+        color: var(--yellow);
+      }
+
+      .suggestion-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        padding: 6px 10px;
+        margin-bottom: 4px;
+        border-radius: 6px;
+        background: transparent;
+        border: 1px solid transparent;
+        transition: background 0.12s, border-color 0.12s;
+        cursor: pointer;
+      }
+
+      .suggestion-item:hover {
+        background: var(--accent-dim);
+        border-color: var(--border-solid);
+      }
+
+      .suggestion-arrow {
+        color: var(--accent-light);
+        flex-shrink: 0;
+        font-size: 11px;
+      }
+
+      .suggestion-title {
+        color: var(--text);
+        font-size: 12.5px;
+      }
+
+      .suggestion-wiki {
+        color: var(--text-muted);
+        font-size: 11px;
+        margin-left: auto;
+      }
+
       /* back button */
       .back-line {
         display: inline-flex;
@@ -335,6 +386,8 @@
           request to contribute.
         </div>
 
+        <div id="suggestions-block" class="suggestions-block" hidden></div>
+
         <a class="back-line" id="back-btn" href="./">
           <span class="prompt">$</span>
           <span class="back-cmd">cd <span class="arg">../</span></span>
@@ -373,6 +426,114 @@
           backBtn.click();
         }
       });
+    </script>
+
+    <script>
+      (async function rescueSearch() {
+        if (!title) return;
+
+        const WIKIS = [
+          { id: "system-design", title: "System Design", indexPath: "./content/system-design/index.md" },
+          { id: "dsa", title: "DSA", indexPath: "./content/dsa/index.md" },
+        ];
+
+        function parseCards(md, wikiId, wikiTitle) {
+          const cards = [];
+          for (const line of md.split("\n")) {
+            if (!line.startsWith("|")) continue;
+            if (/^\|\s*[-:]+/.test(line)) continue;
+            const m = line.match(/^\|\s*\[([^\]]+)\]\(([^)]+\.md)\)/);
+            if (m) cards.push({ title: m[1].trim(), slug: m[2].trim().split("/").pop().replace(/\.md$/, ""), wikiId, wikiTitle });
+          }
+          return cards;
+        }
+
+        function editDist(a, b) {
+          const m = a.length, n = b.length;
+          const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+          for (let j = 0; j <= n; j++) dp[0][j] = j;
+          for (let i = 1; i <= m; i++)
+            for (let j = 1; j <= n; j++)
+              dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+          return dp[m][n];
+        }
+
+        function score(card, query) {
+          const q = query.toLowerCase().replace(/[-_]/g, " ");
+          const t = card.title.toLowerCase().replace(/[-_]/g, " ");
+          const s = card.slug.toLowerCase().replace(/[-_]/g, " ");
+          if (t === q || s === q) return 1;
+          if (t.startsWith(q) || s.startsWith(q)) return 0.9;
+          if (t.includes(q) || s.includes(q)) return 0.7;
+          const qWords = q.split(/\s+/).filter(Boolean);
+          const tWords = t.split(/\s+/);
+          const hits = qWords.filter(w => w.length >= 3 && tWords.some(tw => tw.length >= 3 && (tw.startsWith(w) || w.startsWith(tw))));
+          if (hits.length) return 0.4 + 0.1 * (hits.length / qWords.length);
+          if (qWords.length === 1 && q.length >= 4) {
+            const d = Math.min(editDist(q, t), editDist(q, s));
+            if (d <= 2) return 0.3;
+          }
+          return 0;
+        }
+
+        try {
+          const allCards = [];
+          await Promise.allSettled(
+            WIKIS.map(async (wiki) => {
+              const res = await fetch(wiki.indexPath);
+              if (!res.ok) return;
+              const md = await res.text();
+              allCards.push(...parseCards(md, wiki.id, wiki.title));
+            })
+          );
+
+          const query = title.replace(/[-_]/g, " ");
+          const scored = allCards
+            .map(c => ({ ...c, score: score(c, query) }))
+            .filter(c => c.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3);
+
+          if (!scored.length) return;
+
+          const block = document.getElementById("suggestions-block");
+          block.innerHTML = "";
+
+          const label = document.createElement("div");
+          label.className = "suggestions-label";
+          const cmd = document.createElement("span");
+          cmd.className = "label-cmd";
+          cmd.textContent = "suggest";
+          label.appendChild(cmd);
+          label.appendChild(document.createTextNode(' --did-you-mean "' + title + '"'));
+          block.appendChild(label);
+
+          for (const c of scored) {
+            const a = document.createElement("a");
+            a.className = "suggestion-item";
+            a.href = "./#" + encodeURIComponent(c.wikiId) + "/" + encodeURIComponent(c.slug);
+
+            const arrow = document.createElement("span");
+            arrow.className = "suggestion-arrow";
+            arrow.textContent = "→";
+
+            const titleSpan = document.createElement("span");
+            titleSpan.className = "suggestion-title";
+            titleSpan.textContent = c.title;
+
+            const wikiSpan = document.createElement("span");
+            wikiSpan.className = "suggestion-wiki";
+            wikiSpan.textContent = c.wikiTitle;
+
+            a.appendChild(arrow);
+            a.appendChild(titleSpan);
+            a.appendChild(wikiSpan);
+            block.appendChild(a);
+          }
+
+          block.hidden = false;
+        } catch {}
+      })();
     </script>
   </body>
 </html>

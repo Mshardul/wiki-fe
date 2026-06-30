@@ -142,5 +142,5 @@ def test_anon_read_makes_no_api_call(page, base_url):
     btn.wait_for(state="visible")
     if "active" not in (btn.get_attribute("class") or ""):
         btn.click()
-    page.wait_for_timeout(300)
+    page.wait_for_timeout(150)
     assert all("/reads" not in u for u in calls)

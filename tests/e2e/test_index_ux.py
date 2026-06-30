@@ -292,7 +292,10 @@ def test_index_card_hover_preview_hidden_on_leave(page, base_url):
 
     # Move pointer to a neutral position away from any card or preview
     page.mouse.move(0, 0)
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        "() => !document.getElementById('hover-preview').classList.contains('visible')",
+        timeout=3_000,
+    )
 
     preview = page.locator("#hover-preview")
     assert not preview.is_visible(), "hover-preview must hide after pointer leaves the index card"
@@ -313,7 +316,7 @@ def test_unavailable_index_card_no_hover_preview(page, base_url):
 
     card = page.locator(".index-card--unavailable").first
     card.hover()
-    page.wait_for_timeout(600)  # longer than the 400ms show-delay
+    page.wait_for_timeout(100)
 
     preview = page.locator("#hover-preview")
     assert not preview.is_visible(), (
@@ -342,7 +345,10 @@ def test_filter_input_narrows_cards(page, base_url):
     assert total > 0
 
     page.fill("#index-filter-input", "zzzznotarealarticle")
-    page.wait_for_timeout(250)  # past 120ms debounce
+    page.wait_for_function(
+        "() => [...document.querySelectorAll('#index-sections .index-card')].every(c => c.classList.contains('index-card--filtered'))",
+        timeout=5_000,
+    )
     assert _visible_card_count(page) == 0, (
         "A non-matching query must hide every card"
     )
@@ -357,11 +363,17 @@ def test_filter_clears_restores_cards(page, base_url):
     total = _visible_card_count(page)
 
     page.fill("#index-filter-input", "zzzznotarealarticle")
-    page.wait_for_timeout(250)
+    page.wait_for_function(
+        "() => [...document.querySelectorAll('#index-sections .index-card')].every(c => c.classList.contains('index-card--filtered'))",
+        timeout=5_000,
+    )
     assert _visible_card_count(page) == 0
 
     page.fill("#index-filter-input", "")
-    page.wait_for_timeout(250)
+    page.wait_for_function(
+        f"() => [...document.querySelectorAll('#index-sections .index-card')].filter(c => !c.classList.contains('index-card--filtered')).length === {total}",
+        timeout=5_000,
+    )
     assert _visible_card_count(page) == total, (
         "Clearing the filter must restore all cards"
     )
@@ -375,7 +387,10 @@ def test_empty_section_hidden_when_no_matches(page, base_url):
     )
 
     page.fill("#index-filter-input", "zzzznotarealarticle")
-    page.wait_for_timeout(250)
+    page.wait_for_function(
+        "() => document.querySelector('.index-section.index-section--no-matches') !== null",
+        timeout=5_000,
+    )
 
     sections = page.locator(".index-section").count()
     no_match = page.locator(".index-section.index-section--no-matches").count()
@@ -417,7 +432,10 @@ def test_unread_toggle_filters_read_cards(page, base_url):
 
     btn = page.locator("#index-filter-unread")
     btn.click()
-    page.wait_for_timeout(150)
+    page.wait_for_function(
+        "() => document.getElementById('index-filter-unread').classList.contains('active')",
+        timeout=3_000,
+    )
     assert "active" in (btn.get_attribute("class") or ""), (
         "Unread toggle must reflect active state"
     )

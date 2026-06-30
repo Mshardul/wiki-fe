@@ -1,4 +1,4 @@
-# FE/BE Repo Split — Decisions
+# [Archive] FE/BE Repo Split — Decisions
 
 How the current single-folder wiki becomes two repos.
 Status: **executed.** Both repos live — `wiki-fe` (`git@github.com:Mshardul/wiki-fe.git`) and `wiki-be` (`git@github.com:Mshardul/wiki-be.git`), each with its own remote + history. The commands below are kept as the record of how it was done.

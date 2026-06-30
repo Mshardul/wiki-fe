@@ -43,7 +43,7 @@ Score a hub against **only** these:
 | U12 | Links resolve        | gate | Script — every live `.md` link resolves (member links not yet wired must be plain text, not broken links).                                                        |
 | U13 | Soundbite            | adv  | One spoken-aloud family summary.                                                                                                                                  |
 
-Scoring scale, weights (U1/H-params weight 1; U8–U13 weight 0.5), the ≥6 gate, and the report format are unchanged. The gate is SHIP only if every gated hub param scores ≥6.
+Scoring scale, weights (U1/H-params weight 1; U8–U13 weight 0.5), the ≥9 gate, and the report format are unchanged. The gate is SHIP only if every gated hub param scores ≥9.
 
 ---
 
@@ -66,11 +66,11 @@ Scoring scale, weights (U1/H-params weight 1; U8–U13 weight 0.5), the ≥6 gat
 
 Each param is **gated** or **advisory**:
 
-- **Gated** params must score **≥6** to publish. Any gated param scoring **≤5** → **NO-SHIP**, regardless of the /100.
+- **Gated** params must score **≥9** to publish. Any gated param scoring **≤8** → **NO-SHIP**, regardless of the /100.
 - **Advisory** params never block — they only inform fixes.
-- A gated param scoring ≤5 is a **blocker** and is listed first in the report.
+- A gated param scoring ≤8 is a **blocker** and is listed first in the report.
 
-So a 91/100 article with one gated param at 4 still reads **NO-SHIP** until that param is fixed. The score measures quality; the gate measures publishability.
+So a 91/100 article with one gated param at 8 still reads **NO-SHIP** until that param is fixed. The score measures quality; the gate measures publishability.
 
 ### Param caps (judgment notes the score scale can't carry)
 
@@ -109,29 +109,31 @@ A few params have a hard cap regardless of how good the rest reads — apply the
 
 ## Output format
 
+**Always produce the full score table.** Do not substitute a bullet list, a prose summary, or an ad-hoc table with different columns. The exact format below is required — every time, including self-ratings after edits.
+
 ```
 <filename>  —  <overall>/100  —  <SHIP | NO-SHIP>   [section: <DS|Algo|Pattern>, family: <name|n/a>]
 
 PARAM                         SCORE   W    GATE   NOTE
 --------------------------------------------------------------------------------
 U1 def + mental model         9/10    1    gate   clean one-liner + analogy
-U5 pseudocode present/≠py     4/10    2    gate   pseudocode is just python with comments
-DS2 operations table          8/10    1    gate   all ops have O(), missing space col
-DS8 comparison table          7/10    1    gate   table vs linked-list/hash, missing BST row
-CP cp-primitives              5/10    1    gate   Linear family → gated; only prefix-sum, needs ≥2
-FB memory layout              7/10    2    gate   covers cache, misses resize cost
-U17 real-world + at-scale     6/10   0.5   adv    real-world line present; at-scale failure missing
-U18 cache behavior            7/10   0.5   adv    one line present in memory layout
-DS9 interviewer probes        7/10    1    adv    2 probes present; missing scale probe
-DS9a amortized proof          5/10    2    cond   Linear family → gated; asserts O(1) amort. but no accounting argument
-U9 prerequisites format       6/10   0.5   adv    reason text missing on 2 prereqs
+U5 pseudocode present/≠py     4/10    2    gate   pseudocode is just python with comments — BLOCKER
+DS2 operations table          9/10    1    gate   all ops have O(); space col present
+DS8 comparison table          8/10    1    gate   table vs linked-list/hash; missing BST row — BLOCKER
+CP cp-primitives              5/10    1    gate   Linear family → gated; only prefix-sum, needs ≥2 — BLOCKER
+FB memory layout              9/10    2    gate   covers cache, resize cost, amortized argument
+U17 real-world + at-scale     9/10   0.5   adv    real-world system named; at-scale failure stated
+U18 cache behavior            9/10   0.5   adv    cache-friendly vs hostile contrast present
+DS9 interviewer probes        8/10    1    adv    2 probes present; missing scale probe
+DS9a amortized proof          5/10    2    cond   Linear family → gated; asserts O(1) amort. but no accounting argument — BLOCKER
+U9 prerequisites format       9/10   0.5   adv    all prereqs have [Must read] + reason text
 AL10 constraints & approach   n/a     -     -     (DS article — AL10 is algorithms/patterns only)
 PA1 recognition signals       n/a     -     -     (not a pattern article)
 --------------------------------------------------------------------------------
 
-GATE: NO-SHIP — 1 gated param below 6.
+GATE: NO-SHIP — 1 gated param below 9.
 
-BLOCKERS (gated, score ≤5 — fix before publish):
+BLOCKERS (gated, score ≤8 — fix before publish):
 - U5: rewrite pseudocode in CLRS form (for i = 1 to n; ▷ comment; swap A[i] A[j])
 
 FIXES (ranked, highest-impact first = score-gain × weight):
@@ -142,7 +144,7 @@ FIXES (ranked, highest-impact first = score-gain × weight):
 Rules for the report:
 
 - Every applicable param gets a row. **n/a** params still listed (as n/a) so the reader sees nothing was skipped silently. Any **n/a must carry a one-line justification** in NOTE (which param, why it doesn't apply) — an unjustified n/a is treated as a low score, never a free pass. This applies especially to U5.
-- **GATE verdict** = SHIP only if every gated param scores ≥6; otherwise NO-SHIP. State it on the header line and again in the GATE line with the count.
+- **GATE verdict** = SHIP only if every gated param scores ≥9; otherwise NO-SHIP. State it on the header line and again in the GATE line with the count.
 - **NOTE** is one line — what's there / what's missing, never vague.
 - **BLOCKERS** (gated ≤5) listed first, then **FIXES** ranked by score-gain × weight.
 - Fixes are concrete and actionable — name the section, the change, the form. "Add a recurrence → Master theorem step to the derivation", not "improve complexity".

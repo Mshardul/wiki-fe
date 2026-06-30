@@ -6,8 +6,8 @@
 - Toast queue (FIFO, 200ms gap)
 - parseIndexMd CRLF + malformed row guards
 - Debug overlay via ?debug URL param
-- Hotkey conflict detection (WIKI-207)
-- localStorage key uniqueness (WIKI-208)
+- Hotkey conflict detection
+- localStorage key uniqueness
 """
 
 import re
@@ -135,7 +135,7 @@ def test_successful_copy_does_not_show_toast(page, base_url):
     page.wait_for_selector("#markdown-body pre .copy-btn", timeout=10_000)
 
     page.locator("#markdown-body pre .copy-btn").first.click()
-    page.wait_for_timeout(500)
+    page.wait_for_timeout(200)
 
     toast_visible = page.evaluate(
         "() => document.getElementById('wiki-toast')?.classList.contains('visible') ?? false"
@@ -159,7 +159,10 @@ def test_scroll_position_restored_after_navigation(page, base_url):
     )
 
     page.evaluate("() => window.scrollTo({ top: 600, behavior: 'instant' })")
-    page.wait_for_timeout(500)  # debounce fires at 400ms
+    page.wait_for_function(
+        "() => localStorage.getItem('scroll-' + window.state.currentWikiId + '-' + window.state.currentFilePath) !== null",
+        timeout=5_000,
+    )
 
     saved = page.evaluate(
         "() => localStorage.getItem('scroll-' + window.state.currentWikiId + '-' + window.state.currentFilePath)"
@@ -183,7 +186,7 @@ def test_scroll_position_restored_after_navigation(page, base_url):
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
         timeout=8_000,
     )
-    page.wait_for_timeout(500)  # double rAF + settling
+    page.wait_for_function("() => window.scrollY > 0", timeout=3_000)
 
     scroll_y = page.evaluate("() => window.scrollY")
     assert scroll_y > 0, f"Scroll not restored after navigation (scrollY={scroll_y})"
@@ -199,7 +202,7 @@ def test_scroll_position_stable_after_revisit(page, base_url):
         slug="scroll-stable",
     )
     page.evaluate("() => window.scrollTo(0, 400)")
-    page.wait_for_timeout(600)
+    page.wait_for_function("() => window.scrollY > 0", timeout=3_000)
 
     scroll_y = page.evaluate("() => window.scrollY")
     assert scroll_y > 0, "Scroll should be non-zero after scrollTo"
@@ -296,7 +299,8 @@ def test_hover_preview_hidden_after_mouseleave_during_fetch(page, base_url):
 
     # Now let the fetch complete
     ready.set()
-    page.wait_for_timeout(400)
+    # Brief wait for any post-fetch render attempt to settle (no DOM signal available)
+    page.wait_for_timeout(200)
 
     # Preview must remain hidden; stale content must not be shown
     is_visible = page.evaluate(
@@ -369,7 +373,7 @@ def test_rapid_theme_changes_do_not_crash(page, base_url):
             "() => document.dispatchEvent(new CustomEvent('wiki:themechange', { detail: { theme: 'dark' } }))"
         )
 
-    page.wait_for_timeout(400)  # past 150ms debounce window
+    page.wait_for_timeout(200)
 
     assert not errors, f"Page errors after rapid theme changes: {errors}"
     assert page.locator("#view-content.active").count() == 1, (
@@ -415,14 +419,17 @@ def test_mermaid_rerender_skips_offscreen_diagrams(page, base_url):
 
     # Scroll to top — first diagram in view, second is far below
     page.evaluate("() => window.scrollTo(0, 0)")
-    page.wait_for_timeout(100)
 
     second_html_before = page.locator(".mermaid-diagram").last.inner_html()
 
+    first_html_before = page.locator(".mermaid-diagram").first.inner_html()
     page.evaluate(
         "() => document.dispatchEvent(new CustomEvent('wiki:themechange', { detail: { theme: 'light' } }))"
     )
-    page.wait_for_timeout(400)
+    page.wait_for_function(
+        f"() => document.querySelector('.mermaid-diagram').innerHTML !== {repr(first_html_before)}",
+        timeout=5_000,
+    )
 
     second_html_after = page.locator(".mermaid-diagram").last.inner_html()
 

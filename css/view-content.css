@@ -924,6 +924,13 @@ pre.has-line-numbers {
 .katex-display:hover .latex-copy-btn {
   opacity: 1;
 }
+@media (pointer: coarse) {
+  .copy-btn,
+  .mermaid-copy-btn,
+  .latex-copy-btn {
+    opacity: 1;
+  }
+}
 .mermaid-diagram svg {
   max-width: 100%;
   height: auto;
@@ -1006,8 +1013,8 @@ pre.has-line-numbers {
   position: absolute;
   top: var(--s4);
   right: var(--s4);
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1243,6 +1250,77 @@ pre.has-line-numbers {
   color: var(--text-muted);
   text-align: center;
   padding: var(--s4) 0;
+}
+
+@media (pointer: coarse) {
+  .hover-preview:not(.hover-preview--sheet) {
+    display: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   INLINE CAVEAT REVEALS
+   ═══════════════════════════════════════════════ */
+.caveat-marker {
+  display: inline;
+  cursor: pointer;
+  user-select: none;
+}
+.caveat-marker::after {
+  content: "?";
+  display: inline-block;
+  font-size: 0.62em;
+  font-weight: 700;
+  color: var(--accent-light);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-full);
+  padding: 0 4px;
+  margin-left: 2px;
+  vertical-align: super;
+  line-height: 1.6;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.caveat-marker:hover::after,
+.caveat-marker[aria-expanded="true"]::after {
+  background: var(--accent);
+  color: #fff;
+}
+.caveat-body {
+  display: none;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-style: italic;
+  background: var(--surface-2);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  padding: var(--s1) var(--s3);
+  margin-left: var(--s2);
+}
+.caveat-marker[aria-expanded="true"] .caveat-body {
+  display: inline;
+}
+
+/* ═══════════════════════════════════════════════
+   INLINE GLOSSARY EXPAND
+   ═══════════════════════════════════════════════ */
+abbr.glossary-term--expandable {
+  cursor: pointer;
+}
+.glossary-inline-def {
+  display: none;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  padding: var(--s2) var(--s4);
+  margin: var(--s1) 0 0 var(--s2);
+  line-height: 1.5;
+}
+.glossary-inline-def--open {
+  display: block;
 }
 
 /* ═══════════════════════════════════════════════

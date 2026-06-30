@@ -220,7 +220,7 @@ def test_toc_item_click_does_not_break_hash(page, base_url):
     page.wait_for_selector("#toc-nav .toc-item", timeout=10_000)
 
     page.locator("#toc-nav .toc-item").first.click()
-    page.wait_for_timeout(400)
+    page.wait_for_function("() => location.search.includes('?a=')", timeout=5_000)
 
     assert "system-design/caching" in page.url, "Hash route lost after TOC click"
     assert "?a=" in page.url, "?a= anchor param not set after TOC click"

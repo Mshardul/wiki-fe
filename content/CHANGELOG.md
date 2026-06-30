@@ -9,6 +9,15 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` — what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-06-30
+- `k-way-merge.md` — new article: K-Way Merge pattern (merge k sorted lists/arrays/streams via min-heap; smallest range, k-th smallest in matrix; lazy-deletion and iterator-based CP-primitives)
+- `interval-dp.md` — new article: Interval DP pattern (burst balloons, matrix chain, merge stones, strange printer; Knuth-Yao speedup and sentinel padding CP-primitives)
+- `state-machine-dp.md` — new article: State Machine DP pattern (cooldown, transaction fee, k-transactions, circular house robber, paint house; rolling-array and top-2 CP-primitives)
+
+## 2026-06-29
+- `graph-coloring.md` — new article: Graph Coloring pattern (2-coloring / bipartite check, k-coloring via backtracking, bitmask DP for chromatic number)
+- `in-place-reversal.md` — new article: In-place Reversal of a Linked List pattern (full reversal, sublist reversal, k-groups, palindrome check, rotate right)
+
 **What gets logged:** new article, new section, expanded/rewritten section, new stub.  
 **What doesn't:** typo fixes, grammar, cross-reference links.
 

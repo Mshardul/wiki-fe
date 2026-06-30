@@ -2,6 +2,7 @@
 Preferences modal - open/close, background swatches, text/accent colours, font, size, persistence.
 Theme variable sync - background/accent/text CSS vars.
 OS theme detect on first visit.
+Reading modes (focus mode, offline save) in Advanced tab.
 """
 
 
@@ -654,7 +655,7 @@ def test_os_theme_change_ignored_when_user_picked_theme(page, base_url):
 
     # OS flips to dark — explicit choice must hold.
     page.emulate_media(color_scheme="dark")
-    page.wait_for_timeout(500)
+    page.wait_for_timeout(100)
     assert (
         page.evaluate("() => document.documentElement.getAttribute('data-theme')")
         == "light"
@@ -727,3 +728,51 @@ def test_size_setting_uses_percentage_units(wiki_page):
         wiki_page.locator("#settings-sizes .settings-size-btn").nth(idx).click()
         val = wiki_page.evaluate("() => document.documentElement.style.fontSize")
         assert val == expected, f"size idx {idx}: expected {expected}, got {val}"
+
+
+# ── Reading Modes in Advanced tab ────────────────────────────────
+
+
+def _open_advanced_tab(page):
+    _open_settings(page)
+    page.locator("[data-tab='advanced']").click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-panel-advanced').getAttribute('aria-hidden') === 'false'"
+    )
+
+
+def test_advanced_tab_has_reading_modes_buttons(wiki_page):
+    """Advanced prefs tab contains Focus Mode and Save Offline buttons."""
+    _open_advanced_tab(wiki_page)
+    assert wiki_page.locator("#prefs-focus-toggle").count() == 1
+    assert wiki_page.locator("#prefs-offline-toggle").count() == 1
+
+
+def test_focus_mode_prefs_btn_toggles_active_state(page, base_url):
+    """Focus Mode button in Advanced prefs sets aria-pressed and .active when toggled from content view."""
+    page.goto(f"{base_url}/#system-design/caching")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    page.locator("[title='Preferences (,)']").last.click()
+    page.wait_for_function(
+        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    page.locator("[data-tab='advanced']").click()
+
+    btn = page.locator("#prefs-focus-toggle")
+    assert btn.get_attribute("aria-pressed") == "false"
+
+    btn.click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-focus-toggle').getAttribute('aria-pressed') === 'true'"
+    )
+    assert "active" in btn.get_attribute("class")
+
+    btn.click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-focus-toggle').getAttribute('aria-pressed') === 'false'"
+    )
+    assert "active" not in btn.get_attribute("class")

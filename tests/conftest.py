@@ -14,6 +14,33 @@ def browser_context_args(browser_context_args):
     return {**browser_context_args, "service_workers": "block"}
 
 
+_MERMAID_STUB = """
+if (typeof window.mermaid === 'undefined') {
+    var _mermaidConfig = {};
+    window.mermaid = {
+        initialize: function(cfg) { _mermaidConfig = cfg || {}; },
+        render: function(id, src) {
+            var theme = _mermaidConfig.theme || 'default';
+            var svg = '<svg xmlns="http://www.w3.org/2000/svg" id="' + id + '" data-theme="' + theme + '" width="100" height="50"><text y="20">stub</text></svg>';
+            return Promise.resolve({ svg: svg });
+        }
+    };
+}
+"""
+
+
+@pytest.fixture(autouse=True)
+def disable_animations(page):
+    page.add_init_script(_MERMAID_STUB)
+    page.add_init_script("""
+        (() => {
+            const s = document.createElement('style');
+            s.textContent = '*, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; transition-delay: 0s !important; animation-delay: 0s !important; }';
+            document.head.appendChild(s);
+        })();
+    """)
+
+
 @pytest.fixture(scope="session")
 def base_url():
     class Handler(SimpleHTTPRequestHandler):
@@ -47,7 +74,7 @@ def base_url():
 
 
 @pytest.fixture
-def wiki_page(page, base_url):
+def wiki_page(page, base_url, disable_animations):
     page.goto(f"{base_url}/")
     page.wait_for_load_state("networkidle")
     return page

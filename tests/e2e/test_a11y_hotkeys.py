@@ -138,7 +138,10 @@ def test_content_scroll_restored_after_navigation(page, base_url):
         const max = document.documentElement.scrollHeight - window.innerHeight;
         window.scrollTo({ top: Math.floor(max * 0.5), behavior: 'instant' });
     }""")
-    page.wait_for_timeout(500)
+    page.wait_for_function(
+        "() => localStorage.getItem('scroll-' + window.state.currentWikiId + '-' + window.state.currentFilePath) !== null",
+        timeout=5_000,
+    )
 
     saved_y = page.evaluate("() => window.scrollY")
     assert saved_y > 0, "Could not scroll article (content may be too short)"
@@ -154,7 +157,7 @@ def test_content_scroll_restored_after_navigation(page, base_url):
     )
     # Wait for fonts to finish loading so layout is stable before rAF scroll fires
     page.wait_for_function("() => document.fonts.status === 'loaded'", timeout=8_000)
-    page.wait_for_timeout(300)
+    page.wait_for_function("() => window.scrollY > 0", timeout=5_000)
 
     restored_y = page.evaluate("() => window.scrollY")
     assert restored_y >= saved_y * 0.6, (

@@ -32,7 +32,6 @@ def test_arrow_keys_cycle_results(wiki_page):
     wiki_page.fill("#gsearch-input", "cache")
     # Wait for ≥2 results and let the 150ms debounce fully settle.
     wiki_page.locator(".gsearch-result").nth(1).wait_for()
-    wiki_page.wait_for_timeout(200)
 
     wiki_page.keyboard.press("ArrowDown")
     wiki_page.wait_for_selector(".gsearch-result.selected")
@@ -69,7 +68,10 @@ def test_visited_stub_excluded_from_search(wiki_page, base_url):
 
     _open_search(wiki_page)
     wiki_page.fill("#gsearch-input", "api gateway")
-    wiki_page.wait_for_timeout(1_000)
+    wiki_page.wait_for_function(
+        "() => document.querySelectorAll('.gsearch-result').length > 0 || document.querySelector('.gsearch-no-results')",
+        timeout=8_000,
+    )
 
     titles = [r.inner_text() for r in wiki_page.locator(".gsearch-result").all()]
     assert all("api gateway" not in t.lower() for t in titles), (
@@ -149,8 +151,9 @@ def test_search_debounce_suppresses_intermediate_updates(wiki_page):
     for char in "caching":
         wiki_page.type("#gsearch-input", char, delay=0)
 
-    # Wait for debounce + render to settle
-    wiki_page.wait_for_timeout(400)
+    wiki_page.wait_for_function(
+        "() => (window._resultUpdates ?? 0) > 0", timeout=5_000
+    )
 
     updates = wiki_page.evaluate("() => window._resultUpdates ?? 0")
     # With 150ms debounce, rapid typing produces far fewer updates than keystrokes
@@ -182,7 +185,10 @@ def test_result_count_clears_on_empty_query(wiki_page):
     wiki_page.wait_for_selector(".gsearch-result", timeout=8_000)
 
     wiki_page.fill("#gsearch-input", "")
-    wiki_page.wait_for_timeout(300)  # past debounce
+    wiki_page.wait_for_function(
+        "() => (document.getElementById('gsearch-count')?.textContent ?? '').trim() === ''",
+        timeout=5_000,
+    )
 
     count_text = wiki_page.evaluate(
         "() => document.getElementById('gsearch-count')?.textContent ?? ''"
@@ -288,7 +294,10 @@ def test_section_filter_mode_shows_badge(wiki_page):
     """Typing '>' switches to section-filter mode and shows the mode badge."""
     _open_search(wiki_page)
     wiki_page.fill("#gsearch-input", ">")
-    wiki_page.wait_for_timeout(300)  # past debounce
+    wiki_page.wait_for_function(
+        "() => document.querySelector('.gsearch-dialog')?.classList.contains('section-mode')",
+        timeout=5_000,
+    )
 
     dialog = wiki_page.locator(".gsearch-dialog")
     assert "section-mode" in (dialog.get_attribute("class") or ""), (
@@ -303,9 +312,15 @@ def test_section_filter_mode_clears_on_normal_query(wiki_page):
     """Removing the leading '>' exits section-filter mode and hides the badge."""
     _open_search(wiki_page)
     wiki_page.fill("#gsearch-input", ">")
-    wiki_page.wait_for_timeout(300)
+    wiki_page.wait_for_function(
+        "() => document.querySelector('.gsearch-dialog')?.classList.contains('section-mode')",
+        timeout=5_000,
+    )
     wiki_page.fill("#gsearch-input", "caching")
-    wiki_page.wait_for_timeout(300)
+    wiki_page.wait_for_function(
+        "() => !document.querySelector('.gsearch-dialog')?.classList.contains('section-mode')",
+        timeout=5_000,
+    )
 
     dialog = wiki_page.locator(".gsearch-dialog")
     assert "section-mode" not in (dialog.get_attribute("class") or ""), (
@@ -380,7 +395,10 @@ def test_cmd_f_opens_scoped_search_with_badge(page, base_url):
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
     _open_scoped_search(page)
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        "() => document.querySelector('.gsearch-dialog')?.classList.contains('scope-mode')",
+        timeout=5_000,
+    )
 
     dialog = page.locator(".gsearch-dialog")
     assert "scope-mode" in (dialog.get_attribute("class") or ""), (
@@ -414,7 +432,11 @@ def test_cmd_f_on_home_does_not_open_scoped_search(page, base_url):
     page.wait_for_selector("#view-home.active", timeout=5_000)
 
     page.keyboard.press("Meta+f")
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        "() => !document.getElementById('global-search-modal').classList.contains('hidden')"
+        " || !document.querySelector('.gsearch-dialog')?.classList.contains('scope-mode')",
+        timeout=3_000,
+    )
 
     dialog = page.locator(".gsearch-dialog")
     assert "scope-mode" not in (dialog.get_attribute("class") or ""), (
@@ -568,7 +590,10 @@ def test_article_find_count_and_cycle(page, base_url):
     total = int(count_text.split("/")[1])
     if total > 1:
         page.keyboard.press("Enter")
-        page.wait_for_timeout(100)
+        page.wait_for_function(
+            f"() => document.getElementById('article-find-count').textContent.split('/')[0] !== '{first_pos}'",
+            timeout=3_000,
+        )
         new_pos = page.locator("#article-find-count").inner_text().split("/")[0]
         assert new_pos != first_pos, "Enter must advance the current match index"
 
@@ -612,7 +637,10 @@ def test_scope_dropdown_filters_results(page, base_url):
     count_all = page.locator(".gsearch-result").count()
 
     page.select_option("#gsearch-scope-select", "system-design")
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        f"() => document.querySelectorAll('.gsearch-result').length <= {count_all}",
+        timeout=5_000,
+    )
     count_scoped = page.locator(".gsearch-result").count()
 
     assert count_scoped <= count_all, (
@@ -635,10 +663,16 @@ def test_scope_dropdown_all_wikis_restores_full_results(page, base_url):
     count_all = page.locator(".gsearch-result").count()
 
     page.select_option("#gsearch-scope-select", "system-design")
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        f"() => document.querySelectorAll('.gsearch-result').length < {count_all}",
+        timeout=5_000,
+    )
 
     page.select_option("#gsearch-scope-select", "")
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        f"() => document.querySelectorAll('.gsearch-result').length === {count_all}",
+        timeout=5_000,
+    )
     count_restored = page.locator(".gsearch-result").count()
 
     assert count_restored == count_all, (
@@ -706,7 +740,10 @@ def test_recent_search_remove_button_removes_chip(wiki_page):
     _open_search(wiki_page)
     wiki_page.wait_for_selector(".gsearch-recent-remove")
     wiki_page.locator(".gsearch-recent-remove").first.click()
-    wiki_page.wait_for_timeout(300)
+    wiki_page.wait_for_function(
+        "() => document.querySelectorAll('.gsearch-recent-query').length === 1",
+        timeout=5_000,
+    )
 
     remaining = wiki_page.locator(".gsearch-recent-query").all_text_contents()
     assert len(remaining) == 1, f"One chip must remain after remove, got {remaining}"
@@ -725,7 +762,10 @@ def test_recent_searches_hidden_when_typing(wiki_page):
     _open_search(wiki_page)
     wiki_page.wait_for_selector(".gsearch-recents")
     wiki_page.fill("#gsearch-input", "tree")
-    wiki_page.wait_for_timeout(300)
+    wiki_page.wait_for_function(
+        "() => document.querySelectorAll('.gsearch-recents').length === 0",
+        timeout=5_000,
+    )
     assert wiki_page.locator(".gsearch-recents").count() == 0, (
         "Recent chips must disappear once user is typing"
     )
@@ -908,6 +948,9 @@ def test_scope_custom_dropdown_sets_scope(wiki_page):
     options = wiki_page.locator(".gsearch-scope-option")
     if options.count() > 1:
         options.nth(1).click()
-        wiki_page.wait_for_timeout(300)
+        wiki_page.wait_for_function(
+            "() => document.querySelector('.gsearch-dialog')?.classList.contains('scope-mode')",
+            timeout=5_000,
+        )
         dialog = wiki_page.locator(".gsearch-dialog")
         assert "scope-mode" in (dialog.get_attribute("class") or "")

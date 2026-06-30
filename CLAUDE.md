@@ -10,7 +10,7 @@ Do this before any file reads or skill invocations — every session:
 
 1. Classify the task using the table below.
 2. MEMORY.md is already in context — no need to fetch it.
-3. If task type is **Ticket**: read `docs/tickets.md` first, nothing else.
+3. If task type is **Ticket**: run `python3 docs/_meta/ai-instructions/scripts/fetch-backlog-tickets.py` first to get the backlog list. Do not read `docs/tickets.md` raw for the list.
 4. If task type is anything else: go directly to the FILE MAP section and route.
 
 ---
@@ -141,7 +141,7 @@ Do this before any file reads or skill invocations — every session:
 | `docs/_meta/ai-instructions/devops-cheatsheets.md` | Writing DevOps cheatsheet — self-contained, skip \_base.md                              |
 | `docs/_meta/decisions/ui-ux.md`                    | UI / UX decision needed                                                                 |
 | `docs/_meta/decisions/auth.md`                     | Auth/personal-layer decisions — product model, tech, DB schema, password/session/error contracts |
-| `docs/_meta/decisions/auth-integration.md`         | How auth wires into the FE SPA — api.js, state.session, caching, auth modal, migration   |
+| `docs/_meta/decisions/auth-integration.md`         | [Archive] How auth wires into the FE SPA — reference only; superseded by implemented code |
 | `docs/_meta/plans/fe-be-integration.md` | Step-by-step plan for the FE auth+sync integration work                          |
 | `docs/tasks.md`                                    | Context on recently completed work or implementation notes                              |
 | `docs/changelog.md`                                | Context on recent feature history or what changed                                       |

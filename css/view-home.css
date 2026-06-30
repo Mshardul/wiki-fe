@@ -180,6 +180,10 @@
   font-size: var(--text-sm);
   color: var(--text-muted);
   line-height: 1.55;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 .wiki-card-footer {
   display: flex;

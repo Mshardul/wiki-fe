@@ -82,6 +82,49 @@ def test_no_active_card_on_fresh_load(page, base_url):
     assert active_count == 0
 
 
+# ── Home hero parallax ──────────────────────────────────────────────
+
+
+def test_parallax_mousemove_translates_grid(page, base_url):
+    """Mousemove over #view-home sets a non-empty transform on .home-bg-grid."""
+    page.goto(f"{base_url}/")
+    page.wait_for_selector("#view-home.active", timeout=5_000)
+    page.mouse.move(100, 100)
+    page.mouse.move(400, 300)
+    page.wait_for_function(
+        "() => (document.querySelector('.home-bg-grid')?.style.transform || '').includes('translate')",
+        timeout=3_000,
+    )
+    transform = page.evaluate(
+        "() => document.querySelector('.home-bg-grid')?.style.transform"
+    )
+    assert transform and "translate" in transform, (
+        f"Expected translate transform on .home-bg-grid after mousemove, got: {transform!r}"
+    )
+
+
+def test_parallax_mouseleave_resets_grid(page, base_url):
+    """Mouseleave from #view-home clears the transform on .home-bg-grid."""
+    page.goto(f"{base_url}/")
+    page.wait_for_selector("#view-home.active", timeout=5_000)
+    page.mouse.move(400, 300)
+    page.wait_for_function(
+        "() => (document.querySelector('.home-bg-grid')?.style.transform || '').includes('translate')",
+        timeout=3_000,
+    )
+    page.mouse.move(-10, -10)
+    page.wait_for_function(
+        "() => !(document.querySelector('.home-bg-grid')?.style.transform || '').includes('translate')",
+        timeout=3_000,
+    )
+    transform = page.evaluate(
+        "() => document.querySelector('.home-bg-grid')?.style.transform"
+    )
+    assert not transform, (
+        f"Expected empty transform after mouseleave, got: {transform!r}"
+    )
+
+
 # ── PWA manifest  ────────────────────────────────────────────────
 
 

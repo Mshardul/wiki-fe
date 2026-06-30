@@ -98,13 +98,15 @@ def test_index_scroll_persistence(page, base_url):
     page.wait_for_selector(
         ".index-card", timeout=10_000
     )  # Content loaded → page is scrollable
-    page.wait_for_timeout(100)  # Let showView's 50ms scroll-restore timer fire first
     # Scroll to 60% of the actual scrollable height (stays within page bounds)
     page.evaluate("""() => {
         const max = document.documentElement.scrollHeight - window.innerHeight;
         window.scrollTo({ top: Math.floor(max * 0.6), behavior: 'instant' });
     }""")
-    page.wait_for_timeout(400)  # Wait for debounced save
+    page.wait_for_function(
+        "() => localStorage.getItem('wiki-index-scroll-system-design') !== null",
+        timeout=5_000,
+    )
 
     saved_scroll = page.evaluate(
         "() => localStorage.getItem('wiki-index-scroll-system-design')"

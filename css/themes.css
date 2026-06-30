@@ -37,3 +37,21 @@
 [data-theme="light"] .wiki-card:hover {
   box-shadow: 0 0 0 1px var(--accent-glow), 0 8px 24px rgba(0, 0, 0, 0.1);
 }
+
+/* ═══════════════════════════════════════════════
+   FOCUS-VISIBLE RING — PER THEME
+   base.css sets the global default. Override here
+   so each theme has an accessible contrast ratio.
+   ═══════════════════════════════════════════════ */
+
+[data-theme="light"] :focus-visible {
+  outline-color: var(--accent);
+  outline-width: 2px;
+  outline-offset: 3px;
+}
+
+[data-theme="dark"] :focus-visible {
+  outline-color: var(--accent-light);
+  outline-width: 2px;
+  outline-offset: 3px;
+}

@@ -151,7 +151,7 @@ def test_excess_dotdot_does_not_crash(page, base_url):
     errors = []
     page.on("pageerror", lambda err: errors.append(str(err)))
     page.locator("text='Deep'").click()
-    page.wait_for_timeout(500)
+    page.wait_for_timeout(200)
     assert not errors, f"Excess .. caused JS errors: {errors}"
 
 

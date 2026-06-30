@@ -36,7 +36,10 @@ def test_collapse_all_collapses_every_section(page, base_url):
     """Clicking collapse-all collapses all index sections."""
     _go_to_index(page, base_url)
     page.locator("#index-collapse-all").click()
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        "() => [...document.querySelectorAll('.index-section')].every(s => s.classList.contains('section--collapsed'))",
+        timeout=5_000,
+    )
 
     all_collapsed = page.evaluate("""() => {
         const sections = [...document.querySelectorAll('.index-section')];
@@ -49,9 +52,15 @@ def test_expand_all_expands_every_section(page, base_url):
     """Clicking expand-all after collapse-all expands all sections."""
     _go_to_index(page, base_url)
     page.locator("#index-collapse-all").click()
-    page.wait_for_timeout(200)
+    page.wait_for_function(
+        "() => [...document.querySelectorAll('.index-section')].every(s => s.classList.contains('section--collapsed'))",
+        timeout=5_000,
+    )
     page.locator("#index-expand-all").click()
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        "() => [...document.querySelectorAll('.index-section')].every(s => !s.classList.contains('section--collapsed'))",
+        timeout=5_000,
+    )
 
     all_expanded = page.evaluate("""() => {
         const sections = [...document.querySelectorAll('.index-section')];
@@ -145,7 +154,7 @@ def test_w_hotkey_inactive_on_home(page, base_url):
     page.goto(f"{base_url}/")
     page.wait_for_selector("#view-home.active", timeout=5_000)
     page.keyboard.press("w")
-    page.wait_for_timeout(300)
+    page.wait_for_timeout(100)
     modal_visible = page.locator("#wiki-switcher-modal").is_visible()
     assert not modal_visible, "Wiki switcher must not open on home view"
 

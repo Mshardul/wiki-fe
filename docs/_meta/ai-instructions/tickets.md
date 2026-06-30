@@ -62,13 +62,24 @@ Note: older tickets may use `security` or `cleanup` as types — these are accep
 
 When user asks which ticket to work on, do this:
 
-1. Read `docs/tickets.md`.
-2. Filter to `Status = Backlog` only.
-3. Sort by priority ascending (p0 first), then story points ascending within same priority.
-4. Present top 3–5 candidates with: ID, Summary, Type, Priority, Story Points, Description.
-5. Ask user to confirm before starting implementation.
+1. Run `python3 docs/_meta/ai-instructions/scripts/fetch-backlog-tickets.py` — this prints all backlog tickets sorted by priority then story points.
+2. Present top 3–5 candidates with: ID, Summary, Type, Priority, Story Points, Description.
+3. Ask user to confirm before starting implementation.
 
 Never recommend `Done` or `Dropped` tickets. Never start implementation without user confirmation.
+
+---
+
+## STARTING WORK ON A TICKET
+
+Whenever the user asks to work on a ticket (any phrasing: "let's do WIKI-xxx", "work on tickets", "pick a ticket", "implement WIKI-xxx"):
+
+**Always run the backlog script first:**
+```
+python3 docs/_meta/ai-instructions/scripts/fetch-backlog-tickets.py
+```
+
+Use the output to confirm the ticket exists in Backlog before proceeding. Do not read `docs/tickets.md` raw to get the list — use the script.
 
 ---
 

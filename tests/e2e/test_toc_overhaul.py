@@ -96,7 +96,10 @@ def test_toc_current_class_applied(page, base_url):
         const h2 = document.querySelector('#markdown-body h2');
         if (h2) h2.scrollIntoView({ behavior: 'instant' });
     }""")
-    page.wait_for_timeout(400)
+    page.wait_for_function(
+        "() => document.querySelectorAll('#toc-nav .toc-current').length >= 1",
+        timeout=5_000,
+    )
 
     current_count = page.locator("#toc-nav .toc-current").count()
     assert current_count >= 1, "Expected at least one .toc-current item after scrolling"
@@ -116,7 +119,10 @@ def test_toc_passed_class_applied_after_scroll(page, base_url):
         const h2s = document.querySelectorAll('#markdown-body h2');
         if (h2s[1]) h2s[1].scrollIntoView({ behavior: 'instant' });
     }""")
-    page.wait_for_timeout(400)
+    page.wait_for_function(
+        "() => document.querySelectorAll('#toc-nav .toc-passed').length >= 1",
+        timeout=5_000,
+    )
 
     passed_count = page.locator("#toc-nav .toc-passed").count()
     assert passed_count >= 1, "Expected at least one .toc-passed item after scrolling past first H2"

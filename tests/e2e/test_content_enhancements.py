@@ -45,7 +45,7 @@ Some text.
 
 def _load_mock_article(page, base_url, content, slug="mock"):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=3_000)
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
     page.evaluate(f"""() => navigateToContent(
         'system-design',
@@ -53,10 +53,10 @@ def _load_mock_article(page, base_url, content, slug="mock"):
         encodeURIComponent('{slug.capitalize()}'),
         '{slug}'
     )""")
-    page.wait_for_selector("#view-content.active", timeout=3_000)
+    page.wait_for_selector("#view-content.active", timeout=8_000)
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=3_000,
+        timeout=8_000,
     )
 
 
@@ -259,7 +259,7 @@ def test_escape_after_zoom_stays_in_content_view(page, base_url):
 def test_mermaid_diagram_has_zoom_cursor(page, base_url):
     """.mermaid-diagram element has cursor: zoom-in from CSS."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-cursor")
-    page.wait_for_selector(".mermaid-diagram", timeout=3_000)
+    page.wait_for_selector(".mermaid-diagram", timeout=8_000)
 
     cursor = page.evaluate("""() => {
         const d = document.querySelector('.mermaid-diagram');
@@ -273,7 +273,7 @@ def test_mermaid_diagram_has_zoom_cursor(page, base_url):
 def test_diagram_click_opens_zoom_overlay(page, base_url):
     """Clicking a rendered .mermaid-diagram opens the zoom overlay."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-open")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=3_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
 
     page.locator(".mermaid-diagram").first.click()
     page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
@@ -287,7 +287,7 @@ def test_diagram_click_opens_zoom_overlay(page, base_url):
 def test_diagram_zoom_overlay_contains_svg(page, base_url):
     """Zoom overlay content contains an <svg> element after a diagram is clicked."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-svg")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=3_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
 
     page.locator(".mermaid-diagram").first.click()
     page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
@@ -308,7 +308,7 @@ def test_diagram_zoom_overlay_contains_svg(page, base_url):
 def test_mermaid_src_stored_on_wrapper(page, base_url):
     """.mermaid-diagram wrappers have data-mermaid-src set after initial render."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-src")
-    page.wait_for_selector(".mermaid-diagram", timeout=3_000)
+    page.wait_for_selector(".mermaid-diagram", timeout=8_000)
 
     has_src = page.evaluate("""() => {
         const wrapper = document.querySelector('.mermaid-diagram');
@@ -320,7 +320,7 @@ def test_mermaid_src_stored_on_wrapper(page, base_url):
 def test_diagram_rerenders_on_theme_change(page, base_url):
     """Switching theme triggers Mermaid re-render; SVG output changes."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-theme")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=3_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
 
     svg_before = page.evaluate(
         "() => document.querySelector('.mermaid-diagram svg')?.outerHTML"
@@ -348,7 +348,7 @@ def test_diagram_rerenders_on_theme_change(page, base_url):
 def test_diagram_src_preserved_after_theme_change(page, base_url):
     """data-mermaid-src is preserved on wrapper after a theme-triggered re-render."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-src-preserve")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=3_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
 
     src_before = page.evaluate(
         "() => document.querySelector('.mermaid-diagram')?.dataset.mermaidSrc"
@@ -995,7 +995,7 @@ graph LR
 def test_mermaid_diagram_has_copy_button(page, base_url):
     """A rendered .mermaid-diagram contains a .mermaid-copy-btn button."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_FOR_COPY, slug="mermaid-copy-btn")
-    page.wait_for_selector(".mermaid-diagram", timeout=3_000)
+    page.wait_for_selector(".mermaid-diagram", timeout=8_000)
     count = page.evaluate(
         "() => document.querySelectorAll('.mermaid-diagram .mermaid-copy-btn').length"
     )
@@ -1005,12 +1005,27 @@ def test_mermaid_diagram_has_copy_button(page, base_url):
 def test_mermaid_copy_btn_copies_svg(page, base_url):
     """Clicking .mermaid-copy-btn writes SVG markup to the clipboard."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_FOR_COPY, slug="mermaid-copy-svg")
-    page.wait_for_selector(".mermaid-copy-btn", timeout=3_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
+    # Patch clipboard before clicking so it survives any re-render
     page.evaluate(
         "() => { navigator.clipboard.writeText = (t) => { window.__svgCopied = t; return Promise.resolve(); }; }"
     )
-    page.locator(".mermaid-copy-btn").first.click()
-    page.wait_for_function("() => !!window.__svgCopied", timeout=3_000)
+    # Wait for DOM to stabilise: poll until the button stays attached for 200ms
+    page.wait_for_function(
+        """() => {
+            const btn = document.querySelector('.mermaid-copy-btn');
+            if (!btn || !btn.isConnected) return false;
+            window.__copyBtnRef = btn;
+            return true;
+        }""",
+        timeout=8_000,
+    )
+    page.wait_for_function(
+        "() => window.__copyBtnRef && window.__copyBtnRef.isConnected",
+        timeout=3_000,
+    )
+    page.evaluate("() => window.__copyBtnRef.click()")
+    page.wait_for_function("() => !!window.__svgCopied", timeout=5_000)
     copied = page.evaluate("() => window.__svgCopied")
     assert "<svg" in copied, f"Copied text does not look like SVG: {copied[:80]!r}"
 
@@ -1156,7 +1171,7 @@ def test_mermaid_node_caption_parsed_from_src(page, base_url):
     _load_mock_article(
         page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-caption-src"
     )
-    page.wait_for_selector(".mermaid-diagram[data-mermaid-src]", timeout=3_000)
+    page.wait_for_selector(".mermaid-diagram[data-mermaid-src]", timeout=8_000)
     src = page.evaluate(
         "() => document.querySelector('.mermaid-diagram')?.dataset.mermaidSrc ?? ''"
     )
@@ -1179,7 +1194,7 @@ def test_mermaid_tooltip_not_injected_without_captions(page, base_url):
     _load_mock_article(
         page, base_url, ARTICLE_WITH_UNCAPTIONED_MERMAID, slug="mermaid-tooltip-absent"
     )
-    page.wait_for_selector(".mermaid-diagram svg", timeout=3_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
     exists = page.evaluate(
         "() => !!document.getElementById('mermaid-node-tooltip')"
     )
@@ -1191,7 +1206,7 @@ def test_mermaid_tooltip_not_visible_on_load(page, base_url):
     _load_mock_article(
         page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-tooltip-hidden"
     )
-    page.wait_for_selector(".mermaid-diagram svg", timeout=3_000)
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
     is_visible = page.evaluate(
         "() => document.getElementById('mermaid-node-tooltip')?.classList.contains('visible') ?? false"
     )
@@ -1272,7 +1287,7 @@ def test_tabbed_code_blocks_lang_persistence(page, base_url):
     assert active_tab.get_attribute("data-lang") == "java"
 
 
-# ── WIKI-295: zoom overlay caption from alt text ────────────────────────────
+# ── Zoom overlay caption from alt text ───────────────────────────────────
 
 ARTICLE_WITH_CAPTIONED_IMAGE = """\
 # Caption Test
@@ -1321,7 +1336,7 @@ def test_zoom_overlay_no_caption_when_alt_empty(page, base_url):
     )
 
 
-# ── WIKI-294: collapsible callouts with + prefix ─────────────────────────────
+# ── Collapsible callouts with + prefix ────────────────────────────────────
 
 ARTICLE_WITH_PLUS_CALLOUT = """\
 # Plus Callout Test
@@ -1391,7 +1406,7 @@ def test_plus_callout_expands_on_click(page, base_url):
     assert is_expanded, ".callout--expanded not added after clicking expand button"
 
 
-# ── WIKI-293: glossary term hover popover ────────────────────────────────────
+# ── Glossary term hover popover ───────────────────────────────────────────
 
 ARTICLE_WITH_ABBR = """\
 # Glossary Test
@@ -1448,3 +1463,174 @@ def test_no_glossary_popover_without_abbr(page, base_url):
         "() => document.querySelectorAll('abbr.glossary-term').length"
     )
     assert count == 0, "glossary-term class added when no abbr tags present"
+
+
+# ── Inline glossary expand ───────────────────────────────────
+
+def test_inline_glossary_expand_class_added(page, base_url):
+    """A matched abbr gets .glossary-term--expandable after glossary loads."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-expand-class")
+    page.wait_for_function(
+        "() => document.querySelector('abbr.glossary-term--expandable') !== null",
+        timeout=5_000,
+    )
+    count = page.evaluate(
+        "() => document.querySelectorAll('abbr.glossary-term--expandable').length"
+    )
+    assert count > 0, "glossary-term--expandable class not added"
+
+
+def test_inline_glossary_expand_def_hidden_initially(page, base_url):
+    """The .glossary-inline-def is not visible before clicking the term."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-expand-hidden")
+    page.wait_for_function(
+        "() => document.querySelector('abbr.glossary-term--expandable') !== null",
+        timeout=5_000,
+    )
+    open_count = page.evaluate(
+        "() => document.querySelectorAll('.glossary-inline-def--open').length"
+    )
+    assert open_count == 0, "Inline def shown before click"
+
+
+def test_inline_glossary_expand_click_shows_def(page, base_url):
+    """Clicking .glossary-term--expandable shows the inline definition."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-expand-click")
+    page.wait_for_function(
+        "() => document.querySelector('abbr.glossary-term--expandable') !== null",
+        timeout=5_000,
+    )
+    page.locator("abbr.glossary-term--expandable").first.click()
+    page.wait_for_function(
+        "() => document.querySelector('.glossary-inline-def--open') !== null",
+        timeout=3_000,
+    )
+    text = page.evaluate(
+        "() => document.querySelector('.glossary-inline-def--open')?.textContent"
+    )
+    assert text and len(text) > 5, "Inline def opened but text is empty"
+
+
+def test_inline_glossary_expand_second_click_collapses(page, base_url):
+    """Second click on .glossary-term--expandable collapses the definition."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-expand-collapse")
+    page.wait_for_function(
+        "() => document.querySelector('abbr.glossary-term--expandable') !== null",
+        timeout=5_000,
+    )
+    abbr = page.locator("abbr.glossary-term--expandable").first
+    abbr.click()
+    page.wait_for_function(
+        "() => document.querySelector('.glossary-inline-def--open') !== null",
+        timeout=3_000,
+    )
+    abbr.click()
+    page.wait_for_function(
+        "() => document.querySelector('.glossary-inline-def--open') === null",
+        timeout=3_000,
+    )
+    open_count = page.evaluate(
+        "() => document.querySelectorAll('.glossary-inline-def--open').length"
+    )
+    assert open_count == 0, "Inline def still open after second click"
+
+
+# ── Inline caveat reveals ────────────────────────────────────
+
+ARTICLE_WITH_CAVEAT = """\
+# Caveat Test
+
+## Section
+
+This runs in O(1) amortized[?unless the array resizes, making it O(n)].
+
+And another claim[?second caveat here] for good measure.
+"""
+
+ARTICLE_WITHOUT_CAVEAT = """\
+# No Caveat Test
+
+## Section
+
+Plain text with no caveat markers at all.
+"""
+
+
+def test_caveat_marker_rendered(page, base_url):
+    """[?...] syntax produces .caveat-marker elements in the DOM."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CAVEAT, slug="caveat-render")
+    page.wait_for_function(
+        "() => document.querySelector('.caveat-marker') !== null",
+        timeout=5_000,
+    )
+    count = page.evaluate(
+        "() => document.querySelectorAll('.caveat-marker').length"
+    )
+    assert count == 2, f"Expected 2 caveat markers, got {count}"
+
+
+def test_caveat_body_hidden_initially(page, base_url):
+    """.caveat-body is not displayed before clicking the marker."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CAVEAT, slug="caveat-hidden")
+    page.wait_for_function(
+        "() => document.querySelector('.caveat-marker') !== null",
+        timeout=5_000,
+    )
+    expanded = page.evaluate(
+        "() => document.querySelector('.caveat-marker[aria-expanded=\"true\"]') !== null"
+    )
+    assert not expanded, "Caveat marker should start collapsed"
+
+
+def test_caveat_click_expands(page, base_url):
+    """Clicking .caveat-marker sets aria-expanded=true."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CAVEAT, slug="caveat-click")
+    page.wait_for_function(
+        "() => document.querySelector('.caveat-marker') !== null",
+        timeout=5_000,
+    )
+    page.locator(".caveat-marker").first.click()
+    expanded = page.evaluate(
+        "() => document.querySelector('.caveat-marker')?.getAttribute('aria-expanded')"
+    )
+    assert expanded == "true", "Caveat marker not expanded after click"
+
+
+def test_caveat_second_click_collapses(page, base_url):
+    """Second click collapses .caveat-marker back to aria-expanded=false."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CAVEAT, slug="caveat-collapse")
+    page.wait_for_function(
+        "() => document.querySelector('.caveat-marker') !== null",
+        timeout=5_000,
+    )
+    marker = page.locator(".caveat-marker").first
+    marker.click()
+    marker.click()
+    expanded = page.evaluate(
+        "() => document.querySelector('.caveat-marker')?.getAttribute('aria-expanded')"
+    )
+    assert expanded == "false", "Caveat marker still expanded after second click"
+
+
+def test_caveat_body_text_content(page, base_url):
+    """.caveat-body contains the text from the [?...] marker."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CAVEAT, slug="caveat-text")
+    page.wait_for_function(
+        "() => document.querySelector('.caveat-body') !== null",
+        timeout=5_000,
+    )
+    texts = page.evaluate(
+        "() => Array.from(document.querySelectorAll('.caveat-body')).map(el => el.textContent)"
+    )
+    assert any("array resizes" in t for t in texts), "First caveat text not found"
+    assert any("second caveat" in t for t in texts), "Second caveat text not found"
+
+
+def test_no_caveat_markers_without_syntax(page, base_url):
+    """Article with no [?...] syntax produces no .caveat-marker elements."""
+    _load_mock_article(page, base_url, ARTICLE_WITHOUT_CAVEAT, slug="caveat-none")
+    page.wait_for_selector("#markdown-body[data-render-done]", timeout=5_000)
+    count = page.evaluate(
+        "() => document.querySelectorAll('.caveat-marker').length"
+    )
+    assert count == 0, "Caveat markers found in article without [?...] syntax"

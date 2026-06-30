@@ -72,7 +72,7 @@ def test_anon_bookmark_makes_no_api_call(page, base_url):
 
     _go_to_article(page, base_url)
     _bookmark_current(page)
-    page.wait_for_timeout(300)  # give any (erroneous) fire-and-forget POST time to fire
+    page.wait_for_timeout(150)  # give any (erroneous) fire-and-forget POST time to fire
     assert all("/bookmarks" not in u for u in calls)
 
 

@@ -77,7 +77,8 @@ def test_scroll_position_not_restored_with_anchor(page, base_url):
         f"() => history.replaceState(null, '', location.href.split('?')[0] + '?a={first_heading}')"
     )
     page.evaluate("() => window.scrollTo(0, 0)")
-    page.wait_for_timeout(400)
+    # Brief wait for anchor-scroll logic to settle (no DOM signal)
+    page.wait_for_timeout(100)
     # Anchor scroll targets near-0 if heading is at top, or some other position -
     # key assertion is that the restore path did not fire (no error thrown).
     assert page.locator("#view-content.active").count() == 1
@@ -121,7 +122,6 @@ def test_mobile_toc_closes_on_link_tap(page, base_url):
     page.wait_for_function(
         "() => document.getElementById('toc-sidebar').classList.contains('mobile-open')"
     )
-    page.wait_for_timeout(400)  # slideInRight 0.2s + toc-item transition settle buffer
     page.locator("#toc-nav .toc-item").first.click()
     page.wait_for_function(
         "() => !document.getElementById('toc-sidebar').classList.contains('mobile-open')"
@@ -140,7 +140,7 @@ def test_toc_sticky_does_not_scroll_away(page, base_url):
     page.wait_for_selector("#markdown-body pre", timeout=8_000)
 
     page.evaluate("() => window.scrollTo(0, 1500)")
-    page.wait_for_timeout(200)
+    page.wait_for_function("() => window.scrollY >= 1000", timeout=3_000)
 
     sidebar = page.locator("#toc-sidebar")
     assert sidebar.is_visible()

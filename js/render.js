@@ -11,6 +11,8 @@ import {
   addFormulaToggle,
   addGlossaryTerms,
   addImageLightbox,
+  addInlineCaveats,
+  addInlineGlossaryExpand,
   addLatexCopyButtons,
   addLineNumbers,
   addMermaidNodeCaptions,
@@ -979,6 +981,8 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       // Image lightbox + diagram zoom + table scroll cues
       addImageLightbox(body);
       addGlossaryTerms(body);
+      addInlineGlossaryExpand(body);
+      addInlineCaveats(body);
       addDiagramZoom(body);
       addMermaidNodeCaptions(body);
       addTableScrollCues(body);

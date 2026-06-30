@@ -129,6 +129,54 @@ def test_404_unrelated_slug_shows_plain_message(page, base_url):
     assert page.locator("#wiki-toast .toast-undo-btn").count() == 0
 
 
+# ── 404.html standalone search rescue ──────────────────────────────
+
+
+def test_404_html_shows_suggestions_for_known_slug(page, base_url):
+    """404.html with a ?title= near-miss renders suggestion links in the terminal UI."""
+    page.goto(f"{base_url}/404.html?title=cachng")
+    page.wait_for_load_state("networkidle")
+
+    block = page.locator("#suggestions-block")
+    block.wait_for(state="visible", timeout=8_000)
+    assert block.locator(".suggestion-item").count() >= 1
+    titles = block.locator(".suggestion-title").all_inner_texts()
+    assert any("Caching" in t or "cach" in t.lower() for t in titles)  # codespell:ignore
+
+
+def test_404_html_suggestion_link_points_to_app(page, base_url):
+    """Suggestion links href targets the SPA hash route, not 404.html."""
+    page.goto(f"{base_url}/404.html?title=cachng")
+    page.wait_for_load_state("networkidle")
+
+    block = page.locator("#suggestions-block")
+    block.wait_for(state="visible", timeout=8_000)
+    first_href = block.locator(".suggestion-item").first.get_attribute("href")
+    assert first_href is not None
+    assert "404" not in first_href
+    assert "#" in first_href
+
+
+def test_404_html_no_suggestions_when_no_title_param(page, base_url):
+    """404.html with no ?title= param leaves the suggestions block hidden."""
+    page.goto(f"{base_url}/404.html")
+    page.wait_for_load_state("networkidle")
+
+    block = page.locator("#suggestions-block")
+    assert block.get_attribute("hidden") is not None
+
+
+def test_404_html_no_suggestions_for_gibberish_title(page, base_url):
+    """404.html with a gibberish title that matches nothing stays hidden."""
+    page.goto(f"{base_url}/404.html?title=zzzqqqxxx999")
+    page.wait_for_load_state("networkidle")
+
+    # Give the async rescue script time to run and find no matches.
+    page.wait_for_timeout(500)
+    block = page.locator("#suggestions-block")
+    assert block.get_attribute("hidden") is not None
+
+
 # ── 404.html back-button history fallback ───────────────────────────
 
 

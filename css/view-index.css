@@ -133,6 +133,9 @@
   cursor: pointer;
   user-select: none;
 }
+.section-header:active {
+  background: var(--surface-hover);
+}
 .section-title {
   font-size: var(--text-lg);
   font-weight: 600;
