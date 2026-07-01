@@ -22,6 +22,7 @@
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
 
 ## What it is
@@ -168,7 +169,8 @@ The `i` tiebreaker in the tuple prevents Python from comparing `ListNode` object
 | Metric | Value |
 |--------|-------|
 | Time | O(N log k), N = total elements across all lists |
-| Space | O(k) for the heap + O(N) for output |
+| Space (heap) | O(k) — at most one entry per non-exhausted list |
+| Space (output) | O(N) — the full merged sequence; if streaming, O(1) extra |
 | Per-element cost | O(log k) — one heap pop + at most one push |
 
 **Cache behavior:** the heap holds at most k elements, so at small k (≤ a few hundred) the entire heap fits in L1/L2 cache — every sift is a cache hit. At large k (thousands of lists) the heap's random-access sift pattern causes L2 misses; at that scale a tournament tree (losers tree) has better cache behavior because it accesses a fixed path of log k nodes rather than arbitrary heap positions.
@@ -273,13 +275,13 @@ n × n matrix where each row and each column is sorted. Find the k-th smallest e
 
 k sorted lists. Find the smallest range [a, b] such that at least one element from each list lies in [a, b]. k ≤ 3500, each list length ≤ 50.
 
-**Approach:** k-way merge with a running max. Heap tracks the current minimum across all list fronts; `cur_max` is maintained as elements are pushed. The range at any step is `[heap.top, cur_max]`. Advance the list contributing the current minimum (to try to shrink the range). Stop when any list exhausts. O(N log k) where N = total elements = k × avg_list_length.
+**Approach:** the key insight is that at any moment during a k-way merge, the heap holds exactly one element per list — the current minimum is `heap.top`, and you also track `cur_max` as the largest element ever pushed. So `[heap.top, cur_max]` is the tightest range currently covering one element per list. Advancing the list that contributes the minimum moves the left boundary up (the only direction that can shrink the range, since `cur_max` only grows). Stop the moment any list exhausts — from that point, you can no longer cover all k lists. O(N log k), N = total elements.
 
 ### 4. Merge K Sorted Arrays
 
 Given k sorted integer arrays, merge into one sorted array. Classic external-sort simulation; k ≤ 500, total N ≤ 10⁶.
 
-**Approach (N ≤ 10⁶):** heap of `(value, list_index, element_index)`. Standard k-way merge skeleton. O(N log k) ≈ 10⁶ × 9 ops. If k = 2, two-pointer merge is faster in practice (no heap overhead). The pattern is unambiguous when k > 2 and lists are pre-sorted.
+**Approach (N ≤ 10⁶):** heap of `(value, list_index, element_index)` — standard k-way merge skeleton. Each of N elements is pushed and popped exactly once, each at O(log k), giving O(N log k) ≈ 10⁶ × 9 ≈ 10⁷ ops, well within limits. The index triple avoids comparisons between equal-value elements from different arrays. If k = 2, use two-pointer merge instead — O(N) with no heap overhead. The heap only wins when k > 2 because two-pointer linear scan of k heads is O(N·k) which dominates at large k.
 
 ## Pitfalls
 
@@ -300,6 +302,20 @@ Given k sorted integer arrays, merge into one sorted array. Classic external-sor
 - [Top-K Elements](./top-k-elements.md) — sibling heap pattern; one heap of fixed size k over one stream vs k heaps of size 1 over k streams.
 - [Two Pointers](./two-pointers.md) — the O(N) alternative for k=2 with both lists in memory.
 - [Binary Search on Answer](./binary-search-on-answer.md) — alternative to k-way merge for "k-th smallest across k sorted arrays" when you want value rather than the full merged sequence.
+
+## What the interviewer probes for
+
+**"Why a heap and not just repeatedly scanning all k heads?"**
+Scanning all k heads to find the minimum is O(k) per element → O(N·k) total. A heap does the same selection in O(log k), so k-way merge beats naive scanning whenever k is more than a handful. For k = 2 the heap has overhead and two-pointer at O(N) wins; the crossover is typically k ≥ 3–4 in practice.
+
+**"What happens if one of the k lists is much longer than the others?"**
+The heap size never exceeds k regardless of list lengths — it always holds exactly one entry per non-exhausted list. Long lists just contribute more pop-push cycles, but each cycle is still O(log k). The total cost is O(N log k) where N is the total element count across all lists, not the max single-list length.
+
+**"Can you do this without O(N) output space — streaming the merged output?"**
+Yes — use a generator (see CP-primitives: iterator-based variant). The heap stays O(k) and you yield each element as it's popped instead of appending to a list. The merged sequence is never materialized. This is how production external merge sort works: each of the k runs is read from disk one buffer-page at a time, and the merged output is streamed to the output file.
+
+**"What if the lists are not fully sorted but nearly sorted (bounded disorder d)?"**
+A min-heap of size k still works correctly — it makes no assumption about global order, only that each individual list is sorted. "Nearly sorted" is a property of each list independently; the heap tolerates it without modification. If d is the max displacement within each list, you can use a heap of size d instead of k for a bounded-disorder single-sequence problem (patience sort variant) — but that's a different problem shape.
 
 ## Practice problems
 

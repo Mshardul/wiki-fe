@@ -40,7 +40,7 @@ Structural references. Each page covers how it works, operations with their comp
 | [B-Plus Tree](./data-structures/b-plus-tree.md)                     | B-tree variant with all values at leaves, internal nodes as pure routing keys, leaves linked for range scans — the structure behind MySQL InnoDB and PostgreSQL indexes. |
 | [Interval Tree](./data-structures/interval-tree.md)                 | Augmented BST storing intervals; O(log n + k) stabbing and overlap queries — the structure for sweep-line and scheduling problems.                     |
 | [Treap](./data-structures/treap.md)                                 | **[stub]** BST on keys + heap on random priorities — dual invariant gives expected O(log n) height without deterministic rotations.                    |
-| [Suffix Array](./data-structures/suffix-array.md)                   | **[stub]** Sorted array of suffix indices. O(n log n) build, O(m log n) pattern search — lighter than a suffix tree; the CP string workhorse.         |
+| [Suffix Array](./data-structures/suffix-array.md)                   | Sorted array of suffix indices. O(n log² n) prefix-doubling build, O(m log n) pattern search — lighter than a suffix tree; the CP string and genomics workhorse.         |
 
 ---
 
@@ -78,12 +78,13 @@ Procedures with correctness intuition. Each page covers the worked example, the 
 | [Z-Algorithm](./algorithms/z-algorithm.md)                                      | Computes, for each position, the longest prefix starting there (the Z-array) in O(n) by reusing a sliding match window. KMP's twin; pattern search via `P$T`. |
 | [Number Theory](./algorithms/number-theory.md)                                  | **Hub** — survey + decision layer for the contest math toolkit: GCD, modular exponentiation, the sieve. Routes to each member; ties them together via mod-prime arithmetic. |
 | [Modular Arithmetic](./algorithms/modular-arithmetic.md)                        | Arithmetic under a modulus: add/mul/pow in O(log n), modular inverse, the Chinese Remainder Theorem — the foundation of every contest problem that says "answer mod 10⁹+7". |
+| [Modular Exponentiation](./algorithms/modular-exponentiation.md)                | Compute base^exp mod m in O(log exp) by squaring instead of multiplying exp times — the engine behind RSA, Fermat's modular inverse, and matrix exponentiation for Fibonacci. |
 | [Strongly Connected Components](./algorithms/strongly-connected-components.md)  | Find all maximal groups where every node can reach every other. Kosaraju (two-pass DFS + transpose) or Tarjan (single-pass, low-link values) — both O(V + E). Foundation of 2-SAT and condensation DAG analysis. |
 | [Maximum Flow](./algorithms/maximum-flow.md)                                    | **[Hub][stub]** Survey + decision layer for max-flow algorithms: Ford-Fulkerson, Edmonds-Karp, Dinic, and the bipartite-matching reduction.            |
 | [Ford-Fulkerson](./algorithms/ford-fulkerson.md)                                | **[stub]** Augment flow along any path in the residual graph. O(E·\|max_flow\|) — can fail to terminate on irrational capacities; the conceptual baseline. |
 | [Edmonds-Karp](./algorithms/edmonds-karp.md)                                    | **[stub]** Ford-Fulkerson with BFS for shortest augmenting paths. O(VE²) — polynomial regardless of capacity values.                                   |
 | [Dinic's Algorithm](./algorithms/dinic.md)                                      | **[stub]** Level graph + blocking flows. O(V²E); O(E√V) on unit-capacity graphs — the practical choice for dense graphs and bipartite matching.         |
-| [Rabin-Karp](./algorithms/rabin-karp.md)                                        | **[stub]** Rolling hash over a sliding window. O(n + m) average pattern search; O(nm) worst case — shines on multi-pattern search.                     |
+| [Rabin-Karp](./algorithms/rabin-karp.md)                                        | Rolling polynomial hash over a sliding window. O(n + m) average, O(nm) worst case — the primary choice for multi-pattern search and substring fingerprinting.                     |
 | [Kadane](./algorithms/kadane.md)                                    | Maximum subarray sum in O(n) via a single pass — extend the running subarray or restart, whichever is larger. The canonical space-compressed DP; extends to circular arrays and 2-D max-sum rectangle.                   |
 
 ---

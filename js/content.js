@@ -451,7 +451,8 @@ function buildTOC(contentEl, wikiId, articlePath) {
       chevron.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        toggleCollapse(collapseKey, currentGroup);
+        const nowCollapsed = toggleCollapse(collapseKey, currentGroup);
+        _syncContentH2(h.id, nowCollapsed);
       });
 
       const h2Row = document.createElement("div");
@@ -700,6 +701,29 @@ function _positionTooltip(tip, e) {
 }
 
 /* ─── Diagram Zoom ─── */
+function _appendMermaidCopyBtn(diagram) {
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "copy-btn mermaid-copy-btn";
+  copyBtn.title = "Copy diagram as SVG";
+  copyBtn.setAttribute("aria-label", "Copy diagram as SVG");
+  copyBtn.textContent = "⧉";
+  copyBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const svgEl = diagram.querySelector("svg");
+    if (!svgEl) return;
+    const svgText = new XMLSerializer().serializeToString(svgEl);
+    writeToClipboard(svgText).then(() => {
+      copyBtn.textContent = "✓";
+      copyBtn.classList.add("copied");
+      setTimeout(() => {
+        copyBtn.textContent = "⧉";
+        copyBtn.classList.remove("copied");
+      }, 2000);
+    });
+  });
+  diagram.appendChild(copyBtn);
+}
+
 function addDiagramZoom(contentEl) {
   contentEl.querySelectorAll(".mermaid-diagram").forEach((diagram) => {
     diagram.addEventListener("click", () => {
@@ -716,26 +740,7 @@ function addDiagramZoom(contentEl) {
       openZoomOverlay(clone);
     });
 
-    const copyBtn = document.createElement("button");
-    copyBtn.className = "copy-btn mermaid-copy-btn";
-    copyBtn.title = "Copy diagram as SVG";
-    copyBtn.setAttribute("aria-label", "Copy diagram as SVG");
-    copyBtn.textContent = "⧉";
-    copyBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const svgEl = diagram.querySelector("svg");
-      if (!svgEl) return;
-      const svgText = new XMLSerializer().serializeToString(svgEl);
-      writeToClipboard(svgText).then(() => {
-        copyBtn.textContent = "✓";
-        copyBtn.classList.add("copied");
-        setTimeout(() => {
-          copyBtn.textContent = "⧉";
-          copyBtn.classList.remove("copied");
-        }, 2000);
-      });
-    });
-    diagram.appendChild(copyBtn);
+    _appendMermaidCopyBtn(diagram);
   });
 }
 
@@ -791,6 +796,7 @@ async function rerenderMermaidDiagrams() {
       const id = `mermaid-rerender-${Date.now()}-${i++}`;
       const { svg } = await mermaid.render(id, code);
       wrapper.innerHTML = svg;
+      _appendMermaidCopyBtn(wrapper);
     } catch (err) {
       console.warn("Mermaid re-render failed:", err);
       const errEl = document.createElement("div");
@@ -1212,12 +1218,9 @@ function injectHeadingCollapseToggles(contentEl, wikiId, articlePath) {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const nowCollapsed = !h2.classList.contains("section--collapsed");
-      if (nowCollapsed) {
-        localStorage.setItem(key, "1");
-      } else {
-        localStorage.removeItem(key);
-      }
+      toggleCollapse(key, h2, nowCollapsed);
       _setSectionCollapsed(h2, nowCollapsed);
+      _syncTocGroup(sectionId, nowCollapsed);
     });
   });
 }
@@ -1758,6 +1761,173 @@ function addGlossaryTerms(contentEl) {
   });
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   SESSION HTML CACHE
+   ═══════════════════════════════════════════════════════════════ */
+const _HTML_CACHE_PREFIX = "wiki-html-cache-";
+
+function cacheRenderedHtml(filePath, html) {
+  try {
+    sessionStorage.setItem(_HTML_CACHE_PREFIX + filePath, html);
+  } catch {}
+}
+
+function getCachedHtml(filePath) {
+  try {
+    return sessionStorage.getItem(_HTML_CACHE_PREFIX + filePath);
+  } catch {
+    return null;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FOOTNOTES
+   ═══════════════════════════════════════════════════════════════ */
+function addFootnotes(contentEl) {
+  const defMap = {};
+  const defEls = [];
+
+  contentEl.querySelectorAll("p").forEach((p) => {
+    const m = p.textContent.match(/^\[\^(\w+)\]:\s*(.+)$/s);
+    if (m) {
+      defMap[m[1]] = m[2].trim();
+      defEls.push(p);
+    }
+  });
+
+  if (Object.keys(defMap).length === 0) return;
+
+  const walk = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent;
+      if (!/\[\^/.test(text)) return;
+      const frag = document.createDocumentFragment();
+      let last = 0;
+      const re = /\[\^(\w+)\]/g;
+      let m = re.exec(text);
+      while (m !== null) {
+        const label = m[1];
+        if (defMap[label]) {
+          frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+          const sup = document.createElement("sup");
+          sup.className = "footnote-ref";
+          const a = document.createElement("a");
+          a.href = `#fn-${label}`;
+          a.id = `fnref-${label}`;
+          a.textContent = label;
+          sup.appendChild(a);
+          frag.appendChild(sup);
+          last = m.index + m[0].length;
+        }
+        m = re.exec(text);
+      }
+      frag.appendChild(document.createTextNode(text.slice(last)));
+      node.parentNode.replaceChild(frag, node);
+    } else if (
+      node.nodeType === Node.ELEMENT_NODE &&
+      !["SCRIPT", "CODE", "PRE"].includes(node.tagName)
+    ) {
+      Array.from(node.childNodes).forEach(walk);
+    }
+  };
+  walk(contentEl);
+
+  defEls.forEach((el) => el.remove());
+
+  const section = document.createElement("section");
+  section.className = "footnotes";
+  const ol = document.createElement("ol");
+  ol.className = "footnotes-list";
+  Object.entries(defMap).forEach(([label, text]) => {
+    const li = document.createElement("li");
+    li.id = `fn-${label}`;
+    li.className = "footnote-item";
+    li.appendChild(document.createTextNode(`${text} `));
+    const back = document.createElement("a");
+    back.href = `#fnref-${label}`;
+    back.className = "footnote-backref";
+    back.setAttribute("aria-label", "Back to reference");
+    back.textContent = "↩";
+    li.appendChild(back);
+    ol.appendChild(li);
+  });
+  section.appendChild(ol);
+  contentEl.appendChild(section);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ARTICLE END-MARKER
+   ═══════════════════════════════════════════════════════════════ */
+function addArticleEndMarker(contentEl) {
+  if (contentEl.querySelector(".article-end-marker")) return;
+  const marker = document.createElement("div");
+  marker.className = "article-end-marker";
+  marker.setAttribute("aria-hidden", "true");
+  marker.textContent = "⌘";
+  contentEl.appendChild(marker);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PROGRESS RING ON SCROLL-TO-TOP BUTTON
+   ═══════════════════════════════════════════════════════════════ */
+const _RING_R = 17;
+const _RING_CIRC = 2 * Math.PI * _RING_R;
+
+function initProgressRingScrollTop() {
+  const btn = document.getElementById("scroll-top");
+  if (!btn || btn.querySelector(".scroll-top-ring")) return;
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "scroll-top-ring");
+  svg.setAttribute("viewBox", "0 0 42 42");
+  svg.setAttribute("aria-hidden", "true");
+
+  const track = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  track.setAttribute("class", "scroll-top-ring-track");
+  track.setAttribute("cx", "21");
+  track.setAttribute("cy", "21");
+  track.setAttribute("r", String(_RING_R));
+  track.setAttribute("fill", "none");
+
+  const fill = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  fill.setAttribute("class", "scroll-top-ring-fill");
+  fill.setAttribute("cx", "21");
+  fill.setAttribute("cy", "21");
+  fill.setAttribute("r", String(_RING_R));
+  fill.setAttribute("fill", "none");
+  fill.setAttribute("stroke-dasharray", String(_RING_CIRC));
+  fill.setAttribute("stroke-dashoffset", String(_RING_CIRC));
+
+  svg.appendChild(track);
+  svg.appendChild(fill);
+  btn.appendChild(svg);
+}
+
+function updateProgressRing(pct) {
+  const fill = document.querySelector(".scroll-top-ring-fill");
+  if (!fill) return;
+  fill.setAttribute("stroke-dashoffset", String(_RING_CIRC * (1 - pct)));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOC ↔ CONTENT HEADING COLLAPSE SYNC
+   ═══════════════════════════════════════════════════════════════ */
+function _syncTocGroup(h2Id, collapsed) {
+  const tocGroup = document.querySelector(`.toc-h2-group[data-h2-id="${CSS.escape(h2Id)}"]`);
+  if (!tocGroup) return;
+  if (collapsed) {
+    tocGroup.classList.add("section--collapsed");
+  } else {
+    tocGroup.classList.remove("section--collapsed");
+  }
+}
+
+function _syncContentH2(h2Id, collapsed) {
+  const h2 = document.querySelector(`#markdown-body h2[data-section-id="${CSS.escape(h2Id)}"]`);
+  if (!h2) return;
+  _setSectionCollapsed(h2, collapsed);
+}
+
 export {
   syncHljsTheme,
   addLatexCopyButtons,
@@ -1793,4 +1963,10 @@ export {
   addGlossaryTerms,
   addInlineCaveats,
   addInlineGlossaryExpand,
+  cacheRenderedHtml,
+  getCachedHtml,
+  addFootnotes,
+  addArticleEndMarker,
+  initProgressRingScrollTop,
+  updateProgressRing,
 };

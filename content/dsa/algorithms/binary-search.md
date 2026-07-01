@@ -167,9 +167,6 @@ return NIL                             ▷ lo > hi: not present
 **Python** — idiomatic, with the leftmost-boundary variant and the contest-velocity stdlib shortcut:
 
 ```python
-from bisect import bisect_left
-
-
 def binary_search(a: list[int], target: int) -> int:
     """Return an index of target in sorted a, or -1 if absent."""
     lo, hi = 0, len(a) - 1
@@ -186,11 +183,17 @@ def binary_search(a: list[int], target: int) -> int:
 
 def leftmost(a: list[int], target: int) -> int:
     """Index of the FIRST occurrence of target, or -1. Handles duplicates."""
-    i = bisect_left(a, target)             # half-open: first index with a[i] >= target
-    return i if i < len(a) and a[i] == target else -1
+    lo, hi = 0, len(a)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if a[mid] < target:
+            lo = mid + 1
+        else:
+            hi = mid
+    # lo is the first index where a[lo] >= target
+    return lo if lo < len(a) and a[lo] == target else -1
 
 
-# Contest velocity: don't hand-roll — bisect does it in one line.
 # bisect_left(a, x)  → first index where x could insert, keeping a sorted
 # bisect_right(a, x) → last  such index; (right - left) = count of x in a
 ```

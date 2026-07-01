@@ -379,11 +379,11 @@ Time: O(1) average per op. Space: O(n).
 **Approach.** Keep a [queue](./queue.md) of candidate "seen-once" characters in arrival order, plus a count map. On each new char, increment its count; lazily pop from the queue's front while the front's count > 1. The front is always the answer. This reuses LRU's _"maintain an ordering with O(1) removal of entries that fall out of contention"_ idea — the queue is the ordering, the count map is the side index.
 
 ```python
-from collections import deque, Counter
+from collections import deque
 def first_unique_stream(chars):
-    counts, q, out = Counter(), deque(), []
+    counts, q, out = {}, deque(), []
     for c in chars:
-        counts[c] += 1; q.append(c)
+        counts[c] = counts.get(c, 0) + 1; q.append(c)
         while q and counts[q[0]] > 1: q.popleft()   # lazy eviction
         out.append(q[0] if q else "#")
     return out

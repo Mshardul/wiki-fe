@@ -248,10 +248,10 @@ Return the `k` most frequent elements of an array. Constraints: `n ≤ 10⁵`; e
 
 ```python
 import heapq
-from collections import Counter
 
 def top_k_frequent(nums: list[int], k: int) -> list[int]:
-    freq = Counter(nums)
+    freq = {}
+    for x in nums: freq[x] = freq.get(x, 0) + 1
     heap = []                                     # min-heap of (freq, val), size ≤ k
     for val, f in freq.items():
         heapq.heappush(heap, (f, val))

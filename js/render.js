@@ -2,12 +2,14 @@ import {
   ArticleFind,
   QuizMode,
   addAnchorLinks,
+  addArticleEndMarker,
   addCodeBlockHeader,
   addCodeLangLabels,
   addCollapsibleCallouts,
   addCollapsibleCodeBlocks,
   addCopyButtons,
   addDiagramZoom,
+  addFootnotes,
   addFormulaToggle,
   addGlossaryTerms,
   addImageLightbox,
@@ -23,12 +25,15 @@ import {
   addTableScrollCues,
   addTableSort,
   buildTOC,
+  cacheRenderedHtml,
   cleanupFocusMode,
   cleanupStickySection,
+  getCachedHtml,
   injectHeadingCollapseToggles,
   renderMermaidDiagrams,
   renderPrerequisites,
   styleCallouts,
+  updateProgressRing,
 } from "./content.js";
 import {
   STUB_THRESHOLD,
@@ -72,6 +77,7 @@ function showView(id) {
   const isContent = id === "view-content";
   progressBar.classList.toggle("visible", isContent);
   if (isContent) progressBar.style.width = "0%";
+  else updateProgressRing(0);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -895,7 +901,11 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     }
 
     // DOMPurify (XSS Protection)
-    const rawHtml = mdConverter.makeHtml(markdown);
+    let rawHtml = getCachedHtml(filePath);
+    if (!rawHtml) {
+      rawHtml = mdConverter.makeHtml(markdown);
+      cacheRenderedHtml(filePath, rawHtml);
+    }
     body.innerHTML = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(rawHtml) : rawHtml;
 
     // KaTeX rendering
@@ -920,10 +930,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     // Post-processing — enhancements only.
     try {
       addTabbedCodeBlocks(body);
-
-      // Line numbers (after hljs so it runs on highlighted HTML)
       addLineNumbers(body);
-
       addCodeBlockHeader(body, () => showToast("Copy failed — clipboard access denied"));
       styleCallouts(body);
       addCollapsibleCallouts(body);
@@ -959,42 +966,35 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
         }
       }
 
-      // Per-heading collapse toggles (must run before TOC so h2 IDs are stable)
       injectHeadingCollapseToggles(body, wiki.id, filePath);
-
-      // TOC
       buildTOC(body, wiki.id, filePath);
       addStickySection(body);
 
-      // Code language labels + collapsible long blocks
       addCodeLangLabels(body);
       addCollapsibleCodeBlocks(body);
 
-      // Inline SVG diagrams (must run before lightbox/zoom claim them)
       await inlineSvgImages(body);
 
-      // Lazy-load remaining raster images
       body
         .querySelectorAll("img:not([loading])")
         .forEach((img) => img.setAttribute("loading", "lazy"));
 
-      // Image lightbox + diagram zoom + table scroll cues
       addImageLightbox(body);
       addGlossaryTerms(body);
       addInlineGlossaryExpand(body);
       addInlineCaveats(body);
-      addDiagramZoom(body);
       addMermaidNodeCaptions(body);
+      addDiagramZoom(body); // MUST run after addMermaidNodeCaptions to keep the copy button
       addTableScrollCues(body);
       addPreOverflowDetection(body);
       addTableSort(body);
       addLatexCopyButtons(body, () => showToast("Copy failed — clipboard access denied"));
       addFormulaToggle(body);
+      addFootnotes(body);
+      addArticleEndMarker(body);
 
-      // Related articles
       renderRelatedArticles(wiki, filePath);
 
-      // Topbar button states
       updateBookmarkBtn();
       updateReadBtn();
       updateOfflineBtn();
@@ -1002,13 +1002,11 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       showToast("Some content enhancements failed to load");
     }
 
-    // Record this article's shape so the next visit can render a mirror skeleton
     saveShapeFingerprint(filePath, {
       headings: body.querySelectorAll("h2, h3").length,
       codeBlocks: body.querySelectorAll("pre").length,
     });
 
-    // Topbar Title Observer
     if (state.titleObserver) {
       state.titleObserver.disconnect();
       state.titleObserver = null;
@@ -1022,7 +1020,6 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
         state.titleObserver = new IntersectionObserver(
           (entries) => {
             const entry = entries[0];
-            // Show title if h1 is scrolled ABOVE the viewport
             topbarTitle.classList.toggle(
               "visible",
               !entry.isIntersecting && entry.boundingClientRect.top < 0,

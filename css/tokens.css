@@ -73,6 +73,7 @@
   --s20: 5rem;
 
   /* Border radius */
+  --r-xs: 4px;
   --r-sm: 6px;
   --r: 10px;
   --r-lg: 16px;
@@ -85,8 +86,59 @@
   --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6);
   --shadow-accent: 0 0 0 1px var(--accent), 0 4px 24px var(--accent-glow);
 
+  /* Font weights */
+  --fw-normal: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
+
+  /* Z-index scale */
+  --z-base: 1;
+  --z-raised: 2;
+  --z-above: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-toc-drawer: 400;
+  --z-find-bar: 500;
+  --z-auth-modal: 1000;
+  --z-modal-backdrop: 1100;
+  --z-search-modal: 2000;
+  --z-prefs-modal: 3000;
+  --z-toc-header: 90;
+  --z-wiki-switcher: 8500;
+  --z-toast: 9000;
+  --z-max: 9999;
+  --z-tooltip: 9998;
+  --z-zoom: 10000;
+
+  /* Semantic status colors */
+  --color-success: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.08);
+  --color-error: #ef4444;
+  --color-error-bg: rgba(239, 68, 68, 0.08);
+  --color-error-dim: rgba(239, 68, 68, 0.06);
+  --color-error-border: rgba(239, 68, 68, 0.2);
+  --color-error-border-dashed: rgba(239, 68, 68, 0.3);
+  --color-error-border-strong: rgba(239, 68, 68, 0.12);
+  --color-warning: #f59e0b;
+
+  /* Overlay scrim colors */
+  --overlay-light: rgba(0, 0, 0, 0.4);
+  --overlay: rgba(0, 0, 0, 0.5);
+  --overlay-dark: rgba(0, 0, 0, 0.6);
+  --overlay-darker: rgba(0, 0, 0, 0.7);
+  --overlay-intense: rgba(0, 0, 0, 0.88);
+
   /* Transitions */
   --t-fast: 0.12s ease;
   --t: 0.2s ease;
   --t-slow: 0.35s ease;
+
+  /* Layout */
+  --topbar-h: 44px;
+
+  /* FAB (floating action button) size — shared by scroll-top-btn and toc-mobile-btn */
+  --fab-size: 42px;
 }

@@ -233,7 +233,7 @@ class HashMap(Generic[K, V]):
         bucket = self._buckets[self._index(key)]
         for i, (k, _) in enumerate(bucket):
             if k == key:
-                bucket[i] = (key, value)          # update existing
+                bucket[i] = (key, value)
                 return
         bucket.append((key, value))               # new key
         self._size += 1
@@ -282,8 +282,9 @@ The hash table's contest value isn't the structure — it's the patterns it unlo
 Count occurrences of each key in one O(n) pass — the substrate for anagrams, "most frequent", "first unique", majority element.
 
 ```python
-from collections import Counter
-freq = Counter(s)             # {char: count}, O(n)
+freq: dict[str, int] = {}
+for ch in s:
+    freq[ch] = freq.get(ch, 0) + 1
 ```
 
 **Why for CP:** turns "how many of each?" from an O(n²) double-loop into O(n) with a one-liner. The single most-used contest primitive after prefix sums.
@@ -351,13 +352,11 @@ def two_sum(nums: list[int], target: int) -> list[int]:
 **Approach.** Two strings are anagrams iff their sorted characters match — so the **sorted string is a canonical key**. Bucket each word under its sorted-char signature in a `defaultdict(list)`. (Faster signature: a 26-count tuple, avoiding the O(L log L) sort.) Hashing a derived canonical key is the grouping primitive.
 
 ```python
-from collections import defaultdict
-
 def group_anagrams(words: list[str]) -> list[list[str]]:
-    groups: dict[str, list[str]] = defaultdict(list)
+    groups: dict[str, list[str]] = {}
     for w in words:
-        key = "".join(sorted(w))          # canonical signature
-        groups[key].append(w)
+        key = "".join(sorted(w))
+        groups.setdefault(key, []).append(w)
     return list(groups.values())
 ```
 
@@ -391,16 +390,13 @@ def longest_consecutive(nums: list[int]) -> int:
 **Approach.** `sum(i..j] == k` ⟺ `prefix[j] - prefix[i] == k` ⟺ `prefix[i] == prefix[j] - k`. Sweep keeping a running prefix and a **hashmap of how many times each prefix value has occurred**; at each step add the count of `prefix - k`. Hashing prefix sums turns an O(n²) range scan into O(n) — and handles negatives, which a sliding window can't. (Same problem appears on [Array](./array.md#practice-problems); here the hashing is the star.)
 
 ```python
-from collections import defaultdict
-
 def subarray_sum(nums: list[int], k: int) -> int:
     count = prefix = 0
-    seen: dict[int, int] = defaultdict(int)
-    seen[0] = 1                            # empty prefix
+    seen: dict[int, int] = {0: 1}         # empty prefix
     for x in nums:
         prefix += x
-        count += seen[prefix - k]
-        seen[prefix] += 1
+        count += seen.get(prefix - k, 0)
+        seen[prefix] = seen.get(prefix, 0) + 1
     return count
 ```
 
@@ -413,11 +409,11 @@ def subarray_sum(nums: list[int], k: int) -> int:
 **Approach.** Two passes with a frequency map: first count every character, then scan left to right for the first with count 1. The counter primitive in its plainest form — O(n) instead of an O(n²) "for each char, scan the rest". A bounded 26-array would shave the constant (see [Array CP-primitives](./array.md#cp-primitives)).
 
 ```python
-from collections import Counter
-
 def first_uniq_char(s: str) -> int:
-    freq = Counter(s)                      # pass 1: count
-    for i, ch in enumerate(s):            # pass 2: first with count 1
+    freq: dict[str, int] = {}
+    for ch in s:
+        freq[ch] = freq.get(ch, 0) + 1
+    for i, ch in enumerate(s):
         if freq[ch] == 1:
             return i
     return -1

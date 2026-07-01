@@ -72,9 +72,8 @@ def test_card_swipe_right_bookmarks(mobile_page, base_url):
     cy = box["y"] + box["height"] / 2
     _swipe(page, box["x"] + 20, cy, box["x"] + box["width"] - 10, cy)
 
-    section = page.locator("#bookmarks-section")
-    section.wait_for(state="visible", timeout=5_000)
-    assert section.locator(".recent-chip").count() >= 1
+    page.locator("#bookmarks-section .recent-chip").wait_for(state="attached", timeout=5_000)
+    assert page.locator("#bookmarks-section .recent-chip").count() >= 1
 
 
 def test_card_swipe_left_marks_read(mobile_page, base_url):
@@ -225,3 +224,32 @@ def test_swipe_down_closes_panel(mobile_page, base_url):
         ".classList.contains('mobile-open')",
         timeout=5_000,
     )
+
+
+def test_swipe_down_from_mid_sheet_closes_prefs(mobile_page, base_url):
+    """swipe down from mid-sheet (not upper third) closes prefs when open."""
+    page = mobile_page
+    page.goto(f"{base_url}/")
+    page.wait_for_selector("#view-home.active", timeout=10_000)
+
+    page.evaluate("() => Settings.open()")
+    page.wait_for_function("() => Settings.isOpen()", timeout=5_000)
+
+    # swipe down starting from vertical midpoint — previously did nothing
+    mid_y = MOBILE_VIEWPORT["height"] // 2
+    _swipe(page, 195, mid_y, 195, mid_y + 120)
+    page.wait_for_function("() => !Settings.isOpen()", timeout=5_000)
+
+
+def test_search_modal_closes_on_resize(mobile_page, base_url):
+    """search modal closes when viewport is resized (orientation change)."""
+    page = mobile_page
+    page.goto(f"{base_url}/")
+    page.wait_for_selector("#view-home.active", timeout=10_000)
+
+    page.keyboard.press("Meta+k")
+    page.wait_for_selector("#global-search-modal:not(.hidden)", timeout=5_000)
+
+    # simulate orientation change by resizing viewport
+    page.set_viewport_size({"width": 800, "height": 390})
+    page.wait_for_selector("#global-search-modal.hidden", state="attached", timeout=5_000)

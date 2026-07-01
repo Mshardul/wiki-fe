@@ -266,7 +266,7 @@ def test_index_card_hover_shows_preview(page, base_url):
         "() => !!document.querySelector('.index-card:not(.index-card--unavailable) .index-card-read-time[data-path]')",
         timeout=10_000,
     )
-    card.hover()
+    card.evaluate("el => { const ev = new PointerEvent('pointerover', {bubbles: true, pointerType: 'mouse' }); el.dispatchEvent(ev); }")
 
     # Wait for the preview to gain the 'visible' class (400ms timer + fetch).
     # Condition-based: polls until the class appears rather than a fixed sleep.

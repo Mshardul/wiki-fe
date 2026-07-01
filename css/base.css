@@ -29,12 +29,12 @@
   width: auto;
   height: auto;
   overflow: visible;
-  z-index: 9999;
+  z-index: var(--z-max);
   padding: 0.5rem 1rem;
   background: var(--accent);
   color: var(--bg);
-  border-radius: 4px;
-  font-weight: 600;
+  border-radius: var(--r-xs);
+  font-weight: var(--fw-semibold);
   text-decoration: none;
 }
 
@@ -71,7 +71,7 @@ body {
   display: block;
   position: fixed;
   inset: 0;
-  z-index: 1;
+  z-index: var(--z-base);
   pointer-events: none;
   background: radial-gradient(
     ellipse 120% 95% at 50% 0%,
@@ -141,7 +141,7 @@ kbd {
   color: var(--text-subtle);
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   padding: 1px 5px;
 }
 

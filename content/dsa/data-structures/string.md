@@ -352,20 +352,22 @@ def is_palindrome(s: str) -> bool:
 **Approach.** A **fixed-size sliding window** of length `len(p)` with two count arrays. Slide the window one char at a time, updating counts in O(1) (add the entering char, remove the leaving one), and record a match whenever the window's counts equal `p`'s counts. Comparing two 26-arrays is O(1), so the whole scan is O(n). Combines the count-array and fixed-window primitives.
 
 ```python
-from collections import Counter
-
 def find_anagrams(s: str, p: str) -> list[int]:
     if len(p) > len(s):
         return []
-    need = Counter(p)
-    window = Counter(s[:len(p)])
+    need: dict[str, int] = {}
+    for ch in p:
+        need[ch] = need.get(ch, 0) + 1
+    window: dict[str, int] = {}
+    for ch in s[:len(p)]:
+        window[ch] = window.get(ch, 0) + 1
     res = [0] if window == need else []
     for i in range(len(p), len(s)):
-        window[s[i]] += 1                 # char entering
+        window[s[i]] = window.get(s[i], 0) + 1
         left = s[i - len(p)]
-        window[left] -= 1                 # char leaving
+        window[left] -= 1
         if window[left] == 0:
-            del window[left]              # keep counters comparable
+            del window[left]              # keep dicts comparable
         if window == need:
             res.append(i - len(p) + 1)
     return res

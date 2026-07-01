@@ -5,7 +5,7 @@
 .auth-modal {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-auth-modal);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,7 +13,7 @@
 .auth-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay);
 }
 .auth-dialog {
   position: relative;
@@ -37,7 +37,7 @@
   border: none;
   color: var(--text-body);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: var(--text-base);
 }
 .auth-panel {
   display: none;
@@ -48,7 +48,7 @@
 .auth-title {
   margin: 0 0 1.25rem;
   color: var(--text-heading);
-  font-size: 1.25rem;
+  font-size: var(--text-xl);
 }
 .auth-field {
   display: block;
@@ -58,7 +58,7 @@
   display: block;
   margin-bottom: 0.35rem;
   color: var(--text-body);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 .auth-field input {
   width: 100%;
@@ -89,7 +89,7 @@
 .auth-pw-checklist li::before {
   content: "✗";
   color: #e5484d;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 .auth-pw-checklist li.ok::before {
   content: "✓";
@@ -108,7 +108,7 @@
   border: none;
   border-radius: var(--r);
   font: inherit;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   cursor: pointer;
 }
 .auth-submit:disabled {
@@ -119,7 +119,7 @@
   margin: 1rem 0 0;
   text-align: center;
   color: var(--text-body);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 .auth-verify-copy {
   margin: 0 0 1.25rem;
@@ -139,8 +139,8 @@
   padding: 0 0.75rem;
 }
 .auth-btn-label {
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
 }
 
 @media (max-width: 640px) {
@@ -150,5 +150,9 @@
   }
   .topbar-auth-btn .auth-btn-label {
     display: none;
+  }
+  .auth-modal {
+    align-items: flex-start;
+    padding-top: max(env(safe-area-inset-top), var(--s4));
   }
 }

@@ -230,7 +230,7 @@ FUNCTION BFS(graph, source):
 ### Python — adjacency list graph
 
 ```python
-from collections import defaultdict, deque
+from collections import deque
 from typing import Optional
 
 def build_graph(
@@ -238,11 +238,11 @@ def build_graph(
     edges: list[tuple[int, int, int]],
     directed: bool = False,
 ) -> dict[int, list[tuple[int, int]]]:
-    graph: dict[int, list[tuple[int, int]]] = defaultdict(list)
+    graph: dict[int, list[tuple[int, int]]] = {}
     for u, v, w in edges:
-        graph[u].append((v, w))
+        graph.setdefault(u, []).append((v, w))
         if not directed:
-            graph[v].append((u, w))
+            graph.setdefault(v, []).append((u, w))
     return graph
 
 
@@ -256,7 +256,7 @@ def bfs(
     queue: deque[int] = deque([source])
     while queue:
         u = queue.popleft()
-        for v, _w in graph[u]:
+        for v, _w in graph.get(u, []):
             if dist[v] == float("inf"):
                 dist[v] = dist[u] + 1
                 queue.append(v)
@@ -271,7 +271,7 @@ def dfs(
     if visited is None:
         visited = set()
     visited.add(source)
-    for v, _w in graph[source]:
+    for v, _w in graph.get(source, []):
         if v not in visited:
             dfs(graph, v, visited)
     return visited
@@ -423,19 +423,17 @@ Given `numCourses` and a list of `[a, b]` prerequisites (must take b before a), 
 **Approach:** Build a directed graph; the problem reduces to cycle detection in a DAG. Use DFS with three-color marking: WHITE (unvisited), GRAY (in current DFS path), BLACK (fully processed). If DFS reaches a GRAY node, a cycle exists → return False. This is topological-sort cycle detection, not simple visited/unvisited.
 
 ```python
-from collections import defaultdict
-
 def canFinish(numCourses: int, prerequisites: list[list[int]]) -> bool:
-    graph: dict[int, list[int]] = defaultdict(list)
+    graph: dict[int, list[int]] = {}
     for a, b in prerequisites:
-        graph[b].append(a)
+        graph.setdefault(b, []).append(a)
 
     WHITE, GRAY, BLACK = 0, 1, 2
     color = [WHITE] * numCourses
 
     def dfs(u: int) -> bool:
         color[u] = GRAY
-        for v in graph[u]:
+        for v in graph.get(u, []):
             if color[v] == GRAY:
                 return False  # back edge → cycle
             if color[v] == WHITE and not dfs(v):

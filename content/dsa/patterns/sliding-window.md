@@ -158,7 +158,7 @@ MIN-WINDOW(s, t)
 ### Python templates
 
 ```python
-from collections import defaultdict, deque
+from collections import deque
 from typing import Optional
 
 # ── Fixed-size window ────────────────────────────────────────────────────────
@@ -173,11 +173,11 @@ def max_sum_fixed(arr: list[int], k: int) -> int:
 
 # ── Variable-size window (maximize length) ───────────────────────────────────
 def longest_valid_window(arr: list[int], k: int) -> int:
-    freq: defaultdict[int, int] = defaultdict(int)
+    freq: dict[int, int] = {}
     L = 0
     best = 0
     for R, val in enumerate(arr):
-        freq[val] += 1                          # expand right
+        freq[val] = freq.get(val, 0) + 1       # expand right
         while len(freq) > k:                    # shrink left until valid
             freq[arr[L]] -= 1
             if freq[arr[L]] == 0:
@@ -189,15 +189,15 @@ def longest_valid_window(arr: list[int], k: int) -> int:
 
 # ── Minimum window (minimize length) ────────────────────────────────────────
 def min_window(s: str, t: str) -> str:
-    need: defaultdict[str, int] = defaultdict(int)
+    need: dict[str, int] = {}
     for c in t:
-        need[c] += 1
+        need[c] = need.get(c, 0) + 1
     have, required = 0, len(need)
-    window: defaultdict[str, int] = defaultdict(int)
+    window: dict[str, int] = {}
     best: Optional[tuple[int, int]] = None
     L = 0
     for R, c in enumerate(s):
-        window[c] += 1
+        window[c] = window.get(c, 0) + 1
         if c in need and window[c] == need[c]:
             have += 1
         while have == required:

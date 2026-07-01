@@ -166,21 +166,35 @@ def insertion_sort(a: list[int]) -> None:
         a[j + 1] = key                        # insert into the opened gap
 
 
-from bisect import insort, bisect_right
-
 def binary_insertion_sort(a: list[int]) -> None:
     """Cuts comparisons to O(log n)/element; shifts still O(n), so total O(n²)."""
     for i in range(1, len(a)):
         key = a[i]
-        pos = bisect_right(a, key, 0, i)      # find slot in O(log n) comparisons
+        # bisect_right: find rightmost slot for key in a[0:i]
+        lo, hi = 0, i
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if a[mid] <= key:
+                lo = mid + 1
+            else:
+                hi = mid
+        pos = lo
         a[pos + 1:i + 1] = a[pos:i]           # shift block right (still O(n) work)
         a[pos] = key
 
 
-# Contest / real-world velocity: insort maintains a sorted list under streaming inserts.
+# Online insertion: maintain a sorted list under streaming input.
 stream: list[int] = []
 for x in (5, 2, 8, 1):
-    insort(stream, x)                          # online insertion, keeps `stream` sorted
+    # bisect_left: find insertion point, then insert
+    lo, hi = 0, len(stream)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if stream[mid] < x:
+            lo = mid + 1
+        else:
+            hi = mid
+    stream.insert(lo, x)                       # keeps `stream` sorted
 ```
 
 ## What the interviewer probes for

@@ -454,17 +454,16 @@ def shortest_subarray(nums: list[int], k: int) -> int:
 
 ```python
 import heapq
-from collections import defaultdict
 
 def median_sliding_window(nums: list[int], k: int) -> list[float]:
     small: list[int] = []                 # max-heap (negated) — lower half
     large: list[int] = []                 # min-heap            — upper half
-    delayed: dict[int, int] = defaultdict(int)   # lazy-delete counts
+    delayed: dict[int, int] = {}          # lazy-delete counts
     res: list[float] = []
 
     def prune(heap: list[int]) -> None:   # drop stale tops
         sign = -1 if heap is small else 1
-        while heap and delayed[sign * heap[0]] > 0:
+        while heap and delayed.get(sign * heap[0], 0) > 0:
             delayed[sign * heap[0]] -= 1
             heapq.heappop(heap)
 
@@ -481,10 +480,7 @@ def median_sliding_window(nums: list[int], k: int) -> list[float]:
             heapq.heappush(large, x)
         if i >= k:                         # remove nums[i-k] lazily
             out = nums[i - k]
-            if out <= -small[0]:
-                delayed[out] += 1
-            else:
-                delayed[out] += 1
+            delayed[out] = delayed.get(out, 0) + 1
             prune(small); prune(large)
         rebalance(); prune(small); prune(large)
         if i >= k - 1:

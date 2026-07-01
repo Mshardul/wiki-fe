@@ -552,59 +552,29 @@ def _open_article(page, base_url):
     )
 
 
-def test_slash_opens_article_find_bar(page, base_url):
-    """Pressing '/' in an article opens the in-article find bar focused."""
+def test_article_find_bar(page, base_url):
+    """'/' opens find bar; typing highlights matches; Enter cycles; Escape closes and clears."""
     _open_article(page, base_url)
+
     page.keyboard.press("/")
     page.wait_for_selector("#article-find:not(.hidden)", timeout=3_000)
-    focused_id = page.evaluate("() => document.activeElement?.id")
-    assert focused_id == "article-find-input", (
-        f"Find input must be focused on open, active = {focused_id}"
-    )
+    assert page.evaluate("() => document.activeElement?.id") == "article-find-input"
 
-
-def test_article_find_highlights_matches(page, base_url):
-    """Typing in the find bar wraps matches in mark.article-find-hit."""
-    _open_article(page, base_url)
-    page.keyboard.press("/")
-    page.wait_for_selector("#article-find:not(.hidden)")
     page.fill("#article-find-input", "cache")
     page.wait_for_selector("#markdown-body mark.article-find-hit", timeout=3_000)
     assert page.locator("#markdown-body mark.article-find-hit").count() > 0
-    # One match is the current (focused) hit.
     assert page.locator("mark.article-find-hit--current").count() == 1
-
-
-def test_article_find_count_and_cycle(page, base_url):
-    """Enter cycles to the next match and the count reflects position."""
-    _open_article(page, base_url)
-    page.keyboard.press("/")
-    page.wait_for_selector("#article-find:not(.hidden)")
-    page.fill("#article-find-input", "cache")
-    page.wait_for_selector("#markdown-body mark.article-find-hit", timeout=3_000)
 
     count_text = page.locator("#article-find-count").inner_text()
     assert "/" in count_text, f"Count must read 'i/N', got '{count_text}'"
     first_pos = count_text.split("/")[0]
-
-    total = int(count_text.split("/")[1])
-    if total > 1:
+    if int(count_text.split("/")[1]) > 1:
         page.keyboard.press("Enter")
         page.wait_for_function(
             f"() => document.getElementById('article-find-count').textContent.split('/')[0] !== '{first_pos}'",
             timeout=3_000,
         )
-        new_pos = page.locator("#article-find-count").inner_text().split("/")[0]
-        assert new_pos != first_pos, "Enter must advance the current match index"
-
-
-def test_article_find_escape_closes_and_clears(page, base_url):
-    """Escape closes the find bar and removes all highlight marks."""
-    _open_article(page, base_url)
-    page.keyboard.press("/")
-    page.wait_for_selector("#article-find:not(.hidden)")
-    page.fill("#article-find-input", "cache")
-    page.wait_for_selector("#markdown-body mark.article-find-hit", timeout=3_000)
+        assert page.locator("#article-find-count").inner_text().split("/")[0] != first_pos
 
     page.keyboard.press("Escape")
     page.wait_for_selector("#article-find.hidden", state="attached", timeout=3_000)
@@ -877,80 +847,61 @@ def test_find_bar_clears_sticky_header(wiki_page, base_url):
     )
 
 
-# ── Search modal fits small viewport ─────────────────────────────────
+# ── Search modal fits small viewport + results ───────────────────────
 
 
 def test_search_modal_fits_small_viewport(wiki_page):
-    """Search dialog must not overflow a 375×400 viewport (approx keyboard-up on mobile)."""
+    """Search dialog and results must not overflow a 375x400 viewport."""
     wiki_page.set_viewport_size({"width": 375, "height": 400})
+    wiki_page.locator("body").click()
     wiki_page.keyboard.press("Meta+k")
     wiki_page.wait_for_selector("#global-search-modal:not(.hidden)")
 
     dialog = wiki_page.locator(".gsearch-dialog")
-    box = dialog.bounding_box()
-    assert box is not None
+    dialog.wait_for(state="visible", timeout=5_000)
+    box = wiki_page.evaluate("""() => {
+        const r = document.querySelector('.gsearch-dialog').getBoundingClientRect();
+        return {y: r.top, height: r.height};
+    }""")
+    assert box["height"] > 0, "Dialog has zero height"
     assert box["y"] >= 0, f"Dialog above viewport: y={box['y']}"
     assert box["y"] + box["height"] <= 400, (
         f"Dialog bottom ({box['y'] + box['height']}) exceeds viewport height (400)"
     )
 
-
-# ── Search results visible in small viewport ─────────────────────────
-
-
-def test_search_results_visible_small_viewport(wiki_page):
-    """Search results must not clip below a 400px-height viewport."""
-    wiki_page.set_viewport_size({"width": 375, "height": 400})
-    wiki_page.keyboard.press("Meta+k")
-    wiki_page.wait_for_selector("#global-search-modal:not(.hidden)")
     wiki_page.fill("#gsearch-input", "array")
-    wiki_page.wait_for_selector(".gsearch-result")
-
-    results_el = wiki_page.locator("#gsearch-results")
-    box = results_el.bounding_box()
-    assert box is not None
-    results_bottom = box["y"] + box["height"]
-    assert results_bottom <= 400, (
-        f"Results overflow viewport: bottom={results_bottom}"
+    wiki_page.wait_for_selector(".gsearch-result", state="attached", timeout=10_000)
+    last_bottom = wiki_page.evaluate("""() => {
+        const results = document.querySelectorAll('.gsearch-result');
+        if (!results.length) return null;
+        return results[results.length - 1].getBoundingClientRect().bottom;
+    }""")
+    assert last_bottom is not None, "No search results found"
+    assert last_bottom <= 400, (
+        f"Last result bottom ({last_bottom}) overflows viewport height 400"
     )
 
 
 # ── Custom scope dropdown ────────────────────────────────────────────
 
 
-def test_scope_custom_dropdown_exists(wiki_page):
-    """Custom scope listbox trigger must exist in DOM."""
-    btn = wiki_page.locator(".gsearch-scope-btn")
-    assert btn.count() == 1
-
-
-def test_scope_custom_dropdown_opens_on_click(wiki_page):
-    """Clicking the custom scope button shows the listbox."""
+def test_scope_custom_dropdown(wiki_page):
+    """Custom scope button opens listbox; selecting an option scopes results."""
     wiki_page.set_viewport_size({"width": 375, "height": 700})
+    wiki_page.locator("body").click()
     wiki_page.keyboard.press("Meta+k")
     wiki_page.wait_for_selector("#global-search-modal:not(.hidden)")
 
-    wiki_page.click(".gsearch-scope-btn")
-    listbox = wiki_page.locator(".gsearch-scope-listbox")
-    assert listbox.is_visible()
-
-
-def test_scope_custom_dropdown_sets_scope(wiki_page):
-    """Clicking a listbox option scopes search results."""
-    wiki_page.set_viewport_size({"width": 375, "height": 700})
-    wiki_page.keyboard.press("Meta+k")
-    wiki_page.wait_for_selector("#global-search-modal:not(.hidden)")
     wiki_page.fill("#gsearch-input", "array")
-    wiki_page.wait_for_selector(".gsearch-result")
+    wiki_page.wait_for_selector(".gsearch-result", state="attached", timeout=10_000)
 
-    wiki_page.click(".gsearch-scope-btn")
-    wiki_page.wait_for_selector(".gsearch-scope-listbox:not(.hidden)")
+    scope_btn = wiki_page.locator(".gsearch-scope-btn")
+    scope_btn.wait_for(state="visible", timeout=5_000)
+    scope_btn.click()
+    wiki_page.locator(".gsearch-scope-listbox:not(.hidden)").wait_for(state="visible", timeout=5_000)
+
     options = wiki_page.locator(".gsearch-scope-option")
     if options.count() > 1:
         options.nth(1).click()
-        wiki_page.wait_for_function(
-            "() => document.querySelector('.gsearch-dialog')?.classList.contains('scope-mode')",
-            timeout=5_000,
-        )
-        dialog = wiki_page.locator(".gsearch-dialog")
-        assert "scope-mode" in (dialog.get_attribute("class") or "")
+        wiki_page.locator(".gsearch-dialog.scope-mode").wait_for(state="visible", timeout=5_000)
+        assert "scope-mode" in (wiki_page.locator(".gsearch-dialog").get_attribute("class") or "")

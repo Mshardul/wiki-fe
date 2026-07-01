@@ -3,9 +3,11 @@ import {
   ArticleFind,
   QuizMode,
   closeZoomOverlay,
+  initProgressRingScrollTop,
   rerenderMermaidDiagrams,
   syncHljsTheme,
   toggleFocusMode,
+  updateProgressRing,
 } from "./content.js";
 import {
   navigate,
@@ -208,6 +210,7 @@ window.addEventListener(
       const total = doc.scrollHeight - doc.clientHeight;
       const pct = total > 0 ? scrolled / total : 0;
       progressBar.style.width = `${pct * 100}%`;
+      updateProgressRing(pct);
 
       // Auto-mark as read at 85%
       if (pct > 0.85 && state.currentFilePath) {
@@ -263,7 +266,7 @@ if ("onscrollend" in window) {
    ═══════════════════════════════════════════════════════════════ */
 const GESTURE_MOBILE_MAX = 900;
 const SWIPE_THRESHOLD = 50;
-const EDGE_ZONE = 24;
+const EDGE_ZONE = 44;
 const DEADZONE = 8;
 
 const isMobileViewport = () => window.innerWidth <= GESTURE_MOBILE_MAX;
@@ -379,8 +382,10 @@ function closeTopPanel() {
           if (state.currentView === "content") openMobileToc();
         }
       } else if (axis === "y") {
-        if (dy > SWIPE_THRESHOLD && sy < window.innerHeight / 3) {
-          // Swipe down from upper third → close topmost panel/modal.
+        const panelOpen =
+          Settings.isOpen() ||
+          document.getElementById("hover-preview")?.classList.contains("hover-preview--sheet-open");
+        if (dy > SWIPE_THRESHOLD && (panelOpen || sy < window.innerHeight / 3)) {
           closeTopPanel();
         }
       }
@@ -404,6 +409,10 @@ window.addEventListener(
       _lastViewportWidth = width;
 
       if (isMobileTocOpen()) closeMobileToc();
+
+      if (!document.getElementById("global-search-modal").classList.contains("hidden")) {
+        closeGlobalSearch();
+      }
 
       // Hover preview position goes stale on resize/rotation.
       document
@@ -719,6 +728,7 @@ function mountDebugOverlay() {
   // async; fires GET /auth/me, pulls data, refreshes UI + re-renders when done.
   // Not awaited — boot/render proceeds anonymously, re-renders on wiki:session-changed.
   Auth.init();
+  initProgressRingScrollTop();
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./wiki-sw.js").catch(() => {});

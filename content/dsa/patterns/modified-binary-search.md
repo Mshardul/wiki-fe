@@ -165,13 +165,27 @@ def find_peak(nums: list[int]) -> int:
 **Python template — first/last position (bisect-style):**
 
 ```python
-import bisect
-
 def search_range(nums: list[int], target: int) -> tuple[int, int]:
-    left = bisect.bisect_left(nums, target)
+    # bisect_left: first index where nums[i] >= target
+    lo, hi = 0, len(nums)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if nums[mid] < target:
+            lo = mid + 1
+        else:
+            hi = mid
+    left = lo
     if left == len(nums) or nums[left] != target:
         return (-1, -1)
-    right = bisect.bisect_right(nums, target) - 1
+    # bisect_right: first index where nums[i] > target
+    lo, hi = 0, len(nums)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if nums[mid] <= target:
+            lo = mid + 1
+        else:
+            hi = mid
+    right = lo - 1
     return (left, right)
 ```
 
@@ -352,13 +366,27 @@ Given sorted array `nums` and `target`, return `[first, last]` index of `target`
 **Approach:** Two separate binary searches. First: `bisect_left` — find the leftmost index where `nums[i] >= target` (the "lower bound"). Second: `bisect_right` — find the leftmost index where `nums[i] > target`, subtract 1 (the "upper bound"). If `lower_bound` is out of range or `nums[lower_bound] != target`, return `[-1,-1]`.
 
 ```python
-import bisect
-
 def searchRange(nums: list[int], target: int) -> list[int]:
-    left = bisect.bisect_left(nums, target)
+    # bisect_left: first index where nums[i] >= target
+    lo, hi = 0, len(nums)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if nums[mid] < target:
+            lo = mid + 1
+        else:
+            hi = mid
+    left = lo
     if left == len(nums) or nums[left] != target:
         return [-1, -1]
-    right = bisect.bisect_right(nums, target) - 1
+    # bisect_right: first index where nums[i] > target
+    lo, hi = 0, len(nums)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if nums[mid] <= target:
+            lo = mid + 1
+        else:
+            hi = mid
+    right = lo - 1
     return [left, right]
 ```
 
@@ -529,19 +557,27 @@ Design a data structure supporting `set(key, value, timestamp)` and `get(key, ti
 **Approach:** Store values per key in a list of `(timestamp, value)` pairs (they arrive in strictly increasing timestamp order, so the list is automatically sorted). For `get`, binary search the list for the largest timestamp ≤ the query timestamp using `bisect_right` — the answer is at index `pos - 1`.
 
 ```python
-import bisect
-from collections import defaultdict
-
 class TimeMap:
     def __init__(self) -> None:
-        self.store: dict[str, list[tuple[int, str]]] = defaultdict(list)
+        self.store: dict[str, list[tuple[int, str]]] = {}
 
     def set(self, key: str, value: str, timestamp: int) -> None:
-        self.store[key].append((timestamp, value))
+        self.store.setdefault(key, []).append((timestamp, value))
 
     def get(self, key: str, timestamp: int) -> str:
-        entries = self.store[key]
-        pos = bisect.bisect_right(entries, (timestamp, chr(127)))  # past all values at this ts
+        entries = self.store.get(key, [])
+        # bisect_right on (timestamp, chr(127)): find first entry with ts > timestamp
+        # chr(127) is the largest printable ASCII, so (timestamp, chr(127)) sorts past
+        # all real values at this timestamp
+        target = (timestamp, chr(127))
+        lo, hi = 0, len(entries)
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if entries[mid] <= target:
+                lo = mid + 1
+            else:
+                hi = mid
+        pos = lo
         return entries[pos - 1][1] if pos > 0 else ""
 ```
 

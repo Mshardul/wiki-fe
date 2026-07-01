@@ -22,6 +22,7 @@
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
 
 ## What it is
@@ -165,7 +166,7 @@ def interval_dp_memo(n: int) -> int:
 
 **Where the n³ comes from:** for each of the O(n²) `(i, j)` pairs, you try O(n) split points. No known general approach reduces interval DP below O(n³) in the worst case, though specific cost functions admit the Knuth-Yao speedup (see CP-primitives).
 
-**Cache behavior:** the dp table is accessed as `dp[i][k]` and `dp[k+1][j]` — both row-major accesses if you lay out the table with `i` as the row index. The bottom-up fill (by length, not by `i`) means the access pattern is diagonal stripes, not row-by-row — this can cause L2 cache misses at large n. In practice n ≤ 500 (O(n²) = 250k cells, fits in L2) so cache is not the bottleneck.
+**Cache behavior:** the dp table is n² cells × 8 bytes = 2 MB at n = 500 — this spills out of L2 (typically 256 KB–1 MB per core). The bottom-up fill accesses `dp[i][k]` and `dp[k+1][j]` in diagonal stripes, not sequential rows, so the hardware prefetcher doesn't help. In practice the inner loop (over k) still hits the same row `dp[i][*]` sequentially, which stays warm; the `dp[k+1][j]` accesses scatter across rows and cause the misses. At n ≤ 300 (720 KB table, borderline L2) this is rarely the bottleneck; at n = 500 in a tight C++ inner loop, cache misses on `dp[k+1][j]` can cost 30–40% of wall time.
 
 ## Constraints & approach
 
@@ -185,7 +186,7 @@ def interval_dp_memo(n: int) -> int:
 
 ## Variations
 
-- **Palindrome DP:** `dp[i][j]` = min insertions (or deletions) to make `s[i..j]` a palindrome. Base: `dp[i][i] = 0`, `dp[i][i-1] = 0`. Recurrence: if `s[i]==s[j]` then `dp[i][j] = dp[i+1][j-1]`, else `1 + min(dp[i+1][j], dp[i][j-1])`. A split-boundary variant of the general shape.
+- **Palindrome DP:** `dp[i][j]` = min insertions to make `s[i..j]` a palindrome. Base: `dp[i][i] = 0` (single char), `dp[i][i-1] = 0` (empty). Recurrence: `s[i]==s[j]` → `dp[i][j] = dp[i+1][j-1]` (outer chars already match, recurse inward); else `dp[i][j] = 1 + min(dp[i+1][j], dp[i][j-1])` (insert one char to match either end). Fill bottom-up from shorter to longer intervals. Note: this is *not* the standard split-point-k recurrence — it's a shrink-inward recurrence, which is why it fills from bottom-right to top-left (`for i in range(n-1, -1, -1)`) rather than by length. It shares the O(n²) table and O(n²) fill, but the dependency is inward rather than through a split.
 - **Optimal BST:** given search probabilities `p[i]` and miss probabilities `q[i]`, find the BST that minimizes expected search cost. `dp[i][j]` = min cost tree for keys `i..j`; split point is the root. O(n³) plain, O(n²) with Knuth-Yao.
 - **Matrix Chain Multiplication:** classic interval DP; `dp[i][j]` = min scalar multiplications for the chain `M_i × ... × M_j`. Split point `k` gives `dp[i][k] + dp[k+1][j] + dims[i] × dims[k+1] × dims[j+1]`.
 - **Stone merging / Zuma game:** merge adjacent piles / groups, cost is the merged pile's weight (or a function of the merged group). Identical shape to matrix chain — only the cost function changes.
@@ -274,6 +275,17 @@ Given string `s`, partition it into the fewest substrings that are all palindrom
 - [Bitmask DP](./bitmask-dp.md) — the other 2-D DP shape; choose interval DP when the sequence is ordered and you split contiguous ranges, bitmask when you choose arbitrary subsets.
 - [Prefix Sum](./prefix-sum.md) — almost every interval DP uses prefix sums to compute range sums in O(1) inside the O(n³) loop; combine them.
 - [Divide and Conquer](../algorithms/divide-and-conquer.md) — similar splitting structure, but D&C sub-problems are independent (no overlap, no memoization needed).
+
+## What the interviewer probes for
+
+**"Why must k be the last operation rather than the first?"**
+If k is the first balloon burst in `(i, j)`, the coins earned are `vals[i-1] * vals[k] * vals[j+1]` — but `vals[i-1]` and `vals[j+1]` are outside the sub-problem's boundary and depend on what the outer DP has already done. Sub-problem isolation breaks: `dp[i][j]` would need to know its context, making the recurrence circular. Choosing k as the *last* burst means `vals[i]` and `vals[j]` (the sentinels bounding `(i, j)`) are still present when k is burst — they're the fixed walls of the sub-problem, not anything the inner DP touches.
+
+**"What if n = 500 and you're in Python — does interval DP pass?"**
+Likely no. O(n³) at n = 500 is 1.25 × 10⁸ iterations; Python executes roughly 10⁷ simple operations per second, so this is 10–100 seconds — a TLE. Options: (1) use PyPy if the judge allows it; (2) apply the Knuth-Yao speedup if the cost satisfies the quadrangle inequality, dropping to O(n²) ≈ 250k iterations; (3) rewrite the inner loop in C via `ctypes` or use `numpy` for the cost computation. In interviews (no TLE), state the O(n³) complexity, note the Python constant, and mention Knuth-Yao as the optimization path.
+
+**"How do you check if Knuth-Yao applies?"**
+Verify the quadrangle inequality: `cost(a, c) + cost(b, d) ≤ cost(a, d) + cost(b, c)` for all `a ≤ b ≤ c ≤ d`. Intuitively, "the cost of merging two wide intervals is at least as large as the sum of costs for two crossing narrower intervals." Additive range-sum costs (stone merging: cost = sum of the merged pile) satisfy this. Multiplicative or max-based costs usually don't — check by plugging in small examples.
 
 ## Practice problems
 

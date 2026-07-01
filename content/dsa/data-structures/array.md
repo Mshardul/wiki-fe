@@ -352,17 +352,14 @@ Five staples, each a **distinct** technique on an array — no two solved the sa
 **Approach.** A subarray `(i..j]` sums to `prefix[j] − prefix[i]`. So `sum(i..j] == k` ⟺ `prefix[i] == prefix[j] − k`. Sweep left to right keeping a running prefix sum and a hashmap of _how many times each prefix value has occurred_. At each `j`, the count of valid left endpoints is how many earlier prefixes equalled `prefix − k`. One pass — negatives are fine (no sliding window, which would need monotonicity).
 
 ```python
-from collections import defaultdict
-
 def subarray_sum(nums: list[int], k: int) -> int:
     count = 0
     prefix = 0
-    seen: dict[int, int] = defaultdict(int)
-    seen[0] = 1                       # empty prefix, so subarrays starting at index 0 count
+    seen: dict[int, int] = {0: 1}    # empty prefix, so subarrays starting at index 0 count
     for x in nums:
         prefix += x
-        count += seen[prefix - k]     # earlier prefixes that make sum == k
-        seen[prefix] += 1
+        count += seen.get(prefix - k, 0)
+        seen[prefix] = seen.get(prefix, 0) + 1
     return count
 ```
 

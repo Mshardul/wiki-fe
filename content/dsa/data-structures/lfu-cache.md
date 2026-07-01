@@ -342,9 +342,9 @@ Time: O(1) per op. Space: O(n).
 **Approach.** The *static* cousin of LFU's idea: instead of maintaining buckets live, build them once. Count with a [hash table](./hash-table.md), then **bucket by frequency** into an array indexed `0..n` (frequency can't exceed `n`), and sweep from the high-frequency end collecting `k`. O(n) total — no heap, no sort — because frequencies live in a bounded range, exactly why LFU buckets by count.
 
 ```python
-from collections import Counter
 def top_k_frequent(nums: list[int], k: int) -> list[int]:
-    counts = Counter(nums)
+    counts = {}
+    for x in nums: counts[x] = counts.get(x, 0) + 1
     buckets = [[] for _ in range(len(nums) + 1)]      # index = frequency
     for x, c in counts.items(): buckets[c].append(x)
     out = []
@@ -364,9 +364,9 @@ Time: O(n). Space: O(n).
 **Approach.** Frequency-bucketing applied to output ordering — the inverse of LFU's "evict the *least* frequent." Count characters, bucket by count, then emit from the highest-count bucket down, repeating each character `count` times. O(n) via bounded-range bucketing rather than an O(n log n) comparison sort on counts.
 
 ```python
-from collections import Counter
 def frequency_sort(s: str) -> str:
-    counts = Counter(s)
+    counts = {}
+    for ch in s: counts[ch] = counts.get(ch, 0) + 1
     buckets = [[] for _ in range(len(s) + 1)]
     for ch, c in counts.items(): buckets[c].append(ch)
     out = []

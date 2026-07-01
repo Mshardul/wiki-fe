@@ -965,6 +965,7 @@ def test_table_sort_indicator_classes(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_WITH_SORTABLE_TABLE, slug="sort-indicator")
     page.wait_for_selector("#markdown-body th.sortable-th", timeout=5_000)
     page.locator("#markdown-body th.sortable-th").first.click()
+    page.wait_for_selector("#markdown-body th.sort-asc", timeout=5_000)
     result = page.evaluate("""() => {
         const ths = [...document.querySelectorAll('#markdown-body th.sortable-th')];
         return {
@@ -1005,7 +1006,7 @@ def test_mermaid_diagram_has_copy_button(page, base_url):
 def test_mermaid_copy_btn_copies_svg(page, base_url):
     """Clicking .mermaid-copy-btn writes SVG markup to the clipboard."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_FOR_COPY, slug="mermaid-copy-svg")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
+    page.wait_for_selector(".mermaid-diagram svg", state="attached", timeout=8_000)
     # Patch clipboard before clicking so it survives any re-render
     page.evaluate(
         "() => { navigator.clipboard.writeText = (t) => { window.__svgCopied = t; return Promise.resolve(); }; }"
@@ -1634,3 +1635,117 @@ def test_no_caveat_markers_without_syntax(page, base_url):
         "() => document.querySelectorAll('.caveat-marker').length"
     )
     assert count == 0, "Caveat markers found in article without [?...] syntax"
+
+
+# ── Progress ring ─────────────────────────────────────────────────
+
+
+ARTICLE_WITH_SECTIONS = """\
+# Long Article
+
+## Section One
+
+""" + ("Some paragraph text.\n\n" * 30) + """\
+## Section Two
+
+""" + ("More paragraph text.\n\n" * 30)
+
+
+def test_progress_ring_svg_attached_to_scroll_top_btn(page, base_url):
+    """After loading a content article the #scroll-top button has an SVG ring child."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="ring-attach")
+    has_ring = page.evaluate(
+        "() => !!document.querySelector('#scroll-top .scroll-top-ring')"
+    )
+    assert has_ring, "#scroll-top must contain a .scroll-top-ring SVG element"
+
+
+def test_progress_ring_advances_on_scroll(page, base_url):
+    """stroke-dashoffset decreases (ring fills) as the user scrolls down."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="ring-scroll")
+    page.wait_for_selector("#scroll-top .scroll-top-ring", timeout=8_000)
+    offset_before = page.evaluate(
+        "() => parseFloat(document.querySelector('.scroll-top-ring-fill')?.getAttribute('stroke-dashoffset') ?? '999')"
+    )
+    page.evaluate("() => window.scrollTo({ top: 2000, behavior: 'instant' })")
+    page.wait_for_timeout(200)
+    offset_after = page.evaluate(
+        "() => parseFloat(document.querySelector('.scroll-top-ring-fill')?.getAttribute('stroke-dashoffset') ?? '999')"
+    )
+    assert offset_after < offset_before, (
+        f"Ring fill offset should decrease on scroll ({offset_before} → {offset_after})"
+    )
+
+
+# ── Article end-marker ────────────────────────────────────────────
+
+
+def test_end_marker_present_after_render(page, base_url):
+    """Every article must have exactly one .article-end-marker element."""
+    _load_mock_article(page, base_url, "# End Marker\n\nContent.\n", slug="end-mark")
+    count = page.locator(".article-end-marker").count()
+    assert count == 1, f"Expected 1 .article-end-marker, got {count}"
+
+
+def test_end_marker_contains_glyph(page, base_url):
+    """The end-marker must contain the ⌘ glyph."""
+    _load_mock_article(page, base_url, "# End Marker\n\nContent.\n", slug="end-glyph")
+    text = page.locator(".article-end-marker").inner_text()
+    assert "⌘" in text, f"End marker must contain ⌘, got {text!r}"
+
+
+def test_end_marker_is_last_child_of_body(page, base_url):
+    """The .article-end-marker must be the last element inside #markdown-body."""
+    _load_mock_article(page, base_url, "# End Marker\n\nContent.\n", slug="end-last")
+    is_last = page.evaluate("""() => {
+        const body = document.getElementById('markdown-body');
+        if (!body) return false;
+        const last = body.lastElementChild;
+        return last && last.classList.contains('article-end-marker');
+    }""")
+    assert is_last, ".article-end-marker must be the last child of #markdown-body"
+
+
+# ── TOC ↔ content collapse sync ──────────────────────────────────
+
+
+def test_toc_collapse_syncs_to_content_h2(page, base_url):
+    """Collapsing a TOC h2 group adds section--collapsed to the matching content h2."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="toc-sync-down")
+    page.wait_for_selector(".toc-h2-group", timeout=8_000)
+    page.locator(".toc-h2-group").first.locator(".toc-group-chevron").click()
+    content_collapsed = page.evaluate("""() => {
+        const h2 = document.querySelector('#markdown-body h2');
+        return h2 && h2.classList.contains('section--collapsed');
+    }""")
+    assert content_collapsed, "Collapsing TOC group must add section--collapsed to content h2"
+
+
+def test_content_collapse_syncs_to_toc(page, base_url):
+    """Collapsing a content h2 adds section--collapsed to the matching TOC group."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="toc-sync-up")
+    page.wait_for_selector(".heading-collapse-btn", timeout=8_000)
+    page.locator(".heading-collapse-btn").first.click()
+    toc_collapsed = page.evaluate("""() => {
+        const group = document.querySelector('.toc-h2-group');
+        return group && group.classList.contains('section--collapsed');
+    }""")
+    assert toc_collapsed, "Collapsing content h2 must add section--collapsed to TOC group"
+
+
+def test_toc_expand_syncs_content_section_visible(page, base_url):
+    """Re-expanding a TOC group removes section--collapsed from the content h2."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="toc-sync-expand")
+    page.wait_for_selector(".toc-h2-group", timeout=8_000)
+    chevron = page.locator(".toc-h2-group").first.locator(".toc-group-chevron")
+    chevron.click()
+    page.wait_for_function(
+        "() => document.querySelector('#markdown-body h2')?.classList.contains('section--collapsed')",
+        timeout=5_000,
+    )
+    chevron.click()
+    content_expanded = page.evaluate("""() => {
+        const h2 = document.querySelector('#markdown-body h2');
+        return h2 && !h2.classList.contains('section--collapsed');
+    }""")
+    assert content_expanded, "Re-expanding TOC group must remove section--collapsed from content h2"

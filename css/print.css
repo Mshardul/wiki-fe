@@ -76,7 +76,7 @@
 
   details > summary {
     list-style: none;
-    font-weight: 600;
+    font-weight: var(--fw-semibold);
   }
 
   details > *:not(summary) {

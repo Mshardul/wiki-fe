@@ -10,6 +10,9 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 ```
 
 ## 2026-06-30
+- `rabin-karp.md` — new article: Rabin-Karp algorithm (rolling hash sliding window, multi-pattern search, spurious hit / Las Vegas correctness, O(n+m) average / O(nm) worst derivation, binary search + rolling hash for longest duplicate substring)
+- `modular-exponentiation.md` — new article: Modular Exponentiation algorithm (binary exponentiation, loop invariant proof, Fermat modular inverse, matrix exponentiation for Fibonacci, overflow traps, 3-arg pow contest idiom)
+- `suffix-array.md` — new article: Suffix Array data structure (prefix-doubling build, Kasai LCP, pattern search, longest repeated substring, distinct substrings, longest common substring)
 - `k-way-merge.md` — new article: K-Way Merge pattern (merge k sorted lists/arrays/streams via min-heap; smallest range, k-th smallest in matrix; lazy-deletion and iterator-based CP-primitives)
 - `interval-dp.md` — new article: Interval DP pattern (burst balloons, matrix chain, merge stones, strange printer; Knuth-Yao speedup and sentinel padding CP-primitives)
 - `state-machine-dp.md` — new article: State Machine DP pattern (cooldown, transaction fee, k-transactions, circular house robber, paint house; rolling-array and top-2 CP-primitives)

@@ -253,7 +253,7 @@ def delete(root: Optional[Node], k: int) -> Optional[Node]:
         while succ.left:
             succ = succ.left
         root.key = succ.key                  # copy successor up
-        root.right = delete(root.right, succ.key)  # delete the successor
+        root.right = delete(root.right, succ.key)
     return root
 ```
 
@@ -275,21 +275,9 @@ successor of 8 in   (8)          → right subtree's leftmost = 10's leftmost = 
 
 **Why for CP:** nearest-smaller/larger key, rank/select, and range-count queries all become O(log n) on a balanced BST — problems a hash map forces into O(n). The augment-with-sizes trick is the standard "k-th element with updates" answer.
 
-### Balanced BST via the standard library
+### Balanced BST in contest settings
 
-Most BST contest problems are really "I need an ordered multiset with O(log n) insert/delete/rank". In Python that's `sortedcontainers.SortedList`; in C++ `std::set`/`std::multiset`; in Java `TreeMap`/`TreeSet`.
-
-```python
-from sortedcontainers import SortedList
-
-sl = SortedList()
-sl.add(5); sl.add(1); sl.add(3)   # O(log n) insert, stays sorted
-sl.bisect_left(3)                  # rank / how many < 3  → O(log n)
-sl[0]                              # min; sl[-1] → max     → O(1)
-sl.remove(3)                       # O(log n) delete
-```
-
-**Why for CP:** gives you the balanced-BST interface (ordered insert/delete + rank/select) without implementing rotations — the difference between solving the problem and burning 40 minutes debugging AVL. Reach for it whenever you need a "sorted set that changes".
+Most BST contest problems are really "I need an ordered multiset with O(log n) insert/delete/rank". In C++ `std::set`/`std::multiset` and in Java `TreeMap`/`TreeSet` provide this directly. In Python, use the hand-rolled BST with size augmentation shown above for rank/select, or an AVL/red-black implementation when rotations are required. The key operations — ordered insert, delete, rank, and range queries — are all covered by the augmented BST patterns on this page.
 
 ## Gotchas / edge cases
 

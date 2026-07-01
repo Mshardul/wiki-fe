@@ -26,7 +26,7 @@
 }
 .page-title {
   font-size: var(--text-3xl);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   color: var(--text-heading);
   letter-spacing: -0.02em;
   margin-bottom: var(--s3);
@@ -48,7 +48,7 @@
 .index-ctrl-btn {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   padding: 5px 8px;
   cursor: pointer;
   color: var(--text-muted);
@@ -138,13 +138,13 @@
 }
 .section-title {
   font-size: var(--text-lg);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--text-heading);
   letter-spacing: -0.01em;
 }
 .section-count {
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--text-muted);
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -173,7 +173,7 @@
   gap: var(--s3);
   max-height: 3000px;
   overflow: hidden;
-  transition: max-height 0.2s ease;
+  transition: max-height var(--t);
 }
 @media (min-width: 640px) {
   .index-card-grid {
@@ -222,7 +222,7 @@
 .index-card.card-swiping {
   cursor: grabbing;
   user-select: none;
-  z-index: 2;
+  z-index: var(--z-raised);
   position: relative;
 }
 .index-card.card-swiping::before,
@@ -259,7 +259,7 @@
 }
 .index-card-title {
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--text-heading);
   line-height: 1.35;
 }
@@ -292,7 +292,7 @@
   width: 6px;
   height: 6px;
   border-radius: var(--r-full);
-  background: #10b981;
+  background: var(--color-success);
   flex-shrink: 0;
   opacity: 0;
   transition: opacity var(--t-fast);
@@ -324,7 +324,7 @@
 }
 .recents-label {
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);

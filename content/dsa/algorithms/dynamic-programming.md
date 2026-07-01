@@ -309,12 +309,18 @@ def change(amount: int, coins: List[int]) -> int:
 Find the length of the longest strictly increasing subsequence. Constraints: `n ≤ 10^5` — `O(n^2)` DP is too slow, must hit `O(n log n)`. Technique: **patience-sorting DP** — maintain `tails[k]` = smallest tail of any increasing subsequence of length `k+1`; binary-search the insertion point for each number. The DP recurrence is implicit in the monotone `tails` array.
 
 ```python
-import bisect
-
 def length_of_lis(nums: List[int]) -> int:
     tails: List[int] = []
     for n in nums:
-        i = bisect.bisect_left(tails, n)  # first tail ≥ n
+        # bisect_left: first index where tails[i] >= n
+        lo, hi = 0, len(tails)
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if tails[mid] < n:
+                lo = mid + 1
+            else:
+                hi = mid
+        i = lo
         if i == len(tails):
             tails.append(n)               # extends the longest run
         else:
@@ -322,4 +328,4 @@ def length_of_lis(nums: List[int]) -> int:
     return len(tails)
 ```
 
-**Complexity:** `O(n log n)` time, `O(n)` space — the `bisect` is what beats the naive `O(n^2)` DP. Pattern: DP + binary search; cross-link [Binary Search](./binary-search.md).
+**Complexity:** `O(n log n)` time, `O(n)` space — the binary search is what beats the naive `O(n^2)` DP. Pattern: DP + binary search; cross-link [Binary Search](./binary-search.md).

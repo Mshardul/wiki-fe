@@ -8,6 +8,8 @@
 - Article hero presence + ghost text
 - H1 first-word accent span
 - Lede paragraph styling
+- sessionStorage HTML cache
+- Footnote rendering
 """
 
 
@@ -374,3 +376,100 @@ def test_small_swipe_does_not_close_zoom_overlay(page, base_url):
         return overlay.classList.contains('open');
     }""")
     assert still_open, "A <80px swipe must not close the overlay"
+
+
+# ── HTML cache ──────────────────────────────────────────────────
+
+
+_ARTICLE_WITH_FOOTNOTES = (
+    "# Notes\n\n"
+    "See the first point[^a] and the second[^b].\n\n"
+    "[^a]: First footnote text.\n\n"
+    "[^b]: Second footnote text.\n"
+)
+
+
+def _load_mock_article_content(page, base_url, content, slug="fntest"):
+    """Like _load_mock_article but returns after content is rendered."""
+    page.goto(f"{base_url}/")
+    page.wait_for_load_state("networkidle")
+    page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
+    page.evaluate(f"""() => navigateToContent(
+        'system-design',
+        encodeURIComponent('../content/system-design/{slug}.md'),
+        encodeURIComponent('{slug.capitalize()}'),
+        '{slug}'
+    )""")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+
+
+def test_html_cache_populated_after_first_render(page, base_url):
+    """sessionStorage should contain cached HTML after first article load."""
+    _load_mock_article(page, base_url, "# Cache Test\n\nContent.\n", slug="cachetest")
+    cached = page.evaluate("""() => {
+        for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            if (key && key.startsWith('wiki-html-cache-')) return sessionStorage.getItem(key);
+        }
+        return null;
+    }""")
+    assert cached is not None, "sessionStorage must have a wiki-html-cache-* entry"
+    assert "<h1" in cached, "Cached HTML must contain the rendered heading"
+
+
+def test_html_cache_used_on_revisit(page, base_url):
+    """Second navigation to same article skips makeHtml (cache hit keeps same HTML)."""
+    _load_mock_article(page, base_url, "# Revisit\n\nBody text.\n", slug="revisit")
+    first_html = page.evaluate(
+        "() => document.getElementById('markdown-body').innerHTML"
+    )
+    page.evaluate("""() => navigateToContent(
+        'system-design',
+        encodeURIComponent('../content/system-design/revisit.md'),
+        encodeURIComponent('Revisit'),
+        'revisit'
+    )""")
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    second_html = page.evaluate(
+        "() => document.getElementById('markdown-body').innerHTML"
+    )
+    assert first_html and second_html, "Both renders must produce non-empty HTML"
+
+
+# ── Footnotes ───────────────────────────────────────────────────
+
+
+def test_footnote_section_rendered(page, base_url):
+    """Articles with [^n] definitions should render a .footnotes section."""
+    _load_mock_article_content(page, base_url, _ARTICLE_WITH_FOOTNOTES)
+    assert page.locator(".footnotes").count() == 1, ".footnotes section must be present"
+
+
+def test_footnote_list_items_rendered(page, base_url):
+    """Each footnote definition becomes a .footnote-item <li>."""
+    _load_mock_article_content(page, base_url, _ARTICLE_WITH_FOOTNOTES)
+    items = page.locator(".footnote-item").count()
+    assert items == 2, f"Expected 2 footnote items, got {items}"
+
+
+def test_footnote_refs_link_to_definitions(page, base_url):
+    """Inline [^a] markers become .footnote-ref links pointing to #fn-a."""
+    _load_mock_article_content(page, base_url, _ARTICLE_WITH_FOOTNOTES)
+    refs = page.locator(".footnote-ref").all()
+    assert len(refs) >= 1, "At least one .footnote-ref must exist"
+    href = refs[0].locator("a").get_attribute("href")
+    assert href and href.startswith("#fn-"), f"footnote-ref href must point to #fn-*, got {href!r}"
+
+
+def test_footnote_definitions_removed_from_body(page, base_url):
+    """[^n]: ... definition paragraphs must not appear in the article body."""
+    _load_mock_article_content(page, base_url, _ARTICLE_WITH_FOOTNOTES)
+    body_text = page.locator("#markdown-body").inner_text()
+    assert "[^a]:" not in body_text, "Definition paragraph [^a]: must be removed from body"

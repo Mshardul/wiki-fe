@@ -115,12 +115,10 @@ class MedianFinder:
         self._hi: list[int] = []   # min-heap
 
     def add_num(self, num: int) -> None:
-        # push to correct half
         if not self._lo or num <= -self._lo[0]:
             heapq.heappush(self._lo, -num)
         else:
             heapq.heappush(self._hi, num)
-        # rebalance
         if len(self._lo) > len(self._hi) + 1:
             heapq.heappush(self._hi, -heapq.heappop(self._lo))
         elif len(self._hi) > len(self._lo):
@@ -130,9 +128,6 @@ class MedianFinder:
         if len(self._lo) > len(self._hi):
             return float(-self._lo[0])
         return (-self._lo[0] + self._hi[0]) / 2.0
-
-    # --- adapt here for your specific problem ---
-    # your logic here
 ```
 
 Python's `heapq` is a **min-heap only**. Simulate a max-heap by **negating values** on push and negating again on pop/peek. This is the standard Python two-heaps idiom — always negate `lo` entries.
@@ -179,20 +174,19 @@ In contests, `heapq` has no `remove` operation. When an element leaves the windo
 **Why for CP:** eliminates the need for a balanced BST (unavailable in Python stdlib) for sliding-window median; the lazy approach runs fast enough for n ≤ 10⁵ in Python.
 
 ```python
-from collections import defaultdict
 import heapq
 
 class SlidingMedian:
     def __init__(self) -> None:
         self._lo: list[int] = []
         self._hi: list[int] = []
-        self._garbage: dict[int, int] = defaultdict(int)
+        self._garbage: dict[int, int] = {}
         self._lo_size = self._hi_size = 0  # effective sizes (excluding garbage)
 
     def _clean(self, heap: list[int], negate: bool) -> None:
         while heap:
             val = -heap[0] if negate else heap[0]
-            if self._garbage[val]:
+            if self._garbage.get(val, 0):
                 self._garbage[val] -= 1
                 heapq.heappop(heap)
             else:
@@ -241,24 +235,7 @@ class SlidingMedian:
 
 Python's `sortedcontainers.SortedList` gives O(log n) insert, delete, and index — effectively an order-statistics tree. For sliding window median it's often simpler: `sl[len(sl) // 2]` is the median directly. **Why for CP:** eliminates the lazy-deletion complexity at the cost of a slightly larger constant; useful when the problem combines median with rank queries.
 
-```python
-from sortedcontainers import SortedList
-
-class SortedMedian:
-    def __init__(self) -> None:
-        self.sl: SortedList[int] = SortedList()
-
-    def add(self, num: int) -> None:
-        self.sl.add(num)
-
-    def remove(self, num: int) -> None:
-        self.sl.remove(num)
-
-    def median(self) -> float:
-        n = len(self.sl)
-        mid = n // 2
-        return float(self.sl[mid]) if n % 2 else (self.sl[mid - 1] + self.sl[mid]) / 2.0
-```
+Use the hand-rolled implementation above rather than `SortedList` from the `sortedcontainers` third-party package.
 
 ## Worked problems
 
@@ -356,19 +333,18 @@ Given `nums` (n ≤ 10⁵) and window size k, return the median of each k-sized 
 
 ```python
 import heapq
-from collections import defaultdict
 from typing import List
 
 def medianSlidingWindow(nums: List[int], k: int) -> List[float]:
     lo: list[int] = []   # max-heap (negated)
     hi: list[int] = []   # min-heap
-    garbage: dict[int, int] = defaultdict(int)
+    garbage: dict[int, int] = {}
     lo_size = hi_size = 0
 
     def _clean_top(heap: list[int], negate: bool) -> None:
         while heap:
             top = -heap[0] if negate else heap[0]
-            if garbage[top]:
+            if garbage.get(top, 0):
                 garbage[top] -= 1
                 heapq.heappop(heap)
             else:

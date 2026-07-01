@@ -60,11 +60,13 @@ Each `js/` module owns one concern. Do not reach across the boundary — call th
 ## CSS
 
 - **`tokens.css` is the single source of every value** — spacing, type scale, colours, radius, transitions. **Read it first for any CSS task.** Never hardcode a value that a token already expresses; never duplicate a token's value in another file.
+- **Add a token before repeating a value.** If a CSS value (color, font-weight, z-index, transition duration, font-size) appears in more than one rule and no token exists yet, add the token to `tokens.css` first, then use `var(--token-name)` everywhere. Available token groups: `--fw-*` (font-weight), `--z-*` (z-index layers), `--text-*` (font-size scale — always prefer over raw rem/em values), `--color-*` (semantic status colors), `--overlay-*` (rgba scrim colors), `--t*` (transitions), `--s*` (spacing), `--r-*` (border-radius, including `--r-xs: 4px`), `--topbar-h` (topbar height — use in any `top`/`calc` offset that depends on topbar).
 - **BEM-adjacent naming** (block-element pattern).
 - **`wiki.css` is the aggregator** — it `@import`s the modules and **holds no rules of its own.**
 - **Theming via `data-theme`** — per-theme overrides live in `themes.css`, never scattered.
 - View-specific rules live in their `view-*.css`; shared components in `components.css` / `components-auth.css`. Don't put view styles in the shared files or vice versa.
 - **Responsive:** mobile-first. All new CSS must work at 320px. Breakpoints live in `responsive.css` — not `tokens.css`, not scattered in view files. No new breakpoints outside `responsive.css` without a deliberate decision.
+- **No fixed px for layout dimensions that must adapt.** Use fluid units for layout-level sizing: `min()`, `max()`, `clamp()`, `vw`, `vh`, `%`. Fixed `px` is correct for: borders, outlines, icon sizes, touch targets (44px min), blur radii, `transform` nudges. Fixed `px` is wrong for: panel widths, drawer widths, overlay heights, `top`/`scroll-margin-top` offsets tied to a layout measurement. For topbar-relative offsets use `var(--topbar-h)` or `calc(var(--topbar-h) + ...)` — never a raw px value.
 
 ---
 
@@ -157,6 +159,7 @@ For the full model and the *why*, see the decisions docs:
 - **Add tests to the existing file** matching the feature (see the test map in CLAUDE.md). Never create a new test file unless the feature genuinely has no home.
 - **Match the existing structure** in that file (function- vs class-based, fixture usage).
 - Use `page.locator()` + `expect()`; avoid `page.query_selector()`.
+- **Never use `page.evaluate("element.click()")` to interact with elements.** If Playwright's actionability checks reject a click, fix the production code (e.g. remove a static `aria-hidden`, correct a CSS visibility issue) so the element is genuinely reachable. `evaluate`-based clicks bypass the checks and will miss real regressions.
 - **Selectors:** prefer user-visible text or ARIA roles. Use `data-testid` only when no semantic alternative exists.
 - **Isolation:** every test resets localStorage via the conftest fixture — don't assume state from other tests.
 - **Naming:** descriptive and behavior-focused (`test_login_unverified_shows_verify_panel`). No rigid template — match the style of the file you're adding to.
