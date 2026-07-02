@@ -906,7 +906,8 @@ def test_scope_custom_dropdown(wiki_page):
         timeout=3_000,
     )
     scope_btn = wiki_page.locator(".gsearch-scope-btn")
-    scope_btn.click(force=True)
+    scope_btn.wait_for(state="visible", timeout=5_000)
+    scope_btn.click()
     wiki_page.locator(".gsearch-scope-listbox:not(.hidden)").wait_for(state="visible", timeout=5_000)
 
     options = wiki_page.locator(".gsearch-scope-option")

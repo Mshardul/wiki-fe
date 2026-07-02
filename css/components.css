@@ -613,6 +613,10 @@
   .gsearch-scope-custom {
     display: block;
   }
+
+  .gsearch-esc-key {
+    display: none;
+  }
 }
 
 /* ═══════════════════════════════════════════════
