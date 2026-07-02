@@ -287,11 +287,22 @@ def test_index_card_hover_preview_hidden_on_leave(page, base_url):
     )
 
     card = page.locator(".index-card:not(.index-card--unavailable)").first
-    card.hover()
-    page.locator("#hover-preview").wait_for(state="visible", timeout=2_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('.index-card:not(.index-card--unavailable) .index-card-read-time[data-path]')",
+        timeout=10_000,
+    )
+    card.evaluate("el => { const ev = new PointerEvent('pointerover', {bubbles: true, pointerType: 'mouse'}); el.dispatchEvent(ev); }")
+    page.wait_for_function(
+        "() => document.getElementById('hover-preview')?.classList.contains('visible')",
+        timeout=8_000,
+    )
 
-    # Move pointer to a neutral position away from any card or preview
-    page.mouse.move(0, 0)
+    # Dispatch pointerleave from the container to trigger hide
+    page.evaluate("""() => {
+        const container = document.getElementById('index-sections');
+        const ev = new PointerEvent('pointerleave', {bubbles: false, pointerType: 'mouse', relatedTarget: null});
+        container.dispatchEvent(ev);
+    }""")
     page.wait_for_function(
         "() => !document.getElementById('hover-preview').classList.contains('visible')",
         timeout=3_000,

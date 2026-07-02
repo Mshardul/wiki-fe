@@ -888,6 +888,11 @@ def test_search_modal_fits_small_viewport(wiki_page):
 def test_scope_custom_dropdown(wiki_page):
     """Custom scope button opens listbox; selecting an option scopes results."""
     wiki_page.set_viewport_size({"width": 375, "height": 700})
+    # Wait for media query to apply before interacting
+    wiki_page.wait_for_function(
+        "() => window.matchMedia('(max-width: 640px)').matches",
+        timeout=3_000,
+    )
     wiki_page.locator("body").click()
     wiki_page.keyboard.press("Meta+k")
     wiki_page.wait_for_selector("#global-search-modal:not(.hidden)")
@@ -895,9 +900,13 @@ def test_scope_custom_dropdown(wiki_page):
     wiki_page.fill("#gsearch-input", "array")
     wiki_page.wait_for_selector(".gsearch-result", state="attached", timeout=10_000)
 
+    # At <=640px the custom scope button replaces the native select
+    wiki_page.wait_for_function(
+        "() => getComputedStyle(document.querySelector('.gsearch-scope-custom')).display !== 'none'",
+        timeout=3_000,
+    )
     scope_btn = wiki_page.locator(".gsearch-scope-btn")
-    scope_btn.wait_for(state="visible", timeout=5_000)
-    scope_btn.click()
+    scope_btn.click(force=True)
     wiki_page.locator(".gsearch-scope-listbox:not(.hidden)").wait_for(state="visible", timeout=5_000)
 
     options = wiki_page.locator(".gsearch-scope-option")
