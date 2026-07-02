@@ -20,7 +20,8 @@ repos:
     hooks:
       - id: codespell
         # pres = plural of <pre> elements; couldn = "couldn't" w/ escaped apostrophe.
-        args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn"]
+        # ths = table-headers variable (Array.from querySelectorAll th)
+        args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths"]
 
   # JS/CSS lint + format — check-only (CI mode, never writes).
   - repo: https://github.com/biomejs/pre-commit

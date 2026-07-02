@@ -1,7 +1,7 @@
 # Infra & Deploy — Decisions
 
 How v0 goes from zero to live. FE + BE hosting, deploy flow, backup, cost guard.
-Status: **design locked, not yet executed.** See [auth.md](./auth.md), [backend-structure.md](./backend-structure.md), [fe-be-split.md](./fe-be-split.md).
+Status: **design locked, not yet executed.** See [auth.md](./auth.md), `wiki-be/docs/_meta/decisions/backend-structure.md`, [fe-be-split.md](./fe-be-split.md).
 
 ---
 
