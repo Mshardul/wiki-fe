@@ -9,6 +9,16 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` — what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-07-03
+- `dfs.md` — new article: Depth-First Search (DFS, Traversal family; O(V+E) derivation with Σ|Adj(u)|=|E| argument; parenthesis theorem proof; white-gray-black coloring invariant; 8-vertex directed graph trace with step-by-step stack states and discovery/finish timestamps; CLRS pseudocode for DFS, DFS-VISIT, ITERATIVE-DFS, and TOPOLOGICAL-SORT; Python recursive + iterative + undirected cycle detection; 3 worked problems: Number of Islands, Course Schedule / directed cycle detection, Clone Graph; senior trap: parent tracking in undirected cycle detection; cache behavior: pointer-chasing on adjacency lists)
+- `bfs.md` — new article: Breadth-First Search (BFS, Traversal family; O(V+E) derivation; mark-on-enqueue invariant proof; CLRS pseudocode; 0-1 BFS and multi-source BFS in Graph/tree assumptions; 3 worked problems: Word Ladder, Binary Tree Level Order, 01 Matrix with multi-source BFS; 7 edge cases including mark-on-dequeue bug and list-vs-deque CP trap)
+
+## 2026-07-02
+- `union-find.md` — new article: Union-Find (DSU) data structure (path compression + union by rank/size; O(α(n)) amortized proof via iterated-log intuition; forest invariant + why rank is an upper bound post-compression; 4 CP-primitives: Kruskal's MST, cycle detection, component counting, rollback DSU; 4 worked problems: connected components, Kruskal's MST, accounts merge, redundant connection)
+- `bit-manipulation.md` — new article: Bit Manipulation algorithm (AND/OR/XOR/NOT/shift operators; two's complement proofs for n&(n-1) and n&(-n); Brian Kernighan popcount; XOR find-unique; bitmask DP TSP; subset enumeration via (sub-1)&mask; bitmask memory budget table; 4 worked problems: Single Number, Counting Bits, Subsets, Number of Ways to Wear Different Hats)
+- `difference-array.md` — expanded: replaced Car Fleet worked problem with LC 2251 (Flowers in Full Bloom, genuine diff-array + coord-compress); added real-world usage (game servers, ad-impression) and cache-behavior note (sequential prefix-sum pass = cache-friendly) to Constraints section; registered in index.md Patterns table
+- `meet-in-the-middle.md` — new article: Meet in the Middle pattern (split → enumerate 2^(n/2) sums per half → sort + binary-search combine; two-pointer combine CP-primitive; 4-sum MITM reduction; closest subset sum variant; pitfalls on empty-subset, integer overflow, off-by-one; worked problems LC 1755, LC 805, LC 454)
+
 ## 2026-06-30
 - `rabin-karp.md` — new article: Rabin-Karp algorithm (rolling hash sliding window, multi-pattern search, spurious hit / Las Vegas correctness, O(n+m) average / O(nm) worst derivation, binary search + rolling hash for longest duplicate substring)
 - `modular-exponentiation.md` — new article: Modular Exponentiation algorithm (binary exponentiation, loop invariant proof, Fermat modular inverse, matrix exponentiation for Fibonacci, overflow traps, 3-arg pow contest idiom)

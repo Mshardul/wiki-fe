@@ -98,6 +98,7 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 | [Two Pointers](./patterns/two-pointers.md)                                  | Two indices walking a sequence (same or opposite ends). Pair-sum, dedup, partition — O(n) where brute force is O(n²).          |
 | [Sliding Window](./patterns/sliding-window.md)                              | A moving sub-range over a sequence: expand right, contract left on a constraint. Longest/shortest contiguous subarray in O(n). |
 | [Prefix Sum](./patterns/prefix-sum.md)                                      | Precompute cumulative sums for O(1) range queries. The "subarray sum equals K" and difference-array family.                    |
+| [Difference Array](./patterns/difference-array.md)                          | Two O(1) point writes per range update, one prefix-sum pass to reconstruct — O(n + q) vs O(n·q) naive. Batch range-increment problems.   |
 | [Fast & Slow Pointers](./patterns/fast-slow-pointers.md)                    | Two pointers at different speeds. Cycle detection, middle of a list, cycle start — Floyd's tortoise and hare.                  |
 | [Merge Intervals](./patterns/merge-intervals.md)                            | Sort by start, sweep, merge overlaps. The interval-overlap, meeting-rooms, insert-interval family.                             |
 | [Cyclic Sort](./patterns/cyclic-sort.md)                                    | Place each value at its index in O(n) when values are 1..n. Finds the missing/duplicate number without extra space.            |
@@ -119,6 +120,7 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 | [Bitmask DP](./patterns/bitmask-dp.md)                                      | Encode a subset of n ≤ 20 items as an integer bitmask, DP over all 2ⁿ subsets. TSP, optimal assignment, minimum coverage — O(2ⁿ · n) or O(2ⁿ · n²). |
 | [Frequency Array](./patterns/frequency-array.md)                            | Array indexed by value: O(1) increment/lookup for bounded integer or character keys. Replaces a hash map when the key range fits — anagram detection, counting sort, sliding-window distribution matching. |
 | [Graph Coloring](./patterns/graph-coloring.md)                              | Assign colors to nodes so no two adjacent nodes match. 2-coloring (bipartite check) in O(V + E); k-coloring for k ≥ 3 is NP-complete — backtracking for small n, bitmask DP for n ≤ 20. |
+| [Meet in the Middle](./patterns/meet-in-the-middle.md)                      | Split an exponential search space in half, enumerate each independently (2^(n/2) each), sort one, binary-search from the other. Turns O(2ⁿ) into O(2^(n/2) · n) — the go-to for n ≤ 40 subset-sum problems. |
 
 ---
 

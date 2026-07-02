@@ -163,6 +163,10 @@ Naive approach (update each element in the range): O(n·q) time.
 
 **When NOT to reach for it:** if the problem says "after each update, report the value at position i" — updates and queries are interleaved, and you need an online structure. Difference array only pays off when you can defer all reads until all writes are complete.
 
+**Real-world usage:** game servers use a difference array to apply area-of-effect damage across player-health arrays (all hits in a tick batch before recalculation); ad-impression systems count overlapping campaign intervals over a time axis before aggregating totals. **At scale:** with `n` approaching 10⁸ (e.g. second-granularity time axes over a day), the O(n) prefix-sum pass over the full array dominates — coordinate-compress to the ~10⁶ actual event endpoints instead, reducing both time and memory by the same factor.
+
+**Cache behavior:** the prefix-sum reconstruction pass is maximally cache-friendly — it reads `D` sequentially from index 0 to n−1 with no pointer indirection, so every access is a cache-line hit. The O(n + q) cost in practice has a tiny constant; compare this to a segment tree's O(log n) per query that follows non-contiguous child pointers and incurs a cache miss at each level.
+
 ## Variations
 
 - **Non-zero initial array** — initialize `D` from `A` using `D[i] = A[i] - A[i-1]`, then apply updates, then prefix-sum.
@@ -215,8 +219,6 @@ When updates are on a continuous or large-integer axis, sort events instead of a
 **Why for CP:** meeting-rooms II (max concurrent meetings), car-fleet problems, bandwidth allocation, and any problem where the "positions" are large integers or floats. Avoids O(max_coord) space — O(q log q) time from sorting.
 
 ```python
-import heapq
-
 def max_overlap(intervals: list[tuple[int, int]]) -> int:
     """Count max simultaneous overlapping intervals."""
     events: list[tuple[int, int]] = []
@@ -248,6 +250,17 @@ Given an array of `n` zeros and a list of operations `(i, j, inc)`, return the a
 
 **Approach:** textbook difference array — `D[i] += inc`, `D[j+1] -= inc` for each operation; prefix sum of `D` is the answer. Every operation is O(1); total O(n + q).
 
+```python
+def get_modified_array(n: int, updates: list[list[int]]) -> list[int]:
+    diff = [0] * (n + 1)
+    for l, r, val in updates:
+        diff[l] += val
+        diff[r + 1] -= val
+    for i in range(1, n):
+        diff[i] += diff[i - 1]
+    return diff[:n]
+```
+
 **Complexity:** O(n + q) time, O(n) space.
 
 ### 2. Corporate Flight Bookings (LC 1109)
@@ -256,31 +269,79 @@ Given an array of `n` zeros and a list of operations `(i, j, inc)`, return the a
 
 **Approach:** difference array on 1-indexed positions — `D[first-1] += seats`, `D[last] -= seats`; prefix sum of `D[0..n-1]` is the answer. The problem is a verbatim range-addition task.
 
+```python
+def corp_flight_bookings(bookings: list[list[int]], n: int) -> list[int]:
+    diff = [0] * (n + 1)
+    for first, last, seats in bookings:
+        diff[first - 1] += seats
+        diff[last] -= seats
+    for i in range(1, n):
+        diff[i] += diff[i - 1]
+    return diff[:n]
+```
+
 **Complexity:** O(n + q) time, O(n) space.
 
 ### 3. Meeting Rooms II (LC 253)
 
 Given a list of meeting intervals `[start, end]`, find the minimum number of conference rooms required (equivalently, the maximum number of concurrent meetings at any point).
 
-**Approach:** difference array / event sweep — place `+1` at each `start` and `-1` at each `end`; sort events; running sum gives occupancy at each moment; max occupancy = rooms needed. This is the overlap-counting variant.
+**Approach:** event sweep — place `+1` at each `start` and `-1` at each `end`; sort events; running sum gives occupancy at each moment; max occupancy = rooms needed. This is the overlap-counting variant of the difference array on a large-integer axis.
+
+```python
+def min_meeting_rooms(intervals: list[list[int]]) -> int:
+    events: list[tuple[int, int]] = []
+    for start, end in intervals:
+        events.append((start, 1))
+        events.append((end, -1))
+    events.sort()
+    rooms = cur = 0
+    for _, delta in events:
+        cur += delta
+        rooms = max(rooms, cur)
+    return rooms
+```
 
 **Complexity:** O(q log q) time (dominated by sort), O(q) space.
 
-### 4. Minimum Number of Arrows to Burst Balloons (LC 452)
+### 4. Points That Intersect With Cars (LC 2848)
 
-Balloons are represented as intervals `[x_start, x_end]`; an arrow shot at `x` bursts all balloons where `x_start ≤ x ≤ x_end`. Find the minimum arrows to burst all balloons.
+`nums[i] = [start_i, end_i]` represents a car occupying a 1D segment. Count the number of integer points covered by at least one car.
 
-**Approach:** greedy on sorted intervals — sort by `x_end`; shoot each arrow at the rightmost point of the earliest-ending balloon and count how many balloons it overlaps. The "how many overlap at a point" intuition is the same difference-array sweep; here, greedy collapses the problem further.
+**Approach:** textbook difference array on integer points — `D[start_i] += 1`, `D[end_i + 1] -= 1` for each car; prefix sum of `D` gives coverage at each point; count positions where `D[i] > 0`. This is the overlap-counting variant on a bounded integer axis.
 
-**Complexity:** O(q log q) time, O(1) extra space after sort.
+```python
+def number_of_points(nums: list[list[int]]) -> int:
+    diff = [0] * 102
+    for start, end in nums:
+        diff[start] += 1
+        diff[end + 1] -= 1
+    running = covered = 0
+    for v in diff:
+        running += v
+        if running > 0:
+            covered += 1
+    return covered
+```
 
-### 5. Car Fleet (LC 853)
+**Complexity:** O(n + max_coord) time, O(max_coord) space.
 
-`n` cars at positions `pos[i]` heading to target at speed `speed[i]`; a slower car ahead blocks a faster car behind (they merge into a fleet). Count fleets.
+### 5. Number of Flowers in Full Bloom (LC 2251)
 
-**Approach:** sort cars by position descending; compute time to reach target for each. A car behind that arrives no earlier than the car ahead joins its fleet — this is a sweep (difference-array thinking on a sorted axis) where the "merge" signal is a non-strict decrease in arrival time.
+`n` flowers bloom in `[start_i, end_i]` (inclusive). For each of `m` people at position `time_j`, count how many flowers are in bloom.
 
-**Complexity:** O(n log n) time, O(n) space.
+**Approach:** difference array on the time axis — `D[start_i] += 1`, `D[end_i + 1] -= 1` for each flower, then prefix-sum gives `bloom[t]` = count of blooming flowers at time `t`. Each person query is answered in O(log n) via binary search on a sorted coordinate array (coordinate-compress the time axis since `start_i` can reach 10⁹). This combines the core difference-array mechanic with offline coordinate compression, a common CP pairing.
+
+```python
+from bisect import bisect_left, bisect_right
+
+def full_bloom_flowers(flowers: list[list[int]], people: list[int]) -> list[int]:
+    starts = sorted(f[0] for f in flowers)
+    ends = sorted(f[1] for f in flowers)
+    return [bisect_right(starts, p) - bisect_left(ends, p) for p in people]
+```
+
+**Complexity:** O((n + m) log n) time, O(n) space.
 
 ## Pitfalls
 
@@ -385,24 +446,27 @@ def min_meeting_rooms(intervals: list[list[int]]) -> int:
 
 ---
 
-### LC 452 — Minimum Number of Arrows to Burst Balloons
+### LC 2848 — Points That Intersect With Cars
 
-`points[i] = [x_start, x_end]` represents a balloon. An arrow at `x` bursts all balloons with `x_start ≤ x ≤ x_end`. Return minimum arrows. `1 ≤ points.length ≤ 10⁵`.
+`nums[i] = [start_i, end_i]` is a car on a 1D road. Return the number of integer points covered by at least one car. `1 ≤ nums.length ≤ 100`, `1 ≤ start_i ≤ end_i ≤ 100`.
 
-**Insight:** sort balloons by end coordinate; greedily shoot at the end of the current earliest-ending balloon and skip all overlapping balloons. The overlap check is the difference-array sweep idea compressed into a greedy.
+**Insight:** difference array on the integer axis — increment at `start`, decrement at `end + 1`; prefix sum gives coverage count at each point; count positions with coverage > 0.
 
 ```python
-def find_min_arrow_shots(points: list[list[int]]) -> int:
-    points.sort(key=lambda p: p[1])
-    arrows = 0
-    arrow_pos = float('-inf')
-    for start, end in points:
-        if start > arrow_pos:        # no existing arrow covers this balloon
-            arrows += 1
-            arrow_pos = end          # shoot at the rightmost point of this balloon
-    return arrows
+def number_of_points(nums: list[list[int]]) -> int:
+    diff = [0] * 102          # coordinates up to 100, sentinel at 101
+    for start, end in nums:
+        diff[start] += 1
+        diff[end + 1] -= 1
+    covered = 0
+    running = 0
+    for v in diff:
+        running += v
+        if running > 0:
+            covered += 1
+    return covered
 ```
 
-**Complexity:** O(q log q) time, O(1) extra space.
+**Complexity:** O(n + max_coord) time, O(max_coord) space.
 
-**Duplicate problems:** LC 435 (Non-overlapping Intervals) uses the same greedy on sorted-by-end intervals.
+**Duplicate problems:** LC 2251 (Number of Flowers in Full Bloom) is the same overlap-count pattern with coordinate compression for large ranges.

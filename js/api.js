@@ -3,7 +3,7 @@ import { state } from "./state.js";
 /* Base URL: localhost → local BE; else prod. BE URL is public by nature
    (browser must reach it) — not a secret. Security = CORS + cookie + BE validation. */
 const _isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-const BACKEND_URL = _isLocal ? "http://localhost:8001" : "https://wiki-be.fly.dev"; // matches BE prod host; update when custom domain bought
+const BACKEND_URL = _isLocal ? "http://localhost:8001" : "https://wiki-be.onrender.com";
 const API = `${BACKEND_URL}/api/v1`;
 
 class ApiError extends Error {
