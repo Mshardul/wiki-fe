@@ -796,8 +796,10 @@ async function rerenderMermaidDiagrams() {
     try {
       const id = `mermaid-rerender-${Date.now()}-${i++}`;
       const { svg } = await mermaid.render(id, code);
+      const existingBtn = wrapper.querySelector(".mermaid-copy-btn");
       wrapper.innerHTML = svg;
-      _appendMermaidCopyBtn(wrapper);
+      if (existingBtn) wrapper.appendChild(existingBtn);
+      else _appendMermaidCopyBtn(wrapper);
     } catch (err) {
       console.warn("Mermaid re-render failed:", err);
       const errEl = document.createElement("div");
