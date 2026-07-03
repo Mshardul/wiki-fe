@@ -924,7 +924,10 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
 
     // Syntax highlighting
     if (typeof hljs !== "undefined") {
-      body.querySelectorAll("pre code").forEach((block) => hljs.highlightElement(block));
+      body.querySelectorAll("pre code").forEach((block) => {
+        if (block.className.match(/language-(\w+)/)) block.dataset.langExplicit = "true";
+        hljs.highlightElement(block);
+      });
     }
 
     // Post-processing — enhancements only.

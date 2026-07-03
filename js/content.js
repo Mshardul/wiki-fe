@@ -251,9 +251,10 @@ function addCodeBlockHeader(contentEl, onCopyError = () => {}) {
     });
     header.appendChild(lights);
 
-    // Lang label (centered in header)
+    // Lang label (centered in header) — only for languages from the fence info string,
+    // not hljs auto-detection guesses on untagged blocks
     const langMatch = code?.className.match(/language-(\w+)/);
-    if (langMatch && langMatch[1] !== "mermaid") {
+    if (langMatch && langMatch[1] !== "mermaid" && code?.dataset.langExplicit === "true") {
       const label = document.createElement("span");
       label.className = "code-lang-label";
       label.textContent = langMatch[1];
