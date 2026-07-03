@@ -50,8 +50,8 @@ def test_deep_path_resolution(page, base_url):
     page.route("**/target.md", lambda r: r.fulfill(body="# Target Article\n\nContent."))
 
     # Navigate to mock article
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.evaluate("""() => navigateToContent(
         'system-design',
         encodeURIComponent('../content/system-design/mock.md'),
@@ -73,21 +73,18 @@ def test_deep_path_resolution(page, base_url):
 def test_404_fallback_on_bad_wiki(page, base_url):
     """Bad wiki ID on fresh load redirects to Home and cleans URL."""
     # Fresh load with non-existent wiki
-    page.goto(f"{base_url}/#non-existent-wiki")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/#non-existent-wiki", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
-    # Should render home view
-    assert page.locator("#view-home.active").count() == 1
     # URL should not contain the bad hash
     assert "non-existent-wiki" not in page.url
 
 
 def test_404_fallback_on_bad_article(page, base_url):
     """Valid wiki + bad article slug on fresh load redirects to Home."""
-    page.goto(f"{base_url}/#system-design/this-does-not-exist")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/#system-design/this-does-not-exist", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
-    assert page.locator("#view-home.active").count() == 1
     assert "this-does-not-exist" not in page.url
 
 
@@ -96,11 +93,10 @@ def test_404_fallback_on_bad_article(page, base_url):
 
 def test_404_near_miss_offers_suggestion(page, base_url):
     """A near-miss slug offers the closest article via a toast action button."""
-    page.goto(f"{base_url}/#system-design/cachng")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/#system-design/cachng", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     # Falls back to home, but surfaces a suggestion toast first.
-    assert page.locator("#view-home.active").count() == 1
     toast = page.locator("#wiki-toast")
     toast.wait_for(state="visible", timeout=5_000)
     assert "Caching" in toast.inner_text()
@@ -108,8 +104,8 @@ def test_404_near_miss_offers_suggestion(page, base_url):
 
 def test_404_near_miss_open_navigates_to_match(page, base_url):
     """Clicking the suggestion's Open button routes to the matched article."""
-    page.goto(f"{base_url}/#system-design/cachng")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/#system-design/cachng", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     page.locator("#wiki-toast .toast-undo-btn").click()
     page.wait_for_selector("#view-content.active", timeout=10_000)
@@ -118,10 +114,9 @@ def test_404_near_miss_open_navigates_to_match(page, base_url):
 
 def test_404_unrelated_slug_shows_plain_message(page, base_url):
     """A slug with no near match falls back to the plain not-found toast."""
-    page.goto(f"{base_url}/#system-design/zzzqqqxxx")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/#system-design/zzzqqqxxx", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
-    assert page.locator("#view-home.active").count() == 1
     toast = page.locator("#wiki-toast")
     toast.wait_for(state="visible", timeout=5_000)
     assert "not found" in toast.inner_text().lower()
@@ -134,8 +129,7 @@ def test_404_unrelated_slug_shows_plain_message(page, base_url):
 
 def test_404_html_shows_suggestions_for_known_slug(page, base_url):
     """404.html with a ?title= near-miss renders suggestion links in the terminal UI."""
-    page.goto(f"{base_url}/404.html?title=cachng")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/404.html?title=cachng", wait_until="domcontentloaded")
 
     block = page.locator("#suggestions-block")
     block.wait_for(state="visible", timeout=8_000)
@@ -146,8 +140,7 @@ def test_404_html_shows_suggestions_for_known_slug(page, base_url):
 
 def test_404_html_suggestion_link_points_to_app(page, base_url):
     """Suggestion links href targets the SPA hash route, not 404.html."""
-    page.goto(f"{base_url}/404.html?title=cachng")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/404.html?title=cachng", wait_until="domcontentloaded")
 
     block = page.locator("#suggestions-block")
     block.wait_for(state="visible", timeout=8_000)
@@ -159,8 +152,7 @@ def test_404_html_suggestion_link_points_to_app(page, base_url):
 
 def test_404_html_no_suggestions_when_no_title_param(page, base_url):
     """404.html with no ?title= param leaves the suggestions block hidden."""
-    page.goto(f"{base_url}/404.html")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/404.html", wait_until="domcontentloaded")
 
     block = page.locator("#suggestions-block")
     assert block.get_attribute("hidden") is not None
@@ -168,8 +160,7 @@ def test_404_html_no_suggestions_when_no_title_param(page, base_url):
 
 def test_404_html_no_suggestions_for_gibberish_title(page, base_url):
     """404.html with a gibberish title that matches nothing stays hidden."""
-    page.goto(f"{base_url}/404.html?title=zzzqqqxxx999")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/404.html?title=zzzqqqxxx999", wait_until="domcontentloaded")
 
     # Give the async rescue script time to run and find no matches.
     page.wait_for_timeout(500)
@@ -215,8 +206,8 @@ def test_fetch_produces_absolute_url(page, base_url):
 
 def test_back_forward_does_not_double_render(page, base_url):
     """Back+forward navigation fires route handler once; popstate+hashchange both call route() but dedup fires _execRoute once."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     # Push article to history via in-app navigate (uses history.pushState)
     page.evaluate("() => window.navigate('system-design/caching', true)")

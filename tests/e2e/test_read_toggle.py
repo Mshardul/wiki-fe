@@ -6,8 +6,8 @@ ARTICLE_HASH = "system-design/caching"
 
 
 def _go_to_article(page, base_url):
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.evaluate("() => localStorage.removeItem('wiki-read-system-design')")
     page.goto(f"{base_url}/#{ARTICLE_HASH}")
     page.wait_for_selector("#view-content.active", timeout=10_000)

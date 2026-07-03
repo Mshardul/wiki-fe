@@ -13,6 +13,8 @@
 import re
 from pathlib import Path
 
+import pytest
+
 JS_DIR = Path(__file__).parent.parent.parent / "js"
 
 
@@ -71,7 +73,7 @@ def test_localStorage_keys_are_unique():
 
 def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     if extra_routes:
         for pattern, handler in extra_routes:
             page.route(pattern, handler)
@@ -97,6 +99,7 @@ def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
 def test_copy_button_failure_shows_toast(page, base_url):
     """denied clipboard on copy-btn click shows 'Copy failed' toast."""
     page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_selector("#markdown-body pre .copy-btn", timeout=10_000)
 
     page.evaluate(
@@ -114,6 +117,7 @@ def test_copy_button_failure_shows_toast(page, base_url):
 def test_anchor_copy_failure_shows_toast(page, base_url):
     """denied clipboard on anchor-btn click shows 'Copy failed' toast."""
     page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_selector("#markdown-body .anchor-btn", timeout=10_000)
 
     page.evaluate(
@@ -132,6 +136,7 @@ def test_successful_copy_does_not_show_toast(page, base_url):
     """successful clipboard write does not show error toast."""
     page.context.grant_permissions(["clipboard-read", "clipboard-write"])
     page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_selector("#markdown-body pre .copy-btn", timeout=10_000)
 
     page.locator("#markdown-body pre .copy-btn").first.click()
@@ -214,7 +219,7 @@ def test_scroll_position_stable_after_revisit(page, base_url):
 def test_hover_preview_filters_prerequisites_from_fallback(page, base_url):
     """fallback preview skips paragraphs starting with 'Prerequisites:'."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     page.route(
         "**/prereq-linked.md",
@@ -266,7 +271,7 @@ def test_hover_preview_hidden_after_mouseleave_during_fetch(page, base_url):
         route.fulfill(body="# L\n\n## TL;DR\n\nStale content that must not appear.\n")
 
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.route("**/slow-link.md", slow_handler)
     page.route(
         "**/abort-host.md",
@@ -319,7 +324,7 @@ def test_hover_preview_left_clamped_near_right_edge(page, base_url):
     # 320px viewport is narrower than the 340px preview; clamping always fires
     page.set_viewport_size({"width": 320, "height": 800})
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     page.route(
         "**/right-linked.md",
@@ -385,7 +390,7 @@ def test_mermaid_rerender_skips_offscreen_diagrams(page, base_url):
     """rerenderMermaidDiagrams does not update diagrams outside the viewport."""
     page.set_viewport_size({"width": 1280, "height": 600})
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     page.route(
         "**/two-diagrams.md",
@@ -465,6 +470,7 @@ def test_toast_queue_no_crash_on_rapid_triggers(page, base_url):
     assert not errors, f"Page errors after rapid toasts: {errors}"
 
 
+@pytest.mark.slow
 def test_toast_queue_second_message_appears_after_first(page, base_url):
     """queued second toast appears after first expires; not dropped."""
     page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
@@ -502,7 +508,7 @@ def test_toast_queue_second_message_appears_after_first(page, base_url):
 def test_index_renders_with_crlf_line_endings(page, base_url):
     """wiki index with CRLF line endings renders article cards correctly."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     crlf_index = (
         "## Components\r\n"
@@ -524,7 +530,7 @@ def test_index_renders_with_crlf_line_endings(page, base_url):
 def test_index_malformed_row_does_not_crash(page, base_url):
     """malformed link row in index.md is skipped; valid rows still render."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     index_with_bad_row = (
         "## Components\n"
@@ -552,7 +558,7 @@ def test_index_malformed_row_does_not_crash(page, base_url):
 def test_debug_overlay_appears_with_debug_param(page, base_url):
     """?debug param mounts the debug info overlay."""
     page.goto(f"{base_url}/?debug", wait_until="domcontentloaded")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     overlay = page.locator("#debug-overlay")
     assert overlay.count() == 1, "#debug-overlay must be present when ?debug is in URL"
@@ -562,7 +568,7 @@ def test_debug_overlay_appears_with_debug_param(page, base_url):
 def test_debug_overlay_absent_without_param(page, base_url):
     """debug overlay must not appear without ?debug param."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     assert page.locator("#debug-overlay").count() == 0, (
         "#debug-overlay must not exist without ?debug param"
@@ -572,7 +578,7 @@ def test_debug_overlay_absent_without_param(page, base_url):
 def test_debug_overlay_close_removes_it(page, base_url):
     """clicking the close button removes the debug overlay from DOM."""
     page.goto(f"{base_url}/?debug", wait_until="domcontentloaded")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     page.locator(".debug-close").click()
 

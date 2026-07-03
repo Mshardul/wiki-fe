@@ -22,8 +22,8 @@ def _go_to_article(page, base_url, slug="system-design/caching"):
 
 def test_404_shows_not_found_message(page, base_url):
     """A 404 response shows 'not found' in the error message, not a generic HTTP error."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.route("**/nonexistent.md", lambda r: r.fulfill(status=404, body=""))
     page.evaluate("""() => navigateToContent(
         'system-design',
@@ -45,8 +45,8 @@ def test_404_shows_not_found_message(page, base_url):
 
 def test_network_error_shows_connection_message(page, base_url):
     """A network failure shows a connection-error message, not a generic HTTP error."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.route("**/offline.md", lambda r: r.abort("failed"))
     page.evaluate("""() => navigateToContent(
         'system-design',

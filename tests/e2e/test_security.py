@@ -3,7 +3,10 @@ CDN script Subresource Integrity (SRI) attributes
 Error-state output escaping (err.message is HTML-escaped before innerHTML)
 """
 
+import pytest
 
+
+@pytest.mark.smoke
 def test_cdn_scripts_have_integrity_attribute(page, base_url):
     """Every CDN <script> tag carries a sha-based integrity (SRI) hash."""
     page.goto(f"{base_url}/")
@@ -57,8 +60,8 @@ def test_index_load_error_escapes_message(page, base_url):
     Forces fetch to reject with an error message containing markup; the error
     state must show it as text, never inject a live element into the DOM.
     """
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     # Make every index.md fetch reject with a message that carries HTML.
     page.evaluate("""() => {

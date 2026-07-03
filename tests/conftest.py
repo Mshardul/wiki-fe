@@ -75,6 +75,6 @@ def base_url():
 
 @pytest.fixture
 def wiki_page(page, base_url, disable_animations):
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     return page

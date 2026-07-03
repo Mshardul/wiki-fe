@@ -12,12 +12,14 @@
 - Footnote rendering
 """
 
+import pytest
+
 
 def _load_mock_article(page, base_url, content, slug="mock"):
     """Navigate to a mocked article via JS, bypassing index slug resolution.
     Waits until the loading indicator is replaced by actual content."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
     page.evaluate(f"""() => navigateToContent(
         'system-design',
@@ -33,6 +35,7 @@ def _load_mock_article(page, base_url, content, slug="mock"):
     )
 
 
+@pytest.mark.smoke
 def test_copy_buttons_on_code_blocks(page, base_url):
     """every <pre> block in article body has a .copy-btn child."""
     page.goto(f"{base_url}/#system-design/caching")
@@ -391,8 +394,8 @@ _ARTICLE_WITH_FOOTNOTES = (
 
 def _load_mock_article_content(page, base_url, content, slug="fntest"):
     """Like _load_mock_article but returns after content is rendered."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
     page.evaluate(f"""() => navigateToContent(
         'system-design',

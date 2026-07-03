@@ -103,8 +103,8 @@ def test_link_with_fragment_is_intercepted(page, base_url):
         lambda r: r.fulfill(body="# Target\n\nContent."),
     )
 
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.evaluate(
         """() => navigateToContent(
         'system-design',
@@ -223,8 +223,8 @@ def test_clear_bookmarks_shows_undo_toast(page, base_url):
 
 def test_prefs_modal_hidden_on_load(page, base_url):
     """Prefs modal starts hidden."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     modal = page.locator("#prefs-modal")
     assert modal.count() > 0, "Prefs modal should exist in DOM"
     assert "hidden" in (modal.get_attribute("class") or ""), (
@@ -234,8 +234,8 @@ def test_prefs_modal_hidden_on_load(page, base_url):
 
 def test_question_mark_opens_prefs_keyboard_tab(page, base_url):
     """Pressing ? opens the prefs modal with Keyboard tab active."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.keyboard.press("?")
     modal = page.locator("#prefs-modal")
     assert "hidden" not in (modal.get_attribute("class") or ""), (
@@ -249,8 +249,8 @@ def test_question_mark_opens_prefs_keyboard_tab(page, base_url):
 
 def test_escape_closes_prefs_modal(page, base_url):
     """Pressing Escape closes the prefs modal."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.keyboard.press("?")
     page.keyboard.press("Escape")
     modal = page.locator("#prefs-modal")
@@ -261,8 +261,8 @@ def test_escape_closes_prefs_modal(page, base_url):
 
 def test_prefs_close_btn_closes_modal(page, base_url):
     """Clicking the close button hides the prefs modal."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.keyboard.press("?")
     page.locator("[data-action='prefs-close']").click()
     modal = page.locator("#prefs-modal")
@@ -273,8 +273,8 @@ def test_prefs_close_btn_closes_modal(page, base_url):
 
 def test_prefs_backdrop_closes_modal(page, base_url):
     """Clicking the backdrop closes the prefs modal."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.keyboard.press("?")
     page.locator("#prefs-backdrop").click(position={"x": 5, "y": 5})
     modal = page.locator("#prefs-modal")
@@ -285,8 +285,8 @@ def test_prefs_backdrop_closes_modal(page, base_url):
 
 def test_prefs_keyboard_tab_contains_shortcuts(page, base_url):
     """Keyboard tab lists at least the ⌘K and ? shortcuts."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.keyboard.press("?")
     page.wait_for_selector("#prefs-panel-keyboard kbd", timeout=5_000)
     body_text = page.locator("#prefs-panel-keyboard").inner_text()
@@ -298,8 +298,8 @@ def test_prefs_keyboard_tab_contains_shortcuts(page, base_url):
 
 def test_prefs_keyboard_tab_shows_index_and_content_groups(page, base_url):
     """Keyboard tab renders Index and Content context groups from shortcuts.json."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.keyboard.press("?")
     page.wait_for_selector("#prefs-panel-keyboard kbd", timeout=5_000)
     body_text = page.locator("#prefs-panel-keyboard").inner_text().upper()
@@ -316,8 +316,8 @@ def test_prefs_keyboard_tab_shows_index_and_content_groups(page, base_url):
 
 def test_prefs_focus_trapped_on_open(page, base_url):
     """Focus is inside the prefs modal when opened via ? key."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.keyboard.press("?")
     focused_inside = page.evaluate("""() => {
         const modal = document.getElementById('prefs-modal');

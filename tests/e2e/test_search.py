@@ -7,6 +7,8 @@
 - section-filter mode indicator
 """
 
+import pytest
+
 
 def _open_search(page):
     page.keyboard.press("Meta+k")
@@ -14,6 +16,7 @@ def _open_search(page):
     page.wait_for_selector("#gsearch-input")
 
 
+@pytest.mark.smoke
 def test_arrow_down_selects_first_result(wiki_page):
     """ArrowDown marks first result with .selected class."""
     _open_search(wiki_page)
@@ -44,6 +47,7 @@ def test_arrow_keys_cycle_results(wiki_page):
     assert first != second
 
 
+@pytest.mark.smoke
 def test_enter_navigates_to_article(wiki_page):
     """Enter on focused result navigates to article (content view becomes active)."""
     _open_search(wiki_page)
@@ -109,6 +113,7 @@ def test_search_input_has_aria_label(wiki_page):
     assert label and label.strip()
 
 
+@pytest.mark.smoke
 def test_search_shows_real_articles(wiki_page):
     """non-stub articles do appear in search results."""
     _open_search(wiki_page)
@@ -225,8 +230,8 @@ def test_search_load_failure_shows_retry(page, base_url):
     """When every wiki index fails to load, search shows an error with a Retry button."""
     # Fail all index.md requests so loadAllSearchEntries finds no usable cache.
     page.route("**/index.md", lambda route: route.abort())
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     page.keyboard.press("Meta+k")
     page.wait_for_selector("#global-search-modal:not(.hidden)")
@@ -248,8 +253,8 @@ def test_search_retry_recovers_after_failure(page, base_url):
             route.continue_()
 
     page.route("**/index.md", handler)
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     page.keyboard.press("Meta+k")
     page.wait_for_selector(".gsearch-error", timeout=8_000)
@@ -270,8 +275,8 @@ def test_search_recovers_on_reopen_after_failure(page, base_url):
         "**/index.md",
         lambda route: route.abort() if failing["on"] else route.continue_(),
     )
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     # First open fails.
     page.keyboard.press("Meta+k")
@@ -337,6 +342,7 @@ def test_section_filter_mode_clears_on_normal_query(wiki_page):
 _PLACEHOLDER_ROTATE_MS = 2800
 
 
+@pytest.mark.slow
 def test_placeholder_rotates_hint_when_empty(wiki_page):
     """While the ⌘K input is empty, the placeholder cycles to an example query."""
     _open_search(wiki_page)
@@ -351,6 +357,7 @@ def test_placeholder_rotates_hint_when_empty(wiki_page):
     assert rotated.startswith("try:"), f"Expected a 'try:' hint, got '{rotated}'"
 
 
+@pytest.mark.slow
 def test_placeholder_does_not_rotate_while_typing(wiki_page):
     """Hints never overwrite the placeholder once the user has typed text."""
     _open_search(wiki_page)
@@ -362,6 +369,7 @@ def test_placeholder_does_not_rotate_while_typing(wiki_page):
     )
 
 
+@pytest.mark.slow
 def test_placeholder_resets_to_default_on_close(wiki_page):
     """Closing the modal restores the static default placeholder."""
     _open_search(wiki_page)
@@ -888,11 +896,13 @@ def test_search_modal_fits_small_viewport(wiki_page):
 def test_scope_custom_dropdown(wiki_page):
     """Custom scope button opens listbox; selecting an option scopes results."""
     wiki_page.set_viewport_size({"width": 375, "height": 700})
-    # Wait for media query to apply before interacting
+    # Wait for media query and the 150ms resize-debounce in app.js to settle
+    # before opening the search modal, or the debounce will close it.
     wiki_page.wait_for_function(
         "() => window.matchMedia('(max-width: 640px)').matches",
         timeout=3_000,
     )
+    wiki_page.wait_for_timeout(200)
     wiki_page.locator("body").click()
     wiki_page.keyboard.press("Meta+k")
     wiki_page.wait_for_selector("#global-search-modal:not(.hidden)")

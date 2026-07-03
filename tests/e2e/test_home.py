@@ -3,7 +3,10 @@
 - article count defaults to 0, not ellipsis
 """
 
+import pytest
 
+
+@pytest.mark.smoke
 def test_search_button_visible_on_home(wiki_page):
     """search button present and visible in home topbar."""
     btn = wiki_page.locator('.home-topbar button[title="Search all (⌘K)"]')
@@ -39,8 +42,8 @@ def test_article_count_updates_to_nonzero(wiki_page):
 
 def test_theme_applied_before_module_js_loads(page, base_url):
     """inline head script sets data-theme before app.js module executes."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     page.evaluate(
         """() => localStorage.setItem('wiki-settings',
         JSON.stringify({backgroundId:'light-white',textColorId:'text-crisp-light',
@@ -57,8 +60,8 @@ def test_theme_applied_before_module_js_loads(page, base_url):
 
 def test_active_wiki_card_marked_after_navigation(page, base_url):
     """returning home after visiting a wiki marks that wiki's card .active."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     first_card = page.locator(".wiki-card").first
     wiki_id = first_card.get_attribute("data-wiki-id")
@@ -76,8 +79,8 @@ def test_active_wiki_card_marked_after_navigation(page, base_url):
 
 def test_no_active_card_on_fresh_load(page, base_url):
     """on first load with no prior navigation, no wiki card is marked active."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     active_count = page.locator(".wiki-card.active").count()
     assert active_count == 0
 

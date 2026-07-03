@@ -4,12 +4,15 @@
 - Escape from content → wiki index; Escape closes search modal first
 """
 
+import pytest
+
 
 def _go_to_article(page, base_url):
     page.goto(f"{base_url}/#system-design/caching")
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
 
+@pytest.mark.smoke
 def test_hash_url_no_404(page, base_url):
     """fresh load of wiki index hash URL returns 200."""
     response = page.goto(f"{base_url}/#system-design")
@@ -22,6 +25,7 @@ def test_hash_url_content_no_404(page, base_url):
     assert response is not None and response.status == 200
 
 
+@pytest.mark.smoke
 def test_breadcrumb_home_link_works(wiki_page, base_url):
     """home breadcrumb link navigates back to home view."""
     _go_to_article(wiki_page, base_url)
@@ -39,6 +43,7 @@ def test_breadcrumb_wiki_link_works(wiki_page, base_url):
     wiki_page.wait_for_selector("#view-index.active", timeout=5_000)
 
 
+@pytest.mark.smoke
 def test_escape_closes_search_modal(wiki_page):
     """Escape closes open search modal (takes priority over index nav)."""
     wiki_page.keyboard.press("Meta+k")

@@ -4,7 +4,7 @@ PY := $(VENV)/bin/python
 PYTEST := $(VENV)/bin/pytest
 PRECOMMIT := $(VENV)/bin/pre-commit
 
-.PHONY: help install test test-headed test-debug precommit precommit-ci clean
+.PHONY: help install test test-smoke test-headed test-debug precommit precommit-ci clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -26,6 +26,9 @@ precommit-ci: ## Run the CI gate locally (check-only, never writes; mirrors CI)
 
 test: ## Run the e2e test suite (headless)
 	$(PYTEST) tests/ -q
+
+test-smoke: ## Run smoke subset only (fast dev-loop)
+	$(PYTEST) tests/ -q -m smoke
 
 test-parallel: ## Run tests in parallel (N=<number of processes>, default: auto)
 	$(PYTEST) tests/ -q -n $${N:-auto}

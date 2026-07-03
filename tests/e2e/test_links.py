@@ -7,8 +7,8 @@
 def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
     """Navigate to a mocked article via JS, bypassing index slug resolution.
     Waits until the loading indicator is replaced by actual content."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     if extra_routes:
         for pattern, handler in extra_routes:
             page.route(pattern, handler)
@@ -28,8 +28,8 @@ def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
 
 def test_tldr_hover_preview(page, base_url):
     """017: Hovering an internal link shows the TLDR in a popup."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     page.route(
         "**/linked.md",

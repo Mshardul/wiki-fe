@@ -1,5 +1,6 @@
 import re
 
+import pytest
 from playwright.sync_api import expect
 
 _UNAUTH = '{"error":{"code":"UNAUTHORIZED","message":"no session"}}'
@@ -15,6 +16,7 @@ def _stub_logged_out(page):
     )
 
 
+@pytest.mark.smoke
 def test_auth_modal_opens_from_topbar(page, base_url):
     _stub_logged_out(page)
     page.goto(base_url)

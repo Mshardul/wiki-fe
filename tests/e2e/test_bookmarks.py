@@ -3,6 +3,8 @@
 - clear button removes all bookmarks for the wiki
 """
 
+import pytest
+
 
 def _go_to_article(page, base_url):
     page.goto(f"{base_url}/#system-design/caching")
@@ -28,6 +30,7 @@ def test_bookmarks_not_on_home(page, base_url):
     assert page.locator("#view-home #bookmarks-section").count() == 0
 
 
+@pytest.mark.smoke
 def test_bookmarks_appear_on_index(page, base_url):
     """after bookmarking, chip appears in #bookmarks-section on wiki index."""
     _go_to_article(page, base_url)

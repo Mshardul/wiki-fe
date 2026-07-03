@@ -19,8 +19,8 @@ def _open_settings(page):
 
 def test_export_button_triggers_download(page, base_url):
     """Clicking 'Export Backup' triggers a file download."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     _open_settings(page)
 
     with page.expect_download() as dl_info:
@@ -33,8 +33,8 @@ def test_export_button_triggers_download(page, base_url):
 
 def test_export_json_contains_expected_keys(page, base_url):
     """Exported JSON contains version, bookmarks, recents, settings keys."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     _open_settings(page)
 
     with page.expect_download() as dl_info:
@@ -80,14 +80,14 @@ def test_import_restores_settings(page, base_url):
         tmp_path = tmp.name
 
     try:
-        page.goto(f"{base_url}/")
-        page.wait_for_load_state("networkidle")
+        page.goto(f"{base_url}/", wait_until="domcontentloaded")
+        page.wait_for_selector("#view-home.active", timeout=8_000)
         _open_settings(page)
 
         with page.expect_navigation(timeout=10_000):
             page.locator("#import-upload").set_input_files(tmp_path)
 
-        page.wait_for_load_state("networkidle")
+        page.wait_for_selector("#view-home.active", timeout=8_000)
 
         stored = page.evaluate(
             "() => JSON.parse(localStorage.getItem('wiki-settings') || 'null')"
@@ -109,8 +109,8 @@ def test_import_invalid_file_shows_toast(page, base_url):
         tmp_path = tmp.name
 
     try:
-        page.goto(f"{base_url}/")
-        page.wait_for_load_state("networkidle")
+        page.goto(f"{base_url}/", wait_until="domcontentloaded")
+        page.wait_for_selector("#view-home.active", timeout=8_000)
         _open_settings(page)
 
         page.locator("#import-upload").set_input_files(tmp_path)
@@ -141,8 +141,8 @@ def test_import_version_mismatch_shows_warning_toast(page, base_url):
         tmp_path = tmp.name
 
     try:
-        page.goto(f"{base_url}/")
-        page.wait_for_load_state("networkidle")
+        page.goto(f"{base_url}/", wait_until="domcontentloaded")
+        page.wait_for_selector("#view-home.active", timeout=8_000)
         _open_settings(page)
 
         page.locator("#import-upload").set_input_files(tmp_path)

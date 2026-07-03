@@ -90,8 +90,8 @@ def _inject_recents(page, count):
 
 def test_show_more_appears_when_recents_overflow(page, base_url):
     """show-more button appears when recents count exceeds CHIP_VISIBLE_MAX (4)."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     _inject_recents(page, 5)
     _go_to_index(page, base_url)
 
@@ -108,8 +108,8 @@ def test_show_more_appears_when_recents_overflow(page, base_url):
 
 def test_show_more_absent_when_chips_within_limit(page, base_url):
     """no show-more button when recents count <= CHIP_VISIBLE_MAX (4)."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     _inject_recents(page, 3)
     _go_to_index(page, base_url)
 
@@ -123,8 +123,8 @@ def test_show_more_absent_when_chips_within_limit(page, base_url):
 
 def test_show_more_click_expands_strip(page, base_url):
     """clicking show-more expands strip and reveals hidden chips."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     _inject_recents(page, 5)
     _go_to_index(page, base_url)
 

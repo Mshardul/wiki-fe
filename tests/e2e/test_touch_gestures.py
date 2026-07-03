@@ -45,8 +45,8 @@ def _swipe(page, sx, sy, ex, ey, steps=6):
 @pytest.fixture
 def mobile_page(page, base_url):
     page.set_viewport_size(MOBILE_VIEWPORT)
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
     return page
 
 

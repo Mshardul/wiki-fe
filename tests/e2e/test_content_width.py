@@ -76,8 +76,8 @@ def test_width_button_gets_active_class(wiki_page):
 
 def test_content_width_persists_across_reload(page, base_url):
     """selected content width survives a page reload via localStorage."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     page.locator("[title='Preferences (,)']").first.click()
     page.wait_for_selector("#prefs-modal:not(.hidden)")
@@ -88,8 +88,8 @@ def test_content_width_persists_across_reload(page, base_url):
     )
     assert stored == "Narrow"
 
-    page.reload()
-    page.wait_for_load_state("networkidle")
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     stored_after = page.evaluate(
         "() => JSON.parse(localStorage.getItem('wiki-settings')).contentWidth"

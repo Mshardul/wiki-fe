@@ -1036,8 +1036,8 @@ def test_mermaid_copy_btn_copies_svg(page, base_url):
 
 def test_hljs_stylesheet_swaps_on_theme_change(page, base_url):
     """Toggling the theme swaps the hljs CSS href between dark and light variants."""
-    page.goto(f"{base_url}/")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
 
     initial_href = page.evaluate(
         "() => document.getElementById('hljs-theme-css')?.href ?? ''"
