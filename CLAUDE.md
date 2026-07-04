@@ -87,31 +87,88 @@ Do this before any file reads or skill invocations - every session:
 
 ### JS (`js/`)
 
-| File         | Owns                                                                                                                                                                     |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `app.js`     | ES module entry; bootstraps app, wires hash router, exposes window globals for inline onclick handlers, keyboard shortcuts                                               |
-| `state.js`   | WIKIS registry, Showdown/Mermaid config, shared caches (readTimeCache, indexCache, allSearchCache), app state object, shared pure utilities (escHtml, fuzzyMatch)        |
-| `content.js` | Content post-processing after markdown→HTML: copy buttons, callouts, prerequisites chips, hover link previews, Mermaid, highlight.js, anchor links, code language labels |
-| `render.js`  | View rendering: home grid, wiki index sections, content layout, TOC, breadcrumbs, related articles, reading progress bar                                                 |
-| `search.js`  | ⌘K modal: open/close lifecycle, search entry loading, fuzzy scoring, result rendering, section-filter mode (>)                                                           |
-| `auth.js`    | Auth domain: password-rule validation, auth modal controller (login/register/verify panels), login/register/logout/resend flows, anon→login migration
-| `api.js`     | Single wrapper for all backend (`wiki-be`) calls: base-URL detect, credentials, `ApiError`, global 401 handler, typed endpoint helpers
-| `storage.js` | All localStorage operations: settings r/w, bookmarks, recents, read tracking, offline cache button state; cache-through backend sync hooks (`Sync`) when logged in                                                                 |
+| File / domain      | Owns                                                                                                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `app.js` + `app/`  | ES module entry; bootstraps app, wires hash router, exposes window globals for inline onclick handlers, keyboard shortcuts, click delegation, scroll-to-top. `app/` holds mobile gestures, wiki switcher, debug overlay, home parallax, print, distraction-free |
+| `state.js`         | WIKIS registry, Showdown/Mermaid config, shared caches (readTimeCache, indexCache, allSearchCache), app state object, shared pure utilities (escHtml, fuzzyMatch)        |
+| `content/`         | Content post-processing after markdown→HTML - see subtable below                                                                                                        |
+| `render/`          | Routing + view rendering - see subtable below                                                                                                                            |
+| `search.js`        | ⌘K modal: open/close lifecycle, search entry loading, fuzzy scoring, result rendering, section-filter mode (>)                                                           |
+| `auth.js`          | Auth domain: password-rule validation, auth modal controller (login/register/verify panels), login/register/logout/resend flows, anon→login migration |
+| `api.js`           | Single wrapper for all backend (`wiki-be`) calls: base-URL detect, credentials, `ApiError`, global 401 handler, typed endpoint helpers |
+| `storage/`         | All localStorage operations - see subtable below                                                                                                                         |
+
+**Never read every file in a domain folder** (`content/`, `render/`, `storage/`, `app/`) - the subtables below say exactly which file owns which behavior.
+
+#### `js/content/`
+
+| File                  | Owns                                                                             |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| `zoom-lightbox.js`    | Zoom overlay (image + diagram), pinch/pan/swipe gestures                            |
+| `code-blocks.js`      | Code block header, copy buttons, clipboard helper, line numbers, hljs theme sync     |
+| `mermaid.js`          | Diagram render/re-render, node hover captions, step-through walkthrough              |
+| `tables.js`           | Column sort, quiz-me mode, table scroll cues                                        |
+| `toc.js`              | TOC build, sticky section header, per-heading collapse, progress ring               |
+| `formatting.js`       | Callouts, prerequisites chips, anchor links, LaTeX toggle/copy, focus mode, tabbed code blocks, footnotes, in-article find |
+| `glossary-caveats.js` | Inline caveat reveals, glossary popovers/expand, rendered-HTML session cache          |
+
+#### `js/render/`
+
+| File                   | Owns                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| `router.js`            | Hash router (`navigate`/`route`), view switching, slug resolution                    |
+| `home-index.js`        | Home grid, wiki index sections, card filter/swipe/hover, article counts              |
+| `content-view.js`      | Content render pipeline: fetch → parse → post-process → wire links/hover-preview      |
+| `related-articles.js` | Related-article ranking + rendering                                                  |
+| `nav-utils.js`         | Path resolution, breadcrumb, page title, `fetchText`, `readingTime`                   |
+| `toast.js`             | Toast queue + display                                                                |
+
+#### `js/storage/`
+
+| File                 | Owns                                                                     |
+| -------------------- | ----------------------------------------------------------------------------- |
+| `bookmarks.js`       | Bookmark CRUD, bookmarks section render                                       |
+| `recents.js`         | Recently-visited CRUD, recents section render                                 |
+| `read-tracking.js`   | Read/unread state, quiz-reveal tracking                                       |
+| `offline.js`         | Offline cache download/remove/check, offline button state                     |
+| `settings-theme.js`  | Settings object + swatches, `Settings`/`Theme`/`Sync`, multi-tab sync listener |
+| `scroll-collapse.js` | Scroll-position cache, section collapse, TOC scroll, recent searches          |
 
 ### CSS (`css/`)
 
-| File               | Owns                                                                                                                                                  |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tokens.css`       | ALL CSS custom properties: spacing scale, typography scale, colour tokens, border-radius, transition durations - **read this first for any CSS task** |
-| `base.css`         | Global reset and base styles: body, headings, inline code, scrollbar, text selection                                                                  |
-| `themes.css`       | Per-theme CSS token overrides for dark, light, matrix, terminal, amber-term via `data-theme` attribute                                                |
-| `components.css`   | Shared UI components: breadcrumb, back button, topbar layout, scroll-to-top, settings panel, hover preview panel                                      |
-| `components-auth.css` | Auth modal + topbar auth button styles (tokens only)                                                                                              |
-| `view-home.css`    | Home view: background grid/glow, wiki card grid, home topbar, hero section                                                                            |
-| `view-index.css`   | Index view: hero, section headers, index card grid, recents strip, bookmarks strip                                                                    |
-| `view-content.css` | Content view: two-column layout, TOC sidebar, markdown body, callouts, code blocks, reading time badge, related articles                              |
-| `responsive.css`   | Mobile/tablet media queries - overrides layout, TOC visibility, topbar density for narrow viewports                                                   |
-| `wiki.css`         | CSS aggregator - imports all CSS modules via @import; never add rules here                                                                            |
+| File / folder           | Owns                                                                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tokens.css`            | ALL CSS custom properties: spacing scale, typography scale, colour tokens, border-radius, transition durations - **read this first for any CSS task** |
+| `base.css`              | Global reset and base styles: body, headings, inline code, scrollbar, text selection                                                                  |
+| `themes.css`            | Per-theme CSS token overrides for dark, light, matrix, terminal, amber-term via `data-theme` attribute                                                |
+| `components/`           | Shared UI components - see subtable below                                                                                                              |
+| `components-auth.css`   | Auth modal + topbar auth button styles (tokens only)                                                                                              |
+| `view-home.css`         | Home view: background grid/glow, wiki card grid, home topbar, hero section                                                                            |
+| `view-index.css`        | Index view: hero, section headers, index card grid, recents strip, bookmarks strip                                                                    |
+| `view-content/`         | Content view - see subtable below                                                                                                                      |
+| `responsive.css`        | Mobile/tablet media queries - overrides layout, TOC visibility, topbar density for narrow viewports                                                   |
+| `wiki.css`              | CSS aggregator - imports all CSS modules via @import; never add rules here                                                                            |
+
+#### `css/components/`
+
+| File                    | Owns                                                                          |
+| ----------------------- | ---------------------------------------------------------------------------------- |
+| `topbar.css`            | Breadcrumb, back button, topbar, scroll-to-top, topbar title, icon buttons, reading progress bar, anchor links, reading-time badge |
+| `search-modal.css`      | ⌘K global search modal (all `.gsearch-*` rules)                                     |
+| `preferences-modal.css` | Settings swatches, preferences modal, keyboard-shortcuts tab                        |
+| `toast.css`             | Toast notification                                                                  |
+| `wiki-switcher.css`     | Wiki switcher modal, debug overlay                                                  |
+
+#### `css/view-content/`
+
+| File                     | Owns                                                                        |
+| ------------------------ | ---------------------------------------------------------------------------------- |
+| `layout.css`             | Sticky header, article hero, TOC sidebar, markdown-body base, headings/lists/links/inline-code, content stub |
+| `code.css`               | Code blocks, line numbers, code header, table scroll cue, tables, tabbed code blocks |
+| `mermaid.css`            | Mermaid diagrams/tooltip/step-through, zoom overlay, image error fallback           |
+| `callouts-prereqs.css`   | Callout variants, prerequisites chips, collapsible callouts                          |
+| `interactive.css`        | Focus mode, details/summary, distraction-free mode, in-article find bar, per-heading collapse, formula toggle |
+| `glossary-related.css`  | Related articles, hover previews, inline caveats/glossary, footnotes, article-end marker |
 
 ### Tests (`tests/`)
 
@@ -168,13 +225,14 @@ Do this before any file reads or skill invocations - every session:
 | Task                      | Read these only                                                                                 |
 | ------------------------- | ----------------------------------------------------------------------------------------------- |
 | Search bug                | `js/search.js`, `js/state.js`                                                                   |
-| Rendering / markdown bug  | `js/render.js`, `js/content.js`                                                                 |
-| Navigation / routing bug  | `js/app.js`, `js/state.js`                                                                      |
-| Bookmark / recents bug    | `js/storage.js`, `js/state.js`                                                                  |
-| Auth / sync bug           | `js/api.js`, `js/auth.js`, `js/storage.js`, `js/state.js`                                       |
-| Settings bug              | `js/storage.js`, `css/themes.css`, `css/tokens.css`                                             |
-| UI / visual bug           | `css/tokens.css` + relevant view CSS                                                            |
-| New CSS feature           | `css/tokens.css` first, then target view CSS                                                    |
+| Rendering / markdown bug  | `js/render/content-view.js` (pipeline) or the specific `js/content/*.js` file for the enhancement in question |
+| Navigation / routing bug  | `js/render/router.js`, `js/state.js`                                                            |
+| Bookmark / recents bug    | `js/storage/bookmarks.js` or `js/storage/recents.js`, `js/state.js`                             |
+| Auth / sync bug           | `js/api.js`, `js/auth.js`, `js/storage/settings-theme.js` (Sync), `js/state.js`                  |
+| Settings bug              | `js/storage/settings-theme.js`, `css/themes.css`, `css/tokens.css`                               |
+| UI / visual bug           | `css/tokens.css` + relevant view/component CSS file                                              |
+| New CSS feature           | `css/tokens.css` first, then target view/component CSS file                                      |
+| Mobile gesture / TOC drawer bug | `js/app/mobile-panels.js`                                                                  |
 | Service worker issue      | `wiki-sw.js` only                                                                               |
 | Write tests for feature X | Relevant `tests/e2e/test_*.py` + `tests/conftest.py`                                            |
 | Content article           | `docs/_meta/ai-instructions/_base.md` + relevant type file (except cheatsheets: type file only) |
@@ -227,7 +285,7 @@ above to pick which file a test belongs in.
 **App dev tasks:**
 
 - Never read `content/**/*.md` - irrelevant to app code
-- Never read all 8 JS files - use the module map above to pick the right one
+- Never read every file in a domain folder (`content/`, `render/`, `storage/`, `app/`) - use the subtables above to pick the right one
 - Never read all CSS files - always start with `tokens.css`
 
 **Content tasks:**

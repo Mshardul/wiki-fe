@@ -1,11 +1,8 @@
-import {
-  IndexFilter,
-  fetchWikiIndex,
-  navigate,
-  navigateToContent,
-  normalizePath,
-  showToast,
-} from "./render.js";
+import { navigateToContent } from "./render/content-view.js";
+import { IndexFilter, fetchWikiIndex } from "./render/home-index.js";
+import { normalizePath } from "./render/nav-utils.js";
+import { navigate } from "./render/router.js";
+import { showToast } from "./render/toast.js";
 import {
   expandQuery,
   extractSnippet,
@@ -22,7 +19,9 @@ import {
   state,
   synonymCache,
 } from "./state.js";
-import { RecentSearches, Settings, Theme, isRead, markRead, markUnread } from "./storage.js";
+import { isRead, markRead, markUnread } from "./storage/read-tracking.js";
+import { RecentSearches } from "./storage/scroll-collapse.js";
+import { Settings, Theme } from "./storage/settings-theme.js";
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL SEARCH (⌘K)

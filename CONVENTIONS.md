@@ -9,6 +9,7 @@ This file is the *how to write the code*. The operational map (which file owns w
 ## Core principles
 
 - **SRP (Single Responsibility).** One module, one concern. Each `js/` file owns exactly one slice of the app (see the module map below); a function does one thing. If you can't name what a module owns in one phrase, it's doing too much.
+- **Size is a signal, not a rule to game.** A file crossing **~400 lines** is a prompt to split it by sub-concern into a domain subfolder (`js/domain/sub-file.js`, `css/view-x/sub-file.css`) - don't wait for a "refactor" ticket to do it. Exception: a single cohesive pipeline (fetch → render → wire, no independently reusable piece) may stay one file past the threshold if splitting would only fragment one linear flow - note the exception in a one-line comment at the top of that file.
 - **DRY (Don't Repeat Yourself).** Logic lives in one place. Shared pure helpers belong in `state.js` (`escHtml`, `fuzzyMatch`). A repeated literal → a named constant. A CSS value used twice → a token in `tokens.css`, never copied.
 - **SoC (Separation of Concerns).** Rendering, persistence, content processing, and search never bleed into each other - that's why they're separate modules. Keep the boundaries.
 - **YAGNI.** Build for the current version. No framework, no abstraction layer, no config knob until a real second caller needs it. The app is deliberately small and dependency-light.
@@ -22,23 +23,68 @@ This file is the *how to write the code*. The operational map (which file owns w
 - Single-page app. **No build step, no framework, no TypeScript.** Plain ES6 modules served as-is.
 - **Boot:** `index.html` → `wiki.css` → `app.js` → registers service worker → reads state → routes to the correct view.
 - **Views:** `#view-home`, `#view-index`, `#view-content` - exactly one active at a time. View state is owned by `state.js`.
-- **Content loading:** `content.js` fetches `.md` files from `content/` over HTTP → parses front matter → builds the search index. `render.js` converts markdown to DOM.
-- **Persistence:** `storage.js` → `localStorage` (today). With auth, localStorage becomes a cache-through layer over the backend - see State & persistence below.
+- **Content loading:** `js/content/` post-processes fetched `.md` after markdown→HTML. `js/render/` fetches `.md`, parses it, and converts it to DOM (routing, home/index views, content pipeline, related articles).
+- **Persistence:** `js/storage/` → `localStorage` (today). With auth, localStorage becomes a cache-through layer over the backend - see State & persistence below.
 
 ### Module map is a contract
 
-Each `js/` module owns one concern. Do not reach across the boundary - call the owning module.
+Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do not reach across a domain boundary - call the owning module. Never read every file in a domain folder to find something - the tables below say exactly which file owns which behavior.
 
-| Module       | Owns                                                                                                             |
-| ------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `app.js`     | Entry/bootstrap, hash router, `window.*` globals for inline handlers, keyboard shortcuts                         |
-| `state.js`   | App state object, WIKIS registry, shared caches, shared pure utilities                                           |
-| `content.js` | Post-markdown content processing (callouts, copy buttons, Mermaid, highlight.js, …)                              |
-| `render.js`  | View rendering (home grid, index sections, content layout, TOC, breadcrumbs)                                     |
-| `search.js`  | ⌘K modal lifecycle, fuzzy scoring, result rendering                                                              |
-| `storage.js` | All `localStorage` access + cache-through backend sync hooks when logged in                                      |
-| `auth.js`    | Auth domain: password-rule validation, auth modal controller, login/register/logout/resend, anon→login migration |
-| `api.js`     | Single wrapper for all `wiki-be` calls (base-URL detect, credentials, `ApiError`, global 401)                    |
+| Domain            | Owns                                                                                                             |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `app.js` + `app/`  | Entry/bootstrap, hash router wiring, `window.*` globals, keyboard shortcuts, mobile gestures, wiki switcher, debug overlay |
+| `state.js`         | App state object, WIKIS registry, shared caches, shared pure utilities                                           |
+| `content/`         | Post-markdown content processing (callouts, copy buttons, Mermaid, TOC, focus mode, glossary, footnotes, …)      |
+| `render/`          | Routing + view rendering (home grid, index sections, content pipeline, breadcrumbs, related articles, toast)     |
+| `search.js`        | ⌘K modal lifecycle, fuzzy scoring, result rendering                                                              |
+| `storage/`         | All `localStorage` access + cache-through backend sync hooks when logged in                                      |
+| `auth.js`          | Auth domain: password-rule validation, auth modal controller, login/register/logout/resend, anon→login migration |
+| `api.js`           | Single wrapper for all `wiki-be` calls (base-URL detect, credentials, `ApiError`, global 401)                    |
+
+#### `js/content/` - post-markdown enhancement
+
+| File                   | Owns                                                                            |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `zoom-lightbox.js`     | Zoom overlay (shared by image + diagram zoom), pinch/pan/swipe gestures          |
+| `code-blocks.js`       | Code block header, copy buttons, clipboard helper, line numbers, hljs theme sync |
+| `mermaid.js`           | Diagram render/re-render, node captions, step-through walkthrough                |
+| `tables.js`            | Column sort, quiz-me mode, table scroll cues                                     |
+| `toc.js`               | TOC build, sticky section header, per-heading collapse, progress ring            |
+| `formatting.js`        | Callouts, prerequisites chips, anchor links, LaTeX toggle/copy, focus mode, tabbed code blocks, footnotes, in-article find |
+| `glossary-caveats.js`  | Inline caveat reveals, glossary popovers/expand, rendered-HTML session cache      |
+
+#### `js/render/` - routing + view rendering
+
+| File                    | Owns                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------- |
+| `router.js`             | Hash router (`navigate`/`route`), view switching, slug resolution               |
+| `home-index.js`         | Home grid, wiki index sections, card filter/swipe/hover, article counts         |
+| `content-view.js`       | Content render pipeline (fetch → parse → post-process → wire links/preview) - kept as one file, see size-threshold exception |
+| `related-articles.js`  | Related-article ranking + rendering                                             |
+| `nav-utils.js`          | Path resolution, breadcrumb, page title, `fetchText`, `readingTime`             |
+| `toast.js`              | Toast queue + display                                                           |
+
+#### `js/storage/` - localStorage + sync
+
+| File                  | Owns                                                              |
+| --------------------- | -------------------------------------------------------------------- |
+| `bookmarks.js`        | Bookmark CRUD, bookmarks section render                             |
+| `recents.js`          | Recently-visited CRUD, recents section render                       |
+| `read-tracking.js`    | Read/unread state, quiz-reveal tracking                             |
+| `offline.js`          | Service-worker cache download/remove/check for offline articles      |
+| `settings-theme.js`   | Settings object, theme/background/accent/font data, `Settings`/`Theme`/`Sync`, multi-tab sync listener |
+| `scroll-collapse.js`  | Scroll-position cache, section collapse state, TOC scroll, recent searches |
+
+#### `js/app/` - bootstrap-adjacent behaviors
+
+| File                  | Owns                                          |
+| --------------------- | ------------------------------------------------ |
+| `mobile-panels.js`    | Mobile TOC drawer, swipe gestures, panel-close registry, viewport resize |
+| `wiki-switcher.js`    | Wiki switcher modal open/close/render             |
+| `debug-overlay.js`    | `?debug` diagnostic overlay                       |
+| `home-parallax.js`    | Home hero mouse-parallax effect                   |
+| `print.js`            | Print-article trigger                             |
+| `distraction-free.js` | Distraction-free mode toggle                      |
 
 `state.js` is the **single source of app state.** Other modules read/write state through it, not via their own parallel globals.
 
@@ -64,7 +110,8 @@ Each `js/` module owns one concern. Do not reach across the boundary - call the 
 - **BEM-adjacent naming** (block-element pattern).
 - **`wiki.css` is the aggregator** - it `@import`s the modules and **holds no rules of its own.**
 - **Theming via `data-theme`** - per-theme overrides live in `themes.css`, never scattered.
-- View-specific rules live in their `view-*.css`; shared components in `components.css` / `components-auth.css`. Don't put view styles in the shared files or vice versa.
+- View-specific rules live in `view-*.css` or a `view-*/` subfolder; shared components in `components/` / `components-auth.css`. Don't put view styles in the shared files or vice versa.
+- **`components/` and `view-content/` are split by sub-concern** (see the module map above for the JS equivalent). `components/topbar.css`, `search-modal.css`, `preferences-modal.css`, `toast.css`, `wiki-switcher.css`; `view-content/layout.css`, `code.css`, `mermaid.css`, `callouts-prereqs.css`, `interactive.css`, `glossary-related.css`. A new component/view rule set crossing ~400 lines gets its own file in the matching subfolder, imported from `wiki.css` in the same position.
 - **Responsive:** mobile-first. All new CSS must work at 320px. Breakpoints live in `responsive.css` - not `tokens.css`, not scattered in view files. No new breakpoints outside `responsive.css` without a deliberate decision.
 - **No fixed px for layout dimensions that must adapt.** Use fluid units for layout-level sizing: `min()`, `max()`, `clamp()`, `vw`, `vh`, `%`. Fixed `px` is correct for: borders, outlines, icon sizes, touch targets (44px min), blur radii, `transform` nudges. Fixed `px` is wrong for: panel widths, drawer widths, overlay heights, `top`/`scroll-margin-top` offsets tied to a layout measurement. For topbar-relative offsets use `var(--topbar-h)` or `calc(var(--topbar-h) + ...)` - never a raw px value.
 
@@ -74,8 +121,8 @@ Each `js/` module owns one concern. Do not reach across the boundary - call the 
 
 - **`state.js` owns app state.** Identity, view, caches - read and mutate through it.
 - **Avoid direct property assignment to `state` from outside `state.js`.** Mutations from other modules should go through exported functions where they exist; adding direct `state.foo = …` in a caller is a smell.
-- **`storage.js` owns localStorage.** No other module touches `localStorage` directly.
-- **Cache-through model (with auth):** localStorage is the instant read path and UI source of truth; the API is the durable source. Sync hooks inject *inside* `storage.js` save functions so existing callers are unchanged. Writes are **fire-and-forget**; a load-time pull reconciles drift.
+- **`js/storage/` owns localStorage.** No other module touches `localStorage` directly.
+- **Cache-through model (with auth):** localStorage is the instant read path and UI source of truth; the API is the durable source. Sync hooks inject *inside* the relevant `js/storage/` save function so existing callers are unchanged. Writes are **fire-and-forget**; a load-time pull reconciles drift.
 - **Identity is never cached in localStorage** - `state.session` lives in memory only; the httpOnly cookie + backend are the sole authority.
 - **Scroll position stays local-only** - ephemeral, device-specific, never synced.
 

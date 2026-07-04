@@ -1,6 +1,8 @@
 import { ApiError, api } from "./api.js";
 import { WIKIS, state } from "./state.js";
-import { Sync, getBookmarks, getRecents } from "./storage.js";
+import { getBookmarks } from "./storage/bookmarks.js";
+import { getRecents } from "./storage/recents.js";
+import { Sync } from "./storage/settings-theme.js";
 
 /* ═══════════════════════════════════════════════════════════════
    PASSWORD POLICY (§7) - mirrors wiki-be; keep in sync via auth.md

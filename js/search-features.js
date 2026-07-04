@@ -1,5 +1,5 @@
 import { escHtml, synonymCache } from "./state.js";
-import { RecentSearches } from "./storage.js";
+import { RecentSearches } from "./storage/scroll-collapse.js";
 
 /* ═══════════════════════════════════════════════════════════════
    SNIPPET EXTRACTION

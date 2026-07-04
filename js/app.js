@@ -1,22 +1,20 @@
 import { Auth, AuthModal } from "./auth.js";
-import {
-  ArticleFind,
-  QuizMode,
-  closeZoomOverlay,
-  initProgressRingScrollTop,
-  rerenderMermaidDiagrams,
-  syncHljsTheme,
-  toggleFocusMode,
-  updateProgressRing,
-} from "./content.js";
-import {
-  navigate,
-  navigateToContent,
-  progressBar,
-  route,
-  showToast,
-  toggleSection,
-} from "./render.js";
+import "./app/home-parallax.js";
+import "./app/mobile-panels.js";
+import { mountDebugOverlay } from "./app/debug-overlay.js";
+import { toggleDistractionFree } from "./app/distraction-free.js";
+import { printArticle } from "./app/print.js";
+import { closeWikiSwitcher, openWikiSwitcher } from "./app/wiki-switcher.js";
+import { syncHljsTheme } from "./content/code-blocks.js";
+import { ArticleFind, toggleFocusMode } from "./content/formatting.js";
+import { rerenderMermaidDiagrams } from "./content/mermaid.js";
+import { QuizMode } from "./content/tables.js";
+import { initProgressRingScrollTop, updateProgressRing } from "./content/toc.js";
+import { closeZoomOverlay } from "./content/zoom-lightbox.js";
+import { navigateToContent } from "./render/content-view.js";
+import { toggleSection } from "./render/home-index.js";
+import { navigate, progressBar, route } from "./render/router.js";
+import { showToast } from "./render/toast.js";
 import {
   applyGlobalSearch,
   closeGlobalSearch,
@@ -29,24 +27,21 @@ import {
 import { WIKIS, escHtml, state } from "./state.js";
 import {
   Bookmarks,
-  Offline,
-  ReadToggle,
+  getBookmarks,
+  renderBookmarksSection,
+  saveBookmarks,
+} from "./storage/bookmarks.js";
+import { Offline } from "./storage/offline.js";
+import { ReadToggle, markRead, updateReadBtn } from "./storage/read-tracking.js";
+import { clearRecents, getRecents, renderRecentsSection, saveRecents } from "./storage/recents.js";
+import { saveScrollPos } from "./storage/scroll-collapse.js";
+import {
   Settings,
   Theme,
   applySettingsToDOM,
-  clearRecents,
-  getBookmarks,
-  getRecents,
   getSettings,
   initOsThemeListener,
-  markRead,
-  renderBookmarksSection,
-  renderRecentsSection,
-  saveBookmarks,
-  saveRecents,
-  saveScrollPos,
-  updateReadBtn,
-} from "./storage.js";
+} from "./storage/settings-theme.js";
 
 /* ═══════════════════════════════════════════════════════════════
    WINDOW GLOBALS - required for onclick strings in dynamically
@@ -167,28 +162,6 @@ document.addEventListener("click", (e) => {
 
 document.getElementById("import-upload").addEventListener("change", (e) => Settings.importData(e));
 
-function printArticle() {
-  document.getElementById("markdown-body")?.setAttribute("data-print-url", location.href);
-  window.print();
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   TOC COLLAPSE & MOBILE TOC
-   ═══════════════════════════════════════════════════════════════ */
-document.getElementById("toc-collapse").addEventListener("click", () => {
-  document.getElementById("toc-sidebar").classList.toggle("collapsed");
-});
-
-const tocMobileBtn = document.getElementById("toc-mobile-btn");
-const tocMobileOverlay = document.getElementById("toc-mobile-overlay");
-const tocSidebar = document.getElementById("toc-sidebar");
-
-tocMobileBtn.addEventListener("click", () => openMobileToc());
-tocMobileOverlay.addEventListener("click", () => closeMobileToc());
-document.getElementById("toc-nav").addEventListener("click", (e) => {
-  if (e.target.closest(".toc-item")) closeMobileToc();
-});
-
 /* ═══════════════════════════════════════════════════════════════
    SCROLL TO TOP
    ═══════════════════════════════════════════════════════════════ */
@@ -260,222 +233,11 @@ if ("onscrollend" in window) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MOBILE TOUCH GESTURES
-   Swipe navigation, panel-close, and a shared close registry.
-   All gestures are touch-only and gated to the mobile breakpoint.
-   ═══════════════════════════════════════════════════════════════ */
-const GESTURE_MOBILE_MAX = 900;
-const SWIPE_THRESHOLD = 50;
-const EDGE_ZONE = 44;
-const DEADZONE = 8;
-
-const isMobileViewport = () => window.innerWidth <= GESTURE_MOBILE_MAX;
-
-// Resolve dominant axis once movement leaves the deadzone; null while ambiguous.
-function axisLock(dx, dy) {
-  if (Math.abs(dx) < DEADZONE && Math.abs(dy) < DEADZONE) return null;
-  return Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
-}
-
-function isMobileTocOpen() {
-  return tocSidebar.classList.contains("mobile-open");
-}
-
-function openMobileToc() {
-  if (document.getElementById("toc-sidebar").style.display === "none") return;
-  if (!document.querySelector("#toc-nav .toc-item")) return;
-  tocSidebar.classList.add("mobile-open");
-  tocMobileOverlay.classList.add("open");
-  document.body.classList.add("toc-open");
-}
-
-function closeMobileToc() {
-  tocSidebar.classList.remove("mobile-open");
-  tocMobileOverlay.classList.remove("open");
-  document.body.classList.remove("toc-open");
-}
-
-function closeTopPanel() {
-  if (document.getElementById("zoom-overlay")?.classList.contains("open")) {
-    closeZoomOverlay();
-    return true;
-  }
-  if (Settings.isOpen()) {
-    Settings.close();
-    return true;
-  }
-  if (!document.getElementById("global-search-modal").classList.contains("hidden")) {
-    closeGlobalSearch();
-    return true;
-  }
-  if (document.getElementById("hover-preview")?.classList.contains("hover-preview--sheet-open")) {
-    document.dispatchEvent(new CustomEvent("wiki:close-peek"));
-    return true;
-  }
-  if (isMobileTocOpen()) {
-    closeMobileToc();
-    return true;
-  }
-  return false;
-}
-
-(function bindSwipeGestures() {
-  let sx = 0;
-  let sy = 0;
-  let axis = null;
-  let fromLeftEdge = false;
-  let fromRightEdge = false;
-  let tracking = false;
-
-  document.addEventListener(
-    "touchstart",
-    (e) => {
-      if (!isMobileViewport() || e.touches.length !== 1) {
-        tracking = false;
-        return;
-      }
-      // Lightbox owns its own gestures.
-      if (e.target.closest("#zoom-overlay")) {
-        tracking = false;
-        return;
-      }
-      const t = e.touches[0];
-      sx = t.clientX;
-      sy = t.clientY;
-      axis = null;
-      fromLeftEdge = sx <= EDGE_ZONE;
-      fromRightEdge = sx >= window.innerWidth - EDGE_ZONE;
-      tracking = true;
-    },
-    { passive: true },
-  );
-
-  document.addEventListener(
-    "touchmove",
-    (e) => {
-      if (!tracking || e.touches.length !== 1) return;
-      if (!axis) {
-        axis = axisLock(e.touches[0].clientX - sx, e.touches[0].clientY - sy);
-      }
-    },
-    { passive: true },
-  );
-
-  document.addEventListener(
-    "touchend",
-    (e) => {
-      if (!tracking) return;
-      tracking = false;
-      const t = e.changedTouches[0];
-      if (!t) return;
-      const dx = t.clientX - sx;
-      const dy = t.clientY - sy;
-
-      if (axis === "x") {
-        if (fromLeftEdge && dx > SWIPE_THRESHOLD) {
-          // Swipe right from left edge → back.
-          if (state.currentView === "content" && state.currentWikiId) {
-            navigate(state.currentWikiId);
-          }
-        } else if (fromRightEdge && dx < -SWIPE_THRESHOLD) {
-          // Swipe left from right edge → open TOC drawer (content view only).
-          if (state.currentView === "content") openMobileToc();
-        }
-      } else if (axis === "y") {
-        const panelOpen =
-          Settings.isOpen() ||
-          document.getElementById("hover-preview")?.classList.contains("hover-preview--sheet-open");
-        if (dy > SWIPE_THRESHOLD && (panelOpen || sy < window.innerHeight / 3)) {
-          closeTopPanel();
-        }
-      }
-    },
-    { passive: true },
-  );
-})();
-
-/* ═══════════════════════════════════════════════════════════════
-   ORIENTATION / VIEWPORT RESIZE
-   ═══════════════════════════════════════════════════════════════ */
-let _resizeTimer = null;
-let _lastViewportWidth = window.innerWidth;
-window.addEventListener(
-  "resize",
-  () => {
-    clearTimeout(_resizeTimer);
-    // Snapshot search-modal state at resize-start, not at debounce-fire — a modal
-    // opened during the debounce window (e.g. ⌘K right after a resize) must not
-    // be closed by a resize that predates it.
-    const searchWasOpenAtResizeStart = !document
-      .getElementById("global-search-modal")
-      .classList.contains("hidden");
-    _resizeTimer = setTimeout(() => {
-      const prevWidth = _lastViewportWidth;
-      const width = window.innerWidth;
-      _lastViewportWidth = width;
-      const widthChangedSignificantly = Math.abs(width - prevWidth) > 50;
-
-      if (isMobileTocOpen()) closeMobileToc();
-
-      if (widthChangedSignificantly && searchWasOpenAtResizeStart) {
-        closeGlobalSearch();
-      }
-
-      // Hover preview position goes stale on resize/rotation.
-      document
-        .getElementById("hover-preview")
-        ?.classList.remove("visible", "hover-preview--sheet-open");
-
-      // Re-fit Mermaid only when the content view's width actually changed.
-      if (state.currentView === "content" && widthChangedSignificantly) {
-        rerenderMermaidDiagrams();
-      }
-    }, 150);
-  },
-  { passive: true },
-);
-
-/* ═══════════════════════════════════════════════════════════════
    MODAL BACKDROP & GLOBAL KEYDOWN
    ═══════════════════════════════════════════════════════════════ */
 document.getElementById("prefs-backdrop").addEventListener("click", () => Settings.close());
 
 document.getElementById("auth-backdrop").addEventListener("click", () => AuthModal.close());
-
-document.getElementById("wiki-switcher-overlay").addEventListener("click", closeWikiSwitcher);
-
-function openWikiSwitcher() {
-  const modal = document.getElementById("wiki-switcher-modal");
-  const list = document.getElementById("wiki-switcher-list");
-  list.innerHTML = WIKIS.map(
-    (w) => `
-    <button class="wiki-switcher-card${w.id === state.currentWikiId ? " wiki-switcher-card--active" : ""}"
-      data-wiki-id="${escHtml(w.id)}" type="button">
-      <span class="wiki-switcher-card-icon">${escHtml(w.icon || "📖")}</span>
-      <span class="wiki-switcher-card-body">
-        <span class="wiki-switcher-card-name">${escHtml(w.name)}</span>
-        ${w.description ? `<span class="wiki-switcher-card-desc">${escHtml(w.description)}</span>` : ""}
-      </span>
-    </button>`,
-  ).join("");
-  list.querySelectorAll(".wiki-switcher-card").forEach((card) => {
-    card.addEventListener("click", () => {
-      closeWikiSwitcher();
-      navigate(card.dataset.wikiId);
-    });
-  });
-  modal.classList.remove("hidden");
-  modal.setAttribute("aria-hidden", "false");
-  const active =
-    list.querySelector(".wiki-switcher-card--active") || list.querySelector(".wiki-switcher-card");
-  active?.focus();
-}
-
-function closeWikiSwitcher() {
-  const modal = document.getElementById("wiki-switcher-modal");
-  modal.classList.add("hidden");
-  modal.setAttribute("aria-hidden", "true");
-}
 
 document.addEventListener("keydown", (e) => {
   // ⌘K: Global Search
@@ -600,55 +362,6 @@ document.addEventListener("keydown", (e) => {
 });
 
 /* ═══════════════════════════════════════════════════════════════
-   DISTRACTION-FREE MODE
-   ═══════════════════════════════════════════════════════════════ */
-let _distractionFree = false;
-function toggleDistractionFree() {
-  _distractionFree = !_distractionFree;
-  document.body.classList.toggle("distraction-free", _distractionFree);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   HOME HERO PARALLAX
-   ═══════════════════════════════════════════════════════════════ */
-(function bindHomeParallax() {
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-  if (reduced.matches) return;
-
-  const homeView = document.getElementById("view-home");
-  if (!homeView) return;
-
-  let rafId = null;
-  homeView.addEventListener(
-    "mousemove",
-    (e) => {
-      if (reduced.matches) return;
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        rafId = null;
-        const grid = homeView.querySelector(".home-bg-grid");
-        if (!grid) return;
-        const cx = window.innerWidth / 2;
-        const cy = window.innerHeight / 2;
-        const dx = ((e.clientX - cx) / cx) * 8;
-        const dy = ((e.clientY - cy) / cy) * 8;
-        grid.style.transform = `translate(${dx}px, ${dy}px)`;
-      });
-    },
-    { passive: true },
-  );
-
-  homeView.addEventListener(
-    "mouseleave",
-    () => {
-      const grid = homeView.querySelector(".home-bg-grid");
-      if (grid) grid.style.transform = "";
-    },
-    { passive: true },
-  );
-})();
-
-/* ═══════════════════════════════════════════════════════════════
    DIAGRAM THEME SYNC
    ═══════════════════════════════════════════════════════════════ */
 let _mermaidRerenderTimer = null;
@@ -669,59 +382,6 @@ window.addEventListener("popstate", (e) => {
 window.addEventListener("hashchange", () => {
   route(location.hash.slice(1));
 });
-
-/* ═══════════════════════════════════════════════════════════════
-   DEBUG OVERLAY (?debug URL param)
-   ═══════════════════════════════════════════════════════════════ */
-function mountDebugOverlay() {
-  const el = document.createElement("div");
-  el.id = "debug-overlay";
-  el.className = "debug-overlay";
-
-  const header = document.createElement("div");
-  header.className = "debug-header";
-  const titleSpan = document.createElement("span");
-  titleSpan.className = "debug-title";
-  titleSpan.textContent = "Debug";
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "debug-close";
-  closeBtn.setAttribute("aria-label", "Close");
-  closeBtn.textContent = "✕";
-  closeBtn.addEventListener("click", () => el.remove());
-  header.appendChild(titleSpan);
-  header.appendChild(closeBtn);
-
-  const body = document.createElement("div");
-  body.className = "debug-body";
-  el.appendChild(header);
-  el.appendChild(body);
-  document.body.appendChild(el);
-
-  function refresh() {
-    const rows = [
-      ["View", state.currentView || "-"],
-      ["Wiki", state.currentWikiId || "-"],
-      ["File", state.currentFilePath || "-"],
-      ["Wikis", String(WIKIS.length)],
-      ["SW", "serviceWorker" in navigator ? "supported" : "none"],
-      ["Cache API", "caches" in window ? "supported" : "none"],
-      ["Clipboard", navigator.clipboard ? "async" : "execCommand"],
-      ["Theme", document.documentElement.getAttribute("data-theme") || "dark"],
-    ];
-    body.innerHTML = rows
-      .map(
-        ([k, v]) =>
-          `<div class="debug-row"><span class="debug-key">${escHtml(
-            k,
-          )}</span><span class="debug-val">${escHtml(String(v))}</span></div>`,
-      )
-      .join("");
-  }
-
-  refresh();
-  document.addEventListener("wiki:themechange", refresh);
-  window.addEventListener("hashchange", () => setTimeout(refresh, 100));
-}
 
 /* ═══════════════════════════════════════════════════════════════
    INIT - parse hash on load

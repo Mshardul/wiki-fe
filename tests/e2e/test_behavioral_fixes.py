@@ -44,8 +44,8 @@ def test_no_duplicate_hotkey_bindings():
 
 
 def test_localStorage_keys_are_unique():
-    """All localStorage keys defined in storage.js are unique and article-scoped keys are wiki-prefixed."""
-    src = (JS_DIR / "storage.js").read_text()
+    """All localStorage keys defined in js/storage/ are unique and article-scoped keys are wiki-prefixed."""
+    src = "\n".join(p.read_text() for p in sorted((JS_DIR / "storage").glob("*.js")))
 
     # Extract string constant key names (e.g. "wiki-bookmarks", "wiki-recents", etc.)
     const_key_pattern = re.compile(r'const\s+\w+_KEY\w*\s*=\s*["\']([^"\']+)["\']')

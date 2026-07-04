@@ -1,4 +1,4 @@
-const SHELL_CACHE = "wiki-shell-v6";
+const SHELL_CACHE = "wiki-shell-v7";
 const ARTICLE_CACHE = "wiki-articles-v1";
 
 self.addEventListener("install", (e) => {
@@ -19,6 +19,7 @@ self.addEventListener("install", (e) => {
             "./js/render.js",
             "./js/content.js",
             "./js/search.js",
+            "./js/search-features.js",
             "./js/storage.js",
             "./js/auth.js",
             "./js/api.js",

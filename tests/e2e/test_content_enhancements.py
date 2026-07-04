@@ -4,6 +4,7 @@ Content view enhancements:
 - Image lightbox zoom (#zoom-overlay, .zoomable-img)
 - Mermaid diagram zoom (click .mermaid-diagram → overlay svg)
 - Diagram theme sync (SVG re-renders on theme change)
+- Mermaid step-through walkthrough (Play button, caption rail, node highlighting)
 - Anchor link toast confirmation
 - Reading progress bar glow
 - Code block header with traffic lights and copy button
@@ -37,6 +38,20 @@ ARTICLE_WITH_MERMAID = """\
 ```mermaid
 graph LR
   A[Start] --> B[Middle] --> C[End]
+```
+
+Some text.
+"""
+
+ARTICLE_WITH_MERMAID_STEPS = """\
+# Mermaid Step-Through Test
+
+```mermaid
+graph LR
+  A[Start] --> B[Middle] --> C[End]
+  %% step: 1 a "Start at node A"
+  %% step: 2 a,b "Traverse edge A to B"
+  %% step: 3 b,c "Traverse edge B to C"
 ```
 
 Some text.
@@ -366,6 +381,63 @@ def test_diagram_src_preserved_after_theme_change(page, base_url):
     )
     assert src_before == src_after, (
         "data-mermaid-src changed after re-render - re-render should preserve source attribute"
+    )
+
+
+# ── Mermaid step-through ──────────────────────────────────────────
+
+
+def test_mermaid_no_step_through_button_without_steps(page, base_url):
+    """A mermaid diagram with no %% step: directives gets no Play button."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="steps-none")
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
+
+    count = page.locator(".mermaid-step-play-btn").count()
+    assert count == 0, "Play button should not appear when no %% step: directives are present"
+
+
+def test_mermaid_step_through_play_button_appears(page, base_url):
+    """A mermaid diagram with %% step: directives shows a Play button."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_STEPS, slug="steps-btn")
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
+
+    page.wait_for_selector(".mermaid-step-play-btn", timeout=3_000)
+    count = page.locator(".mermaid-step-play-btn").count()
+    assert count == 1, "Play button should appear when %% step: directives are present"
+
+
+def test_mermaid_step_through_play_reveals_rail_and_highlights_first_step(page, base_url):
+    """Clicking Play reveals the caption rail and highlights the first step's node."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_STEPS, slug="steps-play")
+    page.wait_for_selector(".mermaid-step-play-btn", timeout=8_000)
+
+    page.locator(".mermaid-step-play-btn").click()
+    page.wait_for_selector(".mermaid-step-rail", state="visible", timeout=3_000)
+
+    label_text = page.locator(".mermaid-step-label").inner_text()
+    assert "Step 1/3" in label_text, f"Expected 'Step 1/3' in rail label, got: {label_text}"
+
+    active_count = page.locator(".mermaid-diagram .step-active").count()
+    assert active_count >= 1, "First step should highlight at least one node"
+
+
+def test_mermaid_step_through_next_advances_step(page, base_url):
+    """Clicking Next advances to the next step and updates the caption."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_STEPS, slug="steps-next")
+    page.wait_for_selector(".mermaid-step-play-btn", timeout=8_000)
+
+    page.locator(".mermaid-step-play-btn").click()
+    page.wait_for_selector(".mermaid-step-rail", state="visible", timeout=3_000)
+
+    page.locator(".mermaid-step-next").click()
+    page.wait_for_function(
+        "() => document.querySelector('.mermaid-step-label')?.textContent.includes('Step 2/3')",
+        timeout=3_000,
+    )
+
+    label_text = page.locator(".mermaid-step-label").inner_text()
+    assert "Traverse edge A to B" in label_text, (
+        f"Expected step 2 caption in rail label, got: {label_text}"
     )
 
 
