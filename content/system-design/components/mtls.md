@@ -10,11 +10,11 @@
 
 ## Table of Contents
 
-<!-- Partial article — seeded from authentication.md. Sections to be completed. -->
+<!-- Partial article - seeded from authentication.md. Sections to be completed. -->
 
 - [How mTLS Works](#how-mtls-works)
 - [PKI Management](#pki-management)
-- [Certificate Lifecycle — Issuance, Rotation, Revocation](#certificate-lifecycle--issuance-rotation-revocation)
+- [Certificate Lifecycle - Issuance, Rotation, Revocation](#certificate-lifecycle--issuance-rotation-revocation)
 - [Service Mesh Integration](#service-mesh-integration)
 
 ---
@@ -27,7 +27,7 @@
 
 ## How mTLS Works
 
-Standard TLS authenticates the server to the client — the server presents a certificate and the client verifies it against a trusted CA. mTLS adds the reverse: the client also presents a certificate, and the server verifies it. Both sides prove their identity during the handshake, before any application data is exchanged.
+Standard TLS authenticates the server to the client - the server presents a certificate and the client verifies it against a trusted CA. mTLS adds the reverse: the client also presents a certificate, and the server verifies it. Both sides prove their identity during the handshake, before any application data is exchanged.
 
 ```
 Client                              Server
@@ -40,7 +40,7 @@ Client                              Server
   │  Application data encrypted     │
 ```
 
-The server validates the client certificate against its trusted CA. The certificate encodes the client's identity in the Common Name or Subject Alternative Name field. No API keys, no application-layer tokens — identity is established at the connection layer before any application code runs.
+The server validates the client certificate against its trusted CA. The certificate encodes the client's identity in the Common Name or Subject Alternative Name field. No API keys, no application-layer tokens - identity is established at the connection layer before any application code runs.
 
 ---
 
@@ -52,7 +52,7 @@ PKI (Public Key Infrastructure) is the operational challenge of mTLS. Someone mu
 - **Certificate issuance:** Each service needs a certificate with its identity encoded in the SAN. Short TTL (hours to days, not years) limits the exposure window of a compromised certificate.
 - **Certificate rotation:** Certs must be rotated before expiry without downtime. This requires the service to load the new cert and the CA to issue it ahead of expiry. Manual rotation does not scale.
 - **Revocation:** When a service is decommissioned or compromised, its certificate must be revoked. Two mechanisms:
-  - **CRL (Certificate Revocation List):** CA publishes a list of revoked serial numbers. Verifiers download periodically — revocation is not instant.
+  - **CRL (Certificate Revocation List):** CA publishes a list of revoked serial numbers. Verifiers download periodically - revocation is not instant.
   - **OCSP (Online Certificate Status Protocol):** Verifier queries the CA in real-time for each cert. Instant revocation but adds latency and a dependency on the CA being reachable.
 
 Without automation, PKI becomes a toil-intensive, error-prone operation. Manual cert rotation across hundreds of services is where mTLS deployments fail in practice.
@@ -61,9 +61,9 @@ Without automation, PKI becomes a toil-intensive, error-prone operation. Manual 
 
 ## Service Mesh Integration
 
-_Service meshes handle PKI automatically — the correct production approach for mTLS at scale._
+_Service meshes handle PKI automatically - the correct production approach for mTLS at scale._
 
-**Istio:** The control plane's Citadel (now merged into istiod) acts as the internal CA. It issues short-lived X.509 certificates to each Envoy sidecar proxy. Certs are automatically rotated before expiry. The application process never handles TLS directly — the sidecar intercepts all traffic and handles the mTLS handshake transparently.
+**Istio:** The control plane's Citadel (now merged into istiod) acts as the internal CA. It issues short-lived X.509 certificates to each Envoy sidecar proxy. Certs are automatically rotated before expiry. The application process never handles TLS directly - the sidecar intercepts all traffic and handles the mTLS handshake transparently.
 
 ```
 Pod A (App + Envoy sidecar)   →   mTLS   →   Pod B (App + Envoy sidecar)
@@ -78,5 +78,5 @@ Pod A (App + Envoy sidecar)   →   mTLS   →   Pod B (App + Envoy sidecar)
 
 **When NOT to use a service mesh for mTLS:**
 
-- Heterogeneous infrastructure (VMs + containers + Lambda) — sidecar model doesn't apply. Use SPIFFE/SPIRE instead.
-- Simple two-service system where the operational overhead of a mesh is not justified — use JWT with service accounts or API keys.
+- Heterogeneous infrastructure (VMs + containers + Lambda) - sidecar model doesn't apply. Use SPIFFE/SPIRE instead.
+- Simple two-service system where the operational overhead of a mesh is not justified - use JWT with service accounts or API keys.

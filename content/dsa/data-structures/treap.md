@@ -14,7 +14,7 @@
 
 ## How it works
 
-<!-- DS1: internal layout + a REAL diagram (mermaid or ASCII — no placeholder). -->
+<!-- DS1: internal layout + a REAL diagram (mermaid or ASCII - no placeholder). -->
 
 ## Operations
 
@@ -30,12 +30,12 @@
 
 ## When to use / when not
 
-<!-- DS4 + U3: decision cues naming ≥1 sibling structure (AVL, red-black, skip list) — PROSE. The scannable table is DS8 below, don't duplicate.
+<!-- DS4 + U3: decision cues naming ≥1 sibling structure (AVL, red-black, skip list) - PROSE. The scannable table is DS8 below, don't duplicate.
      U17 (advisory): fold in ONE sentence naming a real system where this is a workhorse (cross-link system-design where natural). -->
 
 ## Comparison
 
-<!-- DS8 (gated): a TABLE — rows = treap + AVL + red-black + skip list, columns = key ops' time/space + the distinguishing trade-off (deterministic vs randomized, rotation count, implementation complexity). Scannable. -->
+<!-- DS8 (gated): a TABLE - rows = treap + AVL + red-black + skip list, columns = key ops' time/space + the distinguishing trade-off (deterministic vs randomized, rotation count, implementation complexity). Scannable. -->
 
 ## Variants
 
@@ -43,7 +43,7 @@
 
 ## Traversal & invariant
 
-<!-- FB: Tree/heap family block — dual invariant: BST property on keys, heap property on random priorities. Explain why random priorities give expected O(log n) height with high probability. -->
+<!-- FB: Tree/heap family block - dual invariant: BST property on keys, heap property on random priorities. Explain why random priorities give expected O(log n) height with high probability. -->
 
 ## Implementation
 
@@ -55,4 +55,4 @@
 
 ## Practice problems
 
-<!-- U6: ≥3 problems, each a WORKED entry (### subheading per problem): (1) full problem statement in 2–3 sentences + constraints where they matter; (2) approach/insight in prose; (3) short runnable Python solution; (4) time/space complexity. Tag the pattern + relative .md cross-link where a target exists. Favor canonical staples. EVERY PROBLEM MUST EXERCISE A DISTINCT TECHNIQUE — no duplicates padding the count. -->
+<!-- U6: ≥3 problems, each a WORKED entry (### subheading per problem): (1) full problem statement in 2–3 sentences + constraints where they matter; (2) approach/insight in prose; (3) short runnable Python solution; (4) time/space complexity. Tag the pattern + relative .md cross-link where a target exists. Favor canonical staples. EVERY PROBLEM MUST EXERCISE A DISTINCT TECHNIQUE - no duplicates padding the count. -->

@@ -26,17 +26,17 @@
 
 ## What it is
 
-**Modular arithmetic** is arithmetic performed on a "clock face" — after every operation you wrap around at a fixed modulus `m`, so all values stay in the range `[0, m-1]`. Formally, `a mod m` is the remainder when `a` is divided by `m`; two numbers are *congruent modulo m* (written `a ≡ b (mod m)`) when they differ by a multiple of m.
+**Modular arithmetic** is arithmetic performed on a "clock face" - after every operation you wrap around at a fixed modulus `m`, so all values stay in the range `[0, m-1]`. Formally, `a mod m` is the remainder when `a` is divided by `m`; two numbers are *congruent modulo m* (written `a ≡ b (mod m)`) when they differ by a multiple of m.
 
-> **One-liner:** Add, subtract, multiply, and exponentiate integers while keeping every result bounded — the technique that lets you compute `3^10^100 mod 10^9+7` in microseconds instead of years.
+> **One-liner:** Add, subtract, multiply, and exponentiate integers while keeping every result bounded - the technique that lets you compute `3^10^100 mod 10^9+7` in microseconds instead of years.
 
-**Soundbite for interviews:** "Modular arithmetic gives you the last-digit behavior of a computation without carrying the full number — take mod at every step because `(a op b) mod m = ((a mod m) op (b mod m)) mod m`."
+**Soundbite for interviews:** "Modular arithmetic gives you the last-digit behavior of a computation without carrying the full number - take mod at every step because `(a op b) mod m = ((a mod m) op (b mod m)) mod m`."
 
 ---
 
 ## Intuition
 
-Picture a 12-hour clock. At 11 o'clock, adding 3 hours gives 2 — not 14. The result *wraps*. Modular arithmetic formalizes this: the "clock size" is the modulus `m`, and every result lives on that clock.
+Picture a 12-hour clock. At 11 o'clock, adding 3 hours gives 2 - not 14. The result *wraps*. Modular arithmetic formalizes this: the "clock size" is the modulus `m`, and every result lives on that clock.
 
 The killer property is **homomorphism**: the remainder of a sum, product, or difference equals the sum, product, or difference of the remainders.
 
@@ -45,13 +45,13 @@ The killer property is **homomorphism**: the remainder of a sum, product, or dif
 (a × b) mod m  =  ((a mod m) × (b mod m)) mod m
 ```
 
-This means you can take mod *at every step* of a computation — intermediate values never grow larger than `m-1`. Without it, computing `3^1000000 mod 10^9+7` would require a billion-digit integer. With it, every intermediate product fits in a 64-bit integer.
+This means you can take mod *at every step* of a computation - intermediate values never grow larger than `m-1`. Without it, computing `3^1000000 mod 10^9+7` would require a billion-digit integer. With it, every intermediate product fits in a 64-bit integer.
 
 Three operations build on this foundation:
 
-1. **Modular exponentiation** — compute `a^n mod m` in O(log n) by squaring
-2. **Modular inverse** — find `a^(-1) mod m` (the division analogue) in O(log m)
-3. **Chinese Remainder Theorem** — reconstruct a value from its remainders modulo coprime moduli
+1. **Modular exponentiation** - compute `a^n mod m` in O(log n) by squaring
+2. **Modular inverse** - find `a^(-1) mod m` (the division analogue) in O(log m)
+3. **Chinese Remainder Theorem** - reconstruct a value from its remainders modulo coprime moduli
 
 ---
 
@@ -59,7 +59,7 @@ Three operations build on this foundation:
 
 ### Binary (fast) exponentiation
 
-The naive loop `result = 1; for _ in range(n): result = result * base % m` is O(n) — useless when n is 10^18. Binary exponentiation exploits the following recurrence:
+The naive loop `result = 1; for _ in range(n): result = result * base % m` is O(n) - useless when n is 10^18. Binary exponentiation exploits the following recurrence:
 
 ```
 base^n = (base^(n/2))^2          if n is even
@@ -201,38 +201,38 @@ Total precomputation: **O(n + log p)**, queries: **O(1)**.
 | Input size / condition               | Expected complexity   | Approach                                                                  |
 | ------------------------------------ | --------------------- | ------------------------------------------------------------------------- |
 | n ≤ 10^6, answer mod p               | O(n)                  | Precompute fact + inv_fact arrays; O(1) per C(n,k) query                  |
-| n ≤ 10^9, single `a^n mod p`         | O(log n)              | Binary exponentiation — `pow(a, n, p)` in Python; loop in C++             |
-| n ≤ 10^18                            | O(log n)              | Binary exponentiation mandatory — repeated multiply overflows and is O(n) |
+| n ≤ 10^9, single `a^n mod p`         | O(log n)              | Binary exponentiation - `pow(a, n, p)` in Python; loop in C++             |
+| n ≤ 10^18                            | O(log n)              | Binary exponentiation mandatory - repeated multiply overflows and is O(n) |
 | p is prime                           | O(log p)              | Modular inverse via Fermat: `pow(a, p-2, p)`                              |
-| p is **not** prime, gcd(a,p)=1       | O(log p)              | Extended Euclidean algorithm — Fermat fails for composite moduli          |
+| p is **not** prime, gcd(a,p)=1       | O(log p)              | Extended Euclidean algorithm - Fermat fails for composite moduli          |
 | gcd(a, p) > 1                        | N/A                   | Inverse does not exist; check before computing                             |
 | "answer mod 10^9+7" in problem       | whatever the problem  | Signal: the answer grows too large to store; take mod at every step       |
 | n large, p small (p ≤ 10^6)          | O(p + log n)          | Lucas' theorem: `C(n,k) = C(n mod p, k mod p) × C(n/p, k/p) mod p`      |
 
-**Reading the constraint:** When a problem says "mod 10^9+7" or "mod a prime p", it's telling you the answer is combinatorial or exponential in the input — the *constraint is the signal* to plan for modular arithmetic from step one, not as an afterthought.
+**Reading the constraint:** When a problem says "mod 10^9+7" or "mod a prime p", it's telling you the answer is combinatorial or exponential in the input - the *constraint is the signal* to plan for modular arithmetic from step one, not as an afterthought.
 
 ---
 
 ## When to use / when not
 
-**Cache behavior:** Binary exponentiation operates entirely on scalar variables (`result`, `base`, `exp`) — everything fits in registers, no array is touched, and the loop is trivially cache-friendly. The linear-sieve and factorial precomputation passes are single forward (or backward) scans over a dense integer array — stride-1, sequential prefetch, maximally cache-friendly. By contrast, arbitrary `C(n, k)` queries into the factorial-inverse table are **cache-hostile when n and k are far apart**: `fact[n]`, `inv_fact[k]`, and `inv_fact[n-k]` can be separated by hundreds of kilobytes of array, each a potential L2/L3 miss. For n ≤ 10^6 the entire table fits in ~8 MB (L3 on most machines), so cold-start misses amortize away after the first sweep — but for n ≈ 10^7 the table exceeds L3 and random-query performance degrades noticeably.
+**Cache behavior:** Binary exponentiation operates entirely on scalar variables (`result`, `base`, `exp`) - everything fits in registers, no array is touched, and the loop is trivially cache-friendly. The linear-sieve and factorial precomputation passes are single forward (or backward) scans over a dense integer array - stride-1, sequential prefetch, maximally cache-friendly. By contrast, arbitrary `C(n, k)` queries into the factorial-inverse table are **cache-hostile when n and k are far apart**: `fact[n]`, `inv_fact[k]`, and `inv_fact[n-k]` can be separated by hundreds of kilobytes of array, each a potential L2/L3 miss. For n ≤ 10^6 the entire table fits in ~8 MB (L3 on most machines), so cold-start misses amortize away after the first sweep - but for n ≈ 10^7 the table exceeds L3 and random-query performance degrades noticeably.
 
 **Use modular arithmetic when:**
 
-- The problem says "output the answer modulo 10^9+7" (or any prime) — this is the universal CP signal
+- The problem says "output the answer modulo 10^9+7" (or any prime) - this is the universal CP signal
 - Counting problems: permutations, combinations, and paths grow exponentially; keep them bounded
 - Power / exponentiation of integers with large exponents (cryptography, DP transitions)
 - Hashing by polynomial rolling hash uses a prime modulus to reduce collisions
 
 **Do not use (or use with care) when:**
 
-- You need the actual value, not the remainder — modular arithmetic destroys the magnitude. A problem asking for the *exact* count of paths cannot be answered with a mod-reduced value unless it asks for the result mod something. The canonical trap: you cannot compare two mod-reduced values to determine which original was larger.
-- Checking divisibility — `a mod m == 0` checks divisibility by m, but you can't infer "is a divisible by p?" from `a mod q` for `q ≠ p`. Modular arithmetic is not a general divisibility oracle.
-- Floating-point quantities — never substitute integer modular arithmetic for floating-point reasoning.
-- **Prefer extended Euclidean over Fermat when the modulus might not be prime.** Using `pow(a, m-2, m)` silently gives a wrong answer if m is composite — it's the most common modular-inverse bug in contest code. Always confirm primality before applying Fermat.
+- You need the actual value, not the remainder - modular arithmetic destroys the magnitude. A problem asking for the *exact* count of paths cannot be answered with a mod-reduced value unless it asks for the result mod something. The canonical trap: you cannot compare two mod-reduced values to determine which original was larger.
+- Checking divisibility - `a mod m == 0` checks divisibility by m, but you can't infer "is a divisible by p?" from `a mod q` for `q ≠ p`. Modular arithmetic is not a general divisibility oracle.
+- Floating-point quantities - never substitute integer modular arithmetic for floating-point reasoning.
+- **Prefer extended Euclidean over Fermat when the modulus might not be prime.** Using `pow(a, m-2, m)` silently gives a wrong answer if m is composite - it's the most common modular-inverse bug in contest code. Always confirm primality before applying Fermat.
 - **Lucas' theorem when n ≥ p.** The factorial precomputation table breaks down when n ≥ p because `fact[p] = 0 mod p`. For combinations C(n, k) with n ≥ p, use Lucas' theorem: `C(n, k) ≡ C(n mod p, k mod p) × C(n/p, k/p) (mod p)`, recurse until arguments are < p. This is the alternative when the standard factorial table is inapplicable.
 
-**Real-world usage:** "mod 10^9+7" is universal in competitive programming because 10^9+7 is prime, just under 2^30, and the product of any two values below it fits in a signed 64-bit integer — no intermediate overflow. At scale: RSA encryption uses modular exponentiation on 2048-bit numbers — the *same binary exponentiation algorithm*, but applied to arbitrary-precision integers by the crypto library. Every time you encrypt data in a browser, modular exponentiation runs in the TLS handshake.
+**Real-world usage:** "mod 10^9+7" is universal in competitive programming because 10^9+7 is prime, just under 2^30, and the product of any two values below it fits in a signed 64-bit integer - no intermediate overflow. At scale: RSA encryption uses modular exponentiation on 2048-bit numbers - the *same binary exponentiation algorithm*, but applied to arbitrary-precision integers by the crypto library. Every time you encrypt data in a browser, modular exponentiation runs in the TLS handshake.
 
 ---
 
@@ -244,9 +244,9 @@ Total precomputation: **O(n + log p)**, queries: **O(1)**.
 | Extended Euclidean               | O(log p)              | O(n log p)        | No                | Works for any modulus when `gcd(a,p)=1`                  |
 | Linear sieve inverse             | O(n) total            | O(n) total        | Yes               | One-time precompute; O(1) per query after                 |
 | Factorial + inverse precompute   | O(n + log p) setup    | O(1) per C(n,k)  | Yes               | Best when many combination queries                        |
-| Python `pow(a, b, m)` built-in   | O(log b)              | —                 | No requirement    | Uses fast three-arg form; always prefer over `a**b % m`  |
-| Naive `a ** n % m`               | O(n)                  | —                 | —                 | Catastrophic: builds full a^n in memory first             |
-| BigInteger / arbitrary precision | O(n · M(n))           | —                 | —                 | Wasteful when mod suffices; only needed for exact value   |
+| Python `pow(a, b, m)` built-in   | O(log b)              | -                 | No requirement    | Uses fast three-arg form; always prefer over `a**b % m`  |
+| Naive `a ** n % m`               | O(n)                  | -                 | -                 | Catastrophic: builds full a^n in memory first             |
+| BigInteger / arbitrary precision | O(n · M(n))           | -                 | -                 | Wasteful when mod suffices; only needed for exact value   |
 
 **Crossover:** Use the linear sieve when you need inverses of *all* integers in a range (e.g., factorial inverse table). Use Fermat for *one-off* inverses. Use extended Euclidean when p might not be prime.
 
@@ -254,7 +254,7 @@ Total precomputation: **O(n + log p)**, queries: **O(1)**.
 
 ## Modular arithmetic identities
 
-> **Family note:** Modular arithmetic sits in the **Bit/greedy** family by the spec (the binary exponentiation loop is a bit-scan loop — same shift-and-test skeleton as most bit tricks). The table below is the "Bit-tricks table" repurposed for modular identities, since mod-arith's canonical reference is a set of algebraic laws, not low-level bit patterns. The bit-manipulation connection is direct: binary exponentiation *is* bit manipulation applied to an exponent.
+> **Family note:** Modular arithmetic sits in the **Bit/greedy** family by the spec (the binary exponentiation loop is a bit-scan loop - same shift-and-test skeleton as most bit tricks). The table below is the "Bit-tricks table" repurposed for modular identities, since mod-arith's canonical reference is a set of algebraic laws, not low-level bit patterns. The bit-manipulation connection is direct: binary exponentiation *is* bit manipulation applied to an exponent.
 
 ### Fundamental congruence properties
 
@@ -266,7 +266,7 @@ Total precomputation: **O(n + log p)**, queries: **O(1)**.
 | `(a / b) mod m = (a × b^(-1)) mod m`  (when inverse exists)  | Division is multiplication by the inverse; the inverse exists iff `gcd(b,m)=1`.        |
 | `a^n mod m = (a mod m)^n mod m`                               | Apply multiplicative property n-1 times; basis for binary exponentiation.              |
 
-**Property that does NOT hold:** `(a / b) mod m ≠ (a mod m) / (b mod m)` — standard integer division is not modular division. Always convert to inverse multiplication.
+**Property that does NOT hold:** `(a / b) mod m ≠ (a mod m) / (b mod m)` - standard integer division is not modular division. Always convert to inverse multiplication.
 
 ### Fermat's little theorem
 
@@ -298,7 +298,7 @@ EXTENDED-GCD(a, m):
   return g, y, x - (a / m)·y  ▷ back-substitute
 ```
 
-Runtime: O(log min(a, m)) — same as Euclidean GCD.
+Runtime: O(log min(a, m)) - same as Euclidean GCD.
 
 ### Chinese Remainder Theorem (CRT)
 
@@ -316,17 +316,17 @@ x = (Σ rᵢ × Mᵢ × yᵢ) mod M
 
 ## Edge cases
 
-1. **Negative subtraction result in C++ / Java:** `(a - b) % m` can be negative when `a < b`. The fix: `((a - b) % m + m) % m`. Python's `%` operator always returns a non-negative result (it uses floored division), so this is not needed in Python — but you *must* apply it in C++ and Java.
+1. **Negative subtraction result in C++ / Java:** `(a - b) % m` can be negative when `a < b`. The fix: `((a - b) % m + m) % m`. Python's `%` operator always returns a non-negative result (it uses floored division), so this is not needed in Python - but you *must* apply it in C++ and Java.
 
-2. **Integer overflow on multiplication in C++:** If `a` and `b` are both up to `10^9`, then `a * b` overflows a 32-bit `int` (max ~2×10^9). Use `long long` (64-bit). Even with `long long`, `a * b * c` for three values near `10^9` can overflow — intermediate-mod after each multiplication.
+2. **Integer overflow on multiplication in C++:** If `a` and `b` are both up to `10^9`, then `a * b` overflows a 32-bit `int` (max ~2×10^9). Use `long long` (64-bit). Even with `long long`, `a * b * c` for three values near `10^9` can overflow - intermediate-mod after each multiplication.
 
 3. **Modular inverse of 0 does not exist:** `0` has no multiplicative inverse mod any m. Before computing an inverse, check that the argument is nonzero (and for non-prime m, check `gcd(a, m) == 1`).
 
 4. **Fermat's little theorem fails for composite m:** `a^(m-1) mod m ≠ 1` in general when m is not prime (except for Carmichael numbers, which are a rare pathology). For a composite modulus, use the extended Euclidean algorithm.
 
-5. **Off-by-one in factorial inverse precomputation:** Computing `inv_fact[n]` requires `fact[n]` to already be computed. Ensure the forward pass goes all the way to `n` (inclusive), and the backward pass starts from `n-1` and goes down to `0`. An array declared `fact[n]` in C++ holds indices 0..n-1, not 0..n — use `fact[n+1]`.
+5. **Off-by-one in factorial inverse precomputation:** Computing `inv_fact[n]` requires `fact[n]` to already be computed. Ensure the forward pass goes all the way to `n` (inclusive), and the backward pass starts from `n-1` and goes down to `0`. An array declared `fact[n]` in C++ holds indices 0..n-1, not 0..n - use `fact[n+1]`.
 
-6. **Using `a ** b % m` in Python (CP trap):** Python's `**` builds the full `a^b` as an arbitrary-precision integer before applying `%`. For large b, this is catastrophically slow. Always use `pow(a, b, m)` — Python's three-argument `pow` uses binary exponentiation internally.
+6. **Using `a ** b % m` in Python (CP trap):** Python's `**` builds the full `a^b` as an arbitrary-precision integer before applying `%`. For large b, this is catastrophically slow. Always use `pow(a, b, m)` - Python's three-argument `pow` uses binary exponentiation internally.
 
 ---
 
@@ -371,7 +371,7 @@ MODINV-GENERAL(a, m)
 ```python
 def modpow(base: int, exp: int, mod: int) -> int:
     """Binary exponentiation: base^exp mod mod, O(log exp)."""
-    # In contests, just use pow(base, exp, mod) — Python's built-in is this.
+    # In contests, just use pow(base, exp, mod) - Python's built-in is this.
     result = 1
     base %= mod
     while exp > 0:
@@ -431,15 +431,15 @@ def comb(n: int, k: int, fact: list[int], inv_fact: list[int], p: int) -> int:
 
 ## What the interviewer probes for
 
-- **"Why not just compute `a**b` and then take mod?"** — For large b, `a**b` is an astronomically large integer (billions of digits). Python builds it in memory before applying `%`; the memory and time cost is O(b·log a) bit-operations. Binary exponentiation keeps every intermediate value below m, so the bit-width never grows — O(log b) multiplications of numbers each at most `~log m` bits wide.
+- **"Why not just compute `a**b` and then take mod?"** - For large b, `a**b` is an astronomically large integer (billions of digits). Python builds it in memory before applying `%`; the memory and time cost is O(b·log a) bit-operations. Binary exponentiation keeps every intermediate value below m, so the bit-width never grows - O(log b) multiplications of numbers each at most `~log m` bits wide.
 
-- **"What if the modulus isn't prime?"** — Fermat's little theorem requires p prime. For composite m, use the extended Euclidean algorithm. The inverse exists iff `gcd(a, m) = 1` — if the modulus and the value share a common factor, no inverse exists (analogous to: you can't divide 6 by 4 and get an integer, because they share factor 2).
+- **"What if the modulus isn't prime?"** - Fermat's little theorem requires p prime. For composite m, use the extended Euclidean algorithm. The inverse exists iff `gcd(a, m) = 1` - if the modulus and the value share a common factor, no inverse exists (analogous to: you can't divide 6 by 4 and get an integer, because they share factor 2).
 
-- **"How do you compute `n! mod p` for large n?"** — Two cases. If n < p: precompute `fact[0..n]` in O(n), done. If n ≥ p: by Wilson's theorem, `p!` contains p as a factor so `p! ≡ 0 (mod p)` — and `n!` for n ≥ p is also `0 mod p`. For combinations `C(n, k)` when n ≥ p, use Lucas' theorem: `C(n, k) ≡ C(n mod p, k mod p) × C(n/p, k/p) (mod p)`.
+- **"How do you compute `n! mod p` for large n?"** - Two cases. If n < p: precompute `fact[0..n]` in O(n), done. If n ≥ p: by Wilson's theorem, `p!` contains p as a factor so `p! ≡ 0 (mod p)` - and `n!` for n ≥ p is also `0 mod p`. For combinations `C(n, k)` when n ≥ p, use Lucas' theorem: `C(n, k) ≡ C(n mod p, k mod p) × C(n/p, k/p) (mod p)`.
 
-- **"How do you handle `(a - b) mod m` safely in C++?"** — Use `((a % m) - (b % m) + m) % m`. The `+m` ensures the intermediate can never be negative. In Python, `(a - b) % m` is always correct because Python's `%` returns `[0, m-1]` by definition.
+- **"How do you handle `(a - b) mod m` safely in C++?"** - Use `((a % m) - (b % m) + m) % m`. The `+m` ensures the intermediate can never be negative. In Python, `(a - b) % m` is always correct because Python's `%` returns `[0, m-1]` by definition.
 
-- **"What is the significance of 10^9+7?"** — It is prime (so Fermat's little theorem applies), and just under 2^30 ≈ 10^9.07. The product of any two residues below it fits in a signed 64-bit integer (max ~9.2×10^18 >> (10^9+7)^2 ≈ 10^18), so `a * b % MOD` never overflows `long long` in C++.
+- **"What is the significance of 10^9+7?"** - It is prime (so Fermat's little theorem applies), and just under 2^30 ≈ 10^9.07. The product of any two residues below it fits in a signed 64-bit integer (max ~9.2×10^18 >> (10^9+7)^2 ≈ 10^18), so `a * b % MOD` never overflows `long long` in C++.
 
 ---
 
@@ -451,7 +451,7 @@ def comb(n: int, k: int, fact: list[int], inv_fact: list[int], p: int) -> int:
 
 **Approach:** Matrix exponentiation is the fast-Fibonacci technique: the recurrence `[F(n+1), F(n)] = [[1,1],[1,0]]^n × [F(1), F(0)]`. Binary exponentiation on 2×2 matrices takes O(log n) matrix multiplications, each O(1) (fixed size). Each matrix entry is taken mod 10^9+7 after every multiply.
 
-*Insight that unlocks it:* Binary exponentiation works on *any* structure with an associative multiply — integers, matrices, or polynomials. Here the "base" is a 2×2 matrix.
+*Insight that unlocks it:* Binary exponentiation works on *any* structure with an associative multiply - integers, matrices, or polynomials. Here the "base" is a 2×2 matrix.
 
 ```python
 MOD = 10**9 + 7
@@ -483,8 +483,8 @@ def fib(n: int) -> int:
 **Complexity:** O(log n) matrix multiplications, each O(1) → O(log n) total. Space: O(1).
 
 **Duplicate problems:**
-- Climbing Stairs (LC 70) — same Fibonacci recurrence, n ≤ 45; naive iteration works, but matrix pow generalizes to arbitrary linear recurrences.
-- K-th Symbol in Grammar (LC 779) — recursive structure; different recurrence, same halving-per-step pattern.
+- Climbing Stairs (LC 70) - same Fibonacci recurrence, n ≤ 45; naive iteration works, but matrix pow generalizes to arbitrary linear recurrences.
+- K-th Symbol in Grammar (LC 779) - recursive structure; different recurrence, same halving-per-step pattern.
 
 ---
 
@@ -515,8 +515,8 @@ def countVowelPermutation(n: int) -> int:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- House Robber (LC 198) — DP with mod not needed, but same "take mod at transition" reasoning applies once counts exceed int bounds.
-- Distinct Subsequences (LC 115) — DP with potentially large counts; same mod-at-every-step discipline.
+- House Robber (LC 198) - DP with mod not needed, but same "take mod at transition" reasoning applies once counts exceed int bounds.
+- Distinct Subsequences (LC 115) - DP with potentially large counts; same mod-at-every-step discipline.
 
 ---
 
@@ -545,8 +545,8 @@ def solve_combinations() -> None:
 **Complexity:** O(n + log p) precomputation, O(1) per query.
 
 **Duplicate problems:**
-- Unique Paths (LC 62) — `C(m+n-2, m-1)` with small m,n; mod not needed but the formula generalizes to large inputs with this technique.
-- Binomial Coefficient (LC 1569 / many contest variants) — same factorial inverse table; constraint determines whether sieve or Fermat is cheaper.
+- Unique Paths (LC 62) - `C(m+n-2, m-1)` with small m,n; mod not needed but the formula generalizes to large inputs with this technique.
+- Binomial Coefficient (LC 1569 / many contest variants) - same factorial inverse table; constraint determines whether sieve or Fermat is cheaper.
 
 ---
 
@@ -554,9 +554,9 @@ def solve_combinations() -> None:
 
 **Problem:** Implement `pow(x, n)` where `x` is a float and `n` is a 32-bit integer (including negative). Return `x^n`. Constraints: `-100.0 < x < 100.0`, `-2^31 ≤ n ≤ 2^31 - 1`.
 
-**Approach:** Binary exponentiation on floats. Handle negative `n` by computing `1.0 / pow(x, -n)`. Edge case: `n = -2^31` overflows when negated in 32-bit int — convert to 64-bit first.
+**Approach:** Binary exponentiation on floats. Handle negative `n` by computing `1.0 / pow(x, -n)`. Edge case: `n = -2^31` overflows when negated in 32-bit int - convert to 64-bit first.
 
-*Insight:* This problem tests whether you know binary exponentiation, not modular arithmetic specifically — but it's the same squaring loop. Demonstrates the algorithm family applies beyond integer mod contexts.
+*Insight:* This problem tests whether you know binary exponentiation, not modular arithmetic specifically - but it's the same squaring loop. Demonstrates the algorithm family applies beyond integer mod contexts.
 
 ```python
 def myPow(x: float, n: int) -> float:
@@ -574,5 +574,5 @@ def myPow(x: float, n: int) -> float:
 **Complexity:** O(log |n|) time, O(1) space.
 
 **Duplicate problems:**
-- Fast Matrix Exponentiation (e.g., LC 509 matrix variant) — same squaring loop, matrix multiply instead of scalar multiply.
-- Super Pow (LC 372) — `a^b mod 1337` where `b` is given as a digit array; decompose by Euler's theorem + binary exp per digit.
+- Fast Matrix Exponentiation (e.g., LC 509 matrix variant) - same squaring loop, matrix multiply instead of scalar multiply.
+- Super Pow (LC 372) - `a^b mod 1337` where `b` is given as a digit array; decompose by Euler's theorem + binary exp per digit.

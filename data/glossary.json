@@ -27,6 +27,6 @@
   "consistent hashing": "A hashing scheme where adding/removing nodes minimizes key remapping. Used in distributed caches.",
   "load balancing": "Distributing incoming requests across multiple servers to avoid hotspots.",
   "cache eviction": "The process of removing entries from a cache when capacity is reached. Common policies: LRU, LFU, FIFO.",
-  "lru": "Least Recently Used — evicts the item that was accessed furthest in the past.",
+  "lru": "Least Recently Used - evicts the item that was accessed furthest in the past.",
   "two-pointer": "A technique using two indices that move through a data structure, often from opposite ends, to solve problems in O(n)."
 }

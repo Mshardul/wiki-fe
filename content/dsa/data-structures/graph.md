@@ -22,17 +22,17 @@
 
 ## What it is
 
-A graph is a set of **nodes (vertices)** connected by **edges** — the most general structure for modeling relationships, with no ordering constraint and no restriction on connectivity.
+A graph is a set of **nodes (vertices)** connected by **edges** - the most general structure for modeling relationships, with no ordering constraint and no restriction on connectivity.
 
 **Mental model:** A road map. Cities are nodes; roads are edges. A one-way road is a directed edge; a road with a distance sign is a weighted edge. Every tree, every linked list, every lattice is a restricted graph.
 
-> **Interview soundbite:** "A graph is nodes + edges — the structure when 'connected to' is the relationship. Represent it as an adjacency list for sparse graphs, a matrix for dense or when edge-existence lookups dominate."
+> **Interview soundbite:** "A graph is nodes + edges - the structure when 'connected to' is the relationship. Represent it as an adjacency list for sparse graphs, a matrix for dense or when edge-existence lookups dominate."
 
 ## How it works
 
 A graph G = (V, E) is defined by a vertex set V and an edge set E ⊆ V × V.
 
-**Directed vs undirected:** In a directed graph (digraph), each edge (u → v) has a source and a target; u → v does not imply v → u. In an undirected graph, each edge {u, v} is bidirectional — stored as two directed edges in an adjacency list.
+**Directed vs undirected:** In a directed graph (digraph), each edge (u → v) has a source and a target; u → v does not imply v → u. In an undirected graph, each edge {u, v} is bidirectional - stored as two directed edges in an adjacency list.
 
 **Weighted vs unweighted:** Edges can carry a weight (cost, distance, capacity). An unweighted graph is a weighted graph where all weights are 1.
 
@@ -73,14 +73,14 @@ Entry `M[i][j]` = 1 (or the weight) if edge i → j exists, else 0.
 
 | Operation | List Time | List Space | Matrix Time | Matrix Space |
 | --------- | --------- | ---------- | ----------- | ------------ |
-| Add vertex | O(1) | O(1) | O(V²) — resize | O(V²) |
+| Add vertex | O(1) | O(1) | O(V²) - resize | O(V²) |
 | Add edge | O(1) | O(1) | O(1) | O(1) |
 | Remove edge | O(degree) | O(1) | O(1) | O(1) |
 | Remove vertex | O(V + E) | O(V + E) | O(V²) | O(V²) |
 | Edge exists (u, v)? | O(degree(u)) | O(1) | O(1) | O(1) |
 | Iterate neighbors of u | O(degree(u)) | O(1) | O(V) | O(1) |
 | Iterate all edges | O(V + E) | O(1) | O(V²) | O(1) |
-| Total space | — | O(V + E) | — | O(V²) |
+| Total space | - | O(V + E) | - | O(V²) |
 
 **The critical asymmetry:** matrix gives O(1) edge-existence checks; list gives O(degree) neighbor iteration. Most traversal algorithms (BFS, DFS, Dijkstra) iterate neighbors in the inner loop → adjacency list wins for sparse graphs.
 
@@ -94,18 +94,18 @@ Graph complexity always has two variables: V (vertices) and E (edges).
 | Adjacency matrix | O(V²) | O(1) | O(V) |
 | Edge list | O(E) | O(E) | O(E) |
 
-E ranges from O(V) for sparse trees/chains to O(V²) for complete graphs. When E ≈ V², matrix and list have the same space; the lookup advantage of the matrix breaks even. The tipping point in practice: once E > V log V, the O(V²) matrix space becomes acceptable — and when E = V(V-1)/2 (complete graph), an adjacency list stores V² tuples anyway, so the matrix's O(1) edge-lookup is a pure win.
+E ranges from O(V) for sparse trees/chains to O(V²) for complete graphs. When E ≈ V², matrix and list have the same space; the lookup advantage of the matrix breaks even. The tipping point in practice: once E > V log V, the O(V²) matrix space becomes acceptable - and when E = V(V-1)/2 (complete graph), an adjacency list stores V² tuples anyway, so the matrix's O(1) edge-lookup is a pure win.
 
 ## When to use / when not
 
 **Reach for a graph when** the problem is fundamentally about relationships between entities: shortest path, connectivity, cycle detection, dependency ordering, flow, matching. The signal is "can I reach X from Y?" or "what is the minimum cost connection?"
 
-**Adjacency list** is the default. Use it when the graph is sparse (E ≪ V²) — social networks, road maps, dependency graphs. Every traversal algorithm (BFS, DFS, Dijkstra, topological sort) runs in O(V + E) on a list; on a matrix they degrade to O(V²) because iterating neighbors costs O(V) per node.
+**Adjacency list** is the default. Use it when the graph is sparse (E ≪ V²) - social networks, road maps, dependency graphs. Every traversal algorithm (BFS, DFS, Dijkstra, topological sort) runs in O(V + E) on a list; on a matrix they degrade to O(V²) because iterating neighbors costs O(V) per node.
 
 **Adjacency matrix** when:
-- Graph is dense (E close to V²) — the O(V²) space is unavoidable anyway.
+- Graph is dense (E close to V²) - the O(V²) space is unavoidable anyway.
 - You need O(1) edge-existence queries in the hot path (Floyd-Warshall all-pairs DP, some DP on grids).
-- V is small (≤ a few thousand) — the V² memory fits.
+- V is small (≤ a few thousand) - the V² memory fits.
 
 **Not a graph** when hierarchy is the only relationship → use a tree. When the access pattern is sequential → use an array/list. When the relationship is purely key-value → use a hash map.
 
@@ -128,11 +128,11 @@ Real-world workhorse: operating system kernels use directed graphs (DAGs) for pa
 
 **Bipartite graph:** Vertices split into two disjoint sets; every edge goes between sets, never within. Used in matching problems (job assignments, network flow). Detectable via 2-coloring BFS.
 
-**Multigraph:** Multiple edges between the same pair of nodes. Rare in interviews; adjacency list still works — just allow duplicates.
+**Multigraph:** Multiple edges between the same pair of nodes. Rare in interviews; adjacency list still works - just allow duplicates.
 
-**Implicit graph:** No explicit node/edge list — the structure is defined by a rule (grid cells, state transitions, subsets of a bitmask). BFS/DFS applies unchanged; no adjacency structure is built.
+**Implicit graph:** No explicit node/edge list - the structure is defined by a rule (grid cells, state transitions, subsets of a bitmask). BFS/DFS applies unchanged; no adjacency structure is built.
 
-**Complete graph (Kₙ):** Every pair of nodes connected. E = V(V-1)/2 — the densest possible. Use the matrix.
+**Complete graph (Kₙ):** Every pair of nodes connected. E = V(V-1)/2 - the densest possible. Use the matrix.
 
 ## Representations
 
@@ -146,15 +146,15 @@ The representation choice is the single most impactful decision when coding a gr
 | Dense graph (E ≈ V²) or O(1) edge-existence in hot loop | Adjacency matrix |
 | Sort all edges globally (Kruskal's MST), or reading from stdin | Edge list |
 | All-pairs shortest path (Floyd-Warshall) | Adjacency matrix (algorithm operates on it directly) |
-| Grid / implicit graph | No structure — compute neighbors on the fly |
+| Grid / implicit graph | No structure - compute neighbors on the fly |
 
 ### Adjacency list
 
 **Implementation:** Each vertex maps to a list of `(neighbor, weight)` pairs. In Python, a `defaultdict(list)` or `dict[int, list[tuple[int, int]]]`.
 
-**Memory:** O(V + E) — stores exactly the edges that exist, nothing else.
+**Memory:** O(V + E) - stores exactly the edges that exist, nothing else.
 
-**Why it wins for traversal:** The inner loop of BFS/DFS/Dijkstra is "for each neighbor of u" — this loop runs in O(degree(u)) on a list. On a matrix, the same loop scans an entire row of V entries regardless of how many neighbors u actually has. For a sparse graph with E = O(V), that's O(V) wasted work per node → total O(V²) instead of O(V + E).
+**Why it wins for traversal:** The inner loop of BFS/DFS/Dijkstra is "for each neighbor of u" - this loop runs in O(degree(u)) on a list. On a matrix, the same loop scans an entire row of V entries regardless of how many neighbors u actually has. For a sparse graph with E = O(V), that's O(V) wasted work per node → total O(V²) instead of O(V + E).
 
 **Trade-off accepted:** Edge-existence check (is there an edge u → v?) is O(degree(u)) in the worst case, not O(1). If you need repeated O(1) edge checks, you can augment the list with a hash set per node, paying O(V + E) extra space.
 
@@ -162,14 +162,14 @@ The representation choice is the single most impactful decision when coding a gr
 
 **Implementation:** A V × V array (or `list[list[int]]`). `matrix[i][j]` = weight (or 1/0 for unweighted).
 
-**Memory:** O(V²) — stores all V² possible edges, even absent ones.
+**Memory:** O(V²) - stores all V² possible edges, even absent ones.
 
 **When it wins:**
-- **Floyd-Warshall:** The algorithm is literally `dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])` — it operates directly on the matrix. Building a list first and converting adds overhead.
+- **Floyd-Warshall:** The algorithm is literally `dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])` - it operates directly on the matrix. Building a list first and converting adds overhead.
 - **Dense graphs:** When E ≈ V², you'd store V² entries in the list too (as weight tuples), so the matrix's V² space has no asymptotic disadvantage.
 - **Small V (≤ 1000):** 1000² = 10⁶ entries, easily fits in memory.
 
-**Trade-off accepted:** Adding a vertex requires resizing the matrix — O(V²) copy. Iterating neighbors is always O(V), even if a node has degree 2.
+**Trade-off accepted:** Adding a vertex requires resizing the matrix - O(V²) copy. Iterating neighbors is always O(V), even if a node has degree 2.
 
 ### Edge list
 
@@ -177,7 +177,7 @@ The representation choice is the single most impactful decision when coding a gr
 
 **Memory:** O(E).
 
-**When it wins:** Kruskal's MST — the algorithm sorts all edges by weight and processes them globally. An adjacency list would require flattening first. Edge list is also the natural format for reading graph input from stdin in contests.
+**When it wins:** Kruskal's MST - the algorithm sorts all edges by weight and processes them globally. An adjacency list would require flattening first. Edge list is also the natural format for reading graph input from stdin in contests.
 
 **Trade-off accepted:** No efficient neighbor lookup. Cannot answer "who are the neighbors of u?" without scanning the whole list.
 
@@ -195,11 +195,11 @@ graph[u].append((v, w))
 graph[u].append(v)
 ```
 
-**Visited state for directed vs undirected:** In BFS/DFS on an undirected graph, when you visit a neighbor you must mark it visited before enqueueing, not after popping — otherwise the same node gets enqueued multiple times via different neighbors, blowing up from O(V + E) to O(E) enqueue operations (which matters when E = V²).
+**Visited state for directed vs undirected:** In BFS/DFS on an undirected graph, when you visit a neighbor you must mark it visited before enqueueing, not after popping - otherwise the same node gets enqueued multiple times via different neighbors, blowing up from O(V + E) to O(E) enqueue operations (which matters when E = V²).
 
 ## Implementation
 
-### Pseudocode — build graph from edge list
+### Pseudocode - build graph from edge list
 
 ```
 FUNCTION BUILD-GRAPH(edges, n, directed):
@@ -211,7 +211,7 @@ FUNCTION BUILD-GRAPH(edges, n, directed):
   RETURN graph
 ```
 
-### Pseudocode — BFS (unweighted shortest path)
+### Pseudocode - BFS (unweighted shortest path)
 
 ```
 FUNCTION BFS(graph, source):
@@ -227,7 +227,7 @@ FUNCTION BFS(graph, source):
   RETURN dist
 ```
 
-### Python — adjacency list graph
+### Python - adjacency list graph
 
 ```python
 from collections import deque
@@ -277,7 +277,7 @@ def dfs(
     return visited
 ```
 
-### Python — adjacency matrix graph
+### Python - adjacency matrix graph
 
 ```python
 def build_matrix(
@@ -298,26 +298,26 @@ def build_matrix(
 
 ## Gotchas / edge cases
 
-**1. Disconnected graphs — not every node is reachable from the source.**
+**1. Disconnected graphs - not every node is reachable from the source.**
 BFS/DFS from a single source only visits the source's connected component. To visit all nodes, wrap the traversal in a loop over all vertices:
 ```python
 for start in range(n):
     if start not in visited:
         dfs(graph, start, visited)
 ```
-Missing this is the most common graph bug in interviews — the "number of connected components" problem fails silently on disconnected input.
+Missing this is the most common graph bug in interviews - the "number of connected components" problem fails silently on disconnected input.
 
 **2. Self-loops and parallel edges.**
-Adjacency list handles both naturally, but your algorithm may not. Cycle-detection DFS must distinguish "parent edge" from "back edge" — a self-loop is a back edge to yourself. With an undirected adjacency list, when you traverse edge u→v, skip v if v is the parent (not just if v is visited), otherwise the undirected edge looks like a cycle.
+Adjacency list handles both naturally, but your algorithm may not. Cycle-detection DFS must distinguish "parent edge" from "back edge" - a self-loop is a back edge to yourself. With an undirected adjacency list, when you traverse edge u→v, skip v if v is the parent (not just if v is visited), otherwise the undirected edge looks like a cycle.
 
-**3. Directed vs undirected cycle detection — two-color is wrong for directed graphs.**
-In an undirected graph, a simple `visited` boolean correctly detects cycles: if DFS reaches an already-visited node that isn't the parent, it's a cycle. In a directed graph, this fails — a visited node reachable via a different path is a cross edge (not a back edge), and cross edges don't form cycles. You need three-color marking: WHITE (unvisited) → GRAY (in current DFS stack) → BLACK (done). A back edge is GRAY → GRAY; a cross edge is WHITE/BLACK → BLACK. Juniors apply the undirected two-color approach to directed graphs and get false positives on cross edges. Additionally, in undirected BFS/DFS, mark nodes visited *before* enqueueing, not after popping — otherwise the same node is enqueued multiple times via different neighbors, degrading O(V + E) to O(E) enqueue operations (catastrophic when E = V²).
+**3. Directed vs undirected cycle detection - two-color is wrong for directed graphs.**
+In an undirected graph, a simple `visited` boolean correctly detects cycles: if DFS reaches an already-visited node that isn't the parent, it's a cycle. In a directed graph, this fails - a visited node reachable via a different path is a cross edge (not a back edge), and cross edges don't form cycles. You need three-color marking: WHITE (unvisited) → GRAY (in current DFS stack) → BLACK (done). A back edge is GRAY → GRAY; a cross edge is WHITE/BLACK → BLACK. Juniors apply the undirected two-color approach to directed graphs and get false positives on cross edges. Additionally, in undirected BFS/DFS, mark nodes visited *before* enqueueing, not after popping - otherwise the same node is enqueued multiple times via different neighbors, degrading O(V + E) to O(E) enqueue operations (catastrophic when E = V²).
 
-**4. V and E — know which to use in complexity.**
+**4. V and E - know which to use in complexity.**
 `O(V + E)` and `O(V²)` look close when E is dense, but for sparse graphs (E = O(V)), the difference is O(V) vs O(V²). State complexity in terms of both; never say "O(n)" for a graph problem.
 
 **5. CP: implicit graphs from grids.**
-Grid problems are graphs — cells are nodes, valid moves are edges. Don't build an explicit adjacency structure; compute neighbors on the fly:
+Grid problems are graphs - cells are nodes, valid moves are edges. Don't build an explicit adjacency structure; compute neighbors on the fly:
 ```python
 DIRS = [(0,1),(0,-1),(1,0),(-1,0)]
 for dr, dc in DIRS:
@@ -370,9 +370,9 @@ def numIslands(grid: list[list[str]]) -> int:
 **Complexity:** O(V + E) = O(rows × cols) time; O(rows × cols) space for the visited set.
 
 **Duplicate problems:**
-- Flood Fill (LC 733) — same BFS/DFS component-marking, different action (paint cells instead of count).
-- Max Area of Island (LC 695) — same traversal, track size during BFS instead of just counting components.
-- Count Sub Islands (LC 1905) — two grids, same connected-component BFS with an extra cross-grid membership check.
+- Flood Fill (LC 733) - same BFS/DFS component-marking, different action (paint cells instead of count).
+- Max Area of Island (LC 695) - same traversal, track size during BFS instead of just counting components.
+- Count Sub Islands (LC 1905) - two grids, same connected-component BFS with an extra cross-grid membership check.
 
 ---
 
@@ -410,9 +410,9 @@ def cloneGraph(node: Optional[Node]) -> Optional[Node]:
 **Complexity:** O(V + E) time; O(V) space for the clone map.
 
 **Duplicate problems:**
-- Copy List with Random Pointer (LC 138) — identical pattern: BFS/DFS + hash map from original to clone, then wire pointers. Linked list instead of graph nodes.
-- Graph Valid Tree (LC 261) — BFS from node 0 with a visited set; valid tree iff exactly V-1 edges and all nodes reached (same "build adjacency list + BFS + check all visited" skeleton).
-- Pacific Atlantic Water Flow (LC 417) — multi-source BFS from ocean borders inward; same "mark reachable" traversal, answer is intersection of two visited sets.
+- Copy List with Random Pointer (LC 138) - identical pattern: BFS/DFS + hash map from original to clone, then wire pointers. Linked list instead of graph nodes.
+- Graph Valid Tree (LC 261) - BFS from node 0 with a visited set; valid tree iff exactly V-1 edges and all nodes reached (same "build adjacency list + BFS + check all visited" skeleton).
+- Pacific Atlantic Water Flow (LC 417) - multi-source BFS from ocean borders inward; same "mark reachable" traversal, answer is intersection of two visited sets.
 
 ---
 
@@ -447,6 +447,6 @@ def canFinish(numCourses: int, prerequisites: list[list[int]]) -> bool:
 **Complexity:** O(V + E) time; O(V + E) space for the graph and call stack.
 
 **Duplicate problems:**
-- Course Schedule II (LC 210) — same cycle detection + topological sort; return the order instead of just True/False.
-- Find Eventual Safe States (LC 802) — same three-color DFS; nodes that are not on any cycle (BLACK nodes) are "safe."
-- Alien Dictionary (LC 269) — build a directed graph from character ordering constraints, then topological sort + cycle detection.
+- Course Schedule II (LC 210) - same cycle detection + topological sort; return the order instead of just True/False.
+- Find Eventual Safe States (LC 802) - same three-color DFS; nodes that are not on any cycle (BLACK nodes) are "safe."
+- Alien Dictionary (LC 269) - build a directed graph from character ordering constraints, then topological sort + cycle detection.

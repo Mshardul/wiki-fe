@@ -227,7 +227,7 @@ def test_collapsed_grid_not_display_none(page, base_url):
 
     page.locator(".section-header").first.click()
 
-    # Poll until the 200ms max-height transition has settled — a fixed wait
+    # Poll until the 200ms max-height transition has settled - a fixed wait
     # flakes when the machine is under load and the transition runs long.
     page.wait_for_function(
         """() => {
@@ -244,7 +244,7 @@ def test_collapsed_grid_not_display_none(page, base_url):
         return { display: style.display, maxHeight: style.maxHeight };
     }""")
     assert result["display"] != "none", (
-        "Collapsed grid must not use display:none — must use max-height transition"
+        "Collapsed grid must not use display:none - must use max-height transition"
     )
     assert result["maxHeight"] == "0px", (
         f"Collapsed grid max-height must be 0px, got '{result['maxHeight']}'"

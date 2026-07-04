@@ -1,7 +1,7 @@
 import { state } from "./state.js";
 
 /* Base URL: localhost → local BE; else prod. BE URL is public by nature
-   (browser must reach it) — not a secret. Security = CORS + cookie + BE validation. */
+   (browser must reach it) - not a secret. Security = CORS + cookie + BE validation. */
 const _isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 const BACKEND_URL = _isLocal ? "http://localhost:8001" : "https://wiki-be.onrender.com";
 const API = `${BACKEND_URL}/api/v1`;
@@ -72,11 +72,14 @@ const api = {
     me: () => _request("GET", "/auth/me", undefined, { silent401: true }),
     register: (email, password) => api.post("/auth/register", { email, password }),
     // login 401 = bad credentials (a normal auth failure), not an expired
-    // session — bypass the global handler so the real error reaches the caller
+    // session - bypass the global handler so the real error reaches the caller
     login: (email, password) =>
       _request("POST", "/auth/login", { email, password }, { silent401: true }),
     logout: () => api.post("/auth/logout"),
     resend: (email) => api.post("/auth/resend-verification", { email }),
+    verify: (token) => api.post("/auth/verify", { token }),
+    forgotPassword: (email) => api.post("/auth/forgot-password", { email }),
+    resetPassword: (token, password) => api.post("/auth/reset-password", { token, password }),
   },
   bookmarks: {
     list: () => api.get("/bookmarks"),

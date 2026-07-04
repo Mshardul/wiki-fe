@@ -123,7 +123,7 @@ function renderBookmarksSection(wiki) {
   const bookmarks = getBookmarks().filter((b) => b.wikiId === wiki.id);
   if (!bookmarks.length) {
     section.classList.remove("hidden");
-    section.innerHTML = `<p class="recents-empty">// no bookmarks yet — press <kbd>b</kbd> on any article</p>`;
+    section.innerHTML = `<p class="recents-empty">// no bookmarks yet - press <kbd>b</kbd> on any article</p>`;
     return;
   }
   section.classList.remove("hidden");
@@ -245,7 +245,7 @@ function renderRecentsSection(wiki) {
   const recents = getRecents().filter((r) => r.wikiId === wiki.id);
   if (!recents.length) {
     section.classList.remove("hidden");
-    section.innerHTML = `<p class="recents-empty">// nothing visited yet — open any article to start</p>`;
+    section.innerHTML = `<p class="recents-empty">// nothing visited yet - open any article to start</p>`;
     return;
   }
   section.classList.remove("hidden");
@@ -330,7 +330,7 @@ function updateReadBtn() {
   btn.title = read ? "Mark as unread" : "Mark as read";
 }
 
-/* Quiz-mode reveal tracking — a lightweight confidence signal. */
+/* Quiz-mode reveal tracking - a lightweight confidence signal. */
 const REVEAL_KEY_PREFIX = "wiki-reveals";
 
 function _revealKey() {
@@ -740,7 +740,7 @@ const Settings = {
   _shortcutsCache: null,
 
   open(tab = "general") {
-    loadAllFonts(); // user may pick any font here — make all previews available
+    loadAllFonts(); // user may pick any font here - make all previews available
     this._lastFocus = document.activeElement;
     const modal = document.getElementById("prefs-modal");
     modal.classList.remove("hidden");
@@ -1059,7 +1059,7 @@ const Settings = {
         const data = JSON.parse(e.target.result);
 
         if (!_validateBackup(data)) {
-          _toast("Invalid backup file — import failed.");
+          _toast("Invalid backup file - import failed.");
           event.target.value = "";
           return;
         }
@@ -1078,7 +1078,7 @@ const Settings = {
 
         if (data.version !== 1) {
           _toast(
-            `Backup version ${data.version ?? "unknown"} — format may differ. Import anyway?`,
+            `Backup version ${data.version ?? "unknown"} - format may differ. Import anyway?`,
             8000,
             doImport,
           );
@@ -1086,7 +1086,7 @@ const Settings = {
           doImport();
         }
       } catch {
-        _toast("Invalid backup file — import failed.");
+        _toast("Invalid backup file - import failed.");
       }
       event.target.value = "";
     };
@@ -1147,7 +1147,7 @@ const Theme = {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   SYNC — pull/merge on login & boot; cache clear on logout
+   SYNC - pull/merge on login & boot; cache clear on logout
    ═══════════════════════════════════════════════════════════════ */
 const Sync = {
   // Pull all server lists and overwrite localStorage with server truth.

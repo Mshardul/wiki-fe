@@ -154,7 +154,7 @@ async function resolveSlugAndRender(wiki, slug) {
       history.replaceState(null, "", location.pathname);
       renderHome();
       showToast(
-        `No "${slug}" — did you mean ${suggestion.title}?`,
+        `No "${slug}" - did you mean ${suggestion.title}?`,
         8000,
         () => navigate(`${wiki.id}/${suggestion.slug}`),
         "Open",
@@ -469,7 +469,7 @@ const IndexFilter = {
   _pendingUnread: false,
   _debounce: null,
 
-  /* applied on the next index render — lets a command arm it before navigating */
+  /* applied on the next index render - lets a command arm it before navigating */
   requestUnread() {
     this._pendingUnread = true;
   },
@@ -674,7 +674,7 @@ async function populateIndexReadTimes() {
           card.classList.add("index-card--unavailable");
           card.removeAttribute("onclick");
           card.setAttribute("aria-disabled", "true");
-          card.title = "Coming soon — this article hasn't been written yet";
+          card.title = "Coming soon - this article hasn't been written yet";
           const dot = card.querySelector(".index-card-read-dot");
           if (dot) dot.remove();
         }
@@ -930,11 +930,11 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       });
     }
 
-    // Post-processing — enhancements only.
+    // Post-processing - enhancements only.
     try {
       addTabbedCodeBlocks(body);
       addLineNumbers(body);
-      addCodeBlockHeader(body, () => showToast("Copy failed — clipboard access denied"));
+      addCodeBlockHeader(body, () => showToast("Copy failed - clipboard access denied"));
       styleCallouts(body);
       addCollapsibleCallouts(body);
 
@@ -949,7 +949,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       interceptMdLinks(body, wiki, filePath);
       addAnchorLinks(
         body,
-        () => showToast("Copy failed — clipboard access denied"),
+        () => showToast("Copy failed - clipboard access denied"),
         () => showToast("Link copied"),
       );
 
@@ -991,7 +991,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       addTableScrollCues(body);
       addPreOverflowDetection(body);
       addTableSort(body);
-      addLatexCopyButtons(body, () => showToast("Copy failed — clipboard access denied"));
+      addLatexCopyButtons(body, () => showToast("Copy failed - clipboard access denied"));
       addFormulaToggle(body);
       addFootnotes(body);
       addArticleEndMarker(body);
@@ -1134,7 +1134,7 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
       }
     });
 
-    // Hover logic — skip on touch
+    // Hover logic - skip on touch
     link.addEventListener("mouseenter", () => {
       if (_lastPointerWasTouch) return;
       hoverPreviewTimer = setTimeout(() => showHoverPreview(link, resolvedPath), 400);
@@ -1251,7 +1251,7 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
     previewEl.style.left = "";
   } else {
     previewEl.classList.remove("hover-preview--sheet", "hover-preview--sheet-open");
-    // Position preview — prefer below, flip above when near viewport bottom
+    // Position preview - prefer below, flip above when near viewport bottom
     const rect = link.getBoundingClientRect();
     const PREVIEW_H = 160;
     const spaceBelow = window.innerHeight - rect.bottom;
@@ -1356,7 +1356,7 @@ async function fetchText(path, signal) {
     res = await fetch(new URL(path, location.href).href, signal ? { signal } : {});
   } catch (err) {
     if (err.name === "AbortError") throw err;
-    throw new Error(`Network error — check your connection (${err.message})`);
+    throw new Error(`Network error - check your connection (${err.message})`);
   }
   if (res.status === 404) throw new Error("Page not found (404)");
   if (res.status === 403) throw new Error("Access denied (403)");

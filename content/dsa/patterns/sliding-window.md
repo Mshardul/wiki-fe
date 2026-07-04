@@ -27,11 +27,11 @@
 
 ## What it is
 
-A **sliding window** maintains a contiguous sub-range `[L, R]` over a sequence and moves it by expanding `R` to include new elements and contracting `L` to restore a constraint — answering questions about all sub-ranges in O(n) instead of O(n²).
+A **sliding window** maintains a contiguous sub-range `[L, R]` over a sequence and moves it by expanding `R` to include new elements and contracting `L` to restore a constraint - answering questions about all sub-ranges in O(n) instead of O(n²).
 
 **Mental model:** imagine a physical window frame sliding across a row of tiles. You never lift the frame; you push the right edge right to grow it, and push the left edge right to shrink it. Everything you need to know about the current view is maintained incrementally.
 
-> **Interview soundbite:** "Sliding window — two pointers bounding a contiguous sub-range; expand right, contract left on a constraint violation, track aggregate state incrementally."
+> **Interview soundbite:** "Sliding window - two pointers bounding a contiguous sub-range; expand right, contract left on a constraint violation, track aggregate state incrementally."
 
 ---
 
@@ -53,13 +53,13 @@ Look for these literal phrasings in the problem statement:
 - Input is an **array or string** (contiguous, indexed).
 - You need to optimize a metric (max/min length, max/min sum) over **all sub-ranges** satisfying a constraint.
 - The constraint has a **monotonic** relationship with window size: once the window violates it, growing further only makes it worse (or better), so you can move one pointer without re-checking all positions.
-- Output is a single value or a list of sub-ranges — not all pairs.
+- Output is a single value or a list of sub-ranges - not all pairs.
 
 ### (c) Not to be confused with
 
 | Pattern | Distinction |
 |---|---|
-| **Two Pointers** | Two-pointers is the parent — sliding window IS two-pointers, but with **window semantics**: every element between L and R contributes to a maintained aggregate (sum, frequency map). Pure two-pointer (pair-sum on sorted array) converges toward a condition without maintaining a running aggregate over the gap. |
+| **Two Pointers** | Two-pointers is the parent - sliding window IS two-pointers, but with **window semantics**: every element between L and R contributes to a maintained aggregate (sum, frequency map). Pure two-pointer (pair-sum on sorted array) converges toward a condition without maintaining a running aggregate over the gap. |
 | **Prefix Sum** | Prefix sum answers range queries in O(1) after O(n) preprocessing; it doesn't move a window. Use prefix sum when you need arbitrary `[L, R]` queries; use sliding window when you're scanning for an optimal window under a constraint. |
 | **DP** | DP memoizes overlapping subproblems. Sliding window is a special case where the subproblem structure is purely contiguous and can be maintained in O(1) per step without memoization. |
 
@@ -118,7 +118,7 @@ FIXED-WINDOW(arr, n, k)
   return best
 ```
 
-### Variable-size window — maximize length (pseudocode)
+### Variable-size window - maximize length (pseudocode)
 
 ```
 VARIABLE-WINDOW-MAX(arr, n)
@@ -284,7 +284,7 @@ def sliding_window_max(nums: list[int], k: int) -> list[int]:
     return result
 ```
 
-**Why for CP:** collapses window-max from O(k) per step to O(1) amortized — critical when n=10⁵ and k=10⁴ would make a naive approach TLE.
+**Why for CP:** collapses window-max from O(k) per step to O(1) amortized - critical when n=10⁵ and k=10⁴ would make a naive approach TLE.
 
 ### 2. Frequency map / Counter for distribution matching
 
@@ -315,7 +315,7 @@ def find_anagrams(s: str, p: str) -> list[int]:
     return result
 ```
 
-**Why for CP:** O(1) validity check per step (just compare `have == required`) instead of comparing entire frequency maps — reduces constant factor dramatically for large alphabets.
+**Why for CP:** O(1) validity check per step (just compare `have == required`) instead of comparing entire frequency maps - reduces constant factor dramatically for large alphabets.
 
 ### 3. atMost(K) decomposition
 
@@ -361,8 +361,8 @@ def max_sum_subarray(nums: list[int], k: int) -> int:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Maximum Average Subarray I (LC 643) — same fixed window, return average instead of sum.
-- Subarray Product Less Than K (LC 713) — fixed window replaced with variable (product constraint); count valid windows.
+- Maximum Average Subarray I (LC 643) - same fixed window, return average instead of sum.
+- Subarray Product Less Than K (LC 713) - fixed window replaced with variable (product constraint); count valid windows.
 
 ---
 
@@ -388,8 +388,8 @@ def length_of_longest_substring(s: str) -> int:
 **Complexity:** O(n) time, O(min(n, ∣Σ∣)) space.
 
 **Duplicate problems:**
-- Longest Substring with At Most Two Distinct Characters (LC 159) — same pattern, `len(freq) > 2` is the violation.
-- Longest Substring with At Most K Distinct Characters (LC 340) — generalize to K.
+- Longest Substring with At Most Two Distinct Characters (LC 159) - same pattern, `len(freq) > 2` is the violation.
+- Longest Substring with At Most K Distinct Characters (LC 340) - generalize to K.
 
 ---
 
@@ -427,8 +427,8 @@ def min_window(s: str, t: str) -> str:
 **Complexity:** O(n + ∣t∣) time, O(∣Σ∣) space.
 
 **Duplicate problems:**
-- Smallest Range Covering Elements from K Lists (LC 632) — same shrink-when-valid logic, more complex state.
-- Substring with Concatenation of All Words (LC 30) — fixed-word-length windows instead of character windows.
+- Smallest Range Covering Elements from K Lists (LC 632) - same shrink-when-valid logic, more complex state.
+- Substring with Concatenation of All Words (LC 30) - fixed-word-length windows instead of character windows.
 
 ---
 
@@ -458,8 +458,8 @@ def length_of_longest_substring_k_distinct(s: str, k: int) -> int:
 **Complexity:** O(n) time, O(k) space.
 
 **Duplicate problems:**
-- Fruit Into Baskets (LC 904) — identical: at most 2 distinct "types" (k=2), different framing.
-- Max Consecutive Ones III (LC 1004) — at most K zeros allowed; same window violation structure.
+- Fruit Into Baskets (LC 904) - identical: at most 2 distinct "types" (k=2), different framing.
+- Max Consecutive Ones III (LC 1004) - at most K zeros allowed; same window violation structure.
 
 ---
 
@@ -489,18 +489,18 @@ def max_sliding_window(nums: list[int], k: int) -> list[int]:
 **Complexity:** O(n) time, O(k) space.
 
 **Duplicate problems:**
-- Jump Game VI (LC 1696) — DP + monotonic deque for max in a window of size k.
-- Constrained Subsequence Sum (LC 1425) — same deque trick, different DP formulation.
+- Jump Game VI (LC 1696) - DP + monotonic deque for max in a window of size k.
+- Constrained Subsequence Sum (LC 1425) - same deque trick, different DP formulation.
 
 ---
 
 ## Pitfalls
 
-1. **Treating variable-size as fixed-size.** Not shrinking `L` at all — just advancing `R`. Produces wrong answers on violation cases and may not terminate correctly.
+1. **Treating variable-size as fixed-size.** Not shrinking `L` at all - just advancing `R`. Produces wrong answers on violation cases and may not terminate correctly.
 
 2. **Off-by-one on window size check.** In fixed windows: `window_size = R - L + 1`, not `R - L`. Forgetting the `+1` causes a window one element too small throughout.
 
-3. **Using sliding window when elements aren't contiguous.** If the problem allows skipping elements or selecting non-adjacent ones (e.g. "pick any k elements from the array"), there is no contiguous window — reach for sorting, heap, or DP instead.
+3. **Using sliding window when elements aren't contiguous.** If the problem allows skipping elements or selecting non-adjacent ones (e.g. "pick any k elements from the array"), there is no contiguous window - reach for sorting, heap, or DP instead.
 
 4. **Missing the exactly-K trap.** "Exactly K distinct" cannot be directly windowed because the window can't maintain a simple monotonic valid/invalid boundary. Apply `atMost(K) − atMost(K−1)`.
 
@@ -510,7 +510,7 @@ def max_sliding_window(nums: list[int], k: int) -> list[int]:
 
 ## First 30 seconds
 
-*"Sliding window — contiguous sub-range, two pointers. Expand R one step at a time; shrink L whenever the window violates the constraint. Maintain the aggregate state (sum, frequency map) incrementally. O(n) because each element enters and leaves at most once."*
+*"Sliding window - contiguous sub-range, two pointers. Expand R one step at a time; shrink L whenever the window violates the constraint. Maintain the aggregate state (sum, frequency map) incrementally. O(n) because each element enters and leaves at most once."*
 
 Then clarify: fixed size K (simpler) or variable size (need a constraint to drive shrinking)?
 
@@ -518,12 +518,12 @@ Then clarify: fixed size K (simpler) or variable size (need a constraint to driv
 
 ## Related
 
-- [Two Pointers](./two-pointers.md) — parent pattern; sliding window is two-pointers with window semantics
-- [Prefix Sum](./prefix-sum.md) — alternative for arbitrary range queries without a constraint to drive shrinking
-- [Monotonic Stack](./monotonic-stack.md) — next-greater-element sibling; monotonic deque is the window-max version
-- [Deque](../data-structures/deque.md) — the data structure powering the monotonic deque CP-primitive
-- [Hash Table](../data-structures/hash-table.md) — frequency maps for character/value distribution in variable windows
-- [Fast & Slow Pointers](./fast-slow-pointers.md) — different two-pointer variant (cycle detection, not window)
+- [Two Pointers](./two-pointers.md) - parent pattern; sliding window is two-pointers with window semantics
+- [Prefix Sum](./prefix-sum.md) - alternative for arbitrary range queries without a constraint to drive shrinking
+- [Monotonic Stack](./monotonic-stack.md) - next-greater-element sibling; monotonic deque is the window-max version
+- [Deque](../data-structures/deque.md) - the data structure powering the monotonic deque CP-primitive
+- [Hash Table](../data-structures/hash-table.md) - frequency maps for character/value distribution in variable windows
+- [Fast & Slow Pointers](./fast-slow-pointers.md) - different two-pointer variant (cycle detection, not window)
 
 ---
 
@@ -551,8 +551,8 @@ def length_of_longest_substring(s: str) -> int:
 **Complexity:** O(n) time, O(min(n, ∣Σ∣)) space.
 
 **Duplicate problems:**
-- Longest Substring with At Most Two Distinct Characters (LC 159) — change set to frequency map, `len(freq) > 2` as violation.
-- Longest Repeating Character Replacement (LC 424) — count max-frequency char in window; violation when `window_len − max_freq > k`.
+- Longest Substring with At Most Two Distinct Characters (LC 159) - change set to frequency map, `len(freq) > 2` as violation.
+- Longest Repeating Character Replacement (LC 424) - count max-frequency char in window; violation when `window_len − max_freq > k`.
 
 ---
 
@@ -590,7 +590,7 @@ def min_window(s: str, t: str) -> str:
 **Complexity:** O(n + m) time, O(∣Σ∣) space.
 
 **Duplicate problems:**
-- Smallest Range Covering Elements from K Lists (LC 632) — generalized minimum-window with multi-list state.
+- Smallest Range Covering Elements from K Lists (LC 632) - generalized minimum-window with multi-list state.
 
 ---
 
@@ -622,5 +622,5 @@ def subarrays_with_k_distinct(nums: list[int], k: int) -> int:
 **Complexity:** O(n) time, O(k) space.
 
 **Duplicate problems:**
-- Binary Subarrays With Sum (LC 930) — `atMost(goal) − atMost(goal−1)` on 0/1 arrays; identical decomposition.
-- Count Number of Nice Subarrays (LC 1248) — same trick on odd-count constraint.
+- Binary Subarrays With Sum (LC 930) - `atMost(goal) − atMost(goal−1)` on 0/1 arrays; identical decomposition.
+- Count Number of Nice Subarrays (LC 1248) - same trick on odd-count constraint.

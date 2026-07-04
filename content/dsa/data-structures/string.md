@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - string operations hide costs (concatenation, slicing); you need the cost model to see why a loop of `+=` is O(n²). <!-- U9: not-yet-written target — wire to `algorithms/big-o-notation.md` once that page exists. -->
+- **Big-O Notation** [Must read] - string operations hide costs (concatenation, slicing); you need the cost model to see why a loop of `+=` is O(n²). <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
 - [Array](./array.md) [Must read] - a string is an array of characters; everything about contiguity, indexing, and the O(n) middle-insert applies directly.
 - [Dynamic Array](./dynamic-array.md) [Should read] - building a string incrementally is the dynamic-array append problem; the amortization argument explains why you join a list instead of `+=`.
 
@@ -33,11 +33,11 @@
 
 ## What it is
 
-A **string** is an immutable (in most modern languages) sequence of characters stored as a contiguous array — an [array](./array.md) whose elements happen to be characters, with a library of text-specific operations on top.
+A **string** is an immutable (in most modern languages) sequence of characters stored as a contiguous array - an [array](./array.md) whose elements happen to be characters, with a library of text-specific operations on top.
 
-Mental model: **a row of character lockers, sealed shut.** It's an array — O(1) indexed access, contiguous memory — but with one extra rule in Python/Java/JS: **you can't change a character in place.** Any "edit" (append, replace, slice-and-join) builds a _new_ string. That immutability is the source of the one string-specific cost that bites everyone: a loop of `s += c` is O(n²), because each `+=` copies the whole string.
+Mental model: **a row of character lockers, sealed shut.** It's an array - O(1) indexed access, contiguous memory - but with one extra rule in Python/Java/JS: **you can't change a character in place.** Any "edit" (append, replace, slice-and-join) builds a _new_ string. That immutability is the source of the one string-specific cost that bites everyone: a loop of `s += c` is O(n²), because each `+=` copies the whole string.
 
-> **Takeaway (say this out loud):** "A string is an immutable character array — O(1) indexing, but every mutation copies, so build with a list and `join`, never `+=` in a loop."
+> **Takeaway (say this out loud):** "A string is an immutable character array - O(1) indexing, but every mutation copies, so build with a list and `join`, never `+=` in a loop."
 
 ## How it works
 
@@ -57,15 +57,15 @@ index:    0     1     2     3     4
 
 ```
 s = "cat"
-s += "s"        # does NOT extend "cat" — allocates a new 4-char block "cats" and copies
+s += "s"        # does NOT extend "cat" - allocates a new 4-char block "cats" and copies
 
 in a loop:
 for c in chars:  s += c     # each += copies the whole string → 1+2+3+...+n = O(n²)!
 ```
 
-The fix is to **accumulate into a mutable structure** (a list, or a `StringBuilder`/`bytearray`) and convert once at the end — turning O(n²) into O(n). This is the dynamic-array amortization argument ([Dynamic Array](./dynamic-array.md)) applied to text, and it's the single most important practical string fact.
+The fix is to **accumulate into a mutable structure** (a list, or a `StringBuilder`/`bytearray`) and convert once at the end - turning O(n²) into O(n). This is the dynamic-array amortization argument ([Dynamic Array](./dynamic-array.md)) applied to text, and it's the single most important practical string fact.
 
-**Encoding matters for "length" and indexing.** ASCII is one byte per character; **UTF-8** is variable-width (1–4 bytes), so "the 5th character" is not "the 5th byte". Python 3 strings index by Unicode code point (so `len`/indexing are by character), but a single emoji can be multiple code points — see [Gotchas](#gotchas--edge-cases).
+**Encoding matters for "length" and indexing.** ASCII is one byte per character; **UTF-8** is variable-width (1–4 bytes), so "the 5th character" is not "the 5th byte". Python 3 strings index by Unicode code point (so `len`/indexing are by character), but a single emoji can be multiple code points - see [Gotchas](#gotchas--edge-cases).
 
 ## Operations
 
@@ -80,7 +80,7 @@ The fix is to **accumulate into a mutable structure** (a list, or a `StringBuild
 | Build via `+=` in a loop        | **O(n²)**                   | O(n)        |
 | Build via list + `"".join`      | **O(n)**                    | O(n)        |
 
-Slicing and concatenation **allocate** (immutability) — they're not the O(1) view they might appear to be. Naive substring search is O(n·m); [KMP / rolling hash](#polynomial-rolling-hash) bring it to O(n+m).
+Slicing and concatenation **allocate** (immutability) - they're not the O(1) view they might appear to be. Naive substring search is O(n·m); [KMP / rolling hash](#polynomial-rolling-hash) bring it to O(n+m).
 
 ## Complexity summary
 
@@ -91,27 +91,27 @@ Slicing and concatenation **allocate** (immutability) — they're not the O(1) v
 | Build (correct)  | O(n) | O(n)    | O(n) (list + join)        |
 | Build (`+=`)     | O(n) | O(n²)   | O(n²) (the trap)          |
 
-**Space:** O(n) for the characters, ×1–4 for UTF-8 width. The hidden cost is **transient allocation**: every slice, concat, or `+=` creates a new string, so a loop of small edits can churn O(n²) total bytes through the allocator even when the final result is O(n). Some runtimes intern short/literal strings (deduplicating identical values), which is why `is` sometimes "works" on strings — never rely on it (see [Gotchas](#gotchas--edge-cases)).
+**Space:** O(n) for the characters, ×1–4 for UTF-8 width. The hidden cost is **transient allocation**: every slice, concat, or `+=` creates a new string, so a loop of small edits can churn O(n²) total bytes through the allocator even when the final result is O(n). Some runtimes intern short/literal strings (deduplicating identical values), which is why `is` sometimes "works" on strings - never rely on it (see [Gotchas](#gotchas--edge-cases)).
 
 ## When to use / when not
 
-A string is the default for text — the question is usually _what to pair it with_, not whether to use it.
+A string is the default for text - the question is usually _what to pair it with_, not whether to use it.
 
 **Reach for the raw string when:**
 
-- You read text by index or scan it once — parsing, validation, pattern checks.
-- The alphabet is small and bounded (lowercase letters, ASCII) — a **count array** beats a hash map (see [CP-primitives](#character-count-array-bounded-alphabet)).
+- You read text by index or scan it once - parsing, validation, pattern checks.
+- The alphabet is small and bounded (lowercase letters, ASCII) - a **count array** beats a hash map (see [CP-primitives](#character-count-array-bounded-alphabet)).
 
 **Reach for something else / pair it when:**
 
-- **You build incrementally** → accumulate in a **list** and `"".join` once (O(n)), or a `bytearray`/`StringBuilder` — never `+=` in a loop (O(n²)). This is the #1 string mistake.
+- **You build incrementally** → accumulate in a **list** and `"".join` once (O(n)), or a `bytearray`/`StringBuilder` - never `+=` in a loop (O(n²)). This is the #1 string mistake.
 - **You need prefix queries / autocomplete** → a [trie](./trie.md), which indexes strings by shared prefix in O(L).
 - **You need fast membership across many strings** → a [hash set](./hash-set.md) of strings (O(1) average) or a trie.
 - **You mutate characters heavily in place** → a mutable buffer (`list(s)`, `bytearray`) and convert back once; repeatedly rebuilding an immutable string is wasteful.
 
 Rule of thumb: **strings are arrays with an immutability tax.** Read by index freely; build with a list-and-join; reach for a trie when prefixes matter.
 
-Real-world: strings are everywhere — every identifier, URL, log line, and JSON key; **full-text search** engines build inverted indexes over them; compilers tokenize source; and rolling-hash string matching underpins `grep`, plagiarism detection, and Git's delta compression.
+Real-world: strings are everywhere - every identifier, URL, log line, and JSON key; **full-text search** engines build inverted indexes over them; compilers tokenize source; and rolling-hash string matching underpins `grep`, plagiarism detection, and Git's delta compression.
 
 ## Comparison
 
@@ -123,21 +123,21 @@ How a string relates to the structures you'd weigh against it for text work:
 | List of chars               | O(1)           | **yes**          | **O(n)** then join | no           | building/editing then converting once   |
 | `bytearray` / StringBuilder | O(1)           | **yes**          | **O(n)**           | no           | heavy in-place character mutation       |
 | Trie                        | O(L) by prefix | yes              | O(total chars)     | **yes**      | autocomplete, prefix sets, dictionaries |
-| Hash set of strings         | n/a (by value) | —                | O(total chars)     | no           | "have I seen this whole string?"        |
+| Hash set of strings         | n/a (by value) | -                | O(total chars)     | no           | "have I seen this whole string?"        |
 
 The string's identity is **O(1)-indexed immutable text**. The list/`bytearray` trade immutability for cheap building; the [trie](./trie.md) trades flat storage for prefix queries.
 
 ## Variants
 
-- **Mutable string buffer** — `bytearray` / `io.StringIO` (Python), `StringBuilder` (Java), `std::string` (C++ is mutable). Edit in place in O(1) per char, convert to an immutable string once. The right tool for incremental building.
-- **C string (null-terminated)** — a raw `char*` array ending in `\0`; length is O(n) to compute (scan to the terminator), and the source of countless buffer-overflow bugs. Know it exists; modern code stores length explicitly.
-- **Rope** — a balanced tree of string chunks giving O(log n) insert/delete/concat in the middle, used by text editors for huge documents where rebuilding a flat string per keystroke would be O(n). A structural variant; reach for it only at editor scale.
-- **Interned string** — runtimes deduplicate identical literals into one shared object so equality can be a pointer compare. An optimization, not a different structure; see [Gotchas](#gotchas--edge-cases).
-- **Suffix array / suffix automaton** — preprocessed indexes over all suffixes enabling O(log n) substring queries; the heavy CP machinery for repeated pattern search. <!-- suffix-array not yet written --> Named here; far beyond a basic interview.
+- **Mutable string buffer** - `bytearray` / `io.StringIO` (Python), `StringBuilder` (Java), `std::string` (C++ is mutable). Edit in place in O(1) per char, convert to an immutable string once. The right tool for incremental building.
+- **C string (null-terminated)** - a raw `char*` array ending in `\0`; length is O(n) to compute (scan to the terminator), and the source of countless buffer-overflow bugs. Know it exists; modern code stores length explicitly.
+- **Rope** - a balanced tree of string chunks giving O(log n) insert/delete/concat in the middle, used by text editors for huge documents where rebuilding a flat string per keystroke would be O(n). A structural variant; reach for it only at editor scale.
+- **Interned string** - runtimes deduplicate identical literals into one shared object so equality can be a pointer compare. An optimization, not a different structure; see [Gotchas](#gotchas--edge-cases).
+- **Suffix array / suffix automaton** - preprocessed indexes over all suffixes enabling O(log n) substring queries; the heavy CP machinery for repeated pattern search. <!-- suffix-array not yet written --> Named here; far beyond a basic interview.
 
 ## Memory layout
 
-A string is an [array](./array.md), so its layout story is the array's — with two text-specific twists: **encoding width** and **immutability**.
+A string is an [array](./array.md), so its layout story is the array's - with two text-specific twists: **encoding width** and **immutability**.
 
 **Contiguous, like an array.** Characters sit back-to-back in one block; indexing is the same `base + i × width` arithmetic, so `s[i]` is O(1) and iteration is cache-friendly.
 
@@ -150,7 +150,7 @@ UTF-8 "h€!" (variable width):  [ 68 | E2 82 AC | 21 ]
                                  → "the 3rd character" ≠ "byte index 3"
 ```
 
-**Encoding width breaks naive byte-indexing.** With ASCII, character index = byte index. With **UTF-8** (variable 1–4 bytes), they diverge: byte offset 3 might land in the middle of a multi-byte character. Python 3 hides this by indexing on code points (using a 1/2/4-byte internal representation per string), so `s[2]` is always the 3rd character — but the cost is that `len` and indexing reason about code points, and a user-perceived "character" (an emoji with skin-tone modifier) can still be several code points.
+**Encoding width breaks naive byte-indexing.** With ASCII, character index = byte index. With **UTF-8** (variable 1–4 bytes), they diverge: byte offset 3 might land in the middle of a multi-byte character. Python 3 hides this by indexing on code points (using a 1/2/4-byte internal representation per string), so `s[2]` is always the 3rd character - but the cost is that `len` and indexing reason about code points, and a user-perceived "character" (an emoji with skin-tone modifier) can still be several code points.
 
 **Immutability and copy-on-edit.** The block is read-only in Python/Java/JS, so any modification allocates a fresh block and copies:
 
@@ -163,15 +163,15 @@ build "aaaa" with += :
   "aa"→"aaa" copy 3   ...   total 1+2+3+...+n = O(n²)   ← the trap
 ```
 
-The fix is the dynamic-array one: accumulate into a **mutable, over-allocating** buffer (a Python list, whose append is amortized O(1) by [doubling](./dynamic-array.md#memory-layout)) and materialize the string once with `"".join` — total O(n).
+The fix is the dynamic-array one: accumulate into a **mutable, over-allocating** buffer (a Python list, whose append is amortized O(1) by [doubling](./dynamic-array.md#memory-layout)) and materialize the string once with `"".join` - total O(n).
 
-**Interning.** Many runtimes store one shared copy of identical string literals/short strings (a global table), so `"ab" is "ab"` may be `True`. It's an allocator optimization (saves memory, makes equality a possible pointer-compare) — never a semantic guarantee; compare with `==`, never `is`.
+**Interning.** Many runtimes store one shared copy of identical string literals/short strings (a global table), so `"ab" is "ab"` may be `True`. It's an allocator optimization (saves memory, makes equality a possible pointer-compare) - never a semantic guarantee; compare with `==`, never `is`.
 
 ## Implementation
 
-There's no "implement a string" — it's a language primitive. What matters is implementing the **correct build pattern** and the canonical search. Pseudocode states the build contract; Python shows the right way and the trap.
+There's no "implement a string" - it's a language primitive. What matters is implementing the **correct build pattern** and the canonical search. Pseudocode states the build contract; Python shows the right way and the trap.
 
-**Pseudocode (CLRS-style contract — correct O(n) build):**
+**Pseudocode (CLRS-style contract - correct O(n) build):**
 
 ```
 BUILD-STRING(parts)                   ▷ parts = sequence of chunks to concatenate
@@ -179,20 +179,20 @@ BUILD-STRING(parts)                   ▷ parts = sequence of chunks to concaten
 2   for each p in parts
 3       APPEND(buffer, p)             ▷ no copy of the accumulated result
 4   return JOIN(buffer, "")           ▷ single O(n) materialization
-                                      ▷ total O(n) — vs O(n²) if we concatenated in the loop
+                                      ▷ total O(n) - vs O(n²) if we concatenated in the loop
 ```
 
-**Python (reference — idiomatic, and the trap to avoid):**
+**Python (reference - idiomatic, and the trap to avoid):**
 
 ```python
-# CORRECT — O(n): accumulate in a list, join once
+# CORRECT - O(n): accumulate in a list, join once
 def build_correct(parts: list[str]) -> str:
     out: list[str] = []
     for p in parts:
         out.append(p)            # amortized O(1)
     return "".join(out)          # single O(n) pass
 
-# WRONG — O(n²): every += copies the whole accumulated string
+# WRONG - O(n²): every += copies the whole accumulated string
 def build_wrong(parts: list[str]) -> str:
     s = ""
     for p in parts:
@@ -204,12 +204,12 @@ s = "Hello, World"
 s.lower(); s.upper()             # case
 s.split(",")                     # ['Hello', ' World']
 s.strip()                        # trim whitespace
-"".join(["a", "b", "c"])         # 'abc' — the correct concatenation
-s[::-1]                          # 'dlroW ,olleH' — reverse via slice
+"".join(["a", "b", "c"])         # 'abc' - the correct concatenation
+s[::-1]                          # 'dlroW ,olleH' - reverse via slice
 s.startswith("He"); "lo" in s    # prefix / substring checks
 ```
 
-**Contest velocity — lean on the stdlib.** `Counter(s)` for frequencies, `s.count(sub)`, `str.translate` for bulk char mapping, and `"".join(...)` instead of `+=` are the speed-of-coding wins. For matching, Python's `in`/`find` are C-optimized (good enough for most), and `re` covers pattern needs.
+**Contest velocity - lean on the stdlib.** `Counter(s)` for frequencies, `s.count(sub)`, `str.translate` for bulk char mapping, and `"".join(...)` instead of `+=` are the speed-of-coding wins. For matching, Python's `in`/`find` are C-optimized (good enough for most), and `re` covers pattern needs.
 
 ## CP-primitives
 
@@ -217,7 +217,7 @@ Three string techniques that dominate contest and interview text problems.
 
 ### Character-count array (bounded alphabet)
 
-When the alphabet is small and fixed (26 lowercase letters, 128 ASCII), a plain **array indexed by character** is an O(1) frequency map with zero hashing overhead — faster and simpler than a [hash table](./hash-table.md).
+When the alphabet is small and fixed (26 lowercase letters, 128 ASCII), a plain **array indexed by character** is an O(1) frequency map with zero hashing overhead - faster and simpler than a [hash table](./hash-table.md).
 
 ```python
 count = [0] * 26
@@ -229,7 +229,7 @@ for ch in s:
 
 ### Polynomial rolling hash
 
-Map a string (or window) to a number: `h = (s[0]·pⁿ⁻¹ + s[1]·pⁿ⁻² + … + s[n-1]) mod M`. The magic: sliding the window one char right updates the hash in **O(1)** (subtract the leaving char's contribution, multiply by `p`, add the entering char) — so you compare an m-length pattern against every position in **O(n + m)** instead of O(n·m). This is **Rabin–Karp**.
+Map a string (or window) to a number: `h = (s[0]·pⁿ⁻¹ + s[1]·pⁿ⁻² + … + s[n-1]) mod M`. The magic: sliding the window one char right updates the hash in **O(1)** (subtract the leaving char's contribution, multiply by `p`, add the entering char) - so you compare an m-length pattern against every position in **O(n + m)** instead of O(n·m). This is **Rabin–Karp**.
 
 ```python
 def rabin_karp(text: str, pat: str) -> int:
@@ -250,14 +250,14 @@ def rabin_karp(text: str, pat: str) -> int:
     return -1
 ```
 
-**Why for CP:** O(n) substring search and the engine for "count distinct substrings", "longest common substring" (binary-search + hash), and dup-substring detection. Use a **large prime modulus** (or double hashing) to dodge collisions — anti-hash test cases target weak moduli.
+**Why for CP:** O(n) substring search and the engine for "count distinct substrings", "longest common substring" (binary-search + hash), and dup-substring detection. Use a **large prime modulus** (or double hashing) to dodge collisions - anti-hash test cases target weak moduli.
 
 ### Two pointers / sliding window on characters
 
 Treat the string as a sequence and walk two indices: opposite ends (palindrome, reverse) or a same-direction expanding/contracting window (longest substring with a constraint). A char-count array tracks the window contents in O(1).
 
 ```python
-# longest substring with no repeating char — expanding window
+# longest substring with no repeating char - expanding window
 def longest_unique(s: str) -> int:
     last: dict[str, int] = {}
     start = best = 0
@@ -273,22 +273,22 @@ def longest_unique(s: str) -> int:
 
 ## Gotchas / edge cases
 
-- **`s += c` in a loop is O(n²) — the cardinal string sin.** Immutability means each `+=` copies the whole accumulated string. Build with a **list + `"".join`** (or `StringBuilder`/`bytearray`) for O(n). This is the single most common string performance bug; an interviewer watches for it specifically.
-- **Slicing and concatenation allocate.** `s[i:j]` and `s + t` look cheap but copy O(length) characters and allocate — they are not O(1) views. Inside a hot loop, repeated slicing (e.g. `text[i:i+m]` to compare) silently adds an O(m) factor; hash or compare incrementally instead.
-- **Unicode: length and "character" are slippery.** `len(s)` counts code points, not user-perceived characters — an emoji with a modifier (👨‍👩‍👧) is several code points, and a "café" may be 4 or 5 code points depending on whether `é` is composed or `e` + combining accent. Normalize (`unicodedata.normalize`) before comparing user text; don't assume one glyph = one index.
+- **`s += c` in a loop is O(n²) - the cardinal string sin.** Immutability means each `+=` copies the whole accumulated string. Build with a **list + `"".join`** (or `StringBuilder`/`bytearray`) for O(n). This is the single most common string performance bug; an interviewer watches for it specifically.
+- **Slicing and concatenation allocate.** `s[i:j]` and `s + t` look cheap but copy O(length) characters and allocate - they are not O(1) views. Inside a hot loop, repeated slicing (e.g. `text[i:i+m]` to compare) silently adds an O(m) factor; hash or compare incrementally instead.
+- **Unicode: length and "character" are slippery.** `len(s)` counts code points, not user-perceived characters - an emoji with a modifier (👨‍👩‍👧) is several code points, and a "café" may be 4 or 5 code points depending on whether `é` is composed or `e` + combining accent. Normalize (`unicodedata.normalize`) before comparing user text; don't assume one glyph = one index.
 - **Encoding mismatches corrupt data.** Reading UTF-8 bytes as Latin-1 (or vice versa) produces mojibake or `UnicodeDecodeError`. Always decode/encode with an explicit charset; "it worked on my ASCII test" hides the bug until a non-ASCII character arrives.
-- **Comparing strings with `is` instead of `==`.** `is` checks object identity; it sometimes appears to work because the runtime **interns** literals, but it's not a guarantee — `a = "x"*1000; b = "x"*1000; a is b` is `False`. Always compare string _values_ with `==`.
+- **Comparing strings with `is` instead of `==`.** `is` checks object identity; it sometimes appears to work because the runtime **interns** literals, but it's not a guarantee - `a = "x"*1000; b = "x"*1000; a is b` is `False`. Always compare string _values_ with `==`.
 - **Off-by-one in substring bounds (CP trap).** Window/substring problems live and die on inclusive-vs-exclusive bounds (`s[i:j]` is `[i, j)` in Python) and the `i < n - m + 1` search loop limit. The classic bug is searching one position too few or slicing one char short.
 
 ## Practice problems
 
-Five staples, each a **distinct** string technique — no two solved the same way.
+Five staples, each a **distinct** string technique - no two solved the same way.
 
-### 1. Valid Anagram — _character count_
+### 1. Valid Anagram - _character count_
 
 **Problem.** Given two strings, decide if one is an anagram of the other (same characters, same counts). E.g. `"anagram"`, `"nagaram"` → true; `"rat"`, `"car"` → false.
 
-**Approach.** Two strings are anagrams iff their character frequencies match. With a bounded alphabet, a **26-length count array** is the fastest check: increment for one string, decrement for the other, then verify all zeros. O(n) time, O(1) space (alphabet is fixed). The count-array primitive in its plainest form — no sorting, no hashing.
+**Approach.** Two strings are anagrams iff their character frequencies match. With a bounded alphabet, a **26-length count array** is the fastest check: increment for one string, decrement for the other, then verify all zeros. O(n) time, O(1) space (alphabet is fixed). The count-array primitive in its plainest form - no sorting, no hashing.
 
 ```python
 def is_anagram(s: str, t: str) -> bool:
@@ -303,11 +303,11 @@ def is_anagram(s: str, t: str) -> bool:
 
 **Complexity.** O(n) time, O(1) space.
 
-### 2. Longest Substring Without Repeating Characters — _sliding window_
+### 2. Longest Substring Without Repeating Characters - _sliding window_
 
 **Problem.** Find the length of the longest substring with all distinct characters. E.g. `"abcabcbb"` → `3` (`"abc"`), `"bbbbb"` → `1`.
 
-**Approach.** An **expanding/contracting window** with a map of each char's last index. When the current char was seen inside the window, jump the window's start past its previous occurrence — never revisiting characters, so it's one O(n) pass. The window always holds a distinct-char substring; track the max length. Classic sliding window on characters.
+**Approach.** An **expanding/contracting window** with a map of each char's last index. When the current char was seen inside the window, jump the window's start past its previous occurrence - never revisiting characters, so it's one O(n) pass. The window always holds a distinct-char substring; track the max length. Classic sliding window on characters.
 
 ```python
 def length_of_longest(s: str) -> int:
@@ -323,11 +323,11 @@ def length_of_longest(s: str) -> int:
 
 **Complexity.** O(n) time, O(min(n, alphabet)) space. Pattern: [Sliding Window](../patterns/sliding-window.md).
 
-### 3. Valid Palindrome — _two pointers_
+### 3. Valid Palindrome - _two pointers_
 
 **Problem.** Decide if a string is a palindrome, considering only alphanumeric characters and ignoring case. E.g. `"A man, a plan, a canal: Panama"` → true.
 
-**Approach.** **Converging two pointers** from both ends: skip non-alphanumeric characters, compare the rest case-insensitively, move inward. They must match all the way to the middle. O(1) extra space — no cleaned-copy allocation needed if you skip in place. The two-pointer primitive on a string.
+**Approach.** **Converging two pointers** from both ends: skip non-alphanumeric characters, compare the rest case-insensitively, move inward. They must match all the way to the middle. O(1) extra space - no cleaned-copy allocation needed if you skip in place. The two-pointer primitive on a string.
 
 ```python
 def is_palindrome(s: str) -> bool:
@@ -345,7 +345,7 @@ def is_palindrome(s: str) -> bool:
 
 **Complexity.** O(n) time, O(1) space. Pattern: [Two Pointers](../patterns/two-pointers.md).
 
-### 4. Find All Anagrams in a String — _fixed window + count match_
+### 4. Find All Anagrams in a String - _fixed window + count match_
 
 **Problem.** Given strings `s` and `p`, return all start indices of `p`'s anagrams in `s`. E.g. `s="cbaebabacd", p="abc"` → `[0, 6]`.
 
@@ -375,11 +375,11 @@ def find_anagrams(s: str, p: str) -> list[int]:
 
 **Complexity.** O(n) time, O(1) space (bounded alphabet). Pattern: [Sliding Window](../patterns/sliding-window.md).
 
-### 5. Implement strStr / Find the Index — _rolling hash (Rabin–Karp)_
+### 5. Implement strStr / Find the Index - _rolling hash (Rabin–Karp)_
 
 **Problem.** Return the index of the first occurrence of `needle` in `haystack`, or -1. E.g. `haystack="sadbutsad", needle="sad"` → `0`.
 
-**Approach.** **Rabin–Karp**: hash the needle and the first window of the haystack, then **roll** the window hash one char at a time in O(1). On a hash match, verify the actual characters (to rule out a collision). O(n + m) average — far better than the O(n·m) brute force on adversarial inputs. The rolling-hash primitive in its defining problem.
+**Approach.** **Rabin–Karp**: hash the needle and the first window of the haystack, then **roll** the window hash one char at a time in O(1). On a hash match, verify the actual characters (to rule out a collision). O(n + m) average - far better than the O(n·m) brute force on adversarial inputs. The rolling-hash primitive in its defining problem.
 
 ```python
 def str_str(haystack: str, needle: str) -> int:

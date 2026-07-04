@@ -33,11 +33,11 @@
 
 ## What it is
 
-A **suffix array** (`SA`) is an array of integers in `[0, n)`, sorted so that `SA[i]` is the starting index of the `i`-th lexicographically smallest suffix of the string — giving you the power of a sorted suffix dictionary without the pointer-per-character overhead of a suffix tree.
+A **suffix array** (`SA`) is an array of integers in `[0, n)`, sorted so that `SA[i]` is the starting index of the `i`-th lexicographically smallest suffix of the string - giving you the power of a sorted suffix dictionary without the pointer-per-character overhead of a suffix tree.
 
-Mental model: **a yellow-pages index for every tail of your string.** Imagine ripping a book into all its "chapters-and-everything-after" tails, then alphabetizing them and keeping only the page numbers in that alphabetical order. Looking up a pattern means binary-searching those page numbers to find which sorted tail it sits in — no scanning, no hash collision, no extra memory beyond one array of ints.
+Mental model: **a yellow-pages index for every tail of your string.** Imagine ripping a book into all its "chapters-and-everything-after" tails, then alphabetizing them and keeping only the page numbers in that alphabetical order. Looking up a pattern means binary-searching those page numbers to find which sorted tail it sits in - no scanning, no hash collision, no extra memory beyond one array of ints.
 
-> **Takeaway (say this out loud):** "A suffix array is a sorted index into a string's suffixes — it's what you get when you want a suffix tree's query power but the cache-friendly footprint of a plain array."
+> **Takeaway (say this out loud):** "A suffix array is a sorted index into a string's suffixes - it's what you get when you want a suffix tree's query power but the cache-friendly footprint of a plain array."
 
 ## How it works
 
@@ -79,7 +79,7 @@ binary search for "ana":
 
 **LCP array.** The companion **Longest Common Prefix array** (`LCP[i]`) stores the length of the longest common prefix between `SA[i-1]`'s suffix and `SA[i]`'s suffix. Together, `SA` and `LCP` unlock almost every suffix-query task. LCP construction via **Kasai's algorithm** runs in O(n) and is the standard post-build step (see [Variants](#variants)).
 
-**Cache behavior.** Because `SA` is a contiguous array of integers and binary search strides across it predictably, the pattern-match inner loop is far more cache-friendly than traversing the pointer-threaded nodes of a suffix tree — this is why suffix arrays beat suffix trees in practice even at the same asymptotic complexity.
+**Cache behavior.** Because `SA` is a contiguous array of integers and binary search strides across it predictably, the pattern-match inner loop is far more cache-friendly than traversing the pointer-threaded nodes of a suffix tree - this is why suffix arrays beat suffix trees in practice even at the same asymptotic complexity.
 
 ## Operations
 
@@ -107,25 +107,25 @@ binary search for "ana":
 | LCP array build (Kasai) | O(n)         | O(n)         | O(n)         | O(n)        |
 | RMQ on LCP (LCP query)  | O(1) query   | O(1) query   | O(1) query   | O(n log n)  |
 
-There is **no amortized behavior** in a suffix array: build is one-shot, queries are independent. Pattern search is the same cost every call — no hot-path amortization applies.
+There is **no amortized behavior** in a suffix array: build is one-shot, queries are independent. Pattern search is the same cost every call - no hot-path amortization applies.
 
 ## When to use / when not
 
 **Reach for a suffix array when:**
 
-- You need to answer **multiple pattern-matching queries** on a fixed text — build the SA once in O(n log n) or O(n), then answer each O(m log n); better than re-running KMP/Z per query.
-- You need **all occurrences** of a pattern rather than just one — the SA's contiguous hit-range gives them all in one binary search.
-- You need **longest common extension**, **longest repeated substring**, or **number of distinct substrings** — these collapse to LCP-array scans after a single O(n) build.
-- Memory is constrained — suffix arrays use 4–8 bytes per character vs suffix trees' 20–40 bytes per node.
+- You need to answer **multiple pattern-matching queries** on a fixed text - build the SA once in O(n log n) or O(n), then answer each O(m log n); better than re-running KMP/Z per query.
+- You need **all occurrences** of a pattern rather than just one - the SA's contiguous hit-range gives them all in one binary search.
+- You need **longest common extension**, **longest repeated substring**, or **number of distinct substrings** - these collapse to LCP-array scans after a single O(n) build.
+- Memory is constrained - suffix arrays use 4–8 bytes per character vs suffix trees' 20–40 bytes per node.
 
 **Reach for something else when:**
 
 - **Single-query, single-pattern** matching on a short-lived text → [KMP](../algorithms/string-matching.md) or [Z-algorithm](../algorithms/z-algorithm.md) at O(n+m) with O(n) build, no O(n log n) up-front cost.
-- **Rolling hash / existence check with no repeats** → [Rabin-Karp](../algorithms/rabin-karp.md) is O(n) build and O(1) per sliding window — far cheaper if you only need one scan.
+- **Rolling hash / existence check with no repeats** → [Rabin-Karp](../algorithms/rabin-karp.md) is O(n) build and O(1) per sliding window - far cheaper if you only need one scan.
 - **Prefix queries** (autocomplete, "all strings starting with…") → a [trie](./trie.md) is purpose-built; a suffix array's binary search gives prefix ranges but doesn't enumerate them as cleanly.
 - **Online (streaming) text** where you can't afford to rebuild → KMP or Aho-Corasick pattern automata work online; suffix arrays require a complete, static text.
 
-**At scale:** Bioinformatics tools (BWA, Bowtie, samtools) build suffix arrays over genomes of 3 × 10⁹ characters. At that size, prefix-doubling's O(n log² n) is roughly 10¹² comparisons — unusable; SA-IS with a compressed (FM-index) representation is the standard. For typical competitive programming constraints (n ≤ 10⁵–10⁶), prefix-doubling is fine.
+**At scale:** Bioinformatics tools (BWA, Bowtie, samtools) build suffix arrays over genomes of 3 × 10⁹ characters. At that size, prefix-doubling's O(n log² n) is roughly 10¹² comparisons - unusable; SA-IS with a compressed (FM-index) representation is the standard. For typical competitive programming constraints (n ≤ 10⁵–10⁶), prefix-doubling is fine.
 
 ## Comparison
 
@@ -141,19 +141,19 @@ The suffix array is the **sweet spot**: nearly as fast as a suffix tree for quer
 
 ## Variants
 
-**Standard suffix array (prefix-doubling, O(n log² n)).** The taught version. Sort suffixes by their length-1 prefix, then iteratively sort by doubled prefix lengths (1, 2, 4, 8, …). Each doubling round is a radix sort in O(n), and there are O(log n) rounds — total O(n log n) rounds × O(log n) sort = O(n log² n). Concrete and implementable in contest conditions (see [Implementation](#implementation)).
+**Standard suffix array (prefix-doubling, O(n log² n)).** The taught version. Sort suffixes by their length-1 prefix, then iteratively sort by doubled prefix lengths (1, 2, 4, 8, …). Each doubling round is a radix sort in O(n), and there are O(log n) rounds - total O(n log n) rounds × O(log n) sort = O(n log² n). Concrete and implementable in contest conditions (see [Implementation](#implementation)).
 
 **SA-IS (Suffix Array by Induced Sorting, O(n)).** The gold standard. Classifies each suffix as S-type or L-type based on its suffix's first character vs its right neighbor, then uses a clever induced-sorting pass over LMS (leftmost-S-type) suffixes to build the SA in linear time. Requires O(alphabet) auxiliary space. The algorithm behind most production tools; conceptually more involved but the code is ~100 lines.
 
 **DC3 / Skew algorithm (O(n)).** An alternative linear construction: partition suffix positions into those at indices `i % 3 ≠ 0` and `i % 3 = 0`, sort the first group recursively (reducing the problem to ⅔ size), then use the result to sort the remaining group. Two recursive calls on ⅔-size problems gives T(n) = T(2n/3) + O(n) = O(n). Theoretically clean; SA-IS has a smaller constant in practice.
 
-**Enhanced suffix array (SA + LCP + child table).** Augmenting `SA` with the `LCP` array (Kasai, O(n)) and a range-minimum-query structure on `LCP` (sparse table, O(n log n) build, O(1) query) gives O(m + log n) pattern matching — one binary search step per LCP comparison rather than one character per step. This is the production version for high-query workloads.
+**Enhanced suffix array (SA + LCP + child table).** Augmenting `SA` with the `LCP` array (Kasai, O(n)) and a range-minimum-query structure on `LCP` (sparse table, O(n log n) build, O(1) query) gives O(m + log n) pattern matching - one binary search step per LCP comparison rather than one character per step. This is the production version for high-query workloads.
 
 **Compressed suffix array / FM-index.** For texts of gigabytes (genomics), the O(n) space of an explicit SA is still too large. The FM-index represents the SA implicitly via the Burrows-Wheeler Transform and wavelet trees, using O(n log σ) bits (σ = alphabet size). Querying runs in O(m) via backward search. The standard in bioinformatics.
 
 ## Traversal & invariant
 
-A suffix array's **ordering invariant** is precisely: for all `0 ≤ i < j < n`, the suffix starting at `SA[i]` is strictly lexicographically less than the suffix starting at `SA[j]`. This is a **total order on suffixes** — no ties are possible because no two suffixes of the same string are equal (they differ at least in length, with the shorter one being a strict prefix of the longer, but in the standard `$`-terminated construction they differ at the terminator; in Python's string comparison, the shorter suffix wins on equal prefix).
+A suffix array's **ordering invariant** is precisely: for all `0 ≤ i < j < n`, the suffix starting at `SA[i]` is strictly lexicographically less than the suffix starting at `SA[j]`. This is a **total order on suffixes** - no ties are possible because no two suffixes of the same string are equal (they differ at least in length, with the shorter one being a strict prefix of the longer, but in the standard `$`-terminated construction they differ at the terminator; in Python's string comparison, the shorter suffix wins on equal prefix).
 
 **Binary search for pattern matching.** Because `SA` is sorted, `std::lower_bound` / `bisect_left` on suffix comparisons finds the first position in `SA` whose suffix is `≥ P`, and `bisect_right` finds the first whose suffix is `> P`. The range `[lo, hi)` in `SA` contains all occurrence positions. Each comparison takes O(m), and O(log n) comparisons are made → **O(m log n)** per query.
 
@@ -167,13 +167,13 @@ query P = "na":
   SA[4]=4, SA[5]=2 → "na" starts at positions {4, 2}
 ```
 
-**LCP array and O(m + log n) matching.** The LCP array stores `LCP[i] = len(longest common prefix of suffix SA[i-1] and suffix SA[i])`, with `LCP[0] = 0`. Once the initial binary-search bounds `[lo, hi)` are found, the LCP within that range is at least `|P|` — you can use this to skip re-comparing matched characters in subsequent binary steps, reducing total character comparisons from O(m log n) to O(m + log n). An RMQ structure on `LCP` enables O(1) range-minimum queries, making this practical.
+**LCP array and O(m + log n) matching.** The LCP array stores `LCP[i] = len(longest common prefix of suffix SA[i-1] and suffix SA[i])`, with `LCP[0] = 0`. Once the initial binary-search bounds `[lo, hi)` are found, the LCP within that range is at least `|P|` - you can use this to skip re-comparing matched characters in subsequent binary steps, reducing total character comparisons from O(m log n) to O(m + log n). An RMQ structure on `LCP` enables O(1) range-minimum queries, making this practical.
 
-**The LCP array as a compact suffix tree.** Every internal node of the conceptual suffix tree corresponds to a **range** in `SA` with its LCP value as the "string depth." The LCP array is, in effect, a flattened suffix tree — enabling suffix-tree algorithms (longest repeated substring, etc.) to run on the cache-friendly flat array.
+**The LCP array as a compact suffix tree.** Every internal node of the conceptual suffix tree corresponds to a **range** in `SA` with its LCP value as the "string depth." The LCP array is, in effect, a flattened suffix tree - enabling suffix-tree algorithms (longest repeated substring, etc.) to run on the cache-friendly flat array.
 
 ## Implementation
 
-**CLRS-style pseudocode — prefix-doubling construction:**
+**CLRS-style pseudocode - prefix-doubling construction:**
 
 ```
 procedure BUILD-SUFFIX-ARRAY(s, n)
@@ -184,7 +184,7 @@ procedure BUILD-SUFFIX-ARRAY(s, n)
     k = 1
     while k < n do
         ▷ Two-pass radix sort on pair (rank[i], rank[i+k]):
-        ▷ Pass 1 — stable sort SA by secondary key rank[i+k]
+        ▷ Pass 1 - stable sort SA by secondary key rank[i+k]
         cnt[0..n] ← 0
         for i = 0 to n-1 do
             r2 ← rank[SA[i] + k] if SA[i]+k < n else 0
@@ -196,7 +196,7 @@ procedure BUILD-SUFFIX-ARRAY(s, n)
             tmp[cnt[r2]] ← SA[i]
         SA ← tmp
 
-        ▷ Pass 2 — stable sort SA by primary key rank[i]
+        ▷ Pass 2 - stable sort SA by primary key rank[i]
         cnt[0..n] ← 0
         for i = 0 to n-1 do cnt[rank[SA[i]]] ← cnt[rank[SA[i]]] + 1
         for i = 1 to n do cnt[i] ← cnt[i] + cnt[i-1]
@@ -219,9 +219,9 @@ procedure BUILD-SUFFIX-ARRAY(s, n)
     return SA
 ```
 
-**Why O(n log n) with radix sort, O(n log² n) with comparison sort.** There are O(log n) doubling rounds. Each round sorts by a pair of integer ranks — a two-pass counting sort (one pass per key component) runs in O(n) per round because the rank values are bounded by n. Total: O(n) × O(log n) rounds = **O(n log n)**. If you replace the two-pass radix sort with Python's `sorted()` (Timsort, O(n log n) per round), the total becomes O(n log n · log n) = **O(n log² n)**. The Python implementation below uses `sorted()` for clarity; the pseudocode above shows the O(n log n) radix path.
+**Why O(n log n) with radix sort, O(n log² n) with comparison sort.** There are O(log n) doubling rounds. Each round sorts by a pair of integer ranks - a two-pass counting sort (one pass per key component) runs in O(n) per round because the rank values are bounded by n. Total: O(n) × O(log n) rounds = **O(n log n)**. If you replace the two-pass radix sort with Python's `sorted()` (Timsort, O(n log n) per round), the total becomes O(n log n · log n) = **O(n log² n)**. The Python implementation below uses `sorted()` for clarity; the pseudocode above shows the O(n log n) radix path.
 
-**Python — from-scratch prefix-doubling construction:**
+**Python - from-scratch prefix-doubling construction:**
 
 ```python
 from __future__ import annotations
@@ -286,7 +286,7 @@ def search(s: str, sa: list[int], pattern: str) -> list[int]:
     n = len(sa)
     m = len(pattern)
 
-    # Manual binary search — works on all Python 3.x versions
+    # Manual binary search - works on all Python 3.x versions
     lo, hi = 0, n
     while lo < hi:
         mid = (lo + hi) // 2
@@ -313,12 +313,12 @@ if __name__ == "__main__":
     text = "banana"
     sa   = build_suffix_array(text)          # built on "banana\x00" internally
     lcp  = build_lcp_array(text + "\x00", sa)
-    print("SA:", sa)          # [6, 5, 3, 1, 0, 4, 2] — index 6 is sentinel '\x00'
+    print("SA:", sa)          # [6, 5, 3, 1, 0, 4, 2] - index 6 is sentinel '\x00'
     print("LCP:", lcp)
     print("search 'ana':", search(text + "\x00", sa, "ana"))  # [1, 3]
 ```
 
-**Kasai's algorithm insight.** When you compute `LCP` for suffix at position `i` (rank `r`), the result is `h`. Move to position `i+1` (rank `r'`). The suffix starting at `i+1` is `s[i:]` with its first character stripped — its LCP with its SA-neighbor can only be `h-1` at minimum (the neighbor's first character changes, but the remaining `h-1` characters still match). So Kasai's algorithm starts each LCP computation at `h-1` from the previous step — amortized O(n) total.
+**Kasai's algorithm insight.** When you compute `LCP` for suffix at position `i` (rank `r`), the result is `h`. Move to position `i+1` (rank `r'`). The suffix starting at `i+1` is `s[i:]` with its first character stripped - its LCP with its SA-neighbor can only be `h-1` at minimum (the neighbor's first character changes, but the remaining `h-1` characters still match). So Kasai's algorithm starts each LCP computation at `h-1` from the previous step - amortized O(n) total.
 
 ## CP-primitives
 
@@ -326,13 +326,13 @@ Three suffix-array techniques that unlock hard string problems in contests.
 
 ### LCP array for pattern counting
 
-After building `SA` and `LCP`, counting the number of occurrences of pattern `P` is a binary search on `SA` for the range `[lo, hi)` — the count is `hi - lo`. But with the `LCP` array and a **sparse table for range-minimum queries (RMQ)**, you can accelerate the binary search from O(m log n) to **O(m + log n)**: once you've matched `m` characters to land in the correct SA range, subsequent binary-search pivots can use `RMQ(LCP, lo, mid)` to skip characters already known to match, reducing character comparisons to O(m) total.
+After building `SA` and `LCP`, counting the number of occurrences of pattern `P` is a binary search on `SA` for the range `[lo, hi)` - the count is `hi - lo`. But with the `LCP` array and a **sparse table for range-minimum queries (RMQ)**, you can accelerate the binary search from O(m log n) to **O(m + log n)**: once you've matched `m` characters to land in the correct SA range, subsequent binary-search pivots can use `RMQ(LCP, lo, mid)` to skip characters already known to match, reducing character comparisons to O(m) total.
 
-**Why for CP:** Any "count occurrences of P in T" problem with many queries goes from O(q · m log n) to O(n log n build + q(m + log n)) — the LCP RMQ is the difference between TLE and AC on large test cases.
+**Why for CP:** Any "count occurrences of P in T" problem with many queries goes from O(q · m log n) to O(n log n build + q(m + log n)) - the LCP RMQ is the difference between TLE and AC on large test cases.
 
 ### Longest repeated substring
 
-The longest repeated substring equals `max(LCP)` — the maximum value in the LCP array. `LCP[i]` is the length of the longest common prefix between the `(i-1)`-th and `i`-th suffixes in sorted order; if two suffixes share `k` characters, those `k` characters form a repeated substring. Taking the maximum identifies the longest one.
+The longest repeated substring equals `max(LCP)` - the maximum value in the LCP array. `LCP[i]` is the length of the longest common prefix between the `(i-1)`-th and `i`-th suffixes in sorted order; if two suffixes share `k` characters, those `k` characters form a repeated substring. Taking the maximum identifies the longest one.
 
 ```python
 def longest_repeated_substring(s: str) -> str:
@@ -343,7 +343,7 @@ def longest_repeated_substring(s: str) -> str:
     return s[sa[best_pos]: sa[best_pos] + best_len]
 ```
 
-**Why for CP:** Collapses a non-obvious O(n²) brute-force into a one-liner O(n) scan after the O(n log² n) build — a classic suffix-array showcase problem.
+**Why for CP:** Collapses a non-obvious O(n²) brute-force into a one-liner O(n) scan after the O(n log² n) build - a classic suffix-array showcase problem.
 
 ### Z-array vs suffix array
 
@@ -358,25 +358,25 @@ The **Z-array** (Z-function) `Z[i]` = length of the longest string starting at `
 
 ## Gotchas / edge cases
 
-**1. Sentinel character is mandatory (CP trap).** The standard prefix-doubling algorithm assumes no two suffixes are identical — impossible for a proper string, but the comparison `s[i:]` vs `s[j:]` (where one is a prefix of the other) can tie without a sentinel. Appending `$` (or `\x00`) — strictly smaller than any character in the alphabet — ensures the shorter suffix sorts before the longer one and all suffixes are distinct. Forgetting the sentinel produces incorrect `SA` ranks, breaking LCP construction silently. Every hand-rolled SA should start with `s += "$"`.
+**1. Sentinel character is mandatory (CP trap).** The standard prefix-doubling algorithm assumes no two suffixes are identical - impossible for a proper string, but the comparison `s[i:]` vs `s[j:]` (where one is a prefix of the other) can tie without a sentinel. Appending `$` (or `\x00`) - strictly smaller than any character in the alphabet - ensures the shorter suffix sorts before the longer one and all suffixes are distinct. Forgetting the sentinel produces incorrect `SA` ranks, breaking LCP construction silently. Every hand-rolled SA should start with `s += "$"`.
 
-**2. 0-vs-1 indexing in LCP (CP trap).** `LCP[0]` is conventionally `0` (no predecessor for the first suffix). `LCP[i]` is the LCP between `SA[i-1]` and `SA[i]`. It's `LCP[i]` not `LCP[i+1]` that describes the gap between adjacent SA entries — off-by-one here corrupts longest-repeated and distinct-substring computations. When porting code, double-check the convention in the reference (some implementations use 1-indexed `SA` and `LCP`).
+**2. 0-vs-1 indexing in LCP (CP trap).** `LCP[0]` is conventionally `0` (no predecessor for the first suffix). `LCP[i]` is the LCP between `SA[i-1]` and `SA[i]`. It's `LCP[i]` not `LCP[i+1]` that describes the gap between adjacent SA entries - off-by-one here corrupts longest-repeated and distinct-substring computations. When porting code, double-check the convention in the reference (some implementations use 1-indexed `SA` and `LCP`).
 
-**3. Comparing suffix lengths without sentinels.** In Python, `"banana" < "ban"` is `False` (longer wins on equal prefix) — this is the opposite of what suffix array construction wants. Without the sentinel, the suffix `"an"` (starting at index 4) should sort before `"anana"` (starting at index 1) because it's shorter; Python's string comparison would say `"an" < "anana"` — coincidentally correct here, but the convention breaks when the shorter suffix is a strict prefix of the longer. The sentinel short-circuits this by making the terminator sort smallest, so the shorter suffix always comes first.
+**3. Comparing suffix lengths without sentinels.** In Python, `"banana" < "ban"` is `False` (longer wins on equal prefix) - this is the opposite of what suffix array construction wants. Without the sentinel, the suffix `"an"` (starting at index 4) should sort before `"anana"` (starting at index 1) because it's shorter; Python's string comparison would say `"an" < "anana"` - coincidentally correct here, but the convention breaks when the shorter suffix is a strict prefix of the longer. The sentinel short-circuits this by making the terminator sort smallest, so the shorter suffix always comes first.
 
-**4. O(n log² n) is fine up to n ≈ 10⁶, then you need SA-IS (scale trap).** At n = 10⁷ (10 MB text, e.g. a gene sequence fragment), prefix-doubling does O(n log² n) ≈ 10⁷ × 23 × 23 ≈ 5 × 10⁹ character comparisons — several minutes in Python, multiple seconds in C++. SA-IS is O(n) with a small constant and handles this comfortably. For contest constraints n ≤ 10⁵ prefix-doubling is fine; for genomics or large corpus work, reach for SA-IS.
+**4. O(n log² n) is fine up to n ≈ 10⁶, then you need SA-IS (scale trap).** At n = 10⁷ (10 MB text, e.g. a gene sequence fragment), prefix-doubling does O(n log² n) ≈ 10⁷ × 23 × 23 ≈ 5 × 10⁹ character comparisons - several minutes in Python, multiple seconds in C++. SA-IS is O(n) with a small constant and handles this comfortably. For contest constraints n ≤ 10⁵ prefix-doubling is fine; for genomics or large corpus work, reach for SA-IS.
 
-**5. LCP ≠ suffix array length.** The LCP value at position `i` is not the length of `SA[i]`'s suffix — it's the overlap with the previous suffix. Indexing `lcp[sa[i]]` vs `lcp[rank[i]]` is a common confusion in implementations that blend the two arrays.
+**5. LCP ≠ suffix array length.** The LCP value at position `i` is not the length of `SA[i]`'s suffix - it's the overlap with the previous suffix. Indexing `lcp[sa[i]]` vs `lcp[rank[i]]` is a common confusion in implementations that blend the two arrays.
 
 ## What the interviewer probes for
 
-**"You said O(m log n) for pattern search — can you get it to O(m + log n)?"**
+**"You said O(m log n) for pattern search - can you get it to O(m + log n)?"**
 
 The LCP array + RMQ (range-minimum query with a sparse table) cuts the per-query character comparisons from O(m log n) to O(m + log n): build a sparse table on the LCP array in O(n log n); during binary search, instead of re-comparing all m characters at each pivot, use `RMQ(lcp, lo, mid)` to determine how many leading characters already match, starting the character comparison where they diverge. Total work per query is O(m) for the initial landing plus O(log n) binary-search steps with O(1) LCP comparisons each.
 
 **"Why is a suffix array faster in practice than a suffix tree even when their query complexities are the same?"**
 
-Cache behavior. A suffix tree is a pointer-linked tree where each node holds 4–8 pointers plus metadata — traversing it during a query pointer-chases unpredictably through memory, blowing L1/L2 cache. A suffix array is a flat `int[]`; binary search accesses it in a predictable halving pattern, and the LCP array lives alongside it in cache. On modern hardware the constant-factor cache advantage of the flat array often exceeds 3–5× over the pointer-threaded suffix tree, which is why bioinformatics tools universally prefer the SA + FM-index over Ukkonen-tree implementations.
+Cache behavior. A suffix tree is a pointer-linked tree where each node holds 4–8 pointers plus metadata - traversing it during a query pointer-chases unpredictably through memory, blowing L1/L2 cache. A suffix array is a flat `int[]`; binary search accesses it in a predictable halving pattern, and the LCP array lives alongside it in cache. On modern hardware the constant-factor cache advantage of the flat array often exceeds 3–5× over the pointer-threaded suffix tree, which is why bioinformatics tools universally prefer the SA + FM-index over Ukkonen-tree implementations.
 
 ## Practice problems
 
@@ -412,14 +412,14 @@ print(longest_repeated_substring("abcde"))    # ""
 
 **Problem.** Given a string `s` of length up to 10⁵, count the number of distinct (non-empty) substrings. For example, `"aab"` has 5 distinct substrings: `"a"`, `"aa"`, `"aab"`, `"ab"`, `"b"`. Strings may contain repeated characters.
 
-**Approach.** The total number of substrings is `n(n+1)/2`. Each pair of adjacent suffixes in sorted SA order shares `LCP[i]` substrings. Subtracting those shared (already counted) prefixes gives the distinct count: `n(n+1)/2 − sum(LCP)`. This works because the suffix array in sorted order introduces exactly `(suffix_length − LCP[i])` new distinct substrings at each step — the non-shared suffixes.
+**Approach.** The total number of substrings is `n(n+1)/2`. Each pair of adjacent suffixes in sorted SA order shares `LCP[i]` substrings. Subtracting those shared (already counted) prefixes gives the distinct count: `n(n+1)/2 − sum(LCP)`. This works because the suffix array in sorted order introduces exactly `(suffix_length − LCP[i])` new distinct substrings at each step - the non-shared suffixes.
 
 ```python
 def count_distinct_substrings(s: str) -> int:
     n = len(s)
     sa  = build_suffix_array(s)
     lcp = build_lcp_array(s + "\x00", sa)
-    # n suffixes of lengths n, n-1, ..., 1  — but SA includes the sentinel suffix (len 1)
+    # n suffixes of lengths n, n-1, ..., 1  - but SA includes the sentinel suffix (len 1)
     # Work over original string: suffix lengths are (n - sa[i]) for sa[i] < n
     total = n * (n + 1) // 2
     return total - sum(lcp)

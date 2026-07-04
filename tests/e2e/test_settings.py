@@ -161,7 +161,7 @@ def test_crossing_to_light_resets_accent_to_light_default(wiki_page):
     wiki_page.locator("#settings-backgrounds .settings-bg-swatch").nth(
         0
     ).click()  # Void (dark)
-    # Now pick emerald — index 2 in dark accents
+    # Now pick emerald - index 2 in dark accents
     wiki_page.locator("#settings-accents .settings-accent-swatch").nth(
         2
     ).click()  # emerald
@@ -634,7 +634,7 @@ def test_os_theme_change_updates_live_when_no_saved_settings(page, base_url):
         == "dark"
     )
 
-    # OS flips to light mid-session — listener should re-apply without reload.
+    # OS flips to light mid-session - listener should re-apply without reload.
     page.emulate_media(color_scheme="light")
     page.wait_for_function(
         "() => document.documentElement.getAttribute('data-theme') === 'light'",
@@ -643,7 +643,7 @@ def test_os_theme_change_updates_live_when_no_saved_settings(page, base_url):
 
 
 def test_os_theme_change_ignored_when_user_picked_theme(page, base_url):
-    """An explicit saved theme wins — OS changes must not override it mid-session."""
+    """An explicit saved theme wins - OS changes must not override it mid-session."""
     page.emulate_media(color_scheme="dark")
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
@@ -657,7 +657,7 @@ def test_os_theme_change_ignored_when_user_picked_theme(page, base_url):
         == "light"
     )
 
-    # OS flips to dark — explicit choice must hold.
+    # OS flips to dark - explicit choice must hold.
     page.emulate_media(color_scheme="dark")
     page.wait_for_timeout(100)
     assert (

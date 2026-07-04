@@ -23,15 +23,15 @@
 
 ## What it is
 
-In-place reversal rewires the `next` pointers of a linked list (or a subrange) using three variables — `prev`, `curr`, `next` — in a single O(n) pass, consuming O(1) extra space.
+In-place reversal rewires the `next` pointers of a linked list (or a subrange) using three variables - `prev`, `curr`, `next` - in a single O(n) pass, consuming O(1) extra space.
 
 **Mental model:** think of flipping arrows one at a time. At each step you save where you're going (`next = curr.next`), flip the arrow (`curr.next = prev`), then shuffle the trio one node forward (`prev = curr; curr = next`). When `curr` is `None`, `prev` is the new head.
 
-> **Interview soundbite:** "Three variables, one pass — save the next, flip the arrow, advance. Reversal is just arrow-flipping."
+> **Interview soundbite:** "Three variables, one pass - save the next, flip the arrow, advance. Reversal is just arrow-flipping."
 
 ## Recognition signals
 
-**(a) Trigger phrases** — literal problem-statement snippets that flag this pattern:
+**(a) Trigger phrases** - literal problem-statement snippets that flag this pattern:
 
 - "reverse a linked list" / "reverse a singly linked list in place"
 - "reverse the nodes of a linked list k at a time"
@@ -39,22 +39,22 @@ In-place reversal rewires the `next` pointers of a linked list (or a subrange) u
 - "check whether a linked list is a palindrome"
 - "rotate the linked list to the right by k places"
 
-**(b) Structural cues** — regardless of wording:
+**(b) Structural cues** - regardless of wording:
 
 - Input is a **singly or doubly linked list** (not an array).
-- The required output is a **reordering of the same nodes** — no new nodes, no extra data structure.
+- The required output is a **reordering of the same nodes** - no new nodes, no extra data structure.
 - The constraint is **O(1) extra space** (or the problem says "in place").
 - Sublist reversal: two positions (`m`, `n`) or a group size (`k`) are given that define the range to flip.
 
 **(c) Not to be confused with:**
 
-- **Two Pointers on arrays** — two pointers reverse arrays by swapping values at indices; in-place reversal on lists rewires pointers, not values, because random access doesn't exist. The swap approach reads and writes values; the pointer-rewire approach never touches values at all.
-- **Fast & Slow Pointers** — Floyd's tortoise/hare finds the middle or detects cycles; it does not reverse anything. In-place reversal uses fast/slow only to locate a boundary (e.g. palindrome midpoint), then runs the three-pointer flip from there. When both appear in the same problem, they are sequential steps, not the same mechanic.
-- **Rotate (deque-style)** — rotating a list by k looks similar to reversal (both change node order) but the optimal implementation is ring-cut, not reversal. Candidates who confuse the two reach for the three-reversal algorithm (`reverse all`, `reverse [0..k-1]`, `reverse [k..n-1]`) which is correct but requires three passes where ring-cut needs one; on a linked list specifically the ring-cut is also O(1) additional pointer operations.
+- **Two Pointers on arrays** - two pointers reverse arrays by swapping values at indices; in-place reversal on lists rewires pointers, not values, because random access doesn't exist. The swap approach reads and writes values; the pointer-rewire approach never touches values at all.
+- **Fast & Slow Pointers** - Floyd's tortoise/hare finds the middle or detects cycles; it does not reverse anything. In-place reversal uses fast/slow only to locate a boundary (e.g. palindrome midpoint), then runs the three-pointer flip from there. When both appear in the same problem, they are sequential steps, not the same mechanic.
+- **Rotate (deque-style)** - rotating a list by k looks similar to reversal (both change node order) but the optimal implementation is ring-cut, not reversal. Candidates who confuse the two reach for the three-reversal algorithm (`reverse all`, `reverse [0..k-1]`, `reverse [k..n-1]`) which is correct but requires three passes where ring-cut needs one; on a linked list specifically the ring-cut is also O(1) additional pointer operations.
 
 ## How it works
 
-**Core operation — reverse an entire list:**
+**Core operation - reverse an entire list:**
 
 Three pointers march forward together. At each node, the `next` pointer is flipped to point backward.
 
@@ -108,7 +108,7 @@ Result:  [3]→[2]→[1]→[6]→[5]→[4]→None
 
 ## Skeleton
 
-**CLRS pseudocode — reverse entire list:**
+**CLRS pseudocode - reverse entire list:**
 
 ```
 REVERSE-LIST(head)
@@ -122,7 +122,7 @@ REVERSE-LIST(head)
   return prev                ▷ new head
 ```
 
-**CLRS pseudocode — reverse sublist [m, n] (1-indexed):**
+**CLRS pseudocode - reverse sublist [m, n] (1-indexed):**
 
 ```
 REVERSE-SUBLIST(head, m, n)
@@ -142,7 +142,7 @@ REVERSE-SUBLIST(head, m, n)
   return dummy.next
 ```
 
-**Python template — reverse entire list:**
+**Python template - reverse entire list:**
 
 ```python
 from __future__ import annotations
@@ -163,10 +163,10 @@ def reverse_list(head: Optional[ListNode]) -> Optional[ListNode]:
         curr = next_node        # advance curr
     return prev                 # new head
 
-# your logic here — adapt boundary (sublist start/end, k-group size)
+# your logic here - adapt boundary (sublist start/end, k-group size)
 ```
 
-**Python template — reverse sublist:**
+**Python template - reverse sublist:**
 
 ```python
 def reverse_sublist(
@@ -207,32 +207,32 @@ def reverse_sublist(
 
 | Input size | Constraint signal | Reach for this pattern? |
 |------------|-------------------|------------------------|
-| n ≤ 10⁵, linked list | "in place", O(1) space | **Yes** — the defining case |
-| n ≤ 10⁵, **array** | "reverse in place" | **No** — swap by index instead; no pointer rewiring needed |
-| n ≤ 10⁵, k-groups specified | k ≥ 1, reverse k at a time | **Yes** — iterative k-group reversal |
-| n ≤ 10⁵, "palindrome" on list | no extra space allowed | **Yes** — find mid (fast/slow), reverse second half, compare |
-| n ≤ 10⁵, "palindrome" on list | O(n) space allowed | **No** — copy values to array, two-pointer check is simpler |
-| n > 10⁵ (large list), recursive reversal asked | deep stack risk | **Caution** — iterative always; recursive hits O(n) stack frames and will stack-overflow in Python at n ≈ 10³ |
+| n ≤ 10⁵, linked list | "in place", O(1) space | **Yes** - the defining case |
+| n ≤ 10⁵, **array** | "reverse in place" | **No** - swap by index instead; no pointer rewiring needed |
+| n ≤ 10⁵, k-groups specified | k ≥ 1, reverse k at a time | **Yes** - iterative k-group reversal |
+| n ≤ 10⁵, "palindrome" on list | no extra space allowed | **Yes** - find mid (fast/slow), reverse second half, compare |
+| n ≤ 10⁵, "palindrome" on list | O(n) space allowed | **No** - copy values to array, two-pointer check is simpler |
+| n > 10⁵ (large list), recursive reversal asked | deep stack risk | **Caution** - iterative always; recursive hits O(n) stack frames and will stack-overflow in Python at n ≈ 10³ |
 
-**When the constraint pushes you off:** if the input is an array (not a linked list), use index swaps — pointer rewiring is irrelevant. If extra O(n) space is allowed and the code simplicity matters more, copy to a list and reverse with slicing.
+**When the constraint pushes you off:** if the input is an array (not a linked list), use index swaps - pointer rewiring is irrelevant. If extra O(n) space is allowed and the code simplicity matters more, copy to a list and reverse with slicing.
 
-**Real-world usage:** in-place list reversal is the kernel of undo/redo stacks in editors (reverse the operation list to undo a batch), and the basis of doubly-linked-list re-splicing in Linux kernel's `list_del` + `list_add` — the same three-pointer rewire, just with both `prev` and `next` updated. **At scale:** for very long lists (n > 10⁷), the bottleneck shifts from pointer count to TLB pressure — each `curr.next` dereference is a pointer-chase to an arbitrary heap address, and at large n those addresses stop fitting in L3. A chunked approach (reverse in cache-sized segments, then stitch) is measurably faster on hardware even though Big-O is the same O(n).
+**Real-world usage:** in-place list reversal is the kernel of undo/redo stacks in editors (reverse the operation list to undo a batch), and the basis of doubly-linked-list re-splicing in Linux kernel's `list_del` + `list_add` - the same three-pointer rewire, just with both `prev` and `next` updated. **At scale:** for very long lists (n > 10⁷), the bottleneck shifts from pointer count to TLB pressure - each `curr.next` dereference is a pointer-chase to an arbitrary heap address, and at large n those addresses stop fitting in L3. A chunked approach (reverse in cache-sized segments, then stitch) is measurably faster on hardware even though Big-O is the same O(n).
 
 ## Variations
 
-- **Reverse entire list** — the base case; all other variants build on it.
-- **Reverse sublist [m, n]** — one extra walk to position `m`, same core loop, two re-stitch operations.
-- **Reverse k-groups** (LC 25) — repeat sublist reversal in chunks; the hardest variant because you must detect when fewer than k nodes remain.
-- **Palindrome check** (LC 234) — find the midpoint with fast/slow pointers, reverse the second half in place, compare front-to-back, optionally restore.
-- **Rotate right by k** (LC 61) — find the tail, form a ring (tail.next = head), walk to the new tail at position `n - k % n`, cut.
-- **Reorder list** (LC 143) — find mid, reverse second half, interleave the two halves.
-- **Reverse in pairs** — k=2 special case of k-groups; simpler stitching.
+- **Reverse entire list** - the base case; all other variants build on it.
+- **Reverse sublist [m, n]** - one extra walk to position `m`, same core loop, two re-stitch operations.
+- **Reverse k-groups** (LC 25) - repeat sublist reversal in chunks; the hardest variant because you must detect when fewer than k nodes remain.
+- **Palindrome check** (LC 234) - find the midpoint with fast/slow pointers, reverse the second half in place, compare front-to-back, optionally restore.
+- **Rotate right by k** (LC 61) - find the tail, form a ring (tail.next = head), walk to the new tail at position `n - k % n`, cut.
+- **Reorder list** (LC 143) - find mid, reverse second half, interleave the two halves.
+- **Reverse in pairs** - k=2 special case of k-groups; simpler stitching.
 
 ## CP-primitives
 
 **1. Iterative k-group reversal with a dummy head sentinel**
 
-The standard k-group recursive solution has O(n/k) call-stack depth — fine for small k, but contest judges sometimes set k close to n. The iterative version uses a dummy head and a `group_prev` pointer that advances by k each iteration:
+The standard k-group recursive solution has O(n/k) call-stack depth - fine for small k, but contest judges sometimes set k close to n. The iterative version uses a dummy head and a `group_prev` pointer that advances by k each iteration:
 
 ```python
 def reverse_k_group(head: Optional[ListNode], k: int) -> Optional[ListNode]:
@@ -261,7 +261,7 @@ def get_kth(node: Optional[ListNode], k: int) -> Optional[ListNode]:
     return node
 ```
 
-Why for CP: O(n) time, O(1) space — avoids stack-overflow on n = 10⁵ with k = 10⁵.
+Why for CP: O(n) time, O(1) space - avoids stack-overflow on n = 10⁵ with k = 10⁵.
 
 **2. In-place palindrome check (reverse + compare + restore)**
 
@@ -289,7 +289,7 @@ def is_palindrome(head: Optional[ListNode]) -> bool:
     return result
 ```
 
-Why for CP: O(n) time, O(1) space — passes strict memory constraints; the restore step is required when the judge checks the original list post-call.
+Why for CP: O(n) time, O(1) space - passes strict memory constraints; the restore step is required when the judge checks the original list post-call.
 
 **3. Right-rotation as ring-cut**
 
@@ -316,7 +316,7 @@ def rotate_right(head: Optional[ListNode], k: int) -> Optional[ListNode]:
     return new_head
 ```
 
-Why for CP: O(n) single pass to find length + O(n) walk to cut — cleaner than three-reversal approach and harder to get wrong under contest time pressure.
+Why for CP: O(n) single pass to find length + O(n) walk to cut - cleaner than three-reversal approach and harder to get wrong under contest time pressure.
 
 ## Worked problems
 
@@ -324,7 +324,7 @@ Why for CP: O(n) single pass to find length + O(n) walk to cut — cleaner than 
 
 Reverse a singly linked list and return the new head. No space constraint stated, but O(1) is expected.
 
-Apply the three-pointer core directly — `prev=None`, `curr=head`, flip and advance until `curr` is `None`, return `prev`. The simplest case; no stitching needed.
+Apply the three-pointer core directly - `prev=None`, `curr=head`, flip and advance until `curr` is `None`, return `prev`. The simplest case; no stitching needed.
 
 **Constraint:** n ≤ 5000; O(n)/O(1).
 
@@ -348,7 +348,7 @@ Use `get_kth` to probe whether k nodes remain before committing to a reversal. R
 
 Return true if the linked list is a palindrome. O(n) time, O(1) space.
 
-Fast/slow pointers find the midpoint; `slow` lands at the start of the second half. Reverse the second half in place. Walk both halves from their heads, comparing values — a mismatch means not a palindrome. Optionally reverse the second half back.
+Fast/slow pointers find the midpoint; `slow` lands at the start of the second half. Reverse the second half in place. Walk both halves from their heads, comparing values - a mismatch means not a palindrome. Optionally reverse the second half back.
 
 **Constraint:** n ≤ 10⁵; O(n)/O(1) required.
 
@@ -356,14 +356,14 @@ Fast/slow pointers find the midpoint; `slow` lands at the start of the second ha
 
 Reorder L₀ → Lₙ → L₁ → Lₙ₋₁ → L₂ → Lₙ₋₂ → … in place.
 
-Three sequential applications of the pattern: (1) fast/slow finds the midpoint and cuts the list; (2) three-pointer reversal turns the second half into a reversed list; (3) the interleave merge alternates nodes from front and reversed-back. The invariant for step 3: at each iteration `first` points to the current front node and `second` to the current back node — after wiring `first.next = second` and `second.next = old_first.next`, both pointers advance to their successors. No new nodes created.
+Three sequential applications of the pattern: (1) fast/slow finds the midpoint and cuts the list; (2) three-pointer reversal turns the second half into a reversed list; (3) the interleave merge alternates nodes from front and reversed-back. The invariant for step 3: at each iteration `first` points to the current front node and `second` to the current back node - after wiring `first.next = second` and `second.next = old_first.next`, both pointers advance to their successors. No new nodes created.
 
 **Constraint:** n ≤ 5 × 10⁴; O(n)/O(1).
 
 ## Pitfalls
 
 **1. Losing the forward link before flipping.**
-The single most common bug: `curr.next = prev` before saving `next_node = curr.next`. The forward half of the list is now unreachable. Save first, flip second — always.
+The single most common bug: `curr.next = prev` before saving `next_node = curr.next`. The forward half of the list is now unreachable. Save first, flip second - always.
 
 **2. Forgetting the dummy head for sublist reversal when `m = 1`.**
 Without a dummy, `tail_of_first` would be `None` (there's no node before position 1), and `tail_of_first.next = prev` crashes. The dummy gives `tail_of_first` a valid node even when the sublist starts at the head.
@@ -372,7 +372,7 @@ Without a dummy, `tail_of_first` would be `None` (there's no node before positio
 Reversing k nodes requires exactly k iterations of the flip loop. Fenceposting on `curr != group_next` vs. `i < k` is equivalent, but mixing them with boundary conditions (dummy, tail sentinel) produces off-by-one corruptions. Pick one style and verify on k=1 and k=n.
 
 **4. Stitching in the wrong order for sublist reversal.**
-After reversing `[m..n]`, you have two re-stitch operations: `tail_of_first.next = prev` (attach the reversed head) and `tail_of_sub.next = curr` (attach the remainder). Doing them in reverse order — attaching `curr` to `tail_of_sub` first — is correct only if `tail_of_first` and `tail_of_sub` are not the same node. If `m = 1`, `tail_of_first` is the dummy and `tail_of_sub` is the original head, so either order works — but for `m > 1`, doing `tail_of_first.next = prev` first is the safe pattern because `tail_of_sub` is still reachable before you change `tail_of_first.next`.
+After reversing `[m..n]`, you have two re-stitch operations: `tail_of_first.next = prev` (attach the reversed head) and `tail_of_sub.next = curr` (attach the remainder). Doing them in reverse order - attaching `curr` to `tail_of_sub` first - is correct only if `tail_of_first` and `tail_of_sub` are not the same node. If `m = 1`, `tail_of_first` is the dummy and `tail_of_sub` is the original head, so either order works - but for `m > 1`, doing `tail_of_first.next = prev` first is the safe pattern because `tail_of_sub` is still reachable before you change `tail_of_first.next`.
 
 **5. Stack overflow on recursive reversal with large n.**
 Python's default recursion limit is ~1000. A recursive reverse on n = 10⁵ nodes will crash. Always use the iterative three-pointer version in interviews and contests.
@@ -382,17 +382,17 @@ Some problems (and some interviewers) expect the original list to be intact afte
 
 ## First 30 seconds
 
-"This is in-place reversal — I need to rewire `next` pointers without extra space. Three variables: `prev = None`, `curr = head`, `next_node`. Each step: save `curr.next`, flip `curr.next = prev`, advance both. For a sublist I walk to position `m-1` first, reverse `n-m+1` nodes, then re-stitch at both ends. Dummy head handles `m = 1` cleanly."
+"This is in-place reversal - I need to rewire `next` pointers without extra space. Three variables: `prev = None`, `curr = head`, `next_node`. Each step: save `curr.next`, flip `curr.next = prev`, advance both. For a sublist I walk to position `m-1` first, reverse `n-m+1` nodes, then re-stitch at both ends. Dummy head handles `m = 1` cleanly."
 
 ## Related
 
 **Structures this pattern operates on:**
-- [Linked List](../data-structures/linked-list.md) — the only structure this pattern applies to directly
+- [Linked List](../data-structures/linked-list.md) - the only structure this pattern applies to directly
 
-**Sibling patterns — same family of pointer techniques:**
-- [Fast & Slow Pointers](./fast-slow-pointers.md) — combined with in-place reversal for palindrome check and reorder list
-- [Two Pointers](./two-pointers.md) — the conceptual ancestor; in-place reversal is two pointers specialised to pointer rewiring
-- [Two Heaps](./two-heaps.md) — unrelated mechanism but often appears in the same "linked list hard" problem cluster
+**Sibling patterns - same family of pointer techniques:**
+- [Fast & Slow Pointers](./fast-slow-pointers.md) - combined with in-place reversal for palindrome check and reorder list
+- [Two Pointers](./two-pointers.md) - the conceptual ancestor; in-place reversal is two pointers specialised to pointer rewiring
+- [Two Heaps](./two-heaps.md) - unrelated mechanism but often appears in the same "linked list hard" problem cluster
 
 ## Practice problems
 
@@ -400,7 +400,7 @@ Some problems (and some interviewers) expect the original list to be intact afte
 
 Given the head of a singly linked list, reverse it and return the new head. n ≤ 5000.
 
-**Approach:** Three-pointer core — `prev=None`, `curr=head`. Each iteration: save `curr.next`, set `curr.next = prev`, advance `prev = curr`, `curr = saved`. Return `prev` when `curr` is `None`.
+**Approach:** Three-pointer core - `prev=None`, `curr=head`. Each iteration: save `curr.next`, set `curr.next = prev`, advance `prev = curr`, `curr = saved`. Return `prev` when `curr` is `None`.
 
 ```python
 from typing import Optional
@@ -424,8 +424,8 @@ def reverseList(head: Optional[ListNode]) -> Optional[ListNode]:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Reverse String (LC 344) — same flip-in-place idea but on an array; swap by index instead of rewiring pointers, same O(n)/O(1).
-- Reverse Words in a String III (LC 557) — split on spaces, reverse each word's character list in place; identical three-pointer mechanic on a character slice.
+- Reverse String (LC 344) - same flip-in-place idea but on an array; swap by index instead of rewiring pointers, same O(n)/O(1).
+- Reverse Words in a String III (LC 557) - split on spaces, reverse each word's character list in place; identical three-pointer mechanic on a character slice.
 
 ---
 
@@ -472,7 +472,7 @@ def reverseKGroup(head: Optional[ListNode], k: int) -> Optional[ListNode]:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Swap Nodes in Pairs (LC 24) — k=2 special case; same iterative k-group template with k hardcoded to 2.
+- Swap Nodes in Pairs (LC 24) - k=2 special case; same iterative k-group template with k hardcoded to 2.
 
 ---
 
@@ -480,7 +480,7 @@ def reverseKGroup(head: Optional[ListNode], k: int) -> Optional[ListNode]:
 
 Given the head of a singly linked list, return true if it is a palindrome. n ≤ 10⁵; O(n) time, O(1) space required.
 
-**Approach:** Fast/slow pointers find the midpoint (`slow` lands at start of second half). Reverse the second half in place. Walk both halves simultaneously comparing values — any mismatch → false. Reverse the second half back before returning (restores the original list).
+**Approach:** Fast/slow pointers find the midpoint (`slow` lands at start of second half). Reverse the second half in place. Walk both halves simultaneously comparing values - any mismatch → false. Reverse the second half back before returning (restores the original list).
 
 ```python
 from typing import Optional
@@ -519,8 +519,8 @@ def isPalindrome(head: Optional[ListNode]) -> bool:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Valid Palindrome II (LC 680) — on a string, skip at most one character; same two-pointer compare logic without pointer rewiring.
-- Linked List Palindrome check on circular list — same algorithm; find mid, reverse, compare; break the cycle first.
+- Valid Palindrome II (LC 680) - on a string, skip at most one character; same two-pointer compare logic without pointer rewiring.
+- Linked List Palindrome check on circular list - same algorithm; find mid, reverse, compare; break the cycle first.
 
 ---
 
@@ -528,7 +528,7 @@ def isPalindrome(head: Optional[ListNode]) -> bool:
 
 Given a linked list L₀ → L₁ → … → Lₙ, reorder it to L₀ → Lₙ → L₁ → Lₙ₋₁ → L₂ → Lₙ₋₂ → … in place. n ≤ 5 × 10⁴.
 
-**Approach:** Three steps — (1) find the midpoint with fast/slow; (2) reverse the second half; (3) interleave: alternate `p1.next = p2`, then advance `p1 = old_p1_next`, repeat until one half is exhausted. No extra space — all pointer rewiring.
+**Approach:** Three steps - (1) find the midpoint with fast/slow; (2) reverse the second half; (3) interleave: alternate `p1.next = p2`, then advance `p1 = old_p1_next`, repeat until one half is exhausted. No extra space - all pointer rewiring.
 
 ```python
 from typing import Optional
@@ -565,4 +565,4 @@ def reorderList(head: Optional[ListNode]) -> None:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Interleaving two lists (variant) — same merge step; the only difference is the second list isn't the reversed tail of the first.
+- Interleaving two lists (variant) - same merge step; the only difference is the second list isn't the reversed tail of the first.

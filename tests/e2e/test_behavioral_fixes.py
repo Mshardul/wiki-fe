@@ -422,7 +422,7 @@ def test_mermaid_rerender_skips_offscreen_diagrams(page, base_url):
         # mermaid not loaded in this env; nothing to assert
         return
 
-    # Scroll to top — first diagram in view, second is far below
+    # Scroll to top - first diagram in view, second is far below
     page.evaluate("() => window.scrollTo(0, 0)")
 
     second_html_before = page.locator(".mermaid-diagram").last.inner_html()
@@ -485,7 +485,7 @@ def test_toast_queue_second_message_appears_after_first(page, base_url):
     if btns.count() < 2:
         return  # need at least 2 copy buttons to queue 2 toasts
 
-    # Click 2 buttons rapidly — queues 2 "Copy failed" toasts (3000ms each)
+    # Click 2 buttons rapidly - queues 2 "Copy failed" toasts (3000ms each)
     btns.nth(0).click()
     btns.nth(1).click()
 

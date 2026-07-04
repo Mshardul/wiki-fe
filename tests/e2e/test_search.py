@@ -133,7 +133,7 @@ def test_search_debounce_results_appear_after_typing(wiki_page):
     for char in "caching":
         wiki_page.type("#gsearch-input", char, delay=0)
 
-    # Debounce fires at 150ms — wait well past it
+    # Debounce fires at 150ms - wait well past it
     wiki_page.wait_for_selector(".gsearch-result", timeout=2_000)
     assert wiki_page.locator(".gsearch-result").count() > 0
 
@@ -152,7 +152,7 @@ def test_search_debounce_suppresses_intermediate_updates(wiki_page):
         }
     }""")
 
-    # Type 7 chars with 0ms delay — without debounce this would trigger 7 updates
+    # Type 7 chars with 0ms delay - without debounce this would trigger 7 updates
     for char in "caching":
         wiki_page.type("#gsearch-input", char, delay=0)
 
@@ -434,7 +434,7 @@ def test_cmd_f_results_limited_to_current_wiki(page, base_url):
 def test_cmd_f_on_home_does_not_open_scoped_search(page, base_url):
     """⌘F on the home view has no wiki to scope to; app must not open scoped mode.
 
-    (The browser's native find may run instead — we only assert our modal
+    (The browser's native find may run instead - we only assert our modal
     does not enter scope-mode.)"""
     page.goto(f"{base_url}/")
     page.wait_for_selector("#view-home.active", timeout=5_000)
@@ -769,7 +769,7 @@ def test_no_results_fallback_shown(wiki_page):
 def test_synonym_expansion_returns_results(wiki_page):
     """Querying a synonym term returns results via synonym expansion."""
     _open_search(wiki_page)
-    # 'list' is a synonym of 'array' — should surface DSA/system-design articles
+    # 'list' is a synonym of 'array' - should surface DSA/system-design articles
     wiki_page.fill("#gsearch-input", "list")
     wiki_page.wait_for_selector(".gsearch-result", timeout=8_000)
     assert wiki_page.locator(".gsearch-result").count() > 0, (

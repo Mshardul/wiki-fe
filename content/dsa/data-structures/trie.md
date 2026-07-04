@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - a trie's operations are O(L) in the key _length_, not O(n) in the key _count_; you need the cost model to see why that's the win. <!-- U9: not-yet-written target — wire to `algorithms/big-o-notation.md` once that page exists. -->
+- **Big-O Notation** [Must read] - a trie's operations are O(L) in the key _length_, not O(n) in the key _count_; you need the cost model to see why that's the win. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
 - [String](./string.md) [Must read] - a trie keys on the characters of a string, one per level; the character-indexing intuition transfers directly.
 - [Hash Table](./hash-table.md) [Should read] - the trie's main rival for string keys; you compare against it constantly, and each trie node often _is_ a small hash map of children.
 
@@ -32,11 +32,11 @@
 
 ## What it is
 
-A **trie** (prefix tree) is a tree that stores strings by their **characters**, one character per edge, so that all words sharing a prefix share the same path from the root — making lookup, insert, and prefix queries O(L) in the key's length, independent of how many keys are stored.
+A **trie** (prefix tree) is a tree that stores strings by their **characters**, one character per edge, so that all words sharing a prefix share the same path from the root - making lookup, insert, and prefix queries O(L) in the key's length, independent of how many keys are stored.
 
-Mental model: **a shared-path dictionary, like a phone-tree menu.** To find "cat" you walk root → c → a → t; "car" shares the first two steps and branches at the third. Common prefixes are stored **once**, and "does any word start with 'ca'?" is just "can I walk the path c → a?" — the operation a [hash table](./hash-table.md) can't do, because hashing destroys prefix structure.
+Mental model: **a shared-path dictionary, like a phone-tree menu.** To find "cat" you walk root → c → a → t; "car" shares the first two steps and branches at the third. Common prefixes are stored **once**, and "does any word start with 'ca'?" is just "can I walk the path c → a?" - the operation a [hash table](./hash-table.md) can't do, because hashing destroys prefix structure.
 
-> **Takeaway (say this out loud):** "A trie stores strings character-by-character down a tree, so shared prefixes share a path — giving O(L) lookup and, uniquely, O(L) prefix queries that a hash map can't do."
+> **Takeaway (say this out loud):** "A trie stores strings character-by-character down a tree, so shared prefixes share a path - giving O(L) lookup and, uniquely, O(L) prefix queries that a hash map can't do."
 
 ## How it works
 
@@ -59,9 +59,9 @@ words:  cat (c-a-t*),  car (c-a-r*),  card (c-a-r-d*),  dog (d-o-g*)
 prefix "ca" → walk c→a → exists → some word starts with "ca"  ✓
 ```
 
-**Search "card":** walk c → a → r → d, check `is_end` → found. **Prefix "ca":** walk c → a, succeed → at least one word has that prefix (no `is_end` check needed). **Insert "care":** walk the shared path c-a-r, then add a new `e*` child. Every operation is a walk of length L (the word/prefix length), touching one node per character — **O(L), regardless of how many words the trie holds.** That length-not-count cost is the trie's defining property.
+**Search "card":** walk c → a → r → d, check `is_end` → found. **Prefix "ca":** walk c → a, succeed → at least one word has that prefix (no `is_end` check needed). **Insert "care":** walk the shared path c-a-r, then add a new `e*` child. Every operation is a walk of length L (the word/prefix length), touching one node per character - **O(L), regardless of how many words the trie holds.** That length-not-count cost is the trie's defining property.
 
-The shared-prefix structure is also the space story: storing "car", "card", "care", "carry" costs roughly one path for "car" plus the divergent tails — common prefixes are paid for once.
+The shared-prefix structure is also the space story: storing "car", "card", "care", "carry" costs roughly one path for "car" plus the divergent tails - common prefixes are paid for once.
 
 ## Operations
 
@@ -74,7 +74,7 @@ The shared-prefix structure is also the space story: storing "car", "card", "car
 | List all words with prefix | O(p + total chars of matches) | O(answer)             |
 | Count words with prefix    | O(p) (with augmentation)      | O(1)                  |
 
-Every core operation is **O(L)** — the word length — and crucially **independent of `n`, the number of stored words.** Compare a [BST](./binary-search-tree.md)'s O(log n · L) (log n comparisons, each comparing up to L chars) or a sorted scan. The prefix query is the trie's signature: O(p) for a prefix of length p.
+Every core operation is **O(L)** - the word length - and crucially **independent of `n`, the number of stored words.** Compare a [BST](./binary-search-tree.md)'s O(log n · L) (log n comparisons, each comparing up to L chars) or a sorted scan. The prefix query is the trie's signature: O(p) for a prefix of length p.
 
 ## Complexity summary
 
@@ -84,16 +84,16 @@ Every core operation is **O(L)** — the word length — and crucially **indepen
 | Search    | O(L) | O(L)    | O(L)  |
 | Prefix    | O(p) | O(p)    | O(p)  |
 
-**Space:** the catch. A naive trie node holds an array of child pointers sized to the **alphabet** (26 for lowercase, 256 for bytes, more for Unicode), so worst-case space is **O(n · L · alphabet)** — potentially huge and sparse, since most child slots are empty. This is the trie's central trade: blazing O(L) operations bought with heavy memory. Mitigations — a **hash map of children** per node (only present edges), or a **compressed/radix trie** that collapses single-child chains — cut the waste (see [Variants](#variants)). For a dense dictionary the prefix-sharing recovers a lot; for sparse keys the overhead bites.
+**Space:** the catch. A naive trie node holds an array of child pointers sized to the **alphabet** (26 for lowercase, 256 for bytes, more for Unicode), so worst-case space is **O(n · L · alphabet)** - potentially huge and sparse, since most child slots are empty. This is the trie's central trade: blazing O(L) operations bought with heavy memory. Mitigations - a **hash map of children** per node (only present edges), or a **compressed/radix trie** that collapses single-child chains - cut the waste (see [Variants](#variants)). For a dense dictionary the prefix-sharing recovers a lot; for sparse keys the overhead bites.
 
 ## When to use / when not
 
 **Reach for a trie when:**
 
-- You need **prefix queries** — autocomplete, "words starting with…", longest-prefix match, type-ahead. This is the trie's reason to exist; nothing else does it as cleanly.
-- You're doing **many lookups on a fixed dictionary** of strings — spell-check, word games, dictionary membership where O(L) beats hashing the whole word repeatedly.
-- The keys **share lots of prefixes** — URLs, file paths, IP prefixes (routing) — so the sharing pays for the node overhead.
-- You need **lexicographic ordering** of string keys — a pre-order walk emits them sorted, for free.
+- You need **prefix queries** - autocomplete, "words starting with…", longest-prefix match, type-ahead. This is the trie's reason to exist; nothing else does it as cleanly.
+- You're doing **many lookups on a fixed dictionary** of strings - spell-check, word games, dictionary membership where O(L) beats hashing the whole word repeatedly.
+- The keys **share lots of prefixes** - URLs, file paths, IP prefixes (routing) - so the sharing pays for the node overhead.
+- You need **lexicographic ordering** of string keys - a pre-order walk emits them sorted, for free.
 
 **Reach for something else when:**
 
@@ -121,18 +121,18 @@ The trie's column is the only one with **O(p) prefix queries**. The hash table b
 
 ## Variants
 
-- **Standard (array-node) trie** — each node has a fixed array of `alphabet` child slots. Fastest child lookup (O(1) index), heaviest memory. Good for small alphabets (26 letters, 2 bits).
-- **Hash-map-node trie** — each node stores children in a [hash map](./hash-table.md) keyed by character, so only present edges cost memory. Leaner for large/sparse alphabets (Unicode), slightly slower child access.
-- **Compressed trie / radix tree (Patricia trie)** — collapses chains of single-child nodes into one edge labeled with a substring, drastically cutting node count and memory while keeping O(L)/O(p) operations. The variant used in IP routing and many real systems.
-- **Ternary search trie** — each node has low/equal/high children (a BST of characters per level), trading some speed for far less memory than an array-node trie. A middle ground.
-- **Bitwise trie (binary trie)** — keys are the **bits** of integers (alphabet = {0,1}, depth = bit-width), enabling max-XOR and longest-prefix-match queries. A structural specialization; the technique lives in [CP-primitives](#bitwise-trie-for-max-xor).
-- **Suffix trie / suffix tree** — a trie of all suffixes of one string, for substring queries. Powerful but heavy; the compressed form (suffix tree/automaton) is the practical version. <!-- suffix-tree not yet written -->
+- **Standard (array-node) trie** - each node has a fixed array of `alphabet` child slots. Fastest child lookup (O(1) index), heaviest memory. Good for small alphabets (26 letters, 2 bits).
+- **Hash-map-node trie** - each node stores children in a [hash map](./hash-table.md) keyed by character, so only present edges cost memory. Leaner for large/sparse alphabets (Unicode), slightly slower child access.
+- **Compressed trie / radix tree (Patricia trie)** - collapses chains of single-child nodes into one edge labeled with a substring, drastically cutting node count and memory while keeping O(L)/O(p) operations. The variant used in IP routing and many real systems.
+- **Ternary search trie** - each node has low/equal/high children (a BST of characters per level), trading some speed for far less memory than an array-node trie. A middle ground.
+- **Bitwise trie (binary trie)** - keys are the **bits** of integers (alphabet = {0,1}, depth = bit-width), enabling max-XOR and longest-prefix-match queries. A structural specialization; the technique lives in [CP-primitives](#bitwise-trie-for-max-xor).
+- **Suffix trie / suffix tree** - a trie of all suffixes of one string, for substring queries. Powerful but heavy; the compressed form (suffix tree/automaton) is the practical version. <!-- suffix-tree not yet written -->
 
 ## Traversal & invariant
 
-A trie's **invariant** is structural: each edge is labeled by exactly one symbol of the alphabet, a node's path from the root spells its prefix, and `is_end` flags which prefixes are complete words. No ordering-by-value invariant like a [BST](./binary-search-tree.md) — the order is the **lexicographic order of the edge labels**.
+A trie's **invariant** is structural: each edge is labeled by exactly one symbol of the alphabet, a node's path from the root spells its prefix, and `is_end` flags which prefixes are complete words. No ordering-by-value invariant like a [BST](./binary-search-tree.md) - the order is the **lexicographic order of the edge labels**.
 
-**Traversal — pre-order yields sorted words.** Walk children in alphabetical order, emitting the accumulated string whenever you hit an `is_end` node:
+**Traversal - pre-order yields sorted words.** Walk children in alphabetical order, emitting the accumulated string whenever you hit an `is_end` node:
 
 ```
 pre-order (children A→Z), collecting at is_end:
@@ -145,7 +145,7 @@ pre-order (children A→Z), collecting at is_end:
 emits:  car, card, cat, dog   ← lexicographically sorted, for free
 ```
 
-This is how a trie does **ordered iteration** and **prefix listing**: to list all words under a prefix, walk to the prefix node (O(p)), then DFS its subtree collecting `is_end` paths. The `is_end` flag is load-bearing — without it you can't distinguish a stored word "car" from the mere prefix "car" of "card" (see [Gotchas](#gotchas--edge-cases)).
+This is how a trie does **ordered iteration** and **prefix listing**: to list all words under a prefix, walk to the prefix node (O(p)), then DFS its subtree collecting `is_end` paths. The `is_end` flag is load-bearing - without it you can't distinguish a stored word "car" from the mere prefix "car" of "card" (see [Gotchas](#gotchas--edge-cases)).
 
 ## Implementation
 
@@ -177,7 +177,7 @@ TRIE-WALK(root, s)                                  ▷ follow s; NIL if path br
 5   return node
 ```
 
-**Python (reference — idiomatic, dict-of-children):**
+**Python (reference - idiomatic, dict-of-children):**
 
 ```python
 from __future__ import annotations
@@ -216,7 +216,7 @@ class Trie:
         return self._walk(prefix) is not None     # path existing is enough
 ```
 
-**Contest velocity.** A `dict`-of-children trie (above) is the fast thing to write — no fixed alphabet array, no index math. For a known small alphabet (lowercase), a 26-slot list per node is faster but more code; reach for it only when profiling demands. For pure membership with no prefixes, skip the trie and use a `set`.
+**Contest velocity.** A `dict`-of-children trie (above) is the fast thing to write - no fixed alphabet array, no index math. For a known small alphabet (lowercase), a 26-slot list per node is faster but more code; reach for it only when profiling demands. For pure membership with no prefixes, skip the trie and use a `set`.
 
 ## CP-primitives
 
@@ -231,11 +231,11 @@ Store a **counter per node** = how many inserted words pass through it. Then "ho
 # count_prefix(p): walk to p's node, return node.count (0 if path breaks)
 ```
 
-**Why for CP:** answers "number of strings with this prefix" in O(p) instead of O(n·p) re-scanning — the standard augmentation for prefix-frequency queries and many string-counting problems.
+**Why for CP:** answers "number of strings with this prefix" in O(p) instead of O(n·p) re-scanning - the standard augmentation for prefix-frequency queries and many string-counting problems.
 
 ### Bitwise trie for max-XOR
 
-Insert integers as **fixed-width bit strings** (most-significant bit first) into a binary trie (alphabet {0,1}). To maximize `x XOR y`, walk x's bits down the trie always choosing the **opposite** bit when available (a differing bit sets that position to 1 in the XOR) — O(bit-width) per query, e.g. 32 steps.
+Insert integers as **fixed-width bit strings** (most-significant bit first) into a binary trie (alphabet {0,1}). To maximize `x XOR y`, walk x's bits down the trie always choosing the **opposite** bit when available (a differing bit sets that position to 1 in the XOR) - O(bit-width) per query, e.g. 32 steps.
 
 ```python
 class BitTrie:
@@ -257,29 +257,29 @@ class BitTrie:
         return best
 ```
 
-**Why for CP:** "maximum XOR pair / subarray" and "XOR with a query value" drop from O(n²) to O(n · bits) — the canonical bitwise-trie trick, and a frequent hard-problem unlock.
+**Why for CP:** "maximum XOR pair / subarray" and "XOR with a query value" drop from O(n²) to O(n · bits) - the canonical bitwise-trie trick, and a frequent hard-problem unlock.
 
 ## Gotchas / edge cases
 
-- **Confusing a prefix with a stored word — the `is_end` flag.** Inserting "card" creates the path for "car" too, but "car" is not a stored word unless separately inserted. `search("car")` must check `is_end`; `starts_with("car")` must not. Forgetting the flag (or checking it in the wrong query) is the #1 trie bug.
+- **Confusing a prefix with a stored word - the `is_end` flag.** Inserting "card" creates the path for "car" too, but "car" is not a stored word unless separately inserted. `search("car")` must check `is_end`; `starts_with("car")` must not. Forgetting the flag (or checking it in the wrong query) is the #1 trie bug.
 - **The empty string.** Inserting `""` marks the **root** as `is_end`; searching `""` then returns true, and `starts_with("")` is always true (every word has the empty prefix). Decide whether the empty string is a valid key and handle the root flag accordingly.
-- **Memory blowup on large alphabets.** An array-node trie over Unicode (or bytes) allocates a huge mostly-empty child array per node — O(n·L·alphabet) space. Use a hash-map node or a compressed/radix trie when the alphabet is large or keys are sparse; don't reflexively use 26-arrays for arbitrary text.
-- **Delete must prune, not just unflag.** Removing a word should clear its `is_end` and then **delete now-childless, non-word nodes** up the path — otherwise dead branches leak memory. But stop pruning at any node that is another word's `is_end` or has other children.
+- **Memory blowup on large alphabets.** An array-node trie over Unicode (or bytes) allocates a huge mostly-empty child array per node - O(n·L·alphabet) space. Use a hash-map node or a compressed/radix trie when the alphabet is large or keys are sparse; don't reflexively use 26-arrays for arbitrary text.
+- **Delete must prune, not just unflag.** Removing a word should clear its `is_end` and then **delete now-childless, non-word nodes** up the path - otherwise dead branches leak memory. But stop pruning at any node that is another word's `is_end` or has other children.
 - **Case sensitivity and normalization.** "Cat" and "cat" are different paths; normalize case/encoding before insert and lookup, or queries silently miss. The same Unicode-normalization caveat as [strings](./string.md#gotchas--edge-cases) applies.
-- **Off-the-end walks.** A lookup whose path breaks partway (a character with no child) must return "not found" immediately — dereferencing a missing child is the crash. The `_walk` returning `None` on a broken path centralizes this.
+- **Off-the-end walks.** A lookup whose path breaks partway (a character with no child) must return "not found" immediately - dereferencing a missing child is the crash. The `_walk` returning `None` on a broken path centralizes this.
 
 ## Practice problems
 
-Five staples, each a **distinct** trie technique — no two solved the same way.
+Five staples, each a **distinct** trie technique - no two solved the same way.
 
-### 1. Implement a Trie — _insert, search, startsWith_
+### 1. Implement a Trie - _insert, search, startsWith_
 
 **Problem.** Build a trie supporting `insert(word)`, `search(word)` (exact, complete word), and `startsWith(prefix)`. E.g. after inserting "apple", `search("app")` → false, `startsWith("app")` → true, `search("apple")` → true.
 
 **Approach.** A node per prefix with a children map and an `is_end` flag. Insert walks/extends the path and marks the last node. Search walks then checks `is_end`; startsWith walks and just checks the path exists. The `is_end` distinction between "word" and "prefix" is the whole exercise.
 
 ```python
-# see Trie in Implementation — the canonical solution.
+# see Trie in Implementation - the canonical solution.
 t = Trie()
 t.insert("apple")
 print(t.search("app"), t.starts_with("app"), t.search("apple"))   # False True True
@@ -287,11 +287,11 @@ print(t.search("app"), t.starts_with("app"), t.search("apple"))   # False True T
 
 **Complexity.** O(L) per operation, O(total chars) space.
 
-### 2. Word Search II — _trie + DFS on a grid_
+### 2. Word Search II - _trie + DFS on a grid_
 
 **Problem.** Given a grid of letters and a list of words, return all words findable by connecting 4-directionally adjacent cells (no cell reused per word). E.g. find "oath", "eat" in a board of letters.
 
-**Approach.** Build a trie of the word list, then DFS the grid following trie edges — prune the moment the current path isn't a trie prefix (this is what makes it fast vs searching each word separately). When a DFS reaches an `is_end` node, record the word. Searching all words simultaneously through one trie is the key efficiency.
+**Approach.** Build a trie of the word list, then DFS the grid following trie edges - prune the moment the current path isn't a trie prefix (this is what makes it fast vs searching each word separately). When a DFS reaches an `is_end` node, record the word. Searching all words simultaneously through one trie is the key efficiency.
 
 ```python
 def find_words(board, words):
@@ -317,11 +317,11 @@ def find_words(board, words):
 
 **Complexity.** O(cells · 4^L) worst, pruned hard by the trie in practice. Pattern: [Tree & Graph Traversal](../patterns/tree-graph-traversal.md) + [Backtracking](../patterns/subsets-permutations.md).
 
-### 3. Replace Words — _shortest-prefix lookup_
+### 3. Replace Words - _shortest-prefix lookup_
 
 **Problem.** Given a dictionary of root words and a sentence, replace every word by the **shortest root** that is a prefix of it. E.g. roots `["cat","bat"]`, "the cattle was rattled" → "the cat was rattled".
 
-**Approach.** Insert all roots into a trie. For each word, walk its characters down the trie, stopping at the **first** `is_end` node — that's the shortest matching root. If the path breaks before any `is_end`, keep the word. The early-stop-at-first-is_end is the shortest-prefix idiom.
+**Approach.** Insert all roots into a trie. For each word, walk its characters down the trie, stopping at the **first** `is_end` node - that's the shortest matching root. If the path breaks before any `is_end`, keep the word. The early-stop-at-first-is_end is the shortest-prefix idiom.
 
 ```python
 def replace_words(roots, sentence):
@@ -338,11 +338,11 @@ def replace_words(roots, sentence):
 
 **Complexity.** O(total chars) time and space.
 
-### 4. Maximum XOR of Two Numbers — _bitwise trie_
+### 4. Maximum XOR of Two Numbers - _bitwise trie_
 
 **Problem.** Given an array of integers, return the maximum `nums[i] XOR nums[j]`. E.g. `[3,10,5,25,2,8]` → `28` (`5 XOR 25`).
 
-**Approach.** Insert every number's bits (MSB-first) into a **binary trie**. For each number, greedily walk choosing the **opposite** bit at each step when possible — each differing bit contributes a 1 to the XOR at that position, maximizing it. O(n · 32) instead of the O(n²) all-pairs check. The bitwise-trie CP-primitive in its defining problem.
+**Approach.** Insert every number's bits (MSB-first) into a **binary trie**. For each number, greedily walk choosing the **opposite** bit at each step when possible - each differing bit contributes a 1 to the XOR at that position, maximizing it. O(n · 32) instead of the O(n²) all-pairs check. The bitwise-trie CP-primitive in its defining problem.
 
 ```python
 def find_maximum_xor(nums: list[int]) -> int:
@@ -357,7 +357,7 @@ def find_maximum_xor(nums: list[int]) -> int:
 
 **Complexity.** O(n · B) time (B = bit-width), O(n · B) space.
 
-### 5. Design Add and Search Words — _wildcard DFS_
+### 5. Design Add and Search Words - _wildcard DFS_
 
 **Problem.** Support `addWord(word)` and `search(word)` where `search` may contain `.` matching any single character. E.g. after adding "bad","dad", `search("b..")` → true, `search(".ad")` → true.
 

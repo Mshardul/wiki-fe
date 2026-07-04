@@ -26,11 +26,11 @@
 
 ## What it is
 
-**Meet in the Middle (MITM)** is a divide-and-conquer technique that cuts an exponential search space in half by splitting the input into two equal halves, exhaustively enumerating each half independently, then combining the two result sets — typically by sorting one half and binary-searching it.
+**Meet in the Middle (MITM)** is a divide-and-conquer technique that cuts an exponential search space in half by splitting the input into two equal halves, exhaustively enumerating each half independently, then combining the two result sets - typically by sorting one half and binary-searching it.
 
 **Mental model:** imagine two explorers starting from opposite ends of a maze; instead of one person walking the entire O(2ⁿ) path, both walk O(2^(n/2)) steps and meet somewhere in the middle.
 
-> **Takeaway:** "Split the input in half, enumerate each half independently (2^(n/2) each), sort one, binary-search from the other — turns O(2ⁿ) into O(2^(n/2) · n)."
+> **Takeaway:** "Split the input in half, enumerate each half independently (2^(n/2) each), sort one, binary-search from the other - turns O(2ⁿ) into O(2^(n/2) · n)."
 
 ## Recognition signals
 
@@ -39,37 +39,37 @@
 - "given n ≤ 40 integers, find a subset that sums to target T"
 - "count pairs (i, j) where i is from the first half and j from the second half such that …"
 - "find four numbers summing to zero" (4-sum variant where brute force is O(n⁴))
-- "n ≤ 40 and find if any subset satisfies constraint X" — the n ≤ 40 phrase is almost a signature
+- "n ≤ 40 and find if any subset satisfies constraint X" - the n ≤ 40 phrase is almost a signature
 
 **(b) Structural cues**
 
 - Input size in the range 30–45 where 2ⁿ is TLE (2⁴⁰ ≈ 10¹²) but 2^(n/2) is fine (2²⁰ ≈ 10⁶)
-- The search space is a power set or Cartesian product — every element is either included or excluded (or chosen from a set of options)
+- The search space is a power set or Cartesian product - every element is either included or excluded (or chosen from a set of options)
 - The objective decomposes cleanly across a split: `f(left_half) ⊕ f(right_half) = target` where ⊕ is addition, XOR, concatenation, or a similarly splittable operation
-- Output is "does it exist?", "count of", or "closest value" — not "all solutions" (all-solutions would still be exponential)
+- Output is "does it exist?", "count of", or "closest value" - not "all solutions" (all-solutions would still be exponential)
 
 **(c) Not to be confused with**
 
 - **Two Pointers:** two pointers walk a *single sorted array* from both ends toward the center; MITM generates *two independent result sets* from two halves of the input and merges them. Different mechanism, different trigger.
-- **DP (Dynamic Programming):** DP requires *overlapping subproblems* and a recurrence — the same sub-state is reached many ways. MITM works when the two halves are *independent* and there is no recurrence structure to exploit. If n ≤ 20 and subproblems overlap, reach for DP first.
-- **Bidirectional BFS:** also called "meet in the middle" in graph contexts — expands from both source and target until frontiers meet. Shares the name and the "halving" intuition but operates on a graph rather than a power set.
+- **DP (Dynamic Programming):** DP requires *overlapping subproblems* and a recurrence - the same sub-state is reached many ways. MITM works when the two halves are *independent* and there is no recurrence structure to exploit. If n ≤ 20 and subproblems overlap, reach for DP first.
+- **Bidirectional BFS:** also called "meet in the middle" in graph contexts - expands from both source and target until frontiers meet. Shares the name and the "halving" intuition but operates on a graph rather than a power set.
 
 ## How it works
 
 The technique has three phases: **split → enumerate → combine**.
 
-**Concrete trace — subset sum with n = 6, target T = 9**
+**Concrete trace - subset sum with n = 6, target T = 9**
 
 Input: `A = [3, 1, 4, 1, 5, 9]`, target = 9
 
-**Phase 1 — Split**
+**Phase 1 - Split**
 
 ```
 Left half  L = [3, 1, 4]      (indices 0..2)
 Right half R = [1, 5, 9]      (indices 3..5)
 ```
 
-**Phase 2 — Enumerate all subset sums of each half**
+**Phase 2 - Enumerate all subset sums of each half**
 
 ```
 Subsets of L = [3, 1, 4]:
@@ -97,7 +97,7 @@ Subsets of R = [1, 5, 9]:
 right_sums = [0, 1, 5, 9, 6, 10, 14, 15]  (2³ = 8 values)
 ```
 
-**Phase 3 — Combine via sort + binary search**
+**Phase 3 - Combine via sort + binary search**
 
 Sort `right_sums`: `[0, 1, 5, 6, 9, 10, 14, 15]`
 
@@ -109,7 +109,7 @@ s = 0  → need 9  → bisect finds 9  ✓  FOUND
 
 A subset from L with sum 0 (the empty set) plus a subset from R with sum 9 (`{9}`) gives target 9.
 
-**ASCII diagram — the three phases**
+**ASCII diagram - the three phases**
 
 ```
 Input A = [3, 1, 4, 1, 5, 9]   (n = 6)
@@ -133,7 +133,7 @@ Input A = [3, 1, 4, 1, 5, 9]   (n = 6)
 
 The combine step converts the naive O(2^(n/2) × 2^(n/2)) Cartesian scan into O(2^(n/2) · log(2^(n/2))) = O(2^(n/2) · n/2) by sorting once and probing with binary search.
 
-**Cache behavior:** the enumeration phase iterates over small arrays of size 2^(n/2) ≈ 10⁶ — these fit comfortably in L2/L3 cache. The sort is comparison-based and cache-friendly (sequential merges). The binary search has O(log(2^(n/2))) = O(n/2) cache misses per probe but only 2^(n/2) probes, so the total miss count is the same order as the sort. In practice MITM on n = 40 runs in under a second on modern hardware.
+**Cache behavior:** the enumeration phase iterates over small arrays of size 2^(n/2) ≈ 10⁶ - these fit comfortably in L2/L3 cache. The sort is comparison-based and cache-friendly (sequential merges). The binary search has O(log(2^(n/2))) = O(n/2) cache misses per probe but only 2^(n/2) probes, so the total miss count is the same order as the sort. In practice MITM on n = 40 runs in under a second on modern hardware.
 
 ## Skeleton
 
@@ -217,9 +217,9 @@ def count_subsets(A: list[int], target: int) -> int:
 | Space     | O(2^(n/2))                   | storing both sum lists, each of size 2^(n/2)                                    |
 | vs brute  | O(2ⁿ) → O(2^(n/2) · n)      | the square-root reduction: 2^40 ≈ 10¹² vs 2^20 ≈ 10⁶                           |
 
-**Why this is better than O(2ⁿ):** 2^(n/2) is the *geometric mean* of 1 and 2ⁿ. Halving the exponent squares the denominator of the running time — `2^40 / 2^20 = 2^20 ≈ 10⁶` speedup for n = 40. The logarithmic factor `n` from the sort/search is negligible. This is the same mathematical trick that makes baby-step giant-step work in discrete logarithms.
+**Why this is better than O(2ⁿ):** 2^(n/2) is the *geometric mean* of 1 and 2ⁿ. Halving the exponent squares the denominator of the running time - `2^40 / 2^20 = 2^20 ≈ 10⁶` speedup for n = 40. The logarithmic factor `n` from the sort/search is negligible. This is the same mathematical trick that makes baby-step giant-step work in discrete logarithms.
 
-**Space note:** at n = 40, each half produces 2²⁰ ≈ 10⁶ sums. If each sum is a 64-bit integer that is 8 MB per list — trivially within memory. At n = 50 (2²⁵ ≈ 33 M entries × 8 bytes = 256 MB per list), you're close to the memory wall; n ≤ 40 is the practical ceiling.
+**Space note:** at n = 40, each half produces 2²⁰ ≈ 10⁶ sums. If each sum is a 64-bit integer that is 8 MB per list - trivially within memory. At n = 50 (2²⁵ ≈ 33 M entries × 8 bytes = 256 MB per list), you're close to the memory wall; n ≤ 40 is the practical ceiling.
 
 ## Constraints & approach
 
@@ -227,7 +227,7 @@ def count_subsets(A: list[int], target: int) -> int:
 | ---------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
 | n ≤ 20                 | DP / bitmask DP / backtracking             | 2²⁰ ≈ 10⁶ is fine without splitting; bitmask DP gives richer info (all subset sums in O(2ⁿ · n))    |
 | n ≤ 35–40              | **Meet in the Middle**                     | 2ⁿ = 10¹⁰⁻¹² → TLE; 2^(n/2) = 10⁶ → fine. MITM is the only practical exact algorithm here          |
-| n ≤ 10⁵, T ≤ 10⁹      | DP (if values small) or greedy             | MITM space = 2^(n/2) ≈ 2^50000 — astronomically infeasible; need a polynomial algorithm              |
+| n ≤ 10⁵, T ≤ 10⁹      | DP (if values small) or greedy             | MITM space = 2^(n/2) ≈ 2^50000 - astronomically infeasible; need a polynomial algorithm              |
 | n ≤ 10⁵, values ≤ n   | DP (O(n · T)) if T is small                | Classic 0/1 knapsack DP; MITM won't help when the power-set is the bottleneck, not the sum space      |
 | 4-sum, n ≤ 2000        | MITM on pairs (O(n²) pairs per half)       | Brute force O(n⁴); MITM on pair-sums gives O(n² log n); better than O(n³) two-pointer if n is small |
 | Password / key search  | MITM (baby-step giant-step)                | n ≤ 56-bit DES key → 2^28 meet-in-middle instead of 2^56 brute force                                 |
@@ -243,7 +243,7 @@ Instead of checking for exact equality, after sorting `right_sums`, for each `s`
 Use `Counter` on `left_sums`, then for each value in `right_sums` add `counter[target - val]`. O(2^(n/2)) time after enumeration.
 
 **3. Two-pointer combine (when both halves are sorted)**
-Sort both `left_sums` and `right_sums`. Use two pointers (lo on left, hi on right). This reduces the combine from O(2^(n/2) · n/2) to O(2^(n/2)) but requires sorting both lists first — same asymptotic, better constant.
+Sort both `left_sums` and `right_sums`. Use two pointers (lo on left, hi on right). This reduces the combine from O(2^(n/2) · n/2) to O(2^(n/2)) but requires sorting both lists first - same asymptotic, better constant.
 
 **4. Partition into two equal-sum halves (LC 805)**
 Generate all achievable sums from subsets of the left half, check if any sum equals `(total / num_in_left_partition)`. Requires careful tracking of subset sizes alongside sums.
@@ -271,7 +271,7 @@ while lo < len(left_sums) and hi >= 0:
         hi -= 1
 ```
 
-**Why for CP:** the combine step becomes O(2^(n/2)) instead of O(2^(n/2) · n/2) — eliminates the log factor from binary search. In tight time limits this is the difference between AC and TLE. Use when you only need existence (not count), the target is exact, and both lists are sorted anyway.
+**Why for CP:** the combine step becomes O(2^(n/2)) instead of O(2^(n/2) · n/2) - eliminates the log factor from binary search. In tight time limits this is the difference between AC and TLE. Use when you only need existence (not count), the target is exact, and both lists are sorted anyway.
 
 **2. MITM for 4-sum / k-sum reduction**
 
@@ -303,11 +303,11 @@ For problems where each element has a state (not just in/out), enumerate all 3^(
 
 ## Worked problems
 
-### LC 1755 — Closest Subsequence Sum
+### LC 1755 - Closest Subsequence Sum
 
 **Problem:** Given an integer array `nums` of length n ≤ 40 and a target integer `goal`, return the minimum absolute difference between `goal` and the sum of any non-empty subset of `nums`.
 
-**Approach (MITM — closest subset sum):** n ≤ 40 rules out O(2ⁿ) brute force and makes DP infeasible (values can be ±10⁹). Split into two halves, enumerate all 2^(n/2) sums for each, sort the right list, then for each left sum binary-search for the complementary right sum that brings the total closest to `goal`. Check both the floor and ceiling neighbours in the sorted right list.
+**Approach (MITM - closest subset sum):** n ≤ 40 rules out O(2ⁿ) brute force and makes DP infeasible (values can be ±10⁹). Split into two halves, enumerate all 2^(n/2) sums for each, sort the right list, then for each left sum binary-search for the complementary right sum that brings the total closest to `goal`. Check both the floor and ceiling neighbours in the sorted right list.
 
 ```python
 from bisect import bisect_left
@@ -338,12 +338,12 @@ class Solution:
 **Complexity:** O(2^(n/2) · n) time, O(2^(n/2)) space.
 
 **Duplicate problems:**
-- Subset Sum (LC 416 — Partition Equal Subset Sum) — same MITM or DP approach; find a subset summing to total/2. DP works here because values ≤ 200 bound the sum space; MITM is the fallback when values are large.
-- Target Sum (LC 494) — assign +/− signs to elements; each sign assignment is a "subset selection" — count assignments where the signed sum equals target. MITM applies when n is up to 40 (not LC 494's n ≤ 20).
+- Subset Sum (LC 416 - Partition Equal Subset Sum) - same MITM or DP approach; find a subset summing to total/2. DP works here because values ≤ 200 bound the sum space; MITM is the fallback when values are large.
+- Target Sum (LC 494) - assign +/− signs to elements; each sign assignment is a "subset selection" - count assignments where the signed sum equals target. MITM applies when n is up to 40 (not LC 494's n ≤ 20).
 
 ---
 
-### LC 805 — Split Array With Same Average
+### LC 805 - Split Array With Same Average
 
 **Problem:** Given integer array `nums` of length n ≤ 30, return True if you can split nums into two non-empty subsets A and B such that `average(A) == average(B)`. The split must use every element exactly once.
 
@@ -373,7 +373,7 @@ class Solution:
         right = gen(nums[mid:])
 
         for ls, lc in left:
-            for rc in range(1, n - lc):   # O(n) per left entry — total O(2^(n/2) · n)
+            for rc in range(1, n - lc):   # O(n) per left entry - total O(2^(n/2) · n)
                 needed_total = total * (lc + rc)
                 if needed_total % n != 0:
                     continue
@@ -383,18 +383,18 @@ class Solution:
         return False
 ```
 
-**Complexity:** O(2^(n/2) · n) time — the `rc` loop runs at most n times per left entry, giving 2^(n/2) × n total iterations. O(2^(n/2)) space.
+**Complexity:** O(2^(n/2) · n) time - the `rc` loop runs at most n times per left entry, giving 2^(n/2) × n total iterations. O(2^(n/2)) space.
 
 **Duplicate problems:**
-- Fair Split (partition into two equal-sum groups) — same feasibility check pattern; MITM if n ≤ 40, DP if values are bounded.
+- Fair Split (partition into two equal-sum groups) - same feasibility check pattern; MITM if n ≤ 40, DP if values are bounded.
 
 ---
 
-### Classic — Subset Sum with Large Values
+### Classic - Subset Sum with Large Values
 
 **Problem:** Given n ≤ 40 integers each up to 10¹⁸, determine if any subset sums exactly to T. Standard DP is infeasible (sum space too large). Return True or False.
 
-**Approach (canonical MITM):** This is the textbook motivation for MITM. DP breaks because the sum space is up to 40 × 10¹⁸ — no table fits in memory. Backtracking is O(2ⁿ) ≈ 10¹² — TLE. MITM: split into two halves of size 20, enumerate all 2²⁰ ≈ 10⁶ sums for each, sort the right list, binary-search from the left. Runs in ~1 second.
+**Approach (canonical MITM):** This is the textbook motivation for MITM. DP breaks because the sum space is up to 40 × 10¹⁸ - no table fits in memory. Backtracking is O(2ⁿ) ≈ 10¹² - TLE. MITM: split into two halves of size 20, enumerate all 2²⁰ ≈ 10⁶ sums for each, sort the right list, binary-search from the left. Runs in ~1 second.
 
 ```python
 from bisect import bisect_left
@@ -428,8 +428,8 @@ def subset_sum_large(A: list[int], T: int) -> bool:
 **Complexity:** O(2^(n/2) · n) time, O(2^(n/2)) space.
 
 **Duplicate problems:**
-- Partition to K Equal Sum Subsets (LC 698) — for k=2 reduces to subset-sum; MITM applies when n is large and sum space is huge.
-- Sum of Squares (find four perfect squares summing to N) — Lagrange's 4-square theorem; MITM on two pairs cuts the search from O(N²) to O(N).
+- Partition to K Equal Sum Subsets (LC 698) - for k=2 reduces to subset-sum; MITM applies when n is large and sum space is huge.
+- Sum of Squares (find four perfect squares summing to N) - Lagrange's 4-square theorem; MITM on two pairs cuts the search from O(N²) to O(N).
 
 ## Pitfalls
 
@@ -439,7 +439,7 @@ def subset_sum_large(A: list[int], T: int) -> bool:
 
 **2. Integer overflow when values are large**
 
-With n = 40 elements each up to 10¹⁸, the maximum subset sum is 40 × 10¹⁸ = 4 × 10¹⁹, which overflows a signed 64-bit integer (max ≈ 9.2 × 10¹⁸). In Python this is not an issue (arbitrary precision), but in C++/Java you must use `__int128` or `unsigned long long` for the accumulation. A missed overflow silently produces wrong answers — especially treacherous because the code runs without error.
+With n = 40 elements each up to 10¹⁸, the maximum subset sum is 40 × 10¹⁸ = 4 × 10¹⁹, which overflows a signed 64-bit integer (max ≈ 9.2 × 10¹⁸). In Python this is not an issue (arbitrary precision), but in C++/Java you must use `__int128` or `unsigned long long` for the accumulation. A missed overflow silently produces wrong answers - especially treacherous because the code runs without error.
 
 **3. Off-by-one when target falls exactly in one half**
 
@@ -447,7 +447,7 @@ If `target` can be formed using only elements from the left half (right contribu
 
 **4. Confusing MITM with two-pointer on the same array**
 
-MITM *generates two independent lists* from two halves of the input and sorts/searches one list with values from the other. Two pointers *walks a single sorted input array* from both ends. Applying a two-pointer walk directly to the original unsorted input will produce wrong answers for subset-sum — the pointers must operate on the *generated sum lists*, not on `A` itself.
+MITM *generates two independent lists* from two halves of the input and sorts/searches one list with values from the other. Two pointers *walks a single sorted input array* from both ends. Applying a two-pointer walk directly to the original unsorted input will produce wrong answers for subset-sum - the pointers must operate on the *generated sum lists*, not on `A` itself.
 
 **5. Applying MITM when n ≤ 20 (DP is faster and richer)**
 
@@ -455,29 +455,29 @@ At n ≤ 20, bitmask DP runs in O(2²⁰ · n) and gives not just existence but 
 
 ## First 30 seconds
 
-"The constraint says n ≤ 40 and I need to find a subset satisfying a sum condition — that's Meet in the Middle. 2⁴⁰ is TLE but 2²⁰ is fine. I'll split the array in half, enumerate all 2^(n/2) subset sums for each half independently, sort the right list, then binary-search for the complement from the left list. Time is O(2^(n/2) · n), space O(2^(n/2))."
+"The constraint says n ≤ 40 and I need to find a subset satisfying a sum condition - that's Meet in the Middle. 2⁴⁰ is TLE but 2²⁰ is fine. I'll split the array in half, enumerate all 2^(n/2) subset sums for each half independently, sort the right list, then binary-search for the complement from the left list. Time is O(2^(n/2) · n), space O(2^(n/2))."
 
 ## Related
 
 **Leans on:**
-- [Binary Search](../algorithms/binary-search.md) — the combine step (sort one half, `bisect_left` probe from the other)
-- [Backtracking](../algorithms/backtracking.md) — recursive subset enumeration for each half
-- [Subsets & Permutations](./subsets-permutations.md) — the power-set generation template
-- [Array](../data-structures/array.md) — underlying structure for the sum lists
+- [Binary Search](../algorithms/binary-search.md) - the combine step (sort one half, `bisect_left` probe from the other)
+- [Backtracking](../algorithms/backtracking.md) - recursive subset enumeration for each half
+- [Subsets & Permutations](./subsets-permutations.md) - the power-set generation template
+- [Array](../data-structures/array.md) - underlying structure for the sum lists
 
 **Sibling patterns / alternatives:**
-- [Bitmask DP](./bitmask-dp.md) — preferred when n ≤ 20; same subset enumeration idea but with memoization across overlapping subproblems
-- [Dynamic Programming](../algorithms/dynamic-programming.md) — preferred when values are bounded (small sum space); O(n · T) DP beats MITM when T ≤ 10⁶
-- [Two Pointers](./two-pointers.md) — similar "meet in the middle" intuition on a sorted array, but entirely different mechanism (no power-set generation)
-- [Binary Search on Answer](./binary-search-on-answer.md) — different "split + search" shape; binary-searches the answer space rather than a generated sum list
+- [Bitmask DP](./bitmask-dp.md) - preferred when n ≤ 20; same subset enumeration idea but with memoization across overlapping subproblems
+- [Dynamic Programming](../algorithms/dynamic-programming.md) - preferred when values are bounded (small sum space); O(n · T) DP beats MITM when T ≤ 10⁶
+- [Two Pointers](./two-pointers.md) - similar "meet in the middle" intuition on a sorted array, but entirely different mechanism (no power-set generation)
+- [Binary Search on Answer](./binary-search-on-answer.md) - different "split + search" shape; binary-searches the answer space rather than a generated sum list
 
 ## Practice problems
 
-### LC 454 — 4Sum II
+### LC 454 - 4Sum II
 
 **Problem statement:** Given four integer arrays `nums1`, `nums2`, `nums3`, `nums4` each of length n ≤ 200, return the number of tuples (i, j, k, l) such that `nums1[i] + nums2[j] + nums3[k] + nums4[l] == 0`. Constraints: n ≤ 200.
 
-**Approach:** MITM on pairs — treat (nums1[i] + nums2[j]) as "left half sums" and (nums3[k] + nums4[l]) as "right half sums". Build a frequency counter of all n² AB-sums; for each of the n² CD-sums look up its negation. O(n²) — the n² pair enumeration replaces the 2^(n/2) element enumeration because here each "item" is a pair.
+**Approach:** MITM on pairs - treat (nums1[i] + nums2[j]) as "left half sums" and (nums3[k] + nums4[l]) as "right half sums". Build a frequency counter of all n² AB-sums; for each of the n² CD-sums look up its negation. O(n²) - the n² pair enumeration replaces the 2^(n/2) element enumeration because here each "item" is a pair.
 
 ```python
 from collections import Counter
@@ -492,8 +492,8 @@ class Solution:
 **Complexity:** O(n²) time, O(n²) space.
 
 **Duplicate problems:**
-- Two Sum (LC 1) — same hash-map lookup on a single array; MITM on pairs generalises it to 4 arrays.
-- 4-Sum (LC 18, unique quadruples in one array) — two-pointer on sorted array; different problem shape from 4Sum II.
+- Two Sum (LC 1) - same hash-map lookup on a single array; MITM on pairs generalises it to 4 arrays.
+- 4-Sum (LC 18, unique quadruples in one array) - two-pointer on sorted array; different problem shape from 4Sum II.
 
 ---
 

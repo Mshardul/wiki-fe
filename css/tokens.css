@@ -139,6 +139,6 @@
   /* Layout */
   --topbar-h: 44px;
 
-  /* FAB (floating action button) size — shared by scroll-top-btn and toc-mobile-btn */
+  /* FAB (floating action button) size - shared by scroll-top-btn and toc-mobile-btn */
   --fab-size: 42px;
 }

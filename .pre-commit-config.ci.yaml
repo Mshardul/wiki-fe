@@ -1,11 +1,11 @@
-# CI pre-commit config — check-only, never auto-fix (authoritative gate).
+# CI pre-commit config - check-only, never auto-fix (authoritative gate).
 # Used by .github/workflows/ci.yml. Local devs use .pre-commit-config.yaml,
 # which auto-fixes; CI must only report and fail, never rewrite files.
 #
 # The fixer hooks (end-of-file-fixer, trailing-whitespace) exit non-zero when
-# they would change a file, which fails the CI job without committing changes —
+# they would change a file, which fails the CI job without committing changes -
 # that is the intended check-only behaviour. codespell runs without -w (report
-# only). No JS/CSS linting by design — repo is build-free with no node toolchain.
+# only). No JS/CSS linting by design - repo is build-free with no node toolchain.
 
 exclude: '^(content/|\.venv/|docs/superpowers/|\.pytest_cache/)'
 
@@ -23,7 +23,7 @@ repos:
         # ths = table-headers variable (Array.from querySelectorAll th)
         args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths"]
 
-  # JS/CSS lint + format — check-only (CI mode, never writes).
+  # JS/CSS lint + format - check-only (CI mode, never writes).
   - repo: https://github.com/biomejs/pre-commit
     rev: v0.6.1
     hooks:

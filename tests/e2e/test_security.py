@@ -55,7 +55,7 @@ def test_cdn_scripts_have_crossorigin_anonymous(page, base_url):
 
 
 def test_index_load_error_escapes_message(page, base_url):
-    """An index-load failure renders err.message escaped — no HTML injected.
+    """An index-load failure renders err.message escaped - no HTML injected.
 
     Forces fetch to reject with an error message containing markup; the error
     state must show it as text, never inject a live element into the DOM.
@@ -85,7 +85,7 @@ def test_index_load_error_escapes_message(page, base_url):
         text: document.querySelector('#index-sections .error').textContent,
     })""")
     assert not result["injectedImg"], "err.message was injected as live HTML (not escaped)"
-    assert not result["xssFired"], "onerror handler fired — message not escaped"
+    assert not result["xssFired"], "onerror handler fired - message not escaped"
     assert "<img" in result["text"], (
         f"Escaped markup should appear as literal text, got: {result['text']!r}"
     )

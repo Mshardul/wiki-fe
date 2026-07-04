@@ -1,6 +1,6 @@
-# AI Instructions — DevOps Cheatsheet Pages
+# AI Instructions - DevOps Cheatsheet Pages
 
-> This file is self-contained. Do NOT read `_base.md` for cheatsheet pages — the format is fundamentally different.
+> This file is self-contained. Do NOT read `_base.md` for cheatsheet pages - the format is fundamentally different.
 
 ---
 
@@ -13,10 +13,10 @@
 ## NEVER
 
 - Include prose explanations longer than one line per command
-- Repeat conceptual content from the companion tool article — link to it instead
-- Use real hostnames, IPs, credentials, or tokens — use readable placeholders
+- Repeat conceptual content from the companion tool article - link to it instead
+- Use real hostnames, IPs, credentials, or tokens - use readable placeholders
 - Include commands that can cause data loss without a ⚠️ callout
-- Generate exhaustive flag references — focus on the 20% of commands used 80% of the time
+- Generate exhaustive flag references - focus on the 20% of commands used 80% of the time
 - Add decorative headers, padding phrases, or filler sentences
 - Include commands that require significant setup context to run safely (without a note)
 
@@ -26,7 +26,7 @@
 
 - **Goal:** Quick-revision reference for engineers who understand the tool conceptually and need fast recall of syntax, flags, and patterns
 - **Persona:** On-call engineer or interview candidate who needs the right command in under 10 seconds
-- **Audience:** Engineers with working knowledge of the tool — this is revision, not learning
+- **Audience:** Engineers with working knowledge of the tool - this is revision, not learning
 - **Scope boundary:** Commands and snippets only. Conceptual understanding lives in the companion article (`../[tool-name].md`).
 
 ---
@@ -45,13 +45,13 @@ Generate the full cheatsheet in one pass. No index phase required. No "Proceed" 
 
 ---
 
-## PAGE STRUCTURE (FIXED — ALWAYS IN THIS ORDER)
+## PAGE STRUCTURE (FIXED - ALWAYS IN THIS ORDER)
 
-1. **Title** — `# [Tool Name] Cheatsheet`
-2. **One-line description** — single sentence: what this cheatsheet covers and who it's for. No TLDR, no prerequisites section.
-3. **Companion article link** — `> 📖 Conceptual deep-dive: **[Tool Name](../tool-name.md)**`
-4. **Sections grouped by workflow** — see Section Format below
-5. **Quick Reference Tables** (optional) — condensed tables for flags, exit codes, or config keys at the end
+1. **Title** - `# [Tool Name] Cheatsheet`
+2. **One-line description** - single sentence: what this cheatsheet covers and who it's for. No TLDR, no prerequisites section.
+3. **Companion article link** - `> 📖 Conceptual deep-dive: **[Tool Name](../tool-name.md)**`
+4. **Sections grouped by workflow** - see Section Format below
+5. **Quick Reference Tables** (optional) - condensed tables for flags, exit codes, or config keys at the end
 
 ---
 
@@ -70,7 +70,7 @@ Each workflow section uses a command table:
 - **Workflow sections** group commands by task, not by command name.
   - ✅ "Images", "Containers", "Debugging", "Volumes", "Networking", "Compose"
   - ❌ "docker run variants", "docker ps variants"
-- **Notes column:** one short phrase — a key flag, a common variant, or a gotcha. Empty cell is better than padding.
+- **Notes column:** one short phrase - a key flag, a common variant, or a gotcha. Empty cell is better than padding.
 - Commands sorted by frequency of use within each section, not alphabetically.
 - When a command has a critical destructive variant, put it on its own row with ⚠️ in Notes.
 
@@ -82,8 +82,8 @@ Use sparingly. Two types only:
 
 | Emoji | Use                                                                              |
 | ----- | -------------------------------------------------------------------------------- |
-| ⚠️    | **Gotcha** — command behaves non-obviously or can cause data loss. One line max. |
-| 💡    | **Tip** — non-obvious shortcut or pattern worth knowing. One line max.           |
+| ⚠️    | **Gotcha** - command behaves non-obviously or can cause data loss. One line max. |
+| 💡    | **Tip** - non-obvious shortcut or pattern worth knowing. One line max.           |
 
 No Interview Lens. No Decision Framework. No Thought Process callouts.
 
@@ -131,7 +131,7 @@ docker run \
 - Destructive commands (data loss, force delete, hard reset) must have ⚠️ in the Notes column or as an inline callout
 - No `sudo` unless the tool genuinely requires it
 - Version-specific commands must include a note: `# requires kubectl ≥ 1.26`
-- Max 3 sections before the most-used commands appear — don't bury useful content in setup boilerplate
+- Max 3 sections before the most-used commands appear - don't bury useful content in setup boilerplate
 - No duplicate commands across sections unless the context materially changes the meaning
 
 ---
@@ -143,7 +143,7 @@ Before outputting, verify:
 - [ ] Every command copy-paste ready with safe placeholders?
 - [ ] Destructive commands flagged with ⚠️?
 - [ ] Notes column non-empty only when genuinely useful?
-- [ ] No prose paragraphs — one-liners only?
+- [ ] No prose paragraphs - one-liners only?
 - [ ] Commands sorted by frequency within each section?
 - [ ] Companion conceptual article link present at top?
 - [ ] No command lists that belong in the conceptual article?

@@ -1,4 +1,4 @@
-/* Auth modal + topbar auth button. Tokens only — see tokens.css. */
+/* Auth modal + topbar auth button. Tokens only - see tokens.css. */
 .auth-modal.hidden {
   display: none;
 }

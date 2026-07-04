@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Deterministic pre-check for DSA rater params U8, U11, U12.
 
-These three params are filesystem facts, not LLM judgment — they must not vary
+These three params are filesystem facts, not LLM judgment - they must not vary
 run-to-run. This script resolves them once and prints a human-readable report
 the rater pastes in, instead of the model guessing whether files exist.
 
-  U8  — H1 title matches the slugified filename (case-insensitive, hyphens).
-  U11 — filename is lowercase, hyphen-separated, .md.
-  U12 — every relative [text](./path.md) link resolves to a real file.
+  U8  - H1 title matches the slugified filename (case-insensitive, hyphens).
+  U11 - filename is lowercase, hyphen-separated, .md.
+  U12 - every relative [text](./path.md) link resolves to a real file.
 
 Usage:
   python3 dsa_check.py <article.md> [<article.md> ...]
@@ -20,7 +20,7 @@ import re
 import sys
 from pathlib import Path
 
-# [text](target) — capture target. Skip images ![..](..) via the negative lookbehind.
+# [text](target) - capture target. Skip images ![..](..) via the negative lookbehind.
 LINK_RE = re.compile(r"(?<!\!)\[[^\]]*\]\(([^)]+)\)")
 H1_RE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
 
@@ -94,24 +94,24 @@ def report_one(path: Path) -> bool:
     fn_ok, fn_msg = check_filename(path)
     ok &= fn_ok
     lines.append(
-        f"  U11 filename convention   {'PASS' if fn_ok else 'FAIL'}  — {fn_msg}"
+        f"  U11 filename convention   {'PASS' if fn_ok else 'FAIL'}  - {fn_msg}"
     )
 
     t_ok, t_msg = check_title(path, text)
     ok &= t_ok
-    lines.append(f"  U8  title ↔ filename      {'PASS' if t_ok else 'FAIL'}  — {t_msg}")
+    lines.append(f"  U8  title ↔ filename      {'PASS' if t_ok else 'FAIL'}  - {t_msg}")
 
     l_ok, broken = check_links(path, text)
     ok &= l_ok
     if l_ok:
-        lines.append("  U12 links resolve         PASS  — all .md links resolve")
+        lines.append("  U12 links resolve         PASS  - all .md links resolve")
     else:
-        lines.append(f"  U12 links resolve         FAIL  — {len(broken)} broken:")
+        lines.append(f"  U12 links resolve         FAIL  - {len(broken)} broken:")
         lines.extend(f"        {b}" for b in broken)
 
     if find_content_root(path) is None:
         lines.append(
-            "  WARN: no 'content' ancestor — links resolved against file dir only"
+            "  WARN: no 'content' ancestor - links resolved against file dir only"
         )
 
     print("\n".join(lines))
@@ -130,7 +130,7 @@ def main() -> int:
     print(
         "RESULT: all checks PASS"
         if all_ok
-        else "RESULT: failures above — fix before relying on U8/U11/U12 as PASS"
+        else "RESULT: failures above - fix before relying on U8/U11/U12 as PASS"
     )
     return 0 if all_ok else 1
 

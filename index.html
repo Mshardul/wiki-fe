@@ -833,7 +833,7 @@
     </div>
 
     <!-- ══════════════════════════════════════
-       AUTH MODAL — login / register / verify-pending
+       AUTH MODAL - login / register / verify-pending
   ══════════════════════════════════════ -->
     <div
       id="auth-modal"
@@ -873,6 +873,11 @@
           /></label>
           <p id="auth-login-error" class="auth-error" hidden></p>
           <button id="auth-login-submit" class="auth-submit">Log in</button>
+          <p class="auth-swap">
+            <button id="auth-to-forgot" class="auth-link" type="button">
+              Forgot password?
+            </button>
+          </p>
           <p class="auth-swap">
             No account?
             <button id="auth-to-register" class="auth-link" type="button">
@@ -924,6 +929,62 @@
               Back to log in
             </button>
           </p>
+        </div>
+
+        <!-- VERIFY RESULT (landed here from the verify-email link) -->
+        <div id="auth-panel-verify-result" class="auth-panel">
+          <h2 class="auth-title">Verifying your email</h2>
+          <p id="auth-verify-result-copy" class="auth-verify-copy">
+            One moment&hellip;
+          </p>
+          <p class="auth-swap">
+            <button id="auth-verify-result-to-login" class="auth-link" type="button" hidden>
+              Back to log in
+            </button>
+          </p>
+        </div>
+
+        <!-- FORGOT PASSWORD -->
+        <div id="auth-panel-forgot" class="auth-panel">
+          <h2 class="auth-title">Reset your password</h2>
+          <label class="auth-field"
+            ><span>Email</span>
+            <input
+              id="auth-forgot-email"
+              type="email"
+              autocomplete="email"
+          /></label>
+          <p id="auth-forgot-error" class="auth-error" hidden></p>
+          <p id="auth-forgot-sent" class="auth-verify-copy" hidden>
+            If that account exists, a reset link is on its way.
+          </p>
+          <button id="auth-forgot-submit" class="auth-submit">Send reset link</button>
+          <p class="auth-swap">
+            <button id="auth-forgot-to-login" class="auth-link" type="button">
+              Back to log in
+            </button>
+          </p>
+        </div>
+
+        <!-- RESET PASSWORD (landed here from the reset-password link) -->
+        <div id="auth-panel-reset" class="auth-panel">
+          <h2 class="auth-title">Choose a new password</h2>
+          <label class="auth-field"
+            ><span>New password</span>
+            <input
+              id="auth-reset-password"
+              type="password"
+              autocomplete="new-password"
+          /></label>
+          <ul
+            id="auth-reset-pw-checklist"
+            class="auth-pw-checklist"
+            aria-live="polite"
+          ></ul>
+          <p id="auth-reset-error" class="auth-error" hidden></p>
+          <button id="auth-reset-submit" class="auth-submit" disabled>
+            Update password
+          </button>
         </div>
       </div>
     </div>

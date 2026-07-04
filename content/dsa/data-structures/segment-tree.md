@@ -1,7 +1,7 @@
 <!--
   Data Structures skeleton. Copy to content/dsa/data-structures/<slug>.md and fill.
   Rules: docs/_meta/ai-instructions/dsa-writer.md  (param IDs in the comments below).
-  Delete every HTML comment before publishing. Do NOT leave this in _templates as an article — the app never indexes _templates.
+  Delete every HTML comment before publishing. Do NOT leave this in _templates as an article - the app never indexes _templates.
   Replace the family heading with the ONE matching your family (see writer › Family blocks).
 -->
 
@@ -21,7 +21,7 @@
 
 ## How it works
 
-<!-- DS1: internal layout + a REAL diagram (mermaid or ASCII — no placeholder). -->
+<!-- DS1: internal layout + a REAL diagram (mermaid or ASCII - no placeholder). -->
 
 ## Operations
 
@@ -37,12 +37,12 @@
 
 ## When to use / when not
 
-<!-- DS4 + U3: decision cues naming ≥1 sibling structure (e.g. array vs linked-list) — PROSE. The scannable table is DS8 below, don't duplicate.
+<!-- DS4 + U3: decision cues naming ≥1 sibling structure (e.g. array vs linked-list) - PROSE. The scannable table is DS8 below, don't duplicate.
      U17 (advisory): fold in ONE sentence naming a real system where this is a workhorse (cross-link system-design where natural). -->
 
 ## Comparison
 
-<!-- DS8 (gated): a TABLE — rows = this structure + real rivals, columns = key ops' time/space + the distinguishing trade-off (ordering? contiguity? lookup?). Scannable. Must add what DS4 prose doesn't; prose-only or single-row caps at 5. -->
+<!-- DS8 (gated): a TABLE - rows = this structure + real rivals, columns = key ops' time/space + the distinguishing trade-off (ordering? contiguity? lookup?). Scannable. Must add what DS4 prose doesn't; prose-only or single-row caps at 5. -->
 
 ## Variants
 
@@ -50,7 +50,7 @@
 
 ## <Family heading>
 
-<!-- FB: ONE of — Memory layout / Hashing & collisions / Traversal & invariant / Representations. Cover its must-cover points at depth. -->
+<!-- FB: ONE of - Memory layout / Hashing & collisions / Traversal & invariant / Representations. Cover its must-cover points at depth. -->
 
 ## Implementation
 
@@ -59,7 +59,7 @@
 ## CP-primitives
 
 <!-- CP: ≥2 contest tools this structure unlocks, topic-appropriate, each with a tiny diagram/snippet + one-line "why for CP" (what complexity it collapses).
-     GATED for the Linear family (array, string, linked-list, stack, queue); ADVISORY for other families. Delete this heading if advisory and the structure has no real CP surface — don't write filler.
+     GATED for the Linear family (array, string, linked-list, stack, queue); ADVISORY for other families. Delete this heading if advisory and the structure has no real CP surface - don't write filler.
      e.g. array → prefix sums (1D/2D), difference array, counter-array; stack → monotonic stack; queue → 0/1-BFS deque, sliding-window-max. -->
 
 ## Gotchas / edge cases
@@ -68,4 +68,4 @@
 
 ## Practice problems
 
-<!-- U6: ≥3 problems, each a WORKED entry (### subheading per problem): (1) full problem statement in 2–3 sentences + constraints where they matter; (2) approach/insight in prose; (3) short runnable Python solution; (4) time/space complexity. Tag the pattern + relative .md cross-link where a target exists. Favor canonical staples. EVERY PROBLEM MUST EXERCISE A DISTINCT TECHNIQUE — no duplicates padding the count. -->
+<!-- U6: ≥3 problems, each a WORKED entry (### subheading per problem): (1) full problem statement in 2–3 sentences + constraints where they matter; (2) approach/insight in prose; (3) short runnable Python solution; (4) time/space complexity. Tag the pattern + relative .md cross-link where a target exists. Favor canonical staples. EVERY PROBLEM MUST EXERCISE A DISTINCT TECHNIQUE - no duplicates padding the count. -->

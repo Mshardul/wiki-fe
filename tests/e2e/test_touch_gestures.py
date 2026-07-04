@@ -6,7 +6,7 @@ Mobile touch gestures (Group 5):
 
 Deterministic gestures are asserted by dispatching synthetic TouchEvents in the
 page. Pinch-to-zoom and orientation re-fit are not reliably reproducible via dispatched
-events and are covered by manual verify — see the note at the bottom of this module.
+events and are covered by manual verify - see the note at the bottom of this module.
 """
 
 import pytest
@@ -235,7 +235,7 @@ def test_swipe_down_from_mid_sheet_closes_prefs(mobile_page, base_url):
     page.evaluate("() => Settings.open()")
     page.wait_for_function("() => Settings.isOpen()", timeout=5_000)
 
-    # swipe down starting from vertical midpoint — previously did nothing
+    # swipe down starting from vertical midpoint - previously did nothing
     mid_y = MOBILE_VIEWPORT["height"] // 2
     _swipe(page, 195, mid_y, 195, mid_y + 120)
     page.wait_for_function("() => !Settings.isOpen()", timeout=5_000)

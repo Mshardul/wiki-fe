@@ -1,4 +1,4 @@
-# Infra & Deploy — Decisions
+# Infra & Deploy - Decisions
 
 How v0 goes from zero to live. FE + BE hosting, deploy flow, backup, cost guard.
 Status: **design locked, not yet executed.** See [auth.md](./auth.md), `wiki-be/docs/_meta/decisions/backend-structure.md`, [fe-be-split.md](./fe-be-split.md).
@@ -7,29 +7,29 @@ Status: **design locked, not yet executed.** See [auth.md](./auth.md), `wiki-be/
 
 ## Order of operations
 
-1. **Repo split first** (before any BE code) — see [fe-be-split.md](./fe-be-split.md) "Commands to execute".
+1. **Repo split first** (before any BE code) - see [fe-be-split.md](./fe-be-split.md) "Commands to execute".
 2. Build BE in `wiki-be`, deploy to Fly.
 3. Deploy FE from `wiki-fe` to GitHub Pages, point at BE.
 4. Verify cross-origin cookie end-to-end.
 
 ---
 
-## BE deploy — Fly.io
+## BE deploy - Fly.io
 
 - **Containerized:** `Dockerfile` (Python + uv + FastAPI + uvicorn) + `fly.toml`.
-- **Persistent volume for SQLite** — mount at `/data`, `DATABASE_URL=sqlite:////data/wiki.db`. **Mandatory** — without a volume SQLite resets every deploy.
+- **Persistent volume for SQLite** - mount at `/data`, `DATABASE_URL=sqlite:////data/wiki.db`. **Mandatory** - without a volume SQLite resets every deploy.
 - **Secrets** via `fly secrets set` (never in repo/image), injected as env: `RESEND_API_KEY`, `SESSION_SECRET`.
 - **HTTPS** free on `*.fly.dev`. App enforces redirect + `Secure` cookie in prod (see Security guards in [auth.md](./auth.md)).
 - **Migrations:** Alembic runs on deploy via Fly **release command**, before the app starts.
-- **Single region, single machine** (free allowance). Known ceiling: SQLite + single volume binds to one machine — can't scale horizontally. Fine at this scale.
+- **Single region, single machine** (free allowance). Known ceiling: SQLite + single volume binds to one machine - can't scale horizontally. Fine at this scale.
 
-## FE deploy — GitHub Pages
+## FE deploy - GitHub Pages
 
 - Static, no build → Pages serves repo files as-is. Free, repo-native. (Netlify possible later; Pages to begin.)
 - `BACKEND_URL` hostname-detects prod fly.dev (see API client in [auth-integration.md](./auth-integration.md)).
-- **Service worker:** bump cache version on any asset-changing deploy (existing project rule) — auth adds `js/api.js` etc, so bump on first auth deploy. Also add a **proper cache expiration policy** for the SW cache (not just version-bump invalidation).
+- **Service worker:** bump cache version on any asset-changing deploy (existing project rule) - auth adds `js/api.js` etc, so bump on first auth deploy. Also add a **proper cache expiration policy** for the SW cache (not just version-bump invalidation).
 
-## Cross-origin cookie — verify end-to-end (not just configured)
+## Cross-origin cookie - verify end-to-end (not just configured)
 
 Both origins are HTTPS (Pages + Fly) → `SameSite=None; Secure` works. Confirm live:
 
@@ -40,17 +40,17 @@ Both origins are HTTPS (Pages + Fly) → `SameSite=None; Secure` works. Confirm 
 
 ## SQLite backup
 
-- **v0: manual** — copy the SQLite file off the volume occasionally. Acceptable for single user.
-- **v2: cron dump** — periodic `sqlite3 .backup` → off-box copy.
+- **v0: manual** - copy the SQLite file off the volume occasionally. Acceptable for single user.
+- **v2: cron dump** - periodic `sqlite3 .backup` → off-box copy.
 - Litestream (continuous stream to object storage) = later option if continuous PITR is wanted.
 
-## Cost guard — $0 is the floor
+## Cost guard - $0 is the floor
 
-- **Hard spend limit / billing alert in Fly dashboard** — guarantee no charge beyond the free allowance. Non-negotiable: zero bill is the baseline.
+- **Hard spend limit / billing alert in Fly dashboard** - guarantee no charge beyond the free allowance. Non-negotiable: zero bill is the baseline.
 
 ---
 
 ## Deferred
 
 - Custom domain → enables same-origin (see API client in [auth-integration.md](./auth-integration.md)) + real-user email (see Email in [auth.md](./auth.md)).
-- Litestream / richer backup; multi-region (only if scale ever demands — unlikely).
+- Litestream / richer backup; multi-region (only if scale ever demands - unlikely).

@@ -26,11 +26,11 @@
 
 ## What it is
 
-**Two pointers** places two indices into a sequence and moves them — toward each other, in the same direction, or at different speeds — so that the pair collectively narrows toward a target condition in O(n) instead of examining all O(n²) pairs.
+**Two pointers** places two indices into a sequence and moves them - toward each other, in the same direction, or at different speeds - so that the pair collectively narrows toward a target condition in O(n) instead of examining all O(n²) pairs.
 
 **Mental model:** two fingers on a number line. One on the left, one on the right. You move whichever finger doesn't help the current state. When they meet, you've seen every candidate without redundancy.
 
-> **Interview soundbite:** "Two pointers — place L and R, move whichever finger brings you closer to the target; O(n) because each pointer traverses the array at most once."
+> **Interview soundbite:** "Two pointers - place L and R, move whichever finger brings you closer to the target; O(n) because each pointer traverses the array at most once."
 
 ---
 
@@ -48,18 +48,18 @@
 
 ### (b) Structural cues
 
-- Input is a **sorted array** (or can be sorted without violating the problem) — the sorted order creates the monotonic property that makes pointer movement correct.
+- Input is a **sorted array** (or can be sorted without violating the problem) - the sorted order creates the monotonic property that makes pointer movement correct.
 - You need O(n) over a brute-force O(n²) pass over all pairs.
 - The problem has a **convergence property**: moving one pointer in a direction strictly brings you closer to the target (or rules out a range of candidates).
-- Output is a pair, triplet, or a transformed version of the array — **not** a count of all valid sub-ranges (that's prefix sum or sliding window).
+- Output is a pair, triplet, or a transformed version of the array - **not** a count of all valid sub-ranges (that's prefix sum or sliding window).
 
 ### (c) Not to be confused with
 
 | Pattern | Distinction |
 |---|---|
-| **Sliding Window** | Sliding window IS two-pointers, but the gap between L and R has semantic meaning — every element in `[L, R]` contributes to a maintained aggregate (sum, frequency map). Pure two-pointer converges toward a condition without maintaining a running state over the gap. If you don't need to know what's *between* the pointers, it's two-pointers; if you do, it's sliding window. |
+| **Sliding Window** | Sliding window IS two-pointers, but the gap between L and R has semantic meaning - every element in `[L, R]` contributes to a maintained aggregate (sum, frequency map). Pure two-pointer converges toward a condition without maintaining a running state over the gap. If you don't need to know what's *between* the pointers, it's two-pointers; if you do, it's sliding window. |
 | **Fast & Slow Pointers** | Same-direction two-pointer variant, but operates on linked lists and uses speed difference (2× vs 1×) for cycle detection. Two-pointers operates on arrays and uses position convergence. |
-| **Binary Search** | Also narrows a range on a sorted array, but by halving — O(log n) per query. Two-pointers scans — O(n) total. Use binary search when you need a single lookup; two-pointers when you need to process all pairs. |
+| **Binary Search** | Also narrows a range on a sorted array, but by halving - O(log n) per query. Two-pointers scans - O(n) total. Use binary search when you need a single lookup; two-pointers when you need to process all pairs. |
 
 ---
 
@@ -69,14 +69,14 @@
 
 Place `L = 0`, `R = n-1`. Move whichever pointer is "worse" inward. Terminates when `L ≥ R`.
 
-**Example — Two Sum on sorted array `[1, 3, 5, 7, 9]`, target = 10`:**
+**Example - Two Sum on sorted array `[1, 3, 5, 7, 9]`, target = 10`:**
 
 ```
 [1,  3,  5,  7,  9]
  L               R    sum = 1+9 = 10  ✓  found
 ```
 
-**Example — Container With Most Water `[1, 8, 6, 2, 5, 4, 8, 3, 7]`:**
+**Example - Container With Most Water `[1, 8, 6, 2, 5, 4, 8, 3, 7]`:**
 
 ```
 [1,  8,  6,  2,  5,  4,  8,  3,  7]
@@ -94,7 +94,7 @@ Place `L = 0`, `R = n-1`. Move whichever pointer is "worse" inward. Terminates w
 
 `L` = write head (next position to fill), `R` = read head (current element to evaluate). `R` scans every element; `L` advances only when it writes.
 
-**Example — Remove duplicates from `[0, 0, 1, 1, 1, 2, 2, 3, 3, 4]`:**
+**Example - Remove duplicates from `[0, 0, 1, 1, 1, 2, 2, 3, 3, 4]`:**
 
 ```
 [0, 0, 1, 1, 1, 2, 2, 3, 3, 4]
@@ -200,7 +200,7 @@ def sort_colors(nums: list[int]) -> None:
             mid += 1
         else:
             nums[mid], nums[hi] = nums[hi], nums[mid]
-            hi -= 1             # do not advance mid — swapped element unseen
+            hi -= 1             # do not advance mid - swapped element unseen
 
 
 # ── kSum scaffold (fix one pointer, recurse / two-pointer the rest) ────────
@@ -239,7 +239,7 @@ def three_sum(nums: list[int]) -> list[list[int]]:
 | Three-way partition | O(n) | O(1) | Each element classified once |
 | kSum (fix outer, two-pointer inner) | O(nᵏ⁻¹) | O(1) extra | 3Sum = O(n²), 4Sum = O(n³) |
 
-**Why O(1) space is the defining property:** two pointers never need an auxiliary array or map. This is the single biggest advantage over hash-map approaches (which are also O(n) time but O(n) space) — at n = 10⁹ in a memory-constrained environment, O(1) space is the deciding factor.
+**Why O(1) space is the defining property:** two pointers never need an auxiliary array or map. This is the single biggest advantage over hash-map approaches (which are also O(n) time but O(n) space) - at n = 10⁹ in a memory-constrained environment, O(1) space is the deciding factor.
 
 ---
 
@@ -250,7 +250,7 @@ def three_sum(nums: list[int]) -> list[list[int]]:
 | n ≤ 10⁶, sorted | "find a pair", "palindrome check", "partition" | Two pointers O(n) | Hash map O(n) space |
 | n ≤ 10⁶, unsorted | "find a pair with sum target" | Sort first O(n log n), then two-pointer | Two-pointer on unsorted (wrong) |
 | n ≤ 10⁴, unsorted, all pairs | "count pairs satisfying" | Hash map O(n) | Sorting (order may matter) |
-| n ≤ 10⁵, "contiguous subarray" | "longest/shortest/max/min window" | Sliding window (not two-pointer) | — |
+| n ≤ 10⁵, "contiguous subarray" | "longest/shortest/max/min window" | Sliding window (not two-pointer) | - |
 | n ≤ 10² (3Sum, 4Sum) | "find all triplets/quadruplets" | Fix outer pointer(s) + two-pointer | Backtracking O(n³)+ |
 | n = 10⁹ | Any pair/partition | Two pointers (O(1) space, O(n) time) | Any O(n) space structure |
 
@@ -274,7 +274,7 @@ def three_sum(nums: list[int]) -> list[list[int]]:
 
 ### 1. Meet in the middle (two-pointer on two sorted halves)
 
-**The problem:** subset-sum with n ≤ 40 — brute force is O(2ⁿ), too slow. Split into two halves of size n/2. Enumerate all 2^(n/2) ≈ 2²⁰ ≈ 10⁶ subset sums for each half. Sort one list, two-pointer the other to find pairs summing to target.
+**The problem:** subset-sum with n ≤ 40 - brute force is O(2ⁿ), too slow. Split into two halves of size n/2. Enumerate all 2^(n/2) ≈ 2²⁰ ≈ 10⁶ subset sums for each half. Sort one list, two-pointer the other to find pairs summing to target.
 
 ```python
 def meet_in_middle(nums: list[int], target: int) -> bool:
@@ -299,7 +299,7 @@ def meet_in_middle(nums: list[int], target: int) -> bool:
     return False
 ```
 
-**Why for CP:** reduces O(2ⁿ) to O(2^(n/2) · log(2^(n/2))) = O(n · 2^(n/2)) — makes n=40 feasible where n=50 is not.
+**Why for CP:** reduces O(2ⁿ) to O(2^(n/2) · log(2^(n/2))) = O(n · 2^(n/2)) - makes n=40 feasible where n=50 is not.
 
 ### 2. Three-pointer / kSum generalization
 
@@ -338,11 +338,11 @@ def four_sum(nums: list[int], target: int) -> list[list[int]]:
 
 ## Worked problems
 
-### 1. Two Sum II — Input Array Is Sorted (LC 167)
+### 1. Two Sum II - Input Array Is Sorted (LC 167)
 
 Given a 1-indexed sorted array `numbers`, find two numbers that add up to `target`. Return their indices. Constraints: `2 ≤ n ≤ 3×10⁴`, `−10³ ≤ numbers[i] ≤ 10³`, exactly one solution.
 
-**Approach:** Classic opposite-ends. If `numbers[L] + numbers[R] < target`, the sum is too small — only way to increase is move `L` right (array is sorted). If too large, move `R` left. Correctness rests entirely on the sorted order: no pointer movement discards a valid pair.
+**Approach:** Classic opposite-ends. If `numbers[L] + numbers[R] < target`, the sum is too small - only way to increase is move `L` right (array is sorted). If too large, move `R` left. Correctness rests entirely on the sorted order: no pointer movement discards a valid pair.
 
 ```python
 def two_sum_sorted(numbers: list[int], target: int) -> list[int]:
@@ -361,8 +361,8 @@ def two_sum_sorted(numbers: list[int], target: int) -> list[int]:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Two Sum IV — Input is a BST (LC 653) — same logic; in-order traversal gives sorted array, then two-pointer.
-- Sum of Square Numbers (LC 633) — two-pointer over `[0, sqrt(c)]`; `a² + b² = c`.
+- Two Sum IV - Input is a BST (LC 653) - same logic; in-order traversal gives sorted array, then two-pointer.
+- Sum of Square Numbers (LC 633) - two-pointer over `[0, sqrt(c)]`; `a² + b² = c`.
 
 ---
 
@@ -370,7 +370,7 @@ def two_sum_sorted(numbers: list[int], target: int) -> list[int]:
 
 Given array `height` of length n, find two lines that together with the x-axis form a container holding the most water. Constraints: `2 ≤ n ≤ 10⁵`, `0 ≤ height[i] ≤ 10⁴`.
 
-**Approach:** Opposite-ends with a greedy argument. Area = `min(height[L], height[R]) * (R - L)`. When we move a pointer inward, width decreases. To have any chance of improving area, we must increase the height — so always move the shorter wall. Proving this is the key interview question: *"why is it safe to discard the shorter wall?"* Because any pair that includes the shorter wall but with a different partner will have `min(height) ≤ height[shorter wall]` and smaller width.
+**Approach:** Opposite-ends with a greedy argument. Area = `min(height[L], height[R]) * (R - L)`. When we move a pointer inward, width decreases. To have any chance of improving area, we must increase the height - so always move the shorter wall. Proving this is the key interview question: *"why is it safe to discard the shorter wall?"* Because any pair that includes the shorter wall but with a different partner will have `min(height) ≤ height[shorter wall]` and smaller width.
 
 ```python
 def max_area(height: list[int]) -> int:
@@ -389,7 +389,7 @@ def max_area(height: list[int]) -> int:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Trapping Rain Water (LC 42) — harder variant; need max from both sides, can still solve with two-pointer tracking running max.
+- Trapping Rain Water (LC 42) - harder variant; need max from both sides, can still solve with two-pointer tracking running max.
 
 ---
 
@@ -397,7 +397,7 @@ def max_area(height: list[int]) -> int:
 
 Given sorted array `nums` in-place, remove duplicates so each unique element appears once. Return the count of unique elements. Constraints: `1 ≤ n ≤ 3×10⁴`.
 
-**Approach:** Same-direction write-head. `L` is the write position (next slot for a unique element). `R` scans. When `nums[R] != nums[L-1]` (new unique), write it at `L` and advance `L`. Elements at `[L:]` don't need to be cleared — the return value `L` tells the caller how many are valid.
+**Approach:** Same-direction write-head. `L` is the write position (next slot for a unique element). `R` scans. When `nums[R] != nums[L-1]` (new unique), write it at `L` and advance `L`. Elements at `[L:]` don't need to be cleared - the return value `L` tells the caller how many are valid.
 
 ```python
 def remove_duplicates(nums: list[int]) -> int:
@@ -414,8 +414,8 @@ def remove_duplicates(nums: list[int]) -> int:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Remove Duplicates from Sorted Array II (LC 80) — allow at most 2 copies; change condition to `nums[R] != nums[L-2]`.
-- Move Zeroes (LC 283) — write-head keeps non-zeros, then fill tail with zeros.
+- Remove Duplicates from Sorted Array II (LC 80) - allow at most 2 copies; change condition to `nums[R] != nums[L-2]`.
+- Move Zeroes (LC 283) - write-head keeps non-zeros, then fill tail with zeros.
 
 ---
 
@@ -453,8 +453,8 @@ def three_sum(nums: list[int]) -> list[list[int]]:
 **Complexity:** O(n²) time, O(1) extra space (sort is in-place).
 
 **Duplicate problems:**
-- 4Sum (LC 18) — add one more outer fixed pointer; O(n³).
-- 3Sum Closest (LC 16) — track closest sum instead of exact zero.
+- 4Sum (LC 18) - add one more outer fixed pointer; O(n³).
+- 3Sum Closest (LC 16) - track closest sum instead of exact zero.
 
 ---
 
@@ -462,7 +462,7 @@ def three_sum(nums: list[int]) -> list[list[int]]:
 
 Given array `height` representing an elevation map, compute how much water it can trap after raining. Constraints: `1 ≤ n ≤ 2×10⁴`, `0 ≤ height[i] ≤ 10⁵`.
 
-**Approach:** Two-pointer tracking running max from each side. Water at position `i` = `min(max_left[i], max_right[i]) − height[i]`. Instead of precomputing both arrays, use L/R pointers: if `max_left < max_right`, the water at L is determined by `max_left` (the left side is the bottleneck) — accumulate and advance L. Otherwise accumulate from R and advance R. No extra O(n) arrays needed.
+**Approach:** Two-pointer tracking running max from each side. Water at position `i` = `min(max_left[i], max_right[i]) − height[i]`. Instead of precomputing both arrays, use L/R pointers: if `max_left < max_right`, the water at L is determined by `max_left` (the left side is the bottleneck) - accumulate and advance L. Otherwise accumulate from R and advance R. No extra O(n) arrays needed.
 
 ```python
 def trap(height: list[int]) -> int:
@@ -488,13 +488,13 @@ def trap(height: list[int]) -> int:
 **Complexity:** O(n) time, O(1) space (vs O(n) for the two-array prefix-max approach).
 
 **Duplicate problems:**
-- Largest Rectangle in Histogram (LC 84) — different formulation but monotonic stack is simpler; trapping rain water is the two-pointer showcase.
+- Largest Rectangle in Histogram (LC 84) - different formulation but monotonic stack is simpler; trapping rain water is the two-pointer showcase.
 
 ---
 
 ## Pitfalls
 
-1. **Applying to unsorted input.** The opposite-ends pointer movement is only correct when the array is sorted — the monotonic property ("moving L right increases the sum") only holds in sorted order. On unsorted input, the result is wrong with no error. Sort first if needed.
+1. **Applying to unsorted input.** The opposite-ends pointer movement is only correct when the array is sorted - the monotonic property ("moving L right increases the sum") only holds in sorted order. On unsorted input, the result is wrong with no error. Sort first if needed.
 
 2. **Missing duplicate-skip logic in kSum.** After recording a valid triplet/quadruplet in 3Sum/4Sum, failing to skip equal elements for both L and R produces duplicate results. This is the most common reason a "correct" 3Sum implementation gets WA on `[-2, 0, 0, 2, 2]`.
 
@@ -502,13 +502,13 @@ def trap(height: list[int]) -> int:
 
 4. **Wrong pointer to move.** In the opposite-ends variant, when `sum < target` you must move `L` right (not `R` left). Moving the wrong pointer is a logic error that passes small test cases but fails when both pointers are near their bounds.
 
-5. **Pointer order inversion.** Forgetting `while L < R` (not `<=`) in the termination condition causes processing the same element twice when L and R converge on the same index — especially critical when elements include the search target itself.
+5. **Pointer order inversion.** Forgetting `while L < R` (not `<=`) in the termination condition causes processing the same element twice when L and R converge on the same index - especially critical when elements include the search target itself.
 
 ---
 
 ## First 30 seconds
 
-*"Two pointers — sorted array, place L and R at opposite ends, move the one that can't possibly yield a better answer. O(n) because each pointer moves at most n steps. If it's 3Sum, sort first, fix one pointer, two-pointer the rest — O(n²)."*
+*"Two pointers - sorted array, place L and R at opposite ends, move the one that can't possibly yield a better answer. O(n) because each pointer moves at most n steps. If it's 3Sum, sort first, fix one pointer, two-pointer the rest - O(n²)."*
 
 Then clarify: is the array sorted? Is it pair-finding (opposite-ends) or in-place rewriting (same-direction)?
 
@@ -516,18 +516,18 @@ Then clarify: is the array sorted? Is it pair-finding (opposite-ends) or in-plac
 
 ## Related
 
-- [Sliding Window](./sliding-window.md) — two-pointer specialization where the gap `[L, R]` has window semantics with an aggregate
-- [Fast & Slow Pointers](./fast-slow-pointers.md) — same-direction variant for cycle detection on linked lists
-- [Binary Search on Answer](./binary-search-on-answer.md) — also narrows a range, but by halving rather than scanning
-- [Sorting](../algorithms/sorting.md) — prerequisite for opposite-ends two-pointer; the sorted order is what makes convergence correct
-- [Prefix Sum](./prefix-sum.md) — alternative for pair counting problems where you need O(n) without sorting
-- [Merge Intervals](./merge-intervals.md) — uses a single scan with implicit pointer, related sweep idea
+- [Sliding Window](./sliding-window.md) - two-pointer specialization where the gap `[L, R]` has window semantics with an aggregate
+- [Fast & Slow Pointers](./fast-slow-pointers.md) - same-direction variant for cycle detection on linked lists
+- [Binary Search on Answer](./binary-search-on-answer.md) - also narrows a range, but by halving rather than scanning
+- [Sorting](../algorithms/sorting.md) - prerequisite for opposite-ends two-pointer; the sorted order is what makes convergence correct
+- [Prefix Sum](./prefix-sum.md) - alternative for pair counting problems where you need O(n) without sorting
+- [Merge Intervals](./merge-intervals.md) - uses a single scan with implicit pointer, related sweep idea
 
 ---
 
 ## Practice problems
 
-### 1. Two Sum II — Input Array Is Sorted (LC 167)
+### 1. Two Sum II - Input Array Is Sorted (LC 167)
 
 1-indexed sorted array `numbers`. Find two numbers summing to `target` and return their indices. Constraints: `2 ≤ n ≤ 3×10⁴`, exactly one solution.
 
@@ -550,8 +550,8 @@ def two_sum(numbers: list[int], target: int) -> list[int]:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Two Sum IV (LC 653) — same on BST in-order traversal.
-- Sum of Square Numbers (LC 633) — two-pointer over `[0, isqrt(c)]`.
+- Two Sum IV (LC 653) - same on BST in-order traversal.
+- Sum of Square Numbers (LC 633) - two-pointer over `[0, isqrt(c)]`.
 
 ---
 
@@ -576,8 +576,8 @@ def move_zeroes(nums: list[int]) -> None:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Remove Duplicates from Sorted Array (LC 26) — same write-head with a different keep predicate.
-- Remove Element (LC 27) — keep predicate = `nums[R] != val`.
+- Remove Duplicates from Sorted Array (LC 26) - same write-head with a different keep predicate.
+- Remove Element (LC 27) - keep predicate = `nums[R] != val`.
 
 ---
 
@@ -605,5 +605,5 @@ def is_palindrome(s: str) -> bool:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Valid Palindrome II (LC 680) — allow one deletion; try skipping L or R on mismatch, check remainder.
-- Longest Palindromic Substring (LC 5) — expand-around-center variant, not convergence.
+- Valid Palindrome II (LC 680) - allow one deletion; try skipping L or R on mismatch, check remainder.
+- Longest Palindromic Substring (LC 5) - expand-around-center variant, not convergence.

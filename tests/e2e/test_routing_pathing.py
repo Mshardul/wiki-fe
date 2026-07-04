@@ -233,7 +233,7 @@ def test_back_forward_does_not_double_render(page, base_url):
     }"""
     )
 
-    # Go forward — browser fires both popstate and hashchange
+    # Go forward - browser fires both popstate and hashchange
     page.go_forward()
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_function(

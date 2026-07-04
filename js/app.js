@@ -218,7 +218,7 @@ window.addEventListener(
         updateReadBtn();
       }
 
-      // Persist scroll position (debounced) — capture path now, not at fire time
+      // Persist scroll position (debounced) - capture path now, not at fire time
       clearTimeout(_scrollSaveTimer);
       const _pathAtScroll = state.currentFilePath;
       const _wikiAtScroll = state.currentWikiId;
@@ -403,14 +403,21 @@ window.addEventListener(
   "resize",
   () => {
     clearTimeout(_resizeTimer);
+    // Snapshot search-modal state at resize-start, not at debounce-fire — a modal
+    // opened during the debounce window (e.g. ⌘K right after a resize) must not
+    // be closed by a resize that predates it.
+    const searchWasOpenAtResizeStart = !document
+      .getElementById("global-search-modal")
+      .classList.contains("hidden");
     _resizeTimer = setTimeout(() => {
       const prevWidth = _lastViewportWidth;
       const width = window.innerWidth;
       _lastViewportWidth = width;
+      const widthChangedSignificantly = Math.abs(width - prevWidth) > 50;
 
       if (isMobileTocOpen()) closeMobileToc();
 
-      if (!document.getElementById("global-search-modal").classList.contains("hidden")) {
+      if (widthChangedSignificantly && searchWasOpenAtResizeStart) {
         closeGlobalSearch();
       }
 
@@ -420,7 +427,7 @@ window.addEventListener(
         ?.classList.remove("visible", "hover-preview--sheet-open");
 
       // Re-fit Mermaid only when the content view's width actually changed.
-      if (state.currentView === "content" && Math.abs(width - prevWidth) > 50) {
+      if (state.currentView === "content" && widthChangedSignificantly) {
         rerenderMermaidDiagrams();
       }
     }, 150);
@@ -692,9 +699,9 @@ function mountDebugOverlay() {
 
   function refresh() {
     const rows = [
-      ["View", state.currentView || "—"],
-      ["Wiki", state.currentWikiId || "—"],
-      ["File", state.currentFilePath || "—"],
+      ["View", state.currentView || "-"],
+      ["Wiki", state.currentWikiId || "-"],
+      ["File", state.currentFilePath || "-"],
       ["Wikis", String(WIKIS.length)],
       ["SW", "serviceWorker" in navigator ? "supported" : "none"],
       ["Cache API", "caches" in window ? "supported" : "none"],
@@ -726,8 +733,9 @@ function mountDebugOverlay() {
   initOsThemeListener();
 
   // async; fires GET /auth/me, pulls data, refreshes UI + re-renders when done.
-  // Not awaited — boot/render proceeds anonymously, re-renders on wiki:session-changed.
+  // Not awaited - boot/render proceeds anonymously, re-renders on wiki:session-changed.
   Auth.init();
+  Auth.handleBootParams();
   initProgressRingScrollTop();
 
   if ("serviceWorker" in navigator) {

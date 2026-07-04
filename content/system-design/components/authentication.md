@@ -28,13 +28,13 @@
 
 ## TLDR
 
-Authentication is the process of verifying who a principal is — session-based and token-based are the two implementation families, and OAuth 2.0 + OIDC is the delegation and federated identity layer built on top. The core architectural decision is stateful vs stateless: sessions are server-side state with instant revocability; JWTs are self-contained tokens that verify without a database lookup but cannot be revoked before expiry. OAuth 2.0 is a delegated authorization framework, not an authentication protocol — OIDC adds the identity layer on top. In production, the hard problems are not choosing a pattern but the failure modes that emerge from it: session fixation, JWT revocation gaps, OAuth implicit flow token leakage, and refresh token theft with reuse detection.
+Authentication is the process of verifying who a principal is - session-based and token-based are the two implementation families, and OAuth 2.0 + OIDC is the delegation and federated identity layer built on top. The core architectural decision is stateful vs stateless: sessions are server-side state with instant revocability; JWTs are self-contained tokens that verify without a database lookup but cannot be revoked before expiry. OAuth 2.0 is a delegated authorization framework, not an authentication protocol - OIDC adds the identity layer on top. In production, the hard problems are not choosing a pattern but the failure modes that emerge from it: session fixation, JWT revocation gaps, OAuth implicit flow token leakage, and refresh token theft with reuse detection.
 
 ---
 
 ## Quick Decision Guide
 
-**Interviewer TL;DR:** Pattern selection comes before mechanics. Establish the client type and revocation tolerance first — those two answers eliminate most wrong choices before the design discussion starts.
+**Interviewer TL;DR:** Pattern selection comes before mechanics. Establish the client type and revocation tolerance first - those two answers eliminate most wrong choices before the design discussion starts.
 
 **Mental model:** Auth pattern selection is a three-axis decision: who is the client (browser / mobile / service), who owns the identity (you or a third party), and how quickly must access be revocable.
 
@@ -54,7 +54,7 @@ Who is the client?
   │                                         (simpler, instant revocation, fits monoliths)
   │
   ├─ Mobile / native app (no server-side backend)
-  │    └──▶ OAuth 2.0 + OIDC — Authorization Code Flow + PKCE
+  │    └──▶ OAuth 2.0 + OIDC - Authorization Code Flow + PKCE
   │           (PKCE replaces the client secret, which cannot be stored safely in a native app)
   │
   └─ Machine-to-machine (no human user)
@@ -101,26 +101,26 @@ Does the flow involve a human user?
                                           └──▶ Authorization Code Flow + PKCE
                                                 (no client secret; code verifier proves intent)
 
-  ⚠  Implicit Flow — deprecated. Access token exposed in URL fragment.
+  ⚠  Implicit Flow - deprecated. Access token exposed in URL fragment.
                       Do not use in new systems.
 ```
 
 > ⚖️ **Decision Framework**
-> The two questions that eliminate the most wrong answers in an interview: (1) "Does a human log in, or is this service-to-service?" and (2) "Can you tolerate a window where a revoked credential still has a valid token?" If (2) is no — sessions. If yes but you need cross-service verification — JWTs with short expiry. If a third party owns the identity — OAuth + OIDC.
+> The two questions that eliminate the most wrong answers in an interview: (1) "Does a human log in, or is this service-to-service?" and (2) "Can you tolerate a window where a revoked credential still has a valid token?" If (2) is no - sessions. If yes but you need cross-service verification - JWTs with short expiry. If a third party owns the identity - OAuth + OIDC.
 
-**Key Takeaway:** Client type and revocation tolerance are the two load-bearing decisions. Everything else — signing algorithms, storage location, grant type — is downstream of these.
+**Key Takeaway:** Client type and revocation tolerance are the two load-bearing decisions. Everything else - signing algorithms, storage location, grant type - is downstream of these.
 
 ---
 
 ## Conceptual Foundations
 
-**Interviewer TL;DR:** Authentication (who are you?) and authorization (what can you do?) are separate layers — conflating them is the most common design mistake. Get the vocabulary right before discussing mechanisms.
+**Interviewer TL;DR:** Authentication (who are you?) and authorization (what can you do?) are separate layers - conflating them is the most common design mistake. Get the vocabulary right before discussing mechanisms.
 
 **Mental model:** Every secured request has three steps in sequence: establish identity (authentication), determine permissions (authorization), enforce access (policy). Each step builds on the previous one; none can substitute for another.
 
 ### AuthN vs AuthZ
 
-**Authentication (AuthN):** Verifies the identity of a principal. Output is a verified identity — "this request comes from user ID 42." Says nothing about what that user is allowed to do.
+**Authentication (AuthN):** Verifies the identity of a principal. Output is a verified identity - "this request comes from user ID 42." Says nothing about what that user is allowed to do.
 
 **Authorization (AuthZ):** Determines what an authenticated principal is permitted to do. Given "user ID 42 is authenticated," authorization decides "user ID 42 can read posts but not delete them."
 
@@ -132,22 +132,22 @@ Does the flow involve a human user?
 | Failure mode | Impersonation                      | Privilege escalation                  |
 
 > ⚠️ **Warning / Gotcha**
-> OAuth 2.0 is a delegated authorization framework, not an authentication protocol. Using an OAuth access token to answer "who is this user?" without OIDC is a common and exploitable mistake — covered in [OAuth 2.0 & OIDC](#oauth-20--oidc).
+> OAuth 2.0 is a delegated authorization framework, not an authentication protocol. Using an OAuth access token to answer "who is this user?" without OIDC is a common and exploitable mistake - covered in [OAuth 2.0 & OIDC](#oauth-20--oidc).
 
 For the full authorization treatment (RBAC, ABAC, Zanzibar) see `authorization.md`. <!-- link: ./authorization.md -->
 
 > 🎯 **Interview Lens** > **Q:** What's the difference between authentication and authorization?
-> **Ideal answer:** Authentication establishes identity — "this request comes from user 42." Authorization decides what that identity can do — "user 42 can read posts but not delete them." They're separate layers: auth without authz means you know who someone is but haven't decided what they're allowed to do. Confusing the two is how privilege escalation bugs happen — the system authenticates correctly but skips the authz check on a sensitive endpoint.
-> **Common trap:** "OAuth handles authentication." OAuth is authorization — it grants access to resources. OIDC is the identity layer on top. Using an OAuth access token to answer "who is this user?" is a design error.
-> **Next question:** "Where does JWT fit in — authentication or authorization?" → Both, depending on claims. The signature verifies the token's issuer (authentication). The `roles` or `scope` claims inside inform access decisions (authorization). The token is an authentication artifact; its contents feed authorization.
+> **Ideal answer:** Authentication establishes identity - "this request comes from user 42." Authorization decides what that identity can do - "user 42 can read posts but not delete them." They're separate layers: auth without authz means you know who someone is but haven't decided what they're allowed to do. Confusing the two is how privilege escalation bugs happen - the system authenticates correctly but skips the authz check on a sensitive endpoint.
+> **Common trap:** "OAuth handles authentication." OAuth is authorization - it grants access to resources. OIDC is the identity layer on top. Using an OAuth access token to answer "who is this user?" is a design error.
+> **Next question:** "Where does JWT fit in - authentication or authorization?" → Both, depending on claims. The signature verifies the token's issuer (authentication). The `roles` or `scope` claims inside inform access decisions (authorization). The token is an authentication artifact; its contents feed authorization.
 
 ### Identity, Principals, Claims
 
-**Principal:** Any entity that can be authenticated — a human user, a service, a device, or a background job.
+**Principal:** Any entity that can be authenticated - a human user, a service, a device, or a background job.
 
-**Identity:** The set of verified attributes that uniquely identify a principal. Not a username — a stable, unique identifier (typically a UUID) plus associated attributes.
+**Identity:** The set of verified attributes that uniquely identify a principal. Not a username - a stable, unique identifier (typically a UUID) plus associated attributes.
 
-**Credential:** The proof a principal presents to assert its identity — passwords, tokens, certificates. Credentials are ephemeral; compromising one compromises the identity until rotated or revoked.
+**Credential:** The proof a principal presents to assert its identity - passwords, tokens, certificates. Credentials are ephemeral; compromising one compromises the identity until rotated or revoked.
 
 **Claims:** Key-value assertions about a principal, embedded in a token or session:
 
@@ -155,10 +155,10 @@ For the full authorization treatment (RBAC, ABAC, Zanzibar) see `authorization.m
 - **Authorization claims:** `roles`, `scopes`, `permissions`
 - **Token metadata claims:** `iss` (issuer), `aud` (audience), `exp` (expiry), `iat` (issued at)
 
-Claims are _assertions_, not verified facts — the consumer must trust the issuer. A JWT's `email` claim is only as trustworthy as the signing key that produced it.
+Claims are _assertions_, not verified facts - the consumer must trust the issuer. A JWT's `email` claim is only as trustworthy as the signing key that produced it.
 
 > 🧠 **Thought Process**
-> Separate identity claims from authorization claims. Identity claims (who) are stable. Authorization claims (what they can do) change as roles evolve. A long-lived token with embedded role claims goes stale the moment permissions change — this is why short expiry or permission-free tokens with server-side lookups are often the right call for permission-sensitive systems.
+> Separate identity claims from authorization claims. Identity claims (who) are stable. Authorization claims (what they can do) change as roles evolve. A long-lived token with embedded role claims goes stale the moment permissions change - this is why short expiry or permission-free tokens with server-side lookups are often the right call for permission-sensitive systems.
 
 ### Stateful vs Stateless Auth
 
@@ -175,10 +175,10 @@ Client ──[session_id cookie]──▶ Server
 ```
 
 - Verification cost: one store lookup per request (~1ms)
-- Revocation: instant — delete the session record
+- Revocation: instant - delete the session record
 - Scaling: session store must be shared across all server instances
 
-**Stateless (token-based):** All auth information is encoded in the token itself. The server verifies the token cryptographically — no external lookup.
+**Stateless (token-based):** All auth information is encoded in the token itself. The server verifies the token cryptographically - no external lookup.
 
 ```text
 Client ──[JWT in Authorization header]──▶ Server
@@ -205,15 +205,15 @@ Client ──[JWT in Authorization header]──▶ Server
 >
 > Neither is universally superior. The decision follows from revocability requirements and service topology.
 
-**Key Takeaway:** AuthN and AuthZ are separate layers — design them separately. Stateful vs stateless is an architectural trade-off, not a quality one: stateless wins on scalability and cross-service use; stateful wins on instant revocability.
+**Key Takeaway:** AuthN and AuthZ are separate layers - design them separately. Stateful vs stateless is an architectural trade-off, not a quality one: stateless wins on scalability and cross-service use; stateful wins on instant revocability.
 
 ---
 
 ## Session-Based Authentication
 
-**Interviewer TL;DR:** Sessions are server-side state keyed by an opaque ID sent in a cookie. The critical scaling problem is sharing that state across instances — Redis is the standard answer. The critical security problem is regenerating the session ID on login to prevent session fixation.
+**Interviewer TL;DR:** Sessions are server-side state keyed by an opaque ID sent in a cookie. The critical scaling problem is sharing that state across instances - Redis is the standard answer. The critical security problem is regenerating the session ID on login to prevent session fixation.
 
-**Mental model:** A session is a named slot in server memory. The cookie is just the key to that slot — it carries no information itself, which is both its security strength (nothing to forge) and its operational cost (every request needs a store lookup).
+**Mental model:** A session is a named slot in server memory. The cookie is just the key to that slot - it carries no information itself, which is both its security strength (nothing to forge) and its operational cost (every request needs a store lookup).
 
 ### How It Works
 
@@ -242,7 +242,7 @@ Client ──[JWT in Authorization header]──▶ Server
 7. Logout: server deletes session record → cookie becomes orphaned → access revoked immediately
 ```
 
-One property worth emphasising: the session ID is opaque — it encodes nothing. An attacker who intercepts it can replay it, but cannot forge a different one or extract information from it. All sensitive data lives server-side.
+One property worth emphasising: the session ID is opaque - it encodes nothing. An attacker who intercepts it can replay it, but cannot forge a different one or extract information from it. All sensitive data lives server-side.
 
 ### Session Storage
 
@@ -265,7 +265,7 @@ GET session:abc123
 DEL session:abc123   # logout
 ```
 
-Cluster Redis for HA. Use Redis Sentinel or Redis Cluster depending on write volume. The session store is a critical path dependency — its failure equals a site-wide logout.
+Cluster Redis for HA. Use Redis Sentinel or Redis Cluster depending on write volume. The session store is a critical path dependency - its failure equals a site-wide logout.
 
 #### Database (PostgreSQL / MySQL)
 
@@ -279,11 +279,11 @@ Acceptable for low-traffic admin systems or when session reads are infrequent. N
 | Redis     | ~0.3ms  | Yes (with persistence) | Yes                     | Production default        |
 | DB        | ~5–15ms | Yes                    | Yes                     | Low-traffic / audit needs |
 
-### Cookies — HttpOnly, Secure, SameSite
+### Cookies - HttpOnly, Secure, SameSite
 
 The session cookie is the attack surface. Each attribute closes a specific vector.
 
-**`HttpOnly`:** Prevents JavaScript from reading the cookie via `document.cookie`. Eliminates session theft via XSS — a script injected by an attacker cannot extract the session ID.
+**`HttpOnly`:** Prevents JavaScript from reading the cookie via `document.cookie`. Eliminates session theft via XSS - a script injected by an attacker cannot extract the session ID.
 
 **`Secure`:** Cookie is only transmitted over HTTPS. Prevents the session ID from being sent over plaintext HTTP, which would expose it to network-level interception.
 
@@ -291,19 +291,19 @@ The session cookie is the attack surface. Each attribute closes a specific vecto
 
 | Value    | When Cookie Is Sent                             | CSRF Protection | Notes                                                               |
 | -------- | ----------------------------------------------- | --------------- | ------------------------------------------------------------------- |
-| `Strict` | Same-origin requests only                       | Full            | Breaks OAuth redirect flows — user returning from IdP loses session |
+| `Strict` | Same-origin requests only                       | Full            | Breaks OAuth redirect flows - user returning from IdP loses session |
 | `Lax`    | Same-origin + top-level navigations (GET links) | Partial         | Modern browser default; protects against most CSRF                  |
 | `None`   | All requests, including cross-origin            | None            | Requires `Secure`; needed for embedded iframes, third-party auth    |
 
 **`Lax` is the right default** for most session cookies. `Strict` breaks common auth redirect patterns. `None` is required only for cross-origin embedded contexts.
 
-**`Domain` and `Path`:** Scope the cookie to specific subdomains or URL paths. A session cookie scoped to `.example.com` is shared across `api.example.com` and `app.example.com` — useful for SSO across subdomains but widens the exposure surface.
+**`Domain` and `Path`:** Scope the cookie to specific subdomains or URL paths. A session cookie scoped to `.example.com` is shared across `api.example.com` and `app.example.com` - useful for SSO across subdomains but widens the exposure surface.
 
-> ⚠️ **Warning / Gotcha** > `SameSite=Strict` is frequently suggested as "more secure" in interviews. The correct answer is that it breaks OAuth and SAML redirect flows — the user is redirected back from the IdP to your app, which is technically a cross-site navigation, and the session cookie is not sent. The user appears logged out immediately after being redirected back from login. `Lax` provides meaningful CSRF protection without breaking these flows.
+> ⚠️ **Warning / Gotcha** > `SameSite=Strict` is frequently suggested as "more secure" in interviews. The correct answer is that it breaks OAuth and SAML redirect flows - the user is redirected back from the IdP to your app, which is technically a cross-site navigation, and the session cookie is not sent. The user appears logged out immediately after being redirected back from login. `Lax` provides meaningful CSRF protection without breaking these flows.
 
 ### Tradeoffs & Scaling Challenges
 
-#### Horizontal Scaling — Sticky Sessions vs Shared Store
+#### Horizontal Scaling - Sticky Sessions vs Shared Store
 
 With multiple server instances, session lookup fails if the request lands on an instance that doesn't have the session.
 
@@ -311,7 +311,7 @@ With multiple server instances, session lookup fails if the request lands on an 
 
 Problems: defeats load balancing (one overloaded instance, others idle), instance failure loses all sessions pinned to it, doesn't work with auto-scaling where instances appear and disappear.
 
-**Shared session store (Redis):** All instances read from the same store. Stateless backends — any instance handles any request. This is the correct approach for horizontally scaled systems.
+**Shared session store (Redis):** All instances read from the same store. Stateless backends - any instance handles any request. This is the correct approach for horizontally scaled systems.
 
 #### Session Fixation
 
@@ -333,14 +333,14 @@ Attacker steals a valid session cookie (via XSS, network interception, or log ex
 
 Mitigations in order of effectiveness:
 
-1. `HttpOnly` + `Secure` flags — close the two primary theft vectors
-2. Short session TTL — limits the window of a stolen session
-3. Absolute expiry + idle timeout — cap the maximum session lifetime regardless of activity
-4. Rotate session ID on privilege change (password update, role change) — reduces exposure window after partial compromise
+1. `HttpOnly` + `Secure` flags - close the two primary theft vectors
+2. Short session TTL - limits the window of a stolen session
+3. Absolute expiry + idle timeout - cap the maximum session lifetime regardless of activity
+4. Rotate session ID on privilege change (password update, role change) - reduces exposure window after partial compromise
 
 > 🎯 **Interview Lens** > **Q:** How do you handle session management in a horizontally-scaled system?
-> **Ideal answer:** Move session state out of the application process into a shared external store — Redis is the standard. All instances read from the same Redis cluster; any instance can serve any request. Sticky sessions are an anti-pattern: they defeat load balancing and cause session loss on instance failure.
-> **Common trap:** "Use sticky sessions." Interviewers follow up with "what happens when that instance goes down?" — the candidate then has no answer.
+> **Ideal answer:** Move session state out of the application process into a shared external store - Redis is the standard. All instances read from the same Redis cluster; any instance can serve any request. Sticky sessions are an anti-pattern: they defeat load balancing and cause session loss on instance failure.
+> **Common trap:** "Use sticky sessions." Interviewers follow up with "what happens when that instance goes down?" - the candidate then has no answer.
 > **Next question:** "The Redis session store goes down. What happens?" → Every user is effectively logged out on their next request. Mitigation: Redis HA (Sentinel / Cluster), circuit breaker to degrade gracefully, or a fallback to allow read-only access for cached sessions.
 
 **Key Takeaway:** Sessions are operationally simple but require a shared store to scale horizontally. Redis is the default. The two non-negotiable security rules: always regenerate session ID on login (fixation), always set `HttpOnly` + `Secure` on the cookie (hijacking).
@@ -349,17 +349,17 @@ Mitigations in order of effectiveness:
 
 ## Token-Based Authentication
 
-**Interviewer TL;DR:** A JWT is a signed JSON payload — the signature lets any service verify it without calling back to the issuer. The hard problems are not the format but the consequences of statelessness: you cannot revoke a JWT before it expires, key rotation requires coordination, and two widely-exploited vulnerabilities (`alg:none` and algorithm confusion) come from trusting the token's own header.
+**Interviewer TL;DR:** A JWT is a signed JSON payload - the signature lets any service verify it without calling back to the issuer. The hard problems are not the format but the consequences of statelessness: you cannot revoke a JWT before it expires, key rotation requires coordination, and two widely-exploited vulnerabilities (`alg:none` and algorithm confusion) come from trusting the token's own header.
 
-**Mental model:** A JWT is a tamper-evident envelope. Anyone who trusts the issuer's public key can open it and read the claims — but they must verify the seal before trusting what's inside.
+**Mental model:** A JWT is a tamper-evident envelope. Anyone who trusts the issuer's public key can open it and read the claims - but they must verify the seal before trusting what's inside.
 
 ### Structure, Signing Algorithms & JWKS
 
 _Three base64url segments: `header.payload.signature`. The header names the algorithm and key ID; the payload carries signed claims; the signature proves neither was tampered with._
 
-A JWT is **signed, not encrypted** — the payload is base64url-encoded and readable by anyone who intercepts the token. For full anatomy, algorithm selection (HS256 / RS256 / ES256), JWKS endpoint mechanics, and zero-downtime key rotation, see [JWT](./jwt.md).
+A JWT is **signed, not encrypted** - the payload is base64url-encoded and readable by anyone who intercepts the token. For full anatomy, algorithm selection (HS256 / RS256 / ES256), JWKS endpoint mechanics, and zero-downtime key rotation, see [JWT](./jwt.md).
 
-The one decision that matters most here: **use asymmetric keys (RS256 or ES256) for any multi-service system**. With a symmetric key (HS256), any service that can verify a token can also forge one — a single compromised service can mint tokens for any user.
+The one decision that matters most here: **use asymmetric keys (RS256 or ES256) for any multi-service system**. With a symmetric key (HS256), any service that can verify a token can also forge one - a single compromised service can mint tokens for any user.
 
 ### Claims
 
@@ -373,11 +373,11 @@ The one decision that matters most here: **use asymmetric keys (RS256 or ES256) 
 | `exp` | Expiration | Unix timestamp after which the token is invalid       |
 | `nbf` | Not Before | Unix timestamp before which the token is invalid      |
 | `iat` | Issued At  | Unix timestamp of issuance                            |
-| `jti` | JWT ID     | Unique ID for this token — used for replay prevention |
+| `jti` | JWT ID     | Unique ID for this token - used for replay prevention |
 
 **Public claims:** Custom claims registered with IANA or using collision-resistant URIs (`https://example.com/roles`). Safe to use across systems.
 
-**Private claims:** Agreed-upon between specific parties. Not registered, no collision protection — fine within a closed system, problematic when tokens cross system boundaries.
+**Private claims:** Agreed-upon between specific parties. Not registered, no collision protection - fine within a closed system, problematic when tokens cross system boundaries.
 
 > ⚠️ **Warning / Gotcha**
 > Always validate `aud`. A token issued for `api.example.com` should be rejected by `admin.example.com`. Many libraries skip audience validation unless explicitly configured. An attacker who obtains a token for a low-privilege service can replay it against a higher-privilege service if `aud` is not checked.
@@ -403,9 +403,9 @@ A JWT is valid until `exp`. If a user is banned, their account deleted, or their
 
 Mitigations:
 
-- Short-lived access tokens (15 min) — limits the window, doesn't eliminate it
-- Token blocklist in Redis — check `jti` against a blocklist on each request. Reintroduces I/O on the verification path, partially negating the stateless benefit. Justified for high-security actions (admin operations, financial transactions).
-- Per-user token version counter — store a `token_version` in the user record; embed it in the JWT. On verification, check that the JWT's version matches the DB. Forced logout increments the counter. One DB read per request, but a single field rather than a full session lookup.
+- Short-lived access tokens (15 min) - limits the window, doesn't eliminate it
+- Token blocklist in Redis - check `jti` against a blocklist on each request. Reintroduces I/O on the verification path, partially negating the stateless benefit. Justified for high-security actions (admin operations, financial transactions).
+- Per-user token version counter - store a `token_version` in the user record; embed it in the JWT. On verification, check that the JWT's version matches the DB. Forced logout increments the counter. One DB read per request, but a single field rather than a full session lookup.
 
 #### Clock Skew
 
@@ -415,38 +415,38 @@ Standard practice: add a small `leeway` (30–60 seconds) to the expiry check. A
 
 #### `alg:none` Attack
 
-The JWT header specifies the algorithm. Some libraries, if not explicitly configured, accept `alg: "none"` — meaning no signature is required. An attacker changes the header to `{"alg":"none"}`, strips the signature, and the library accepts the forged token.
+The JWT header specifies the algorithm. Some libraries, if not explicitly configured, accept `alg: "none"` - meaning no signature is required. An attacker changes the header to `{"alg":"none"}`, strips the signature, and the library accepts the forged token.
 
 **Fix:** Always explicitly specify the allowed algorithm(s) in the verifier configuration. Never accept `alg: "none"`.
 
 ```python
-# WRONG — trusts the token's own alg header
+# WRONG - trusts the token's own alg header
 jwt.decode(token, key)
 
-# RIGHT — caller dictates allowed algorithms
+# RIGHT - caller dictates allowed algorithms
 jwt.decode(token, key, algorithms=["RS256"])
 ```
 
 #### Algorithm Confusion Attack
 
-Attacker changes `alg` from `RS256` to `HS256` in the token header and re-signs the payload using the server's _public key_ as the HMAC secret (the public key is known — it's at the JWKS endpoint). If the library reads the algorithm from the token header and switches to symmetric verification, it uses the public key as the HMAC secret and the signature validates.
+Attacker changes `alg` from `RS256` to `HS256` in the token header and re-signs the payload using the server's _public key_ as the HMAC secret (the public key is known - it's at the JWKS endpoint). If the library reads the algorithm from the token header and switches to symmetric verification, it uses the public key as the HMAC secret and the signature validates.
 
-**Fix:** Same as above — always hardcode the allowed algorithm(s) in the verifier. Never allow the token to dictate its own verification algorithm.
+**Fix:** Same as above - always hardcode the allowed algorithm(s) in the verifier. Never allow the token to dictate its own verification algorithm.
 
 > 🎯 **Interview Lens** > **Q:** How would you revoke a JWT before it expires?
-> **Ideal answer:** Three options with different trade-offs. (1) Short-lived tokens (15 min) — accept the revocation gap, keep the system stateless. (2) `jti` blocklist in Redis — check on every request; instant revocation but adds I/O. (3) Token version counter in the user record — one DB read per request to check version; revoke all tokens for a user by incrementing the counter. Choose based on security requirements: (1) for most APIs, (2) for high-security actions, (3) as a middle ground.
-> **Common trap:** "Just set a very short expiry." The interviewer follows up: "What's the minimum expiry where the system still works?" — with refresh tokens, 15 minutes is viable; without them, short expiry is unusable.
+> **Ideal answer:** Three options with different trade-offs. (1) Short-lived tokens (15 min) - accept the revocation gap, keep the system stateless. (2) `jti` blocklist in Redis - check on every request; instant revocation but adds I/O. (3) Token version counter in the user record - one DB read per request to check version; revoke all tokens for a user by incrementing the counter. Choose based on security requirements: (1) for most APIs, (2) for high-security actions, (3) as a middle ground.
+> **Common trap:** "Just set a very short expiry." The interviewer follows up: "What's the minimum expiry where the system still works?" - with refresh tokens, 15 minutes is viable; without them, short expiry is unusable.
 > **Next question:** "How do you rotate the signing key without logging everyone out?" → Publish new key at JWKS endpoint alongside old key, switch signing to new key, wait for all tokens signed with old key to expire (one `exp` window), then remove old key. The `kid` header on each token tells the verifier which key to use.
 
-**Key Takeaway:** JWTs trade revocability for scalability. The two production decisions that matter most: use asymmetric keys (RS256/ES256) for any multi-service architecture, and always pin the allowed algorithm in the verifier — never let the token dictate its own verification.
+**Key Takeaway:** JWTs trade revocability for scalability. The two production decisions that matter most: use asymmetric keys (RS256/ES256) for any multi-service architecture, and always pin the allowed algorithm in the verifier - never let the token dictate its own verification.
 
 ---
 
 ## OAuth 2.0 & OIDC
 
-**Interviewer TL;DR:** OAuth 2.0 is a delegated authorization framework — it lets a user grant a third-party application access to their resources without sharing their password. It does not authenticate the user. OpenID Connect is the identity layer built on top that adds authentication. Know the flows, know why Implicit is deprecated, and know the `aud` validation rule that separates secure OIDC from insecure OAuth-as-auth.
+**Interviewer TL;DR:** OAuth 2.0 is a delegated authorization framework - it lets a user grant a third-party application access to their resources without sharing their password. It does not authenticate the user. OpenID Connect is the identity layer built on top that adds authentication. Know the flows, know why Implicit is deprecated, and know the `aud` validation rule that separates secure OIDC from insecure OAuth-as-auth.
 
-**Mental model:** OAuth is a valet key — it gives a third party limited, scoped access to your resources without handing over the master key. OIDC extends this by also telling the third party who you are.
+**Mental model:** OAuth is a valet key - it gives a third party limited, scoped access to your resources without handing over the master key. OIDC extends this by also telling the third party who you are.
 
 ### Core Roles
 
@@ -457,7 +457,7 @@ Attacker changes `alg` from `RS256` to `HS256` in the token header and re-signs 
 | **Authorization Server (AS)** | Authenticates the user, issues tokens                  | Google, GitHub, Auth0, your own IdP |
 | **Resource Server (RS)**      | Hosts the protected resources, validates access tokens | Your API, Google Drive API          |
 
-The Client and Resource Server are often owned by the same org. The Authorization Server can be external (federated identity) or internal (your own auth service). What matters architecturally: the AS is the trust anchor — every other component trusts what the AS asserts.
+The Client and Resource Server are often owned by the same org. The Authorization Server can be external (federated identity) or internal (your own auth service). What matters architecturally: the AS is the trust anchor - every other component trusts what the AS asserts.
 
 ### Authorization Code Flow + PKCE
 
@@ -504,9 +504,9 @@ _The correct flow for any client that handles a human user, whether or not it ha
    }
 ```
 
-The authorization code (step 3) travels through the browser URL — visible in history and server logs. It is intentionally short-lived (typically 60 seconds) and single-use. The access token never touches the browser URL.
+The authorization code (step 3) travels through the browser URL - visible in history and server logs. It is intentionally short-lived (typically 60 seconds) and single-use. The access token never touches the browser URL.
 
-#### PKCE — Proof Key for Code Exchange
+#### PKCE - Proof Key for Code Exchange
 
 PKCE solves the **authorization code interception attack**: a malicious app on the same device intercepts the redirect URI and steals the authorization code.
 
@@ -520,12 +520,12 @@ Step 4: client sends code_verifier to AS
 AS verification: SHA256(received_verifier) == stored_challenge?
 ```
 
-Even if an attacker intercepts the authorization code, they cannot exchange it without the `code_verifier` — which was never transmitted. The AS rejects the exchange.
+Even if an attacker intercepts the authorization code, they cannot exchange it without the `code_verifier` - which was never transmitted. The AS rejects the exchange.
 
 PKCE was originally designed for public clients (mobile, SPA) where a client secret cannot be safely stored. It is now recommended for all clients, including confidential ones with server-side backends.
 
 > 🧠 **Thought Process**
-> The `state` parameter is not optional. It binds the callback to the specific request that initiated the flow — if a response arrives without a matching `state`, the client must reject it. This prevents CSRF on the callback endpoint: an attacker cannot trick the user's browser into completing a login with the attacker's authorization code, which would bind the victim's session to the attacker's identity (account linkage attack).
+> The `state` parameter is not optional. It binds the callback to the specific request that initiated the flow - if a response arrives without a matching `state`, the client must reject it. This prevents CSRF on the callback endpoint: an attacker cannot trick the user's browser into completing a login with the attacker's authorization code, which would bind the victim's session to the attacker's identity (account linkage attack).
 
 ### Client Credentials Flow
 
@@ -543,11 +543,11 @@ Client                         Authorization Server
   │◀─ { access_token, expires_in } ──  │
 ```
 
-No redirect, no consent screen, no user context. The token is scoped to what the client application is allowed to do — not tied to any user identity.
+No redirect, no consent screen, no user context. The token is scoped to what the client application is allowed to do - not tied to any user identity.
 
 Use for: background jobs, microservice-to-microservice calls when services live in different trust domains, scheduled data exports.
 
-Do not use when a user action is involved — the token won't carry user identity and access decisions will be made in the client's context, not the user's.
+Do not use when a user action is involved - the token won't carry user identity and access decisions will be made in the client's context, not the user's.
 
 ### Device Authorization Flow
 
@@ -584,11 +584,11 @@ _For input-constrained devices that cannot open a browser (smart TV, CLI, IoT)._
 4. User goes to verification_uri on phone/laptop, enters user_code, authenticates, approves.
 ```
 
-The `user_code` is intentionally short and human-typeable. The `device_code` is the machine-readable half — never displayed to the user.
+The `user_code` is intentionally short and human-typeable. The `device_code` is the machine-readable half - never displayed to the user.
 
-### Implicit Flow — Why It's Deprecated
+### Implicit Flow - Why It's Deprecated
 
-_The access token lands in the URL fragment — browser history, server logs, and every script on the page can read it._
+_The access token lands in the URL fragment - browser history, server logs, and every script on the page can read it._
 
 The Implicit Flow was designed for SPAs before PKCE existed. Instead of a code that gets exchanged, the access token is returned directly in the URL fragment after the redirect.
 
@@ -601,26 +601,26 @@ GET https://app.example.com/callback
 
 **Why this is a problem:**
 
-1. **Fragment in browser history** — the access token is stored in the browser's navigation history. Anyone with access to the browser (shared machine, browser sync) has the token.
-2. **Logged by referrer headers** — if the page loaded after the redirect makes any external requests, the fragment can appear in server logs via the `Referer` header.
-3. **Accessible to all scripts on the page** — `location.hash` is readable by any JavaScript running on the page, including third-party analytics or CDN-hosted libraries.
-4. **No refresh tokens** — the flow was designed to be short-lived; refresh tokens were considered too risky for public clients.
-5. **No back-channel exchange** — the token is issued without any proof that the right party received it (no code verifier, no client secret).
+1. **Fragment in browser history** - the access token is stored in the browser's navigation history. Anyone with access to the browser (shared machine, browser sync) has the token.
+2. **Logged by referrer headers** - if the page loaded after the redirect makes any external requests, the fragment can appear in server logs via the `Referer` header.
+3. **Accessible to all scripts on the page** - `location.hash` is readable by any JavaScript running on the page, including third-party analytics or CDN-hosted libraries.
+4. **No refresh tokens** - the flow was designed to be short-lived; refresh tokens were considered too risky for public clients.
+5. **No back-channel exchange** - the token is issued without any proof that the right party received it (no code verifier, no client secret).
 
 Authorization Code + PKCE solves all of these: the access token is exchanged via a POST request to the token endpoint (not the browser URL), and PKCE proves the right client is performing the exchange.
 
 > ⚠️ **Warning / Gotcha**
 > You will still encounter Implicit Flow in legacy systems and older documentation. The RFC was updated (OAuth 2.0 Security Best Current Practice) to explicitly state it should not be used for new deployments. If a system you are reviewing uses `response_type=token`, flag it.
 
-### OpenID Connect — ID Token vs Access Token
+### OpenID Connect - ID Token vs Access Token
 
 _OIDC adds authentication on top of OAuth's authorization: the ID token tells the client who the user is; the access token tells the resource server what the client can do._
 
 OIDC is a thin layer on top of OAuth 2.0. It adds:
 
-1. **ID Token** — a JWT containing identity claims about the authenticated user
-2. **UserInfo Endpoint** — returns additional user claims given an access token
-3. **Discovery Document** — `/.well-known/openid-configuration` — machine-readable metadata (endpoints, supported algorithms, supported scopes)
+1. **ID Token** - a JWT containing identity claims about the authenticated user
+2. **UserInfo Endpoint** - returns additional user claims given an access token
+3. **Discovery Document** - `/.well-known/openid-configuration` - machine-readable metadata (endpoints, supported algorithms, supported scopes)
 
 The critical distinction between the two tokens:
 
@@ -635,16 +635,16 @@ The critical distinction between the two tokens:
 
 The ID token is for the client. The access token is for the resource server. They should never be used interchangeably.
 
-**Nonce:** A random value included in the authorization request and embedded in the ID token. The client verifies the nonce in the received ID token matches what it sent. This binds the ID token to a specific authentication request — preventing replay attacks where an old ID token is reused.
+**Nonce:** A random value included in the authorization request and embedded in the ID token. The client verifies the nonce in the received ID token matches what it sent. This binds the ID token to a specific authentication request - preventing replay attacks where an old ID token is reused.
 
 > 🎯 **Interview Lens** > **Q:** What's the difference between an ID token and an access token in OIDC?
-> **Ideal answer:** ID token tells the client who the user is — it's a JWT with identity claims (`sub`, `email`, `name`), audience set to the client's `client_id`, and a `nonce`. The client reads and validates it. Access token tells the resource server what the client is allowed to do — it carries scopes, and its audience is the API. The resource server validates it on every request. They are consumed by different parties for different purposes — never substitute one for the other.
+> **Ideal answer:** ID token tells the client who the user is - it's a JWT with identity claims (`sub`, `email`, `name`), audience set to the client's `client_id`, and a `nonce`. The client reads and validates it. Access token tells the resource server what the client is allowed to do - it carries scopes, and its audience is the API. The resource server validates it on every request. They are consumed by different parties for different purposes - never substitute one for the other.
 > **Common trap:** "Use the access token to get the user's identity." This is the OAuth-as-authentication mistake. An access token doesn't reliably identify the user to your application.
 > **Next question:** "How do you get user profile information in OIDC?" → Either read claims from the ID token directly (for basic profile), or call the UserInfo endpoint with the access token to get additional claims the AS didn't embed in the token.
 
-### OAuth Is Not Authentication — The Common Confusion
+### OAuth Is Not Authentication - The Common Confusion
 
-_OAuth tokens prove authorization scope, not user identity — a valid access token cannot safely answer "who is this user?" without OIDC._
+_OAuth tokens prove authorization scope, not user identity - a valid access token cannot safely answer "who is this user?" without OIDC._
 
 OAuth 2.0 answers: "Can this client access this resource on behalf of the user?"
 
@@ -666,19 +666,19 @@ The fix is `aud` validation on the ID token:
 - An ID token issued to Service A cannot be replayed to Service B
 
 > 🧠 **Thought Process**
-> When you see "login with Google" in a system design, ask: what exactly is Google returning, and what are we doing with it? If the system uses the access token to call `/userinfo` and trusts the response to establish identity — that's correct OIDC usage. If it's using the access token itself as proof of identity (passing it between internal services, storing it as a session credential) — that's the OAuth-as-auth mistake. The interview signal: a strong candidate knows why `aud` exists and can explain what attack it prevents.
+> When you see "login with Google" in a system design, ask: what exactly is Google returning, and what are we doing with it? If the system uses the access token to call `/userinfo` and trusts the response to establish identity - that's correct OIDC usage. If it's using the access token itself as proof of identity (passing it between internal services, storing it as a session credential) - that's the OAuth-as-auth mistake. The interview signal: a strong candidate knows why `aud` exists and can explain what attack it prevents.
 
-OIDC was specifically designed to solve this. If you need to answer "who is this user?" in the context of OAuth flows, use OIDC ID tokens — not access tokens.
+OIDC was specifically designed to solve this. If you need to answer "who is this user?" in the context of OAuth flows, use OIDC ID tokens - not access tokens.
 
-**Key Takeaway:** OAuth is authorization, not authentication. OIDC is the identity layer on top. The `aud` claim is the load-bearing security check that separates correct OIDC from exploitable OAuth-as-auth. In all multi-party flows, validate `aud`, `iss`, `nonce`, and `exp` on every ID token — every field exists because a real attack was possible without it.
+**Key Takeaway:** OAuth is authorization, not authentication. OIDC is the identity layer on top. The `aud` claim is the load-bearing security check that separates correct OIDC from exploitable OAuth-as-auth. In all multi-party flows, validate `aud`, `iss`, `nonce`, and `exp` on every ID token - every field exists because a real attack was possible without it.
 
 ---
 
 ## Token Lifecycle Management
 
-**Interviewer TL;DR:** Access tokens should be short-lived; refresh tokens do the heavy lifting of maintaining sessions without re-authentication. Refresh token rotation with reuse detection is the correct theft-detection mechanism. Logout is harder than it looks — clearing a local cookie does not revoke a JWT or end the session at the IdP.
+**Interviewer TL;DR:** Access tokens should be short-lived; refresh tokens do the heavy lifting of maintaining sessions without re-authentication. Refresh token rotation with reuse detection is the correct theft-detection mechanism. Logout is harder than it looks - clearing a local cookie does not revoke a JWT or end the session at the IdP.
 
-**Mental model:** Access tokens are day passes — short-lived, limited scope. Refresh tokens are the key to the pass-issuing office — longer-lived, higher value, must be stored carefully and rotated on use.
+**Mental model:** Access tokens are day passes - short-lived, limited scope. Refresh tokens are the key to the pass-issuing office - longer-lived, higher value, must be stored carefully and rotated on use.
 
 ### Access Token Expiry Tradeoffs
 
@@ -712,7 +712,7 @@ Client                        Authorization Server
   │     expires_in } ─────────────── │
 ```
 
-Refresh tokens are issued only by flows that involve a user (Authorization Code, Device Authorization). The Client Credentials flow does not issue refresh tokens — the client simply re-authenticates when the access token expires.
+Refresh tokens are issued only by flows that involve a user (Authorization Code, Device Authorization). The Client Credentials flow does not issue refresh tokens - the client simply re-authenticates when the access token expires.
 
 **Refresh token expiry:** Two models exist:
 
@@ -721,7 +721,7 @@ Refresh tokens are issued only by flows that involve a user (Authorization Code,
 
 ### Refresh Token Rotation
 
-_Each use of a refresh token invalidates it and issues a new one — enabling theft detection when a superseded token is replayed._
+_Each use of a refresh token invalidates it and issues a new one - enabling theft detection when a superseded token is replayed._
 
 Every time a refresh token is used, the AS invalidates it and issues a new one. The client must store and use only the most recent refresh token.
 
@@ -731,7 +731,7 @@ Use RT-1      → new access_token + RT-2 (RT-1 invalidated)
 Use RT-2      → new access_token + RT-3 (RT-2 invalidated)
 ```
 
-#### Reuse Detection — Theft Identification
+#### Reuse Detection - Theft Identification
 
 Rotation enables automatic theft detection. If a refresh token has already been rotated (used), and an attacker presents the old one:
 
@@ -744,12 +744,12 @@ Attacker uses RT-2 → AS sees RT-2 was already used → detects reuse
                    → both legitimate client and attacker are logged out
 ```
 
-This is the correct response: the AS cannot determine which party is legitimate, so it revokes the whole lineage and forces re-authentication. The user notices they've been logged out — this is the signal that theft occurred.
+This is the correct response: the AS cannot determine which party is legitimate, so it revokes the whole lineage and forces re-authentication. The user notices they've been logged out - this is the signal that theft occurred.
 
 Token families (lineages) are tracked by linking each new refresh token to its predecessor. Any reuse of a superseded token triggers family-wide revocation.
 
 > ⚠️ **Warning / Gotcha**
-> Rotation creates a narrow race condition: if the network drops after the AS issues the new refresh token but before the client stores it, the client loses access and must re-authenticate. This is an acceptable trade-off. The alternative — no rotation — means a stolen refresh token is valid indefinitely. Some AS implementations handle this with a short reuse window (accept a token for N seconds after it's been rotated) to tolerate network retries, but this comes at a small security cost.
+> Rotation creates a narrow race condition: if the network drops after the AS issues the new refresh token but before the client stores it, the client loses access and must re-authenticate. This is an acceptable trade-off. The alternative - no rotation - means a stolen refresh token is valid indefinitely. Some AS implementations handle this with a short reuse window (accept a token for N seconds after it's been rotated) to tolerate network retries, but this comes at a small security cost.
 
 ### Token Revocation Strategies
 
@@ -769,7 +769,7 @@ POST /revoke
   client_secret=secret
 ```
 
-The AS marks the token as revoked in its internal store. The resource server still needs to know about this — by itself, RFC 7009 only tells the AS. The RS learns via introspection.
+The AS marks the token as revoked in its internal store. The resource server still needs to know about this - by itself, RFC 7009 only tells the AS. The RS learns via introspection.
 
 #### Token Introspection (RFC 7662)
 
@@ -790,7 +790,7 @@ Response:
 }
 ```
 
-Provides real-time validity — revocation is effective immediately. The cost: one AS call per resource server request. Mitigate with short-duration caching of introspection results (30–60 seconds) to avoid hammering the AS.
+Provides real-time validity - revocation is effective immediately. The cost: one AS call per resource server request. Mitigate with short-duration caching of introspection results (30–60 seconds) to avoid hammering the AS.
 
 #### `jti` Blocklist in Redis
 
@@ -807,7 +807,7 @@ def revoke_token(jti, remaining_ttl):
     redis.setex(f"revoked:{jti}", remaining_ttl, "1")
 ```
 
-Adds one Redis read to every verification. Acceptable overhead for high-security endpoints. Blocklist entries auto-expire when the token would have expired anyway — no cleanup job needed.
+Adds one Redis read to every verification. Acceptable overhead for high-security endpoints. Blocklist entries auto-expire when the token would have expired anyway - no cleanup job needed.
 
 #### Per-User Token Version
 
@@ -825,15 +825,15 @@ def force_logout_all_sessions(user_id):
     db.increment(f"users.{user_id}.token_version")
 ```
 
-Revokes all tokens for a user simultaneously (force logout all devices). One DB read per request. Coarser than `jti` blocklist — cannot revoke a single token, only all tokens for a user.
+Revokes all tokens for a user simultaneously (force logout all devices). One DB read per request. Coarser than `jti` blocklist - cannot revoke a single token, only all tokens for a user.
 
-### Logout — Local vs Federated vs Back-Channel
+### Logout - Local vs Federated vs Back-Channel
 
 "Logging out" means different things at different layers. Doing only one layer leaves the user partially authenticated elsewhere.
 
 #### Local Logout
 
-Clear the token or session from the client (delete cookie, clear localStorage, discard in-memory token). For session-based auth, delete the server-side session record. For JWTs, the access token remains cryptographically valid until `exp` — local logout only removes the client's copy.
+Clear the token or session from the client (delete cookie, clear localStorage, discard in-memory token). For session-based auth, delete the server-side session record. For JWTs, the access token remains cryptographically valid until `exp` - local logout only removes the client's copy.
 
 This is the minimum. Sufficient for simple single-application setups where the IdP session is irrelevant.
 
@@ -864,7 +864,7 @@ RP receives logout_token:
   invalidates them
 ```
 
-More reliable than front-channel logout (which embeds logout URIs in iframes in the user's browser — iframes may be blocked, browser may be closed). Back-channel logout works even if the user closed their browser tab immediately after logout.
+More reliable than front-channel logout (which embeds logout URIs in iframes in the user's browser - iframes may be blocked, browser may be closed). Back-channel logout works even if the user closed their browser tab immediately after logout.
 
 > ⚖️ **Decision Framework**
 >
@@ -877,23 +877,23 @@ More reliable than front-channel logout (which embeds logout URIs in iframes in 
 > For any SSO deployment (multiple apps sharing the same IdP), back-channel logout is necessary for complete session termination. Without it, logging out of App A leaves the user silently logged into App B.
 
 > 🎯 **Interview Lens** > **Q:** A user reports they can still access the system after logging out. What went wrong?
-> **Ideal answer:** Several possibilities in order of likelihood: (1) Only local logout was performed — the JWT access token was removed from the client but is still cryptographically valid. A leaked copy can still be used. (2) Federated logout wasn't triggered — the IdP session is alive, and another tab or device can still get new tokens without re-authentication. (3) Back-channel logout isn't implemented — other apps sharing the IdP still have live sessions. Fix: implement all three logout layers appropriate to the architecture, and shorten access token TTL to limit the window for residual valid tokens.
+> **Ideal answer:** Several possibilities in order of likelihood: (1) Only local logout was performed - the JWT access token was removed from the client but is still cryptographically valid. A leaked copy can still be used. (2) Federated logout wasn't triggered - the IdP session is alive, and another tab or device can still get new tokens without re-authentication. (3) Back-channel logout isn't implemented - other apps sharing the IdP still have live sessions. Fix: implement all three logout layers appropriate to the architecture, and shorten access token TTL to limit the window for residual valid tokens.
 > **Common trap:** "Delete the cookie and you're done." Only true for session-based auth. For JWT-based auth, deleting the cookie removes the client's copy but doesn't invalidate the token.
-> **Next question:** "How do you handle logout for a user on multiple devices?" → Back-channel logout at the IdP level propagates to all RP sessions. For JWT-based systems without an IdP, increment the user's `token_version` in the DB — all tokens from all devices are invalidated on the next verification.
+> **Next question:** "How do you handle logout for a user on multiple devices?" → Back-channel logout at the IdP level propagates to all RP sessions. For JWT-based systems without an IdP, increment the user's `token_version` in the DB - all tokens from all devices are invalidated on the next verification.
 
-**Key Takeaway:** Short-lived access tokens (15 min) with refresh token rotation is the correct baseline. Rotation enables theft detection via reuse — when a rotated token is replayed, revoke the whole family. Logout has three layers; most bugs come from only implementing one.
+**Key Takeaway:** Short-lived access tokens (15 min) with refresh token rotation is the correct baseline. Rotation enables theft detection via reuse - when a rotated token is replayed, revoke the whole family. Logout has three layers; most bugs come from only implementing one.
 
 ---
 
 ## Multi-Factor Authentication
 
-**Interviewer TL;DR:** MFA adds a second verification layer that an attacker cannot satisfy with a stolen password alone. TOTP and SMS are both phishable — WebAuthn/Passkeys are the only widely-deployed phishing-resistant factor. Know the mechanics of each and the threat model each one addresses (and fails to address).
+**Interviewer TL;DR:** MFA adds a second verification layer that an attacker cannot satisfy with a stolen password alone. TOTP and SMS are both phishable - WebAuthn/Passkeys are the only widely-deployed phishing-resistant factor. Know the mechanics of each and the threat model each one addresses (and fails to address).
 
-**Mental model:** Factors are classified by what you know (password), what you have (phone, hardware key), and what you are (biometric). MFA requires at least two distinct factor categories — two passwords are not MFA.
+**Mental model:** Factors are classified by what you know (password), what you have (phone, hardware key), and what you are (biometric). MFA requires at least two distinct factor categories - two passwords are not MFA.
 
-### TOTP — How It Works
+### TOTP - How It Works
 
-_A 6-digit code derived from a shared secret and the current 30-second time window — no network required at verification time._
+_A 6-digit code derived from a shared secret and the current 30-second time window - no network required at verification time._
 
 TOTP (Time-based One-Time Password, RFC 6238) generates a 6-digit code that changes every 30 seconds, derived from a shared secret and the current time.
 
@@ -906,22 +906,22 @@ HOTP(secret, counter) = truncate(HMAC-SHA1(secret, counter))
 TOTP(secret, time)    = HOTP(secret, floor(unix_timestamp / 30))
 ```
 
-The counter in TOTP is the number of 30-second windows elapsed since Unix epoch. Both the authenticator app and the server independently compute the same value — no communication required at verification time.
+The counter in TOTP is the number of 30-second windows elapsed since Unix epoch. Both the authenticator app and the server independently compute the same value - no communication required at verification time.
 
 **Enrollment:**
 
 1. Server generates a random 160-bit secret
 2. Secret is encoded as a QR code (`otpauth://totp/...?secret=BASE32...`)
-3. User scans with authenticator app (Google Authenticator, Authy) — app stores the secret
+3. User scans with authenticator app (Google Authenticator, Authy) - app stores the secret
 4. Server also stores the secret, tied to the user's account
 
-**Verification:** The server independently computes TOTP for the current time window and compares against the user-submitted code. It checks ±1 adjacent windows to tolerate clock skew between the authenticator app and server — a 90-second effective acceptance window. Wider windows increase the attack surface.
+**Verification:** The server independently computes TOTP for the current time window and compares against the user-submitted code. It checks ±1 adjacent windows to tolerate clock skew between the authenticator app and server - a 90-second effective acceptance window. Wider windows increase the attack surface.
 
 #### Threat Model
 
 TOTP provides "what you have" (the device with the secret). It does not protect against:
 
-- **Real-time phishing:** attacker presents a fake login page, relays credentials and TOTP code to the real site within the 30-second window. The code is valid — TOTP is not phishing-resistant.
+- **Real-time phishing:** attacker presents a fake login page, relays credentials and TOTP code to the real site within the 30-second window. The code is valid - TOTP is not phishing-resistant.
 - **Device theft:** if the phone is unlocked and unencrypted, the attacker has the second factor.
 - **Secret exfiltration:** if the server's stored TOTP secrets are leaked, all users' second factors are compromised. Secrets must be encrypted at rest.
 
@@ -929,7 +929,7 @@ TOTP provides "what you have" (the device with the secret). It does not protect 
 
 ### WebAuthn / Passkeys
 
-_Public key cryptography bound to the origin domain — the private key never leaves the device and cannot be used on a phishing site._
+_Public key cryptography bound to the origin domain - the private key never leaves the device and cannot be used on a phishing site._
 
 WebAuthn (Web Authentication, W3C spec) uses asymmetric key cryptography. The private key never leaves the authenticator device. The server stores only the public key.
 
@@ -965,11 +965,11 @@ Nothing sensitive is transmitted. The credential never leaves the device. The se
 
 The credential is **origin-bound**. The `rp_id` (relying party ID) is the domain the credential was registered for. The authenticator refuses to sign a challenge if the current origin doesn't match the registered `rp_id`.
 
-A phishing site at `examp1e.com` cannot request a signature from a credential registered for `example.com` — the authenticator rejects it. This is a hardware-enforced property, not a software check that can be bypassed.
+A phishing site at `examp1e.com` cannot request a signature from a credential registered for `example.com` - the authenticator rejects it. This is a hardware-enforced property, not a software check that can be bypassed.
 
 #### Passkeys
 
-Passkeys are synced WebAuthn credentials — the private key is protected by the platform (iCloud Keychain, Google Password Manager) and synchronized across the user's devices. The UX is the same as hardware-bound WebAuthn (biometric prompt), but credentials survive device loss.
+Passkeys are synced WebAuthn credentials - the private key is protected by the platform (iCloud Keychain, Google Password Manager) and synchronized across the user's devices. The UX is the same as hardware-bound WebAuthn (biometric prompt), but credentials survive device loss.
 
 The security trade-off: synced credentials are only as secure as the platform account protecting the sync (iCloud password + Apple ID MFA). Hardware-bound keys (FIDO2 security keys like YubiKey) are more secure but require physical possession.
 
@@ -981,25 +981,25 @@ The security trade-off: synced credentials are only as secure as the platform ac
 | Sync across devices  | App-dependent     | No                     | Yes                          |
 | UX friction          | Code entry        | Tap key / biometric    | Biometric                    |
 
-### SMS OTP — Why It's Weak
+### SMS OTP - Why It's Weak
 
 SMS delivers a one-time code to the user's phone number. It is widely deployed but has fundamental weaknesses at the protocol layer.
 
-**SS7 vulnerability:** The telecom signaling protocol (Signaling System 7, designed in 1975) has no authentication between carriers. An attacker with access to the SS7 network — achievable through a rogue carrier or a compromised telco employee — can intercept SMS messages destined for any number globally.
+**SS7 vulnerability:** The telecom signaling protocol (Signaling System 7, designed in 1975) has no authentication between carriers. An attacker with access to the SS7 network - achievable through a rogue carrier or a compromised telco employee - can intercept SMS messages destined for any number globally.
 
 **SIM swap:** The attacker contacts the carrier, social-engineers or bribes a customer service representative, and transfers the victim's number to a SIM the attacker controls. All subsequent SMS messages (including OTPs) go to the attacker. This attack has been used in high-profile account takeovers of cryptocurrency exchanges and email accounts.
 
-**Real-time relay:** Same phishing weakness as TOTP — an attacker can relay the SMS code to the real site within the validity window.
+**Real-time relay:** Same phishing weakness as TOTP - an attacker can relay the SMS code to the real site within the validity window.
 
 **Malware interception:** Android apps with `READ_SMS` permission can silently read OTP messages.
 
-NIST SP 800-63B classifies SMS OTP as a "restricted authenticator" — permissible but not recommended. Agencies using it must assess the risk, notify users, and offer alternatives.
+NIST SP 800-63B classifies SMS OTP as a "restricted authenticator" - permissible but not recommended. Agencies using it must assess the risk, notify users, and offer alternatives.
 
 SMS OTP is still significantly better than password-only authentication. The guidance is not "never use SMS OTP" but "do not use it as the only MFA option, and prefer TOTP or WebAuthn when possible."
 
 ### Step-Up Authentication
 
-Step-up is a pattern where an existing authenticated session must re-verify with a stronger factor before accessing a sensitive resource — without requiring a full logout and re-login.
+Step-up is a pattern where an existing authenticated session must re-verify with a stronger factor before accessing a sensitive resource - without requiring a full logout and re-login.
 
 **When to use:** The user's base session (authenticated with password) is sufficient for reading data. A higher-assurance action (wire transfer, admin operation, account deletion) requires step-up.
 
@@ -1034,14 +1034,14 @@ acr_values: mfa     ← MFA required
 
 #### Time-Bounding Step-Up
 
-Step-up tokens for sensitive operations should carry a tighter `exp` than the base access token. A gold-level token valid for 15 minutes that was issued 14 minutes ago should not be accepted for a new sensitive action — the AS can embed an `auth_time` claim (time of the last authentication event) and the resource server can check how recent it was.
+Step-up tokens for sensitive operations should carry a tighter `exp` than the base access token. A gold-level token valid for 15 minutes that was issued 14 minutes ago should not be accepted for a new sensitive action - the AS can embed an `auth_time` claim (time of the last authentication event) and the resource server can check how recent it was.
 
 > 🎯 **Interview Lens** > **Q:** How would you design MFA for a banking application?
 > **Ideal answer:** Baseline authentication with password + TOTP or WebAuthn for all logins. Step-up authentication for high-value actions (transfers, beneficiary changes) requiring re-verification of the second factor, with a short step-up token TTL (5 min). WebAuthn preferred over TOTP for phishing resistance. SMS OTP only as a fallback with explicit risk acceptance. Backup codes for account recovery, stored hashed. Enforce `acr` claims at the resource server, not just at the client.
-> **Common trap:** "Add MFA to the login form and you're done." Misses step-up auth for sensitive operations — an attacker who hijacks a session after the MFA checkpoint can still perform high-value actions.
-> **Next question:** "How do you handle a user who loses their second factor device?" → Pre-issued backup codes (primary recovery). Secondary: identity verification via customer support with out-of-band verification (photo ID, account history questions). Do not allow email-only recovery — email account compromise would bypass MFA entirely.
+> **Common trap:** "Add MFA to the login form and you're done." Misses step-up auth for sensitive operations - an attacker who hijacks a session after the MFA checkpoint can still perform high-value actions.
+> **Next question:** "How do you handle a user who loses their second factor device?" → Pre-issued backup codes (primary recovery). Secondary: identity verification via customer support with out-of-band verification (photo ID, account history questions). Do not allow email-only recovery - email account compromise would bypass MFA entirely.
 
-**Key Takeaway:** TOTP is the practical default; WebAuthn/Passkeys are the correct long-term answer for phishing resistance. SMS OTP is a fallback with known weaknesses — acceptable as an option, not as a primary MFA method. Step-up authentication is the pattern that extends MFA coverage beyond login to sensitive in-session operations.
+**Key Takeaway:** TOTP is the practical default; WebAuthn/Passkeys are the correct long-term answer for phishing resistance. SMS OTP is a fallback with known weaknesses - acceptable as an option, not as a primary MFA method. Step-up authentication is the pattern that extends MFA coverage beyond login to sensitive in-session operations.
 
 ---
 
@@ -1049,7 +1049,7 @@ Step-up tokens for sensitive operations should carry a tighter `exp` than the ba
 
 **Interviewer TL;DR:** Machine identities are harder than user identities because there's no human in the loop to verify or rotate credentials. API keys are simple but operationally fragile. mTLS and SPIFFE/SPIRE solve the rotation problem through automation. The right choice depends on whether you control both sides of the connection and how much infrastructure you're willing to operate.
 
-**Mental model:** Service-to-service auth asks the same question as user auth — prove who you are — but the prover is a process, not a person. The challenge is that secrets embedded in processes leak silently and are rotated with operational friction.
+**Mental model:** Service-to-service auth asks the same question as user auth - prove who you are - but the prover is a process, not a person. The challenge is that secrets embedded in processes leak silently and are rotated with operational friction.
 
 ### API Keys
 
@@ -1062,7 +1062,7 @@ Authorization: Bearer sk_live_4f3a9b2e1c...
 X-API-Key: sk_live_4f3a9b2e1c...
 ```
 
-**Prefixes for scannable detection:** Prefix keys with a recognizable string (`sk_live_`, `ghp_`, `npm_`). GitHub, Stripe, and npm use this pattern. Allows automated scanning of source code and commit history to detect accidental key exposure — and immediately revoke before damage is done.
+**Prefixes for scannable detection:** Prefix keys with a recognizable string (`sk_live_`, `ghp_`, `npm_`). GitHub, Stripe, and npm use this pattern. Allows automated scanning of source code and commit history to detect accidental key exposure - and immediately revoke before damage is done.
 
 **Storage:** Store only the hash (SHA-256) of the key. On verification, hash the received key and compare. If the store is breached, attackers get hashes, not usable keys.
 
@@ -1080,13 +1080,13 @@ def verify_api_key(raw_key):
     return db.find_by_hash(key_hash)
 ```
 
-**Rotation without downtime:** Support two active keys per credential at any time. The caller generates a new key, adds it alongside the old one, migrates services, then revokes the old key. Immediate revocation on compromise is still possible — delete the key record.
+**Rotation without downtime:** Support two active keys per credential at any time. The caller generates a new key, adds it alongside the old one, migrates services, then revokes the old key. Immediate revocation on compromise is still possible - delete the key record.
 
 **Limitations:** No built-in expiry, no cryptographic proof of who is calling (only that they have the key), no fine-grained identity beyond what the key record says. Appropriate for third-party external integrations and webhook endpoints. Not appropriate for internal service mesh traffic where better options exist.
 
 ### mTLS
 
-Standard TLS authenticates the server to the client — the server presents a certificate and the client verifies it. mTLS (mutual TLS) adds the reverse: the client also presents a certificate, and the server verifies it. Both sides prove their identity during the TLS handshake.
+Standard TLS authenticates the server to the client - the server presents a certificate and the client verifies it. mTLS (mutual TLS) adds the reverse: the client also presents a certificate, and the server verifies it. Both sides prove their identity during the TLS handshake.
 
 ```
 Client                              Server
@@ -1099,12 +1099,12 @@ Client                              Server
   │  Application data encrypted     │
 ```
 
-The server validates the client certificate against its trusted CA. The certificate encodes the client's identity (Common Name or Subject Alternative Name). No API keys, no tokens — identity is established at the connection layer before any application code runs.
+The server validates the client certificate against its trusted CA. The certificate encodes the client's identity (Common Name or Subject Alternative Name). No API keys, no tokens - identity is established at the connection layer before any application code runs.
 
-**The operational challenge is PKI** — running a CA, issuing short-lived certs, rotating before expiry, revoking on decommission. In practice, service meshes (Istio, Linkerd) automate this entirely: each sidecar proxy gets a cert issued by the mesh CA, rotated transparently, without any application-layer TLS code. For PKI lifecycle, CRL/OCSP, and service mesh integration details, see [mTLS](./mtls.md).
+**The operational challenge is PKI** - running a CA, issuing short-lived certs, rotating before expiry, revoking on decommission. In practice, service meshes (Istio, Linkerd) automate this entirely: each sidecar proxy gets a cert issued by the mesh CA, rotated transparently, without any application-layer TLS code. For PKI lifecycle, CRL/OCSP, and service mesh integration details, see [mTLS](./mtls.md).
 
 > ⚖️ **Decision Framework**
-> mTLS is the right choice when: you control both sides of the connection, you're operating a service mesh or can add one, and you want transport-level identity without application-layer token management. Without automation (cert-manager, Istio), manual cert rotation across many services is the failure mode — the operational burden defeats the security benefit.
+> mTLS is the right choice when: you control both sides of the connection, you're operating a service mesh or can add one, and you want transport-level identity without application-layer token management. Without automation (cert-manager, Istio), manual cert rotation across many services is the failure mode - the operational burden defeats the security benefit.
 
 ### JWT with Service Accounts
 
@@ -1115,7 +1115,7 @@ Service accounts are non-human identities tied to a service or workload. A servi
 ```
 1. GCP creates a service account: my-service@project.iam.gserviceaccount.com
 2. Service downloads a key file (JSON with private key)
-   — or — uses Workload Identity (preferred: no key file)
+   - or - uses Workload Identity (preferred: no key file)
 
 3. Service constructs and signs a JWT:
    {
@@ -1138,7 +1138,7 @@ Kubernetes projects an OIDC-compatible token into each pod at a known path:
 /var/run/secrets/kubernetes.io/serviceaccount/token
 ```
 
-The token is automatically rotated by the kubelet. Services read it and present it to other services or the Kubernetes API. With IAM Roles for Service Accounts (IRSA on AWS, Workload Identity on GCP), the pod's Kubernetes identity is federated to a cloud IAM role — the pod gets cloud credentials without storing any key material.
+The token is automatically rotated by the kubelet. Services read it and present it to other services or the Kubernetes API. With IAM Roles for Service Accounts (IRSA on AWS, Workload Identity on GCP), the pod's Kubernetes identity is federated to a cloud IAM role - the pod gets cloud credentials without storing any key material.
 
 The key pattern: no long-lived secrets embedded in the process. Credentials are short-lived, rotated automatically by the platform, and tightly scoped.
 
@@ -1186,25 +1186,25 @@ Target fetches SPIFFE bundle (public keys) from SPIRE and validates
 
 **Key properties:**
 
-- Short-lived SVIDs (hours, not days) automatically rotated — compromise window is narrow
+- Short-lived SVIDs (hours, not days) automatically rotated - compromise window is narrow
 - Platform-agnostic: works across Kubernetes, VMs, bare metal, Lambda
-- No secrets in environment variables or config files — credentials delivered via local socket
+- No secrets in environment variables or config files - credentials delivered via local socket
 - Integrates with Envoy, Istio, and AWS/GCP workload identity
 
 > 🎯 **Interview Lens** > **Q:** How do you authenticate services in a microservices system without sharing long-lived secrets?
-> **Ideal answer:** Two options depending on complexity tolerance. For a service mesh environment: mTLS with automatic cert rotation via Istio or Linkerd — identity is in the certificate, rotation is automated, no application-layer token management. For heterogeneous or multi-cloud: SPIFFE/SPIRE — platform-agnostic workload identity, short-lived X.509 SVIDs rotated automatically, no secrets in config. Both avoid the core problem with API keys: a long-lived secret that leaks silently and is painful to rotate.
+> **Ideal answer:** Two options depending on complexity tolerance. For a service mesh environment: mTLS with automatic cert rotation via Istio or Linkerd - identity is in the certificate, rotation is automated, no application-layer token management. For heterogeneous or multi-cloud: SPIFFE/SPIRE - platform-agnostic workload identity, short-lived X.509 SVIDs rotated automatically, no secrets in config. Both avoid the core problem with API keys: a long-lived secret that leaks silently and is painful to rotate.
 > **Common trap:** "Use API keys per service." Follow-up: "How do you rotate them without downtime?" and "What happens if one is leaked?" The candidate then describes a manual process that doesn't scale past a few services.
 > **Next question:** "How does a newly deployed pod prove its identity to SPIRE before it has any credentials?" → This is workload attestation. SPIRE Agent uses platform-specific evidence (Kubernetes pod UID, node metadata, service account projection) to verify the workload's claimed identity before issuing any SVID. The agent has a trusted channel to the SPIRE Server; the workload only communicates with the local agent via Unix socket.
 
-**Key Takeaway:** API keys are the right choice for external integrations — simple, immediately revocable. For internal service mesh: mTLS with automated rotation removes long-lived secrets from the picture. SPIFFE/SPIRE is the answer when you need workload identity across heterogeneous infrastructure without per-platform credential management.
+**Key Takeaway:** API keys are the right choice for external integrations - simple, immediately revocable. For internal service mesh: mTLS with automated rotation removes long-lived secrets from the picture. SPIFFE/SPIRE is the answer when you need workload identity across heterogeneous infrastructure without per-platform credential management.
 
 ---
 
 ## Credential Storage & Transmission
 
-**Interviewer TL;DR:** Passwords must be hashed with a slow, memory-hard algorithm — Argon2id is the current recommendation. Token storage is a trade-off between XSS and CSRF exposure: HttpOnly cookies are immune to XSS theft but require CSRF mitigations; localStorage is immune to CSRF but readable by any JavaScript on the page.
+**Interviewer TL;DR:** Passwords must be hashed with a slow, memory-hard algorithm - Argon2id is the current recommendation. Token storage is a trade-off between XSS and CSRF exposure: HttpOnly cookies are immune to XSS theft but require CSRF mitigations; localStorage is immune to CSRF but readable by any JavaScript on the page.
 
-**Mental model:** Storage decisions are about which attacker you're defending against. The XSS attacker runs JavaScript in your page's context. The CSRF attacker tricks the user's browser into making requests. No single storage location defeats both — design explicitly for the threat model.
+**Mental model:** Storage decisions are about which attacker you're defending against. The XSS attacker runs JavaScript in your page's context. The CSRF attacker tricks the user's browser into making requests. No single storage location defeats both - design explicitly for the threat model.
 
 ### Password Hashing
 
@@ -1214,12 +1214,12 @@ MD5, SHA-1, and SHA-256 are designed to be fast. Modern GPUs compute billions of
 
 The correct countermeasures are:
 
-1. **Salting** — unique random value per user, stored alongside the hash. Prevents precomputed rainbow table attacks. Every user's hash is unique even if passwords are identical.
-2. **Slow hashing** — algorithms deliberately tuned to be computationally expensive, making brute-force attacks orders of magnitude slower.
+1. **Salting** - unique random value per user, stored alongside the hash. Prevents precomputed rainbow table attacks. Every user's hash is unique even if passwords are identical.
+2. **Slow hashing** - algorithms deliberately tuned to be computationally expensive, making brute-force attacks orders of magnitude slower.
 
 #### bcrypt
 
-Work-factor-tunable hash based on the Blowfish cipher. The cost parameter (4–31) doubles computation time for each increment. Cost 12 takes ~250ms on modern hardware — acceptable for user-facing login, prohibitive for bulk cracking.
+Work-factor-tunable hash based on the Blowfish cipher. The cost parameter (4–31) doubles computation time for each increment. Cost 12 takes ~250ms on modern hardware - acceptable for user-facing login, prohibitive for bulk cracking.
 
 ```python
 import bcrypt
@@ -1232,16 +1232,16 @@ def verify_password(plaintext: str, hashed: bytes) -> bool:
     return bcrypt.checkpw(plaintext.encode(), hashed)
 ```
 
-**72-byte truncation:** bcrypt silently truncates passwords at 72 bytes. Two passwords that share the same first 72 bytes will produce the same hash. For users with very long passwords, this is a silent collision. Mitigation: pre-hash with SHA-256 (hex-encoded, keeping output under 72 bytes) before passing to bcrypt — but this requires careful implementation to avoid introducing new issues.
+**72-byte truncation:** bcrypt silently truncates passwords at 72 bytes. Two passwords that share the same first 72 bytes will produce the same hash. For users with very long passwords, this is a silent collision. Mitigation: pre-hash with SHA-256 (hex-encoded, keeping output under 72 bytes) before passing to bcrypt - but this requires careful implementation to avoid introducing new issues.
 
 #### Argon2
 
-Winner of the Password Hashing Competition (2015). Memory-hard by design — requires significant RAM, which defeats GPU and ASIC parallelisation (GPU cores have limited per-core memory).
+Winner of the Password Hashing Competition (2015). Memory-hard by design - requires significant RAM, which defeats GPU and ASIC parallelisation (GPU cores have limited per-core memory).
 
 Three variants:
 
-- **Argon2d:** optimized against GPU attacks; vulnerable to side-channel timing attacks — not for password hashing
-- **Argon2i:** resistant to side-channel attacks; weaker against GPU — for key derivation where timing matters
+- **Argon2d:** optimized against GPU attacks; vulnerable to side-channel timing attacks - not for password hashing
+- **Argon2i:** resistant to side-channel attacks; weaker against GPU - for key derivation where timing matters
 - **Argon2id:** hybrid of d and i. Recommended for password hashing (OWASP, NIST SP 800-63B)
 
 ```python
@@ -1259,7 +1259,7 @@ hashed = ph.hash("user_password")
 ph.verify(hashed, "user_password")   # raises if invalid
 ```
 
-OWASP minimum recommended parameters: `time_cost=2, memory_cost=19456` (19 MB), `parallelism=1`. Increase `memory_cost` as hardware improves — the hash output format stores the parameters, so old hashes remain verifiable while new ones use stronger settings.
+OWASP minimum recommended parameters: `time_cost=2, memory_cost=19456` (19 MB), `parallelism=1`. Increase `memory_cost` as hardware improves - the hash output format stores the parameters, so old hashes remain verifiable while new ones use stronger settings.
 
 #### scrypt
 
@@ -1270,11 +1270,11 @@ Memory-hard predecessor to Argon2. Parameters: N (CPU/memory cost), r (block siz
 | bcrypt       | No          | Yes                    | Legacy systems, still acceptable    |
 | scrypt       | Yes         | Partial                | Acceptable; prefer Argon2id for new |
 | Argon2id     | Yes         | Yes                    | Current recommendation              |
-| MD5 / SHA-\* | No          | —                      | Never for passwords                 |
+| MD5 / SHA-\* | No          | -                      | Never for passwords                 |
 
 #### Pepper
 
-A server-side secret added to the password before hashing — stored in an environment variable or secrets manager, not in the database.
+A server-side secret added to the password before hashing - stored in an environment variable or secrets manager, not in the database.
 
 ```python
 import os, hashlib
@@ -1286,17 +1286,17 @@ def hash_password(plaintext: str) -> bytes:
     return bcrypt.hashpw(peppered.encode(), bcrypt.gensalt(rounds=12))
 ```
 
-If the database is leaked without the application server being compromised, the attacker has hashes but not the pepper — offline cracking is blocked entirely, not just slowed. Rotating the pepper requires re-hashing on next login (since the old hash can't be verified without the old pepper).
+If the database is leaked without the application server being compromised, the attacker has hashes but not the pepper - offline cracking is blocked entirely, not just slowed. Rotating the pepper requires re-hashing on next login (since the old hash can't be verified without the old pepper).
 
 #### Algorithm Upgrade Path
 
 When migrating from MD5 or bcrypt to Argon2id: on each successful login, verify with the old algorithm, then immediately re-hash with the new one and update the stored hash. Users who never log in retain old hashes until they do. Optionally: identify remaining old-algorithm hashes and force a password reset after a deadline.
 
-### Token Storage — Cookies vs localStorage vs Memory
+### Token Storage - Cookies vs localStorage vs Memory
 
 | Storage             | XSS Readable        | Sent Automatically      | Persists                  | CSRF Risk                 |
 | ------------------- | ------------------- | ----------------------- | ------------------------- | ------------------------- |
-| HttpOnly cookie     | No                  | Yes (same + cross-site) | Yes                       | Yes — requires mitigation |
+| HttpOnly cookie     | No                  | Yes (same + cross-site) | Yes                       | Yes - requires mitigation |
 | Non-HttpOnly cookie | Yes                 | Yes                     | Yes                       | Yes                       |
 | localStorage        | Yes                 | No                      | Yes (across tabs/restart) | No                        |
 | sessionStorage      | Yes                 | No                      | No (tab only)             | No                        |
@@ -1304,7 +1304,7 @@ When migrating from MD5 or bcrypt to Argon2id: on each successful login, verify 
 
 **HttpOnly cookie:** The access token or session ID is set in an HttpOnly cookie by the server. JavaScript cannot read it (`document.cookie` excludes HttpOnly cookies). XSS cannot steal the credential directly. The browser sends it automatically with every same-origin request. CSRF protection (SameSite + CSRF token) is required.
 
-**localStorage:** Persists across tabs and page refreshes. Readable by any JavaScript in the same origin — XSS can read it with `localStorage.getItem('token')`. Not sent automatically — must be explicitly attached to each request (`Authorization: Bearer ...`). The explicit attachment means CSRF is not a risk (cross-site requests don't automatically include localStorage values).
+**localStorage:** Persists across tabs and page refreshes. Readable by any JavaScript in the same origin - XSS can read it with `localStorage.getItem('token')`. Not sent automatically - must be explicitly attached to each request (`Authorization: Bearer ...`). The explicit attachment means CSRF is not a risk (cross-site requests don't automatically include localStorage values).
 
 **In-memory:** Stored in a JavaScript variable. Lost on page refresh. XSS can still read it if the attacker can execute code at the time the variable exists, but it's not persisted anywhere. The most ephemeral option.
 
@@ -1312,14 +1312,14 @@ When migrating from MD5 or bcrypt to Argon2id: on each successful login, verify 
 
 #### CSRF (Cross-Site Request Forgery)
 
-An attacker tricks the victim's browser into sending a request to your site. The browser automatically includes cookies — if the auth token is in a cookie, the forged request carries valid credentials.
+An attacker tricks the victim's browser into sending a request to your site. The browser automatically includes cookies - if the auth token is in a cookie, the forged request carries valid credentials.
 
 **Attack:**
 
 ```html
 <!-- Attacker's site -->
 <img src="https://bank.example.com/transfer?to=attacker&amount=1000" />
-<!-- Browser sends bank.example.com cookies automatically — valid auth -->
+<!-- Browser sends bank.example.com cookies automatically - valid auth -->
 ```
 
 **Mitigations:**
@@ -1328,7 +1328,7 @@ An attacker tricks the victim's browser into sending a request to your site. The
 
 2. **CSRF token (synchronizer token pattern):** Server generates an unpredictable token, stores it in the session, and sends it in the HTML response (not a cookie). The client includes it in a custom header or form field. Server validates it on state-changing requests. A cross-site attacker cannot read the HTML response (same-origin policy) so cannot get the token.
 
-3. **Custom request header:** For APIs, simply require a custom header (`X-Requested-With: XMLHttpRequest`). Browsers don't send custom headers on cross-site requests without a CORS preflight — and the server rejects preflighted cross-origin requests. Lightweight, no token management needed.
+3. **Custom request header:** For APIs, simply require a custom header (`X-Requested-With: XMLHttpRequest`). Browsers don't send custom headers on cross-site requests without a CORS preflight - and the server rejects preflighted cross-origin requests. Lightweight, no token management needed.
 
 #### XSS (Cross-Site Scripting)
 
@@ -1345,7 +1345,7 @@ fetch(
 
 **Mitigations:**
 
-1. **Content Security Policy (CSP):** HTTP header that restricts which scripts can execute. A strict CSP (`script-src 'self'`) blocks inline scripts and scripts from external origins — neutralises most XSS injection vectors.
+1. **Content Security Policy (CSP):** HTTP header that restricts which scripts can execute. A strict CSP (`script-src 'self'`) blocks inline scripts and scripts from external origins - neutralises most XSS injection vectors.
 
 2. **Output encoding:** Encode all user-controlled content before rendering in HTML. Prevents injection of executable markup.
 
@@ -1358,7 +1358,7 @@ Refresh token  → HttpOnly, Secure, SameSite=Strict cookie
                  (never accessible to JavaScript, survives page refresh)
 
 Access token   → in-memory JavaScript variable
-                 (lost on refresh — silently renewed via refresh token)
+                 (lost on refresh - silently renewed via refresh token)
                  (if XSS occurs, the 15-minute access token is exposed,
                   but the refresh token is protected)
 ```
@@ -1366,49 +1366,49 @@ Access token   → in-memory JavaScript variable
 On page load: a silent request to `/token/refresh` (which sends the HttpOnly refresh token cookie automatically) retrieves a new access token into memory. The user never notices. XSS can steal the in-memory access token but has at most 15 minutes of use. The refresh token is out of reach.
 
 > 🎯 **Interview Lens** > **Q:** Where should a SPA store its auth tokens?
-> **Ideal answer:** Split storage by token lifetime and value. Refresh token in an HttpOnly Secure cookie — immune to XSS theft, browser sends it automatically to the refresh endpoint. Access token in memory — lost on page refresh but silently renewed via the refresh cookie. This maximises protection on the high-value credential (refresh token) while keeping the short-lived access token out of persistent storage. CSRF mitigations (SameSite=Strict on the refresh cookie) cover the cookie's attack surface.
-> **Common trap:** "Store both in localStorage for simplicity." XSS anywhere on the domain steals both tokens permanently — the refresh token gives indefinite access until manually revoked.
+> **Ideal answer:** Split storage by token lifetime and value. Refresh token in an HttpOnly Secure cookie - immune to XSS theft, browser sends it automatically to the refresh endpoint. Access token in memory - lost on page refresh but silently renewed via the refresh cookie. This maximises protection on the high-value credential (refresh token) while keeping the short-lived access token out of persistent storage. CSRF mitigations (SameSite=Strict on the refresh cookie) cover the cookie's attack surface.
+> **Common trap:** "Store both in localStorage for simplicity." XSS anywhere on the domain steals both tokens permanently - the refresh token gives indefinite access until manually revoked.
 > **Next question:** "What happens when the user refreshes the page if the access token is in memory?" → On page load, the app silently calls the token refresh endpoint. The HttpOnly refresh cookie is sent automatically. A new access token is returned and stored in memory. From the user's perspective: seamless. This requires the refresh endpoint to be accessible with only cookie credentials.
 
-**Key Takeaway:** Argon2id is the correct algorithm for new systems — memory-hard, side-channel resistant, tunable. For token storage: HttpOnly cookies protect against XSS; non-cookie storage protects against CSRF. The split pattern (refresh token in HttpOnly cookie, access token in memory) gives the best of both for SPAs.
+**Key Takeaway:** Argon2id is the correct algorithm for new systems - memory-hard, side-channel resistant, tunable. For token storage: HttpOnly cookies protect against XSS; non-cookie storage protects against CSRF. The split pattern (refresh token in HttpOnly cookie, access token in memory) gives the best of both for SPAs.
 
 ---
 
 ## Production Failure Modes
 
-### Session Store Unavailability — Mass Logout
+### Session Store Unavailability - Mass Logout
 
 Redis goes down. Every authenticated request fails the session lookup. Every user is effectively logged out simultaneously.
 
-**Why it's non-obvious:** The application may not have an explicit "Redis is down" code path — it just fails to find sessions and returns 401. From the user's perspective, the site appears broken with no clear error.
+**Why it's non-obvious:** The application may not have an explicit "Redis is down" code path - it just fails to find sessions and returns 401. From the user's perspective, the site appears broken with no clear error.
 
-**Mitigations:** Redis Sentinel or Cluster for HA. Circuit breaker on the session store client — if the store is unreachable, degrade gracefully (e.g., allow read-only access with reduced trust). Distinguish "session not found" from "store unavailable" in error handling. Alert on elevated 401 rates as a leading indicator of session store issues.
+**Mitigations:** Redis Sentinel or Cluster for HA. Circuit breaker on the session store client - if the store is unreachable, degrade gracefully (e.g., allow read-only access with reduced trust). Distinguish "session not found" from "store unavailable" in error handling. Alert on elevated 401 rates as a leading indicator of session store issues.
 
-### JWKS Endpoint Unavailable — Verify Fails Open or Closed
+### JWKS Endpoint Unavailable - Verify Fails Open or Closed
 
 Services cache the AS's public keys fetched from the JWKS endpoint. If the endpoint goes down and the cache expires, services can no longer verify JWTs. Depending on implementation, the failure mode is either: reject all tokens (denial of service for all authenticated users) or fail open and accept unverified tokens (critical security hole).
 
-**The correct behaviour:** Fail closed — reject all tokens when the signing key cannot be verified. Serve a 503, not a 401 — it signals a system error, not a credential failure, and avoids confusing users into thinking they need to log in again.
+**The correct behaviour:** Fail closed - reject all tokens when the signing key cannot be verified. Serve a 503, not a 401 - it signals a system error, not a credential failure, and avoids confusing users into thinking they need to log in again.
 
-**Mitigation:** Set JWKS cache TTL long enough to survive short AS outages (5–60 minutes). When an unknown `kid` appears, attempt a single cache refresh — but don't retry aggressively on outage (thundering herd against a recovering AS). Log "JWKS unavailable" distinctly from "invalid token."
+**Mitigation:** Set JWKS cache TTL long enough to survive short AS outages (5–60 minutes). When an unknown `kid` appears, attempt a single cache refresh - but don't retry aggressively on outage (thundering herd against a recovering AS). Log "JWKS unavailable" distinctly from "invalid token."
 
-### IdP Downtime — Authentication Completely Blocked
+### IdP Downtime - Authentication Completely Blocked
 
 If your authentication flow depends on an external identity provider (Google, Auth0, Okta), IdP downtime means no new logins. Existing sessions/tokens remain valid until expiry, but any user who isn't already authenticated is locked out.
 
-**Mitigations:** Cache the JWKS aggressively with long TTL so existing token verification continues during outage. For critical internal tooling, maintain a break-glass authentication path (local admin account not federated through the IdP). Monitor IdP status as a dependency in your SLO — IdP SLAs are typically 99.9%, which means ~8.7 hours of downtime per year.
+**Mitigations:** Cache the JWKS aggressively with long TTL so existing token verification continues during outage. For critical internal tooling, maintain a break-glass authentication path (local admin account not federated through the IdP). Monitor IdP status as a dependency in your SLO - IdP SLAs are typically 99.9%, which means ~8.7 hours of downtime per year.
 
 ### Token Leakage via Logs and Error Tracking
 
-Access tokens appearing in server access logs (as query parameters or in Authorization headers), error reporting tools (Sentry capturing full request headers), or analytics pipelines. A token in a log is as good as the token itself — anyone with log access has it.
+Access tokens appearing in server access logs (as query parameters or in Authorization headers), error reporting tools (Sentry capturing full request headers), or analytics pipelines. A token in a log is as good as the token itself - anyone with log access has it.
 
 **Common vectors:**
 
-- Tokens passed as URL query parameters: `GET /api/data?token=eyJ...` — logged by every web server, proxy, and CDN by default
+- Tokens passed as URL query parameters: `GET /api/data?token=eyJ...` - logged by every web server, proxy, and CDN by default
 - Error reporters serialising the full request object including headers
 - Debug logging enabled in production that includes raw request/response
 
-**Mitigations:** Never put tokens in URL query parameters — always use the `Authorization` header or an HttpOnly cookie. Configure error trackers to scrub `Authorization` headers and cookie values before capturing. Audit log pipelines for token-shaped strings. Use short-lived access tokens to limit the value of any leaked token.
+**Mitigations:** Never put tokens in URL query parameters - always use the `Authorization` header or an HttpOnly cookie. Configure error trackers to scrub `Authorization` headers and cookie values before capturing. Audit log pipelines for token-shaped strings. Use short-lived access tokens to limit the value of any leaked token.
 
 ### OAuth `redirect_uri` Manipulation
 
@@ -1418,7 +1418,7 @@ The OAuth spec requires the `redirect_uri` in the token exchange to exactly matc
 
 **Fix at the AS:** Exact URI matching, no wildcards, no path prefix matching. Reject any `redirect_uri` that doesn't match a registered value byte-for-byte. At the client: always validate the `state` parameter on callback to ensure the redirect came from an auth flow your client initiated.
 
-### Open Redirect After Authentication — `?next=` Hijacking
+### Open Redirect After Authentication - `?next=` Hijacking
 
 Login pages commonly accept a `next` or `returnTo` parameter to redirect users to their original destination after login:
 
@@ -1432,7 +1432,7 @@ If the `next` parameter is not validated, an attacker links:
 https://app.example.com/login?next=https://evil.com
 ```
 
-The user logs in successfully and is redirected to the attacker's site — which can display a convincing phishing page, having just seen a legitimate login succeed.
+The user logs in successfully and is redirected to the attacker's site - which can display a convincing phishing page, having just seen a legitimate login succeed.
 
 **Fix:** Validate that `next` is a relative path within your application, not an absolute URL or a different domain. Reject any `next` value that starts with `//`, `https://`, or contains a hostname.
 
@@ -1445,11 +1445,11 @@ POST /login → "No account found with that email"
 POST /login → "Incorrect password"
 ```
 
-An attacker can enumerate which email addresses have accounts by probing the login endpoint — useful for targeted phishing and credential stuffing.
+An attacker can enumerate which email addresses have accounts by probing the login endpoint - useful for targeted phishing and credential stuffing.
 
 **Fix:** Return a single, identical response for all failed login attempts: "Invalid email or password." Apply the same response time regardless of which failure occurred (constant-time comparison + artificial delay) to prevent timing-based enumeration.
 
-### Non-Constant-Time Credential Comparison — Timing Attack
+### Non-Constant-Time Credential Comparison - Timing Attack
 
 String comparison short-circuits on the first mismatched byte. An attacker who can measure response latency can determine how many leading bytes of their guess were correct, and progressively refine until they crack the credential.
 
@@ -1466,15 +1466,15 @@ def safe_compare(a: str, b: str) -> bool:
 
 `hmac.compare_digest` (Python), `crypto.timingSafeEqual` (Node.js), and equivalent functions in other runtimes compare the full byte sequence regardless of where a mismatch occurs.
 
-### Stale JWKS Cache — Key Rotation Rejection
+### Stale JWKS Cache - Key Rotation Rejection
 
-The AS rotates its signing key. The new key is published at the JWKS endpoint alongside the old key. Services that cache JWKS aggressively continue verifying old-`kid` tokens successfully until cache expiry — correct behaviour.
+The AS rotates its signing key. The new key is published at the JWKS endpoint alongside the old key. Services that cache JWKS aggressively continue verifying old-`kid` tokens successfully until cache expiry - correct behaviour.
 
 **The failure mode:** Services that cache too aggressively (multi-hour TTL) after the old key is _removed_ from JWKS (before all tokens signed with it have expired) begin rejecting valid tokens with "unknown kid." Users with recently issued tokens are logged out mid-session.
 
 **Fix:** Key rotation protocol must account for active token lifetime. Keep the old key in JWKS for at least one full access token TTL after rotating. Services should also attempt a JWKS refresh on unknown `kid` (one retry, not a loop) to handle the case where a new key was introduced since the last cache fill.
 
-### Refresh Token Theft — Silent Session Takeover
+### Refresh Token Theft - Silent Session Takeover
 
 A refresh token stolen from a user's browser (via XSS on a non-HttpOnly cookie, or from localStorage) gives an attacker indefinite access. Unlike a stolen access token (bounded by TTL), a stolen refresh token can produce new access tokens until it expires or is explicitly revoked.
 
@@ -1482,67 +1482,67 @@ A refresh token stolen from a user's browser (via XSS on a non-HttpOnly cookie, 
 
 **Signals to monitor:** Refresh token use from a different IP than it was issued on, unusual geographic velocity (refresh in London, then Tokyo 20 minutes later), higher-than-expected token refresh frequency for a single user.
 
-### Session Fixation — Pre-Auth Session Reuse
+### Session Fixation - Pre-Auth Session Reuse
 
 Covered in Session-Based Authentication. Consolidated here: attacker plants a known session ID on the victim before login; after the victim authenticates, the server associates the known ID with the valid user. **Fix:** Regenerate session ID on every successful authentication, unconditionally.
 
 ### JWT `exp` Clock Skew Cascade
 
-At scale with many service instances, a JWT issued at `iat=T` with `exp=T+900` may be rejected by an instance whose clock is behind by more than the configured `leeway`. If NTP sync fails across a cluster, a subset of instances starts rejecting valid tokens — producing intermittent 401s that are extremely difficult to diagnose because the token looks valid everywhere else.
+At scale with many service instances, a JWT issued at `iat=T` with `exp=T+900` may be rejected by an instance whose clock is behind by more than the configured `leeway`. If NTP sync fails across a cluster, a subset of instances starts rejecting valid tokens - producing intermittent 401s that are extremely difficult to diagnose because the token looks valid everywhere else.
 
-**Mitigation:** Monitor clock drift across service instances (standard infrastructure health check). Set `leeway` to 30–60 seconds in JWT verification to tolerate normal NTP variance. Alert on elevated 401 rates that don't correlate with traffic spikes — a sign of a clock issue rather than a credential issue.
+**Mitigation:** Monitor clock drift across service instances (standard infrastructure health check). Set `leeway` to 30–60 seconds in JWT verification to tolerate normal NTP variance. Alert on elevated 401 rates that don't correlate with traffic spikes - a sign of a clock issue rather than a credential issue.
 
 ---
 
 ## Common Interview Gotchas
 
 **OAuth is an authentication protocol.**
-Wrong. OAuth 2.0 is a delegated _authorization_ framework. It answers "can this client access this resource?" — not "who is this user?". OIDC is the identity layer on top that answers the authentication question. Using an access token to identify a user without OIDC is a real, exploited vulnerability.
+Wrong. OAuth 2.0 is a delegated _authorization_ framework. It answers "can this client access this resource?" - not "who is this user?". OIDC is the identity layer on top that answers the authentication question. Using an access token to identify a user without OIDC is a real, exploited vulnerability.
 
 ---
 
 **JWTs are encrypted and the payload is private.**
-Wrong. A standard JWT (JWS) is signed, not encrypted. The payload is base64url-encoded — decode it in a browser console in 5 seconds. Anyone who intercepts the token can read all claims. JWE (JSON Web Encryption) is the encrypted variant, rarely used in practice. Never put secrets, PII beyond what's necessary, or sensitive authorization decisions in a JWT payload that travels to the client.
+Wrong. A standard JWT (JWS) is signed, not encrypted. The payload is base64url-encoded - decode it in a browser console in 5 seconds. Anyone who intercepts the token can read all claims. JWE (JSON Web Encryption) is the encrypted variant, rarely used in practice. Never put secrets, PII beyond what's necessary, or sensitive authorization decisions in a JWT payload that travels to the client.
 
 ---
 
 **Deleting the cookie logs the user out (for JWT-based auth).**
-Deleting the client-side cookie removes the client's copy of the token. The JWT itself remains cryptographically valid until `exp`. If the token was intercepted before deletion, the attacker's copy still works. For session-based auth this is correct — deleting the server-side session record revokes access immediately. For JWTs, logout requires a blocklist, token version increment, or accepting the TTL window.
+Deleting the client-side cookie removes the client's copy of the token. The JWT itself remains cryptographically valid until `exp`. If the token was intercepted before deletion, the attacker's copy still works. For session-based auth this is correct - deleting the server-side session record revokes access immediately. For JWTs, logout requires a blocklist, token version increment, or accepting the TTL window.
 
 ---
 
 **SameSite=Strict is the most secure option and should always be used.**
-Strict is maximally protective but breaks OAuth and SAML redirect flows. After a user authenticates at the IdP and is redirected back to your app, the browser considers that a cross-site navigation — and won't send the session cookie. The user appears logged out immediately after a successful login. `Lax` is the correct default: it blocks cross-site sub-resource requests (XHR, fetch, form POST) while allowing top-level navigations.
+Strict is maximally protective but breaks OAuth and SAML redirect flows. After a user authenticates at the IdP and is redirected back to your app, the browser considers that a cross-site navigation - and won't send the session cookie. The user appears logged out immediately after a successful login. `Lax` is the correct default: it blocks cross-site sub-resource requests (XHR, fetch, form POST) while allowing top-level navigations.
 
 ---
 
-**Store auth tokens in localStorage for simplicity — it's easier than cookies.**
+**Store auth tokens in localStorage for simplicity - it's easier than cookies.**
 Any XSS vulnerability on your domain exposes localStorage to `localStorage.getItem('token')`. An attacker's script, a compromised third-party analytics snippet, or a CDN-hosted library with malicious code can exfiltrate the token silently. The token persists across sessions. Use HttpOnly cookies for credentials that should survive page refresh; in-memory for access tokens.
 
 ---
 
 **Sessions don't scale horizontally.**
-They scale fine — the solution is a shared session store (Redis). The cost is one Redis read per request (~0.3ms). The misconception conflates "sessions require shared state" with "sessions can't scale." JWT's advantage is eliminating that I/O, not making the system horizontally scalable (which Redis already does for sessions).
+They scale fine - the solution is a shared session store (Redis). The cost is one Redis read per request (~0.3ms). The misconception conflates "sessions require shared state" with "sessions can't scale." JWT's advantage is eliminating that I/O, not making the system horizontally scalable (which Redis already does for sessions).
 
 ---
 
-**Rotating signing keys requires downtime — old tokens become invalid.**
+**Rotating signing keys requires downtime - old tokens become invalid.**
 Not with JWKS and `kid`. Publish the new key at the JWKS endpoint _alongside_ the old one. Switch signing to the new key. Services encountering an unknown `kid` fetch the updated JWKS. After one full access token TTL has passed (all old-key tokens have expired), remove the old key. Zero downtime, zero forced logouts.
 
 ---
 
-**PKCE is only for mobile apps and SPAs — server-side apps with client secrets don't need it.**
+**PKCE is only for mobile apps and SPAs - server-side apps with client secrets don't need it.**
 The original motivation was public clients (no secure secret storage), but PKCE is now recommended for all OAuth clients. A compromised authorization code is useless without the code verifier. The PKCE check adds negligible overhead and eliminates an entire attack class. OAuth 2.1 (the successor draft) makes PKCE mandatory for all grant types involving the authorization code.
 
 ---
 
-**The Implicit Flow is fine for SPAs — it's simpler and widely documented.**
+**The Implicit Flow is fine for SPAs - it's simpler and widely documented.**
 Deprecated. RFC 9700 (OAuth 2.0 Security Best Current Practice) explicitly states the Implicit Flow should not be used for new deployments. The access token in the URL fragment is in browser history, server logs, and readable by all scripts on the page. Authorization Code + PKCE replaces it with no meaningful complexity cost.
 
 ---
 
-**MFA means two-factor — any two methods are sufficient.**
-MFA requires at least two factors from _different categories_: something you know, something you have, something you are. A password + security question is one factor (both are "something you know") — not MFA. Password + TOTP code is MFA. Password + SMS OTP is technically MFA but with a weak second factor (SS7/SIM swap vulnerable).
+**MFA means two-factor - any two methods are sufficient.**
+MFA requires at least two factors from _different categories_: something you know, something you have, something you are. A password + security question is one factor (both are "something you know") - not MFA. Password + TOTP code is MFA. Password + SMS OTP is technically MFA but with a weak second factor (SS7/SIM swap vulnerable).
 
 ---
 
@@ -1551,35 +1551,35 @@ bcrypt was the best option for a long time but has two known issues: the silent 
 
 ---
 
-**The `alg:none` vulnerability is theoretical — real libraries don't accept it.**
-It was exploited in production. CVE-2015-9235 affected `jsonwebtoken` (Node.js), one of the most widely used JWT libraries, accepting `alg:none` and bypassing signature verification entirely. Multiple libraries across different languages had the same issue. Always explicitly specify the allowed algorithm(s) in the verifier configuration — never read the algorithm from the token header.
+**The `alg:none` vulnerability is theoretical - real libraries don't accept it.**
+It was exploited in production. CVE-2015-9235 affected `jsonwebtoken` (Node.js), one of the most widely used JWT libraries, accepting `alg:none` and bypassing signature verification entirely. Multiple libraries across different languages had the same issue. Always explicitly specify the allowed algorithm(s) in the verifier configuration - never read the algorithm from the token header.
 
 ---
 
 **Short access token expiry makes the system secure without refresh tokens.**
-Short expiry limits the _window_ of a stolen token but doesn't prevent theft. Without refresh tokens, users must re-authenticate every 15 minutes — not viable for any real application. Short expiry is only useful paired with refresh tokens. The access token is the one that travels frequently (every API request); the refresh token is exchanged rarely and can be stored more securely.
+Short expiry limits the _window_ of a stolen token but doesn't prevent theft. Without refresh tokens, users must re-authenticate every 15 minutes - not viable for any real application. Short expiry is only useful paired with refresh tokens. The access token is the one that travels frequently (every API request); the refresh token is exchanged rarely and can be stored more securely.
 
 ---
 
 **Client Credentials tokens are issued on behalf of the user.**
-Client Credentials is a machine-to-machine flow — no user is involved. The token represents the _client application's_ identity and permissions, not any user's. A service using Client Credentials to call another service should be authorized based on what the service is allowed to do, not impersonating any user.
+Client Credentials is a machine-to-machine flow - no user is involved. The token represents the _client application's_ identity and permissions, not any user's. A service using Client Credentials to call another service should be authorized based on what the service is allowed to do, not impersonating any user.
 
 ---
 
 **Refresh token rotation means the user must log in again when the old token is reused.**
-On detecting reuse of an already-rotated token, the AS revokes the _entire token family_ — both the legitimate client's current token and the attacker's stolen old token. Both parties lose access and must re-authenticate. The AS cannot determine which party is legitimate, so full revocation is the correct and conservative response. This is expected behaviour, not a bug.
+On detecting reuse of an already-rotated token, the AS revokes the _entire token family_ - both the legitimate client's current token and the attacker's stolen old token. Both parties lose access and must re-authenticate. The AS cannot determine which party is legitimate, so full revocation is the correct and conservative response. This is expected behaviour, not a bug.
 
 ---
 
 ## Interview Scenario & Debugging Bank
 
-### Scenario 1 — Design Auth for a Multi-Tenant SaaS Application
+### Scenario 1 - Design Auth for a Multi-Tenant SaaS Application
 
 **Setup:** B2B SaaS product. Each customer (tenant) has their own users. Enterprise customers require SSO through their corporate IdP (Okta, Azure AD). Self-serve customers use username/password. All tenants share the same API but must be strictly isolated from each other's data.
 
 **Ideal approach:**
 
-1. **Tenant identification first.** On login, identify which tenant the user belongs to — by subdomain (`acme.yourapp.com`), email domain, or explicit tenant selection. Tenant context must be established before any auth decision.
+1. **Tenant identification first.** On login, identify which tenant the user belongs to - by subdomain (`acme.yourapp.com`), email domain, or explicit tenant selection. Tenant context must be established before any auth decision.
 
 2. **Federated auth for enterprise tenants.** Enterprise customers configure their IdP (SAML or OIDC). Your platform acts as the Relying Party. On login from `acme.com`, detect the domain, redirect to Acme's IdP, receive the assertion or ID token, and create or link a user record in your system.
 
@@ -1587,26 +1587,26 @@ On detecting reuse of an already-rotated token, the AS revokes the _entire token
 
 4. **JWT with tenant claim.** After authentication (regardless of method), issue a short-lived JWT containing `sub` (user ID), `tid` (tenant ID), `roles`, `exp`. Every API request carries this token. The API verifies the JWT, extracts `tid`, and enforces tenant-level data isolation at the query layer (`WHERE tenant_id = $tid`).
 
-5. **Tenant isolation in the token.** A token issued for tenant A must be rejected by tenant B's resources. A `tid` claim, validated server-side on every request, enforces this — never trust a tenant ID from the request body.
+5. **Tenant isolation in the token.** A token issued for tenant A must be rejected by tenant B's resources. A `tid` claim, validated server-side on every request, enforces this - never trust a tenant ID from the request body.
 
 **Common mistakes:**
 
 - Trusting tenant ID from the client (query param, request body) rather than a validated JWT claim
-- No `tid` in the token — requires a DB lookup on every request to recover tenant context
+- No `tid` in the token - requires a DB lookup on every request to recover tenant context
 - Not handling the case where a user's enterprise IdP configuration changes mid-session
 
 **Follow-up questions:**
 
 - "A tenant's IdP goes down. What happens?" → Existing JWTs remain valid. New logins for that tenant fail. Mitigation: break-glass local admin account per tenant not federated through their IdP.
-- "A user belongs to multiple tenants — how do you handle that?" → Separate token per tenant context. Login selects a tenant; the issued JWT is scoped to that tenant. Switching tenants requires a new token exchange, not re-authentication.
+- "A user belongs to multiple tenants - how do you handle that?" → Separate token per tenant context. Login selects a tenant; the issued JWT is scoped to that tenant. Switching tenants requires a new token exchange, not re-authentication.
 
 ---
 
-### Scenario 2 — Debugging: Users Randomly Logged Out
+### Scenario 2 - Debugging: Users Randomly Logged Out
 
-**Setup:** Users report being unexpectedly logged out — randomly, more frequent during peak hours. The app uses JWTs with 1-hour expiry and refresh tokens in HttpOnly cookies. Refresh happens automatically on the client.
+**Setup:** Users report being unexpectedly logged out - randomly, more frequent during peak hours. The app uses JWTs with 1-hour expiry and refresh tokens in HttpOnly cookies. Refresh happens automatically on the client.
 
-**Debugging — work through causes in order:**
+**Debugging - work through causes in order:**
 
 **1. Logouts at exactly 1-hour marks?** Token refresh is failing. Check: is the refresh endpoint returning errors? Is the refresh cookie being sent (SameSite scope, domain attribute)?
 
@@ -1620,27 +1620,27 @@ On detecting reuse of an already-rotated token, the AS revokes the _entire token
 
 ---
 
-### Scenario 3 — Suspended Account Still Has API Access
+### Scenario 3 - Suspended Account Still Has API Access
 
 **Setup:** Security audit finds suspended users can still make successful API calls for up to 15 minutes after suspension. The API uses JWTs with 15-minute expiry.
 
 **Root cause:** Expected behaviour of stateless JWTs. Suspension is recorded in the DB but the already-issued token is cryptographically valid and verified locally without a DB check.
 
-**Solutions — in order of trade-off:**
+**Solutions - in order of trade-off:**
 
 **Accept the window** (if 15 min tolerable): Immediately revoke the refresh token. The suspended user cannot obtain a new access token after the current one expires. The effective revocation window equals the access token TTL.
 
-**Token version counter:** Add `token_version` to the user record, embed it in the JWT. On verification, read the user's current version from Redis (short TTL — 30 seconds to limit DB hits). Suspending a user increments their version — all existing tokens fail on next request. One cache read per request.
+**Token version counter:** Add `token_version` to the user record, embed it in the JWT. On verification, read the user's current version from Redis (short TTL - 30 seconds to limit DB hits). Suspending a user increments their version - all existing tokens fail on next request. One cache read per request.
 
 **`jti` blocklist:** On suspension, add the user's active `jti` values to a Redis blocklist with TTL equal to remaining token lifetime. Requires tracking active tokens per user.
 
-**Token introspection:** Replace local JWT verification with a call to the AS introspection endpoint. Instant revocation. Cost: one AS call per API request — cache introspection results for 30–60 seconds.
+**Token introspection:** Replace local JWT verification with a call to the AS introspection endpoint. Instant revocation. Cost: one AS call per API request - cache introspection results for 30–60 seconds.
 
 **Follow-up:** "Which for a payments API?" → Introspection or `jti` blocklist. A 15-minute window is not acceptable when financial transactions can occur under a suspended account. The added latency is justified.
 
 ---
 
-### Scenario 4 — Design Auth for a Mobile Banking App
+### Scenario 4 - Design Auth for a Mobile Banking App
 
 **Setup:** Mobile banking app. Requirements: MFA for all users, step-up for high-value transactions, 30-day remember-device, full audit trail.
 
@@ -1648,7 +1648,7 @@ On detecting reuse of an already-rotated token, the AS revokes the _entire token
 
 **Login:** Password (Argon2id server-side) → biometric MFA via platform authenticator (Face ID / fingerprint) as primary, TOTP as fallback, SMS OTP as last resort with explicit risk disclosure.
 
-**Tokens:** 5-minute access token (banking requires short window) + 30-day refresh token stored in hardware-backed keychain (iOS Keychain / Android Keystore — inaccessible to other apps, hardware-protected). Access token kept in-memory only.
+**Tokens:** 5-minute access token (banking requires short window) + 30-day refresh token stored in hardware-backed keychain (iOS Keychain / Android Keystore - inaccessible to other apps, hardware-protected). Access token kept in-memory only.
 
 **Step-up for transactions:**
 
@@ -1660,23 +1660,23 @@ On detecting reuse of an already-rotated token, the AS revokes the _entire token
 
 **Audit trail:** Every auth event (login attempt, MFA result, token refresh, step-up, logout) written to an append-only log: timestamp, user_id, device_id, IP, event_type, outcome. Replicated off the primary system for tamper resistance.
 
-**Follow-up:** "User loses their phone?" → Refresh token in hardware keychain is inaccessible without the device passcode. Remote wipe invalidates the device fingerprint — all refresh attempts from that device are rejected. Re-authentication on new device requires password + MFA via backup codes.
+**Follow-up:** "User loses their phone?" → Refresh token in hardware keychain is inaccessible without the device passcode. Remote wipe invalidates the device fingerprint - all refresh attempts from that device are rejected. Re-authentication on new device requires password + MFA via backup codes.
 
 ---
 
-### Scenario 5 — Migrate from Sessions to JWTs Without Logging Everyone Out
+### Scenario 5 - Migrate from Sessions to JWTs Without Logging Everyone Out
 
-**Setup:** Monolith uses server-side sessions in Redis. Breaking into microservices — services don't share the Redis instance. Migrate 2M active users to JWTs without forcing re-login.
+**Setup:** Monolith uses server-side sessions in Redis. Breaking into microservices - services don't share the Redis instance. Migrate 2M active users to JWTs without forcing re-login.
 
 **Three-phase dual-mode migration:**
 
-**Phase 1 — New logins get JWTs; existing sessions remain valid.**
+**Phase 1 - New logins get JWTs; existing sessions remain valid.**
 Add JWT issuance to the login flow alongside the existing session cookie. Verification middleware checks for JWT first; falls back to session lookup. No user-visible change.
 
-**Phase 2 — Opportunistically upgrade active sessions.**
+**Phase 2 - Opportunistically upgrade active sessions.**
 On each authenticated session request, issue a JWT as an additional cookie. After one session TTL, all recently active users have been migrated. Sessions that haven't been used in `max_session_TTL` expire naturally.
 
-**Phase 3 — Remove session fallback.**
+**Phase 3 - Remove session fallback.**
 After `max_session_TTL` has elapsed since Phase 2 began, all active users have JWTs. Remove the Redis session lookup fallback. Decommission the shared session store.
 
 **Key prerequisite:** The JWKS endpoint must be live and all services configured to verify against it _before Phase 1 begins_. Generate the signing key pair, publish JWKS, validate the verification flow end-to-end before issuing a single JWT.
@@ -1717,29 +1717,29 @@ After `max_session_TTL` has elapsed since Phase 2 began, all active users have J
 
 ### Anti-patterns
 
-- **Long-lived access tokens without a revocation strategy** — the stolen token window equals the token lifetime; keeps working until expiry regardless of account state. Use short TTL (15 min) + refresh tokens, and add a revocation mechanism for high-security actions.
+- **Long-lived access tokens without a revocation strategy** - the stolen token window equals the token lifetime; keeps working until expiry regardless of account state. Use short TTL (15 min) + refresh tokens, and add a revocation mechanism for high-security actions.
 
-- **Implicit Flow for SPAs** — access token in the URL fragment is in browser history, server logs, and readable by all scripts on the page. Use Authorization Code Flow + PKCE.
+- **Implicit Flow for SPAs** - access token in the URL fragment is in browser history, server logs, and readable by all scripts on the page. Use Authorization Code Flow + PKCE.
 
-- **Storing the refresh token in localStorage** — XSS anywhere on the domain reads it with one line of JavaScript; the stolen refresh token gives indefinite access. Store refresh tokens in HttpOnly Secure cookies.
+- **Storing the refresh token in localStorage** - XSS anywhere on the domain reads it with one line of JavaScript; the stolen refresh token gives indefinite access. Store refresh tokens in HttpOnly Secure cookies.
 
-- **HS256 in a multi-service architecture** — any service holding the symmetric secret can forge tokens for any user. Use RS256 or ES256: only the private key signs, all services verify with the public key.
+- **HS256 in a multi-service architecture** - any service holding the symmetric secret can forge tokens for any user. Use RS256 or ES256: only the private key signs, all services verify with the public key.
 
-- **Trusting the JWT's own `alg` header for verification** — enables `alg:none` and algorithm confusion attacks. Always pin the allowed algorithm(s) explicitly in the verifier; never read the algorithm from the token.
+- **Trusting the JWT's own `alg` header for verification** - enables `alg:none` and algorithm confusion attacks. Always pin the allowed algorithm(s) explicitly in the verifier; never read the algorithm from the token.
 
-- **Using an OAuth access token to identify the user** — an access token answers "what is this client authorized to do?", not "who is this user?". A token issued to service A can be replayed to service B. Use the OIDC ID token with `aud` validation for authentication.
+- **Using an OAuth access token to identify the user** - an access token answers "what is this client authorized to do?", not "who is this user?". A token issued to service A can be replayed to service B. Use the OIDC ID token with `aud` validation for authentication.
 
-- **Skipping `aud` validation on ID tokens** — a token issued for client A is accepted by client B. An attacker who obtains a token for a low-privilege service can replay it against a higher-privilege one. Always validate `aud` matches your `client_id`.
+- **Skipping `aud` validation on ID tokens** - a token issued for client A is accepted by client B. An attacker who obtains a token for a low-privilege service can replay it against a higher-privilege one. Always validate `aud` matches your `client_id`.
 
-- **Single MFA option (SMS only)** — SS7 interception and SIM swap attacks bypass SMS OTP entirely. Offer TOTP and WebAuthn; SMS as last resort only.
+- **Single MFA option (SMS only)** - SS7 interception and SIM swap attacks bypass SMS OTP entirely. Offer TOTP and WebAuthn; SMS as last resort only.
 
-- **Not regenerating session ID on successful login** — session fixation: an attacker who planted a known session ID before login now holds a valid authenticated session. Always call `session.regenerate_id()` immediately after authentication succeeds.
+- **Not regenerating session ID on successful login** - session fixation: an attacker who planted a known session ID before login now holds a valid authenticated session. Always call `session.regenerate_id()` immediately after authentication succeeds.
 
-- **Not implementing back-channel logout in SSO** — logging out of one application leaves the user silently authenticated in all other applications sharing the same IdP session. Implement OIDC Back-Channel Logout for any SSO deployment.
+- **Not implementing back-channel logout in SSO** - logging out of one application leaves the user silently authenticated in all other applications sharing the same IdP session. Implement OIDC Back-Channel Logout for any SSO deployment.
 
-- **Embedding role/permission claims in long-lived JWTs** — permissions change (role revoked, scope reduced) but the token doesn't until it expires. Use short-lived tokens or a token version check, and never embed permissions in tokens with TTL > 15 minutes without a server-side verification step.
+- **Embedding role/permission claims in long-lived JWTs** - permissions change (role revoked, scope reduced) but the token doesn't until it expires. Use short-lived tokens or a token version check, and never embed permissions in tokens with TTL > 15 minutes without a server-side verification step.
 
-- **Sharing a pepper across all environments** — the pepper's value is the production secret. A dev/staging pepper leaked via a code repo or config file doesn't compromise production — only if all environments share the same value. Use distinct peppers per environment.
+- **Sharing a pepper across all environments** - the pepper's value is the production secret. A dev/staging pepper leaked via a code repo or config file doesn't compromise production - only if all environments share the same value. Use distinct peppers per environment.
 
 ---
 
@@ -1752,7 +1752,7 @@ After `max_session_TTL` has elapsed since Phase 2 began, all active users have J
 | **Token size**                       | ~32 bytes (opaque ID)                                     | ~32 bytes                                            | ~300–500 bytes                                     | Varies                                                    |
 | **Cross-service verification**       | Requires shared store                                     | Requires introspection endpoint                      | Native (verify locally with public key)            | Native with JWKS                                          |
 | **Horizontal scalability**           | Needs shared Redis                                        | Needs introspection AS                               | Trivial                                            | Trivial                                                   |
-| **Third-party / federated identity** | No                                                        | No                                                   | No (internal only)                                 | Yes — designed for it                                     |
+| **Third-party / federated identity** | No                                                        | No                                                   | No (internal only)                                 | Yes - designed for it                                     |
 | **User identity in token**           | Server-side only                                          | Server-side only                                     | In claims (readable)                               | ID token (OIDC)                                           |
 | **SPA / mobile client fit**          | Poor (cookie complexity)                                  | Poor (requires store access)                         | Good                                               | Best (designed for public clients)                        |
 | **Microservices fit**                | Poor (shared store required)                              | Moderate (introspection hop)                         | Good                                               | Good                                                      |

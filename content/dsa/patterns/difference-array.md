@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Array](../data-structures/array.md) [Must read] — the difference array is just an array; you need O(1) indexed read/write
-- [Prefix Sum](../patterns/prefix-sum.md) [Must read] — prefix sum is the inverse operation of the difference array; understanding it makes this pattern immediate
+- [Array](../data-structures/array.md) [Must read] - the difference array is just an array; you need O(1) indexed read/write
+- [Prefix Sum](../patterns/prefix-sum.md) [Must read] - prefix sum is the inverse operation of the difference array; understanding it makes this pattern immediate
 
 ## Table of Contents
 
@@ -25,9 +25,9 @@
 
 A **difference array** is an auxiliary array `D` where `D[i] = A[i] - A[i-1]`; applying a range update `[l, r] += val` becomes two O(1) point writes (`D[l] += val`, `D[r+1] -= val`), and a single prefix-sum pass at the end reconstructs the final array.
 
-**Mental model:** think of `D` as storing the *slope* of `A` — an increment at `l` starts an upward slope, the decrement at `r+1` ends it. The prefix sum "integrates" those slopes back into values. Range update + bulk read = O(n + q); touching every cell per update = O(n·q). Whenever you batch many range increments before any read, reach for this.
+**Mental model:** think of `D` as storing the *slope* of `A` - an increment at `l` starts an upward slope, the decrement at `r+1` ends it. The prefix sum "integrates" those slopes back into values. Range update + bulk read = O(n + q); touching every cell per update = O(n·q). Whenever you batch many range increments before any read, reach for this.
 
-> **Interview soundbite:** "I'll use a difference array — each range update is two O(1) point writes, and one prefix-sum pass at the end recovers the final array, so q updates cost O(n + q) instead of O(n·q)."
+> **Interview soundbite:** "I'll use a difference array - each range update is two O(1) point writes, and one prefix-sum pass at the end recovers the final array, so q updates cost O(n + q) instead of O(n·q)."
 
 ## Recognition signals
 
@@ -35,24 +35,24 @@ A **difference array** is an auxiliary array `D` where `D[i] = A[i] - A[i-1]`; a
 
 Look for these exact phrasings in problem statements:
 
-- *"add `val` to each element in the range `[l, r]`"* — the canonical statement; range update before any query
-- *"each booking reserves seats `first` through `last`"* — the flight-booking / interval-increment variant
-- *"find the maximum number of overlapping intervals at any point"* — the overlap-count formulation
-- *"increment all elements between index `i` and index `j` by `k`"* — textbook LC 370 wording
-- *"what is the coverage at each position after all operations?"* — final-state-after-updates pattern
+- *"add `val` to each element in the range `[l, r]`"* - the canonical statement; range update before any query
+- *"each booking reserves seats `first` through `last`"* - the flight-booking / interval-increment variant
+- *"find the maximum number of overlapping intervals at any point"* - the overlap-count formulation
+- *"increment all elements between index `i` and index `j` by `k`"* - textbook LC 370 wording
+- *"what is the coverage at each position after all operations?"* - final-state-after-updates pattern
 
 ### (b) Structural cues
 
 - **Input shape:** an array of length `n` + `q` update operations each of the form `(l, r, val)`.
-- **Output property:** you need the final state of the array *after all updates*, or the max/count at any position — you do **not** need to answer interleaved point queries during updates.
+- **Output property:** you need the final state of the array *after all updates*, or the max/count at any position - you do **not** need to answer interleaved point queries during updates.
 - **Key tell:** all updates arrive before any read (offline / batch pattern). If queries are interleaved with updates, this pattern is the wrong tool.
-- **Overlap counting:** `q` intervals, asked for the maximum simultaneous overlap — this is a difference array on an event-coordinate axis.
+- **Overlap counting:** `q` intervals, asked for the maximum simultaneous overlap - this is a difference array on an event-coordinate axis.
 
 ### (c) Not to be confused with
 
-- **Prefix sum** — prefix sum answers range-*sum queries* on a static array; difference array answers range-*updates* then one-shot point reads. They are mathematical inverses: prefix sum of a difference array recovers the original array, and vice versa. When the array is static and you want fast range sums, use prefix sum. When the array is modified by many range increments and you want the final array, use difference array.
-- **Segment tree** — a segment tree handles *interleaved* updates and queries online in O(log n) each; use it when queries arrive between updates. A difference array is strictly offline (batch updates → one read pass) but achieves O(1) per update vs O(log n).
-- **BIT / Fenwick tree** — same trade-off as segment tree: online, O(log n) per op. Difference array wins when all updates precede all reads.
+- **Prefix sum** - prefix sum answers range-*sum queries* on a static array; difference array answers range-*updates* then one-shot point reads. They are mathematical inverses: prefix sum of a difference array recovers the original array, and vice versa. When the array is static and you want fast range sums, use prefix sum. When the array is modified by many range increments and you want the final array, use difference array.
+- **Segment tree** - a segment tree handles *interleaved* updates and queries online in O(log n) each; use it when queries arrive between updates. A difference array is strictly offline (batch updates → one read pass) but achieves O(1) per update vs O(log n).
+- **BIT / Fenwick tree** - same trade-off as segment tree: online, O(log n) per op. Difference array wins when all updates precede all reads.
 
 ## How it works
 
@@ -129,7 +129,7 @@ def range_updates(n: int, updates: list[tuple[int, int, int]]) -> list[int]:
 
     for l, r, val in updates:
         diff[l] += val
-        diff[r + 1] -= val             # your logic here — adapt l/r to 0- or 1-indexed
+        diff[r + 1] -= val             # your logic here - adapt l/r to 0- or 1-indexed
 
     # prefix sum restores final array
     for i in range(1, n):
@@ -154,26 +154,26 @@ Naive approach (update each element in the range): O(n·q) time.
 
 | n (array size) | q (updates) | Guidance |
 | -------------- | ----------- | -------- |
-| n ≤ 10⁵, q ≤ 10⁵ | batch before any read | **Reach for difference array** — O(n + q) is fast; naive O(n·q) = 10¹⁰, TLE |
-| n ≤ 10⁶, q ≤ 10⁶ | batch | Still fine — two linear passes, low constants |
-| Updates interleaved with point queries | online | **Do NOT use** — switch to BIT (O(log n) per op) or segment tree with lazy propagation |
-| Updates interleaved with range-sum queries | online + range | **Do NOT use** — segment tree with lazy propagation only |
-| n ≤ 500, q ≤ 500 | batch | Naive O(n·q) = 250K — either works; prefer naive for simplicity |
+| n ≤ 10⁵, q ≤ 10⁵ | batch before any read | **Reach for difference array** - O(n + q) is fast; naive O(n·q) = 10¹⁰, TLE |
+| n ≤ 10⁶, q ≤ 10⁶ | batch | Still fine - two linear passes, low constants |
+| Updates interleaved with point queries | online | **Do NOT use** - switch to BIT (O(log n) per op) or segment tree with lazy propagation |
+| Updates interleaved with range-sum queries | online + range | **Do NOT use** - segment tree with lazy propagation only |
+| n ≤ 500, q ≤ 500 | batch | Naive O(n·q) = 250K - either works; prefer naive for simplicity |
 | Range of values is large but sparse (coordinate compression needed) | offline | Apply coordinate compression first, then difference array on compressed indices |
 
-**When NOT to reach for it:** if the problem says "after each update, report the value at position i" — updates and queries are interleaved, and you need an online structure. Difference array only pays off when you can defer all reads until all writes are complete.
+**When NOT to reach for it:** if the problem says "after each update, report the value at position i" - updates and queries are interleaved, and you need an online structure. Difference array only pays off when you can defer all reads until all writes are complete.
 
-**Real-world usage:** game servers use a difference array to apply area-of-effect damage across player-health arrays (all hits in a tick batch before recalculation); ad-impression systems count overlapping campaign intervals over a time axis before aggregating totals. **At scale:** with `n` approaching 10⁸ (e.g. second-granularity time axes over a day), the O(n) prefix-sum pass over the full array dominates — coordinate-compress to the ~10⁶ actual event endpoints instead, reducing both time and memory by the same factor.
+**Real-world usage:** game servers use a difference array to apply area-of-effect damage across player-health arrays (all hits in a tick batch before recalculation); ad-impression systems count overlapping campaign intervals over a time axis before aggregating totals. **At scale:** with `n` approaching 10⁸ (e.g. second-granularity time axes over a day), the O(n) prefix-sum pass over the full array dominates - coordinate-compress to the ~10⁶ actual event endpoints instead, reducing both time and memory by the same factor.
 
-**Cache behavior:** the prefix-sum reconstruction pass is maximally cache-friendly — it reads `D` sequentially from index 0 to n−1 with no pointer indirection, so every access is a cache-line hit. The O(n + q) cost in practice has a tiny constant; compare this to a segment tree's O(log n) per query that follows non-contiguous child pointers and incurs a cache miss at each level.
+**Cache behavior:** the prefix-sum reconstruction pass is maximally cache-friendly - it reads `D` sequentially from index 0 to n−1 with no pointer indirection, so every access is a cache-line hit. The O(n + q) cost in practice has a tiny constant; compare this to a segment tree's O(log n) per query that follows non-contiguous child pointers and incurs a cache miss at each level.
 
 ## Variations
 
-- **Non-zero initial array** — initialize `D` from `A` using `D[i] = A[i] - A[i-1]`, then apply updates, then prefix-sum.
-- **Range assignment (set, not add)** — difference array handles additive increments natively; for "set range to val", convert to: undo current value and add new (requires knowing current values, or using a segment tree).
-- **Multiple arrays / simultaneous updates** — apply difference arrays independently per dimension and combine.
-- **Overlap counting** — treat each interval `[l, r]` as `+1` at `l` and `-1` at `r+1`; prefix sum gives the count of overlapping intervals at each position. Max of prefix sum = answer to "max simultaneous overlap."
-- **Difference array on events (coordinate-compressed)** — when updates span a large integer range, map event coordinates to compressed indices first, apply difference array, then reconstruct.
+- **Non-zero initial array** - initialize `D` from `A` using `D[i] = A[i] - A[i-1]`, then apply updates, then prefix-sum.
+- **Range assignment (set, not add)** - difference array handles additive increments natively; for "set range to val", convert to: undo current value and add new (requires knowing current values, or using a segment tree).
+- **Multiple arrays / simultaneous updates** - apply difference arrays independently per dimension and combine.
+- **Overlap counting** - treat each interval `[l, r]` as `+1` at `l` and `-1` at `r+1`; prefix sum gives the count of overlapping intervals at each position. Max of prefix sum = answer to "max simultaneous overlap."
+- **Difference array on events (coordinate-compressed)** - when updates span a large integer range, map event coordinates to compressed indices first, apply difference array, then reconstruct.
 
 ## CP-primitives
 
@@ -216,7 +216,7 @@ def rect_updates(R: int, C: int,
 
 When updates are on a continuous or large-integer axis, sort events instead of allocating a giant array. Each interval `[l, r]` contributes a `+val` event at `l` and a `-val` event at `r` (or `r+1` for half-open). Sort all events by coordinate; a running sum as you sweep is the equivalent of the prefix-sum pass.
 
-**Why for CP:** meeting-rooms II (max concurrent meetings), car-fleet problems, bandwidth allocation, and any problem where the "positions" are large integers or floats. Avoids O(max_coord) space — O(q log q) time from sorting.
+**Why for CP:** meeting-rooms II (max concurrent meetings), car-fleet problems, bandwidth allocation, and any problem where the "positions" are large integers or floats. Avoids O(max_coord) space - O(q log q) time from sorting.
 
 ```python
 def max_overlap(intervals: list[tuple[int, int]]) -> int:
@@ -237,8 +237,8 @@ def max_overlap(intervals: list[tuple[int, int]]) -> int:
 
 When the range can wrap around (index `l > r` in a circular array of length `n`):
 
-- If `l ≤ r`: normal update — `D[l] += val`, `D[r+1] -= val`.
-- If `l > r` (wraps): split into `[l, n-1]` and `[0, r]` — equivalently: `D[l] += val`, `D[n] -= val`, `D[0] += val`, `D[r+1] -= val`.
+- If `l ≤ r`: normal update - `D[l] += val`, `D[r+1] -= val`.
+- If `l > r` (wraps): split into `[l, n-1]` and `[0, r]` - equivalently: `D[l] += val`, `D[n] -= val`, `D[0] += val`, `D[r+1] -= val`.
 
 **Why for CP:** circular scheduler problems, wrap-around range painting on rings. Common in IOI / CF problems with circular indices.
 
@@ -248,7 +248,7 @@ When the range can wrap around (index `l > r` in a circular array of length `n`)
 
 Given an array of `n` zeros and a list of operations `(i, j, inc)`, return the array after all operations.
 
-**Approach:** textbook difference array — `D[i] += inc`, `D[j+1] -= inc` for each operation; prefix sum of `D` is the answer. Every operation is O(1); total O(n + q).
+**Approach:** textbook difference array - `D[i] += inc`, `D[j+1] -= inc` for each operation; prefix sum of `D` is the answer. Every operation is O(1); total O(n + q).
 
 ```python
 def get_modified_array(n: int, updates: list[list[int]]) -> list[int]:
@@ -267,7 +267,7 @@ def get_modified_array(n: int, updates: list[list[int]]) -> list[int]:
 
 `n` flights numbered 1..n; `bookings[i] = [first, last, seats]` means `seats` seats are booked on flights `first` through `last`. Return an array where `ans[i]` is the total seats booked on flight `i`.
 
-**Approach:** difference array on 1-indexed positions — `D[first-1] += seats`, `D[last] -= seats`; prefix sum of `D[0..n-1]` is the answer. The problem is a verbatim range-addition task.
+**Approach:** difference array on 1-indexed positions - `D[first-1] += seats`, `D[last] -= seats`; prefix sum of `D[0..n-1]` is the answer. The problem is a verbatim range-addition task.
 
 ```python
 def corp_flight_bookings(bookings: list[list[int]], n: int) -> list[int]:
@@ -286,7 +286,7 @@ def corp_flight_bookings(bookings: list[list[int]], n: int) -> list[int]:
 
 Given a list of meeting intervals `[start, end]`, find the minimum number of conference rooms required (equivalently, the maximum number of concurrent meetings at any point).
 
-**Approach:** event sweep — place `+1` at each `start` and `-1` at each `end`; sort events; running sum gives occupancy at each moment; max occupancy = rooms needed. This is the overlap-counting variant of the difference array on a large-integer axis.
+**Approach:** event sweep - place `+1` at each `start` and `-1` at each `end`; sort events; running sum gives occupancy at each moment; max occupancy = rooms needed. This is the overlap-counting variant of the difference array on a large-integer axis.
 
 ```python
 def min_meeting_rooms(intervals: list[list[int]]) -> int:
@@ -308,7 +308,7 @@ def min_meeting_rooms(intervals: list[list[int]]) -> int:
 
 `nums[i] = [start_i, end_i]` represents a car occupying a 1D segment. Count the number of integer points covered by at least one car.
 
-**Approach:** textbook difference array on integer points — `D[start_i] += 1`, `D[end_i + 1] -= 1` for each car; prefix sum of `D` gives coverage at each point; count positions where `D[i] > 0`. This is the overlap-counting variant on a bounded integer axis.
+**Approach:** textbook difference array on integer points - `D[start_i] += 1`, `D[end_i + 1] -= 1` for each car; prefix sum of `D` gives coverage at each point; count positions where `D[i] > 0`. This is the overlap-counting variant on a bounded integer axis.
 
 ```python
 def number_of_points(nums: list[list[int]]) -> int:
@@ -330,7 +330,7 @@ def number_of_points(nums: list[list[int]]) -> int:
 
 `n` flowers bloom in `[start_i, end_i]` (inclusive). For each of `m` people at position `time_j`, count how many flowers are in bloom.
 
-**Approach:** difference array on the time axis — `D[start_i] += 1`, `D[end_i + 1] -= 1` for each flower, then prefix-sum gives `bloom[t]` = count of blooming flowers at time `t`. Each person query is answered in O(log n) via binary search on a sorted coordinate array (coordinate-compress the time axis since `start_i` can reach 10⁹). This combines the core difference-array mechanic with offline coordinate compression, a common CP pairing.
+**Approach:** difference array on the time axis - `D[start_i] += 1`, `D[end_i + 1] -= 1` for each flower, then prefix-sum gives `bloom[t]` = count of blooming flowers at time `t`. Each person query is answered in O(log n) via binary search on a sorted coordinate array (coordinate-compress the time axis since `start_i` can reach 10⁹). This combines the core difference-array mechanic with offline coordinate compression, a common CP pairing.
 
 ```python
 from bisect import bisect_left, bisect_right
@@ -347,11 +347,11 @@ def full_bloom_flowers(flowers: list[list[int]], people: list[int]) -> list[int]
 
 ### 1. Off-by-one on the sentinel slot
 
-The decrement goes at `D[r+1]`, not `D[r]`. If your array is 1-indexed, `D[r+1]` when `r = n` requires a slot at index `n+1` — allocate size `n+2`. Allocating exactly `n+1` for a 1-indexed array will panic on the last interval. **Fix:** always allocate `D` of size `n+1` for 0-indexed (`n` elements), or `n+2` for 1-indexed (`n` elements).
+The decrement goes at `D[r+1]`, not `D[r]`. If your array is 1-indexed, `D[r+1]` when `r = n` requires a slot at index `n+1` - allocate size `n+2`. Allocating exactly `n+1` for a 1-indexed array will panic on the last interval. **Fix:** always allocate `D` of size `n+1` for 0-indexed (`n` elements), or `n+2` for 1-indexed (`n` elements).
 
 ### 2. Applying updates and queries interleaved
 
-Difference array is **offline only** — you must see all updates before reconstructing. If a problem says "after each update, report the value at index k", a difference array cannot answer without re-running the prefix sum every time (O(n) per query → O(n·q) total, same as naive). The tell is interleaved queries in the problem statement. **Fix:** use a BIT (O(log n) point update + prefix query) or a segment tree with lazy propagation.
+Difference array is **offline only** - you must see all updates before reconstructing. If a problem says "after each update, report the value at index k", a difference array cannot answer without re-running the prefix sum every time (O(n) per query → O(n·q) total, same as naive). The tell is interleaved queries in the problem statement. **Fix:** use a BIT (O(log n) point update + prefix query) or a segment tree with lazy propagation.
 
 ### 3. Forgetting to add the initial array
 
@@ -359,22 +359,22 @@ When the array `A` is not all zeros initially, the difference array must be init
 
 ### 4. 2D prefix sum order dependency
 
-For the 2D variant, you must apply prefix sums in *both* dimensions — row-wise then column-wise (or vice versa). Doing only one dimension gives wrong results. **Fix:** after building the 2D diff array, iterate all rows first to accumulate column-wise, then all columns to accumulate row-wise (or swap order; both are correct).
+For the 2D variant, you must apply prefix sums in *both* dimensions - row-wise then column-wise (or vice versa). Doing only one dimension gives wrong results. **Fix:** after building the 2D diff array, iterate all rows first to accumulate column-wise, then all columns to accumulate row-wise (or swap order; both are correct).
 
 ## First 30 seconds
 
-"I see q range-increment operations on an array followed by a read of the final state — all updates are batched before any query. I'll use a difference array: each update is two O(1) point writes, and one prefix-sum pass at the end recovers the final array. Total cost is O(n + q) instead of O(n·q) naive."
+"I see q range-increment operations on an array followed by a read of the final state - all updates are batched before any query. I'll use a difference array: each update is two O(1) point writes, and one prefix-sum pass at the end recovers the final array. Total cost is O(n + q) instead of O(n·q) naive."
 
 ## Related
 
-- [Prefix Sum](../patterns/prefix-sum.md) — the inverse operation; prefix sum of the difference array recovers the original array. Must understand prefix sum to apply difference array fluently.
-- [Array](../data-structures/array.md) — the underlying data structure; O(1) indexed read/write is what makes both O(1) point updates possible.
-- [Segment Tree](../data-structures/segment-tree.md) — the online alternative; O(log n) range update + range query when updates and queries interleave.
-- [Fenwick Tree (BIT)](../data-structures/fenwick-tree.md) — lighter online alternative; O(log n) point update + prefix query; use when the difference array's offline constraint is violated.
+- [Prefix Sum](../patterns/prefix-sum.md) - the inverse operation; prefix sum of the difference array recovers the original array. Must understand prefix sum to apply difference array fluently.
+- [Array](../data-structures/array.md) - the underlying data structure; O(1) indexed read/write is what makes both O(1) point updates possible.
+- [Segment Tree](../data-structures/segment-tree.md) - the online alternative; O(log n) range update + range query when updates and queries interleave.
+- [Fenwick Tree (BIT)](../data-structures/fenwick-tree.md) - lighter online alternative; O(log n) point update + prefix query; use when the difference array's offline constraint is violated.
 
 ## Practice problems
 
-### LC 370 — Range Addition
+### LC 370 - Range Addition
 
 Given `n` (array length) and `updates`, a list of `[i, j, inc]` operations, apply each operation (add `inc` to `A[i..j]` inclusive) and return the final array. `1 ≤ n ≤ 10⁴`, `0 ≤ i ≤ j < n`. The problem is the textbook difference array problem.
 
@@ -393,11 +393,11 @@ def get_modified_array(n: int, updates: list[list[int]]) -> list[int]:
 
 **Complexity:** O(n + q) time, O(n) space.
 
-**Duplicate problems:** LC 1109 (Corporate Flight Bookings) is structurally identical — 1-indexed range-add then read.
+**Duplicate problems:** LC 1109 (Corporate Flight Bookings) is structurally identical - 1-indexed range-add then read.
 
 ---
 
-### LC 1109 — Corporate Flight Bookings
+### LC 1109 - Corporate Flight Bookings
 
 `n` flights, `bookings` list of `[first, last, seats]`; `seats` are booked on every flight from `first` to `last` (1-indexed). Return the total seats on each flight. `1 ≤ n ≤ 2×10⁴`.
 
@@ -420,11 +420,11 @@ def corp_flight_bookings(bookings: list[list[int]], n: int) -> list[int]:
 
 ---
 
-### LC 253 — Meeting Rooms II
+### LC 253 - Meeting Rooms II
 
 Given `intervals` where `intervals[i] = [start_i, end_i]`, return the minimum number of conference rooms required. `1 ≤ intervals.length ≤ 10⁴`.
 
-**Insight:** event sweep (floating difference array) — `+1` at each start, `-1` at each end. Sort events by time; track running sum; max running sum = minimum rooms.
+**Insight:** event sweep (floating difference array) - `+1` at each start, `-1` at each end. Sort events by time; track running sum; max running sum = minimum rooms.
 
 ```python
 def min_meeting_rooms(intervals: list[list[int]]) -> int:
@@ -446,11 +446,11 @@ def min_meeting_rooms(intervals: list[list[int]]) -> int:
 
 ---
 
-### LC 2848 — Points That Intersect With Cars
+### LC 2848 - Points That Intersect With Cars
 
 `nums[i] = [start_i, end_i]` is a car on a 1D road. Return the number of integer points covered by at least one car. `1 ≤ nums.length ≤ 100`, `1 ≤ start_i ≤ end_i ≤ 100`.
 
-**Insight:** difference array on the integer axis — increment at `start`, decrement at `end + 1`; prefix sum gives coverage count at each point; count positions with coverage > 0.
+**Insight:** difference array on the integer axis - increment at `start`, decrement at `end + 1`; prefix sum gives coverage count at each point; count positions with coverage > 0.
 
 ```python
 def number_of_points(nums: list[list[int]]) -> int:

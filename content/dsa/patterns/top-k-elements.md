@@ -21,10 +21,10 @@
 
 ## Recognition signals
 
-<!-- PA1 (weight 3, the heart). THREE labeled parts, all concrete — any missing/vague caps the score at 5:
-     (a) Trigger phrases — ≥2 literal quoted problem-statement snippets.
-     (b) Structural cues — input shape + output property, regardless of wording.
-     (c) Not to be confused with — name ≥1 neighbor pattern + the distinction in one sentence. -->
+<!-- PA1 (weight 3, the heart). THREE labeled parts, all concrete - any missing/vague caps the score at 5:
+     (a) Trigger phrases - ≥2 literal quoted problem-statement snippets.
+     (b) Structural cues - input shape + output property, regardless of wording.
+     (c) Not to be confused with - name ≥1 neighbor pattern + the distinction in one sentence. -->
 
 ## How it works
 
@@ -48,7 +48,7 @@
 
 ## CP-primitives
 
-<!-- PA11 (gated): the contest-flavored tricks/variants of THIS mechanic — the ones that show up in contests, not basic interviews (sliding window → monotonic-deque window-max; two pointers → meet-in-the-middle; binary-search-on-answer). ≥2, each with a one-line "why for CP". Distinct from PA5 (general twists). -->
+<!-- PA11 (gated): the contest-flavored tricks/variants of THIS mechanic - the ones that show up in contests, not basic interviews (sliding window → monotonic-deque window-max; two pointers → meet-in-the-middle; binary-search-on-answer). ≥2, each with a one-line "why for CP". Distinct from PA5 (general twists). -->
 
 ## Worked problems
 
@@ -60,7 +60,7 @@
 
 ## First 30 seconds
 
-<!-- PA9 (advisory): the 2–3 sentences said out loud on spotting the pattern — structure, why, approach in one breath. -->
+<!-- PA9 (advisory): the 2–3 sentences said out loud on spotting the pattern - structure, why, approach in one breath. -->
 
 ## Related
 
@@ -68,5 +68,5 @@
 
 ## Practice problems
 
-<!-- U6: ≥3 problems, each a WORKED entry (### subheading per problem): (1) full problem statement in 2–3 sentences + constraints where they matter; (2) approach/insight in prose; (3) short runnable Python solution; (4) time/space complexity. EVERY PROBLEM MUST EXERCISE A DISTINCT TECHNIQUE — no duplicates padding the count.
+<!-- U6: ≥3 problems, each a WORKED entry (### subheading per problem): (1) full problem statement in 2–3 sentences + constraints where they matter; (2) approach/insight in prose; (3) short runnable Python solution; (4) time/space complexity. EVERY PROBLEM MUST EXERCISE A DISTINCT TECHNIQUE - no duplicates padding the count.
      Note: keep this distinct from PA6 (Worked problems = brief approach sketches reusing the pattern). U6 here = fully worked, with code. -->

@@ -43,7 +43,7 @@ def test_skip_link_is_first_focusable_element(wiki_page):
 def test_skip_link_off_screen_by_default(wiki_page):
     """The skip link is off-screen (not visually rendered) before focus."""
     bounding_box = wiki_page.locator("a.skip-to-content").bounding_box()
-    # Off-screen via left:-9999px — bounding box x will be very negative or None
+    # Off-screen via left:-9999px - bounding box x will be very negative or None
     assert bounding_box is None or bounding_box["x"] < -100, (
         f"Skip link appears to be on-screen before focus: {bounding_box}"
     )

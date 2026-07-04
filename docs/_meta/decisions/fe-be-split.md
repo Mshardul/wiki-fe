@@ -1,23 +1,23 @@
-# [Archive] FE/BE Repo Split — Decisions
+# [Archive] FE/BE Repo Split - Decisions
 
 How the current single-folder wiki becomes two repos.
-Status: **executed.** Both repos live — `wiki-fe` (`git@github.com:Mshardul/wiki-fe.git`) and `wiki-be` (`git@github.com:Mshardul/wiki-be.git`), each with its own remote + history. The commands below are kept as the record of how it was done.
+Status: **executed.** Both repos live - `wiki-fe` (`git@github.com:Mshardul/wiki-fe.git`) and `wiki-be` (`git@github.com:Mshardul/wiki-be.git`), each with its own remote + history. The commands below are kept as the record of how it was done.
 
 ---
 
 ## Target layout
 
-- **`wiki-fe`** — existing frontend code + its history. Files at repo root (no `wiki/` prefix).
-- **`wiki-be`** — new, empty. Python + FastAPI backend.
+- **`wiki-fe`** - existing frontend code + its history. Files at repo root (no `wiki/` prefix).
+- **`wiki-be`** - new, empty. Python + FastAPI backend.
 - Two repos (not monorepo): cleaner separation, simpler per-side deploy, no future coupling.
 
 ---
 
-## Extract `wiki-fe` — `git filter-repo`
+## Extract `wiki-fe` - `git filter-repo`
 
 Chosen over `git subtree split`: purpose-built for extraction, reparents `wiki/` to root, prunes commits that become empty, cleanest history.
 
-Run on a **throwaway clone** — `filter-repo` rewrites history in place.
+Run on a **throwaway clone** - `filter-repo` rewrites history in place.
 
 ```bash
 git clone <Documentation> /tmp/wiki-extract
@@ -29,31 +29,31 @@ git push -u origin main
 
 | Tool                | Verdict                                                                  |
 | ------------------- | ------------------------------------------------------------------------ |
-| `git filter-repo`   | **Chosen** — auto path-rewrite, prunes empty commits, GitHub-recommended |
+| `git filter-repo`   | **Chosen** - auto path-rewrite, prunes empty commits, GitHub-recommended |
 | `git subtree split` | Works, but keeps merge noise, manual path rewrite                        |
 
 ---
 
 ## Scrub `wiki/` from `Documentation`
 
-After extraction. Two options — decide at execution:
+After extraction. Two options - decide at execution:
 
-- **Simple delete** — `git rm -r wiki/` + commit. Gone going forward; old commits still contain files (repo size unchanged).
-- **Full scrub** — `git filter-repo --path wiki/ --invert-paths` + force-push. Removed from all history, repo shrinks. Force-push ⇒ anyone with a clone must re-clone; safe if solo.
+- **Simple delete** - `git rm -r wiki/` + commit. Gone going forward; old commits still contain files (repo size unchanged).
+- **Full scrub** - `git filter-repo --path wiki/ --invert-paths` + force-push. Removed from all history, repo shrinks. Force-push ⇒ anyone with a clone must re-clone; safe if solo.
 
 ---
 
 ## Notes
 
 - Only `wiki-fe` carries history; `wiki-be` starts fresh.
-- If one commit touched both `wiki/` and other dirs, filter-repo keeps only the `wiki/` part — history stays sensible.
+- If one commit touched both `wiki/` and other dirs, filter-repo keeps only the `wiki/` part - history stays sensible.
 - See [auth.md](./auth.md) for the full personal-layer + backend design.
 
 ---
 
 ## Commands to execute (in order)
 
-Run **before** any backend code — `wiki-be` should be born in its own repo.
+Run **before** any backend code - `wiki-be` should be born in its own repo.
 
 Current state: remote `git@github.com:<username>/Documentations.git`, branch `main`, `wiki/` at repo root, `git-filter-repo` **not yet installed**.
 
@@ -78,14 +78,14 @@ git init -b main
 git remote add origin git@github.com:<username>/wiki-be.git
 # first push happens once there's a commit
 
-# ── 4. Scrub wiki/ from Documentation — choose ONE ────────────────
-#    Option A — simple delete (history retains old files):
+# ── 4. Scrub wiki/ from Documentation - choose ONE ────────────────
+#    Option A - simple delete (history retains old files):
 cd <path-to>/Documentations
 git rm -r wiki/
 git commit -m "Remove wiki (moved to wiki-fe repo)"
 git push
 
-#    Option B — full scrub from all history (repo shrinks, force-push):
+#    Option B - full scrub from all history (repo shrinks, force-push):
 git clone git@github.com:<username>/Documentations.git /tmp/doc-clean
 cd /tmp/doc-clean
 git filter-repo --path wiki/ --invert-paths

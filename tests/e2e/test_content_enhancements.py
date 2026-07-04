@@ -202,7 +202,7 @@ def test_zoom_overlay_closes_on_backdrop_click(page, base_url):
     page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
 
     # The image is centered in the overlay and intercepts pointer events at center.
-    # Click at the top-left corner of the viewport — always on the backdrop, never on content.
+    # Click at the top-left corner of the viewport - always on the backdrop, never on content.
     page.mouse.click(5, 5)
     page.wait_for_function(
         "() => !document.getElementById('zoom-overlay')?.classList.contains('open')",
@@ -292,7 +292,7 @@ def test_diagram_zoom_overlay_contains_svg(page, base_url):
     page.locator(".mermaid-diagram").first.click()
     page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
 
-    # Use evaluate rather than wait_for_selector(visible) — the cloned SVG has
+    # Use evaluate rather than wait_for_selector(visible) - the cloned SVG has
     # no explicit dimensions after stripping width/height attrs, so Playwright's
     # visibility check (non-zero bounding box) may fail even though it is attached.
     svg_in_overlay = page.evaluate("""() => {
@@ -341,7 +341,7 @@ def test_diagram_rerenders_on_theme_change(page, base_url):
         "() => document.querySelector('.mermaid-diagram svg')?.outerHTML"
     )
     assert svg_before != svg_after, (
-        "Mermaid SVG did not change after theme switch — re-render not triggered"
+        "Mermaid SVG did not change after theme switch - re-render not triggered"
     )
 
 
@@ -365,7 +365,7 @@ def test_diagram_src_preserved_after_theme_change(page, base_url):
         "() => document.querySelector('.mermaid-diagram')?.dataset.mermaidSrc"
     )
     assert src_before == src_after, (
-        "data-mermaid-src changed after re-render — re-render should preserve source attribute"
+        "data-mermaid-src changed after re-render - re-render should preserve source attribute"
     )
 
 
@@ -689,7 +689,7 @@ def test_broken_image_shows_error_placeholder(page, base_url):
     count = page.evaluate(
         "() => document.querySelectorAll('#markdown-body .img-error-placeholder').length"
     )
-    assert count > 0, "No .img-error-placeholder found — broken image not replaced"
+    assert count > 0, "No .img-error-placeholder found - broken image not replaced"
 
 
 # ── Copy code with source-context header ────────────────────────────────────────
@@ -903,12 +903,12 @@ def test_print_stylesheet_loaded(wiki_page):
                         if (rule.media && String(rule.media).includes('print')) return true;
                         if (rule.href && rule.href.includes('print.css')) return true;
                     }
-                } catch (e) { /* cross-origin sheet — skip */ }
+                } catch (e) { /* cross-origin sheet - skip */ }
             }
             return false;
         }"""
     )
-    assert has_print, "No @media print rules found — print.css not loaded"
+    assert has_print, "No @media print rules found - print.css not loaded"
 
 
 # ── Table column sort ───────────────────────────────────────────────────────────
@@ -1144,8 +1144,8 @@ ARTICLE_WITH_CAPTIONED_MERMAID = """\
 ## Section
 
 ```mermaid
-%% node-caption: A "entry point — receives all requests"
-%% node-caption: B "load balancer — fans out to workers"
+%% node-caption: A "entry point - receives all requests"
+%% node-caption: B "load balancer - fans out to workers"
 graph LR
   A[Client] --> B[Load Balancer] --> C[Server]
 ```

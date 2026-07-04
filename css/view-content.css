@@ -578,7 +578,7 @@ body.distraction-free .sticky-section-header {
     padding-top: var(--s5);
   }
 }
-/* right-edge scroll fade — only when no header to show overflow */
+/* right-edge scroll fade - only when no header to show overflow */
 .markdown-body pre.pre--overflowing:not(.pre--collapsible)::after {
   content: "";
   position: absolute;
@@ -772,7 +772,7 @@ pre.has-line-numbers {
   background: var(--surface-hover);
 }
 
-/* Quiz-me mode — blanked complexity cells, tap to reveal */
+/* Quiz-me mode - blanked complexity cells, tap to reveal */
 .markdown-body .quiz-cell.quiz-blurred {
   color: transparent;
   background: var(--surface-2);

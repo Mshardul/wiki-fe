@@ -10,7 +10,7 @@ Describes the nature of the work.
 | -------- | ------------------------------------------------------- |
 | feature  | New capability the user didn't have before              |
 | bug      | Something broken or behaving incorrectly                |
-| ux       | Existing thing works better — no new capability added   |
+| ux       | Existing thing works better - no new capability added   |
 | a11y     | Accessibility specifically (ARIA, focus, screen reader) |
 | perf     | Speed, memory, or load-time improvement                 |
 | refactor | Restructure without behaviour change                    |
@@ -35,5 +35,5 @@ Describes which architectural layer(s) the ticket touches.
 | sw       | Service worker, offline, caching                             |
 | ci       | Tooling, pre-commit, GitHub Actions, build pipeline          |
 
-`ux` is a **Type** value, not a Component — UX is a cross-cutting concern, not an isolated layer.
-`backend` omitted — app is entirely frontend.
+`ux` is a **Type** value, not a Component - UX is a cross-cutting concern, not an isolated layer.
+`backend` omitted - app is entirely frontend.

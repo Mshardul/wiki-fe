@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - every core operation here is O(1); you need the cost model to see why the naive list-based version fails. <!-- U9: not-yet-written target — wire to `algorithms/big-o-notation.md` once that page exists. -->
+- **Big-O Notation** [Must read] - every core operation here is O(1); you need the cost model to see why the naive list-based version fails. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
 - [Array](./array.md) [Must read] - a queue over a plain array has an O(n) dequeue trap; the [circular buffer](./circular-buffer.md) fixes it. You need the array's shift cost to see the trap.
 - [Stack](./stack.md) [Should read] - the queue is the FIFO mirror of the stack's LIFO; learning them as a pair locks in when to use which.
 
@@ -20,8 +20,8 @@
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
 - [CP-primitives](#cp-primitives)
-  - [Deque — O(1) at both ends](#deque--o1-at-both-ends)
-  - [Monotonic deque — sliding-window max/min](#monotonic-deque--sliding-window-maxmin)
+  - [Deque - O(1) at both ends](#deque--o1-at-both-ends)
+  - [Monotonic deque - sliding-window max/min](#monotonic-deque--sliding-window-maxmin)
   - [0/1-BFS with a deque](#01-bfs-with-a-deque)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [Practice problems](#practice-problems)
@@ -33,11 +33,11 @@
 
 ## What it is
 
-A **queue** is a linear collection with one rule: **first in, first out (FIFO)** — you add at one end (the **back/rear**) and remove from the other (the **front**).
+A **queue** is a linear collection with one rule: **first in, first out (FIFO)** - you add at one end (the **back/rear**) and remove from the other (the **front**).
 
-Mental model: **a line at a checkout.** People join at the back; the cashier serves from the front; the person who arrived first leaves first. No cutting, no serving from the middle. That single constraint — add at back, remove at front — is what makes a queue the natural fit for **fairness and order-preservation**: task scheduling, request buffering, and breadth-first exploration where you must finish the current "level" before the next.
+Mental model: **a line at a checkout.** People join at the back; the cashier serves from the front; the person who arrived first leaves first. No cutting, no serving from the middle. That single constraint - add at back, remove at front - is what makes a queue the natural fit for **fairness and order-preservation**: task scheduling, request buffering, and breadth-first exploration where you must finish the current "level" before the next.
 
-> **Takeaway (say this out loud):** "A queue is FIFO — enqueue at the back, dequeue at the front in O(1). It's the structure behind BFS and any 'process in arrival order' problem."
+> **Takeaway (say this out loud):** "A queue is FIFO - enqueue at the back, dequeue at the front in O(1). It's the structure behind BFS and any 'process in arrival order' problem."
 
 ## How it works
 
@@ -53,12 +53,12 @@ front                                  front
         back                                  back
 ```
 
-**The naive trap:** put the front at index 0 of an array, and every `dequeue` must shift all remaining elements left by one — O(n). A queue that's O(n) per dequeue defeats the purpose. Two fixes give true O(1) both ends:
+**The naive trap:** put the front at index 0 of an array, and every `dequeue` must shift all remaining elements left by one - O(n). A queue that's O(n) per dequeue defeats the purpose. Two fixes give true O(1) both ends:
 
-- **Circular buffer** — keep `front` and `back` as moving indices that wrap around a fixed array (`i % capacity`); nothing shifts. See [Circular Buffer](./circular-buffer.md) and [Memory layout](#memory-layout).
-- **Doubly linked list** — enqueue at the tail, dequeue at the head; both O(1) with a head and tail pointer. This is what `collections.deque` uses.
+- **Circular buffer** - keep `front` and `back` as moving indices that wrap around a fixed array (`i % capacity`); nothing shifts. See [Circular Buffer](./circular-buffer.md) and [Memory layout](#memory-layout).
+- **Doubly linked list** - enqueue at the tail, dequeue at the head; both O(1) with a head and tail pointer. This is what `collections.deque` uses.
 
-The deep idea: a queue processes things in the order they arrived, which is exactly the order that yields **shortest-path / level-by-level** behavior in BFS. Swap a queue for a stack and breadth-first becomes depth-first — same algorithm skeleton, opposite frontier discipline.
+The deep idea: a queue processes things in the order they arrived, which is exactly the order that yields **shortest-path / level-by-level** behavior in BFS. Swap a queue for a stack and breadth-first becomes depth-first - same algorithm skeleton, opposite frontier discipline.
 
 ## Operations
 
@@ -71,7 +71,7 @@ The deep idea: a queue processes things in the order they arrived, which is exac
 | Size                   | O(1)   | O(1)  |
 | Search by value        | O(n)   | O(1)  |
 
-\*O(1) with a circular buffer or linked list. A queue over a plain Python `list` with `list.pop(0)` makes dequeue **O(n)** — the classic mistake; use `collections.deque` (O(1) `popleft`) instead.
+\*O(1) with a circular buffer or linked list. A queue over a plain Python `list` with `list.pop(0)` makes dequeue **O(n)** - the classic mistake; use `collections.deque` (O(1) `popleft`) instead.
 
 ## Complexity summary
 
@@ -81,15 +81,15 @@ The deep idea: a queue processes things in the order they arrived, which is exac
 | Dequeue   | O(1) | O(1)    | O(1) (ring/list) / O(n) (naive `pop(0)`) |
 | Peek      | O(1) | O(1)    | O(1)                                     |
 
-**Space:** O(n) for n elements. A circular-buffer queue is fixed-capacity (or amortizes resize like a [dynamic array](./dynamic-array.md)); a linked-list queue carries one pointer per node. BFS's hidden space cost is the **frontier**: the queue can hold up to O(width) nodes — for a wide graph that's O(V), the real memory ceiling of BFS.
+**Space:** O(n) for n elements. A circular-buffer queue is fixed-capacity (or amortizes resize like a [dynamic array](./dynamic-array.md)); a linked-list queue carries one pointer per node. BFS's hidden space cost is the **frontier**: the queue can hold up to O(width) nodes - for a wide graph that's O(V), the real memory ceiling of BFS.
 
 ## When to use / when not
 
 **Reach for a queue when:**
 
-- You process in **arrival order / fairness** — task schedulers, print spoolers, request buffers, producer-consumer pipelines. First come, first served.
-- You're doing **breadth-first search** — shortest path in an unweighted graph, level-order tree traversal, flood fill. The queue _is_ the BFS frontier.
-- You need a **buffer between producer and consumer** running at different rates — a bounded queue smooths bursts.
+- You process in **arrival order / fairness** - task schedulers, print spoolers, request buffers, producer-consumer pipelines. First come, first served.
+- You're doing **breadth-first search** - shortest path in an unweighted graph, level-order tree traversal, flood fill. The queue _is_ the BFS frontier.
+- You need a **buffer between producer and consumer** running at different rates - a bounded queue smooths bursts.
 
 **Reach for something else when:**
 
@@ -113,22 +113,22 @@ How the queue stacks up against the structures you'd weigh it against:
 | Priority queue (heap) | O(log n)       | O(log n) min/max | priority | no            | array, complete tree | "most urgent next", Dijkstra    |
 | Array                 | O(1) end       | O(n) front       | by index | **O(1)**      | contiguous, tight    | random access, iteration        |
 
-The queue's identity is **two-ended FIFO in O(1)** — add one side, remove the other. The deque generalizes it (both ends), the heap replaces arrival-order with priority, the stack flips the discipline to LIFO.
+The queue's identity is **two-ended FIFO in O(1)** - add one side, remove the other. The deque generalizes it (both ends), the heap replaces arrival-order with priority, the stack flips the discipline to LIFO.
 
 ## Variants
 
-- **Linear queue (circular buffer)** — fixed array with wrapping `front`/`back` indices; O(1) both ends, no shifting. The standard efficient implementation. Its own page: [Circular Buffer](./circular-buffer.md).
-- **Linked-list queue** — head/tail pointers over a [linked list](./linked-list.md); O(1) enqueue/dequeue, grows without resize, at pointer-overhead cost. What `collections.deque` is built on.
-- **Deque (double-ended queue)** — add/remove at **both** ends in O(1). A superset of both queue and stack; the basis for sliding-window tricks. Detailed in [CP-primitives](#deque--o1-at-both-ends).
-- **Priority queue** — dequeues the min/max (by priority) rather than the oldest. Not really a queue under the hood — it's a [heap](./heap.md). Named here because interviews conflate them; the discipline differs (priority, not arrival).
-- **Circular queue (ring buffer)** — fixed-capacity queue that overwrites or rejects when full; streaming windows, audio buffers, [rate limiters](../../system-design/components/rate-limiter.md). The [Design Circular Queue practice problem](#5-design-circular-queue--ring-buffer) builds one.
-- **Monotonic deque** — a deque kept increasing/decreasing to answer sliding-window min/max in O(n). A discipline on a deque, not a new structure; see [CP-primitives](#monotonic-deque--sliding-window-maxmin).
+- **Linear queue (circular buffer)** - fixed array with wrapping `front`/`back` indices; O(1) both ends, no shifting. The standard efficient implementation. Its own page: [Circular Buffer](./circular-buffer.md).
+- **Linked-list queue** - head/tail pointers over a [linked list](./linked-list.md); O(1) enqueue/dequeue, grows without resize, at pointer-overhead cost. What `collections.deque` is built on.
+- **Deque (double-ended queue)** - add/remove at **both** ends in O(1). A superset of both queue and stack; the basis for sliding-window tricks. Detailed in [CP-primitives](#deque--o1-at-both-ends).
+- **Priority queue** - dequeues the min/max (by priority) rather than the oldest. Not really a queue under the hood - it's a [heap](./heap.md). Named here because interviews conflate them; the discipline differs (priority, not arrival).
+- **Circular queue (ring buffer)** - fixed-capacity queue that overwrites or rejects when full; streaming windows, audio buffers, [rate limiters](../../system-design/components/rate-limiter.md). The [Design Circular Queue practice problem](#5-design-circular-queue--ring-buffer) builds one.
+- **Monotonic deque** - a deque kept increasing/decreasing to answer sliding-window min/max in O(n). A discipline on a deque, not a new structure; see [CP-primitives](#monotonic-deque--sliding-window-maxmin).
 
 ## Memory layout
 
 The queue's whole implementation difficulty is the **two-ended access**, and the layout choice is where it's resolved.
 
-**The naive-array trap.** Front at index 0, back at the end: enqueue is O(1) (append), but dequeue must shift everything left to refill index 0 — **O(n) per dequeue**.
+**The naive-array trap.** Front at index 0, back at the end: enqueue is O(1) (append), but dequeue must shift everything left to refill index 0 - **O(n) per dequeue**.
 
 ```
 dequeue from a front-at-0 array:
@@ -137,7 +137,7 @@ before:  [ 3 | 7 | 2 | 9 ]      dequeue → return 3, then shift left:
 after:   [ 7 | 2 | 9 |   ]      ← every element moved: O(n)
 ```
 
-This is why `queue = []; queue.pop(0)` in Python is a performance bug — innocuous-looking, O(n) each call, O(n²) over a BFS.
+This is why `queue = []; queue.pop(0)` in Python is a performance bug - innocuous-looking, O(n) each call, O(n²) over a BFS.
 
 **The circular-buffer fix (contiguous, wrapping).** Keep `front` and `back` as indices that advance and **wrap** with `% capacity`. Nothing shifts; both ends are O(1). The trade is a fixed capacity (or a resize when full).
 
@@ -155,7 +155,7 @@ enqueue → write at back, back = (back+1) % 6
 - **Cache-friendly** (contiguous), no per-element pointer overhead.
 - Capacity is fixed; growing means allocate + copy (amortized O(1), [dynamic-array style](./dynamic-array.md#memory-layout)). Detail lives in [Circular Buffer](./circular-buffer.md).
 
-**The linked-list fix (scattered, unbounded).** Head pointer = front, tail pointer = back. Enqueue appends a tail node, dequeue drops the head node — both O(1), grows without limit, no resize spike.
+**The linked-list fix (scattered, unbounded).** Head pointer = front, tail pointer = back. Enqueue appends a tail node, dequeue drops the head node - both O(1), grows without limit, no resize spike.
 
 ```
 linked-list queue:   front(head)                       back(tail)
@@ -171,7 +171,7 @@ linked-list queue:   front(head)                       back(tail)
 
 ## Implementation
 
-A queue over a circular buffer — the version that shows the wrapping arithmetic. Pseudocode states the contract; Python gives the from-scratch ring and the `deque` one-liner you'd actually use.
+A queue over a circular buffer - the version that shows the wrapping arithmetic. Pseudocode states the contract; Python gives the from-scratch ring and the `deque` one-liner you'd actually use.
 
 **Pseudocode (CLRS-style contract):**
 
@@ -192,7 +192,7 @@ DEQUEUE(Q)
 6   return x
 ```
 
-**Python (reference — idiomatic):**
+**Python (reference - idiomatic):**
 
 ```python
 from typing import Generic, Optional, TypeVar
@@ -234,24 +234,24 @@ class CircularQueue(Generic[T]):
         return self._size
 ```
 
-**Contest velocity — use `collections.deque`, never `list.pop(0)`.** The single most important queue fact in a contest:
+**Contest velocity - use `collections.deque`, never `list.pop(0)`.** The single most important queue fact in a contest:
 
 ```python
 from collections import deque
 
 q = deque()
-q.append(x)        # enqueue at the back — O(1)
+q.append(x)        # enqueue at the back - O(1)
 front = q[0]       # peek front (guard `if q`)
-val = q.popleft()  # dequeue from the front — O(1), NOT list.pop(0) which is O(n)
+val = q.popleft()  # dequeue from the front - O(1), NOT list.pop(0) which is O(n)
 ```
 
-`deque` also gives `appendleft`/`pop` for the back end (the [deque primitive](#deque--o1-at-both-ends)). A plain `list` as a queue is an O(n²) TLE waiting to happen — reach for `deque` reflexively.
+`deque` also gives `appendleft`/`pop` for the back end (the [deque primitive](#deque--o1-at-both-ends)). A plain `list` as a queue is an O(n²) TLE waiting to happen - reach for `deque` reflexively.
 
 ## CP-primitives
 
-The queue's contest leverage is the **deque** and what it unlocks — sliding-window extremes and a Dijkstra-free shortest path on 0/1 graphs.
+The queue's contest leverage is the **deque** and what it unlocks - sliding-window extremes and a Dijkstra-free shortest path on 0/1 graphs.
 
-### Deque — O(1) at both ends
+### Deque - O(1) at both ends
 
 A **double-ended queue** adds/removes at both front and back in O(1). It is a queue and a stack at once, and the substrate for the next two primitives.
 
@@ -264,9 +264,9 @@ dq.pop()           # back
 dq.popleft()       # front
 ```
 
-**Why for CP:** one structure covers BFS (FIFO), DFS (LIFO), and both-end window tricks — no need to pick a backing structure per problem, and every op is O(1).
+**Why for CP:** one structure covers BFS (FIFO), DFS (LIFO), and both-end window tricks - no need to pick a backing structure per problem, and every op is O(1).
 
-### Monotonic deque — sliding-window max/min
+### Monotonic deque - sliding-window max/min
 
 To get the max of every window of size `k`, keep a deque of **indices** whose values are decreasing: before adding `i`, pop smaller values from the back (they can never be the max while `nums[i]` is around); pop the front when it slides out of the window. The front is always the window max. Each index is added and removed once → **O(n)** for all windows, beating the O(n·k) brute force and the O(n log n) heap.
 
@@ -306,26 +306,26 @@ def zero_one_bfs(graph, source, n):       # graph[u] = [(v, w in {0,1}), ...]
     return dist
 ```
 
-**Why for CP:** shortest path on 0/1-weighted graphs (grid problems with "free" vs "cost-1" moves) in linear time, no priority queue — a frequent contest shortcut over Dijkstra.
+**Why for CP:** shortest path on 0/1-weighted graphs (grid problems with "free" vs "cost-1" moves) in linear time, no priority queue - a frequent contest shortcut over Dijkstra.
 
 ## Gotchas / edge cases
 
-- **`list.pop(0)` is O(n) — the cardinal queue sin.** Using a Python `list` as a queue makes every dequeue shift the whole list left, turning an O(n) BFS into O(n²) and a TLE. Always use `collections.deque` and `popleft()`. This is the single most common queue mistake in interviews and contests.
-- **Empty-queue underflow.** Dequeuing or peeking an empty queue throws (`IndexError`) or returns garbage in C. Guard `if not q` / `while q` — in BFS the loop condition `while q` handles it, but a stray `q.popleft()` after the loop crashes.
-- **Full ring buffer: distinguishing empty from full.** With wrapping indices, `front == back` is ambiguous — it means both empty and full. Resolve it by tracking an explicit `size` count (as the implementation does) or leaving one slot always empty. Getting this wrong silently drops or duplicates elements.
-- **Forgetting the visited-set in BFS.** A queue-based BFS on a graph with cycles re-enqueues already-seen nodes forever (infinite loop / exponential blowup). Mark nodes visited **when you enqueue** them, not when you dequeue — marking on dequeue lets a node be enqueued multiple times before it's processed.
+- **`list.pop(0)` is O(n) - the cardinal queue sin.** Using a Python `list` as a queue makes every dequeue shift the whole list left, turning an O(n) BFS into O(n²) and a TLE. Always use `collections.deque` and `popleft()`. This is the single most common queue mistake in interviews and contests.
+- **Empty-queue underflow.** Dequeuing or peeking an empty queue throws (`IndexError`) or returns garbage in C. Guard `if not q` / `while q` - in BFS the loop condition `while q` handles it, but a stray `q.popleft()` after the loop crashes.
+- **Full ring buffer: distinguishing empty from full.** With wrapping indices, `front == back` is ambiguous - it means both empty and full. Resolve it by tracking an explicit `size` count (as the implementation does) or leaving one slot always empty. Getting this wrong silently drops or duplicates elements.
+- **Forgetting the visited-set in BFS.** A queue-based BFS on a graph with cycles re-enqueues already-seen nodes forever (infinite loop / exponential blowup). Mark nodes visited **when you enqueue** them, not when you dequeue - marking on dequeue lets a node be enqueued multiple times before it's processed.
 - **Monotonic-deque: storing indices, and the `<` vs `<=`.** Store **indices** so you can detect when the front slides out of the window; the comparison strictness decides duplicate handling. As with the monotonic stack, the comparison direction is the subtle bug.
-- **Multi-source BFS seeding.** Problems like "rotting oranges" or "nearest gate" need **all** sources enqueued at distance 0 before the loop starts — a common miss is seeding only one source and getting wrong distances.
+- **Multi-source BFS seeding.** Problems like "rotting oranges" or "nearest gate" need **all** sources enqueued at distance 0 before the loop starts - a common miss is seeding only one source and getting wrong distances.
 
 ## Practice problems
 
-Five staples, each a **distinct** queue technique — no two solved the same way.
+Five staples, each a **distinct** queue technique - no two solved the same way.
 
-### 1. Implement Queue using Stacks — _amortized transfer_
+### 1. Implement Queue using Stacks - _amortized transfer_
 
 **Problem.** Implement a FIFO queue (`push`, `pop`, `peek`, `empty`) using only two LIFO stacks.
 
-**Approach.** Push onto an **in** stack. To pop/peek, if the **out** stack is empty, pour the in-stack into it — reversing the order, so out's top is the oldest element. Each element is moved between stacks at most once, so the transfer amortizes to **O(1)** per operation despite the occasional O(n) pour. The classic "build FIFO from LIFO" insight: two reversals make a forward.
+**Approach.** Push onto an **in** stack. To pop/peek, if the **out** stack is empty, pour the in-stack into it - reversing the order, so out's top is the oldest element. Each element is moved between stacks at most once, so the transfer amortizes to **O(1)** per operation despite the occasional O(n) pour. The classic "build FIFO from LIFO" insight: two reversals make a forward.
 
 ```python
 class MyQueue:
@@ -355,11 +355,11 @@ class MyQueue:
 
 **Complexity.** Amortized O(1) per operation, O(n) space.
 
-### 2. Number of Recent Calls — _sliding-window queue_
+### 2. Number of Recent Calls - _sliding-window queue_
 
 **Problem.** Implement a counter `ping(t)` that returns how many calls happened in the last 3000 ms, i.e. in `[t-3000, t]`. Calls arrive in increasing `t`.
 
-**Approach.** A queue of timestamps. On each `ping(t)`, enqueue `t`, then dequeue everything older than `t-3000` from the front. The queue holds exactly the in-window calls, so its size is the answer. The FIFO order matches time order, so stale calls always leave from the front — a pure sliding-window-over-time use of a queue.
+**Approach.** A queue of timestamps. On each `ping(t)`, enqueue `t`, then dequeue everything older than `t-3000` from the front. The queue holds exactly the in-window calls, so its size is the answer. The FIFO order matches time order, so stale calls always leave from the front - a pure sliding-window-over-time use of a queue.
 
 ```python
 from collections import deque
@@ -377,11 +377,11 @@ class RecentCounter:
 
 **Complexity.** Amortized O(1) per `ping`, O(W) space (W = max calls in a window).
 
-### 3. Sliding Window Maximum — _monotonic deque_
+### 3. Sliding Window Maximum - _monotonic deque_
 
 **Problem.** Given an array and a window size `k`, return the maximum of each contiguous window. E.g. `nums=[1,3,-1,-3,5,3,6,7], k=3` → `[3,3,5,5,6,7]`.
 
-**Approach.** A **decreasing monotonic deque of indices**: before adding `i`, pop smaller values off the back (they can't be the max while `nums[i]` lives); pop the front when it leaves the window. The front index is always the current window max — O(n) total, beating the O(n log n) heap. The monotonic-deque primitive in its canonical problem.
+**Approach.** A **decreasing monotonic deque of indices**: before adding `i`, pop smaller values off the back (they can't be the max while `nums[i]` lives); pop the front when it leaves the window. The front index is always the current window max - O(n) total, beating the O(n log n) heap. The monotonic-deque primitive in its canonical problem.
 
 ```python
 from collections import deque
@@ -402,11 +402,11 @@ def max_sliding_window(nums: list[int], k: int) -> list[int]:
 
 **Complexity.** O(n) time, O(k) space. Pattern: [Sliding Window](../patterns/sliding-window.md).
 
-### 4. Rotting Oranges — _multi-source BFS_
+### 4. Rotting Oranges - _multi-source BFS_
 
 **Problem.** In a grid, `2` = rotten orange, `1` = fresh, `0` = empty. Each minute, a rotten orange rots its 4-directional fresh neighbors. Return the minutes until none are fresh, or -1 if impossible.
 
-**Approach.** **Multi-source BFS**: enqueue _all_ initially-rotten cells at distance 0, then BFS outward level by level — each level is one minute. The queue's FIFO order guarantees you finish minute `t` before minute `t+1`, so the last level processed is the answer. Seeding every source up front is the key (a single-source BFS would give wrong times).
+**Approach.** **Multi-source BFS**: enqueue _all_ initially-rotten cells at distance 0, then BFS outward level by level - each level is one minute. The queue's FIFO order guarantees you finish minute `t` before minute `t+1`, so the last level processed is the answer. Seeding every source up front is the key (a single-source BFS would give wrong times).
 
 ```python
 from collections import deque
@@ -436,9 +436,9 @@ def oranges_rotting(grid: list[list[int]]) -> int:
 
 **Complexity.** O(rows · cols) time and space. Pattern: [Tree & Graph Traversal](../patterns/tree-graph-traversal.md).
 
-### 5. Design Circular Queue — _ring buffer_
+### 5. Design Circular Queue - _ring buffer_
 
-**Problem.** Design a fixed-capacity circular queue with `enQueue`, `deQueue`, `Front`, `Rear`, `isEmpty`, `isFull` — all O(1).
+**Problem.** Design a fixed-capacity circular queue with `enQueue`, `deQueue`, `Front`, `Rear`, `isEmpty`, `isFull` - all O(1).
 
 **Approach.** A fixed array with a `front` index and a `size` count; the back slot is `(front + size) % capacity`. Wrapping arithmetic means nothing shifts and the array reuses freed front slots. Tracking `size` explicitly resolves the empty-vs-full ambiguity that plagues `front == back` designs. The ring-buffer primitive made concrete.
 

@@ -31,15 +31,15 @@
 
 ## What it is
 
-**Backtracking** is the pattern for problems that ask you to **build a solution incrementally**, one choice at a time, and **abandon a partial solution the instant it can't possibly lead to a valid full one** — then undo the last choice and try the next. It's a depth-first walk of an implicit **decision tree**, with pruning: you never expand a branch you can already prove is dead.
+**Backtracking** is the pattern for problems that ask you to **build a solution incrementally**, one choice at a time, and **abandon a partial solution the instant it can't possibly lead to a valid full one** - then undo the last choice and try the next. It's a depth-first walk of an implicit **decision tree**, with pruning: you never expand a branch you can already prove is dead.
 
-Mental model: **exploring a maze with a ball of string.** At each junction you pick a corridor and unspool string; when you hit a dead end you reel the string back to the last junction and try a different corridor. The string is your undo log — the "un-choose" step that lets one recursion explore exponentially many configurations without losing its place.
+Mental model: **exploring a maze with a ball of string.** At each junction you pick a corridor and unspool string; when you hit a dead end you reel the string back to the last junction and try a different corridor. The string is your undo log - the "un-choose" step that lets one recursion explore exponentially many configurations without losing its place.
 
-> **Takeaway (say this out loud):** "This is backtracking — choose, explore, un-choose. I'm walking a decision tree depth-first and pruning any branch that violates a constraint before it grows."
+> **Takeaway (say this out loud):** "This is backtracking - choose, explore, un-choose. I'm walking a decision tree depth-first and pruning any branch that violates a constraint before it grows."
 
 ## Recognition signals
 
-**(a) Trigger phrases** — literal snippets that should fire this pattern:
+**(a) Trigger phrases** - literal snippets that should fire this pattern:
 
 - "find **all** valid …" / "generate **all** combinations / arrangements / placements that satisfy …"
 - "is there a way to **place / assign / partition** … such that **no two** … conflict"
@@ -47,18 +47,18 @@ Mental model: **exploring a maze with a ball of string.** At each junction you p
 - "fill the grid / board so that every row/column/region …" (Sudoku, N-Queens, crosswords)
 - "split the string into valid segments" / "partition into pieces each of which …"
 
-**(b) Structural cues** — independent of wording:
+**(b) Structural cues** - independent of wording:
 
 - The output is a **sequence of decisions** (which item, which cell, which cut), and a candidate is valid only if **every** decision is consistent with the others.
-- The search space is **exponential** (`bᵈ` — branching `b`, depth `d`), but **most branches die early** to constraints — so pruning, not raw enumeration, is what makes it tractable.
+- The search space is **exponential** (`bᵈ` - branching `b`, depth `d`), but **most branches die early** to constraints - so pruning, not raw enumeration, is what makes it tractable.
 - There's a clear **partial-solution validity test** you can apply _before_ a candidate is complete (the prune predicate).
-- Small input bounds (`n ≤ ~15–20`, board ≤ 9×9) — the constraint signature that says "exponential search is intended."
+- Small input bounds (`n ≤ ~15–20`, board ≤ 9×9) - the constraint signature that says "exponential search is intended."
 
 **(c) Not to be confused with:**
 
-- **Dynamic programming** — DP applies when subproblems **overlap and you only need an optimum or a count**; backtracking applies when you must **enumerate actual configurations** or the state can't be memoized cheaply. **The decisive test: does the answer depend only on a small canonical _state_, or on the full _path_ taken to reach it?** If two different partial paths reaching the same state have identical futures (count of completions, best value) — the state is memoizable, it's DP. If the path itself is the output, or the validity of the next choice depends on the whole history (which exact queens are placed, not just how many) — it's backtracking. "Number of ways to climb stairs" collapses to a state (DP); "list every distinct climb" does not (backtracking). Many problems admit both; the question "is my future a function of state alone?" decides it, and the input bound confirms (`n ≤ 20` → exponential is affordable → backtracking; `n` large with overlap → memoize).
-- **[Subsets & Permutations](./subsets-permutations.md)** — that's the _unconstrained enumeration_ special case (every branch is valid, no pruning). Plain backtracking adds a **prune predicate**; if there's no constraint to prune on, you're really doing subset/permutation generation.
-- **Greedy** — greedy commits to one choice and never reconsiders; backtracking _reconsiders_ by undoing. If a single locally-best choice provably works, it's greedy, not backtracking.
+- **Dynamic programming** - DP applies when subproblems **overlap and you only need an optimum or a count**; backtracking applies when you must **enumerate actual configurations** or the state can't be memoized cheaply. **The decisive test: does the answer depend only on a small canonical _state_, or on the full _path_ taken to reach it?** If two different partial paths reaching the same state have identical futures (count of completions, best value) - the state is memoizable, it's DP. If the path itself is the output, or the validity of the next choice depends on the whole history (which exact queens are placed, not just how many) - it's backtracking. "Number of ways to climb stairs" collapses to a state (DP); "list every distinct climb" does not (backtracking). Many problems admit both; the question "is my future a function of state alone?" decides it, and the input bound confirms (`n ≤ 20` → exponential is affordable → backtracking; `n` large with overlap → memoize).
+- **[Subsets & Permutations](./subsets-permutations.md)** - that's the _unconstrained enumeration_ special case (every branch is valid, no pruning). Plain backtracking adds a **prune predicate**; if there's no constraint to prune on, you're really doing subset/permutation generation.
+- **Greedy** - greedy commits to one choice and never reconsiders; backtracking _reconsiders_ by undoing. If a single locally-best choice provably works, it's greedy, not backtracking.
 
 ## How it works
 
@@ -84,9 +84,9 @@ decision tree for "place items with a constraint", branching ≤ 3:
   ✗ = pruned: never expanded, the whole subtree is skipped
 ```
 
-The pruned `C` subtree is the entire point: without the prune predicate this is brute-force enumeration of every leaf; _with_ it, whole exponential subtrees vanish the moment a partial solution is provably dead. The depth-first order means only **one root-to-current path** of state is live at a time — that's why the space is O(depth), not O(number of solutions). The procedure-level correctness (why the undo restores state exactly, why every solution is reached once) lives in the [backtracking algorithm](../algorithms/backtracking.md#correctness--invariant) page.
+The pruned `C` subtree is the entire point: without the prune predicate this is brute-force enumeration of every leaf; _with_ it, whole exponential subtrees vanish the moment a partial solution is provably dead. The depth-first order means only **one root-to-current path** of state is live at a time - that's why the space is O(depth), not O(number of solutions). The procedure-level correctness (why the undo restores state exactly, why every solution is reached once) lives in the [backtracking algorithm](../algorithms/backtracking.md#correctness--invariant) page.
 
-This choose/explore/un-choose-with-pruning frame is the engine of real **constraint-satisfaction solvers** — SAT solvers (DPLL, the backbone of hardware verification and dependency resolvers like `apt`/`pip`) are backtracking with unit-propagation as the prune, and regex backtracking engines (PCRE, Python's `re`) walk exactly this decision tree over match alternatives — which is why a pathological pattern can trigger catastrophic exponential backtracking.
+This choose/explore/un-choose-with-pruning frame is the engine of real **constraint-satisfaction solvers** - SAT solvers (DPLL, the backbone of hardware verification and dependency resolvers like `apt`/`pip`) are backtracking with unit-propagation as the prune, and regex backtracking engines (PCRE, Python's `re`) walk exactly this decision tree over match alternatives - which is why a pathological pattern can trigger catastrophic exponential backtracking.
 
 ## Skeleton
 
@@ -105,7 +105,7 @@ BACKTRACK(state, choices)
 9       UNMAKE-CHOICE(state, candidate)      ▷ un-choose (restore state)
 ```
 
-**Python template — real signature, paste and adapt:**
+**Python template - real signature, paste and adapt:**
 
 ```python
 from typing import TypeVar
@@ -120,14 +120,14 @@ def solve(start_state: State) -> list[State]:
 
     def backtrack(state: State) -> None:
         if is_complete(state):
-            results.append(snapshot(path))   # COPY the path — it mutates
+            results.append(snapshot(path))   # COPY the path - it mutates
             return
         for candidate in candidates(state):
             if not is_valid(state, candidate):
                 continue                # prune: this branch can't lead to a solution
             make_choice(state, path, candidate)     # choose
             backtrack(state)                        # explore
-            unmake_choice(state, path, candidate)   # un-choose — restore exactly
+            unmake_choice(state, path, candidate)   # un-choose - restore exactly
 
     backtrack(start_state)
     return results
@@ -136,86 +136,86 @@ def solve(start_state: State) -> list[State]:
     # make_choice / unmake_choice for the specific problem. The frame never changes.
 ```
 
-The four problem-specific holes are `candidates`, `is_valid` (the prune), and the symmetric `make_choice` / `unmake_choice` pair. Get the choose/un-choose **exactly symmetric** and snapshot the path on record — those are the two places bugs live.
+The four problem-specific holes are `candidates`, `is_valid` (the prune), and the symmetric `make_choice` / `unmake_choice` pair. Get the choose/un-choose **exactly symmetric** and snapshot the path on record - those are the two places bugs live.
 
-**The skeleton invariant that decides speed: prune _before_ recursing, never after.** There are two valid places to reject a dead branch — at the parent (test `is_valid(candidate)` before `make_choice`, as above) or at the child (recurse, then bail at the top via an `is_invalid(state)` guard). They produce the same answers but **not** the same speed: the child-guard form still pays a function call, a make, and an unmake for every dead candidate, whereas the parent-test form skips the branch entirely. Always push the check to the parent so a pruned subtree costs _zero_ recursion. The deeper version is **incremental validity** — maintain the constraint state (occupied columns, running sum) _inside_ `state` so `is_valid` is O(1) per candidate instead of an O(n) re-scan of the whole partial solution; that single change is often what turns a TLE into an accept, and it's why real backtracking carries conflict-sets/bitmasks in the state rather than recomputing validity from `path`. The frame never changes; where and how cheaply you prune is the entire performance story.
+**The skeleton invariant that decides speed: prune _before_ recursing, never after.** There are two valid places to reject a dead branch - at the parent (test `is_valid(candidate)` before `make_choice`, as above) or at the child (recurse, then bail at the top via an `is_invalid(state)` guard). They produce the same answers but **not** the same speed: the child-guard form still pays a function call, a make, and an unmake for every dead candidate, whereas the parent-test form skips the branch entirely. Always push the check to the parent so a pruned subtree costs _zero_ recursion. The deeper version is **incremental validity** - maintain the constraint state (occupied columns, running sum) _inside_ `state` so `is_valid` is O(1) per candidate instead of an O(n) re-scan of the whole partial solution; that single change is often what turns a TLE into an accept, and it's why real backtracking carries conflict-sets/bitmasks in the state rather than recomputing validity from `path`. The frame never changes; where and how cheaply you prune is the entire performance story.
 
 ## Complexity
 
-- **Time: O(b^d · c)** in the worst case — branching factor `b`, depth `d` (decisions), `c` = cost of the validity check + recording per node. This is the size of the explored tree; **pruning shrinks the effective `b^d` dramatically** but doesn't change the worst-case bound (an adversarial input prunes nothing). For permutations `b·d ≈ n!`; for subsets `2ⁿ`; for a k-ary grid `kᶜᵉˡˡˢ`.
-- **Space: O(d)** for the recursion stack + the live `path` — proportional to the **depth**, not the number of solutions. Add O(total output size) if you store every solution. This O(depth) footprint is backtracking's quiet advantage over generating-then-filtering.
+- **Time: O(b^d · c)** in the worst case - branching factor `b`, depth `d` (decisions), `c` = cost of the validity check + recording per node. This is the size of the explored tree; **pruning shrinks the effective `b^d` dramatically** but doesn't change the worst-case bound (an adversarial input prunes nothing). For permutations `b·d ≈ n!`; for subsets `2ⁿ`; for a k-ary grid `kᶜᵉˡˡˢ`.
+- **Space: O(d)** for the recursion stack + the live `path` - proportional to the **depth**, not the number of solutions. Add O(total output size) if you store every solution. This O(depth) footprint is backtracking's quiet advantage over generating-then-filtering.
 
 The honest senior point: backtracking's stated complexity is exponential, and that's _fine_ when the constraints cap `n` small (the [Constraints & approach](#constraints--approach) bounds). The art is making the prune predicate cheap and early so the _actual_ tree explored is a tiny fraction of `b^d`.
 
 ## Constraints & approach
 
-The input bound is the loudest signal that exponential search is intended — and which exponential.
+The input bound is the loudest signal that exponential search is intended - and which exponential.
 
 | Input size / shape              | Reach for                          | Why the constraint says so                                                                                  |
 | ------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `n ≤ ~10`                       | backtracking, even `O(n!)`         | `10! ≈ 3.6M` — full permutation search runs in time; the tiny bound _invites_ exhaustive exploration.       |
+| `n ≤ ~10`                       | backtracking, even `O(n!)`         | `10! ≈ 3.6M` - full permutation search runs in time; the tiny bound _invites_ exhaustive exploration.       |
 | `n ≤ ~20`                       | backtracking `O(2ⁿ)`, or bitmask DP | `2²⁰ ≈ 10⁶`; subset/placement search fits. Past ~22, pure backtracking risks TLE → add memo or meet-in-middle. |
-| `n ≤ ~40`, subset/sum search    | **meet-in-the-middle**, `O(2^(n/2))` | `2⁴⁰` is infeasible but `2²⁰` per half is instant — split, enumerate each half by backtracking, combine. The exact bound that says "backtracking, but only on half." |
+| `n ≤ ~40`, subset/sum search    | **meet-in-the-middle**, `O(2^(n/2))` | `2⁴⁰` is infeasible but `2²⁰` per half is instant - split, enumerate each half by backtracking, combine. The exact bound that says "backtracking, but only on half." |
 | board ≤ 9×9 (Sudoku), N ≤ ~12   | backtracking + strong pruning      | The branching is large but constraints kill most branches; MRV / forward-checking make it instant.          |
 | "count the ways", `n` large     | **off** backtracking → **DP**      | If you only need a count or an optimum and subproblems overlap, enumerating every configuration is wasteful → memoize. |
-| "find one / any valid"          | backtracking, return on first hit  | No need to enumerate all — short-circuit the recursion the moment one solution completes.                    |
+| "find one / any valid"          | backtracking, return on first hit  | No need to enumerate all - short-circuit the recursion the moment one solution completes.                    |
 | `n ≤ 10⁵` and "all subarrays/…" | **off** backtracking → linear/2-ptr | A large bound _rules out_ exponential search; the intended solution is polynomial (sliding window, DP, greedy). |
 
-The senior reading: **a small `n` (≤ ~20) next to "find all / place / partition / satisfy" is the backtracking tell.** A large `n` with the same words means the problem wants a polynomial reformulation, not exhaustive search — the constraint is pushing you _off_ this pattern.
+The senior reading: **a small `n` (≤ ~20) next to "find all / place / partition / satisfy" is the backtracking tell.** A large `n` with the same words means the problem wants a polynomial reformulation, not exhaustive search - the constraint is pushing you _off_ this pattern.
 
 ## Variations
 
-- **Find-one vs find-all** — return a boolean and short-circuit on the first complete solution (Sudoku: "solve it"), versus collecting every solution (N-Queens: "all distinct boards"). The frame is identical; only the record/return step changes.
-- **Constraint propagation** — beyond the local prune, _deduce_ forced values and shrink future candidates (Sudoku: a cell with one legal value is filled immediately). Turns a slow search fast.
-- **Ordering heuristics (MRV / LCV)** — choose the **most-constrained variable next** (fewest legal candidates) to fail fast and prune more; pick the **least-constraining value** to keep options open. Reorders the tree so dead branches die sooner.
-- **Iterative deepening** — bound the depth and increase it, when solutions are shallow and the tree is infinite/huge (game search, word ladders).
-- **Backtracking + memoization** — when partial states recur, cache them; this is the bridge to DP (e.g. word-break with memo).
+- **Find-one vs find-all** - return a boolean and short-circuit on the first complete solution (Sudoku: "solve it"), versus collecting every solution (N-Queens: "all distinct boards"). The frame is identical; only the record/return step changes.
+- **Constraint propagation** - beyond the local prune, _deduce_ forced values and shrink future candidates (Sudoku: a cell with one legal value is filled immediately). Turns a slow search fast.
+- **Ordering heuristics (MRV / LCV)** - choose the **most-constrained variable next** (fewest legal candidates) to fail fast and prune more; pick the **least-constraining value** to keep options open. Reorders the tree so dead branches die sooner.
+- **Iterative deepening** - bound the depth and increase it, when solutions are shallow and the tree is infinite/huge (game search, word ladders).
+- **Backtracking + memoization** - when partial states recur, cache them; this is the bridge to DP (e.g. word-break with memo).
 
 ## CP-primitives
 
-The contest-flavored upgrades that separate a TLE from an accepted solution — none of these appear in a basic interview, all show up in contests:
+The contest-flavored upgrades that separate a TLE from an accepted solution - none of these appear in a basic interview, all show up in contests:
 
-- **Bitmask state for "used" sets** — represent which elements/columns/diagonals are taken as bits in an integer; `make/unmake` becomes `mask ^= (1 << k)`, and validity is a single `&`. Collapses an O(n) "is it used?" scan to O(1) and makes the state hashable for memoization. **Why for CP:** turns O(n!·n) into O(n!) constant-factor wins and enables bitmask-DP fusion (`n ≤ 20`).
-- **Forward checking / constraint propagation** — after each choice, eagerly remove now-illegal candidates from future variables and bail if any variable's domain empties. **Why for CP:** prunes orders of magnitude more than a leaf-only validity test; the difference between Sudoku in milliseconds and in minutes.
-- **Symmetry breaking** — fix a canonical first choice to skip mirror-image solutions (N-Queens: only place the first queen in the left half, double the count). **Why for CP:** divides the explored tree by the symmetry group size — a 2×–8× speedup for free.
-- **Meet-in-the-middle** — for `n ≤ ~40` subset problems too big for `2ⁿ`, split in half, enumerate each `2^(n/2)` side, and combine. **Why for CP:** turns `2⁴⁰` (infeasible) into `2²⁰` (instant) — the standard escape when `n` is just past the backtracking ceiling.
+- **Bitmask state for "used" sets** - represent which elements/columns/diagonals are taken as bits in an integer; `make/unmake` becomes `mask ^= (1 << k)`, and validity is a single `&`. Collapses an O(n) "is it used?" scan to O(1) and makes the state hashable for memoization. **Why for CP:** turns O(n!·n) into O(n!) constant-factor wins and enables bitmask-DP fusion (`n ≤ 20`).
+- **Forward checking / constraint propagation** - after each choice, eagerly remove now-illegal candidates from future variables and bail if any variable's domain empties. **Why for CP:** prunes orders of magnitude more than a leaf-only validity test; the difference between Sudoku in milliseconds and in minutes.
+- **Symmetry breaking** - fix a canonical first choice to skip mirror-image solutions (N-Queens: only place the first queen in the left half, double the count). **Why for CP:** divides the explored tree by the symmetry group size - a 2×–8× speedup for free.
+- **Meet-in-the-middle** - for `n ≤ ~40` subset problems too big for `2ⁿ`, split in half, enumerate each `2^(n/2)` side, and combine. **Why for CP:** turns `2⁴⁰` (infeasible) into `2²⁰` (instant) - the standard escape when `n` is just past the backtracking ceiling.
 
 ## Worked problems
 
-Five constraint-satisfaction staples — each a **distinct** facet of the pattern, none overlapping the enumeration problems on [Subsets & Permutations](./subsets-permutations.md) or the algorithm page.
+Five constraint-satisfaction staples - each a **distinct** facet of the pattern, none overlapping the enumeration problems on [Subsets & Permutations](./subsets-permutations.md) or the algorithm page.
 
-- **N-Queens** — place `N` queens on an `N×N` board, none attacking. Track occupied columns and both diagonals as sets (or bitmasks); the prune is "is this column/diagonal taken?" before placing. Recurse row by row; record a board when all `N` rows are filled. The canonical "place with conflict constraints" problem.
-- **Sudoku Solver** — fill a 9×9 grid so every row, column, and 3×3 box has 1–9. Find the next empty cell, try each digit valid by the three constraints, recurse, undo on failure. Add **MRV** (fill the most-constrained empty cell first) and it solves instantly. Showcases constraint propagation + ordering heuristics.
-- **Combination Sum** — all multisets of candidates summing to a target, reuse allowed. Pass a `start` index so each recursion only considers candidates ≥ the last picked (prevents permutation duplicates); prune when the running sum exceeds the target. The "unbounded choice with a start-index dedup" technique.
-- **Restore IP Addresses** — split a digit string into 4 valid octets (0–255, no leading zeros). Recurse over 4 segments, each taking 1–3 digits, pruning octets > 255 or with leading zeros. A **bounded-depth partition** — exactly 4 cuts — distinct from the open-ended sum search.
-- **Word Break II** — return all sentences formed by inserting spaces so every word is in a dictionary. Backtrack over prefixes that are valid words; **memoize** suffixes that recur to avoid re-exploring — the bridge from pure backtracking to memoized search.
+- **N-Queens** - place `N` queens on an `N×N` board, none attacking. Track occupied columns and both diagonals as sets (or bitmasks); the prune is "is this column/diagonal taken?" before placing. Recurse row by row; record a board when all `N` rows are filled. The canonical "place with conflict constraints" problem.
+- **Sudoku Solver** - fill a 9×9 grid so every row, column, and 3×3 box has 1–9. Find the next empty cell, try each digit valid by the three constraints, recurse, undo on failure. Add **MRV** (fill the most-constrained empty cell first) and it solves instantly. Showcases constraint propagation + ordering heuristics.
+- **Combination Sum** - all multisets of candidates summing to a target, reuse allowed. Pass a `start` index so each recursion only considers candidates ≥ the last picked (prevents permutation duplicates); prune when the running sum exceeds the target. The "unbounded choice with a start-index dedup" technique.
+- **Restore IP Addresses** - split a digit string into 4 valid octets (0–255, no leading zeros). Recurse over 4 segments, each taking 1–3 digits, pruning octets > 255 or with leading zeros. A **bounded-depth partition** - exactly 4 cuts - distinct from the open-ended sum search.
+- **Word Break II** - return all sentences formed by inserting spaces so every word is in a dictionary. Backtrack over prefixes that are valid words; **memoize** suffixes that recur to avoid re-exploring - the bridge from pure backtracking to memoized search.
 
 ## Pitfalls
 
 - **Forgetting to un-choose (asymmetric make/unmake).** The single most common backtracking bug: you mutate shared state going down but don't restore it coming up, so sibling branches inherit a polluted state and emit garbage. Every `make_choice` needs an exactly-mirroring `unmake_choice`; verify the state is byte-for-byte restored after the recursive call returns.
-- **Recording a reference instead of a snapshot.** Appending the live `path` list to `results` stores a _pointer_ that keeps mutating — every result ends up identical (the final/empty path). Always append a **copy** (`path[:]` / `list(path)`).
+- **Recording a reference instead of a snapshot.** Appending the live `path` list to `results` stores a _pointer_ that keeps mutating - every result ends up identical (the final/empty path). Always append a **copy** (`path[:]` / `list(path)`).
 - **No prune predicate → brute force.** Omitting `is_valid` turns backtracking into raw enumeration of every leaf; the whole point is to kill dead branches early. If your solution TLEs, the prune is missing, too late, or too weak (move it _before_ the recursive call, make it cheaper).
-- **Generating duplicate solutions.** With repeated input elements or unordered choices, the naive tree emits the same configuration multiple times. Fix with a `start` index (combinations) or a "skip equal siblings after sorting" guard (`if i > start and a[i] == a[i-1]: continue`) — see [Subsets & Permutations](./subsets-permutations.md#pitfalls).
+- **Generating duplicate solutions.** With repeated input elements or unordered choices, the naive tree emits the same configuration multiple times. Fix with a `start` index (combinations) or a "skip equal siblings after sorting" guard (`if i > start and a[i] == a[i-1]: continue`) - see [Subsets & Permutations](./subsets-permutations.md#pitfalls).
 - **Using backtracking where DP is intended.** Re-exploring overlapping subproblems exponentially when a memo would make it polynomial. If the same partial state recurs and you only need a count/optimum, you wanted DP (or backtracking + memo).
 
 ## First 30 seconds
 
-> "I need to build the answer one decision at a time and I can check validity before it's complete, so this is **backtracking** — DFS over a decision tree with `choose / explore / un-choose`. The branching is exponential but `n` is small (≤ ~20), and I'll **prune** any branch that violates a constraint before recursing. I'll pick the most-constrained choice first to fail fast, snapshot each complete solution, and make sure every make-choice has a mirroring un-choose."
+> "I need to build the answer one decision at a time and I can check validity before it's complete, so this is **backtracking** - DFS over a decision tree with `choose / explore / un-choose`. The branching is exponential but `n` is small (≤ ~20), and I'll **prune** any branch that violates a constraint before recursing. I'll pick the most-constrained choice first to fail fast, snapshot each complete solution, and make sure every make-choice has a mirroring un-choose."
 
 ## Related
 
 - **Leans on:** [Backtracking (algorithm)](../algorithms/backtracking.md) (the procedure + proof), [Recursion](../algorithms/recursion.md), [DFS](../algorithms/dfs.md) (backtracking is DFS on an implicit tree).
-- **Specialized by:** [Subsets & Permutations](./subsets-permutations.md) — the unconstrained-enumeration instance of this pattern.
+- **Specialized by:** [Subsets & Permutations](./subsets-permutations.md) - the unconstrained-enumeration instance of this pattern.
 - **Bridges to:** [Dynamic Programming](../algorithms/dynamic-programming.md) and [DP Patterns](./dp-patterns.md) when subproblems overlap (backtracking + memo → DP); [Bit Manipulation](../algorithms/bit-manipulation.md) for bitmask state.
 - **Sibling decision-tree patterns:** [Tree & Graph Traversal](./tree-graph-traversal.md) (explicit graphs vs backtracking's implicit decision tree).
 
 ## Practice problems
 
-### 1. N-Queens — constraint checks + symmetry
+### 1. N-Queens - constraint checks + symmetry
 
 **Problem.** Place `N` queens on an `N×N` board so no two share a row, column, or diagonal; return all distinct solutions. Constraints: `N ≤ 9`, so an `O(N!)`-ish search with pruning is intended.
 
-**Approach.** Place one queen per row (forces the row constraint for free). Track occupied **columns**, **↘ diagonals** (`row - col`), and **↗ diagonals** (`row + col`) in three sets; a placement is valid iff none of the three is occupied — an O(1) prune. Recurse to the next row, undo on return. The distinct facet: **conflict-set pruning** across three simultaneous constraints, with the diagonal-indexing trick.
+**Approach.** Place one queen per row (forces the row constraint for free). Track occupied **columns**, **↘ diagonals** (`row - col`), and **↗ diagonals** (`row + col`) in three sets; a placement is valid iff none of the three is occupied - an O(1) prune. Recurse to the next row, undo on return. The distinct facet: **conflict-set pruning** across three simultaneous constraints, with the diagonal-indexing trick.
 
 ```python
 def solve_n_queens(n: int) -> list[list[str]]:
@@ -243,11 +243,11 @@ def solve_n_queens(n: int) -> list[list[str]]:
 
 Time O(N!) worst case (far less with pruning), space O(N). Technique: multi-constraint conflict-set pruning.
 
-### 2. Sudoku Solver — constraint propagation + MRV
+### 2. Sudoku Solver - constraint propagation + MRV
 
 **Problem.** Fill a 9×9 grid (some cells given) so every row, column, and 3×3 box contains 1–9 exactly once. Modify the board in place. Constraints: a single solution exists; the board is 9×9.
 
-**Approach.** Find an empty cell, try each digit that doesn't already appear in its row, column, or box, recurse, undo on failure, and **return on the first complete fill** (find-one). The senior speedup is **MRV**: always fill the empty cell with the _fewest_ legal candidates next — failing fast prunes enormous subtrees. Distinct facet: **find-one short-circuit + ordering heuristic**, not collect-all.
+**Approach.** Find an empty cell, try each digit that doesn't already appear in its row, column, or box, recurse, undo on failure, and **return on the first complete fill** (find-one). The senior speedup is **MRV**: always fill the empty cell with the _fewest_ legal candidates next - failing fast prunes enormous subtrees. Distinct facet: **find-one short-circuit + ordering heuristic**, not collect-all.
 
 ```python
 def solve_sudoku(board: list[list[str]]) -> None:
@@ -276,7 +276,7 @@ def solve_sudoku(board: list[list[str]]) -> None:
         r, c = cell
         for d in cs:
             board[r][c] = d            # choose
-            if backtrack():            # explore — return on first success
+            if backtrack():            # explore - return on first success
                 return True
             board[r][c] = "."          # un-choose
         return False                   # dead end → trigger backtrack above
@@ -286,11 +286,11 @@ def solve_sudoku(board: list[list[str]]) -> None:
 
 Time exponential worst case, near-instant with MRV; space O(1) extra (in-place). Technique: find-one + constraint propagation + MRV ordering.
 
-### 3. Combination Sum — reuse with a start index
+### 3. Combination Sum - reuse with a start index
 
-**Problem.** Given distinct positive `candidates` and a `target`, return all unique combinations summing to `target`; each candidate may be used **unlimited** times. Constraints: `candidates ≤ 30`, `target ≤ 40` — small enough for exhaustive search.
+**Problem.** Given distinct positive `candidates` and a `target`, return all unique combinations summing to `target`; each candidate may be used **unlimited** times. Constraints: `candidates ≤ 30`, `target ≤ 40` - small enough for exhaustive search.
 
-**Approach.** Recurse carrying a `start` index and the remaining target. At each step, try candidates from `start` onward (allowing reuse by recursing with the _same_ index, but never going backward — that kills permutation duplicates). Prune the moment `remaining < 0`. Distinct facet: **unbounded reuse with start-index deduplication** — neither a fixed-length nor a permutation search.
+**Approach.** Recurse carrying a `start` index and the remaining target. At each step, try candidates from `start` onward (allowing reuse by recursing with the _same_ index, but never going backward - that kills permutation duplicates). Prune the moment `remaining < 0`. Distinct facet: **unbounded reuse with start-index deduplication** - neither a fixed-length nor a permutation search.
 
 ```python
 def combination_sum(candidates: list[int], target: int) -> list[list[int]]:
@@ -299,13 +299,13 @@ def combination_sum(candidates: list[int], target: int) -> list[list[int]]:
 
     def backtrack(start: int, remaining: int) -> None:
         if remaining == 0:
-            results.append(path[:])    # snapshot — path keeps mutating
+            results.append(path[:])    # snapshot - path keeps mutating
             return
         for i in range(start, len(candidates)):
             if candidates[i] > remaining:
                 continue               # prune: overshoots the target
             path.append(candidates[i])             # choose
-            backtrack(i, remaining - candidates[i])  # explore — i, not i+1: reuse
+            backtrack(i, remaining - candidates[i])  # explore - i, not i+1: reuse
             path.pop()                             # un-choose
 
     candidates.sort()                  # lets the prune also break early if desired
@@ -315,11 +315,11 @@ def combination_sum(candidates: list[int], target: int) -> list[list[int]]:
 
 Time O(2^target) worst case, space O(target/min) depth. Technique: start-index dedup with reuse.
 
-### 4. Restore IP Addresses — bounded-segment partition
+### 4. Restore IP Addresses - bounded-segment partition
 
-**Problem.** Given a string of digits, return all valid IP addresses formable by inserting three dots — four octets, each 0–255, no leading zeros (except "0" itself). Constraints: `|s| ≤ 20`.
+**Problem.** Given a string of digits, return all valid IP addresses formable by inserting three dots - four octets, each 0–255, no leading zeros (except "0" itself). Constraints: `|s| ≤ 20`.
 
-**Approach.** Recurse over exactly **four** segments; at each, take 1–3 leading digits, pruning any octet > 255 or with a leading zero. The fixed depth of 4 and the "consume the whole string in exactly 4 cuts" requirement make this a **bounded partition** — distinct from Combination Sum's open-ended depth. Stop when 4 segments are placed _and_ the string is fully consumed.
+**Approach.** Recurse over exactly **four** segments; at each, take 1–3 leading digits, pruning any octet > 255 or with a leading zero. The fixed depth of 4 and the "consume the whole string in exactly 4 cuts" requirement make this a **bounded partition** - distinct from Combination Sum's open-ended depth. Stop when 4 segments are placed _and_ the string is fully consumed.
 
 ```python
 def restore_ip_addresses(s: str) -> list[str]:

@@ -4,26 +4,26 @@
 
 **Goal:** Wire the existing vanilla-JS frontend to the already-built `wiki-be` backend so logged-in users get auth + server-synced bookmarks / reads / recents, while anonymous users keep today's exact local-only behaviour.
 
-**Architecture:** Cache-through (Model B) — localStorage stays the read path and source of UI truth; the API is the durable source. A new `js/api.js` module is the single wrapper for all backend calls (base-URL detection, `credentials:"include"`, error envelope → `ApiError`, global 401 handler). `state.session` holds identity in memory only (never localStorage). Sync hooks inject *inside* existing `storage.js` save functions, so existing callers (`Bookmarks.toggle`, `markRead`, `addToRecents`, …) are unchanged. Auth UI is one new modal (mirroring the existing `prefs-modal` pattern) plus one topbar login/logout button per view.
+**Architecture:** Cache-through (Model B) - localStorage stays the read path and source of UI truth; the API is the durable source. A new `js/api.js` module is the single wrapper for all backend calls (base-URL detection, `credentials:"include"`, error envelope → `ApiError`, global 401 handler). `state.session` holds identity in memory only (never localStorage). Sync hooks inject *inside* existing `storage.js` save functions, so existing callers (`Bookmarks.toggle`, `markRead`, `addToRecents`, …) are unchanged. Auth UI is one new modal (mirroring the existing `prefs-modal` pattern) plus one topbar login/logout button per view.
 
 **Tech Stack:** Vanilla JS (ES6 modules, no build step), `fetch`, existing CustomEvent bus (`wiki:toast`, `wiki:themechange`), Playwright + pytest for e2e.
 
 ## Global Constraints
 
 - **No build step, no framework, no TypeScript.** Plain ES6 modules only. (CLAUDE.md)
-- **All design tokens in `tokens.css`** — never duplicate values in other CSS files. New auth modal styles reuse existing modal/topbar tokens.
+- **All design tokens in `tokens.css`** - never duplicate values in other CSS files. New auth modal styles reuse existing modal/topbar tokens.
 - **BEM-adjacent class naming** (block-element pattern).
 - **No inline styles** except dynamic values set via JS.
 - **Inline `onclick` handlers require a `window.*` global** (see `app.js` WINDOW GLOBALS block). Prefer the existing `data-action` delegation in `app.js` for new static buttons.
-- **Identity is NEVER cached in localStorage** — only `state.session` in memory; cookie/BE is the sole authority. (decisions/auth-integration.md → Session state)
-- **Writes are fire-and-forget** — write localStorage, async POST/DELETE, do not await, swallow transient failures (`.catch(()=>{})`); load-time pull reconciles. (decisions/auth-integration.md → API client)
+- **Identity is NEVER cached in localStorage** - only `state.session` in memory; cookie/BE is the sole authority. (decisions/auth-integration.md → Session state)
+- **Writes are fire-and-forget** - write localStorage, async POST/DELETE, do not await, swallow transient failures (`.catch(()=>{})`); load-time pull reconciles. (decisions/auth-integration.md → API client)
 - **Base path is `/api/v1`.** Cookie name `session`, httpOnly (JS cannot read it).
 - **Password rule (see Password policy in decisions/auth.md), all 5 must pass:** min 12 chars · ≥1 uppercase · ≥1 lowercase · ≥1 digit · ≥1 special (anything outside `[A-Za-z0-9]`). Hint set shown in UI: `! @ # $ % ^ & * ? - _`.
 - **Service worker (`wiki-sw.js`) change ⇒ cache version bump.** This plan does NOT modify the SW (API calls bypass it); if that changes, bump the version.
-- **Tests are e2e only** through the UI via Playwright; never test JS functions directly. Read `tests/conftest.py` before writing any test. Never add new fixtures. **Never run tests** — write correct test code; the user runs them.
+- **Tests are e2e only** through the UI via Playwright; never test JS functions directly. Read `tests/conftest.py` before writing any test. Never add new fixtures. **Never run tests** - write correct test code; the user runs them.
 - **Never commit secrets / real emails.** Test emails use `@example.com`.
 
-## Backend contract (already built — reference, do not change)
+## Backend contract (already built - reference, do not change)
 
 From the Auth flow + Sync endpoints in `decisions/auth.md` (BE side already built). All JSON, base `/api/v1`. Error envelope: `{"error":{"code","message","details?}}`.
 
@@ -54,21 +54,21 @@ POST   /sync/import    {bookmarks[],reads[],recents[]}  → 200 {merged counts}
 
 ## File Structure
 
-- **Create `js/api.js`** — single backend wrapper. Base-URL detect, `credentials:"include"`, `ApiError`, `api.get/post/del`, global 401 handler, typed endpoint helpers (`api.auth.*`, `api.bookmarks.*`, `api.reads.*`, `api.recents.*`, `api.importAll`). Imports only `state.js`.
-- **Create `js/auth.js`** — auth domain: `Auth` object (`init`/boot `me()`, `register`, `login`, `logout`, `resend`), password-rule validation `validatePassword(pw)`, the auth modal controller `AuthModal` (open/close/swap panels, live 5-rule checklist), and the anon→login migration prompt. Imports `api.js`, `state.js`, `storage.js`.
-- **Modify `js/state.js`** — add `state.session = {user:null,status:"loading"}`.
-- **Modify `js/storage.js`** — inject fire-and-forget sync writes inside `saveBookmarks`/`addToRecents`/`saveRecents`/`markRead`/`markUnread`/clear paths; add pull+merge helpers (`Sync.pullAll`, `Sync.applyServer*`) and `Sync.clearUserDataCache`. Imports `api.js` (no cycle: api imports only state).
-- **Modify `js/app.js`** — import + expose `Auth`/`AuthModal` globals; boot `Auth.init()` after settings; add `data-action` cases for auth button + modal controls; wire `wiki:session-expired` listener.
-- **Modify `index.html`** — add login/logout button to the 3 topbars; add the auth modal markup (mirrors `prefs-modal`).
-- **Create `css/components-auth.css`** + `@import` it from `css/wiki.css` — auth modal + topbar auth button styles, using existing tokens.
-- **Modify `tests/e2e/`** — add `test_auth.py` (modal, validation, login/logout flow against a mocked/stubbed BE or real local BE) and extend `test_bookmarks.py` / `test_recents.py` / `test_read_toggle.py` for the anon-unchanged invariant.
+- **Create `js/api.js`** - single backend wrapper. Base-URL detect, `credentials:"include"`, `ApiError`, `api.get/post/del`, global 401 handler, typed endpoint helpers (`api.auth.*`, `api.bookmarks.*`, `api.reads.*`, `api.recents.*`, `api.importAll`). Imports only `state.js`.
+- **Create `js/auth.js`** - auth domain: `Auth` object (`init`/boot `me()`, `register`, `login`, `logout`, `resend`), password-rule validation `validatePassword(pw)`, the auth modal controller `AuthModal` (open/close/swap panels, live 5-rule checklist), and the anon→login migration prompt. Imports `api.js`, `state.js`, `storage.js`.
+- **Modify `js/state.js`** - add `state.session = {user:null,status:"loading"}`.
+- **Modify `js/storage.js`** - inject fire-and-forget sync writes inside `saveBookmarks`/`addToRecents`/`saveRecents`/`markRead`/`markUnread`/clear paths; add pull+merge helpers (`Sync.pullAll`, `Sync.applyServer*`) and `Sync.clearUserDataCache`. Imports `api.js` (no cycle: api imports only state).
+- **Modify `js/app.js`** - import + expose `Auth`/`AuthModal` globals; boot `Auth.init()` after settings; add `data-action` cases for auth button + modal controls; wire `wiki:session-expired` listener.
+- **Modify `index.html`** - add login/logout button to the 3 topbars; add the auth modal markup (mirrors `prefs-modal`).
+- **Create `css/components-auth.css`** + `@import` it from `css/wiki.css` - auth modal + topbar auth button styles, using existing tokens.
+- **Modify `tests/e2e/`** - add `test_auth.py` (modal, validation, login/logout flow against a mocked/stubbed BE or real local BE) and extend `test_bookmarks.py` / `test_recents.py` / `test_read_toggle.py` for the anon-unchanged invariant.
 
 ---
 
 ## Task 1: `state.session` in state.js
 
 **Files:**
-- Modify: `js/state.js:91-99` (the `state` object), `js/state.js:130-140` (exports unchanged — `state` already exported)
+- Modify: `js/state.js:91-99` (the `state` object), `js/state.js:130-140` (exports unchanged - `state` already exported)
 - Test: covered indirectly; no standalone test (pure data field)
 
 **Interfaces:**
@@ -87,7 +87,7 @@ const state = {
   indexSections: [],
   tocObserver: null,
   titleObserver: null,
-  // Auth identity — in-memory only, NEVER persisted to localStorage.
+  // Auth identity - in-memory only, NEVER persisted to localStorage.
   // status: "loading" until GET /auth/me resolves, then "in" | "out".
   session: { user: null, status: "loading" },
 };
@@ -102,11 +102,11 @@ git commit -m "feat: add in-memory session state field"
 
 ---
 
-## Task 2: `js/api.js` — backend wrapper + ApiError + 401 handler
+## Task 2: `js/api.js` - backend wrapper + ApiError + 401 handler
 
 **Files:**
 - Create: `js/api.js`
-- Test: `tests/e2e/test_auth.py` (added in Task 8; this task ships no test — it is pure infra exercised by every later task)
+- Test: `tests/e2e/test_auth.py` (added in Task 8; this task ships no test - it is pure infra exercised by every later task)
 
 **Interfaces:**
 - Consumes: `state` from `state.js`.
@@ -127,7 +127,7 @@ git commit -m "feat: add in-memory session state field"
 import { state } from "./state.js";
 
 /* Base URL: localhost → local BE; else prod. BE URL is public by nature
-   (browser must reach it) — not a secret. Security = CORS + cookie + BE validation. */
+   (browser must reach it) - not a secret. Security = CORS + cookie + BE validation. */
 const _isLocal =
   location.hostname === "localhost" || location.hostname === "127.0.0.1";
 const BACKEND_URL = _isLocal
@@ -242,8 +242,8 @@ git commit -m "feat: add api.js backend wrapper with ApiError and 401 handler"
 Inject fire-and-forget BE writes inside existing save functions, plus a `Sync` object for boot/login pull. Anon path (status !== "in") must be byte-for-byte today's behaviour.
 
 **Files:**
-- Modify: `js/storage.js` — top import; `saveBookmarks` (line ~44), `Bookmarks.clearAll`/`clearWiki` (~131-139), `addToRecents` (~156), `clearRecents` (~167), `markRead` (~221), `markUnread` (~233); add `Sync` object before exports; extend export list (~1044).
-- Test: `tests/e2e/test_bookmarks.py`, `test_recents.py`, `test_read_toggle.py` (Task 9 — anon-unchanged invariant).
+- Modify: `js/storage.js` - top import; `saveBookmarks` (line ~44), `Bookmarks.clearAll`/`clearWiki` (~131-139), `addToRecents` (~156), `clearRecents` (~167), `markRead` (~221), `markUnread` (~233); add `Sync` object before exports; extend export list (~1044).
+- Test: `tests/e2e/test_bookmarks.py`, `test_recents.py`, `test_read_toggle.py` (Task 9 - anon-unchanged invariant).
 
 **Interfaces:**
 - Consumes: `api` from `js/api.js`; `state.session`, `WIKIS`.
@@ -316,7 +316,7 @@ function saveBookmarks(arr) {
 }
 ```
 
-Note `BOOKMARKS_KEY` is defined at line 34, before `saveBookmarks` — order is fine.
+Note `BOOKMARKS_KEY` is defined at line 34, before `saveBookmarks` - order is fine.
 
 - [ ] **Step 3: Hook bookmark clears**
 
@@ -385,7 +385,7 @@ function clearRecents(wikiId) {
 }
 ```
 
-(`saveRecents` is a plain setter — leave it unhooked to avoid double-fire; recents writes go only through `addToRecents`/`clearRecents`.)
+(`saveRecents` is a plain setter - leave it unhooked to avoid double-fire; recents writes go only through `addToRecents`/`clearRecents`.)
 
 - [ ] **Step 5: Hook reads**
 
@@ -423,7 +423,7 @@ function markUnread(path) {
 }
 ```
 
-Note: `markRead`/`markUnread` use `state.currentWikiId` for `wiki_id` because reads localStorage is keyed per-wiki and carries no wikiId field. This is correct only while the read is for the current wiki — which is always true (reads are toggled from the current article/index). Document this assumption in a one-line comment above each `api.reads` call:
+Note: `markRead`/`markUnread` use `state.currentWikiId` for `wiki_id` because reads localStorage is keyed per-wiki and carries no wikiId field. This is correct only while the read is for the current wiki - which is always true (reads are toggled from the current article/index). Document this assumption in a one-line comment above each `api.reads` call:
 
 ```js
   // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
@@ -435,7 +435,7 @@ Before the `export {` block (line ~1044), add:
 
 ```js
 /* ═══════════════════════════════════════════════════════════════
-   SYNC — pull/merge on login & boot; cache clear on logout
+   SYNC - pull/merge on login & boot; cache clear on logout
    ═══════════════════════════════════════════════════════════════ */
 const Sync = {
   // Pull all server lists and overwrite localStorage with server truth.
@@ -491,7 +491,7 @@ const Sync = {
 
 - [ ] **Step 7: Export the new symbols**
 
-In the `export {` block at the bottom, add `Sync` (and nothing else new — `_deriveBookmark` etc. stay private):
+In the `export {` block at the bottom, add `Sync` (and nothing else new - `_deriveBookmark` etc. stay private):
 
 ```js
   Theme,
@@ -525,7 +525,7 @@ import { state } from "./state.js";
 import { Sync } from "./storage.js";
 
 /* ═══════════════════════════════════════════════════════════════
-   PASSWORD POLICY — mirrors wiki-be; keep in sync via decisions/auth.md
+   PASSWORD POLICY - mirrors wiki-be; keep in sync via decisions/auth.md
    ═══════════════════════════════════════════════════════════════ */
 const PW_RULES = [
   { id: "len", label: "At least 12 characters", test: (p) => p.length >= 12 },
@@ -559,9 +559,9 @@ git commit -m "feat: password policy validation matching backend rules"
 ## Task 5: Auth modal markup + styles
 
 **Files:**
-- Modify: `index.html` — add auth modal block near `prefs-modal` (after line ~480 region; place the new modal right after the prefs modal closes). Add a login/logout button to each of the 3 topbars (home line ~153, index line ~228, content topbar line ~248 region).
+- Modify: `index.html` - add auth modal block near `prefs-modal` (after line ~480 region; place the new modal right after the prefs modal closes). Add a login/logout button to each of the 3 topbars (home line ~153, index line ~228, content topbar line ~248 region).
 - Create: `css/components-auth.css`
-- Modify: `css/wiki.css` — add `@import "components-auth.css";`
+- Modify: `css/wiki.css` - add `@import "components-auth.css";`
 - Test: none (markup/CSS; behaviour tested in Task 8).
 
 **Interfaces:**
@@ -569,7 +569,7 @@ git commit -m "feat: password policy validation matching backend rules"
 
 - [ ] **Step 1: Add the login/logout button to each topbar**
 
-Home topbar — after the preferences button (before `</div>` at line ~154):
+Home topbar - after the preferences button (before `</div>` at line ~154):
 
 ```html
         <button
@@ -582,7 +582,7 @@ Home topbar — after the preferences button (before `</div>` at line ~154):
         </button>
 ```
 
-Index topbar — same markup with `id="auth-btn-index"`, inserted after the preferences button (line ~228). Content topbar — `id="auth-btn-content"`, inserted into the `.topbar-inner` action group near the other `topbar-icon-btn`s (around line ~377). Keep all three identical except the id.
+Index topbar - same markup with `id="auth-btn-index"`, inserted after the preferences button (line ~228). Content topbar - `id="auth-btn-content"`, inserted into the `.topbar-inner` action group near the other `topbar-icon-btn`s (around line ~377). Keep all three identical except the id.
 
 - [ ] **Step 2: Add the auth modal markup**
 
@@ -590,7 +590,7 @@ Immediately after the `prefs-modal` closing markup, add (mirrors prefs-modal str
 
 ```html
     <!-- ══════════════════════════════════════
-       AUTH MODAL — login / register / verify-pending
+       AUTH MODAL - login / register / verify-pending
   ══════════════════════════════════════ -->
     <div id="auth-modal" class="auth-modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Account">
       <div id="auth-backdrop" class="auth-backdrop"></div>
@@ -643,12 +643,12 @@ Immediately after the `prefs-modal` closing markup, add (mirrors prefs-modal str
     </div>
 ```
 
-(Note: the verify panel reuses id `auth-to-login`; ids must be unique — rename the verify-panel one to `auth-verify-to-login` and handle both in Task 6.)
+(Note: the verify panel reuses id `auth-to-login`; ids must be unique - rename the verify-panel one to `auth-verify-to-login` and handle both in Task 6.)
 
 - [ ] **Step 3: Create `css/components-auth.css`**
 
 ```css
-/* Auth modal + topbar auth button. Tokens only — see tokens.css. */
+/* Auth modal + topbar auth button. Tokens only - see tokens.css. */
 .auth-modal.hidden { display: none; }
 .auth-modal {
   position: fixed;
@@ -871,7 +871,7 @@ const AuthModal = {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   AUTH — boot + flows
+   AUTH - boot + flows
    ═══════════════════════════════════════════════════════════════ */
 const Auth = {
   // Called once on app boot (real page load only). One GET /auth/me.
@@ -1022,7 +1022,7 @@ git commit -m "feat: auth modal controller and login/register/logout flows"
 ## Task 7: Anon→login migration prompt
 
 **Files:**
-- Modify: `js/auth.js` — add `maybeMigrate()` (referenced by `Auth.login` in Task 6; define it before `Auth` or hoist via function declaration). Use a function declaration so order doesn't matter.
+- Modify: `js/auth.js` - add `maybeMigrate()` (referenced by `Auth.login` in Task 6; define it before `Auth` or hoist via function declaration). Use a function declaration so order doesn't matter.
 - Test: `tests/e2e/test_auth.py` (Task 8).
 
 **Interfaces:**
@@ -1110,7 +1110,7 @@ git commit -m "feat: anon-to-login data migration prompt"
 ## Task 8: Wire Auth into app.js (boot, globals, events)
 
 **Files:**
-- Modify: `js/app.js` — imports, window globals, `data-action` cases, boot call, session-expired listener, session-changed re-render.
+- Modify: `js/app.js` - imports, window globals, `data-action` cases, boot call, session-expired listener, session-changed re-render.
 - Test: `tests/e2e/test_auth.py` (Task 9 writes the suite).
 
 **Interfaces:**
@@ -1172,7 +1172,7 @@ In the `init()` IIFE, after `applySettingsToDOM(getSettings());` and before `rou
   Auth.init(); // async; fires GET /auth/me, pulls data, refreshes UI when done
 ```
 
-Auth.init is intentionally not awaited — boot/render proceeds anonymously and re-renders on `wiki:session-changed`.
+Auth.init is intentionally not awaited - boot/render proceeds anonymously and re-renders on `wiki:session-changed`.
 
 - [ ] **Step 6: Add Escape handling for the auth modal**
 
@@ -1211,7 +1211,7 @@ git commit -m "feat: boot auth, wire auth events and 401 re-login"
 **Files:**
 - Read first: `tests/conftest.py` (fixtures, server, nav helpers).
 - Create: `tests/e2e/test_auth.py`.
-- Modify: `tests/e2e/test_bookmarks.py`, `tests/e2e/test_recents.py`, `tests/e2e/test_read_toggle.py` — add one "anon behaviour unchanged" assertion each (no network call when logged out).
+- Modify: `tests/e2e/test_bookmarks.py`, `tests/e2e/test_recents.py`, `tests/e2e/test_read_toggle.py` - add one "anon behaviour unchanged" assertion each (no network call when logged out).
 
 **Interfaces:**
 - Consumes: existing conftest fixtures. BE is not assumed running in CI; stub `fetch` via `page.route("**/api/v1/**", …)` to fulfil mock responses.
@@ -1220,7 +1220,7 @@ git commit -m "feat: boot auth, wire auth events and 401 re-login"
 
 Run: open `tests/conftest.py`, note the page/server fixtures and navigation helpers. Do not add new fixtures.
 
-- [ ] **Step 2: Write `test_auth.py` — modal opens + register checklist goes green**
+- [ ] **Step 2: Write `test_auth.py` - modal opens + register checklist goes green**
 
 ```python
 def test_auth_modal_opens_from_topbar(page, base_url):
@@ -1247,7 +1247,7 @@ def test_register_checklist_turns_green(page, base_url):
     expect(page.locator("#auth-reg-submit")).to_be_enabled()
 ```
 
-- [ ] **Step 3: Write `test_auth.py` — login success via mocked BE**
+- [ ] **Step 3: Write `test_auth.py` - login success via mocked BE**
 
 ```python
 def test_login_success_flips_button_to_logout(page, base_url):
@@ -1272,7 +1272,7 @@ def test_login_success_flips_button_to_logout(page, base_url):
     expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
 ```
 
-- [ ] **Step 4: Write `test_auth.py` — unverified login shows verify panel**
+- [ ] **Step 4: Write `test_auth.py` - unverified login shows verify panel**
 
 ```python
 def test_login_unverified_shows_verify_panel(page, base_url):
@@ -1335,7 +1335,7 @@ git commit -m "test: e2e coverage for auth modal, login flow, anon-unchanged inv
 ## Task 10: Update FE CLAUDE.md file map
 
 **Files:**
-- Modify: `CLAUDE.md` (FE) — add `js/api.js` and `js/auth.js` to the JS file map; add `css/components-auth.css` to the CSS map; add `tests/e2e/test_auth.py` to the test map; add an "Auth/sync bug" row to TASK → FILE ROUTING.
+- Modify: `CLAUDE.md` (FE) - add `js/api.js` and `js/auth.js` to the JS file map; add `css/components-auth.css` to the CSS map; add `tests/e2e/test_auth.py` to the test map; add an "Auth/sync bug" row to TASK → FILE ROUTING.
 - Test: none (docs).
 
 - [ ] **Step 1: Add the JS rows**

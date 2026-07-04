@@ -593,7 +593,12 @@
   }
 
   .gsearch-dialog {
-    max-height: calc(100dvh - 8dvh - var(--s2));
+    /* height (not just max-height) gives .gsearch-results a definite space to
+       flex-grow into so it can clip/scroll instead of overflowing the dialog. */
+    /* -1px slack: independent dvh rounding between this calc and the modal's
+       own 8dvh padding can otherwise push the dialog a sub-pixel past the viewport. */
+    height: calc(100dvh - 8dvh - var(--s2) - 1px);
+    max-height: calc(100dvh - 8dvh - var(--s2) - 1px);
     display: flex;
     flex-direction: column;
     overflow: hidden;

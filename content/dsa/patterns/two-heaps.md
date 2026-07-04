@@ -25,31 +25,31 @@
 
 ## What it is
 
-The **two-heaps** pattern maintains a running partition of a data stream into two halves — a **max-heap of the lower half** and a **min-heap of the upper half** — so the median (or any partition-point statistic) is always one or two heap peeks away.
+The **two-heaps** pattern maintains a running partition of a data stream into two halves - a **max-heap of the lower half** and a **min-heap of the upper half** - so the median (or any partition-point statistic) is always one or two heap peeks away.
 
-Mental model: **two back-to-back sorted piles, each with its top card face-up.** The left pile is sorted descending (max-heap, so the largest of the small values is visible); the right pile is sorted ascending (min-heap, so the smallest of the large values is visible). The median lives at the boundary — either the top of one pile (odd total) or the average of both tops (even total).
+Mental model: **two back-to-back sorted piles, each with its top card face-up.** The left pile is sorted descending (max-heap, so the largest of the small values is visible); the right pile is sorted ascending (min-heap, so the smallest of the large values is visible). The median lives at the boundary - either the top of one pile (odd total) or the average of both tops (even total).
 
-> **Takeaway (say this out loud):** "Two heaps split the stream at the median — max-heap holds the lower half, min-heap the upper half, balanced so the tops give the median in O(1) after O(log n) inserts."
+> **Takeaway (say this out loud):** "Two heaps split the stream at the median - max-heap holds the lower half, min-heap the upper half, balanced so the tops give the median in O(1) after O(log n) inserts."
 
 ## Recognition signals
 
 ### (a) Trigger phrases
 
 - "Find the **median** of a data stream" / "running median as elements arrive"
-- "**Sliding window median** — median of the last k elements"
+- "**Sliding window median** - median of the last k elements"
 - "Given a stream of integers, return the median after each insertion"
 - "Find the **weighted median** / **k-th quantile** of a dynamic dataset"
 
 ### (b) Structural cues
 
 - **Input:** a stream (or array processed left-to-right) of numbers arriving one at a time, or a fixed array where you need the median of a moving window.
-- **Output property:** the median (or a fixed partition-point statistic) must be available after every insertion — not just once at the end.
+- **Output property:** the median (or a fixed partition-point statistic) must be available after every insertion - not just once at the end.
 - **Key shape:** you need O(1) or O(log n) access to *both* the maximum of one half *and* the minimum of the other half simultaneously. No single sorted structure gives O(1) to both simultaneously without extra structure.
 
 ### (c) Not to be confused with
 
-- **Top-K Elements (one heap):** one heap finds the k-th largest in a stream; two heaps find the middle — use top-K when the partition point is fixed and one-sided, two-heaps when it must track the center of an expanding (or sliding) dataset.
-- **Sliding Window (two pointers):** sliding window finds subarrays satisfying a constraint; two-heaps tracks a running statistic across the whole seen stream. The confusion arises when combining both (sliding window median) — the outer loop is a window, the inner structure is two heaps.
+- **Top-K Elements (one heap):** one heap finds the k-th largest in a stream; two heaps find the middle - use top-K when the partition point is fixed and one-sided, two-heaps when it must track the center of an expanding (or sliding) dataset.
+- **Sliding Window (two pointers):** sliding window finds subarrays satisfying a constraint; two-heaps tracks a running statistic across the whole seen stream. The confusion arises when combining both (sliding window median) - the outer loop is a window, the inner structure is two heaps.
 - **Sorting:** sorting gives the median once in O(n log n) but can't update in O(log n) per element; two-heaps trades space (two heaps) for O(log n) per update.
 
 ## How it works
@@ -76,7 +76,7 @@ hi = min-heap (shown as sorted list, smallest = top)
 
 Invariant after each insert: `len(lo) == len(hi)` or `len(lo) == len(hi) + 1`. The median is `lo.top` (odd total) or `(lo.top + hi.top) / 2` (even total).
 
-**Why the rebalance is O(log n):** each insert is at most two heap operations (one push + one push/pop pair for rebalancing) — each O(log n).
+**Why the rebalance is O(log n):** each insert is at most two heap operations (one push + one push/pop pair for rebalancing) - each O(log n).
 
 ## Skeleton
 
@@ -130,7 +130,7 @@ class MedianFinder:
         return (-self._lo[0] + self._hi[0]) / 2.0
 ```
 
-Python's `heapq` is a **min-heap only**. Simulate a max-heap by **negating values** on push and negating again on pop/peek. This is the standard Python two-heaps idiom — always negate `lo` entries.
+Python's `heapq` is a **min-heap only**. Simulate a max-heap by **negating values** on push and negating again on pop/peek. This is the standard Python two-heaps idiom - always negate `lo` entries.
 
 ## Complexity
 
@@ -138,31 +138,31 @@ Python's `heapq` is a **min-heap only**. Simulate a max-heap by **negating value
 |-----------|------|-------|
 | `add_num` | O(log n) | O(1) amortized |
 | `find_median` | O(1) | O(1) |
-| Space (n elements total) | — | O(n) |
+| Space (n elements total) | - | O(n) |
 
-**Cache behavior:** Python's `heapq` is a list under the hood — `heappush`/`heappop` access indices `2i+1` and `2i+2`, which stay in L1 cache at small n. At n > 10⁶ the heap's random-access sift pattern on a large list causes L2/L3 cache misses on every swap; at that scale a van Emde Boas layout or a cache-oblivious priority queue outperforms a standard binary heap despite the same O(log n) bound.
+**Cache behavior:** Python's `heapq` is a list under the hood - `heappush`/`heappop` access indices `2i+1` and `2i+2`, which stay in L1 cache at small n. At n > 10⁶ the heap's random-access sift pattern on a large list causes L2/L3 cache misses on every swap; at that scale a van Emde Boas layout or a cache-oblivious priority queue outperforms a standard binary heap despite the same O(log n) bound.
 
 ## Constraints & approach
 
 | n (stream length) | Approach |
 |-------------------|----------|
-| n ≤ 10³ | Sort the seen list each query — O(n log n) per query, trivial code |
-| n ≤ 10⁵, one-shot median | Sort once — O(n log n), done |
-| n ≤ 10⁵, median after each insert | **Two heaps** — O(n log n) total, O(1) per query |
-| n ≤ 10⁵, sliding window median (window k) | Two heaps + lazy deletion — O(n log k) |
-| n ≤ 10⁶, order-statistics needed (rank queries, k-th element) | Augmented BST / order-statistics tree — O(log n) per op, but constant factor larger than two heaps for median-only |
+| n ≤ 10³ | Sort the seen list each query - O(n log n) per query, trivial code |
+| n ≤ 10⁵, one-shot median | Sort once - O(n log n), done |
+| n ≤ 10⁵, median after each insert | **Two heaps** - O(n log n) total, O(1) per query |
+| n ≤ 10⁵, sliding window median (window k) | Two heaps + lazy deletion - O(n log k) |
+| n ≤ 10⁶, order-statistics needed (rank queries, k-th element) | Augmented BST / order-statistics tree - O(log n) per op, but constant factor larger than two heaps for median-only |
 
 **When the constraint pushes you off two heaps:**
-- If you need the **k-th smallest for arbitrary k** (not just the median), two heaps don't generalize — use an order-statistics tree or a Fenwick tree on coordinate-compressed values.
+- If you need the **k-th smallest for arbitrary k** (not just the median), two heaps don't generalize - use an order-statistics tree or a Fenwick tree on coordinate-compressed values.
 - If the **window slides** (elements enter and leave), two heaps require lazy deletion (mark-and-ignore), which is trickier; a sorted structure (`SortedList`) may be cleaner at the cost of a larger constant.
 
-**Real-world usage:** Apache Flink and Kafka Streams use two-heaps-style exact quantile tracking for low-latency streaming percentile metrics (p50/p99 dashboards). **At scale:** at n > 10⁷ events per second, maintaining exact two heaps becomes a bottleneck — the heap's O(log n) per insert with high constant dominates. Production systems replace exact two-heaps with approximate sketches (DDSketch, t-digest) that give p99 within ±1% error in O(1) amortized inserts and constant space.
+**Real-world usage:** Apache Flink and Kafka Streams use two-heaps-style exact quantile tracking for low-latency streaming percentile metrics (p50/p99 dashboards). **At scale:** at n > 10⁷ events per second, maintaining exact two heaps becomes a bottleneck - the heap's O(log n) per insert with high constant dominates. Production systems replace exact two-heaps with approximate sketches (DDSketch, t-digest) that give p99 within ±1% error in O(1) amortized inserts and constant space.
 
 ## Variations
 
 - **Sliding window median:** outer loop slides a window of size k. On each slide, add the new element and lazy-delete the element leaving. Lazy deletion: keep a `to_remove` counter map; skip deleted elements when they surface at a heap top. Requires rebalancing after each add and each delete.
 - **Weighted median:** each element has a weight; the median is where cumulative weight first exceeds total/2. Two heaps with a running weight sum per heap; rebalance by weight, not count.
-- **k-th quantile (not just median):** maintain the partition point at position k rather than n/2. The lo heap has exactly k elements; hi has n − k. Works identically — just change the rebalance target.
+- **k-th quantile (not just median):** maintain the partition point at position k rather than n/2. The lo heap has exactly k elements; hi has n − k. Works identically - just change the rebalance target.
 - **Two heaps on a fixed array (offline):** sort elements by value, assign to lo/hi by position; useful when all elements are known upfront and queries are static.
 
 ## CP-primitives
@@ -233,7 +233,7 @@ class SlidingMedian:
 
 ### Order-statistics tree as an alternative
 
-Python's `sortedcontainers.SortedList` gives O(log n) insert, delete, and index — effectively an order-statistics tree. For sliding window median it's often simpler: `sl[len(sl) // 2]` is the median directly. **Why for CP:** eliminates the lazy-deletion complexity at the cost of a slightly larger constant; useful when the problem combines median with rank queries.
+Python's `sortedcontainers.SortedList` gives O(log n) insert, delete, and index - effectively an order-statistics tree. For sliding window median it's often simpler: `sl[len(sl) // 2]` is the median directly. **Why for CP:** eliminates the lazy-deletion complexity at the cost of a slightly larger constant; useful when the problem combines median with rank queries.
 
 Use the hand-rolled implementation above rather than `SortedList` from the `sortedcontainers` third-party package.
 
@@ -243,23 +243,23 @@ Use the hand-rolled implementation above rather than `SortedList` from the `sort
 
 Design a data structure supporting `addNum(int num)` and `findMedian() → float`. The median of an even-length stream is the average of the two middle values. n ≤ 5 × 10⁴ numbers, values up to ±10⁶.
 
-**Approach (n ≤ 5 × 10⁴):** two heaps as in the skeleton above — O(log n) per add, O(1) per query. The constraint confirms this: at 5 × 10⁴ elements with log factor, total work is well within a second. Use the negation trick for Python's min-heap-only `heapq`.
+**Approach (n ≤ 5 × 10⁴):** two heaps as in the skeleton above - O(log n) per add, O(1) per query. The constraint confirms this: at 5 × 10⁴ elements with log factor, total work is well within a second. Use the negation trick for Python's min-heap-only `heapq`.
 
 ### 2. Sliding Window Median (LC 480)
 
 Given array `nums` and window size `k`, return the median of each window of size k as the window slides from left to right. `1 ≤ k ≤ n ≤ 10⁵`, values up to ±2³¹.
 
-**Approach (n ≤ 10⁵, sliding window):** two heaps + lazy deletion (see CP-primitives). On each step, add `nums[right]` and remove `nums[right - k]`. After rebalancing, read the median from heap tops. The lazy deletion avoids O(k) linear removal at each step — O(n log k) total. Values near ±2³¹ fit in Python ints natively; in C++ use `long long` for the median average to avoid overflow.
+**Approach (n ≤ 10⁵, sliding window):** two heaps + lazy deletion (see CP-primitives). On each step, add `nums[right]` and remove `nums[right - k]`. After rebalancing, read the median from heap tops. The lazy deletion avoids O(k) linear removal at each step - O(n log k) total. Values near ±2³¹ fit in Python ints natively; in C++ use `long long` for the median average to avoid overflow.
 
-### 3. IPO (LC 502) — maximize capital
+### 3. IPO (LC 502) - maximize capital
 
 Given n projects each with `profit[i]` and `capital[i]`, and k project slots starting with initial capital w, greedily pick the available project with highest profit at each step. n ≤ 10⁵.
 
-**Approach:** two heaps with different roles — a min-heap on capital (all projects sorted by cost) and a max-heap on profit (currently affordable projects). Each round: pop all projects with `capital[i] ≤ w` from the min-heap into the max-heap, then pick the max-profit one. This is two heaps used as a "gating" structure rather than a median partition — the same pattern of maintaining a dynamic affordable set and extracting the best from it. O(n log n) total.
+**Approach:** two heaps with different roles - a min-heap on capital (all projects sorted by cost) and a max-heap on profit (currently affordable projects). Each round: pop all projects with `capital[i] ≤ w` from the min-heap into the max-heap, then pick the max-profit one. This is two heaps used as a "gating" structure rather than a median partition - the same pattern of maintaining a dynamic affordable set and extracting the best from it. O(n log n) total.
 
 ### 4. Maximize Capital After k Investments (variant of IPO)
 
-Same as IPO but projects have a deadline — project i is only available during time window `[avail_i, deadline_i]`. n ≤ 10³.
+Same as IPO but projects have a deadline - project i is only available during time window `[avail_i, deadline_i]`. n ≤ 10³.
 
 **Approach (n ≤ 10³):** at each time step, add projects whose `avail` has arrived to the profit max-heap, and remove (lazy-delete) any that have passed their deadline. The time-windowed availability turns this into a sliding-window two-heaps problem. At n ≤ 10³ a sorted list scan per step is also acceptable.
 
@@ -267,25 +267,25 @@ Same as IPO but projects have a deadline — project i is only available during 
 
 Given a set of intervals, for each interval find the interval with the smallest start point ≥ its end point. n ≤ 2 × 10⁴.
 
-**Approach:** not a pure two-heaps problem — sort by start, binary-search for each end. Included here because it's frequently confused with interval-tree or two-heaps problems in recognition. The distinguishing signal: you're looking up a single next-interval, not maintaining a running median or affordable set. Reach for sorted array + `bisect` here, not two heaps.
+**Approach:** not a pure two-heaps problem - sort by start, binary-search for each end. Included here because it's frequently confused with interval-tree or two-heaps problems in recognition. The distinguishing signal: you're looking up a single next-interval, not maintaining a running median or affordable set. Reach for sorted array + `bisect` here, not two heaps.
 
 ## Pitfalls
 
-- **Forgetting to negate in Python.** Python's `heapq` is a min-heap. `lo` (max-heap of lower half) must store `-num`. Forgetting to negate — or negating when reading `lo[0]` — produces silently wrong medians. Always: `heappush(lo, -num)` and `median = -lo[0]`.
+- **Forgetting to negate in Python.** Python's `heapq` is a min-heap. `lo` (max-heap of lower half) must store `-num`. Forgetting to negate - or negating when reading `lo[0]` - produces silently wrong medians. Always: `heappush(lo, -num)` and `median = -lo[0]`.
 - **Off-by-one in rebalance direction.** The invariant is `|lo| == |hi|` or `|lo| == |hi| + 1` (lo holds the extra element on odd count). Rebalancing to `|hi| > |lo|` by mistake means `find_median` reads from `hi[0]` instead of `lo[0]` and returns the wrong value. Always keep lo as the "leading" heap.
-- **Lazy deletion: forgetting to clean before reading.** When using lazy deletion for sliding windows, always clean stale tops before reading the median. A common bug is cleaning on add/remove but not on `median()` — if the last few operations were removes, the top of lo/hi might be garbage.
-- **Sliding window: values near integer overflow.** When averaging two middle values — `(lo_top + hi_top) / 2` — if values can be near ±2³¹ (as in LC 480), the sum overflows a 32-bit int. In Python this is invisible (arbitrary ints), but in C++/Java always cast to `long` before adding.
+- **Lazy deletion: forgetting to clean before reading.** When using lazy deletion for sliding windows, always clean stale tops before reading the median. A common bug is cleaning on add/remove but not on `median()` - if the last few operations were removes, the top of lo/hi might be garbage.
+- **Sliding window: values near integer overflow.** When averaging two middle values - `(lo_top + hi_top) / 2` - if values can be near ±2³¹ (as in LC 480), the sum overflows a 32-bit int. In Python this is invisible (arbitrary ints), but in C++/Java always cast to `long` before adding.
 
 ## First 30 seconds
 
-"This is a two-heaps problem — I need a running median (or partition-point statistic) over a stream. I'll maintain a max-heap `lo` of the lower half and a min-heap `hi` of the upper half, keeping them balanced so sizes differ by at most one. Insert goes into the correct half, then I rebalance with at most one push-pop pair. Median is `lo.top` if sizes differ, else the average of both tops — O(log n) insert, O(1) query. In Python I negate values in `lo` to simulate a max-heap with `heapq`."
+"This is a two-heaps problem - I need a running median (or partition-point statistic) over a stream. I'll maintain a max-heap `lo` of the lower half and a min-heap `hi` of the upper half, keeping them balanced so sizes differ by at most one. Insert goes into the correct half, then I rebalance with at most one push-pop pair. Median is `lo.top` if sizes differ, else the average of both tops - O(log n) insert, O(1) query. In Python I negate values in `lo` to simulate a max-heap with `heapq`."
 
 ## Related
 
-- [Heap](../data-structures/heap.md) — the underlying structure; understand push/pop/peek and the heap property.
-- [Top-K Elements](./top-k-elements.md) — sibling pattern; one heap finds the k-th largest, two heaps find the center.
-- [Sliding Window](./sliding-window.md) — outer loop for the sliding-window median variant; two heaps handle the inner statistic.
-- [Binary Search on Answer](./binary-search-on-answer.md) — alternative for offline k-th quantile: binary-search on the answer and count elements ≤ mid.
+- [Heap](../data-structures/heap.md) - the underlying structure; understand push/pop/peek and the heap property.
+- [Top-K Elements](./top-k-elements.md) - sibling pattern; one heap finds the k-th largest, two heaps find the center.
+- [Sliding Window](./sliding-window.md) - outer loop for the sliding-window median variant; two heaps handle the inner statistic.
+- [Binary Search on Answer](./binary-search-on-answer.md) - alternative for offline k-th quantile: binary-search on the answer and count elements ≤ mid.
 
 ## Practice problems
 
@@ -293,7 +293,7 @@ Given a set of intervals, for each interval find the interval with the smallest 
 
 Implement `addNum(int num)` and `findMedian() → float` for a growing stream. Median of even-length is the average of the two middle values. n ≤ 5 × 10⁴.
 
-**Approach:** standard two-heaps skeleton — max-heap `lo` for lower half, min-heap `hi` for upper half. Insert into correct half, rebalance, read tops. O(log n) per add, O(1) per query.
+**Approach:** standard two-heaps skeleton - max-heap `lo` for lower half, min-heap `hi` for upper half. Insert into correct half, rebalance, read tops. O(log n) per add, O(1) per query.
 
 ```python
 import heapq
@@ -322,8 +322,8 @@ class MedianFinder:
 **Complexity:** O(log n) per `addNum`, O(1) `findMedian`, O(n) space.
 
 **Duplicate problems:**
-- Running Average of Data Stream (not on LC) — trivial running sum; do not confuse with median.
-- Kth Largest Element in a Stream (LC 703) — one min-heap of size k; not two heaps, different partition point.
+- Running Average of Data Stream (not on LC) - trivial running sum; do not confuse with median.
+- Kth Largest Element in a Stream (LC 703) - one min-heap of size k; not two heaps, different partition point.
 
 ### 2. Sliding Window Median (LC 480)
 
@@ -398,8 +398,8 @@ def medianSlidingWindow(nums: List[int], k: int) -> List[float]:
 **Complexity:** O(n log k) time, O(k) space (effective heap sizes).
 
 **Duplicate problems:**
-- Maximum of Sliding Window (LC 239) — same sliding window frame, but max not median; use a monotonic deque instead.
-- Minimum Window Substring (LC 76) — sliding window with a constraint; pattern is sliding window, not two heaps.
+- Maximum of Sliding Window (LC 239) - same sliding window frame, but max not median; use a monotonic deque instead.
+- Minimum Window Substring (LC 76) - sliding window with a constraint; pattern is sliding window, not two heaps.
 
 ### 3. IPO (LC 502)
 
@@ -428,5 +428,5 @@ def findMaximizedCapital(k: int, w: int, profits: List[int], capital: List[int])
 **Complexity:** O(n log n) sort + O((n + k) log n) heap ops = O((n + k) log n) total.
 
 **Duplicate problems:**
-- Task Scheduler (LC 621) — greedy with a max-heap of frequencies; same "pick the most abundant available" structure.
-- Reorganize String (LC 767) — place most-frequent characters greedily; max-heap, not two heaps.
+- Task Scheduler (LC 621) - greedy with a max-heap of frequencies; same "pick the most abundant available" structure.
+- Reorganize String (LC 767) - place most-frequent characters greedily; max-heap, not two heaps.

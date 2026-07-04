@@ -6,7 +6,7 @@
 
 ## Table of Contents
 
-<!-- Stub — sections to be completed -->
+<!-- Stub - sections to be completed -->
 
 ## TLDR
 

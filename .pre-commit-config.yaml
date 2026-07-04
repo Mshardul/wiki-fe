@@ -1,12 +1,12 @@
-# Pre-commit hooks — local guardrails for the FE (vanilla JS static site, no node).
+# Pre-commit hooks - local guardrails for the FE (vanilla JS static site, no node).
 # CI (.github/workflows/ci.yml) is the authoritative gate.
 # Install once:  make install   (or: .venv/bin/pre-commit install)
 # Run on all files:  make precommit
 #
 # Tests are NOT run on commit (playwright suite is slow); CI runs the full suite.
-# No JS/CSS linting here by design — repo is build-free with no node toolchain.
+# No JS/CSS linting here by design - repo is build-free with no node toolchain.
 
-# content/ is 1.5M of authored markdown — excluded from prose/whitespace/spell hooks.
+# content/ is 1.5M of authored markdown - excluded from prose/whitespace/spell hooks.
 exclude: '^(content/|\.venv/|docs/superpowers/|\.pytest_cache/)'
 
 repos:
@@ -26,7 +26,7 @@ repos:
         # ths = table-headers variable (Array.from querySelectorAll th)
         args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths"]
 
-  # ── JS/CSS lint + format (Biome — standalone binary, no node_modules) ───────
+  # ── JS/CSS lint + format (Biome - standalone binary, no node_modules) ───────
   - repo: https://github.com/biomejs/pre-commit
     rev: v0.6.1
     hooks:
@@ -34,7 +34,7 @@ repos:
         # Lints + formats JS/CSS, applies safe fixes in place (review unstaged).
         additional_dependencies: ["@biomejs/biome@1.9.4"]
 
-  # ── Dead links (lychee — requires: brew install lychee) ─────────────────────
+  # ── Dead links (lychee - requires: brew install lychee) ─────────────────────
   - repo: local
     hooks:
       - id: lychee

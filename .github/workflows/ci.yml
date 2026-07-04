@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Offline broken-link check across docs and HTML. content/ excluded —
+      # Offline broken-link check across docs and HTML. content/ excluded -
       # authored wiki articles use app-internal hash routes, not real URLs.
       - name: Link check (lychee)
         uses: lycheeverse/lychee-action@v2

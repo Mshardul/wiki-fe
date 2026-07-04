@@ -1,9 +1,9 @@
 # CI & Pre-commit Hooks
 
-**Phase 1 — language-agnostic, no node toolchain.** The FE is a build-free vanilla-JS
+**Phase 1 - language-agnostic, no node toolchain.** The FE is a build-free vanilla-JS
 static site (no `package.json`, no `node_modules`, ES modules loaded straight from disk).
 Hooks are deliberately limited to language-agnostic guardrails. JS/CSS linting and
-formatting (ESLint/Prettier/markdownlint) are **deferred** — they require introducing a
+formatting (ESLint/Prettier/markdownlint) are **deferred** - they require introducing a
 node toolchain, which is postponed until a real trigger lands (most likely a TypeScript
 migration or a build step). See the discussion that produced this decision.
 
@@ -11,12 +11,12 @@ migration or a build step). See the discussion that produced this decision.
 
 Two configs:
 
-- `.pre-commit-config.yaml` — local hooks, run on every commit. May auto-fix in place.
-- `.pre-commit-config.ci.yaml` — check-only, used by CI. Fixer hooks exit non-zero when
+- `.pre-commit-config.yaml` - local hooks, run on every commit. May auto-fix in place.
+- `.pre-commit-config.ci.yaml` - check-only, used by CI. Fixer hooks exit non-zero when
   they would change a file (failing the build) but never rewrite; `codespell` runs without
   `-w`. CI reports, never commits.
 
-Both share `exclude: ^(content/|.venv/|docs/superpowers/|.pytest_cache/)` — `content/` is
+Both share `exclude: ^(content/|.venv/|docs/superpowers/|.pytest_cache/)` - `content/` is
 1.5M of authored markdown and is kept out of prose/whitespace/spell hooks.
 
 | Hook                      | Description                                                          |
@@ -33,7 +33,7 @@ Both share `exclude: ^(content/|.venv/|docs/superpowers/|.pytest_cache/)` — `c
 | `check-case-conflict`     | Catches filename casing clashes on case-insensitive filesystems.    |
 
 **Not included (deferred to a future node phase):** `prettier`, `markdownlint`, ESLint.
-Tests are **not** run on commit — the playwright suite is slow; CI runs the full suite.
+Tests are **not** run on commit - the playwright suite is slow; CI runs the full suite.
 
 Install locally: `make install` (creates venv, installs deps, runs `pre-commit install`).
 Run all hooks: `make precommit`.

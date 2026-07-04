@@ -1,15 +1,15 @@
-# Wiki App — Claude Instructions
+# Wiki App - Claude Instructions
 
-**Coding standards live in [CONVENTIONS.md](./CONVENTIONS.md) — read it before writing or changing
+**Coding standards live in [CONVENTIONS.md](./CONVENTIONS.md) - read it before writing or changing
 code.** This file is operational: how to classify a task, which skill to invoke, where code lives.
 CONVENTIONS.md is prescriptive: how the code must be written.
 
 ## SESSION START PROTOCOL
 
-Do this before any file reads or skill invocations — every session:
+Do this before any file reads or skill invocations - every session:
 
 1. Classify the task using the table below.
-2. MEMORY.md is already in context — no need to fetch it.
+2. MEMORY.md is already in context - no need to fetch it.
 3. If task type is **Ticket**: run `python3 docs/_meta/ai-instructions/scripts/fetch-backlog-tickets.py` first to get the backlog list. Do not read `docs/tickets.md` raw for the list.
 4. If task type is anything else: go directly to the FILE MAP section and route.
 
@@ -20,7 +20,7 @@ Do this before any file reads or skill invocations — every session:
 | Signal in user message                                                                    | Task type                                     |
 | ----------------------------------------------------------------------------------------- | --------------------------------------------- |
 | `WIKI-xxx` / "work on tickets" / "which ticket" / "decide ticket" / "let's pick a ticket" | **Ticket**                                    |
-| Explicit filename or component named                                                      | **Direct** — skip exploration, read that file |
+| Explicit filename or component named                                                      | **Direct** - skip exploration, read that file |
 | "bug" / "broken" / "not working" / "doesn't" / "wrong"                                    | **Debugging**                                 |
 | "add" / "implement" / "build" + vague or no spec                                          | **Feature**                                   |
 | "add content" / "write article" / "create page" / topic name for article                  | **Content**                                   |
@@ -36,35 +36,35 @@ Do this before any file reads or skill invocations — every session:
 | Hard bug or perf regression (multi-hypothesis)      | `diagnose`                                                  | `brainstorming`                              |
 | New feature, design unclear                         | `brainstorming` (scope only, not full feature-dev pipeline) | `systematic-debugging`, `TDD`                |
 | New feature, spec clear                             | none                                                        | all skills                                   |
-| Ticket with clear spec                              | none — or `executing-plans` if multi-step                   | `brainstorming`, `feature-dev`, `TDD`        |
-| Commit                                              | `caveman-commit`                                            | —                                            |
-| Inline diff / code review                           | `caveman-review`                                            | —                                            |
+| Ticket with clear spec                              | none - or `executing-plans` if multi-step                   | `brainstorming`, `feature-dev`, `TDD`        |
+| Commit                                              | `caveman-commit`                                            | -                                            |
+| Inline diff / code review                           | `caveman-review`                                            | -                                            |
 | Content article                                     | `brainstorming` (outline/scope only), then write            | `TDD`, `systematic-debugging`, `feature-dev` |
 | CSS / JS change, clear scope (1–3 files)            | none                                                        | all skills                                   |
-| PR / code review                                    | `code-review`                                               | —                                            |
-| 2+ independent subtasks with zero shared state      | `dispatching-parallel-agents`                               | —                                            |
+| PR / code review                                    | `code-review`                                               | -                                            |
+| 2+ independent subtasks with zero shared state      | `dispatching-parallel-agents`                               | -                                            |
 | Modularise / find coupling / architectural refactor | `improve-codebase-architecture`                             | `brainstorming`                              |
-| Audit or improve CLAUDE.md                          | `claude-md-improver`                                        | —                                            |
-| Wrapping up branch before PR                        | `finishing-a-development-branch`                            | —                                            |
+| Audit or improve CLAUDE.md                          | `claude-md-improver`                                        | -                                            |
+| Wrapping up branch before PR                        | `finishing-a-development-branch`                            | -                                            |
 
 **`verification-before-completion`**: skip for single-file edits, CSS-only changes, and content `.md` changes.
 
-**`dispatching-parallel-agents`**: only when subtasks share zero state. Example — two independent content articles = yes. CSS change + its test = no.
+**`dispatching-parallel-agents`**: only when subtasks share zero state. Example - two independent content articles = yes. CSS change + its test = no.
 
-**Always on — no invocation needed:**
+**Always on - no invocation needed:**
 
-- `caveman` — active via SessionStart hook; controls response terseness for all sessions
-- `context-mode` — active via SessionStart hook; governs tool selection (use ctx_batch_execute over raw Bash for >20 lines)
-- `security-guidance` — passive PreToolUse hook; warns on file edits automatically
+- `caveman` - active via SessionStart hook; controls response terseness for all sessions
+- `context-mode` - active via SessionStart hook; governs tool selection (use ctx_batch_execute over raw Bash for >20 lines)
+- `security-guidance` - passive PreToolUse hook; warns on file edits automatically
 
 **Never in this project:**
 
-- `frontend-design` — project has a fixed, established aesthetic; do not apply creative reinterpretation
-- `test-driven-development` — user runs tests manually; write correct code, skip the TDD loop
-- `playground` — no interactive HTML playground tasks in this project
-- `netlify-skills` — project is not deployed on Netlify
-- `subagent-driven-development` — too heavyweight; use `dispatching-parallel-agents` for isolation instead
-- `grill-with-docs`, `context-mode-ops`, `writing-skills`, `claude-automation-recommender` — meta/setup skills; invoke only if explicitly asked
+- `frontend-design` - project has a fixed, established aesthetic; do not apply creative reinterpretation
+- `test-driven-development` - user runs tests manually; write correct code, skip the TDD loop
+- `playground` - no interactive HTML playground tasks in this project
+- `netlify-skills` - project is not deployed on Netlify
+- `subagent-driven-development` - too heavyweight; use `dispatching-parallel-agents` for isolation instead
+- `grill-with-docs`, `context-mode-ops`, `writing-skills`, `claude-automation-recommender` - meta/setup skills; invoke only if explicitly asked
 
 ---
 
@@ -87,7 +87,7 @@ Do this before any file reads or skill invocations — every session:
 
 | File               | Owns                                                                                                                                                  |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tokens.css`       | ALL CSS custom properties: spacing scale, typography scale, colour tokens, border-radius, transition durations — **read this first for any CSS task** |
+| `tokens.css`       | ALL CSS custom properties: spacing scale, typography scale, colour tokens, border-radius, transition durations - **read this first for any CSS task** |
 | `base.css`         | Global reset and base styles: body, headings, inline code, scrollbar, text selection                                                                  |
 | `themes.css`       | Per-theme CSS token overrides for dark, light, matrix, terminal, amber-term via `data-theme` attribute                                                |
 | `components.css`   | Shared UI components: breadcrumb, back button, topbar layout, scroll-to-top, settings panel, hover preview panel                                      |
@@ -95,8 +95,8 @@ Do this before any file reads or skill invocations — every session:
 | `view-home.css`    | Home view: background grid/glow, wiki card grid, home topbar, hero section                                                                            |
 | `view-index.css`   | Index view: hero, section headers, index card grid, recents strip, bookmarks strip                                                                    |
 | `view-content.css` | Content view: two-column layout, TOC sidebar, markdown body, callouts, code blocks, reading time badge, related articles                              |
-| `responsive.css`   | Mobile/tablet media queries — overrides layout, TOC visibility, topbar density for narrow viewports                                                   |
-| `wiki.css`         | CSS aggregator — imports all CSS modules via @import; never add rules here                                                                            |
+| `responsive.css`   | Mobile/tablet media queries - overrides layout, TOC visibility, topbar density for narrow viewports                                                   |
+| `wiki.css`         | CSS aggregator - imports all CSS modules via @import; never add rules here                                                                            |
 
 ### Tests (`tests/`)
 
@@ -132,16 +132,16 @@ Do this before any file reads or skill invocations — every session:
 | File                                               | Read when                                                                               |
 | -------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `docs/tickets.md`                                  | WIKI-xxx mentioned OR any ticket intent detected                                        |
-| `docs/_meta/ai-instructions/tickets.md`            | Ticket intent — read alongside tickets.md                                               |
-| `docs/_meta/ai-instructions/_base.md`              | **Every content task** (components / algorithms / HLD / devops-tools) — read this first |
+| `docs/_meta/ai-instructions/tickets.md`            | Ticket intent - read alongside tickets.md                                               |
+| `docs/_meta/ai-instructions/_base.md`              | **Every content task** (components / algorithms / HLD / devops-tools) - read this first |
 | `docs/_meta/ai-instructions/components.md`         | Writing system design component article (after \_base.md)                               |
 | `docs/_meta/ai-instructions/algorithms.md`         | Writing algorithm / concept article (after \_base.md)                                   |
 | `docs/_meta/ai-instructions/hld.md`                | Writing HLD / system design article (after \_base.md)                                   |
 | `docs/_meta/ai-instructions/devops-tools.md`       | Writing DevOps tool article (after \_base.md)                                           |
-| `docs/_meta/ai-instructions/devops-cheatsheets.md` | Writing DevOps cheatsheet — self-contained, skip \_base.md                              |
+| `docs/_meta/ai-instructions/devops-cheatsheets.md` | Writing DevOps cheatsheet - self-contained, skip \_base.md                              |
 | `docs/_meta/decisions/ui-ux.md`                    | UI / UX decision needed                                                                 |
-| `docs/_meta/decisions/auth.md`                     | Auth/personal-layer decisions — product model, tech, DB schema, password/session/error contracts |
-| `docs/_meta/decisions/auth-integration.md`         | [Archive] How auth wires into the FE SPA — reference only; superseded by implemented code |
+| `docs/_meta/decisions/auth.md`                     | Auth/personal-layer decisions - product model, tech, DB schema, password/session/error contracts |
+| `docs/_meta/decisions/auth-integration.md`         | [Archive] How auth wires into the FE SPA - reference only; superseded by implemented code |
 | `docs/_meta/plans/fe-be-integration.md` | Step-by-step plan for the FE auth+sync integration work                          |
 | `docs/tasks.md`                                    | Context on recently completed work or implementation notes                              |
 | `docs/changelog.md`                                | Context on recent feature history or what changed                                       |
@@ -175,10 +175,10 @@ content-loading flow, persistence model, and the module-map-as-contract.
 
 ## TOOL USAGE
 
-- **`Read`** — only for files you will edit immediately after
-- **`ctx_batch_execute`** — multi-file exploration, any output >20 lines
+- **`Read`** - only for files you will edit immediately after
+- **`ctx_batch_execute`** - multi-file exploration, any output >20 lines
 - Never raw `Bash` for reading files
-- **Never run tests** — user runs tests manually; write correct test code only
+- **Never run tests** - user runs tests manually; write correct test code only
 
 ---
 
@@ -186,15 +186,15 @@ content-loading flow, persistence model, and the module-map-as-contract.
 
 After finishing any coding task:
 
-1. **Tests** — decide if new behaviour needs coverage. Add tests if: a new user-visible interaction was added, a bug was fixed (regression test), or a new code path exists that existing tests don't reach. Use the test file map below to pick the right file. Never run tests — write correct test code only.
-2. **Ticket closure** — if the task came from a ticket (`WIKI-xxx`), update its row in `docs/tickets.md`: set Status = `Done` and Impl. Date = today's date (YYYY-MM-DD).
+1. **Tests** - decide if new behaviour needs coverage. Add tests if: a new user-visible interaction was added, a bug was fixed (regression test), or a new code path exists that existing tests don't reach. Use the test file map below to pick the right file. Never run tests - write correct test code only.
+2. **Ticket closure** - if the task came from a ticket (`WIKI-xxx`), update its row in `docs/tickets.md`: set Status = `Done` and Impl. Date = today's date (YYYY-MM-DD).
 
 After finishing any **content task**:
 
-3. **Content changelog** — update `content/CHANGELOG.md` with an entry under today's date. Log: new article, new section, expanded/rewritten section, new stub. Skip: typo fixes, grammar, cross-reference links. Format:
+3. **Content changelog** - update `content/CHANGELOG.md` with an entry under today's date. Log: new article, new section, expanded/rewritten section, new stub. Skip: typo fixes, grammar, cross-reference links. Format:
    ```
    ## YYYY-MM-DD
-   - `filename.md` — what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
+   - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
    ```
 
 ---
@@ -211,9 +211,9 @@ above to pick which file a test belongs in.
 
 **App dev tasks:**
 
-- Never read `content/**/*.md` — irrelevant to app code
-- Never read all 8 JS files — use the module map above to pick the right one
-- Never read all CSS files — always start with `tokens.css`
+- Never read `content/**/*.md` - irrelevant to app code
+- Never read all 8 JS files - use the module map above to pick the right one
+- Never read all CSS files - always start with `tokens.css`
 
 **Content tasks:**
 
