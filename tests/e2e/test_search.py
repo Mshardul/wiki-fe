@@ -867,18 +867,11 @@ def test_search_modal_fits_small_viewport(wiki_page):
 
     dialog = wiki_page.locator(".gsearch-dialog")
     dialog.wait_for(state="visible", timeout=5_000)
-    # The dialog's open animation translates it into place; wait for its rect to
-    # stop moving (two consecutive rAFs at the same top) before measuring it.
+    # Wait for open animation to finish; rAF-equality checks false-positive mid-animation.
     wiki_page.wait_for_function("""() => {
         const el = document.querySelector('.gsearch-dialog');
         if (!el) return false;
-        return new Promise((resolve) => {
-            const top1 = el.getBoundingClientRect().top;
-            requestAnimationFrame(() => {
-                const top2 = el.getBoundingClientRect().top;
-                resolve(top1 === top2);
-            });
-        });
+        return el.getAnimations().every(a => a.playState === 'finished');
     }""", timeout=5_000)
     box = wiki_page.evaluate("""() => {
         const r = document.querySelector('.gsearch-dialog').getBoundingClientRect();
@@ -892,8 +885,7 @@ def test_search_modal_fits_small_viewport(wiki_page):
 
     wiki_page.fill("#gsearch-input", "array")
     wiki_page.wait_for_selector(".gsearch-result", state="attached", timeout=10_000)
-    # Results list scrolls internally (overflow-y: auto) so its own box, not the
-    # last of however many result rows match, must stay within the viewport.
+    # Results list scrolls internally - check its own box, not the last row.
     results_box = wiki_page.evaluate("""() => {
         const results = document.querySelector('.gsearch-results');
         if (!results || !results.children.length) return null;
@@ -912,8 +904,7 @@ def test_search_modal_fits_small_viewport(wiki_page):
 def test_scope_custom_dropdown(wiki_page):
     """Custom scope button opens listbox; selecting an option scopes results."""
     wiki_page.set_viewport_size({"width": 375, "height": 700})
-    # Wait for media query and the 150ms resize-debounce in app.js to settle
-    # before opening the search modal, or the debounce will close it.
+    # Wait for resize-debounce to settle, or it'll close the modal after open.
     wiki_page.wait_for_function(
         "() => window.matchMedia('(max-width: 640px)').matches",
         timeout=3_000,

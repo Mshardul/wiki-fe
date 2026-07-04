@@ -4,6 +4,21 @@
 code.** This file is operational: how to classify a task, which skill to invoke, where code lives.
 CONVENTIONS.md is prescriptive: how the code must be written.
 
+## Tech Stack
+
+- **Hosting** - GitHub Pages - static, no build step
+- **Framework** - none - vanilla JS (ES modules), no bundler, no TypeScript
+- **Markdown rendering** - Showdown
+- **Diagrams** - Mermaid
+- **Syntax highlighting** - highlight.js
+- **Offline** - service worker (`wiki-sw.js`), localStorage-only persistence (no server-side FE state)
+- **Backend** - calls `wiki-be` (Render) via `js/api.js`
+- **Lint/format** - Biome (`biome.json`)
+- **Tests** - pytest + Playwright (e2e, Python-driven browser tests)
+- **CI** - GitHub Actions (`.github/workflows/ci.yml`)
+
+---
+
 ## SESSION START PROTOCOL
 
 Do this before any file reads or skill invocations - every session:
