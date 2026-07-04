@@ -867,6 +867,19 @@ def test_search_modal_fits_small_viewport(wiki_page):
 
     dialog = wiki_page.locator(".gsearch-dialog")
     dialog.wait_for(state="visible", timeout=5_000)
+    # The dialog's open animation translates it into place; wait for its rect to
+    # stop moving (two consecutive rAFs at the same top) before measuring it.
+    wiki_page.wait_for_function("""() => {
+        const el = document.querySelector('.gsearch-dialog');
+        if (!el) return false;
+        return new Promise((resolve) => {
+            const top1 = el.getBoundingClientRect().top;
+            requestAnimationFrame(() => {
+                const top2 = el.getBoundingClientRect().top;
+                resolve(top1 === top2);
+            });
+        });
+    }""", timeout=5_000)
     box = wiki_page.evaluate("""() => {
         const r = document.querySelector('.gsearch-dialog').getBoundingClientRect();
         return {y: r.top, height: r.height};
@@ -879,14 +892,17 @@ def test_search_modal_fits_small_viewport(wiki_page):
 
     wiki_page.fill("#gsearch-input", "array")
     wiki_page.wait_for_selector(".gsearch-result", state="attached", timeout=10_000)
-    last_bottom = wiki_page.evaluate("""() => {
-        const results = document.querySelectorAll('.gsearch-result');
-        if (!results.length) return null;
-        return results[results.length - 1].getBoundingClientRect().bottom;
+    # Results list scrolls internally (overflow-y: auto) so its own box, not the
+    # last of however many result rows match, must stay within the viewport.
+    results_box = wiki_page.evaluate("""() => {
+        const results = document.querySelector('.gsearch-results');
+        if (!results || !results.children.length) return null;
+        const r = results.getBoundingClientRect();
+        return {top: r.top, bottom: r.bottom};
     }""")
-    assert last_bottom is not None, "No search results found"
-    assert last_bottom <= 400, (
-        f"Last result bottom ({last_bottom}) overflows viewport height 400"
+    assert results_box is not None, "No search results found"
+    assert results_box["bottom"] <= 400, (
+        f"Results container bottom ({results_box['bottom']}) overflows viewport height 400"
     )
 
 
