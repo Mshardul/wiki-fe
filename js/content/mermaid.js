@@ -15,6 +15,7 @@ async function renderMermaidDiagrams(contentEl) {
       wrapper.className = "mermaid-diagram";
       wrapper.dataset.mermaidSrc = code;
       wrapper.innerHTML = svg;
+      _appendMermaidCopyBtn(wrapper);
       pre.replaceWith(wrapper);
     } catch (err) {
       console.warn("Mermaid render failed:", err);

@@ -67,7 +67,16 @@ if (typeof window.mermaid === 'undefined') {
         initialize: function(cfg) { _mermaidConfig = cfg || {}; },
         render: function(id, src) {
             var theme = _mermaidConfig.theme || 'default';
-            var svg = '<svg xmlns="http://www.w3.org/2000/svg" id="' + id + '" data-theme="' + theme + '" width="100" height="50"><text y="20">stub</text></svg>';
+            // Fake a <g> per node id (e.g. "A", "B") so tests asserting on
+            // hover-captions / step-through highlighting have real elements to match.
+            var nodeIds = {};
+            var re = /\\b([A-Za-z0-9_]+)[\\[\\(]/g;
+            var m;
+            while ((m = re.exec(src)) !== null) nodeIds[m[1]] = true;
+            var groups = Object.keys(nodeIds).map(function (nid) {
+                return '<g id="flowchart-' + nid + '-0" class="node"><text class="nodeLabel">' + nid + '</text></g>';
+            }).join('');
+            var svg = '<svg xmlns="http://www.w3.org/2000/svg" id="' + id + '" data-theme="' + theme + '" width="100" height="50"><text y="20">stub</text>' + groups + '</svg>';
             return Promise.resolve({ svg: svg });
         }
     };
