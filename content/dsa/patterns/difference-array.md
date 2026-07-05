@@ -370,7 +370,6 @@ For the 2D variant, you must apply prefix sums in *both* dimensions - row-wise t
 - [Prefix Sum](../patterns/prefix-sum.md) - the inverse operation; prefix sum of the difference array recovers the original array. Must understand prefix sum to apply difference array fluently.
 - [Array](../data-structures/array.md) - the underlying data structure; O(1) indexed read/write is what makes both O(1) point updates possible.
 - [Segment Tree](../data-structures/segment-tree.md) - the online alternative; O(log n) range update + range query when updates and queries interleave.
-- [Fenwick Tree (BIT)](../data-structures/fenwick-tree.md) - lighter online alternative; O(log n) point update + prefix query; use when the difference array's offline constraint is violated.
 
 ## Practice problems
 

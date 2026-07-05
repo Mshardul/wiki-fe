@@ -1,6 +1,7 @@
 """
 - TLDR hover previews (017)
 - External and Anchor link handling (049)
+- Author-curated "## Recommended" section feeds the related-articles panel (027)
 """
 
 
@@ -91,3 +92,62 @@ def test_anchor_links_scroll_and_update_url(page, base_url):
 
     assert "?a=down" in page.url
     assert "system-design/anchor" in page.url
+
+
+def test_recommended_section_feeds_related_panel(page, base_url):
+    """027: A `## Recommended` section is parsed into the related-articles
+    panel and stripped from the rendered body, instead of showing as a
+    regular heading + link list."""
+    _load_mock_article(
+        page,
+        base_url,
+        "# Recommended Source\n\n"
+        "Some intro text.\n\n"
+        "## Recommended\n\n"
+        "- [Target One](target-one.md)\n"
+        "- [Target Two](target-two.md)\n",
+        slug="rec-source",
+        extra_routes=[
+            ("**/target-one.md", lambda r: r.fulfill(body="# Target One\n\nBody.")),
+            ("**/target-two.md", lambda r: r.fulfill(body="# Target Two\n\nBody.")),
+        ],
+    )
+
+    # Raw heading must not appear in the rendered article body.
+    h2_texts = page.eval_on_selector_all(
+        "#markdown-body h2", "els => els.map(e => e.textContent.trim())"
+    )
+    assert not any(t.lower() == "recommended" for t in h2_texts), (
+        "Recommended heading should be removed from the rendered body"
+    )
+
+    page.wait_for_selector("#related-articles .related-card", timeout=5_000)
+    label = page.locator("#related-articles .related-label").inner_text()
+    assert label == "Recommended"
+
+    titles = page.locator("#related-articles .related-card-title").all_inner_texts()
+    assert titles == ["Target One", "Target Two"]
+
+    page.locator("#related-articles .related-card").first.click()
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    assert "Target One" in page.locator("#topbar-title").inner_text()
+
+
+def test_article_without_recommended_section_uses_auto_related(page, base_url):
+    """027: Articles with no `## Recommended` heading keep the existing
+    keyword-ranked related-articles behavior (no regression)."""
+    _load_mock_article(
+        page,
+        base_url,
+        "# No Recommended Here\n\n## Some Other Section\n\nJust prose, no recommendations.\n",
+        slug="no-rec",
+    )
+    h2_texts = page.eval_on_selector_all(
+        "#markdown-body h2", "els => els.map(e => e.textContent.trim())"
+    )
+    assert "Some Other Section" in h2_texts, (
+        "Non-recommended headings must still render normally"
+    )

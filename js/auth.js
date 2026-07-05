@@ -335,23 +335,21 @@ const Auth = {
       AuthModal._renderChecklist("auth-pw-checklist", pw.value);
       if (submit) submit.disabled = !validatePassword(pw.value).valid;
     });
-    // submit handlers
-    document
-      .getElementById("auth-login-submit")
-      ?.addEventListener("click", () =>
-        this.login(
-          document.getElementById("auth-login-email").value.trim(),
-          document.getElementById("auth-login-password").value,
-        ),
+    // submit handlers - wired to each panel's <form> submit so Enter-in-field works
+    document.getElementById("auth-form-login")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      this.login(
+        document.getElementById("auth-login-email").value.trim(),
+        document.getElementById("auth-login-password").value,
       );
-    document
-      .getElementById("auth-reg-submit")
-      ?.addEventListener("click", () =>
-        this.register(
-          document.getElementById("auth-reg-email").value.trim(),
-          document.getElementById("auth-reg-password").value,
-        ),
+    });
+    document.getElementById("auth-form-register")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      this.register(
+        document.getElementById("auth-reg-email").value.trim(),
+        document.getElementById("auth-reg-password").value,
       );
+    });
     document
       .getElementById("auth-resend-btn")
       ?.addEventListener("click", () =>
@@ -363,11 +361,10 @@ const Auth = {
     document
       .getElementById("auth-forgot-to-login")
       ?.addEventListener("click", () => AuthModal._swap("login"));
-    document
-      .getElementById("auth-forgot-submit")
-      ?.addEventListener("click", () =>
-        this.forgotPassword(document.getElementById("auth-forgot-email").value.trim()),
-      );
+    document.getElementById("auth-form-forgot")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      this.forgotPassword(document.getElementById("auth-forgot-email").value.trim());
+    });
     document
       .getElementById("auth-verify-result-to-login")
       ?.addEventListener("click", () => AuthModal._swap("login"));
@@ -378,9 +375,10 @@ const Auth = {
       AuthModal._renderChecklist("auth-reset-pw-checklist", resetPw.value);
       if (resetSubmit) resetSubmit.disabled = !validatePassword(resetPw.value).valid;
     });
-    resetSubmit?.addEventListener("click", () =>
-      this.resetPassword(this._pendingResetToken, resetPw.value),
-    );
+    document.getElementById("auth-form-reset")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      this.resetPassword(this._pendingResetToken, resetPw.value);
+    });
     // panel swaps
     document
       .getElementById("auth-to-register")

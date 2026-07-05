@@ -168,6 +168,22 @@ def test_404_html_no_suggestions_for_gibberish_title(page, base_url):
     assert block.get_attribute("hidden") is not None
 
 
+def test_404_html_wiki_title_matches_state_js_registry(page, base_url):
+    """404.html must import WIKIS from state.js rather than a hand-maintained
+    copy - regression for a bug where the two definitions had already drifted
+    ("DSA" vs "Data Structures & Algorithms")."""
+    result = page.evaluate(
+        "async () => (await import('/js/state.js')).WIKIS.find(w => w.id === 'dsa')?.title"
+    )
+    assert result == "Data Structures & Algorithms"
+
+    page.goto(f"{base_url}/404.html?title=zzzqqqxxx999", wait_until="domcontentloaded")
+    imported_title = page.evaluate(
+        "async () => (await import('./js/state.js')).WIKIS.find(w => w.id === 'dsa')?.title"
+    )
+    assert imported_title == "Data Structures & Algorithms"
+
+
 # ── 404.html back-button history fallback ───────────────────────────
 
 
@@ -247,3 +263,31 @@ def test_back_forward_does_not_double_render(page, base_url):
     assert load_count == 1, (
         f"Content loaded {load_count} times on back+forward; expected 1 (route dedup broken)"
     )
+
+
+def test_manual_hash_edit_does_not_reuse_stale_filepath(page, base_url):
+    """Editing location.hash directly (plain hashchange, no pushState) to a
+    different wiki+slug must not reuse history.state.filePath left over from
+    the previous article - regression for _execRoute trusting a stale state
+    object without checking its hash matches the newly parsed route."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+
+    page.evaluate("() => window.navigate('system-design/caching', true)")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=8_000,
+    )
+
+    # Plain hash mutation - no pushState, so history.state still holds the
+    # previous article's { hash: 'system-design/caching', filePath, title }.
+    page.evaluate("() => { location.hash = 'dsa/data-structures/array'; }")
+    page.wait_for_function(
+        "() => document.title.includes('Array')",
+        timeout=10_000,
+    )
+
+    title = page.locator("#markdown-body h1").inner_text()
+    assert "Array" in title
+    assert "Caching" not in title

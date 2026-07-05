@@ -40,6 +40,25 @@ def test_article_count_updates_to_nonzero(wiki_page):
     assert "0 articles" not in text
 
 
+def test_home_topbar_does_not_overlap_eyebrow_at_390px(wiki_page):
+    """The 4-icon home topbar (theme/search/settings/auth) must clear the
+    centered 'Documentation' eyebrow pill on narrow phones - regression for a
+    bug where a max-width:390px rule shrank .home-header's top padding instead
+    of growing it, letting the eyebrow slide up under the icon row."""
+    wiki_page.set_viewport_size({"width": 390, "height": 844})
+    wiki_page.wait_for_timeout(100)
+
+    box = wiki_page.evaluate("""() => {
+        const topbar = document.querySelector('.home-topbar').getBoundingClientRect();
+        const eyebrow = document.querySelector('.home-eyebrow').getBoundingClientRect();
+        return { topbarBottom: topbar.bottom, eyebrowTop: eyebrow.top };
+    }""")
+    assert box["eyebrowTop"] >= box["topbarBottom"], (
+        f"Eyebrow badge (top={box['eyebrowTop']}) overlaps topbar "
+        f"(bottom={box['topbarBottom']}) at 390px width"
+    )
+
+
 def test_theme_applied_before_module_js_loads(page, base_url):
     """inline head script sets data-theme before app.js module executes."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")

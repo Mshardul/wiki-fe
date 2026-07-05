@@ -29,6 +29,13 @@ function _revealQuizCell(td) {
   recordReveal(state.currentFilePath);
 }
 
+function _syncQuizBtn(active) {
+  const btn = document.getElementById("content-quiz-btn");
+  if (!btn) return;
+  btn.classList.toggle("active", active);
+  btn.title = active ? "Exit quiz mode" : "Quiz mode";
+}
+
 const QuizMode = {
   active: false,
 
@@ -39,6 +46,7 @@ const QuizMode = {
     document.querySelectorAll("#markdown-body .quiz-cell").forEach((td) => {
       td.classList.toggle("quiz-blurred", this.active);
     });
+    _syncQuizBtn(this.active);
   },
 
   bind(contentEl) {
@@ -50,6 +58,7 @@ const QuizMode = {
 
   reset() {
     this.active = false;
+    _syncQuizBtn(false);
   },
 };
 

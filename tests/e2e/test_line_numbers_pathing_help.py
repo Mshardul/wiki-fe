@@ -89,6 +89,22 @@ def test_mermaid_blocks_no_line_numbers(page, base_url):
     assert not has_mermaid_numbers, "Mermaid diagrams should not have line numbers"
 
 
+def test_multiline_highlight_span_not_corrupted(page, base_url):
+    """A hljs span wrapping a multi-line docstring must not break tag balance
+    when addLineNumbers splits the block into .code-line spans (bfs.md has a
+    Python triple-quoted docstring spanning multiple lines in one hljs span)."""
+    _go_to_article(page, base_url, slug="dsa/algorithms/bfs")
+    counts = page.evaluate(
+        """() => Array.from(document.querySelectorAll('pre.has-line-numbers .code-line')).map(
+            el => ({ open: (el.innerHTML.match(/<span/g) || []).length,
+                     close: (el.innerHTML.match(/<\\/span>/g) || []).length })
+        )"""
+    )
+    assert counts, "Expected numbered code-line spans in bfs.md"
+    for c in counts:
+        assert c["open"] == c["close"], f"Unbalanced span tags in a code-line: {c}"
+
+
 # ── Multi-level path resolution ─────────────────────────────────
 
 

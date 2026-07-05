@@ -143,6 +143,16 @@
   font-weight: var(--fw-semibold);
 }
 
+.auth-drag-handle {
+  display: none;
+  width: 36px;
+  height: 4px;
+  background: var(--border-2);
+  border-radius: var(--r-full);
+  margin: var(--s3) auto var(--s1);
+  flex-shrink: 0;
+}
+
 @media (max-width: 640px) {
   .topbar-auth-btn {
     width: auto;
@@ -152,7 +162,20 @@
     display: none;
   }
   .auth-modal {
-    align-items: flex-start;
-    padding-top: max(env(safe-area-inset-top), var(--s4));
+    align-items: flex-end;
+  }
+  .auth-dialog {
+    width: 100%;
+    max-width: none;
+    max-height: 85vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: max(env(safe-area-inset-bottom), var(--s6));
+    animation: slideUpSheet 0.2s ease forwards;
+  }
+  .auth-drag-handle {
+    display: block;
   }
 }

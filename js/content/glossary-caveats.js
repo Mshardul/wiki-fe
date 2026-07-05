@@ -118,9 +118,44 @@ function _positionPopover(pop, anchor) {
   pop.style.top = `${top}px`;
 }
 
+/* Tracks currently-rendered glossary terms so a single shared document click
+   listener can close them, instead of registering one document-level
+   listener per term on every article render (unbounded listener growth). */
+const _openGlossaryTerms = new Set();
+let _glossaryDocListenerBound = false;
+
+function resetGlossaryExpandTracking() {
+  _openGlossaryTerms.clear();
+}
+
+function _bindGlossaryDocListener() {
+  if (_glossaryDocListenerBound) return;
+  _glossaryDocListenerBound = true;
+  document.addEventListener(
+    "click",
+    (e) => {
+      _openGlossaryTerms.forEach((entry) => {
+        const { abbr, expand } = entry;
+        if (!abbr.isConnected) {
+          _openGlossaryTerms.delete(entry);
+          return;
+        }
+        if (!abbr.contains(e.target) && !expand.contains(e.target)) {
+          abbr.setAttribute("aria-expanded", "false");
+          expand.setAttribute("aria-hidden", "true");
+          expand.classList.remove("glossary-inline-def--open");
+        }
+      });
+    },
+    { passive: true },
+  );
+}
+
 function addInlineGlossaryExpand(contentEl) {
   const abbrs = Array.from(contentEl.querySelectorAll("abbr"));
   if (!abbrs.length) return;
+
+  _bindGlossaryDocListener();
 
   _loadGlossary().then((glossary) => {
     const matched = abbrs.filter((el) => glossary[el.textContent.trim().toLowerCase()]);
@@ -141,6 +176,8 @@ function addInlineGlossaryExpand(contentEl) {
       expand.setAttribute("aria-hidden", "true");
       abbr.after(expand);
 
+      _openGlossaryTerms.add({ abbr, expand });
+
       const toggle = () => {
         const open = abbr.getAttribute("aria-expanded") === "true";
         abbr.setAttribute("aria-expanded", String(!open));
@@ -158,18 +195,6 @@ function addInlineGlossaryExpand(contentEl) {
           toggle();
         }
       });
-
-      document.addEventListener(
-        "click",
-        (e) => {
-          if (!abbr.contains(e.target) && !expand.contains(e.target)) {
-            abbr.setAttribute("aria-expanded", "false");
-            expand.setAttribute("aria-hidden", "true");
-            expand.classList.remove("glossary-inline-def--open");
-          }
-        },
-        { passive: true },
-      );
     });
   });
 }
@@ -247,4 +272,5 @@ export {
   addGlossaryTerms,
   cacheRenderedHtml,
   getCachedHtml,
+  resetGlossaryExpandTracking,
 };

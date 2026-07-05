@@ -898,6 +898,44 @@ def test_search_modal_fits_small_viewport(wiki_page):
     )
 
 
+def test_search_modal_resizes_when_visual_viewport_shrinks(wiki_page):
+    """Simulates a software keyboard opening (visualViewport shrinks without dvh
+    changing) - the dialog must resize to the actually-visible height, not overflow
+    under where a keyboard would sit."""
+    wiki_page.set_viewport_size({"width": 390, "height": 844})
+    wiki_page.locator("body").click()
+    wiki_page.keyboard.press("Meta+k")
+    wiki_page.wait_for_selector("#global-search-modal:not(.hidden)")
+    wiki_page.wait_for_function("""() => {
+        const el = document.querySelector('.gsearch-dialog');
+        if (!el) return false;
+        return el.getAnimations().every(a => a.playState === 'finished');
+    }""", timeout=5_000)
+
+    full_height = wiki_page.evaluate(
+        "() => document.querySelector('.gsearch-dialog').getBoundingClientRect().height"
+    )
+
+    # Shrinking the actual viewport approximates what visualViewport.height does
+    # when a keyboard opens (dvh-based layout would not react to this on a real device).
+    wiki_page.set_viewport_size({"width": 390, "height": 500})
+    wiki_page.wait_for_timeout(200)
+
+    shrunk_height = wiki_page.evaluate(
+        "() => document.querySelector('.gsearch-dialog').getBoundingClientRect().height"
+    )
+    dialog_bottom = wiki_page.evaluate(
+        "() => document.querySelector('.gsearch-dialog').getBoundingClientRect().bottom"
+    )
+
+    assert shrunk_height < full_height, (
+        "Dialog should shrink to the reduced visual viewport instead of staying full-height"
+    )
+    assert dialog_bottom <= 500, (
+        f"Dialog bottom ({dialog_bottom}) extends past the shrunk viewport (500)"
+    )
+
+
 # ── Custom scope dropdown ────────────────────────────────────────────
 
 

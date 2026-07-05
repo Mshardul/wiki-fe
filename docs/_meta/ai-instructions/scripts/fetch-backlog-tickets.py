@@ -15,7 +15,8 @@ def parse_row(line: str) -> dict | None:
     if not line.startswith("|") or line.startswith("| ---") or line.startswith("| ID"):
         return None
 
-    cols = [c.strip() for c in line.strip("|").split("|")]
+    inner = line.strip("|")
+    cols = [c.strip().replace("\\|", "|") for c in re.split(r"(?<!\\)\|", inner)]
     if len(cols) < 10:
         return None
 

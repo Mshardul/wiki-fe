@@ -64,8 +64,9 @@ function _execRoute(hash) {
 
   // Content view
   const slug = parts[1];
-  const savedPath = history.state?.filePath;
-  const savedTitle = history.state?.title;
+  const stateMatches = history.state?.hash === hash;
+  const savedPath = stateMatches ? history.state?.filePath : null;
+  const savedTitle = stateMatches ? history.state?.title : null;
   if (savedPath) {
     renderContent(wiki, savedPath, savedTitle || slug);
   } else {

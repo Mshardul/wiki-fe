@@ -12,7 +12,7 @@ function openWikiSwitcher() {
       data-wiki-id="${escHtml(w.id)}" type="button">
       <span class="wiki-switcher-card-icon">${escHtml(w.icon || "📖")}</span>
       <span class="wiki-switcher-card-body">
-        <span class="wiki-switcher-card-name">${escHtml(w.name)}</span>
+        <span class="wiki-switcher-card-name">${escHtml(w.title)}</span>
         ${w.description ? `<span class="wiki-switcher-card-desc">${escHtml(w.description)}</span>` : ""}
       </span>
     </button>`,

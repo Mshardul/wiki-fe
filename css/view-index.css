@@ -163,7 +163,7 @@
   transform: rotate(-90deg);
 }
 .section--collapsed .index-card-grid {
-  max-height: 0;
+  height: 0;
 }
 
 /* Index card grid */
@@ -171,9 +171,8 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--s3);
-  max-height: 3000px;
   overflow: hidden;
-  transition: max-height var(--t);
+  transition: height var(--t);
 }
 @media (min-width: 640px) {
   .index-card-grid {
@@ -211,6 +210,12 @@
 .index-sections--loading .index-card {
   pointer-events: none;
   cursor: default;
+}
+#index-sections {
+  transition: transform 0.15s ease-out;
+}
+#index-sections.index-pulling {
+  transition: none;
 }
 .index-card--unavailable .index-card-arrow {
   display: none;

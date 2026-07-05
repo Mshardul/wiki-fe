@@ -27,12 +27,14 @@ import {
   addInlineGlossaryExpand,
   cacheRenderedHtml,
   getCachedHtml,
+  resetGlossaryExpandTracking,
 } from "../content/glossary-caveats.js";
 import {
   addMermaidNodeCaptions,
   addMermaidStepThrough,
   renderMermaidDiagrams,
 } from "../content/mermaid.js";
+import { renderStructureViz } from "../content/structure-viz.js";
 import { QuizMode, addQuizTables, addTableScrollCues, addTableSort } from "../content/tables.js";
 import {
   addStickySection,
@@ -52,6 +54,7 @@ import {
   state,
 } from "../state.js";
 import { updateBookmarkBtn } from "../storage/bookmarks.js";
+import { renderNotesScratchpad } from "../storage/notes.js";
 import { updateOfflineBtn } from "../storage/offline.js";
 import { updateReadBtn } from "../storage/read-tracking.js";
 import { addToRecents } from "../storage/recents.js";
@@ -64,7 +67,7 @@ import {
   setBreadcrumb,
   updatePageTitle,
 } from "./nav-utils.js";
-import { renderRelatedArticles } from "./related-articles.js";
+import { extractRecommendedLinks, renderRelatedArticles } from "./related-articles.js";
 import { showView } from "./router.js";
 import { showToast } from "./toast.js";
 
@@ -255,6 +258,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
 
     // Mermaid must run before hljs so it claims those blocks first
     await renderMermaidDiagrams(body);
+    renderStructureViz(body);
 
     // Syntax highlighting
     if (typeof hljs !== "undefined") {
@@ -266,6 +270,8 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
 
     // Post-processing - enhancements only.
     try {
+      const recommendedLinks = extractRecommendedLinks(body, filePath);
+
       addTabbedCodeBlocks(body);
       addLineNumbers(body);
       addCodeBlockHeader(body, () => showToast("Copy failed - clipboard access denied"));
@@ -305,6 +311,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
 
       injectHeadingCollapseToggles(body, wiki.id, filePath);
       buildTOC(body, wiki.id, filePath);
+      renderNotesScratchpad(wiki.id, filePath);
       addStickySection(body);
 
       addCodeLangLabels(body);
@@ -318,6 +325,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
 
       addImageLightbox(body);
       addGlossaryTerms(body);
+      resetGlossaryExpandTracking();
       addInlineGlossaryExpand(body);
       addInlineCaveats(body);
       addMermaidNodeCaptions(body);
@@ -331,7 +339,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       addFootnotes(body);
       addArticleEndMarker(body);
 
-      renderRelatedArticles(wiki, filePath);
+      renderRelatedArticles(wiki, filePath, recommendedLinks);
 
       updateBookmarkBtn();
       updateReadBtn();
@@ -352,6 +360,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     const topbarTitle = document.getElementById("topbar-title");
     if (topbarTitle) {
       topbarTitle.textContent = title;
+      topbarTitle.title = title;
       topbarTitle.classList.remove("visible");
       const h1 = body.querySelector("h1");
       if (h1) {

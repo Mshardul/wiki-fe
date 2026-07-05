@@ -432,10 +432,8 @@
       (async function rescueSearch() {
         if (!title) return;
 
-        const WIKIS = [
-          { id: "system-design", title: "System Design", indexPath: "./content/system-design/index.md" },
-          { id: "dsa", title: "DSA", indexPath: "./content/dsa/index.md" },
-        ];
+        const { WIKIS: WIKIS_FULL } = await import("./js/state.js");
+        const WIKIS = WIKIS_FULL.map(({ id, title, indexPath }) => ({ id, title, indexPath }));
 
         function parseCards(md, wikiId, wikiTitle) {
           const cards = [];

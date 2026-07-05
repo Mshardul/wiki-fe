@@ -2,7 +2,7 @@
 - Index cards must not be clickable before stub detection completes.
 - Index section headers collapse/expand card grids; state persists in localStorage.
 - Unavailable cards have tooltip title and allow pointer events.
-- Section collapse uses max-height transition, not display:none.
+- Section collapse uses a JS-measured height transition, not display:none.
 """
 
 
@@ -54,7 +54,7 @@ def test_cards_clickable_after_load(page, base_url):
 
 
 def test_section_collapses_on_header_click(page, base_url):
-    """Clicking a section header collapses the card grid via max-height transition."""
+    """Clicking a section header collapses the card grid via a height transition."""
     _go_to_index(page, base_url)
     page.wait_for_selector(
         "#index-sections:not(.index-sections--loading)", timeout=15_000
@@ -62,14 +62,14 @@ def test_section_collapses_on_header_click(page, base_url):
 
     page.locator(".section-header").first.click()
 
-    # Collapse uses max-height:0 (not display:none), so is_hidden() is unreliable.
-    # Wait until computed max-height reaches 0px (transition complete).
+    # Collapse uses height:0 (not display:none), so is_hidden() is unreliable.
+    # Wait until computed height reaches 0px (transition complete).
     page.wait_for_function(
         """() => {
             const section = document.querySelector('.index-section.section--collapsed');
             if (!section) return false;
             const grid = section.querySelector('.index-card-grid');
-            return grid && window.getComputedStyle(grid).maxHeight === '0px';
+            return grid && window.getComputedStyle(grid).height === '0px';
         }""",
         timeout=3_000,
     )
@@ -202,7 +202,7 @@ def test_unavailable_card_has_tooltip_title(page, base_url):
 
 
 def test_section_grid_has_css_transition(page, base_url):
-    """index-card-grid has a CSS transition property set (max-height animation)."""
+    """index-card-grid has a CSS transition property set (height animation)."""
     _go_to_index(page, base_url)
     page.wait_for_selector(
         "#index-sections:not(.index-sections--loading)", timeout=15_000
@@ -213,13 +213,13 @@ def test_section_grid_has_css_transition(page, base_url):
         return grid ? window.getComputedStyle(grid).transition : null;
     }""")
     assert transition, "index-card-grid must have a CSS transition"
-    assert "max-height" in transition, (
-        f"Transition must include max-height for smooth collapse, got: '{transition}'"
+    assert "height" in transition, (
+        f"Transition must include height for smooth collapse, got: '{transition}'"
     )
 
 
 def test_collapsed_grid_not_display_none(page, base_url):
-    """Collapsed section grid uses max-height:0, not display:none."""
+    """Collapsed section grid uses height:0, not display:none."""
     _go_to_index(page, base_url)
     page.wait_for_selector(
         "#index-sections:not(.index-sections--loading)", timeout=15_000
@@ -227,13 +227,13 @@ def test_collapsed_grid_not_display_none(page, base_url):
 
     page.locator(".section-header").first.click()
 
-    # Poll until the 200ms max-height transition has settled - a fixed wait
+    # Poll until the JS-measured height transition has settled - a fixed wait
     # flakes when the machine is under load and the transition runs long.
     page.wait_for_function(
         """() => {
             const grid = document.querySelector('.index-section.section--collapsed .index-card-grid');
             if (!grid) return false;
-            return window.getComputedStyle(grid).maxHeight === '0px';
+            return window.getComputedStyle(grid).height === '0px';
         }""",
         timeout=5_000,
     )
@@ -241,13 +241,33 @@ def test_collapsed_grid_not_display_none(page, base_url):
     result = page.evaluate("""() => {
         const grid = document.querySelector('.index-section.section--collapsed .index-card-grid');
         const style = window.getComputedStyle(grid);
-        return { display: style.display, maxHeight: style.maxHeight };
+        return { display: style.display, height: style.height };
     }""")
     assert result["display"] != "none", (
-        "Collapsed grid must not use display:none - must use max-height transition"
+        "Collapsed grid must not use display:none - must use height transition"
     )
-    assert result["maxHeight"] == "0px", (
-        f"Collapsed grid max-height must be 0px, got '{result['maxHeight']}'"
+    assert result["height"] == "0px", (
+        f"Collapsed grid height must be 0px, got '{result['height']}'"
+    )
+
+
+def test_expanded_grid_height_cleared_after_transition(page, base_url):
+    """After expanding, inline height style is cleared so content isn't clipped by a stale value."""
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+
+    header = page.locator(".section-header").first
+    header.click()  # collapse
+    header.click()  # expand
+
+    page.wait_for_function(
+        """() => {
+            const grid = document.querySelector('.index-card-grid');
+            return grid && grid.style.height === '';
+        }""",
+        timeout=5_000,
     )
 
 

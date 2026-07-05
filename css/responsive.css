@@ -33,6 +33,9 @@
   .page-title {
     font-size: var(--text-2xl);
   }
+  .wiki-card {
+    min-height: 160px;
+  }
   .scroll-top-btn {
     bottom: var(--s5);
     right: var(--s5);
@@ -234,6 +237,26 @@
     text-overflow: ellipsis;
   }
 
+  .recents-strip {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .recents-section {
+    position: relative;
+  }
+  .recents-section::after {
+    content: "";
+    position: absolute;
+    top: calc(var(--s3) + 18px);
+    bottom: 0;
+    right: 0;
+    width: 32px;
+    background: linear-gradient(to right, transparent, var(--surface));
+    pointer-events: none;
+  }
+
   .article-hero {
     height: 100px;
   }
@@ -244,7 +267,34 @@
     height: 80px;
   }
   .home-header {
-    padding-top: var(--s8);
+    padding-top: var(--s16);
+  }
+}
+
+@media (max-width: 375px) {
+  #content-read-time,
+  #content-quiz-btn,
+  #content-offline-btn,
+  .content-topbar [data-action="print-article"] {
+    display: none;
+  }
+  .content-topbar .back-btn {
+    padding: var(--s2);
+  }
+  .content-topbar .back-btn-label {
+    display: none;
+  }
+}
+
+@media (max-width: 340px) {
+  #content-focus-btn {
+    display: none;
+  }
+}
+
+@media (max-width: 330px) {
+  .content-topbar [data-action="search-open"] {
+    display: none;
   }
 }
 

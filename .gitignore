@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 tests/.pytest_cache/
+tests/.cdn-cache/
 
 # OS
 .DS_Store

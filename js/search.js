@@ -374,6 +374,11 @@ function gSearchSelect(idx) {
   items[idx].focus();
 }
 
+function _syncSearchViewportHeight() {
+  if (!window.visualViewport) return;
+  gSearchModal.style.setProperty("--gsearch-vvh", `${window.visualViewport.height}px`);
+}
+
 function openGlobalSearch(opts = {}) {
   _searchOpener = document.activeElement;
   _searchScope = opts.scope || null;
@@ -389,6 +394,11 @@ function openGlobalSearch(opts = {}) {
   setTimeout(() => gSearchInput.focus(), 0);
   _populateScopeDropdown();
   startPlaceholderHints();
+
+  if (window.visualViewport) {
+    _syncSearchViewportHeight();
+    window.visualViewport.addEventListener("resize", _syncSearchViewportHeight);
+  }
 
   _searchFocusTrapHandler = (e) => {
     if (e.key !== "Tab") return;
@@ -430,6 +440,10 @@ function closeGlobalSearch() {
     gSearchModal.removeEventListener("keydown", _searchFocusTrapHandler);
     _searchFocusTrapHandler = null;
   }
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener("resize", _syncSearchViewportHeight);
+  }
+  gSearchModal.style.removeProperty("--gsearch-vvh");
   if (_searchOpener && typeof _searchOpener.focus === "function") {
     _searchOpener.focus();
     _searchOpener = null;

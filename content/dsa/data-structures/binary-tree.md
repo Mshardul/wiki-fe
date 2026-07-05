@@ -124,7 +124,7 @@ The plain binary tree's value is **structure and recursion**, not speed - its sp
 - **[Heap](./heap.md)** - a **complete** binary tree with the heap invariant (parent beats children); stored in a flat array, O(1) min/max. The priority-queue workhorse.
 - **[Trie (prefix tree)](./trie.md)** - branches on characters rather than comparisons; O(L) string lookup and prefix queries.
 - **N-ary tree** - each node has any number of children (the DOM, file systems). Generalizes the binary tree; often re-encoded as binary via "left-child / right-sibling".
-- **Segment tree / Fenwick tree** - tree-shaped indexes over array ranges for O(log n) range queries; [segment tree](./segment-tree.md), [Fenwick tree](./fenwick-tree.md). Structurally trees, used as range-query engines.
+- **Segment tree / Fenwick tree (BIT)** - tree-shaped indexes over array ranges for O(log n) range queries; [segment tree](./segment-tree.md). Structurally trees, used as range-query engines.
 - **Threaded binary tree** - leaf null-pointers repurposed to point at in-order predecessor/successor, enabling O(1)-space traversal (the idea behind Morris traversal).
 
 ## Traversal & invariant

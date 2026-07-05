@@ -64,6 +64,7 @@ async function renderIndex(wiki) {
 
   showView("view-index");
   bindIndexCardSwipe(wiki);
+  bindIndexPullToRefresh(wiki);
   renderRecentsSection(wiki);
   renderBookmarksSection(wiki);
   IndexFilter.reset();
@@ -202,6 +203,7 @@ function renderIndexControls(wiki) {
       const heading = section.dataset.section;
       const key = `wiki-section-collapsed-${wiki.id}-${heading}`;
       toggleCollapse(key, section, true);
+      animateGridHeight(section, true);
     });
   });
 
@@ -210,6 +212,7 @@ function renderIndexControls(wiki) {
       const heading = section.dataset.section;
       const key = `wiki-section-collapsed-${wiki.id}-${heading}`;
       toggleCollapse(key, section, false);
+      animateGridHeight(section, false);
     });
   });
 }
@@ -406,6 +409,7 @@ function bindIndexCardSwipe(wiki) {
     }
     card = null;
     axis = null;
+    state._cardSwipeActive = false;
   };
 
   container.addEventListener(
@@ -432,8 +436,10 @@ function bindIndexCardSwipe(wiki) {
       if (!axis) {
         if (Math.abs(dx) < CARD_SWIPE_DEADZONE && Math.abs(dy) < CARD_SWIPE_DEADZONE) return;
         axis = Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
-        if (axis === "x") card.classList.add("card-swiping");
-        else {
+        if (axis === "x") {
+          card.classList.add("card-swiping");
+          state._cardSwipeActive = true; // tell global edge-swipe (back-nav) to stand down
+        } else {
           card = null; // vertical → let the page scroll, abandon swipe
           return;
         }
@@ -482,10 +488,101 @@ function bindIndexCardSwipe(wiki) {
   container.addEventListener("touchcancel", reset, { passive: true });
 }
 
+const PULL_REFRESH_THRESHOLD = 70;
+const PULL_REFRESH_MAX = 120;
+let _pullRefreshBound = false;
+let _pullWiki = null;
+
+function bindIndexPullToRefresh(wiki) {
+  _pullWiki = wiki;
+  const container = document.getElementById("index-sections");
+  if (!container || _pullRefreshBound) return;
+  _pullRefreshBound = true;
+
+  let startY = 0;
+  let pulling = false;
+  let dy = 0;
+
+  container.addEventListener(
+    "touchstart",
+    (e) => {
+      if (container.scrollTop > 0 || e.touches.length !== 1) return;
+      startY = e.touches[0].clientY;
+      pulling = true;
+      dy = 0;
+    },
+    { passive: true },
+  );
+
+  container.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!pulling || e.touches.length !== 1) return;
+      dy = e.touches[0].clientY - startY;
+      if (dy <= 0) {
+        container.classList.remove("index-pulling");
+        container.style.transform = "";
+        return;
+      }
+      e.preventDefault();
+      const clamped = Math.min(dy, PULL_REFRESH_MAX);
+      container.classList.add("index-pulling");
+      container.style.transform = `translateY(${clamped}px)`;
+    },
+    { passive: false },
+  );
+
+  const endPull = () => {
+    if (!pulling) return;
+    pulling = false;
+    container.classList.remove("index-pulling");
+    container.style.transform = "";
+    if (dy >= PULL_REFRESH_THRESHOLD) {
+      refreshIndex(_pullWiki);
+    }
+    dy = 0;
+  };
+
+  container.addEventListener("touchend", endPull, { passive: true });
+  container.addEventListener("touchcancel", endPull, { passive: true });
+}
+
+async function refreshIndex(wiki) {
+  delete indexCache[wiki.id];
+  try {
+    sessionStorage.removeItem(`wiki-index-${wiki.id}`);
+  } catch {}
+  await renderIndex(wiki);
+}
+
+function animateGridHeight(section, collapsed) {
+  const grid = section.querySelector(".index-card-grid");
+  if (!grid) return;
+  if (collapsed) {
+    grid.style.height = `${grid.scrollHeight}px`;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        grid.style.height = "0px";
+      });
+    });
+  } else {
+    const target = grid.scrollHeight;
+    grid.style.height = `${target}px`;
+    grid.addEventListener(
+      "transitionend",
+      () => {
+        if (!section.classList.contains("section--collapsed")) grid.style.height = "";
+      },
+      { once: true },
+    );
+  }
+}
+
 function toggleSection(headerEl, wikiId, heading) {
   const section = headerEl.closest(".index-section");
   const key = `wiki-section-collapsed-${wikiId}-${heading}`;
   const nowCollapsed = toggleCollapse(key, section);
+  animateGridHeight(section, nowCollapsed);
   headerEl.setAttribute("aria-expanded", nowCollapsed ? "false" : "true");
 }
 

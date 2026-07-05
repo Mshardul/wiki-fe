@@ -1,6 +1,7 @@
 """
 Mobile touch gestures (Group 5):
 - Index-card swipe: right = bookmark, left = read toggle; tap still navigates.
+- Index-card swipe starting near the left edge still bookmarks (no back-nav conflict).
 - Long-press internal link → bottom-sheet TLDR peek; tap-away dismisses.
 - Swipe-right from left edge in content view → back to index.
 
@@ -96,6 +97,22 @@ def test_card_swipe_left_marks_read(mobile_page, base_url):
     )
 
 
+def test_card_swipe_near_left_edge_still_bookmarks(mobile_page, base_url):
+    """right-swipe starting inside the global edge zone on an index card
+    still bookmarks the card (card gesture wins; no stray back-nav)."""
+    page = mobile_page
+    _go_to_index(page, base_url)
+    card, box = _first_card_box(page)
+
+    cy = box["y"] + box["height"] / 2
+    # start within EDGE_ZONE (44px) of the viewport's left edge
+    _swipe(page, 20, cy, box["x"] + box["width"] - 10, cy)
+
+    page.locator("#bookmarks-section .recent-chip").wait_for(state="attached", timeout=5_000)
+    assert page.locator("#bookmarks-section .recent-chip").count() >= 1
+    assert page.locator("#view-index.active").count() == 1
+
+
 def test_card_tap_still_navigates(mobile_page, base_url):
     """a plain tap (no horizontal drag) opens the article."""
     page = mobile_page
@@ -172,6 +189,29 @@ def test_long_press_link_opens_peek_sheet(mobile_page, base_url):
         "() => !document.getElementById('hover-preview')"
         ".classList.contains('hover-preview--sheet-open')",
         timeout=3_000,
+    )
+
+
+def test_pull_to_refresh_clears_index_cache_and_reloads(mobile_page, base_url):
+    """Dragging down past the top of the index view must clear the wiki's
+    sessionStorage index cache and re-fetch/re-render."""
+    page = mobile_page
+    _go_to_index(page, base_url)
+
+    page.evaluate(
+        "() => sessionStorage.setItem('wiki-index-system-design', JSON.stringify([{stale: true}]))"
+    )
+
+    container = page.locator("#index-sections")
+    box = container.bounding_box()
+    cx = box["x"] + box["width"] / 2
+    top = box["y"] + 5
+
+    _swipe(page, cx, top, cx, top + 100, steps=8)
+
+    page.wait_for_function(
+        "() => sessionStorage.getItem('wiki-index-system-design') === null",
+        timeout=5_000,
     )
 
 

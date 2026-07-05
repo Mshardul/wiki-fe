@@ -156,11 +156,49 @@ function addPreOverflowDetection(contentEl) {
 /* ═══════════════════════════════════════════════════════════════
    CODE BLOCK LINE NUMBERS
    ═══════════════════════════════════════════════════════════════ */
+/* Splits highlighted innerHTML into per-line chunks. */
+function splitHighlightedLines(html) {
+  const lines = [];
+  let current = "";
+  const stack = [];
+  let i = 0;
+  while (i < html.length) {
+    const nextTag = html.indexOf("<", i);
+    const nextNl = html.indexOf("\n", i);
+    if (nextNl !== -1 && (nextTag === -1 || nextNl < nextTag)) {
+      current += html.slice(i, nextNl);
+      lines.push(current + "</span>".repeat(stack.length));
+      current = stack.map((attrs) => `<span${attrs}>`).join("");
+      i = nextNl + 1;
+      continue;
+    }
+    if (nextTag === -1) {
+      current += html.slice(i);
+      break;
+    }
+    current += html.slice(i, nextTag);
+    if (html.startsWith("</span>", nextTag)) {
+      stack.pop();
+      current += "</span>";
+      i = nextTag + "</span>".length;
+    } else {
+      const closeIdx = html.indexOf(">", nextTag);
+      const tag = html.slice(nextTag, closeIdx + 1);
+      const attrs = tag.slice("<span".length, -1);
+      stack.push(attrs);
+      current += tag;
+      i = closeIdx + 1;
+    }
+  }
+  lines.push(current);
+  if (lines[lines.length - 1] === "") lines.pop();
+  return lines;
+}
+
 function addLineNumbers(contentEl) {
   contentEl.querySelectorAll("pre code").forEach((code) => {
     if (code.classList.contains("language-mermaid")) return;
-    const lines = code.innerHTML.split("\n");
-    if (lines[lines.length - 1] === "") lines.pop();
+    const lines = splitHighlightedLines(code.innerHTML);
     if (lines.length < 3) return;
     code.innerHTML = lines.map((line) => `<span class="code-line">${line}</span>`).join("\n");
     code.parentElement.classList.add("has-line-numbers");

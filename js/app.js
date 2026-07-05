@@ -136,11 +136,20 @@ document.addEventListener("click", (e) => {
     case "offline-toggle":
       Offline.toggle();
       break;
+    case "quiz-toggle":
+      QuizMode.toggle();
+      break;
+    case "distraction-free-exit":
+      toggleDistractionFree();
+      break;
     case "toggle-theme":
       Theme.toggle();
       break;
     case "print-article":
       printArticle();
+      break;
+    case "find-open":
+      ArticleFind.open();
       break;
     case "copy-source-toggle":
       Settings._toggleCopySourceHeader();
@@ -399,7 +408,40 @@ window.addEventListener("hashchange", () => {
   initProgressRingScrollTop();
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./wiki-sw.js").catch(() => {});
+    navigator.serviceWorker
+      .register("./wiki-sw.js")
+      .then((reg) => {
+        const promptUpdate = (worker) => {
+          showToast(
+            "A new version is available.",
+            8000,
+            () => {
+              worker.postMessage("SKIP_WAITING");
+            },
+            "Refresh",
+          );
+        };
+
+        if (reg.waiting && navigator.serviceWorker.controller) promptUpdate(reg.waiting);
+
+        reg.addEventListener("updatefound", () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener("statechange", () => {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              promptUpdate(newWorker);
+            }
+          });
+        });
+      })
+      .catch(() => {});
+
+    let _swRefreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (_swRefreshing) return;
+      _swRefreshing = true;
+      location.reload();
+    });
   }
 
   if (new URLSearchParams(location.search).has("debug")) {
@@ -415,5 +457,18 @@ window.addEventListener("pageshow", (e) => {
   if (e.persisted) {
     const hash = location.hash.slice(1);
     route(hash);
+
+    // route() renders async (content fetch + double rAF) - the browser's own
+    // post-bfcache scroll adjustment can land after that and override it, so
+    // reassert the saved position once the route has had time to settle.
+    const wikiId = state.currentWikiId;
+    const filePath = state.currentFilePath;
+    if (filePath) {
+      setTimeout(() => {
+        if (state.currentView !== "content" || state.currentFilePath !== filePath) return;
+        const saved = localStorage.getItem(`scroll-${wikiId}-${filePath}`);
+        if (saved) window.scrollTo({ top: Number.parseInt(saved, 10), behavior: "instant" });
+      }, 60);
+    }
   }
 });

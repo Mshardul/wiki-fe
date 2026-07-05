@@ -109,6 +109,19 @@ function addMermaidNodeCaptions(contentEl) {
         });
         el.addEventListener("mousemove", (e) => _positionTooltip(tip, e));
         el.addEventListener("mouseleave", () => tip.classList.remove("visible"));
+        el.addEventListener(
+          "touchstart",
+          (e) => {
+            e.stopPropagation();
+            const touch = e.touches[0];
+            tip.textContent = caption;
+            tip.classList.add("visible");
+            _positionTooltip(tip, { clientX: touch.clientX, clientY: touch.clientY });
+            clearTimeout(el._tooltipHideTimer);
+            el._tooltipHideTimer = setTimeout(() => tip.classList.remove("visible"), 2000);
+          },
+          { passive: true },
+        );
       });
     });
   });

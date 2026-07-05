@@ -67,6 +67,50 @@
   font-family: var(--font-mono);
   margin: var(--s5) 0;
 }
+
+/* ═══════════════════════════════════════════════
+   INLINE STRUCTURE VIZ
+   ═══════════════════════════════════════════════ */
+.structure-viz {
+  margin: var(--s5) 0;
+  padding: var(--s6);
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r);
+  overflow-x: auto;
+  text-align: center;
+}
+.structure-viz-svg {
+  max-width: 100%;
+  height: auto;
+}
+.structure-viz-node {
+  fill: var(--accent-dim);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.structure-viz-cell {
+  fill: var(--accent-dim);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.structure-viz-edge {
+  stroke: var(--border-2);
+  stroke-width: 1.5;
+}
+.structure-viz-arrowhead {
+  fill: var(--border-2);
+}
+.structure-viz-label {
+  fill: var(--text-body);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.structure-viz-index {
+  fill: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
 .mermaid-step-play-btn {
   right: var(--s10);
 }

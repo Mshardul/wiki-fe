@@ -355,7 +355,7 @@
                 stroke-linejoin="round"
               />
             </svg>
-            Back
+            <span class="back-btn-label">Back</span>
           </button>
           <nav
             id="content-breadcrumb"
@@ -419,6 +419,24 @@
             </svg>
           </button>
           <button
+            id="content-quiz-btn"
+            class="topbar-icon-btn"
+            title="Quiz mode"
+            aria-label="Quiz mode"
+            data-action="quiz-toggle"
+          >
+            <svg viewBox="0 0 20 20" fill="none">
+              <path
+                d="M7 7a3 3 0 116 0c0 2-2 2-3 3.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <circle cx="10" cy="14.5" r="0.75" fill="currentColor" />
+            </svg>
+          </button>
+          <button
             id="content-offline-btn"
             class="topbar-icon-btn"
             title="Save for offline"
@@ -466,6 +484,34 @@
                 stroke="currentColor"
                 stroke-width="1.5"
                 stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="topbar-icon-btn"
+            data-action="find-open"
+            title="Find in article (/)"
+            aria-label="Find in article"
+          >
+            <svg viewBox="0 0 20 20" fill="none">
+              <circle
+                cx="8.5"
+                cy="8.5"
+                r="5.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <path
+                d="M13 13l3.5 3.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+              <path
+                d="M6.5 8.5h4"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
               />
             </svg>
           </button>
@@ -598,6 +644,29 @@
             </button>
           </div>
           <nav id="toc-nav" class="toc-nav"></nav>
+          <div id="notes-scratchpad" class="notes-scratchpad">
+            <div class="notes-scratchpad-header">
+              <span class="notes-scratchpad-label">Notes</span>
+              <button id="notes-scratchpad-toggle" class="notes-scratchpad-toggle" title="Collapse notes">
+                <svg viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M9 3L5 7l4 4"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div class="notes-scratchpad-body">
+              <textarea
+                id="notes-scratchpad-input"
+                class="notes-scratchpad-input"
+                placeholder="Jot a note for this article..."
+              ></textarea>
+            </div>
+          </div>
         </aside>
       </div>
       <!-- Mobile TOC -->
@@ -617,6 +686,26 @@
       </button>
       <div id="toc-mobile-overlay" class="toc-mobile-overlay"></div>
     </div>
+
+    <!-- ══════════════════════════════════════
+       DISTRACTION-FREE EXIT (floating, mobile-reachable)
+  ══════════════════════════════════════ -->
+    <button
+      id="distraction-free-exit-btn"
+      class="distraction-free-exit-btn"
+      title="Exit distraction-free mode"
+      aria-label="Exit distraction-free mode"
+      data-action="distraction-free-exit"
+    >
+      <svg viewBox="0 0 20 20" fill="none">
+        <path
+          d="M5 5l10 10M15 5L5 15"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
 
     <!-- ══════════════════════════════════════
        SHARED - SCROLL TO TOP
@@ -845,6 +934,7 @@
     >
       <div id="auth-backdrop" class="auth-backdrop"></div>
       <div class="auth-dialog">
+        <div class="auth-drag-handle"></div>
         <button
           id="auth-close"
           class="auth-close"
@@ -857,22 +947,24 @@
         <!-- LOGIN -->
         <div id="auth-panel-login" class="auth-panel active">
           <h2 class="auth-title">Log in</h2>
-          <label class="auth-field"
-            ><span>Email</span>
-            <input
-              id="auth-login-email"
-              type="email"
-              autocomplete="email"
-            /> </label
-          ><label class="auth-field"
-            ><span>Password</span>
-            <input
-              id="auth-login-password"
-              type="password"
-              autocomplete="current-password"
-          /></label>
-          <p id="auth-login-error" class="auth-error" hidden></p>
-          <button id="auth-login-submit" class="auth-submit">Log in</button>
+          <form id="auth-form-login">
+            <label class="auth-field"
+              ><span>Email</span>
+              <input
+                id="auth-login-email"
+                type="email"
+                autocomplete="email"
+              /> </label
+            ><label class="auth-field"
+              ><span>Password</span>
+              <input
+                id="auth-login-password"
+                type="password"
+                autocomplete="current-password"
+            /></label>
+            <p id="auth-login-error" class="auth-error" hidden></p>
+            <button id="auth-login-submit" class="auth-submit" type="submit">Log in</button>
+          </form>
           <p class="auth-swap">
             <button id="auth-to-forgot" class="auth-link" type="button">
               Forgot password?
@@ -889,25 +981,27 @@
         <!-- REGISTER -->
         <div id="auth-panel-register" class="auth-panel">
           <h2 class="auth-title">Create account</h2>
-          <label class="auth-field"
-            ><span>Email</span>
-            <input id="auth-reg-email" type="email" autocomplete="email" /> </label
-          ><label class="auth-field"
-            ><span>Password</span>
-            <input
-              id="auth-reg-password"
-              type="password"
-              autocomplete="new-password"
-          /></label>
-          <ul
-            id="auth-pw-checklist"
-            class="auth-pw-checklist"
-            aria-live="polite"
-          ></ul>
-          <p id="auth-reg-error" class="auth-error" hidden></p>
-          <button id="auth-reg-submit" class="auth-submit" disabled>
-            Create account
-          </button>
+          <form id="auth-form-register">
+            <label class="auth-field"
+              ><span>Email</span>
+              <input id="auth-reg-email" type="email" autocomplete="email" /> </label
+            ><label class="auth-field"
+              ><span>Password</span>
+              <input
+                id="auth-reg-password"
+                type="password"
+                autocomplete="new-password"
+            /></label>
+            <ul
+              id="auth-pw-checklist"
+              class="auth-pw-checklist"
+              aria-live="polite"
+            ></ul>
+            <p id="auth-reg-error" class="auth-error" hidden></p>
+            <button id="auth-reg-submit" class="auth-submit" type="submit" disabled>
+              Create account
+            </button>
+          </form>
           <p class="auth-swap">
             Have an account?
             <button id="auth-to-login" class="auth-link" type="button">
@@ -947,18 +1041,20 @@
         <!-- FORGOT PASSWORD -->
         <div id="auth-panel-forgot" class="auth-panel">
           <h2 class="auth-title">Reset your password</h2>
-          <label class="auth-field"
-            ><span>Email</span>
-            <input
-              id="auth-forgot-email"
-              type="email"
-              autocomplete="email"
-          /></label>
-          <p id="auth-forgot-error" class="auth-error" hidden></p>
-          <p id="auth-forgot-sent" class="auth-verify-copy" hidden>
-            If that account exists, a reset link is on its way.
-          </p>
-          <button id="auth-forgot-submit" class="auth-submit">Send reset link</button>
+          <form id="auth-form-forgot">
+            <label class="auth-field"
+              ><span>Email</span>
+              <input
+                id="auth-forgot-email"
+                type="email"
+                autocomplete="email"
+            /></label>
+            <p id="auth-forgot-error" class="auth-error" hidden></p>
+            <p id="auth-forgot-sent" class="auth-verify-copy" hidden>
+              If that account exists, a reset link is on its way.
+            </p>
+            <button id="auth-forgot-submit" class="auth-submit" type="submit">Send reset link</button>
+          </form>
           <p class="auth-swap">
             <button id="auth-forgot-to-login" class="auth-link" type="button">
               Back to log in
@@ -969,22 +1065,24 @@
         <!-- RESET PASSWORD (landed here from the reset-password link) -->
         <div id="auth-panel-reset" class="auth-panel">
           <h2 class="auth-title">Choose a new password</h2>
-          <label class="auth-field"
-            ><span>New password</span>
-            <input
-              id="auth-reset-password"
-              type="password"
-              autocomplete="new-password"
-          /></label>
-          <ul
-            id="auth-reset-pw-checklist"
-            class="auth-pw-checklist"
-            aria-live="polite"
-          ></ul>
-          <p id="auth-reset-error" class="auth-error" hidden></p>
-          <button id="auth-reset-submit" class="auth-submit" disabled>
-            Update password
-          </button>
+          <form id="auth-form-reset">
+            <label class="auth-field"
+              ><span>New password</span>
+              <input
+                id="auth-reset-password"
+                type="password"
+                autocomplete="new-password"
+            /></label>
+            <ul
+              id="auth-reset-pw-checklist"
+              class="auth-pw-checklist"
+              aria-live="polite"
+            ></ul>
+            <p id="auth-reset-error" class="auth-error" hidden></p>
+            <button id="auth-reset-submit" class="auth-submit" type="submit" disabled>
+              Update password
+            </button>
+          </form>
         </div>
       </div>
     </div>

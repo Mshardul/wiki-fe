@@ -385,17 +385,15 @@
 
 @media (max-width: 640px) {
   .gsearch-modal {
-    padding: 8dvh var(--s2) var(--s2);
+    /* --gsearch-vvh tracks actual visible area once a software keyboard is up */
+    --gsearch-vh: var(--gsearch-vvh, 100dvh);
+    padding: var(--s3) var(--s2) var(--s2);
     align-items: flex-start;
   }
 
   .gsearch-dialog {
-    /* height (not just max-height) gives .gsearch-results a definite space to
-       flex-grow into so it can clip/scroll instead of overflowing the dialog. */
-    /* -1px slack: independent dvh rounding between this calc and the modal's
-       own 8dvh padding can otherwise push the dialog a sub-pixel past the viewport. */
-    height: calc(100dvh - 8dvh - var(--s2) - 1px);
-    max-height: calc(100dvh - 8dvh - var(--s2) - 1px);
+    height: calc(var(--gsearch-vh) - var(--s3) - var(--s2) - 1px);
+    max-height: calc(var(--gsearch-vh) - var(--s3) - var(--s2) - 1px);
     display: flex;
     flex-direction: column;
     overflow: hidden;

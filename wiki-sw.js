@@ -1,8 +1,11 @@
-const SHELL_CACHE = "wiki-shell-v7";
+const SHELL_CACHE = "wiki-shell-v8";
 const ARTICLE_CACHE = "wiki-articles-v1";
 
+self.addEventListener("message", (e) => {
+  if (e.data === "SKIP_WAITING") self.skipWaiting();
+});
+
 self.addEventListener("install", (e) => {
-  self.skipWaiting();
   e.waitUntil(
     caches
       .open(SHELL_CACHE)

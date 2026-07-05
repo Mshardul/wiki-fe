@@ -1,5 +1,6 @@
 """
 - scroll position persisted per article in localStorage
+- scroll position re-applied on bfcache (persisted) pageshow
 - TOC sidebar sticky on desktop, hidden on mobile
 - Sticky section header updates on scroll
 """
@@ -45,6 +46,42 @@ def test_scroll_position_saved_and_restored(page, base_url):
     except Exception:
         scroll_y = page.evaluate("() => window.scrollY")
         assert False, f"Scroll not restored after 3s; scrollY={scroll_y}"
+
+
+def test_scroll_restored_after_bfcache_pageshow(page, base_url):
+    """Dispatching a persisted pageshow (as on bfcache restore, e.g. browser
+    back from an external page) re-applies the saved scroll position even
+    after the browser's own post-restore adjustment would otherwise win.
+    """
+    page.goto(f"{base_url}/#system-design/caching")
+    page.wait_for_selector("#markdown-body pre", timeout=10_000)
+
+    file_path = page.evaluate(
+        "() => (typeof state !== 'undefined' ? state.currentFilePath : null)"
+    )
+    wiki_id = page.evaluate(
+        "() => (typeof state !== 'undefined' ? state.currentWikiId : null)"
+    )
+    assert file_path, "Could not read state.currentFilePath from app"
+    assert wiki_id, "Could not read state.currentWikiId from app"
+    page.evaluate(
+        "([wid, fp]) => localStorage.setItem('scroll-' + wid + '-' + fp, '600')",
+        [wiki_id, file_path],
+    )
+
+    # Simulate the browser landing back on this page from bfcache: scroll gets
+    # reset to 0 (as a real bfcache restore or fresh route() render would do),
+    # then the persisted pageshow fires.
+    page.evaluate("() => window.scrollTo(0, 0)")
+    page.evaluate(
+        "() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))"
+    )
+
+    try:
+        page.wait_for_function("() => window.scrollY > 100", timeout=3_000)
+    except Exception:
+        scroll_y = page.evaluate("() => window.scrollY")
+        assert False, f"Scroll not restored after bfcache pageshow; scrollY={scroll_y}"
 
 
 def test_scroll_position_not_restored_with_anchor(page, base_url):

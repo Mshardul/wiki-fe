@@ -13,6 +13,8 @@ Content view enhancements:
 - Broken image error placeholder
 """
 
+import pytest
+
 ARTICLE_WITH_TABLE = """\
 # Table Test
 
@@ -932,6 +934,64 @@ def test_tap_reveals_cell_and_records(page, base_url):
     )
     assert remaining == 5, f"Tapped cell should reveal, {remaining} still blurred"
 
+
+def test_quiz_topbar_button_toggles_blur(page, base_url):
+    """Tapping the content-topbar quiz button is a touch-accessible equivalent of the q hotkey."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_COMPLEXITY_TABLE, slug="quiz-btn-toggle")
+    page.wait_for_selector("#markdown-body .quiz-cell", timeout=5_000)
+
+    page.click('[data-action="quiz-toggle"]')
+    page.wait_for_selector("#markdown-body .quiz-cell.quiz-blurred", timeout=2_000)
+    blurred = page.evaluate(
+        "() => document.querySelectorAll('#markdown-body .quiz-cell.quiz-blurred').length"
+    )
+    assert blurred == 6, f"Expected all 6 cells blurred via button, got {blurred}"
+
+    is_active = page.evaluate(
+        "() => document.getElementById('content-quiz-btn').classList.contains('active')"
+    )
+    assert is_active, "Quiz button should show active state while quiz mode is on"
+
+    page.click('[data-action="quiz-toggle"]')
+    blurred_after = page.evaluate(
+        "() => document.querySelectorAll('#markdown-body .quiz-cell.quiz-blurred').length"
+    )
+    assert blurred_after == 0, "Second click on quiz button should clear blur"
+
+
+@pytest.mark.parametrize("width", [320, 360, 375])
+def test_content_topbar_fits_narrow_viewports(page, base_url, width):
+    """The content-topbar row (back, breadcrumb, action buttons) must not
+    overflow at common narrow phone widths - regression for WIKI-341, where
+    low-priority buttons and a non-shrinking breadcrumb pushed the auth
+    button off-screen."""
+    page.set_viewport_size({"width": width, "height": 700})
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+
+    overflow = page.evaluate("""() => {
+        const inner = document.querySelector('.content-topbar .topbar-inner');
+        return inner.scrollWidth - inner.clientWidth;
+    }""")
+    assert overflow <= 1, (
+        f"content-topbar overflows by {overflow}px at {width}px viewport width"
+    )
+
+    auth_btn_box = page.evaluate("""() => {
+        const el = document.getElementById('auth-btn-content');
+        const r = el.getBoundingClientRect();
+        return { right: r.right, width: r.width };
+    }""")
+    assert auth_btn_box["width"] > 0, "Auth button should be visible in the content topbar"
+    assert auth_btn_box["right"] <= width, (
+        f"Auth button right edge ({auth_btn_box['right']}) clipped past "
+        f"viewport width ({width})"
+    )
+
     reveals = page.evaluate(
         """() => {
             const k = Object.keys(localStorage).find((x) => x.startsWith('wiki-reveals-'));
@@ -1286,6 +1346,33 @@ def test_mermaid_tooltip_not_visible_on_load(page, base_url):
     assert not is_visible, "#mermaid-node-tooltip should not be .visible on load"
 
 
+def test_mermaid_tooltip_shows_on_touchstart(page, base_url):
+    """Tapping a captioned node (touchstart) shows the tooltip - touch fallback
+    for devices with no mouseenter."""
+    _load_mock_article(
+        page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-tooltip-touch"
+    )
+    page.wait_for_selector(".mermaid-diagram .has-node-caption", timeout=8_000)
+
+    page.evaluate("""() => {
+        const el = document.querySelector('.has-node-caption');
+        const rect = el.getBoundingClientRect();
+        const touch = new Touch({
+            identifier: 1, target: el,
+            clientX: rect.x + rect.width / 2, clientY: rect.y + rect.height / 2,
+        });
+        el.dispatchEvent(new TouchEvent('touchstart', {
+            bubbles: true, cancelable: true,
+            touches: [touch], targetTouches: [touch], changedTouches: [touch],
+        }));
+    }""")
+
+    is_visible = page.evaluate(
+        "() => document.getElementById('mermaid-node-tooltip')?.classList.contains('visible') ?? false"
+    )
+    assert is_visible, "tooltip did not become visible on touchstart"
+
+
 # ── ResizeObserver cleanup ──────────────────────────────────────────────────────
 
 
@@ -1584,6 +1671,31 @@ def test_inline_glossary_expand_click_shows_def(page, base_url):
     assert text and len(text) > 5, "Inline def opened but text is empty"
 
 
+def test_inline_glossary_expand_touch_shows_def(page, base_url):
+    """Tapping a glossary abbr (synthetic touch, not mouse) shows its inline
+    definition - touch fallback for the hover-only popover path."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-expand-touch")
+    page.wait_for_function(
+        "() => document.querySelector('abbr.glossary-term--expandable') !== null",
+        timeout=5_000,
+    )
+    page.evaluate("""() => {
+        const el = document.querySelector('abbr.glossary-term--expandable');
+        const rect = el.getBoundingClientRect();
+        const x = rect.x + rect.width / 2, y = rect.y + rect.height / 2;
+        const touch = new Touch({ identifier: 1, target: el, clientX: x, clientY: y });
+        el.dispatchEvent(new TouchEvent('touchend', {
+            bubbles: true, cancelable: true,
+            touches: [], targetTouches: [], changedTouches: [touch],
+        }));
+        el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    }""")
+    page.wait_for_function(
+        "() => document.querySelector('.glossary-inline-def--open') !== null",
+        timeout=3_000,
+    )
+
+
 def test_inline_glossary_expand_second_click_collapses(page, base_url):
     """Second click on .glossary-term--expandable collapses the definition."""
     _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-expand-collapse")
@@ -1821,3 +1933,46 @@ def test_toc_expand_syncs_content_section_visible(page, base_url):
         return h2 && !h2.classList.contains('section--collapsed');
     }""")
     assert content_expanded, "Re-expanding TOC group must remove section--collapsed from content h2"
+
+
+# ── Glossary inline expand (listener leak regression) ────────────
+
+ARTICLE_WITH_GLOSSARY_TERM = """\
+# Glossary Test
+
+Dynamic array resizing is <abbr>amortized</abbr> O(1).
+"""
+
+
+def test_glossary_expand_toggles_after_repeated_navigation(page, base_url):
+    """addInlineGlossaryExpand must keep working correctly across many article
+    renders - regression for a bug where one document-level click listener was
+    added per glossary term per render, never removed, growing unbounded."""
+    for i in range(5):
+        _load_mock_article(page, base_url, ARTICLE_WITH_GLOSSARY_TERM, slug=f"glossary-leak-{i}")
+
+    abbr = page.locator("#markdown-body abbr.glossary-term--expandable").first
+    abbr.click()
+    page.wait_for_function(
+        "() => document.querySelector('#markdown-body abbr')?.getAttribute('aria-expanded') === 'true'",
+        timeout=5_000,
+    )
+
+    # Click outside must collapse it (the shared document listener still works)
+    page.locator("body").click(position={"x": 5, "y": 5})
+    page.wait_for_function(
+        "() => document.querySelector('#markdown-body abbr')?.getAttribute('aria-expanded') === 'false'",
+        timeout=5_000,
+    )
+
+
+# ── In-article find touch trigger ─────────────────────────────────
+
+
+def test_find_button_opens_article_find(page, base_url):
+    """The content-topbar find button must open the in-article find bar via
+    ArticleFind.open() - regression for ArticleFind only being reachable via
+    the '/' keyboard shortcut, with no touch-accessible trigger."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="find-btn-touch")
+    page.click('[data-action="find-open"]')
+    page.wait_for_selector("#article-find:not(.hidden)", timeout=5_000)

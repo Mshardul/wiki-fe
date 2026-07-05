@@ -40,8 +40,16 @@ jobs:
       - name: Install Chromium
         run: python -m playwright install --with-deps chromium
 
+      # CDN assets tests mock are version-pinned in conftest.py, so a cache keyed on its
+      # hash is valid until a version bumps (which changes the hash and the URL together).
+      - name: Cache CDN assets
+        uses: actions/cache@v4
+        with:
+          path: tests/.cdn-cache
+          key: cdn-assets-${{ hashFiles('tests/conftest.py') }}
+
       - name: Tests (e2e)
-        run: pytest tests/ -q
+        run: pytest tests/ -q -n auto
 
   dead-links:
     runs-on: ubuntu-latest

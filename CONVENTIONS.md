@@ -207,6 +207,7 @@ For the full model and the *why*, see the decisions docs:
 - **Match the existing structure** in that file (function- vs class-based, fixture usage).
 - Use `page.locator()` + `expect()`; avoid `page.query_selector()`.
 - **Never use `page.evaluate("element.click()")` to interact with elements.** If Playwright's actionability checks reject a click, fix the production code (e.g. remove a static `aria-hidden`, correct a CSS visibility issue) so the element is genuinely reachable. `evaluate`-based clicks bypass the checks and will miss real regressions.
+- **`page.wait_for_timeout()` is banned except for a genuine negative assertion** - proving something did *not* happen (no toast, no API call, no re-open) where no DOM state ever flips to signal "done," or waiting out a fixed internal timer (e.g. a debounce) that exposes no completion hook. Anything with an observable end state - element appears, class toggles, network settles - uses `wait_for_selector` / `expect(...).to_have_*` / `wait_for_function` instead. A sleep-based wait is CPU-load-dependent and is the first thing to flake when tests run in parallel; a condition-based wait isn't.
 - **Selectors:** prefer user-visible text or ARIA roles. Use `data-testid` only when no semantic alternative exists.
 - **Isolation:** every test resets localStorage via the conftest fixture - don't assume state from other tests.
 - **Naming:** descriptive and behavior-focused (`test_login_unverified_shows_verify_panel`). No rigid template - match the style of the file you're adding to.

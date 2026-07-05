@@ -52,6 +52,21 @@
   min-width: 0;
 }
 
+/* Let the content-topbar breadcrumb shrink instead of pushing icon buttons off-screen */
+.content-topbar .breadcrumb {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.content-topbar .breadcrumb a,
+.content-topbar .breadcrumb-link,
+.content-topbar .breadcrumb span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Topbar */
 .page-topbar,
 .content-topbar {

@@ -1,6 +1,6 @@
 import { escHtml } from "../state.js";
 import { fetchWikiIndex } from "./home-index.js";
-import { normalizePath } from "./nav-utils.js";
+import { dirOf, normalizePath, resolvePath } from "./nav-utils.js";
 
 /* ═══════════════════════════════════════════════════════════════
    RELATED ARTICLES
@@ -59,12 +59,67 @@ function _rankRelated(current, candidates) {
   return top.length ? top : candidates.slice(0, 3);
 }
 
-async function renderRelatedArticles(wiki, currentPath) {
+/* ─── Author-curated "## Recommended" section ───
+   Authors can end an article with a `## Recommended` heading followed by a
+   list of internal markdown links. When present, this takes over the related
+   panel instead of the keyword-ranked auto-suggestions, and the raw heading +
+   list is removed from the rendered body so it isn't shown twice. */
+function extractRecommendedLinks(body, currentFilePath) {
+  const heading = [...body.querySelectorAll("h2")].find(
+    (h) => h.textContent.trim().toLowerCase() === "recommended",
+  );
+  if (!heading) return null;
+
+  const baseDir = dirOf(currentFilePath);
+  const links = [];
+  const toRemove = [heading];
+  let node = heading.nextElementSibling;
+  while (node && node.tagName !== "H2") {
+    toRemove.push(node);
+    node.querySelectorAll("a[href]").forEach((a) => {
+      const href = a.getAttribute("href");
+      if (!href || !href.split("#")[0].endsWith(".md")) return;
+      const path = normalizePath(resolvePath(baseDir, href).split("#")[0]);
+      const title = a.textContent.trim();
+      if (path && title) links.push({ path, title });
+    });
+    node = node.nextElementSibling;
+  }
+
+  toRemove.forEach((el) => el.remove());
+  return links;
+}
+
+async function renderRelatedArticles(wiki, currentPath, recommendedLinks) {
   const container = document.getElementById("related-articles");
   if (!container) return;
   container.innerHTML = "";
 
   try {
+    if (recommendedLinks?.length) {
+      container.innerHTML = `
+        <div class="related-header">
+          <span class="related-label">Recommended</span>
+        </div>
+        <div class="related-grid">
+          ${recommendedLinks
+            .map(
+              (link) => `
+            <div class="related-card"
+                 onclick="navigateToContent('${wiki.id}','${encodeURIComponent(
+                   link.path,
+                 )}','${encodeURIComponent(link.title)}')"
+                 role="button" tabindex="0"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+              <span class="related-card-title">${escHtml(link.title)}</span>
+              <span class="related-card-arrow">→</span>
+            </div>`,
+            )
+            .join("")}
+        </div>`;
+      return;
+    }
+
     const sections = await fetchWikiIndex(wiki);
     let related = [];
     let sectionName = "";
@@ -106,4 +161,4 @@ async function renderRelatedArticles(wiki, currentPath) {
   } catch {}
 }
 
-export { renderRelatedArticles };
+export { extractRecommendedLinks, renderRelatedArticles };

@@ -1,3 +1,5 @@
+import hashlib
+import json
 import threading
 import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -29,14 +31,34 @@ _CDN_ASSETS = [
 # empty body instead of the real library, so it never overwrites the stub.
 _MERMAID_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/mermaid@10.9.5/dist/mermaid.min.js"
 
+# On-disk cache so re-running tests (and every xdist worker) doesn't re-hit live CDNs.
+# Every URL above is version-pinned, so a cached response is valid forever - the only way
+# it goes stale is a version bump, which changes the URL (and therefore the cache path).
+_DISK_CACHE_DIR = REPO_ROOT / "tests" / ".cdn-cache"
+
+
+def _disk_cache_path(url):
+    digest = hashlib.sha256(url.encode()).hexdigest()
+    return _DISK_CACHE_DIR / f"{digest}.json"
+
 
 @pytest.fixture(scope="session")
 def cdn_cache():
     cache = {_MERMAID_SCRIPT_URL: (b"/* stubbed for tests */", "application/javascript")}
     for url in _CDN_ASSETS:
+        cache_path = _disk_cache_path(url)
+        if cache_path.exists():
+            stored = json.loads(cache_path.read_text())
+            cache[url] = (stored["body"].encode("latin-1"), stored["content_type"])
+            continue
         with urllib.request.urlopen(url, timeout=15) as resp:
             content_type = resp.headers.get("Content-Type", "application/javascript")
-            cache[url] = (resp.read(), content_type)
+            body = resp.read()
+        cache[url] = (body, content_type)
+        _DISK_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(
+            json.dumps({"body": body.decode("latin-1"), "content_type": content_type})
+        )
     return cache
 
 

@@ -19,7 +19,7 @@
 - [The modular-arithmetic thread that ties them together](#the-modular-arithmetic-thread-that-ties-them-together)
 - [Interview soundbite](#interview-soundbite)
 
-> **Hub article.** This page is the survey + decision layer for the contest number-theory toolkit - it does not trace any single algorithm in full. Each member (Euclidean GCD, modular exponentiation, Sieve of Eratosthenes) has its own page with its invariant, complexity proof, edge cases, and implementation. Read this to learn _what the toolkit contains and which tool a problem is asking for_; follow a member link for the procedure.
+> **Hub article.** This page is the survey + decision layer for the contest number-theory toolkit - it does not trace any single algorithm in full. Each member ([Euclidean GCD](./euclidean-gcd.md), [Modular Exponentiation](./modular-exponentiation.md), [Sieve of Eratosthenes](./sieve-of-eratosthenes.md)) has its own page with its invariant, complexity proof, edge cases, and implementation. Read this to learn _what the toolkit contains and which tool a problem is asking for_; follow a member link for the procedure.
 
 ## What it is
 
@@ -58,11 +58,11 @@ The common theme: **don't iterate over the magnitude of the number - iterate ove
 
 Each member solves a distinct primitive; together they cover the overwhelming majority of contest "math" tags. **Suggested reading order - base first, composites last:** GCD and the sieve are **independent foundations** (read either first); modular exponentiation **depends on** modular arithmetic and underpins the Fermat inverse; the inverse itself **pulls from both** GCD (extended, any modulus) and modular exponentiation (Fermat, prime modulus). So: **GCD → sieve → modular exponentiation**, then the inverse falls out of the first and third.
 
-- **Euclidean GCD** - the **divisibility** tool. Computes `gcd(a, b)` in `O(log min(a,b))` via `gcd(a,b) = gcd(b, a mod b)`. The **extended** version additionally finds integers `x, y` with `a·x + b·y = gcd(a,b)` (Bézout), which yields the **modular inverse** when `gcd = 1`. Foundation for LCM (`a·b / gcd`), fraction reduction, CRT, and any "make these coprime" problem.
+- **[Euclidean GCD](./euclidean-gcd.md)** - the **divisibility** tool. Computes `gcd(a, b)` in `O(log min(a,b))` via `gcd(a,b) = gcd(b, a mod b)`. The **extended** version additionally finds integers `x, y` with `a·x + b·y = gcd(a,b)` (Bézout), which yields the **modular inverse** when `gcd = 1`. Foundation for LCM (`a·b / gcd`), fraction reduction, CRT, and any "make these coprime" problem.
 
-- **Modular exponentiation** - the **large-power** tool. Computes `xⁿ mod m` in `O(log n)` by square-and-multiply, keeping every intermediate `< m`. The workhorse behind answers reported "mod 10⁹+7", behind **Fermat's modular inverse** (`a⁻¹ ≡ a^(p−2) mod p` for prime p), behind RSA, and behind fast Fibonacci / linear-recurrence via matrix power.
+- **[Modular exponentiation](./modular-exponentiation.md)** - the **large-power** tool. Computes `xⁿ mod m` in `O(log n)` by square-and-multiply, keeping every intermediate `< m`. The workhorse behind answers reported "mod 10⁹+7", behind **Fermat's modular inverse** (`a⁻¹ ≡ a^(p−2) mod p` for prime p), behind RSA, and behind fast Fibonacci / linear-recurrence via matrix power.
 
-- **Sieve of Eratosthenes** - the **bulk-primality** tool. Marks every prime up to `n` in `O(n log log n)`. Variants extend it: the **linear sieve** is `O(n)` and also yields each number's **smallest prime factor**, giving `O(log n)` factorization afterward; a **segmented sieve** handles ranges too large to fit in memory at once. The base for prime counting, factorization, Euler's totient over a range, and "is it prime?" answered in `O(1)` after precompute.
+- **[Sieve of Eratosthenes](./sieve-of-eratosthenes.md)** - the **bulk-primality** tool. Marks every prime up to `n` in `O(n log log n)`. Variants extend it: the **linear sieve** is `O(n)` and also yields each number's **smallest prime factor**, giving `O(log n)` factorization afterward; a **segmented sieve** handles ranges too large to fit in memory at once. The base for prime counting, factorization, Euler's totient over a range, and "is it prime?" answered in `O(1)` after precompute.
 
 ## Comparison
 

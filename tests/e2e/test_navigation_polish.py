@@ -177,6 +177,18 @@ def test_wiki_switcher_shows_wiki_cards(page, base_url):
     assert card_count > 0, "Wiki switcher must show at least one wiki card"
 
 
+def test_wiki_switcher_card_names_not_undefined(page, base_url):
+    """Wiki switcher cards must render the wiki's title, not literal 'undefined'."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("w")
+    page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
+    names = page.locator(".wiki-switcher-card-name").all_inner_texts()
+    assert names, "Wiki switcher must render at least one card name"
+    assert all(n.strip() and n.strip() != "undefined" for n in names), (
+        f"Wiki switcher card names must not be 'undefined', got: {names}"
+    )
+
+
 def test_overlay_click_closes_switcher(page, base_url):
     """Clicking the backdrop closes the wiki switcher."""
     _go_to_article(page, base_url)

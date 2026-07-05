@@ -4,6 +4,7 @@ import { navigate } from "../render/router.js";
 import { closeGlobalSearch } from "../search.js";
 import { state } from "../state.js";
 import { Settings } from "../storage/settings-theme.js";
+import { toggleDistractionFree } from "./distraction-free.js";
 
 const tocMobileBtn = document.getElementById("toc-mobile-btn");
 const tocMobileOverlay = document.getElementById("toc-mobile-overlay");
@@ -38,6 +39,10 @@ function closeMobileToc() {
 }
 
 function closeTopPanel() {
+  if (document.body.classList.contains("distraction-free")) {
+    toggleDistractionFree();
+    return true;
+  }
   if (document.getElementById("zoom-overlay")?.classList.contains("open")) {
     closeZoomOverlay();
     return true;
@@ -132,6 +137,7 @@ function axisLock(dx, dy) {
       const dy = t.clientY - sy;
 
       if (axis === "x") {
+        if (state._cardSwipeActive) return; // index-card swipe owns this gesture
         if (fromLeftEdge && dx > SWIPE_THRESHOLD) {
           // Swipe right from left edge → back.
           if (state.currentView === "content" && state.currentWikiId) {

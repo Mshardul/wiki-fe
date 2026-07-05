@@ -249,3 +249,33 @@ def test_distraction_free_clears_on_navigation(page, base_url):
     assert not page.evaluate(
         "() => document.body.classList.contains('distraction-free')"
     ), "distraction-free class should be removed after navigation"
+
+
+def test_distraction_free_exit_button_visible_when_active(page, base_url):
+    """The floating exit button only appears once distraction-free mode is active."""
+    _go_to_article(page, base_url)
+
+    hidden_before = page.evaluate("""() => {
+        const btn = document.getElementById('distraction-free-exit-btn');
+        return btn && getComputedStyle(btn).display === 'none';
+    }""")
+    assert hidden_before, "Exit button should be hidden outside distraction-free mode"
+
+    page.keyboard.press("d")
+    visible_after = page.evaluate("""() => {
+        const btn = document.getElementById('distraction-free-exit-btn');
+        return btn && getComputedStyle(btn).display !== 'none';
+    }""")
+    assert visible_after, "Exit button should appear once distraction-free mode is active"
+
+
+def test_distraction_free_exit_button_click_exits(page, base_url):
+    """Clicking the floating exit button turns distraction-free mode off."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("d")
+    assert page.evaluate("() => document.body.classList.contains('distraction-free')")
+
+    page.click("#distraction-free-exit-btn")
+    assert not page.evaluate(
+        "() => document.body.classList.contains('distraction-free')"
+    ), "distraction-free class should be removed after clicking the exit button"

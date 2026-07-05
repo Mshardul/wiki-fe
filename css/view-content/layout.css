@@ -147,6 +147,88 @@ body.distraction-free .sticky-section-header {
   transform: rotate(180deg);
 }
 
+.notes-scratchpad {
+  border-top: 1px solid var(--border);
+  padding-top: var(--s3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.notes-scratchpad-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.notes-scratchpad-label {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.notes-scratchpad-toggle {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-subtle);
+  border-radius: var(--r-sm);
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.notes-scratchpad-toggle svg {
+  width: 12px;
+  height: 12px;
+}
+.notes-scratchpad-toggle:hover {
+  color: var(--text-body);
+  background: var(--surface-hover);
+}
+.notes-scratchpad--collapsed .notes-scratchpad-input {
+  display: none;
+}
+.notes-scratchpad--collapsed .notes-scratchpad-toggle svg {
+  transform: rotate(180deg);
+}
+.notes-scratchpad-body {
+  position: relative;
+}
+.notes-scratchpad-body::before {
+  content: "$";
+  position: absolute;
+  left: var(--s3);
+  top: calc(var(--s2) + 0.1em);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+  pointer-events: none;
+}
+.notes-scratchpad-input {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  background: var(--surface-2);
+  background-image: linear-gradient(var(--border) 1px, transparent 1px);
+  background-size: 100% 1.6em;
+  background-position: 0 calc(var(--s2) + 1.6em);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  padding: var(--s2) var(--s3) var(--s2) calc(var(--s3) + 14px);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  line-height: 1.6em;
+  color: var(--accent-light);
+  caret-color: var(--accent-light);
+}
+.notes-scratchpad-input::placeholder {
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+}
+.notes-scratchpad-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .toc-nav {
   display: flex;
   flex-direction: column;
