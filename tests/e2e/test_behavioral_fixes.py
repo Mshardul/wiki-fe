@@ -74,6 +74,7 @@ def test_localStorage_keys_are_unique():
 def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     if extra_routes:
         for pattern, handler in extra_routes:
             page.route(pattern, handler)
@@ -178,6 +179,7 @@ def test_scroll_position_restored_after_navigation(page, base_url):
     # Full page reload to home avoids SPA render-race that resets scrollY
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=5_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
 
     page.evaluate(
         """() => navigateToContent(
@@ -220,6 +222,7 @@ def test_hover_preview_filters_prerequisites_from_fallback(page, base_url):
     """fallback preview skips paragraphs starting with 'Prerequisites:'."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
 
     page.route(
         "**/prereq-linked.md",
@@ -272,6 +275,7 @@ def test_hover_preview_hidden_after_mouseleave_during_fetch(page, base_url):
 
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     page.route("**/slow-link.md", slow_handler)
     page.route(
         "**/abort-host.md",
@@ -325,6 +329,7 @@ def test_hover_preview_left_clamped_near_right_edge(page, base_url):
     page.set_viewport_size({"width": 320, "height": 800})
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
 
     page.route(
         "**/right-linked.md",
@@ -391,6 +396,7 @@ def test_mermaid_rerender_skips_offscreen_diagrams(page, base_url):
     page.set_viewport_size({"width": 1280, "height": 600})
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
 
     page.route(
         "**/two-diagrams.md",

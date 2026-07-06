@@ -11,6 +11,7 @@ _MOCK_ARTICLE = "# Caching\n\nA simple article for recents testing.\n"
 def _visit_article(page, base_url, slug="recents-mock"):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=3_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=_MOCK_ARTICLE))
     page.evaluate(f"""() => navigateToContent(
         'system-design',

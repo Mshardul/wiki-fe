@@ -52,6 +52,7 @@ def test_deep_path_resolution(page, base_url):
     # Navigate to mock article
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     page.evaluate("""() => navigateToContent(
         'system-design',
         encodeURIComponent('../content/system-design/mock.md'),
@@ -283,7 +284,7 @@ def test_manual_hash_edit_does_not_reuse_stale_filepath(page, base_url):
 
     # Plain hash mutation - no pushState, so history.state still holds the
     # previous article's { hash: 'system-design/caching', filePath, title }.
-    page.evaluate("() => { location.hash = 'dsa/data-structures/array'; }")
+    page.evaluate("() => { location.hash = 'dsa/array'; }")
     page.wait_for_function(
         "() => document.title.includes('Array')",
         timeout=10_000,

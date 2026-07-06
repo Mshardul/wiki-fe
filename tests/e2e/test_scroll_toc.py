@@ -170,6 +170,27 @@ def test_mobile_toc_closes_on_link_tap(page, base_url):
     )
 
 
+def test_mobile_fabs_do_not_share_a_corner(page, base_url):
+    """Scroll-top and TOC FABs sit in separate corners on mobile, not stacked."""
+    page.set_viewport_size({"width": 375, "height": 812})
+    page.goto(f"{base_url}/#system-design/caching")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    # Scroll down so the scroll-top FAB becomes visible alongside the TOC FAB.
+    page.evaluate("window.scrollTo(0, 500)")
+    page.wait_for_function(
+        "() => document.getElementById('scroll-top').classList.contains('visible')"
+    )
+    scroll_top_box = page.locator("#scroll-top").bounding_box()
+    toc_btn_box = page.locator("#toc-mobile-btn").bounding_box()
+    assert scroll_top_box["x"] < toc_btn_box["x"], (
+        "Scroll-top FAB should sit to the left of the TOC FAB on mobile, not stacked above it"
+    )
+
+
 def test_toc_sticky_does_not_scroll_away(page, base_url):
     """TOC sidebar stays in viewport after scrolling down."""
     page.set_viewport_size({"width": 1280, "height": 800})

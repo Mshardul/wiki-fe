@@ -20,6 +20,7 @@ def _load_mock_article(page, base_url, content, slug="mock"):
     Waits until the loading indicator is replaced by actual content."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
     page.evaluate(f"""() => navigateToContent(
         'system-design',
@@ -396,6 +397,7 @@ def _load_mock_article_content(page, base_url, content, slug="fntest"):
     """Like _load_mock_article but returns after content is rendered."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
     page.evaluate(f"""() => navigateToContent(
         'system-design',

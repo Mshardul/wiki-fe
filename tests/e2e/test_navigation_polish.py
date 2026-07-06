@@ -196,3 +196,22 @@ def test_overlay_click_closes_switcher(page, base_url):
     page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
     page.locator("#wiki-switcher-overlay").click(position={"x": 5, "y": 5})
     page.wait_for_selector("#wiki-switcher-modal.hidden", state="attached", timeout=2_000)
+
+
+def test_wiki_switcher_is_bottom_sheet_on_mobile(page, base_url):
+    """On narrow viewports the switcher docks to the bottom edge with a drag handle."""
+    page.set_viewport_size({"width": 390, "height": 800})
+    _go_to_article(page, base_url)
+    page.keyboard.press("w")
+    page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
+    dialog_box = page.locator(".wiki-switcher-dialog").bounding_box()
+    viewport_height = page.viewport_size["height"]
+    assert dialog_box["y"] + dialog_box["height"] >= viewport_height - 2, (
+        "Wiki switcher dialog should be docked to the bottom edge on mobile"
+    )
+    assert page.locator(".wiki-switcher-drag-handle").is_visible(), (
+        "Drag handle should be visible on mobile"
+    )
+    assert not page.locator(".wiki-switcher-hint").is_visible(), (
+        "Keyboard shortcut hint should be hidden on mobile"
+    )

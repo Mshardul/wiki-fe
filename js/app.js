@@ -151,6 +151,9 @@ document.addEventListener("click", (e) => {
     case "find-open":
       ArticleFind.open();
       break;
+    case "overflow-toggle":
+      toggleTopbarOverflow();
+      break;
     case "copy-source-toggle":
       Settings._toggleCopySourceHeader();
       break;
@@ -167,9 +170,34 @@ document.addEventListener("click", (e) => {
       AuthModal.close();
       break;
   }
+  if (btn.dataset.action !== "overflow-toggle" && btn.closest("#content-overflow-menu")) {
+    closeTopbarOverflow();
+  }
 });
 
 document.getElementById("import-upload").addEventListener("change", (e) => Settings.importData(e));
+
+/* ═══════════════════════════════════════════════════════════════
+   TOPBAR OVERFLOW MENU (mobile)
+   ═══════════════════════════════════════════════════════════════ */
+function toggleTopbarOverflow() {
+  const menu = document.getElementById("content-overflow-menu");
+  const btn = document.getElementById("content-overflow-btn");
+  const isOpen = menu.classList.toggle("open");
+  btn.setAttribute("aria-expanded", String(isOpen));
+}
+function closeTopbarOverflow() {
+  const menu = document.getElementById("content-overflow-menu");
+  const btn = document.getElementById("content-overflow-btn");
+  menu.classList.remove("open");
+  btn.setAttribute("aria-expanded", "false");
+}
+document.addEventListener("click", (e) => {
+  const menu = document.getElementById("content-overflow-menu");
+  if (!menu.classList.contains("open")) return;
+  if (e.target.closest(".topbar-overflow")) return;
+  closeTopbarOverflow();
+});
 
 /* ═══════════════════════════════════════════════════════════════
    SCROLL TO TOP
@@ -285,7 +313,9 @@ document.addEventListener("keydown", (e) => {
 
   // Escape: Close modals or navigate back from content
   if (e.key === "Escape") {
-    if (!document.getElementById("wiki-switcher-modal").classList.contains("hidden")) {
+    if (document.getElementById("content-overflow-menu").classList.contains("open")) {
+      closeTopbarOverflow();
+    } else if (!document.getElementById("wiki-switcher-modal").classList.contains("hidden")) {
       closeWikiSwitcher();
     } else if (ArticleFind.isOpen()) {
       ArticleFind.close();

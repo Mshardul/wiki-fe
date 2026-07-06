@@ -154,4 +154,5 @@ def base_url():
 def wiki_page(page, base_url, disable_animations):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     return page

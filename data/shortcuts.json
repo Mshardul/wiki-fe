@@ -20,5 +20,12 @@
     { "keys": ["⌘F"], "description": "Search within wiki" },
     { "keys": ["="], "description": "Increase font size" },
     { "keys": ["-"], "description": "Decrease font size" }
+  ],
+  "touch": [
+    { "keys": ["Swipe right"], "description": "Go back (from article)" },
+    { "keys": ["Swipe on card"], "description": "Reveal card actions (home / index)" },
+    { "keys": ["Long-press link"], "description": "Peek preview in bottom sheet" },
+    { "keys": ["⋯ button"], "description": "More article actions (topbar)" },
+    { "keys": ["FAB (bottom-right)"], "description": "Table of contents / scroll to top" }
   ]
 }

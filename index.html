@@ -365,28 +365,6 @@
           <div id="topbar-title" class="topbar-title"></div>
           <span id="content-read-time" class="read-time-badge"></span>
           <button
-            id="content-read-btn"
-            class="topbar-icon-btn"
-            title="Mark as read"
-            data-action="read-toggle"
-          >
-            <svg viewBox="0 0 20 20" fill="none">
-              <path
-                d="M10 4C5.5 4 2 10 2 10s3.5 6 8 6 8-6 8-6-3.5-6-8-6z"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linejoin="round"
-              />
-              <circle
-                cx="10"
-                cy="10"
-                r="2.5"
-                stroke="currentColor"
-                stroke-width="1.5"
-              />
-            </svg>
-          </button>
-          <button
             id="content-bookmark-btn"
             class="topbar-icon-btn"
             title="Bookmark"
@@ -401,120 +379,161 @@
               />
             </svg>
           </button>
-          <button
-            id="content-focus-btn"
-            class="topbar-icon-btn"
-            title="Focus mode (F)"
-            aria-label="Focus mode"
-            data-action="focus-toggle"
-          >
-            <svg viewBox="0 0 20 20" fill="none">
-              <path
-                d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          <button
-            id="content-quiz-btn"
-            class="topbar-icon-btn"
-            title="Quiz mode"
-            aria-label="Quiz mode"
-            data-action="quiz-toggle"
-          >
-            <svg viewBox="0 0 20 20" fill="none">
-              <path
-                d="M7 7a3 3 0 116 0c0 2-2 2-3 3.5"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <circle cx="10" cy="14.5" r="0.75" fill="currentColor" />
-            </svg>
-          </button>
-          <button
-            id="content-offline-btn"
-            class="topbar-icon-btn"
-            title="Save for offline"
-            data-action="offline-toggle"
-          >
-            <svg class="offline-icon-download" viewBox="0 0 20 20" fill="none">
-              <path
-                d="M10 3v10M6 9l4 4 4-4"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M3 15h14"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-            <svg
-              class="offline-icon-check"
-              viewBox="0 0 20 20"
-              fill="none"
-              style="display: none"
+          <div class="topbar-overflow">
+            <button
+              class="topbar-icon-btn"
+              id="content-overflow-btn"
+              title="More actions"
+              aria-label="More actions"
+              aria-haspopup="true"
+              aria-expanded="false"
+              data-action="overflow-toggle"
             >
-              <path
-                d="M4 10l5 5 8-8"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          <button
-            class="topbar-icon-btn"
-            data-action="print-article"
-            title="Print / save as PDF"
-            aria-label="Print article"
-          >
-            <svg viewBox="0 0 20 20" fill="none">
-              <path
-                d="M6 7V3h8v4M6 15H4v-5a2 2 0 012-2h8a2 2 0 012 2v5h-2M6 12h8v5H6z"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          <button
-            class="topbar-icon-btn"
-            data-action="find-open"
-            title="Find in article (/)"
-            aria-label="Find in article"
-          >
-            <svg viewBox="0 0 20 20" fill="none">
-              <circle
-                cx="8.5"
-                cy="8.5"
-                r="5.5"
-                stroke="currentColor"
-                stroke-width="1.5"
-              />
-              <path
-                d="M13 13l3.5 3.5"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-              <path
-                d="M6.5 8.5h4"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-          </button>
+              <svg viewBox="0 0 20 20" fill="none">
+                <circle cx="4" cy="10" r="1.4" fill="currentColor" />
+                <circle cx="10" cy="10" r="1.4" fill="currentColor" />
+                <circle cx="16" cy="10" r="1.4" fill="currentColor" />
+              </svg>
+            </button>
+            <div class="topbar-overflow-menu" id="content-overflow-menu">
+              <button
+                id="content-read-btn"
+                class="topbar-overflow-item"
+                data-action="read-toggle"
+              >
+                <svg viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M10 4C5.5 4 2 10 2 10s3.5 6 8 6 8-6 8-6-3.5-6-8-6z"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linejoin="round"
+                  />
+                  <circle
+                    cx="10"
+                    cy="10"
+                    r="2.5"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  />
+                </svg>
+                <span>Mark as read</span>
+              </button>
+              <button
+                id="content-focus-btn"
+                class="topbar-overflow-item"
+                aria-label="Focus mode"
+                data-action="focus-toggle"
+              >
+                <svg viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <span>Focus mode (F)</span>
+              </button>
+              <button
+                id="content-quiz-btn"
+                class="topbar-overflow-item"
+                aria-label="Quiz mode"
+                data-action="quiz-toggle"
+              >
+                <svg viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M7 7a3 3 0 116 0c0 2-2 2-3 3.5"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <circle cx="10" cy="14.5" r="0.75" fill="currentColor" />
+                </svg>
+                <span>Quiz mode</span>
+              </button>
+              <button
+                id="content-offline-btn"
+                class="topbar-overflow-item"
+                data-action="offline-toggle"
+              >
+                <svg class="offline-icon-download" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M10 3v10M6 9l4 4 4-4"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M3 15h14"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <svg
+                  class="offline-icon-check"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  style="display: none"
+                >
+                  <path
+                    d="M4 10l5 5 8-8"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <span>Save for offline</span>
+              </button>
+              <button
+                class="topbar-overflow-item"
+                data-action="print-article"
+                aria-label="Print article"
+              >
+                <svg viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M6 7V3h8v4M6 15H4v-5a2 2 0 012-2h8a2 2 0 012 2v5h-2M6 12h8v5H6z"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <span>Print / save as PDF</span>
+              </button>
+              <button
+                class="topbar-overflow-item"
+                data-action="find-open"
+                aria-label="Find in article"
+              >
+                <svg viewBox="0 0 20 20" fill="none">
+                  <circle
+                    cx="8.5"
+                    cy="8.5"
+                    r="5.5"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  />
+                  <path
+                    d="M13 13l3.5 3.5"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M6.5 8.5h4"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <span>Find in article (/)</span>
+              </button>
+            </div>
+          </div>
           <button
             class="topbar-icon-btn"
             data-action="search-open"
@@ -1146,6 +1165,7 @@
     >
       <div id="wiki-switcher-overlay" class="wiki-switcher-overlay"></div>
       <div class="wiki-switcher-dialog">
+        <div class="wiki-switcher-drag-handle" aria-hidden="true"></div>
         <div class="wiki-switcher-header">
           <span class="wiki-switcher-title">Switch Wiki</span>
           <kbd class="wiki-switcher-hint">W</kbd>

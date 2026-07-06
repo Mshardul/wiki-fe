@@ -93,7 +93,7 @@ def test_multiline_highlight_span_not_corrupted(page, base_url):
     """A hljs span wrapping a multi-line docstring must not break tag balance
     when addLineNumbers splits the block into .code-line spans (bfs.md has a
     Python triple-quoted docstring spanning multiple lines in one hljs span)."""
-    _go_to_article(page, base_url, slug="dsa/algorithms/bfs")
+    _go_to_article(page, base_url, slug="dsa/bfs")
     counts = page.evaluate(
         """() => Array.from(document.querySelectorAll('pre.has-line-numbers .code-line')).map(
             el => ({ open: (el.innerHTML.match(/<span/g) || []).length,
@@ -121,6 +121,7 @@ def test_link_with_fragment_is_intercepted(page, base_url):
 
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     page.evaluate(
         """() => navigateToContent(
         'system-design',
@@ -152,6 +153,7 @@ def test_excess_dotdot_does_not_crash(page, base_url):
 
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=10_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     page.evaluate(
         """() => navigateToContent(
         'system-design',
@@ -327,6 +329,43 @@ def test_prefs_keyboard_tab_shows_index_and_content_groups(page, base_url):
     )
     assert "GLOBAL" in body_text, (
         "Keyboard shortcuts panel must include a 'Global' context group"
+    )
+
+
+def test_prefs_keyboard_tab_shows_touch_gestures_on_coarse_pointer(page, base_url):
+    """Keyboard tab appends a Touch Gestures group when pointer is coarse (touch device)."""
+    page.add_init_script("""
+        window.matchMedia = (query) => ({
+            matches: query.includes('pointer: coarse'),
+            media: query,
+            addListener: () => {},
+            removeListener: () => {},
+            addEventListener: () => {},
+            removeEventListener: () => {},
+        });
+    """)
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.keyboard.press("?")
+    page.wait_for_selector("#prefs-panel-keyboard kbd", timeout=5_000)
+    body_text = page.locator("#prefs-panel-keyboard").inner_text().upper()
+    assert "TOUCH GESTURES" in body_text, (
+        "Keyboard shortcuts panel must include a 'Touch Gestures' group on coarse pointers"
+    )
+    assert "LONG-PRESS LINK" in body_text, (
+        "Touch Gestures group should mention the long-press link peek gesture"
+    )
+
+
+def test_prefs_keyboard_tab_hides_touch_gestures_on_fine_pointer(page, base_url):
+    """Keyboard tab omits Touch Gestures group on a normal mouse/trackpad device."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.keyboard.press("?")
+    page.wait_for_selector("#prefs-panel-keyboard kbd", timeout=5_000)
+    body_text = page.locator("#prefs-panel-keyboard").inner_text().upper()
+    assert "TOUCH GESTURES" not in body_text, (
+        "Touch Gestures group should not render for fine-pointer (mouse) devices"
     )
 
 

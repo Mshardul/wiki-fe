@@ -10,6 +10,7 @@ def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
     Waits until the loading indicator is replaced by actual content."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     if extra_routes:
         for pattern, handler in extra_routes:
             page.route(pattern, handler)
@@ -31,6 +32,7 @@ def test_tldr_hover_preview(page, base_url):
     """017: Hovering an internal link shows the TLDR in a popup."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
 
     page.route(
         "**/linked.md",

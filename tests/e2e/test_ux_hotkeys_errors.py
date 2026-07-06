@@ -24,6 +24,7 @@ def test_404_shows_not_found_message(page, base_url):
     """A 404 response shows 'not found' in the error message, not a generic HTTP error."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     page.route("**/nonexistent.md", lambda r: r.fulfill(status=404, body=""))
     page.evaluate("""() => navigateToContent(
         'system-design',
@@ -47,6 +48,7 @@ def test_network_error_shows_connection_message(page, base_url):
     """A network failure shows a connection-error message, not a generic HTTP error."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     page.route("**/offline.md", lambda r: r.abort("failed"))
     page.evaluate("""() => navigateToContent(
         'system-design',
@@ -125,6 +127,58 @@ def test_focus_btn_click_toggles_mode(page, base_url):
     btn.click()
     assert "active" in (btn.get_attribute("class") or ""), (
         "Focus button should be active after clicking"
+    )
+
+
+# ── Mobile topbar overflow menu ──────────────────────────────────
+
+
+def test_overflow_menu_hidden_by_default_on_mobile(page, base_url):
+    """Overflow dropdown is closed until the ⋯ trigger is tapped."""
+    page.set_viewport_size({"width": 375, "height": 812})
+    _go_to_article(page, base_url)
+    assert not page.locator("#content-overflow-menu").is_visible()
+
+
+def test_overflow_trigger_opens_menu_on_mobile(page, base_url):
+    """Tapping the ⋯ button reveals the low-frequency actions."""
+    page.set_viewport_size({"width": 375, "height": 812})
+    _go_to_article(page, base_url)
+    page.locator("#content-overflow-btn").click()
+    assert page.locator("#content-overflow-menu").is_visible()
+    assert page.locator("#content-overflow-btn").get_attribute("aria-expanded") == "true"
+
+
+def test_overflow_menu_action_closes_menu_after_click(page, base_url):
+    """Clicking an action inside the overflow menu (e.g. focus mode) closes the dropdown."""
+    page.set_viewport_size({"width": 375, "height": 812})
+    _go_to_article(page, base_url)
+    page.locator("#content-overflow-btn").click()
+    page.wait_for_selector("#content-overflow-menu.open")
+    page.locator("#content-focus-btn").click()
+    assert not page.locator("#content-overflow-menu").is_visible()
+
+
+def test_overflow_menu_closes_on_outside_click(page, base_url):
+    """Clicking outside the overflow menu dismisses it without triggering an action."""
+    page.set_viewport_size({"width": 375, "height": 812})
+    _go_to_article(page, base_url)
+    page.locator("#content-overflow-btn").click()
+    page.wait_for_selector("#content-overflow-menu.open")
+    page.locator("#content-breadcrumb").click()
+    assert not page.locator("#content-overflow-menu").is_visible()
+
+
+def test_overflow_menu_closes_on_escape(page, base_url):
+    """Pressing Escape closes the overflow menu without navigating back."""
+    page.set_viewport_size({"width": 375, "height": 812})
+    _go_to_article(page, base_url)
+    page.locator("#content-overflow-btn").click()
+    page.wait_for_selector("#content-overflow-menu.open")
+    page.keyboard.press("Escape")
+    assert not page.locator("#content-overflow-menu").is_visible()
+    assert page.locator("#view-content").get_attribute("class").__contains__("active"), (
+        "Escape should only close the overflow menu, not navigate back from content"
     )
 
 

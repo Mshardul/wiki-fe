@@ -99,6 +99,15 @@
   -webkit-backdrop-filter: var(--glass-blur);
   overflow: hidden;
 }
+.wiki-switcher-drag-handle {
+  display: none;
+  width: 36px;
+  height: 4px;
+  background: var(--border-2);
+  border-radius: var(--r-full);
+  margin: var(--s3) auto var(--s1);
+  flex-shrink: 0;
+}
 .wiki-switcher-header {
   display: flex;
   align-items: center;
@@ -172,4 +181,35 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Mobile: bottom sheet */
+@media (max-width: 640px) {
+  .wiki-switcher-modal {
+    align-items: flex-end;
+  }
+  .wiki-switcher-dialog {
+    width: 100%;
+    border-radius: 12px 12px 0 0;
+    animation: slideUpSheet 0.2s ease forwards;
+  }
+  .wiki-switcher-drag-handle {
+    display: block;
+  }
+  .wiki-switcher-hint {
+    display: none;
+  }
+  .wiki-switcher-list {
+    max-height: 60vh;
+    padding-bottom: calc(var(--s3) + env(safe-area-inset-bottom));
+  }
+}
+
+@keyframes slideUpSheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }

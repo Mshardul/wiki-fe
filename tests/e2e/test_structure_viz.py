@@ -64,6 +64,7 @@ not valid json
 def _load_mock_article(page, base_url, content, slug="mock"):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
     page.evaluate(f"""() => navigateToContent(
         'system-design',

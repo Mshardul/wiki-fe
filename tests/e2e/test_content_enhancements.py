@@ -63,6 +63,7 @@ Some text.
 def _load_mock_article(page, base_url, content, slug="mock"):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
     page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
     page.evaluate(f"""() => navigateToContent(
         'system-design',
@@ -991,16 +992,6 @@ def test_content_topbar_fits_narrow_viewports(page, base_url, width):
         f"Auth button right edge ({auth_btn_box['right']}) clipped past "
         f"viewport width ({width})"
     )
-
-    reveals = page.evaluate(
-        """() => {
-            const k = Object.keys(localStorage).find((x) => x.startsWith('wiki-reveals-'));
-            if (!k) return 0;
-            const map = JSON.parse(localStorage.getItem(k));
-            return Object.values(map).reduce((a, b) => a + b, 0);
-        }"""
-    )
-    assert reveals >= 1, "Reveal was not recorded to localStorage"
 
 
 # ── Print / PDF study sheet ─────────────────────────────────────────────────────

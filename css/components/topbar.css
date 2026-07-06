@@ -284,6 +284,51 @@
 }
 
 /* ═══════════════════════════════════════════════
+   TOPBAR OVERFLOW MENU
+   Desktop: items render inline, "more" trigger hidden.
+   Mobile (responsive.css): trigger shown, items collapse into dropdown.
+   ═══════════════════════════════════════════════ */
+.topbar-overflow {
+  display: contents;
+}
+#content-overflow-btn {
+  display: none;
+}
+.topbar-overflow-menu {
+  display: contents;
+}
+.topbar-overflow-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+}
+.topbar-overflow-item svg {
+  width: 15px;
+  height: 15px;
+}
+.topbar-overflow-item:hover {
+  color: var(--text-body);
+  border-color: var(--border-2);
+  background: var(--surface-3);
+}
+.topbar-overflow-item.active {
+  color: var(--accent-light);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.topbar-overflow-item span {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════
    TOPBAR TITLE
    ═══════════════════════════════════════════════ */
 .content-topbar .topbar-inner {
