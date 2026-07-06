@@ -172,6 +172,7 @@ def test_404_html_wiki_title_matches_state_js_registry(page, base_url):
     """404.html must import WIKIS from state.js rather than a hand-maintained
     copy - regression for a bug where the two definitions had already drifted
     ("DSA" vs "Data Structures & Algorithms")."""
+    page.goto(base_url, wait_until="domcontentloaded")
     result = page.evaluate(
         "async () => (await import('/js/state.js')).WIKIS.find(w => w.id === 'dsa')?.title"
     )

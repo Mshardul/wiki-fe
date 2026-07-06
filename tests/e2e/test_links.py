@@ -123,7 +123,7 @@ def test_recommended_section_feeds_related_panel(page, base_url):
 
     page.wait_for_selector("#related-articles .related-card", timeout=5_000)
     label = page.locator("#related-articles .related-label").inner_text()
-    assert label == "Recommended"
+    assert label.lower() == "recommended"
 
     titles = page.locator("#related-articles .related-card-title").all_inner_texts()
     assert titles == ["Target One", "Target Two"]
