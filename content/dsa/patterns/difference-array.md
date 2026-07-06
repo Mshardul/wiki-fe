@@ -131,7 +131,6 @@ def range_updates(n: int, updates: list[tuple[int, int, int]]) -> list[int]:
         diff[l] += val
         diff[r + 1] -= val             # your logic here - adapt l/r to 0- or 1-indexed
 
-    # prefix sum restores final array
     for i in range(1, n):
         diff[i] += diff[i - 1]
 
@@ -202,7 +201,6 @@ def rect_updates(R: int, C: int,
         D[r1][c2 + 1] -= val
         D[r2 + 1][c1] -= val
         D[r2 + 1][c2 + 1] += val
-    # 2D prefix sum
     for r in range(R):
         for c in range(1, C):
             D[r][c] += D[r][c - 1]
@@ -223,8 +221,8 @@ def max_overlap(intervals: list[tuple[int, int]]) -> int:
     """Count max simultaneous overlapping intervals."""
     events: list[tuple[int, int]] = []
     for l, r in intervals:
-        events.append((l, +1))   # start event
-        events.append((r, -1))   # end event (exclusive at r)
+        events.append((l, +1))
+        events.append((r, -1))   # exclusive at r: half-open interval, not r+1
     events.sort()
     cur = ans = 0
     for _, delta in events:

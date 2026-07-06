@@ -100,8 +100,8 @@ BACKTRACK(state, choices)
 4   for each candidate in choices(state)
 5       if not IS-VALID(state, candidate)   ▷ PRUNE: skip dead branches
 6           continue
-7       MAKE-CHOICE(state, candidate)        ▷ choose
-8       BACKTRACK(state, choices)            ▷ explore
+7       MAKE-CHOICE(state, candidate)
+8       BACKTRACK(state, choices)
 9       UNMAKE-CHOICE(state, candidate)      ▷ un-choose (restore state)
 ```
 
@@ -124,9 +124,9 @@ def solve(start_state: State) -> list[State]:
             return
         for candidate in candidates(state):
             if not is_valid(state, candidate):
-                continue                # prune: this branch can't lead to a solution
-            make_choice(state, path, candidate)     # choose
-            backtrack(state)                        # explore
+                continue
+            make_choice(state, path, candidate)
+            backtrack(state)
             unmake_choice(state, path, candidate)   # un-choose - restore exactly
 
     backtrack(start_state)
@@ -230,11 +230,11 @@ def solve_n_queens(n: int) -> list[list[str]]:
             return
         for col in range(n):
             if col in cols or (row - col) in diag or (row + col) in anti:
-                continue               # prune: column or a diagonal is attacked
-            cols.add(col); diag.add(row - col); anti.add(row + col)   # choose
+                continue
+            cols.add(col); diag.add(row - col); anti.add(row + col)
             placement.append(col)
-            backtrack(row + 1)                                        # explore
-            placement.pop()                                          # un-choose
+            backtrack(row + 1)
+            placement.pop()
             cols.discard(col); diag.discard(row - col); anti.discard(row + col)
 
     backtrack(0)
@@ -272,14 +272,14 @@ def solve_sudoku(board: list[list[str]]) -> None:
     def backtrack() -> bool:
         cell, cs = next_cell()
         if cell is None:
-            return True                # no empty cell → solved
+            return True
         r, c = cell
         for d in cs:
-            board[r][c] = d            # choose
-            if backtrack():            # explore - return on first success
+            board[r][c] = d
+            if backtrack():            # return on first success (find-one)
                 return True
-            board[r][c] = "."          # un-choose
-        return False                   # dead end → trigger backtrack above
+            board[r][c] = "."
+        return False
 
     backtrack()
 ```
@@ -303,10 +303,10 @@ def combination_sum(candidates: list[int], target: int) -> list[list[int]]:
             return
         for i in range(start, len(candidates)):
             if candidates[i] > remaining:
-                continue               # prune: overshoots the target
-            path.append(candidates[i])             # choose
-            backtrack(i, remaining - candidates[i])  # explore - i, not i+1: reuse
-            path.pop()                             # un-choose
+                continue
+            path.append(candidates[i])
+            backtrack(i, remaining - candidates[i])  # i, not i+1: allows reuse of the same candidate
+            path.pop()
 
     candidates.sort()                  # lets the prune also break early if desired
     backtrack(0, target)
@@ -329,17 +329,17 @@ def restore_ip_addresses(s: str) -> list[str]:
     def backtrack(start: int, segment: int, parts: list[str]) -> None:
         if segment == 4:
             if start == n:
-                results.append(".".join(parts))   # all 4 octets, string consumed
+                results.append(".".join(parts))
             return
         for length in (1, 2, 3):
             if start + length > n:
                 break
             piece = s[start:start + length]
             if (piece[0] == "0" and length > 1) or int(piece) > 255:
-                continue               # prune: leading zero or out of range
-            parts.append(piece)                       # choose
-            backtrack(start + length, segment + 1, parts)  # explore
-            parts.pop()                               # un-choose
+                continue
+            parts.append(piece)
+            backtrack(start + length, segment + 1, parts)
+            parts.pop()
 
     backtrack(0, 0, [])
     return results

@@ -304,8 +304,8 @@ MODPOW(base, exp, mod)
   while exp > 0
       if exp & 1 = 1           ▷ lowest bit of exp is set
           result ← (result × base) mod mod
-      base ← (base × base) mod mod   ▷ square for next bit position
-      exp  ← exp >> 1                ▷ consume lowest bit
+      base ← (base × base) mod mod
+      exp  ← exp >> 1
   return result
 ```
 
@@ -316,10 +316,10 @@ MODPOW-REC(base, exp, mod)
   ▷ Recursive form; O(log exp) stack depth
   if exp = 0
       return 1
-  if exp & 1 = 0               ▷ even exponent
+  if exp & 1 = 0
       half ← MODPOW-REC(base, exp >> 1, mod)
       return (half × half) mod mod
-  else                          ▷ odd exponent
+  else
       half ← MODPOW-REC(base, exp >> 1, mod)
       return (half × half mod mod × base) mod mod
 ```
@@ -338,10 +338,10 @@ def modpow(base: int, exp: int, mod: int) -> int:
     result = 1
     base %= mod              # reduce; handles base >= mod
     while exp > 0:
-        if exp & 1:          # lowest bit set: multiply current power into result
+        if exp & 1:
             result = result * base % mod
-        base = base * base % mod   # square: advance to next power of two
-        exp >>= 1                  # consume lowest bit
+        base = base * base % mod
+        exp >>= 1
     return result
 ```
 

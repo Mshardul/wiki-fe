@@ -334,7 +334,7 @@ rotations = 0
 def _rotate_right_counting(z):
     global rotations
     rotations += 1
-    return _rotate_right(z)          # wrap the real rotation
+    return _rotate_right(z)
 # ... swap the helpers, insert the sequence, read `rotations`
 ```
 

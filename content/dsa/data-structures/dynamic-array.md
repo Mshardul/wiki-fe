@@ -157,7 +157,7 @@ Definition + the resize-driven `append`, the operation that defines this structu
 
 ```
 DYNAMIC-ARRAY-APPEND(A, x)
-1   if A.size == A.capacity                      ▷ full - must grow
+1   if A.size == A.capacity
 2       new_cap = max(1, GROWTH × A.capacity)    ▷ GROWTH > 1, e.g. 2
 3       B = ALLOCATE-BLOCK(new_cap)
 4       for i = 0 to A.size − 1                   ▷ O(size) copy - the amortized cost
@@ -315,7 +315,7 @@ class RandomizedSet:
             return False
         i = self._pos[val]
         last = self._vals[-1]
-        self._vals[i] = last                # move last into the hole
+        self._vals[i] = last
         self._pos[last] = i
         self._vals.pop()                    # O(1) - drop the end
         del self._pos[val]
@@ -370,7 +370,7 @@ class DynamicArray:
         self._data: list[int | None] = [None]
 
     def append(self, x: int) -> None:
-        if self._size == self._cap:                 # full → grow
+        if self._size == self._cap:
             self._cap *= 2
             bigger: list[int | None] = [None] * self._cap
             for i in range(self._size):
@@ -398,7 +398,7 @@ class MyQueue:
         self._in.append(x)
 
     def _shift(self) -> None:
-        if not self._out:                   # only pour when out is empty
+        if not self._out:
             while self._in:
                 self._out.append(self._in.pop())
 

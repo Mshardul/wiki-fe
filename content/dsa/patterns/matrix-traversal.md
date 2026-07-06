@@ -260,7 +260,7 @@ def multi_source_bfs_template(grid: list[list[int]]) -> list[list[int]]:
         for c in range(n):
             if grid[r][c] == 0:  # your logic here: seed condition
                 dist[r][c] = 0
-                queue.append((r, c))  # all sources enqueued before the loop starts
+                queue.append((r, c))
 
     while queue:
         r, c = queue.popleft()

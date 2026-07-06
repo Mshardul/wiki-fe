@@ -259,10 +259,9 @@ _The standard production choice for session storage._
 Sub-millisecond reads, native TTL support (keys auto-expire without a cleanup job), pub/sub for cross-node invalidation, and replication for HA. A single Redis node comfortably handles millions of session keys.
 
 ```shell
-# Session key pattern
 SET session:abc123 '{"user_id":42,"roles":["user"]}' EX 86400
 GET session:abc123
-DEL session:abc123   # logout
+DEL session:abc123
 ```
 
 Cluster Redis for HA. Use Redis Sentinel or Redis Cluster depending on write volume. The session store is a critical path dependency - its failure equals a site-wide logout.
@@ -322,8 +321,8 @@ An attacker sets a known session ID on the victim's browser before they log in (
 ```python
 def login(username, password):
     if verify_credentials(username, password):
-        session.invalidate()          # destroy pre-login session
-        session.regenerate_id()       # new session ID post-login
+        session.invalidate()
+        session.regenerate_id()
         session['user_id'] = user.id
 ```
 
@@ -1248,9 +1247,9 @@ Three variants:
 from argon2 import PasswordHasher
 
 ph = PasswordHasher(
-    time_cost=2,        # iterations
+    time_cost=2,
     memory_cost=65536,  # 64 MB of RAM
-    parallelism=2,      # threads
+    parallelism=2,
     hash_len=32,
     salt_len=16
 )

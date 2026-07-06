@@ -185,13 +185,13 @@ def state_machine_dp(values: list[int]) -> int:
         # --- transitions: fill in curr from prev ---
         # your logic here: for each state, which prev states can reach it?
         curr[HELD] = max(
-            prev[HELD],             # hold (stay)
+            prev[HELD],
             prev[REST] - val,       # buy (only legal from REST)
         )
         curr[SOLD] = prev[HELD] + val  # sell (only from HELD)
         curr[REST] = max(
-            prev[REST],             # rest (stay)
-            prev[SOLD],             # cooldown ends
+            prev[REST],
+            prev[SOLD],
         )
 
         prev = curr
@@ -276,7 +276,7 @@ def max_profit_k_tx(k: int, prices: list[int]) -> int:
     n = len(prices)
     if n == 0 or k == 0:
         return 0
-    if k >= n // 2:                        # unlimited transactions case
+    if k >= n // 2:
         return sum(max(0, prices[i+1] - prices[i]) for i in range(n - 1))
     # held[j] = best profit after at most j+1 buys, currently holding
     # cash[j] = best profit after at most j+1 complete transactions, not holding
@@ -303,12 +303,10 @@ def min_cost_k_colors(costs: list[list[int]]) -> int:
     n, k = len(costs), len(costs[0])
     if n == 0:
         return 0
-    # Track (cost, color_index) for top-2 minimums
     prev_min1 = prev_min2 = (0, -1)   # (cost, color_idx); -1 = no color constraint
     for i in range(n):
         cur_min1 = cur_min2 = (float('inf'), -1)
         for c in range(k):
-            # pick cheapest valid previous color
             prev = prev_min1[0] if prev_min1[1] != c else prev_min2[0]
             total = costs[i][c] + prev
             if total <= cur_min1[0]:

@@ -173,9 +173,9 @@ GREEDY-ACTIVITY-SELECT(activities)
 sort activities by finish time ascending
 chosen ← empty list
 last-finish ← −∞
-for each act in activities                 ▷ in sorted order
-    if act.start ≥ last-finish              ▷ compatible with all chosen so far
-        append act to chosen                ▷ greedy choice: earliest finish
+for each act in activities
+    if act.start ≥ last-finish
+        append act to chosen
         last-finish ← act.finish
 return chosen
 ```
@@ -187,13 +187,13 @@ from typing import List, Tuple
 
 def activity_selection(activities: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     """Max set of non-overlapping (start, end) activities."""
-    if not activities:                        # empty-input guard
+    if not activities:
         return []
     activities.sort(key=lambda a: a[1])       # greedy key: finish time ascending
     chosen = [activities[0]]
     last_finish = activities[0][1]
     for start, finish in activities[1:]:
-        if start >= last_finish:              # compatible → take it
+        if start >= last_finish:
             chosen.append((start, finish))
             last_finish = finish
     return chosen
@@ -243,10 +243,10 @@ def erase_overlap_intervals(intervals: List[List[int]]) -> int:
     intervals.sort(key=lambda x: x[1])        # greedy key: end time
     kept, last_end = 1, intervals[0][1]
     for s, e in intervals[1:]:
-        if s >= last_end:                     # compatible → keep
+        if s >= last_end:
             kept += 1
             last_end = e
-    return len(intervals) - kept              # the rest are removed
+    return len(intervals) - kept
 ```
 
 **Complexity:** `O(n log n)` time, `O(1)` space. Pattern: interval scheduling - see [Merge Intervals](../patterns/merge-intervals.md).
@@ -260,7 +260,7 @@ def find_content_children(g: List[int], s: List[int]) -> int:
     g.sort(); s.sort()
     child = cookie = 0
     while child < len(g) and cookie < len(s):
-        if s[cookie] >= g[child]:             # smallest sufficient cookie → take
+        if s[cookie] >= g[child]:
             child += 1
         cookie += 1                           # cookie consumed either way
     return child
@@ -279,7 +279,7 @@ def connect_sticks(sticks: List[int]) -> int:
     heapq.heapify(sticks)
     total = 0
     while len(sticks) > 1:
-        cost = heapq.heappop(sticks) + heapq.heappop(sticks)   # two shortest
+        cost = heapq.heappop(sticks) + heapq.heappop(sticks)
         total += cost
         heapq.heappush(sticks, cost)
     return total
@@ -295,9 +295,9 @@ Given an array where `nums[i]` is the max jump length from `i`, determine if you
 def can_jump(nums: List[int]) -> bool:
     reach = 0
     for i, n in enumerate(nums):
-        if i > reach:                         # current index unreachable → fail
+        if i > reach:
             return False
-        reach = max(reach, i + n)             # extend the frontier greedily
+        reach = max(reach, i + n)
     return True
 ```
 

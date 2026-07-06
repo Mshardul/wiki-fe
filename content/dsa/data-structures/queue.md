@@ -178,7 +178,7 @@ A queue over a circular buffer - the version that shows the wrapping arithmetic.
 ```
 ENQUEUE(Q, x)
 1   if Q.size == Q.capacity
-2       error "overflow"                  ▷ fixed-capacity ring is full
+2       error "overflow"
 3   Q.data[Q.back] = x
 4   Q.back = (Q.back + 1) mod Q.capacity  ▷ wrap around
 5   Q.size = Q.size + 1
@@ -223,7 +223,7 @@ class CircularQueue(Generic[T]):
         self._data[self._front] = None                       # release reference
         self._front = (self._front + 1) % self._capacity     # wrap
         self._size -= 1
-        return x                                             # type: ignore[return-value]
+        return x  # type: ignore[return-value]
 
     def peek(self) -> T:
         if self._size == 0:
@@ -240,9 +240,9 @@ class CircularQueue(Generic[T]):
 from collections import deque
 
 q = deque()
-q.append(x)        # enqueue at the back - O(1)
+q.append(x)
 front = q[0]       # peek front (guard `if q`)
-val = q.popleft()  # dequeue from the front - O(1), NOT list.pop(0) which is O(n)
+val = q.popleft()  # NOT list.pop(0), which is O(n)
 ```
 
 `deque` also gives `appendleft`/`pop` for the back end (the [deque primitive](#deque--o1-at-both-ends)). A plain `list` as a queue is an O(n²) TLE waiting to happen - reach for `deque` reflexively.
@@ -258,10 +258,10 @@ A **double-ended queue** adds/removes at both front and back in O(1). It is a qu
 ```python
 from collections import deque
 dq = deque()
-dq.append(x)       # back
-dq.appendleft(x)   # front
-dq.pop()           # back
-dq.popleft()       # front
+dq.append(x)
+dq.appendleft(x)
+dq.pop()
+dq.popleft()
 ```
 
 **Why for CP:** one structure covers BFS (FIFO), DFS (LIFO), and both-end window tricks - no need to pick a backing structure per problem, and every op is O(1).
@@ -337,7 +337,7 @@ class MyQueue:
         self._in.append(x)
 
     def _shift(self) -> None:
-        if not self._out:                 # only pour when out is empty
+        if not self._out:
             while self._in:
                 self._out.append(self._in.pop())
 
@@ -418,7 +418,7 @@ def oranges_rotting(grid: list[list[int]]) -> int:
     for r in range(rows):
         for c in range(cols):
             if grid[r][c] == 2:
-                q.append((r, c, 0))       # all sources at time 0
+                q.append((r, c, 0))
             elif grid[r][c] == 1:
                 fresh += 1
     minutes = 0

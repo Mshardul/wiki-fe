@@ -227,15 +227,15 @@ class KthLargest:
     def __init__(self, k: int, nums: list[int]):
         self.k = k
         self.heap = nums
-        heapq.heapify(self.heap)                  # O(n) build
+        heapq.heapify(self.heap)
         while len(self.heap) > k:
             heapq.heappop(self.heap)
 
     def add(self, val: int) -> int:
         heapq.heappush(self.heap, val)
         if len(self.heap) > self.k:
-            heapq.heappop(self.heap)              # keep only the k largest
-        return self.heap[0]                       # root = k-th largest
+            heapq.heappop(self.heap)
+        return self.heap[0]
 ```
 
 Time O(log k) per add, space O(k). Pattern: bounded-size min-heap for top-K.
@@ -256,7 +256,7 @@ def top_k_frequent(nums: list[int], k: int) -> list[int]:
     for val, f in freq.items():
         heapq.heappush(heap, (f, val))
         if len(heap) > k:
-            heapq.heappop(heap)                   # drop least frequent
+            heapq.heappop(heap)
     return [val for _, val in heap]
 ```
 
@@ -273,7 +273,7 @@ import heapq
 
 def merge_k_lists(lists: list[list[int]]) -> list[int]:
     heap = [(lst[0], i, 0) for i, lst in enumerate(lists) if lst]
-    heapq.heapify(heap)                           # k heads
+    heapq.heapify(heap)
     out = []
     while heap:
         val, li, ei = heapq.heappop(heap)
@@ -300,7 +300,7 @@ class MedianFinder:
         self.hi = []   # min-heap - larger half
 
     def addNum(self, num: int) -> None:
-        heapq.heappush(self.lo, -num)             # push to lower half
+        heapq.heappush(self.lo, -num)
         heapq.heappush(self.hi, -heapq.heappop(self.lo))   # move its max to upper
         if len(self.hi) > len(self.lo):           # rebalance: lo holds the extra
             heapq.heappush(self.lo, -heapq.heappop(self.hi))

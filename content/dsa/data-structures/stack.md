@@ -166,18 +166,18 @@ A stack over a dynamic array - the idiomatic default. Pseudocode states the cont
 
 ```
 STACK-PUSH(S, x)
-1   S.top = S.top + 1            ▷ advance the top index
-2   S.data[S.top] = x            ▷ (grow the backing array if full)
+1   S.top = S.top + 1
+2   S.data[S.top] = x            ▷ grow the backing array if full
 
 STACK-POP(S)
 1   if STACK-EMPTY(S)
-2       error "underflow"        ▷ popping an empty stack is a bug
+2       error "underflow"
 3   x = S.data[S.top]
 4   S.top = S.top − 1            ▷ logically remove; element left for GC/overwrite
 5   return x
 
 STACK-EMPTY(S)
-1   return S.top == −1           ▷ top = −1 means empty
+1   return S.top == −1
 ```
 
 **Python (reference - idiomatic):**
@@ -195,17 +195,17 @@ class Stack(Generic[T]):
         self._data: list[T] = []
 
     def push(self, x: T) -> None:
-        self._data.append(x)              # amortized O(1)
+        self._data.append(x)
 
     def pop(self) -> T:
         if not self._data:
             raise IndexError("pop from empty stack")
-        return self._data.pop()           # O(1) from the end
+        return self._data.pop()
 
     def peek(self) -> T:
         if not self._data:
             raise IndexError("peek at empty stack")
-        return self._data[-1]             # O(1), no removal
+        return self._data[-1]
 
     def is_empty(self) -> bool:
         return not self._data

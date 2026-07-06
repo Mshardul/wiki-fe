@@ -164,12 +164,12 @@ B-tree code is lengthy; the **search** and the **split-on-insert** are the conce
 ```
 B-TREE-SEARCH(x, k)                        ▷ x = node (already in memory), k = key
 1   i = 1
-2   while i ≤ x.n and k > x.key[i]         ▷ binary-search the node's keys
+2   while i ≤ x.n and k > x.key[i]         ▷ linear scan (can be binary search for large node fanout)
 3       i = i + 1
 4   if i ≤ x.n and k == x.key[i]
-5       return (x, i)                      ▷ found
+5       return (x, i)
 6   if x.leaf
-7       return NIL                         ▷ not present
+7       return NIL
 8   DISK-READ(x.child[i])                  ▷ THE expensive step - one seek
 9   return B-TREE-SEARCH(x.child[i], k)
 
@@ -201,12 +201,12 @@ class BTree:
     def search(self, k: int, node: BTreeNode | None = None):
         node = node or self.root
         i = 0
-        while i < len(node.keys) and k > node.keys[i]:   # find slot / child
+        while i < len(node.keys) and k > node.keys[i]:
             i += 1
         if i < len(node.keys) and node.keys[i] == k:
-            return (node, i)                 # found
+            return (node, i)
         if node.leaf:
-            return None                      # absent
+            return None
         return self.search(k, node.children[i])          # descend (1 "disk read")
 
     def _split_child(self, parent: BTreeNode, i: int) -> None:
@@ -214,12 +214,12 @@ class BTree:
         full = parent.children[i]
         new = BTreeNode(leaf=full.leaf)
         mid = full.keys[t - 1]               # median moves up
-        new.keys = full.keys[t:]             # right half → new node
-        full.keys = full.keys[: t - 1]       # left half stays
+        new.keys = full.keys[t:]
+        full.keys = full.keys[: t - 1]
         if not full.leaf:
             new.children = full.children[t:]
             full.children = full.children[:t]
-        parent.keys.insert(i, mid)           # median into parent
+        parent.keys.insert(i, mid)
         parent.children.insert(i + 1, new)
 
     def insert(self, k: int) -> None:

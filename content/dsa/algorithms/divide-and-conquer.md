@@ -297,11 +297,11 @@ Always verify: "what exactly does the recursive call return, and does my combine
 ```
 function DIVIDE_AND_CONQUER(A, lo, hi)
 1.  if hi - lo ≤ THRESHOLD then
-2.      return BASE_CASE(A, lo, hi)          ▷ solve directly when small enough
+2.      return BASE_CASE(A, lo, hi)
 3.  mid ← lo + ⌊(hi - lo) / 2⌋
-4.  left  ← DIVIDE_AND_CONQUER(A, lo, mid)      ▷ conquer left half
-5.  right ← DIVIDE_AND_CONQUER(A, mid + 1, hi)  ▷ conquer right half
-6.  return COMBINE(left, right)              ▷ merge sub-answers
+4.  left  ← DIVIDE_AND_CONQUER(A, lo, mid)
+5.  right ← DIVIDE_AND_CONQUER(A, mid + 1, hi)
+6.  return COMBINE(left, right)
 ```
 
 ### Concrete: Count Inversions (augmented merge sort)

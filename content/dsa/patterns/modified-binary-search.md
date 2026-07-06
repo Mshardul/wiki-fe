@@ -133,14 +133,14 @@ def modified_binary_search(nums: list[int], target: int) -> int:
             return mid
 
         # Determine which half is structured, then check if target lives there.
-        if nums[lo] <= nums[mid]:          # left half [lo..mid] is sorted
+        if nums[lo] <= nums[mid]:
             if nums[lo] <= target < nums[mid]:
-                hi = mid - 1              # target in sorted left half
+                hi = mid - 1
             else:
-                lo = mid + 1              # target in right half
-        else:                              # right half [mid..hi] is sorted
+                lo = mid + 1
+        else:
             if nums[mid] < target <= nums[hi]:
-                lo = mid + 1              # target in sorted right half
+                lo = mid + 1
             else:
                 hi = mid - 1              # your logic here - target in left half
 
@@ -156,9 +156,9 @@ def find_peak(nums: list[int]) -> int:
     while lo < hi:                         # loop until lo == hi == peak
         mid = lo + (hi - lo) // 2
         if nums[mid] < nums[mid + 1]:
-            lo = mid + 1                   # rising → peak is right
+            lo = mid + 1
         else:
-            hi = mid                       # falling or at peak → peak is here or left
+            hi = mid
     return lo
 ```
 
@@ -311,12 +311,12 @@ def search(nums: list[int], target: int) -> int:
         mid = lo + (hi - lo) // 2
         if nums[mid] == target:
             return mid
-        if nums[lo] <= nums[mid]:          # left half sorted
+        if nums[lo] <= nums[mid]:
             if nums[lo] <= target < nums[mid]:
                 hi = mid - 1
             else:
                 lo = mid + 1
-        else:                              # right half sorted
+        else:
             if nums[mid] < target <= nums[hi]:
                 lo = mid + 1
             else:
@@ -476,12 +476,12 @@ def search(nums: list[int], target: int) -> bool:
         if nums[lo] == nums[mid] == nums[hi]:  # ambiguous - can't tell which half is sorted
             lo += 1
             hi -= 1
-        elif nums[lo] <= nums[mid]:             # left half sorted
+        elif nums[lo] <= nums[mid]:
             if nums[lo] <= target < nums[mid]:
                 hi = mid - 1
             else:
                 lo = mid + 1
-        else:                                   # right half sorted
+        else:
             if nums[mid] < target <= nums[hi]:
                 lo = mid + 1
             else:
@@ -506,7 +506,6 @@ A mountain array first strictly increases then strictly decreases. You can call 
 def findInMountainArray(target: int, mountain_arr) -> int:
     n = mountain_arr.length()
 
-    # 1. Find peak
     lo, hi = 0, n - 1
     while lo < hi:
         mid = lo + (hi - lo) // 2
@@ -516,7 +515,6 @@ def findInMountainArray(target: int, mountain_arr) -> int:
             hi = mid
     peak = lo
 
-    # 2. Search ascending half
     lo, hi = 0, peak
     while lo <= hi:
         mid = lo + (hi - lo) // 2
@@ -528,7 +526,6 @@ def findInMountainArray(target: int, mountain_arr) -> int:
         else:
             hi = mid - 1
 
-    # 3. Search descending half
     lo, hi = peak, n - 1
     while lo <= hi:
         mid = lo + (hi - lo) // 2

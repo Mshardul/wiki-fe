@@ -162,7 +162,7 @@ The clean framing: heapsort is **selection sort with an O(log n) "find max" inst
 HEAPSORT(A, n)
 BUILD-MAX-HEAP(A, n)                   ▷ O(n): heapify all non-leaves bottom-up
 for i ← n − 1 downto 1
-    swap A[0] A[i]                      ▷ move current max to the sorted suffix
+    swap A[0] A[i]
     MAX-HEAPIFY(A, 0, i)               ▷ heap size shrinks to i; sift new root down
 
 BUILD-MAX-HEAP(A, n)
@@ -197,9 +197,9 @@ def heapsort(a: list[int]) -> None:
 
     for i in range(n // 2 - 1, -1, -1):          # build max-heap, O(n)
         sift_down(i, n)
-    for end in range(n - 1, 0, -1):              # extract max into the suffix
-        a[0], a[end] = a[end], a[0]              # max to its final slot
-        sift_down(0, end)                         # re-heap the shrunk region
+    for end in range(n - 1, 0, -1):
+        a[0], a[end] = a[end], a[0]
+        sift_down(0, end)
 
 
 # Contest / real-world velocity: you don't write heapsort - heapq sorts via repeated pop,
@@ -257,8 +257,8 @@ def find_kth_largest(nums: list[int], k: int) -> int:
     h = [-x for x in nums]                        # max-heap via negation
     heapq.heapify(h)                              # O(n) build
     for _ in range(k - 1):
-        heapq.heappop(h)                          # discard the top k-1 maxima
-    return -heapq.heappop(h)                       # k-th largest
+        heapq.heappop(h)
+    return -heapq.heappop(h)
 ```
 
 Time O(n + k log n), space O(n). Pattern: partial heapsort (extract k times).
@@ -274,7 +274,7 @@ import heapq
 
 def sort_nearly_sorted(nums: list[int], k: int) -> list[int]:
     heap = nums[:k + 1]
-    heapq.heapify(heap)                           # window of size k+1
+    heapq.heapify(heap)
     out, idx = [], k + 1
     while heap:
         out.append(heapq.heappop(heap))           # min of window is finalized
@@ -298,10 +298,10 @@ def last_stone_weight(stones: list[int]) -> int:
     h = [-s for s in stones]                      # max-heap via negation
     heapq.heapify(h)
     while len(h) > 1:
-        a = -heapq.heappop(h)                      # largest
-        b = -heapq.heappop(h)                      # second largest
+        a = -heapq.heappop(h)
+        b = -heapq.heappop(h)
         if a != b:
-            heapq.heappush(h, -(a - b))            # push the remainder
+            heapq.heappush(h, -(a - b))
     return -h[0] if h else 0
 ```
 

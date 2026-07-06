@@ -119,16 +119,14 @@ IntervalDP(n, cost) → dp[0][n-1]:
 def interval_dp(n: int) -> int:
     dp: list[list[int]] = [[0] * n for _ in range(n)]
 
-    # base cases: intervals of length 1
     for i in range(n):
         dp[i][i] = 0  # or problem-specific base value
 
-    # fill by increasing interval length
     for length in range(2, n + 1):
         for i in range(n - length + 1):
             j = i + length - 1
             dp[i][j] = float("inf")  # or -inf for max
-            for k in range(i, j):  # try every split point
+            for k in range(i, j):
                 cost = 0  # your logic here: cost of this split
                 dp[i][j] = min(dp[i][j], dp[i][k] + dp[k + 1][j] + cost)
 
@@ -144,7 +142,7 @@ def interval_dp_memo(n: int) -> int:
     @lru_cache(maxsize=None)
     def dp(i: int, j: int) -> int:
         if i == j:
-            return 0  # base case
+            return 0
         result = float("inf")
         for k in range(i, j):
             cost = 0  # your logic here

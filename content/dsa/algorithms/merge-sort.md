@@ -193,12 +193,12 @@ The **Search/divide** family signature: split the problem into subproblems of a 
 MERGE-SORT(A, lo, hi)
 if lo < hi
     mid ← lo + ⌊(hi − lo) / 2⌋
-    MERGE-SORT(A, lo, mid)              ▷ sort left half
-    MERGE-SORT(A, mid + 1, hi)          ▷ sort right half
-    MERGE(A, lo, mid, hi)               ▷ combine two sorted runs
+    MERGE-SORT(A, lo, mid)
+    MERGE-SORT(A, mid + 1, hi)
+    MERGE(A, lo, mid, hi)
 
 MERGE(A, lo, mid, hi)
-L ← A[lo .. mid]                        ▷ copy out both runs
+L ← A[lo .. mid]
 R ← A[mid + 1 .. hi]
 i ← 1; j ← 1; k ← lo
 while i ≤ L.length and j ≤ R.length
@@ -215,7 +215,7 @@ copy any remaining L[i..] / R[j..] into A[k..]
 ```python
 def merge_sort(a: list[int]) -> list[int]:
     """Stable O(n log n), O(n) space. Returns a new sorted list."""
-    if len(a) <= 1:                         # base case: 0 or 1 element
+    if len(a) <= 1:
         return a
     mid = len(a) // 2
     left, right = merge_sort(a[:mid]), merge_sort(a[mid:])
@@ -346,7 +346,7 @@ import heapq
 
 def merge_k_lists(lists: list[list[int]]) -> list[int]:
     heap = [(lst[0], i, 0) for i, lst in enumerate(lists) if lst]
-    heapq.heapify(heap)                           # k heads
+    heapq.heapify(heap)
     out = []
     while heap:
         val, li, ei = heapq.heappop(heap)

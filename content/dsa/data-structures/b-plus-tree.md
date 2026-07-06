@@ -222,8 +222,8 @@ Each invariant has a specific failure consequence - knowing these is what separa
 B+Tree-Search(root, k):
   node ← root
   while node is not a leaf:
-    i ← largest index such that node.key[i] ≤ k       ▷ binary search within node
-    node ← node.child[i]                               ▷ descend
+    i ← largest index such that node.key[i] ≤ k
+    node ← node.child[i]
   ▷ now at leaf
   if k ∈ node.keys:
     return node.value[k]
@@ -231,19 +231,19 @@ B+Tree-Search(root, k):
     return NOT-FOUND
 
 B+Tree-Range(root, lo, hi):
-  leaf ← B+Tree-FindLeaf(root, lo)                     ▷ descend to first leaf
+  leaf ← B+Tree-FindLeaf(root, lo)
   result ← []
   while leaf ≠ NIL and leaf.keys[0] ≤ hi:
-    for each key k in leaf with k ≤ hi:                ▷ scan within leaf
+    for each key k in leaf with k ≤ hi:
       if k ≥ lo: result.append(leaf.value[k])
-    leaf ← leaf.next                                   ▷ follow linked list
+    leaf ← leaf.next
   return result
 
 B+Tree-Insert(root, k, v):
   if root is full:
     new_root ← new InternalNode()
     new_root.child[0] ← root
-    Split-Child(new_root, 0, root)                     ▷ split old root
+    Split-Child(new_root, 0, root)
     root ← new_root
   Insert-Nonfull(root, k, v)
 
@@ -262,7 +262,7 @@ Split-Child(parent, i, child):
     new_leaf ← new LeafNode(right half of child.keys/values)
     push_up_key ← new_leaf.keys[0]                    ▷ COPY smallest key of right half up
     child.keys/values ← left half
-    new_leaf.next ← child.next                        ▷ maintain linked list
+    new_leaf.next ← child.next
     child.next ← new_leaf
     insert push_up_key into parent at position i+1
     parent.child[i+1] ← new_leaf
@@ -325,7 +325,7 @@ Merge-Leaves(parent, i):
   if left is a leaf:
     left.keys.extend(right.keys)
     left.values.extend(right.values)
-    left.next ← right.next                            ▷ re-wire linked list
+    left.next ← right.next
   else:
     left.keys.append(parent.keys[i])                  ▷ pull separator down for internal merge
     left.keys.extend(right.keys)
@@ -349,7 +349,7 @@ Node = Union["LeafNode", "InternalNode"]
 class LeafNode:
     keys: list[int] = field(default_factory=list)
     values: list[Any] = field(default_factory=list)
-    next: Optional["LeafNode"] = None  # linked list pointer
+    next: Optional["LeafNode"] = None
 
 
 @dataclass
@@ -470,7 +470,7 @@ class BPlusTree:
             return
         i = 0
         while i < len(node.keys) and k >= node.keys[i]:
-            i += 1   # child index that contains k
+            i += 1
         self._delete_from(node.children[i], k)
         if len(node.children[i].keys) < self.t - 1:
             self._fix_underflow(node, i)
@@ -517,7 +517,7 @@ class BPlusTree:
         if isinstance(left, LeafNode):
             left.keys.extend(right.keys)
             left.values.extend(right.values)
-            left.next = right.next       # re-wire linked list
+            left.next = right.next
         else:
             left.keys.append(parent.keys[i])   # pull separator down
             left.keys.extend(right.keys)

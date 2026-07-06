@@ -232,10 +232,9 @@ def count_anagram_windows(s: str, p: str) -> list[int]:
 
     result = []
     k = len(p)
-    mismatches = sum(1 for i in range(26) if pf[i] != wf[i])  # initially 26
+    mismatches = sum(1 for i in range(26) if pf[i] != wf[i])
 
     for r in range(len(s)):
-        # add incoming
         inc = ord(s[r]) - 97
         if wf[inc] == pf[inc]:
             mismatches += 1
@@ -243,7 +242,6 @@ def count_anagram_windows(s: str, p: str) -> list[int]:
         if wf[inc] == pf[inc]:
             mismatches -= 1
 
-        # remove outgoing
         if r >= k:
             out = ord(s[r - k]) - 97
             if wf[out] == pf[out]:

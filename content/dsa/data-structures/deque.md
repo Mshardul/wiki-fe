@@ -178,7 +178,7 @@ A circular-buffer deque - the version that shows the both-ends wrapping arithmet
 PUSH-FRONT(D, x)
 1   if D.size == D.cap
 2       error "overflow"
-3   D.front = (D.front − 1 + D.cap) mod D.cap   ▷ walk front backward, wrap
+3   D.front = (D.front − 1 + D.cap) mod D.cap
 4   D.data[D.front] = x
 5   D.size = D.size + 1
 
@@ -226,7 +226,7 @@ class CircularDeque(Generic[T]):
     def push_front(self, x: T) -> None:
         if self._size == self._cap:
             raise OverflowError("deque is full")
-        self._front = (self._front - 1) % self._cap      # walk front back, wrap
+        self._front = (self._front - 1) % self._cap
         self._data[self._front] = x
         self._size += 1
 
@@ -295,7 +295,7 @@ def max_sliding_window(nums: list[int], k: int) -> list[int]:
         if dq[0] == i - k:                # front: index slid out of window
             dq.popleft()
         if i >= k - 1:
-            res.append(nums[dq[0]])       # front = window max
+            res.append(nums[dq[0]])
     return res
 ```
 
@@ -353,7 +353,7 @@ def max_sliding_window(nums: list[int], k: int) -> list[int]:
         while dq and nums[dq[-1]] <= x:
             dq.pop()
         dq.append(i)
-        if dq[0] == i - k:                # front slid out of the window
+        if dq[0] == i - k:
             dq.popleft()
         if i >= k - 1:
             res.append(nums[dq[0]])

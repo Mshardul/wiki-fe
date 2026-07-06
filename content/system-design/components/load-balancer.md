@@ -349,7 +349,6 @@ Key parameters:
 - **Timeout:** How long to wait for a response. Must be shorter than the interval.
 
 ```
-# HAProxy health check config
 option httpchk GET /health
 timeout check 2s
 default-server inter 5s fall 3 rise 2
@@ -447,7 +446,6 @@ When the LB terminates the client connection and opens a new one to the backend,
 **Proxy Protocol (v1/v2):** A lightweight header prepended to the TCP stream before any application data. Works for any TCP-based protocol, not just HTTP. Harder to spoof, better for L4 use cases. Backend must explicitly support it.
 
 ```
-# Proxy Protocol v1 header (text, prepended to TCP stream)
 PROXY TCP4 192.168.1.1 10.0.0.1 56324 443\r\n
 ```
 

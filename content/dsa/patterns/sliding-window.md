@@ -177,8 +177,8 @@ def longest_valid_window(arr: list[int], k: int) -> int:
     L = 0
     best = 0
     for R, val in enumerate(arr):
-        freq[val] = freq.get(val, 0) + 1       # expand right
-        while len(freq) > k:                    # shrink left until valid
+        freq[val] = freq.get(val, 0) + 1
+        while len(freq) > k:
             freq[arr[L]] -= 1
             if freq[arr[L]] == 0:
                 del freq[arr[L]]

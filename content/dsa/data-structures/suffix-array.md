@@ -232,7 +232,6 @@ def build_suffix_array(s: str) -> list[int]:
     s = s + "\x00"          # sentinel: smallest ASCII character
     n = len(s)
 
-    # Initial rank = character ordinal; SA = sorted by single char
     sa = sorted(range(n), key=lambda i: s[i])
     rank = [0] * n
     rank[sa[0]] = 0
@@ -241,10 +240,8 @@ def build_suffix_array(s: str) -> list[int]:
 
     k = 1
     while k < n:
-        # Sort by (rank[i], rank[i+k]) pairs
         sa = sorted(range(n), key=lambda i: (rank[i], rank[i + k] if i + k < n else -1))
 
-        # Re-rank based on the pair
         new_rank = [0] * n
         new_rank[sa[0]] = 0
         for i in range(1, n):
@@ -448,7 +445,6 @@ def longest_common_substring(s: str, t: str) -> str:
     best_len, best_pos = 0, 0
     for i in range(1, len(sa)):
         a, b = sa[i - 1], sa[i]
-        # check one from s, one from t
         from_s_a = a < ns
         from_s_b = b < ns
         if from_s_a != from_s_b:   # different strings

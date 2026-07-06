@@ -196,7 +196,7 @@ ARRAY-APPEND(A, x)
 1   if A.size == A.capacity
 2       new_cap = max(1, 2 × A.capacity)         ▷ double, or seed at 1
 3       B = ALLOCATE-BLOCK(new_cap)
-4       for i = 0 to A.size − 1                  ▷ copy old contents
+4       for i = 0 to A.size − 1
 5           B[i] = A.data[i]
 6       A.data = B
 7       A.capacity = new_cap
@@ -400,14 +400,14 @@ def trap(height: list[int]) -> int:
 def next_permutation(nums: list[int]) -> None:
     n = len(nums)
     i = n - 2
-    while i >= 0 and nums[i] >= nums[i + 1]:   # find pivot
+    while i >= 0 and nums[i] >= nums[i + 1]:
         i -= 1
     if i >= 0:                                  # not the last permutation
         j = n - 1
-        while nums[j] <= nums[i]:               # rightmost element > pivot
+        while nums[j] <= nums[i]:
             j -= 1
         nums[i], nums[j] = nums[j], nums[i]
-    nums[i + 1:] = reversed(nums[i + 1:])       # reverse the suffix
+    nums[i + 1:] = reversed(nums[i + 1:])
 ```
 
 **Complexity.** O(n) time, O(1) space.
@@ -445,7 +445,7 @@ def find_duplicate(nums: list[int]) -> int:
 def max_subarray(nums: list[int]) -> int:
     best = cur = nums[0]
     for x in nums[1:]:
-        cur = max(x, cur + x)         # extend, or restart at x
+        cur = max(x, cur + x)
         best = max(best, cur)
     return best
 ```

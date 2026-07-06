@@ -189,14 +189,14 @@ BUILD-STRING(parts)                   ▷ parts = sequence of chunks to concaten
 def build_correct(parts: list[str]) -> str:
     out: list[str] = []
     for p in parts:
-        out.append(p)            # amortized O(1)
-    return "".join(out)          # single O(n) pass
+        out.append(p)
+    return "".join(out)
 
 # WRONG - O(n²): every += copies the whole accumulated string
 def build_wrong(parts: list[str]) -> str:
     s = ""
     for p in parts:
-        s += p                   # copies all of s each time → O(n²)
+        s += p                   # copies all of s each time -> O(n²)
     return s
 
 # Idiomatic string toolkit you actually reach for:
@@ -222,7 +222,7 @@ When the alphabet is small and fixed (26 lowercase letters, 128 ASCII), a plain 
 ```python
 count = [0] * 26
 for ch in s:
-    count[ord(ch) - ord("a")] += 1   # direct address, no hash
+    count[ord(ch) - ord("a")] += 1
 ```
 
 **Why for CP:** anagram checks, frequency comparisons, and "first unique char" become O(n) with a tiny constant. A candidate who reflexively reaches for a hash map on a 26-letter alphabet is leaving speed on the table (see [Array CP-primitives](./array.md#cp-primitives)).
@@ -315,7 +315,7 @@ def length_of_longest(s: str) -> int:
     start = best = 0
     for i, ch in enumerate(s):
         if ch in last and last[ch] >= start:
-            start = last[ch] + 1        # contract past the repeat
+            start = last[ch] + 1
         last[ch] = i
         best = max(best, i - start + 1)
     return best

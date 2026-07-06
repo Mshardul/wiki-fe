@@ -412,10 +412,10 @@ def min_cost_visit_all(cost: List[List[int]], n: int) -> int:
     for mask in range(1, 1 << n):
         for v in range(n):
             if not (mask >> v & 1) or dp[mask][v] == INF:
-                continue  # v not in current visited set, or unreachable
+                continue
             for u in range(n):
                 if mask >> u & 1:
-                    continue  # u already visited
+                    continue
                 nxt = mask | (1 << u)
                 dp[nxt][u] = min(dp[nxt][u], dp[mask][v] + cost[v][u])
 

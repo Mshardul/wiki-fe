@@ -170,23 +170,23 @@ A singly linked list with the operations that actually carry interview weight: `
 LIST-PUSH-FRONT(L, x)
 1   node = ALLOCATE-NODE()
 2   node.val  = x
-3   node.next = L.head          ▷ new node points at old first
-4   L.head    = node            ▷ head now the new node
-5   if L.tail == NIL            ▷ list was empty
+3   node.next = L.head
+4   L.head    = node
+5   if L.tail == NIL             ▷ list was empty
 6       L.tail = node
 
 LIST-DELETE-VALUE(L, x)
 1   prev = NIL
 2   cur  = L.head
-3   while cur ≠ NIL and cur.val ≠ x      ▷ walk to find x and its predecessor
+3   while cur ≠ NIL and cur.val ≠ x
 4       prev = cur
 5       cur  = cur.next
 6   if cur == NIL
-7       return                            ▷ not found
+7       return
 8   if prev == NIL
 9       L.head = cur.next                 ▷ deleting the head
 10  else
-11      prev.next = cur.next              ▷ splice cur out
+11      prev.next = cur.next
 12  if cur == L.tail
 13      L.tail = prev
 ```
@@ -214,12 +214,12 @@ class LinkedList(Generic[T]):
         self.head: Optional[Node[T]] = None
         self.tail: Optional[Node[T]] = None
 
-    def push_front(self, x: T) -> None:        # O(1)
+    def push_front(self, x: T) -> None:
         self.head = Node(x, self.head)
         if self.tail is None:                  # was empty
             self.tail = self.head
 
-    def append(self, x: T) -> None:            # O(1) thanks to the tail pointer
+    def append(self, x: T) -> None:
         node = Node(x)
         if self.tail is None:
             self.head = self.tail = node
@@ -227,17 +227,17 @@ class LinkedList(Generic[T]):
             self.tail.next = node
             self.tail = node
 
-    def delete_value(self, x: T) -> bool:      # O(n): walk to find predecessor
+    def delete_value(self, x: T) -> bool:
         prev: Optional[Node[T]] = None
         cur = self.head
         while cur is not None and cur.val != x:
             prev, cur = cur, cur.next
         if cur is None:
-            return False                        # not found
+            return False
         if prev is None:
             self.head = cur.next                # deleting the head
         else:
-            prev.next = cur.next                # splice out
+            prev.next = cur.next
         if cur is self.tail:
             self.tail = prev
         return True
@@ -255,9 +255,9 @@ class LinkedList(Generic[T]):
 from collections import deque
 
 dq = deque([1, 2, 3])
-dq.appendleft(0)     # O(1) front insert - the linked list's headline op
-dq.pop()             # O(1) from the right
-dq.popleft()         # O(1) from the left
+dq.appendleft(0)     # the linked list's headline op
+dq.pop()
+dq.popleft()
 dq.rotate(1)         # O(k) circular shift
 ```
 
@@ -300,9 +300,9 @@ Two pointers advancing at different rates extract positional facts in **one pass
 slow = fast = head
 while fast and fast.next:
     slow, fast = slow.next, fast.next.next
-    if slow is fast:          # pointers met → there is a cycle
+    if slow is fast:          # pointers met - there is a cycle
         break
-# if loop ended without meeting, no cycle; slow is the middle
+# if loop ended without meeting, no cycle - slow is the middle
 ```
 
 **Why for CP:** replaces a two-pass or O(n)-extra-space approach (counting length, or a visited set) with a single O(1)-space sweep.
@@ -331,9 +331,9 @@ def reverse_list(head: Optional[Node]) -> Optional[Node]:
     prev, cur = None, head
     while cur is not None:
         nxt = cur.next        # save before overwriting - the cardinal rule
-        cur.next = prev       # flip the link
-        prev, cur = cur, nxt  # advance
-    return prev               # new head
+        cur.next = prev
+        prev, cur = cur, nxt
+    return prev
 ```
 
 **Complexity.** O(n) time, O(1) space.
@@ -354,7 +354,7 @@ def detect_cycle(head: Optional[Node]) -> Optional[Node]:
             while p is not slow:       # phase 2: find the entrance
                 p, slow = p.next, slow.next
             return p
-    return None                         # no cycle
+    return None
 ```
 
 **Complexity.** O(n) time, O(1) space. Pattern: [Fast & Slow Pointers](../patterns/fast-slow-pointers.md).
@@ -395,7 +395,7 @@ def remove_nth_from_end(head: Optional[Node], n: int) -> Optional[Node]:
         fast = fast.next
     while fast.next:             # move together until fast is last
         fast, slow = fast.next, slow.next
-    slow.next = slow.next.next   # splice out the target
+    slow.next = slow.next.next
     return dummy.next
 ```
 
@@ -426,7 +426,7 @@ class LRUCache:
             self.cache.move_to_end(key)
         self.cache[key] = value
         if len(self.cache) > self.cap:
-            self.cache.popitem(last=False)   # evict LRU (the front)
+            self.cache.popitem(last=False)   # evict LRU
 ```
 
 **Complexity.** O(1) average per `get`/`put`, O(capacity) space.

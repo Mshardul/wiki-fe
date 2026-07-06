@@ -223,7 +223,7 @@ def sort_bounded(a: list[int], k: int = 100_001) -> list[int]:
         count[v] += 1
     out = []
     for v in range(k):
-        out.extend([v] * count[v])               # emit each value count[v] times
+        out.extend([v] * count[v])
     return out
 ```
 
@@ -239,7 +239,7 @@ Given a string, return it with characters ordered by **descending frequency** (t
 from collections import Counter
 
 def frequency_sort(s: str) -> str:
-    freq = Counter(s)                            # tally - counting sort step 1
+    freq = Counter(s)
     buckets = [[] for _ in range(len(s) + 1)]    # bucket[count] = chars with that count
     for ch, c in freq.items():
         buckets[c].append(ch)

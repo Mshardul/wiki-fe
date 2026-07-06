@@ -50,7 +50,7 @@ Undirected          Directed (digraph)    Weighted
 
 ```
 graph = {
-  0: [(1, w), (2, w)],   ← node 0 connects to 1 and 2
+  0: [(1, w), (2, w)],
   1: [(2, w)],
   2: []
 }
@@ -62,7 +62,7 @@ Each node maps to its neighbor list. For unweighted graphs, omit the weight.
 
 ```
      0  1  2
-  0 [0, 1, 1]   ← row i, col j: 1 if edge i→j exists
+  0 [0, 1, 1]
   1 [0, 0, 1]
   2 [0, 0, 0]
 ```

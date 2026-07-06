@@ -286,7 +286,7 @@ def rabin_karp(text: str, pattern: str, base: int = 31, q: int = 10**9 + 9) -> l
             # +q guards against negative residue from subtraction
             w_hash = (w_hash - ord(text[i]) * high) % q
             w_hash = (w_hash * base + ord(text[i + m])) % q
-            w_hash = (w_hash + q) % q      # ensure non-negative
+            w_hash = (w_hash + q) % q
 
     return matches
 
@@ -371,14 +371,12 @@ def find_anagrams(s: str, p: str) -> list[int]:
         matches.append(0)
 
     for i in range(len(p), len(s)):
-        # Add incoming character
         inc = ord(s[i]) - ord('a')
         if w_count[inc] == p_count[inc]:
             equal -= 1
         w_count[inc] += 1
         if w_count[inc] == p_count[inc]:
             equal += 1
-        # Remove outgoing character
         out = ord(s[i - len(p)]) - ord('a')
         if w_count[out] == p_count[out]:
             equal -= 1
@@ -411,12 +409,10 @@ def find_repeated_dna_sequences(s: str) -> list[str]:
     char_map = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
     m = 10
 
-    # Compute base^(m-1) mod q
     high = 1
     for _ in range(m - 1):
         high = high * base % q
 
-    # Initial window hash
     h = 0
     for ch in s[:m]:
         h = (h * base + char_map[ch]) % q
@@ -424,7 +420,6 @@ def find_repeated_dna_sequences(s: str) -> list[str]:
     seen.add(h)
 
     for i in range(1, len(s) - m + 1):
-        # Slide
         h = (h - char_map[s[i - 1]] * high) % q
         h = (h * base + char_map[s[i + m - 1]]) % q
         h = (h + q) % q

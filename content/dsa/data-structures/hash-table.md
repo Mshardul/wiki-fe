@@ -193,15 +193,15 @@ HASH-INSERT(T, k, v)
 1   if T.size / T.capacity ≥ MAX_LOAD          ▷ resize before it gets crowded
 2       HASH-RESIZE(T, 2 × T.capacity)
 3   i = HASH(k) mod T.capacity
-4   for each (key, val) in T.buckets[i]         ▷ key already present?
+4   for each (key, val) in T.buckets[i]
 5       if key == k
 6           update its value to v; return
-7   append (k, v) to T.buckets[i]               ▷ new key → chain it
+7   append (k, v) to T.buckets[i]
 8   T.size = T.size + 1
 
 HASH-GET(T, k)
 1   i = HASH(k) mod T.capacity
-2   for each (key, val) in T.buckets[i]         ▷ walk the chain
+2   for each (key, val) in T.buckets[i]
 3       if key == k
 4           return val
 5   return NOT-FOUND
@@ -225,17 +225,17 @@ class HashMap(Generic[K, V]):
         self._buckets: list[list[tuple[K, V]]] = [[] for _ in range(capacity)]
 
     def _index(self, key: K) -> int:
-        return hash(key) % self._capacity        # built-in hash → bucket
+        return hash(key) % self._capacity
 
     def put(self, key: K, value: V) -> None:
-        if self._size / self._capacity >= 0.75:  # keep load factor low
+        if self._size / self._capacity >= 0.75:
             self._resize(self._capacity * 2)
         bucket = self._buckets[self._index(key)]
         for i, (k, _) in enumerate(bucket):
             if k == key:
                 bucket[i] = (key, value)
                 return
-        bucket.append((key, value))               # new key
+        bucket.append((key, value))
         self._size += 1
 
     def get(self, key: K) -> Optional[V]:
@@ -249,7 +249,7 @@ class HashMap(Generic[K, V]):
         self._capacity = new_capacity
         self._buckets = [[] for _ in range(new_capacity)]
         self._size = 0
-        for bucket in old:                        # rehash everything
+        for bucket in old:
             for k, v in bucket:
                 self.put(k, v)
 
@@ -265,10 +265,10 @@ from collections import defaultdict, Counter
 d = defaultdict(int)          # missing keys default to 0 - no `if k in d` guard
 d[x] += 1
 
-c = Counter(words)            # frequency map in one call
-c.most_common(3)              # top-3 by count
+c = Counter(words)
+c.most_common(3)
 
-seen = set()                  # O(1) membership; the seen-set pattern
+seen = set()                  # O(1) membership - the seen-set pattern
 ```
 
 `dict`/`set`/`Counter`/`defaultdict` are C-implemented open-addressing tables - orders of magnitude faster than the teaching class above. The class is for explaining collisions, not for the contest.
@@ -296,7 +296,7 @@ Sweep once, and for each element ask "have I already seen the value that complet
 ```python
 seen = set()
 for x in nums:
-    if target - x in seen:    # complement already seen → pair found
+    if target - x in seen:
         return True
     seen.add(x)
 ```
@@ -308,8 +308,8 @@ for x in nums:
 Python hashes any **immutable** value, so a `tuple`, `frozenset`, or sorted-string can be a dict/set key - perfect for memoizing on a multi-part state or grouping by a canonical signature.
 
 ```python
-memo: dict[tuple[int, int], int] = {}   # DP state (i, j) → answer
-groups: dict[str, list[str]] = {}       # key = "".join(sorted(word)) → anagram group
+memo: dict[tuple[int, int], int] = {}   # DP state (i, j) -> answer
+groups: dict[str, list[str]] = {}       # key = "".join(sorted(word)) -> anagram group
 ```
 
 **Why for CP:** lets you memoize DP over compound states and group by a derived key without inventing an encoding - `tuple` keys are O(1) to hash and compare.

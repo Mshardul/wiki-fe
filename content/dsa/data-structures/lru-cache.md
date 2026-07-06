@@ -213,7 +213,7 @@ class LRUCache:
         if node is None:
             return -1
         self._unlink(node)
-        self._add_front(node)        # touch → MRU
+        self._add_front(node)
         return node.value
 
     def put(self, key: int, value: int) -> None:
@@ -244,7 +244,7 @@ class LRUCache:
     def get(self, key: int) -> int:
         if key not in self.od:
             return -1
-        self.od.move_to_end(key)             # O(1) touch → MRU end
+        self.od.move_to_end(key)
         return self.od[key]
 
     def put(self, key: int, value: int) -> None:
@@ -252,7 +252,7 @@ class LRUCache:
             self.od.move_to_end(key)
         self.od[key] = value
         if len(self.od) > self.cap:
-            self.od.popitem(last=False)       # O(1) evict LRU (front)
+            self.od.popitem(last=False)
 ```
 
 `OrderedDict` keeps a C-level doubly linked list internally, so `move_to_end` and `popitem(last=False)` are the same two O(1) splices - write the from-scratch version when asked to _prove_ you understand the design, reach for `OrderedDict` (or `functools.lru_cache`) when you just need it to work.
@@ -384,7 +384,7 @@ def first_unique_stream(chars):
     counts, q, out = {}, deque(), []
     for c in chars:
         counts[c] = counts.get(c, 0) + 1; q.append(c)
-        while q and counts[q[0]] > 1: q.popleft()   # lazy eviction
+        while q and counts[q[0]] > 1: q.popleft()
         out.append(q[0] if q else "#")
     return out
 ```

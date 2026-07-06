@@ -229,8 +229,8 @@ KADANE(A, n):
   current ← A[1]
   best    ← A[1]
   for i = 2 to n:
-    current ← max(A[i], current + A[i])   ▷ extend or restart
-    best    ← max(best, current)            ▷ update global max
+    current ← max(A[i], current + A[i])
+    best    ← max(best, current)
   return best
 ```
 
@@ -256,7 +256,7 @@ def max_subarray_with_indices(nums: list[int]) -> tuple[int, int, int]:
     temp_start = 0
 
     for i, num in enumerate(nums[1:], start=1):
-        if current + num < num:           # restart
+        if current + num < num:
             current = num
             temp_start = i
         else:

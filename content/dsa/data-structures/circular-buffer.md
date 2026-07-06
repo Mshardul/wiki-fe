@@ -137,7 +137,7 @@ CIRCULAR-ENQUEUE(R, x)
 1   if R.count == R.capacity
 2       error "buffer full"                       ▷ or overwrite head (lossy variant)
 3   R.data[R.tail] = x
-4   R.tail = (R.tail + 1) mod R.capacity           ▷ wrap
+4   R.tail = (R.tail + 1) mod R.capacity
 5   R.count = R.count + 1
 
 CIRCULAR-DEQUEUE(R)
@@ -145,7 +145,7 @@ CIRCULAR-DEQUEUE(R)
 2       error "buffer empty"
 3   x = R.data[R.head]
 4   R.data[R.head] = NIL                            ▷ release reference
-5   R.head = (R.head + 1) mod R.capacity            ▷ wrap
+5   R.head = (R.head + 1) mod R.capacity
 6   R.count = R.count − 1
 7   return x
 ```
@@ -166,8 +166,8 @@ class CircularBuffer(Generic[T]):
             raise ValueError("capacity must be positive")
         self._data: list[T | None] = [None] * capacity
         self._capacity = capacity
-        self._head = 0   # next to read
-        self._tail = 0   # next free slot
+        self._head = 0
+        self._tail = 0
         self._count = 0
 
     def __len__(self) -> int:
@@ -183,7 +183,7 @@ class CircularBuffer(Generic[T]):
         if self.is_full():
             raise OverflowError("circular buffer is full")
         self._data[self._tail] = x
-        self._tail = (self._tail + 1) % self._capacity  # wrap
+        self._tail = (self._tail + 1) % self._capacity
         self._count += 1
 
     def dequeue(self) -> T:
@@ -191,7 +191,7 @@ class CircularBuffer(Generic[T]):
             raise IndexError("dequeue from empty buffer")
         x = self._data[self._head]
         self._data[self._head] = None  # release reference for GC
-        self._head = (self._head + 1) % self._capacity  # wrap
+        self._head = (self._head + 1) % self._capacity
         self._count -= 1
         return x  # type: ignore[return-value]
 

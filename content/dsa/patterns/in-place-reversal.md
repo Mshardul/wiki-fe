@@ -157,11 +157,11 @@ def reverse_list(head: Optional[ListNode]) -> Optional[ListNode]:
     prev: Optional[ListNode] = None
     curr = head
     while curr:
-        next_node = curr.next   # save
-        curr.next = prev        # flip
-        prev = curr             # advance prev
-        curr = next_node        # advance curr
-    return prev                 # new head
+        next_node = curr.next
+        curr.next = prev
+        prev = curr
+        curr = next_node
+    return prev
 
 # your logic here - adapt boundary (sublist start/end, k-group size)
 ```
@@ -304,7 +304,7 @@ def rotate_right(head: Optional[ListNode], k: int) -> Optional[ListNode]:
     while tail.next:
         tail = tail.next
         n += 1
-    tail.next = head          # form ring
+    tail.next = head
     steps = n - k % n
     new_tail = head
     for _ in range(steps - 1):
@@ -312,7 +312,7 @@ def rotate_right(head: Optional[ListNode], k: int) -> Optional[ListNode]:
         new_tail = new_tail.next
     assert new_tail.next is not None
     new_head = new_tail.next
-    new_tail.next = None          # cut
+    new_tail.next = None
     return new_head
 ```
 

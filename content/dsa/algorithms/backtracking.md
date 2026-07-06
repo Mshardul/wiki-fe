@@ -214,11 +214,11 @@ if row = n                              ▷ all rows filled - complete board
     return
 for c ← 0 to n - 1                       ▷ try each column in this row
     if c ∉ used-col and (row - c) ∉ used-diag and (row + c) ∉ used-anti
-        cols[row] ← c                    ▷ choose
+        cols[row] ← c
         insert c into used-col
         insert (row - c) into used-diag
         insert (row + c) into used-anti
-        PLACE-QUEEN(row + 1)             ▷ explore
+        PLACE-QUEEN(row + 1)
         remove c from used-col           ▷ un-choose (backtrack)
         remove (row - c) from used-diag
         remove (row + c) from used-anti
@@ -238,16 +238,16 @@ def solve_n_queens(n: int) -> List[List[int]]:
     used_anti: set[int] = set()       # r + c is constant on a ↙ diagonal
 
     def backtrack(row: int) -> None:
-        if row == n:                  # base case: complete board
+        if row == n:
             solutions.append(cols[:]) # snapshot - never append the live list
             return
         for c in range(n):
             if c in used_col or (row - c) in used_diag or (row + c) in used_anti:
-                continue              # prune: column or diagonal attacked
-            cols[row] = c             # choose
+                continue
+            cols[row] = c
             used_col.add(c); used_diag.add(row - c); used_anti.add(row + c)
-            backtrack(row + 1)        # explore
-            used_col.remove(c); used_diag.remove(row - c); used_anti.remove(row + c)  # un-choose
+            backtrack(row + 1)
+            used_col.remove(c); used_diag.remove(row - c); used_anti.remove(row + c)
 
     backtrack(0)
     return solutions
@@ -261,14 +261,14 @@ def count_n_queens(n: int) -> int:
     full = (1 << n) - 1                       # n low bits set = all columns
 
     def backtrack(cols: int, diag: int, anti: int) -> int:
-        if cols == full:                      # base case: every column filled
+        if cols == full:
             return 1
         available = ~(cols | diag | anti) & full   # bits = legal columns this row
         count = 0
-        while available:                      # iterate set bits, cheapest first
+        while available:
             p = available & -available        # lowest set bit = one candidate column
-            available ^= p                    # clear it (we're handling it now)
-            # choose p, recurse: diag shifts ↘, anti shifts ↙ for the next row
+            available ^= p
+            # diag shifts ↘, anti shifts ↙ for the next row
             count += backtrack(cols | p, (diag | p) << 1, (anti | p) >> 1)
         return count                          # undo is implicit - locals, not shared state
     return backtrack(0, 0, 0)
@@ -288,9 +288,9 @@ def subsets_with_dup(nums: List[int]) -> List[List[int]]:
         for i in range(start, len(nums)):
             if i > start and nums[i] == nums[i - 1]:
                 continue              # skip duplicate at the SAME tree level
-            path.append(nums[i])      # choose
-            backtrack(i + 1)          # explore
-            path.pop()                # un-choose
+            path.append(nums[i])
+            backtrack(i + 1)
+            path.pop()
     backtrack(0)
     return res
 ```
@@ -315,7 +315,7 @@ Given `n` and `k`, return all `k`-length combinations of `1..n`. Constraints: `1
 def combine(n: int, k: int) -> List[List[int]]:
     res, path = [], []
     def backtrack(start: int) -> None:
-        if len(path) == k:                # base case: full combination
+        if len(path) == k:
             res.append(path[:]); return
         # prune: not enough numbers left to fill k slots
         for i in range(start, n - (k - len(path)) + 2):
@@ -336,13 +336,13 @@ Given an `m×n` board of letters and a `word`, return whether the word can be tr
 def exist(board: List[List[str]], word: str) -> bool:
     rows, cols = len(board), len(board[0])
     def dfs(r: int, c: int, i: int) -> bool:
-        if i == len(word): return True                    # matched all chars
+        if i == len(word): return True
         if not (0 <= r < rows and 0 <= c < cols) or board[r][c] != word[i]:
             return False                                   # prune: off-grid or mismatch
-        board[r][c], tmp = "#", board[r][c]                # choose: mark visited
+        board[r][c], tmp = "#", board[r][c]                # mark visited
         found = (dfs(r+1, c, i+1) or dfs(r-1, c, i+1) or
                  dfs(r, c+1, i+1) or dfs(r, c-1, i+1))
-        board[r][c] = tmp                                  # un-choose: restore
+        board[r][c] = tmp                                  # restore
         return found
     return any(dfs(r, c, 0) for r in range(rows) for c in range(cols))
 ```
@@ -359,7 +359,7 @@ def partition(s: str) -> List[List[str]]:
     def is_pal(sub: str) -> bool:
         return sub == sub[::-1]
     def backtrack(start: int) -> None:
-        if start == len(s):                # base case: consumed whole string
+        if start == len(s):
             res.append(path[:]); return
         for end in range(start + 1, len(s) + 1):
             piece = s[start:end]
@@ -381,7 +381,7 @@ Generate all valid combinations of `n` pairs of parentheses. Constraints: `1 ≤
 def generate_parenthesis(n: int) -> List[str]:
     res = []
     def backtrack(s: str, open_n: int, close_n: int) -> None:
-        if len(s) == 2 * n:                # base case: full-length string
+        if len(s) == 2 * n:
             res.append(s); return
         if open_n < n:                     # can still open
             backtrack(s + "(", open_n + 1, close_n)

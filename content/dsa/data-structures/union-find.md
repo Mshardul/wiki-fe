@@ -184,11 +184,11 @@ FIND(x)                                      ▷ path-compressing find; returns 
 UNION(x, y)
   rx ← FIND(x)                               ▷ always find() first - never union raw nodes
   ry ← FIND(y)
-  if rx = ry                                 ▷ already in the same set; nothing to do
+  if rx = ry
       return
   if rank[rx] < rank[ry]                     ▷ attach shorter-rank root under taller
       swap rx ↔ ry
-  parent[ry] ← rx                            ▷ ry becomes child of rx
+  parent[ry] ← rx
   if rank[rx] = rank[ry]                     ▷ only increment when equal ranks merge
       rank[rx] ← rank[rx] + 1
 
@@ -201,7 +201,7 @@ CONNECTED(x, y)
 ```python
 class DSU:
     def __init__(self, n: int) -> None:
-        self.parent = list(range(n))           # parent[i] = i initially (each is own root)
+        self.parent = list(range(n))
         self.size   = [1] * n                  # size of component rooted at i
         self.components = n                    # number of distinct sets
 
@@ -224,7 +224,7 @@ class DSU:
         """Merge sets containing x and y. Returns True if a new merge occurred."""
         rx, ry = self.find(x), self.find(y)
         if rx == ry:
-            return False                       # already connected - no merge
+            return False
         if self.size[rx] < self.size[ry]:
             rx, ry = ry, rx                    # always attach smaller under larger
         self.parent[ry] = rx
@@ -255,7 +255,7 @@ print(dsu.components)        # 2  (one big component + singleton 4)
 ```python
 def find(self, x: int) -> int:
     root = x
-    while self.parent[root] != root:           # walk to root
+    while self.parent[root] != root:
         root = self.parent[root]
     while self.parent[x] != root:             # compress: point each node to root
         nxt = self.parent[x]

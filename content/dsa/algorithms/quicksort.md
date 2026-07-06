@@ -165,16 +165,16 @@ The **Search/divide** family, doing its work on the way _down_ (partition) rathe
 QUICKSORT(A, lo, hi)
 if lo < hi
     p ← PARTITION(A, lo, hi)            ▷ p = pivot's final index
-    QUICKSORT(A, lo, p − 1)             ▷ sort ≤ side
-    QUICKSORT(A, p + 1, hi)             ▷ sort > side
+    QUICKSORT(A, lo, p − 1)
+    QUICKSORT(A, p + 1, hi)
 
 PARTITION(A, lo, hi)
-pivot ← A[hi]                           ▷ choose last as pivot
+pivot ← A[hi]
 i ← lo − 1                              ▷ boundary of the ≤ zone
 for j ← lo to hi − 1
     if A[j] ≤ pivot
         i ← i + 1
-        swap A[i] A[j]                  ▷ grow the ≤ zone
+        swap A[i] A[j]
 swap A[i + 1] A[hi]                     ▷ drop pivot between the zones
 return i + 1
 ```
@@ -299,7 +299,7 @@ def sort_colors(nums: list[int]) -> None:
             low += 1; mid += 1
         elif nums[mid] == 1:
             mid += 1
-        else:                                   # == 2
+        else:
             nums[mid], nums[high] = nums[high], nums[mid]
             high -= 1                            # don't advance mid: swapped-in value unchecked
 ```
@@ -319,7 +319,7 @@ def wiggle_sort(nums: list[int]) -> None:
     # virtual index map: odd positions first (desc), then even (desc)
     def idx(i: int) -> int:
         return (2 * i + 1) % (n | 1)
-    left, i, right = 0, 0, n - 1                          # 3-way partition on virtual indices
+    left, i, right = 0, 0, n - 1
     while i <= right:
         if nums[idx(i)] > median:
             nums[idx(left)], nums[idx(i)] = nums[idx(i)], nums[idx(left)]

@@ -163,7 +163,7 @@ def is_bipartite(graph: List[List[int]]) -> bool:
                     color[neighbor] = 1 - color[node]
                     queue.append(neighbor)
                 elif color[neighbor] == color[node]:
-                    return False  # odd cycle
+                    return False
     return True
 ```
 
@@ -210,7 +210,7 @@ def k_color(graph: List[List[int]], k: int) -> Optional[List[int]]:
                 color[node] = c
                 if backtrack(node + 1):
                     return True
-                color[node] = 0  # undo and try next color
+                color[node] = 0
         return False
 
     return color if backtrack(0) else None
@@ -400,7 +400,7 @@ def two_slot_schedule(n: int, conflicts: List[List[int]]) -> Optional[List[int]]
                     slot[nb] = 1 - slot[node]
                     queue.append(nb)
                 elif slot[nb] == slot[node]:
-                    return None  # not bipartite
+                    return None
     return slot
 ```
 

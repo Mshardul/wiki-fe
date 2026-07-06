@@ -333,7 +333,7 @@ def bfs(
         if u == target:
             break
         for v in graph.get(u, []):
-            if v not in dist:           # mark on enqueue
+            if v not in dist:
                 dist[v] = dist[u] + 1
                 parent[v] = u
                 queue.append(v)
@@ -348,14 +348,14 @@ def reconstruct_path(
 ) -> list[int]:
     """Reconstruct shortest path from source to target using parent map."""
     if target not in parent:
-        return []          # target unreachable
+        return []
     path: list[int] = []
     node: Optional[int] = target
     while node is not None:
         path.append(node)
         node = parent[node]
     path.reverse()
-    return path            # path[0] == source, path[-1] == target
+    return path
 
 
 def bfs_grid(

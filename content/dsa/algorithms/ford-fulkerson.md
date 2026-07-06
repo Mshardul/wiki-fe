@@ -220,7 +220,6 @@ class FlowNetwork:
             path = self._find_path_dfs(source, sink)
             if path is None:
                 break
-            # bottleneck = min residual capacity along the path
             bottleneck = min(
                 self.capacity[(path[i], path[i + 1])]
                 for i in range(len(path) - 1)
@@ -322,7 +321,7 @@ def distinct_routes(n: int, edges: list[tuple[int, int]]) -> list[list[int]]:
                 continue
             # forward edge (u,v) carries flow iff its reverse residual is > 0
             if net.capacity[(v, u)] > 0 and net.capacity[(u, v)] == 0:
-                net.capacity[(v, u)] -= 1   # consume this unit of flow
+                net.capacity[(v, u)] -= 1
                 rest = find_used_path(v, target, visited)
                 if rest is not None:
                     return [u] + rest

@@ -206,7 +206,7 @@ def coin_change_topdown(coins: List[int], amount: int) -> int:
     @lru_cache(maxsize=None)              # ← the memo that turns search into DP
     def best(rem: int) -> float:
         if rem == 0:
-            return 0                      # base case
+            return 0
         if rem < 0:
             return float("inf")           # overshot - dead branch
         return min((1 + best(rem - c) for c in coins), default=float("inf"))

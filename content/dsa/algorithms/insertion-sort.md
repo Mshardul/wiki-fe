@@ -147,9 +147,9 @@ for i = 2 to A.length              ▷ 1-indexed; prefix A[1..i-1] is sorted
     key ← A[i]
     j ← i − 1
     while j > 0 and A[j] > key      ▷ strict > keeps it STABLE
-        A[j + 1] ← A[j]            ▷ shift larger element right
+        A[j + 1] ← A[j]
         j ← j − 1
-    A[j + 1] ← key                 ▷ drop key into the opened slot
+    A[j + 1] ← key
 ```
 
 **Python** - idiomatic, plus the binary-insertion variant (fewer comparisons):
@@ -161,9 +161,9 @@ def insertion_sort(a: list[int]) -> None:
         key = a[i]
         j = i - 1
         while j >= 0 and a[j] > key:          # strict > → stable (equals don't shift)
-            a[j + 1] = a[j]                   # shift larger element right
+            a[j + 1] = a[j]
             j -= 1
-        a[j + 1] = key                        # insert into the opened gap
+        a[j + 1] = key
 
 
 def binary_insertion_sort(a: list[int]) -> None:
@@ -194,7 +194,7 @@ for x in (5, 2, 8, 1):
             lo = mid + 1
         else:
             hi = mid
-    stream.insert(lo, x)                       # keeps `stream` sorted
+    stream.insert(lo, x)
 ```
 
 ## What the interviewer probes for
@@ -240,11 +240,11 @@ def insertion_sort_list(head: ListNode) -> ListNode:
     dummy = ListNode()
     cur = head
     while cur:
-        nxt = cur.next                          # save the rest
+        nxt = cur.next
         prev = dummy
         while prev.next and prev.next.val < cur.val:
-            prev = prev.next                    # find insertion spot in sorted part
-        cur.next = prev.next                    # splice cur in
+            prev = prev.next
+        cur.next = prev.next
         prev.next = cur
         cur = nxt
     return dummy.next
@@ -279,13 +279,13 @@ Given a list of **non-overlapping, sorted** intervals and a new interval, insert
 ```python
 def insert_interval(intervals: list[list[int]], new: list[int]) -> list[list[int]]:
     out, i, n = [], 0, len(intervals)
-    while i < n and intervals[i][1] < new[0]:   # entirely left of new
+    while i < n and intervals[i][1] < new[0]:
         out.append(intervals[i]); i += 1
-    while i < n and intervals[i][0] <= new[1]:  # overlaps new → absorb
+    while i < n and intervals[i][0] <= new[1]:
         new = [min(new[0], intervals[i][0]), max(new[1], intervals[i][1])]
         i += 1
-    out.append(new)                             # insert the merged interval
-    out.extend(intervals[i:])                   # entirely right of new
+    out.append(new)
+    out.extend(intervals[i:])
     return out
 ```
 

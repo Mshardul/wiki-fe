@@ -244,7 +244,7 @@ def delete(root: Optional[Node], k: int) -> Optional[Node]:
         root.left = delete(root.left, k)
     elif k > root.key:
         root.right = delete(root.right, k)
-    else:                                    # found it
+    else:
         if root.left is None:
             return root.right                # 0 or 1 child → splice
         if root.right is None:
@@ -252,7 +252,7 @@ def delete(root: Optional[Node], k: int) -> Optional[Node]:
         succ = root.right                    # in-order successor = leftmost of right subtree
         while succ.left:
             succ = succ.left
-        root.key = succ.key                  # copy successor up
+        root.key = succ.key
         root.right = delete(root.right, succ.key)
     return root
 ```
@@ -320,12 +320,12 @@ def is_valid_bst(root, low=float("-inf"), high=float("inf")) -> bool:
 def kth_smallest(root, k: int) -> int:
     stack, cur = [], root
     while cur or stack:
-        while cur:                        # dive left
+        while cur:
             stack.append(cur)
             cur = cur.left
         cur = stack.pop()
         k -= 1
-        if k == 0:                        # k-th node in sorted order
+        if k == 0:
             return cur.val
         cur = cur.right
     return -1
@@ -343,11 +343,11 @@ def kth_smallest(root, k: int) -> int:
 def lca_bst(root, p, q):
     while root:
         if p.val < root.val and q.val < root.val:
-            root = root.left              # both smaller → go left
+            root = root.left
         elif p.val > root.val and q.val > root.val:
-            root = root.right             # both larger → go right
+            root = root.right
         else:
-            return root                   # split point → LCA
+            return root
     return None
 ```
 
@@ -362,7 +362,7 @@ def lca_bst(root, p, q):
 ```python
 def insert_into_bst(root, val: int):
     if root is None:
-        return Node(val)                  # found the empty slot
+        return Node(val)
     if val < root.val:
         root.left = insert_into_bst(root.left, val)
     else:
@@ -383,7 +383,7 @@ def sorted_array_to_bst(nums: list[int]):
     def build(lo: int, hi: int):
         if lo > hi:
             return None
-        mid = (lo + hi) // 2              # middle → balanced root
+        mid = (lo + hi) // 2
         node = Node(nums[mid])
         node.left = build(lo, mid - 1)
         node.right = build(mid + 1, hi)

@@ -187,9 +187,9 @@ A binary tree node plus the canonical traversals. Pseudocode states the recursiv
 INORDER-TRAVERSE(node, visit)
 1   if node == NIL
 2       return                    ▷ base case: empty subtree
-3   INORDER-TRAVERSE(node.left, visit)    ▷ left subtree first
-4   visit(node.key)                       ▷ then the node
-5   INORDER-TRAVERSE(node.right, visit)   ▷ then right subtree
+3   INORDER-TRAVERSE(node.left, visit)
+4   visit(node.key)
+5   INORDER-TRAVERSE(node.right, visit)
 
 LEVEL-ORDER(root, visit)
 1   if root == NIL
@@ -229,7 +229,7 @@ def inorder_iterative(root: Optional[TreeNode]) -> list[int]:
     """Same walk with an explicit stack - no recursion-depth limit."""
     out, stack, cur = [], [], root
     while cur or stack:
-        while cur:                       # dive left, stacking nodes
+        while cur:
             stack.append(cur)
             cur = cur.left
         cur = stack.pop()                # backtrack: visit, then go right
@@ -337,7 +337,7 @@ def level_order(root: Optional[TreeNode]) -> list[list[int]]:
     out, q = [], deque([root])
     while q:
         level = [None] * len(q)
-        for i in range(len(level)):       # exactly this level's nodes
+        for i in range(len(level)):
             node = q.popleft()
             level[i] = node.val
             if node.left:  q.append(node.left)
@@ -399,7 +399,7 @@ def lowest_common_ancestor(root, p, q):
     left = lowest_common_ancestor(root.left, p, q)
     right = lowest_common_ancestor(root.right, p, q)
     if left and right:
-        return root                        # p and q split here → LCA
+        return root
     return left or right                    # both on one side (or neither)
 ```
 

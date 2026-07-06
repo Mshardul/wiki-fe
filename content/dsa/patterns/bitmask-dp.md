@@ -129,7 +129,7 @@ def bitmask_dp(n: int, cost: List[List[int]]) -> int:
 
     # dp[mask][i] = min cost to have visited exactly the nodes in mask, ending at i
     dp: List[List[float]] = [[INF] * n for _ in range(1 << n)]
-    dp[1][0] = 0  # start at node 0
+    dp[1][0] = 0
 
     for mask in range(1, 1 << n):
         for i in range(n):
@@ -190,7 +190,7 @@ The dominant constant is the inner `n` or `n²` loop. At n = 20, `2²⁰ · 20 �
 
 ```python
 # g[mask] given; compute f[mask] = sum of g[sub] for all sub ⊆ mask
-f = g[:]  # copy
+f = g[:]
 for i in range(n):
     for mask in range(1 << n):
         if mask >> i & 1:
@@ -216,7 +216,6 @@ f[0b011] = g[011] + g[010] + g[001] + g[000]
 mask = some_mask
 sub = mask
 while sub > 0:
-    # process sub as a submask of mask
     sub = (sub - 1) & mask  # next submask
 # Note: sub=0 (empty set) is also a valid submask; handle separately if needed
 ```
@@ -321,7 +320,7 @@ import math
 def tsp(n: int, dist: List[List[int]]) -> int:
     INF = math.inf
     dp = [[INF] * n for _ in range(1 << n)]
-    dp[1][0] = 0  # start at city 0
+    dp[1][0] = 0
 
     for mask in range(1, 1 << n):
         for i in range(n):
@@ -402,7 +401,6 @@ from typing import List
 def max_students(seats: List[List[str]]) -> int:
     m, n = len(seats), len(seats[0])
 
-    # Convert each row to a bitmask of valid seats
     row_masks = [
         sum(1 << j for j in range(n) if seats[i][j] == '.') for i in range(m)
     ]
@@ -418,7 +416,6 @@ def max_students(seats: List[List[str]]) -> int:
             if dp[prev_mask] == INF:
                 continue
             for mask in range(1 << n):
-                # mask must be a subset of valid seats
                 if mask & valid != mask:
                     continue
                 # no two adjacent in same row

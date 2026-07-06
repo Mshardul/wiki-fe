@@ -342,8 +342,8 @@ MODPOW(base, exp, mod)
   while exp > 0
       if exp is odd              ▷ test lowest bit: exp & 1
           result ← result × base mod mod
-      base ← base × base mod mod ▷ square for next bit
-      exp ← exp >> 1             ▷ shift to next bit
+      base ← base × base mod mod
+      exp ← exp >> 1
   return result
 
 MODINV-FERMAT(a, p)

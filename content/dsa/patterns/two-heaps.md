@@ -412,7 +412,7 @@ import heapq
 from typing import List
 
 def findMaximizedCapital(k: int, w: int, profits: List[int], capital: List[int]) -> int:
-    projects = sorted(zip(capital, profits))   # sort by required capital
+    projects = sorted(zip(capital, profits))
     available: list[int] = []                  # max-heap of profits (negated)
     i = 0
     for _ in range(k):

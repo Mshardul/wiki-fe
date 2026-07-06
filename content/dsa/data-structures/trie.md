@@ -197,7 +197,7 @@ class Trie:
     def insert(self, word: str) -> None:
         node = self.root
         for ch in word:
-            node = node.children.setdefault(ch, TrieNode())   # extend or reuse path
+            node = node.children.setdefault(ch, TrieNode())
         node.is_end = True
 
     def _walk(self, s: str) -> TrieNode | None:
@@ -210,10 +210,10 @@ class Trie:
 
     def search(self, word: str) -> bool:
         node = self._walk(word)
-        return node is not None and node.is_end   # must be a complete word
+        return node is not None and node.is_end
 
     def starts_with(self, prefix: str) -> bool:
-        return self._walk(prefix) is not None     # path existing is enough
+        return self._walk(prefix) is not None
 ```
 
 **Contest velocity.** A `dict`-of-children trie (above) is the fast thing to write - no fixed alphabet array, no index math. For a known small alphabet (lowercase), a 26-slot list per node is faster but more code; reach for it only when profiling demands. For pure membership with no prefixes, skip the trie and use a `set`.
@@ -249,7 +249,7 @@ class BitTrie:
         node, best = self.root, 0
         for i in range(bits, -1, -1):
             b = (x >> i) & 1
-            want = 1 - b                      # prefer the opposite bit
+            want = 1 - b
             if want in node:
                 best |= (1 << i); node = node[want]
             else:
@@ -303,12 +303,12 @@ def find_words(board, words):
         if nxt is None: return
         path += ch
         if nxt.is_end: found.add(path)
-        board[r][c] = "#"                     # mark visited
+        board[r][c] = "#"
         for dr, dc in ((1,0),(-1,0),(0,1),(0,-1)):
             nr, nc = r+dr, c+dc
             if 0 <= nr < rows and 0 <= nc < cols and board[nr][nc] != "#":
                 dfs(nr, nc, nxt, path)
-        board[r][c] = ch                      # restore
+        board[r][c] = ch
     for r in range(rows):
         for c in range(cols):
             dfs(r, c, root.root, "")
@@ -330,8 +330,8 @@ def replace_words(roots, sentence):
         node = t.root
         for i, ch in enumerate(word):
             node = node.children.get(ch)
-            if node is None: return word       # no root prefixes it
-            if node.is_end: return word[:i+1]  # first (shortest) root
+            if node is None: return word
+            if node.is_end: return word[:i+1]
         return word
     return " ".join(shortest_root(w) for w in sentence.split())
 ```
