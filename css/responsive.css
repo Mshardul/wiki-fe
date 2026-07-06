@@ -295,6 +295,10 @@
   .content-topbar .back-btn-label {
     display: none;
   }
+  .content-topbar .topbar-icon-btn {
+    min-width: 34px;
+    min-height: 34px;
+  }
 }
 
 @media (max-width: 640px) {

@@ -216,6 +216,21 @@ For the full model and the *why*, see the decisions docs:
 
 ---
 
+## Content code blocks (DSA/algorithm articles)
+
+- **Comments in embedded Python/pseudocode follow the same bar as app JS** (see JavaScript → Comments above): earn their place only for the *why* - a non-obvious invariant, a gotcha, a constraint the next line depends on. Never restate what the line does.
+- **Never justify an implementation choice by "so the article's prose matches."** If a data-structure/algorithm choice (e.g. `list` vs `set` for adjacency) exists only to make a worked trace reproducible, that reasoning belongs in the surrounding prose (if anywhere), not as a code comment - a reader of the code has no use for "why we picked this so our writeup lines up."
+- **Verify runnable code before shipping it in an article** - actually execute it (or paste + run in a scratch file), don't eyeball it. Catches path-reconstruction bugs, off-by-ones, and trace/code mismatches that reading alone misses.
+
+---
+
+## Content changelog
+
+- **One line per entry, ≤12 words (15 max if truly needed).** `content/CHANGELOG.md` is a scan list, not a commit log - `` `file.md` - what changed in a few words ``. No parenthetical breakdowns of every section/table/edge-case added.
+- The detail belongs in the article itself and in the commit message, not the changelog.
+
+---
+
 ## Workflow
 
 - Keep diffs focused - one concern per commit (mirrors the SRP rule for code).

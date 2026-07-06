@@ -60,17 +60,19 @@ graph LR
     b -->|9| t((t))
 ```
 
-**Iteration 1.** DFS finds path `s → a → t`. Bottleneck = min(10, 4) = 4. Push 4 units.
-- Residual: `s→a` now 6, add reverse `a→s` cap 4; `a→t` now 0, add reverse `t→a` cap 4.
-- Flow so far: 4.
-
-**Iteration 2.** DFS finds path `s → b → t`. Bottleneck = min(10, 9) = 9. Push 9 units.
+**Iteration 1.** DFS (a stack explores the most-recently-pushed neighbor first) finds path `s → b → t`. Bottleneck = min(10, 9) = 9. Push 9 units.
 - Residual: `s→b` now 1, add reverse `b→s` cap 9; `b→t` now 0, add reverse `t→b` cap 9.
+- Flow so far: 9.
+
+**Iteration 2.** DFS finds path `s → a → t`. Bottleneck = min(10, 4) = 4. Push 4 units.
+- Residual: `s→a` now 6, add reverse `a→s` cap 4; `a→t` now 0, add reverse `t→a` cap 4.
 - Flow so far: 13.
 
-**Iteration 3.** DFS finds path `s → a → b → t`. Bottleneck = min(6, 2, 0)... `b→t` is 0 now, so this path is **not viable directly** - DFS instead finds `s → a → b → (residual t→b reversed? no)`. In this small graph, after iteration 2, the only remaining path is `s → a → b → t`, but `b → t` is saturated (0 residual capacity) - no augmenting path exists there. DFS correctly reports no path.
+**Iteration 3.** DFS searches for a path from `s` to `t`. `a→t` and `b→t` are both saturated (residual 0). The only forward edge left from `a` is `a→b` (residual 2), but `b→t` is 0 - a dead end. No augmenting path remains. DFS correctly reports no path.
 
-**Terminates.** No augmenting path from `s` to `t` remains (checked via DFS reachability on the residual graph). **Max flow = 4 + 9 = 13.**
+**Terminates.** No augmenting path from `s` to `t` remains (checked via DFS reachability on the residual graph). **Max flow = 9 + 4 = 13.**
+
+(The exact path order DFS explores depends on adjacency-list order - a different insertion order could find `s→a→t` first instead. Either order converges to the same max flow of 13; only the intermediate steps differ.)
 
 Notice: at every step, the invariant "flow pushed so far respects every edge's capacity and every node's conservation (inflow = outflow, except s and t)" holds - each augmentation preserves it by construction, since we only push the bottleneck amount.
 
@@ -88,7 +90,7 @@ Notice: at every step, the invariant "flow pushed so far respects every edge's c
 
 Each augmentation requires one DFS/BFS over the residual graph to find a path: O(E) (or O(V+E), but E dominates in the graphs Ford-Fulkerson is used on). Each augmentation increases the flow by at least 1 (integer capacities), and the flow is bounded above by `|max_flow|`, so there are at most `|max_flow|` augmentations. Total: **O(E · |max_flow|)**.
 
-This bound is loose and can be genuinely bad: consider a graph where `|max_flow|` is large (e.g., 2×10⁹ from huge capacities) but the graph itself is tiny (4 nodes). Then the algorithm can take billions of iterations even though `E` is constant - the bound is pseudo-polynomial (depends on the *value* of the input, not its size in bits). This is precisely the gap Edmonds-Karp closes by choosing augmenting paths via BFS (shortest path in edge count), which bounds the number of augmentations by O(VE) regardless of capacity magnitude.
+This bound is loose and can be genuinely bad. The classic textbook construction: a 4-node graph (`s`, `a`, `b`, `t`) with `s→a` and `s→b` at capacity `C`, `a→t` and `b→t` at capacity `C`, plus a small crossing edge `a↔b` at capacity 1. If DFS happens to pick a path that crosses through `a↔b` at each step instead of draining `s→a→t` and `s→b→t` directly, it pushes only 1 unit per augmentation and takes `2C` iterations to reach the true max flow of `2C` - on a graph with only 6 edges. With `C = 10⁹`, that is a billion-plus iterations even though `E` is constant. Whether DFS actually hits this worst case depends entirely on which neighbor it explores first (an implementation detail - see the adjacency-order note in How it works), which is exactly the danger: the runtime is not just large, it's *unpredictable* from the graph structure alone. This pseudo-polynomial dependence on the *value* of the input (not its size in bits) is precisely the gap Edmonds-Karp closes by choosing augmenting paths via BFS, which bounds the number of augmentations by O(VE) regardless of capacity magnitude or path-selection luck.
 
 **Space: O(V + E)** for the residual graph (original edges + their reverse counterparts) plus O(V) for the visited set used during each path search.
 
@@ -189,13 +191,15 @@ class FlowNetwork:
 
     def __init__(self) -> None:
         self.capacity: dict[tuple[int, int], int] = defaultdict(int)
-        self.adj: dict[int, set[int]] = defaultdict(set)
+        self.adj: dict[int, list[int]] = defaultdict(list)
 
     def add_edge(self, u: int, v: int, cap: int) -> None:
         self.capacity[(u, v)] += cap
         self.capacity[(v, u)] += 0   # ensure reverse residual edge exists
-        self.adj[u].add(v)
-        self.adj[v].add(u)
+        if v not in self.adj[u]:
+            self.adj[u].append(v)
+        if u not in self.adj[v]:
+            self.adj[v].append(u)
 
     def _find_path_dfs(self, source: int, sink: int) -> list[int] | None:
         visited: set[int] = {source}
@@ -249,9 +253,9 @@ Run a reachability search (BFS/DFS) from `s` in the final residual graph. The se
 
 ### 1. Max Flow / Min Cut (generic network, LC-style: "Maximum Flow" is not on LeetCode directly - canonical reference: CSES "Download Speed")
 
-**Problem.** Given a directed graph with edge capacities, a source, and a sink, compute the maximum amount of flow that can be routed from source to sink without violating any edge's capacity. n ≤ 500 nodes, m ≤ 1000 edges, capacities up to 10⁹.
+**Problem.** Given a directed graph with edge capacities, a source, and a sink, compute the maximum amount of flow that can be routed from source to sink without violating any edge's capacity. n ≤ 500 nodes, m ≤ 1000 edges, capacities up to 100 (small enough that Ford-Fulkerson's capacity-dependent bound is safe - see Constraints table above).
 
-**Approach.** Direct application of Ford-Fulkerson (or Edmonds-Karp given the capacity magnitude - see Constraints table). Build the residual graph, repeatedly find an augmenting path, push the bottleneck flow, until no path remains.
+**Approach.** Direct application of Ford-Fulkerson: build the residual graph, repeatedly find an augmenting path via DFS, push the bottleneck flow, until no path remains. If this same problem allowed capacities up to 10⁹, the Constraints table's own guidance says switch to [Edmonds-Karp](./edmonds-karp.md) instead - the small bound here is what makes Ford-Fulkerson the right choice.
 
 ```python
 def download_speed(n: int, edges: list[tuple[int, int, int]]) -> int:
@@ -300,7 +304,7 @@ def max_bipartite_matching(left_n: int, right_n: int, edges: list[tuple[int, int
 
 **Problem.** Given a directed graph, find the maximum number of edge-disjoint paths from node 1 to node n (no two paths share an edge), and output the paths. n ≤ 500, m ≤ 1000.
 
-**Approach.** Set every edge's capacity to 1 (edge-disjoint constraint) and run max-flow from node 1 to node n. The max flow value equals the maximum number of edge-disjoint paths. To recover the actual paths, repeatedly walk from source to sink following any edge with flow > 0 (decrementing as you go) - this is a distinct technique from problems 1-2 because it requires **path reconstruction from a flow assignment**, not just the flow value.
+**Approach.** Set every edge's capacity to 1 (edge-disjoint constraint) and run max-flow from node 1 to node n. The max flow value equals the maximum number of edge-disjoint paths. To recover the actual paths, this needs more care than "follow any used edge": a naive greedy walk can wander into a dead end when a node has more than one candidate used-edge and the wrong one is picked first (no way to backtrack). The safe approach - **DFS with backtracking**, undoing a used edge if it doesn't lead to the sink - is what a correct reconstruction from a flow assignment actually requires, and that DFS-with-undo is the distinct technique this problem exercises over problems 1-2.
 
 ```python
 def distinct_routes(n: int, edges: list[tuple[int, int]]) -> list[list[int]]:
@@ -309,24 +313,30 @@ def distinct_routes(n: int, edges: list[tuple[int, int]]) -> list[list[int]]:
         net.add_edge(u, v, 1)
     num_paths = net.max_flow(1, n)
 
-    # reconstruct paths by following saturated forward edges
+    def find_used_path(u: int, target: int, visited: set[int]) -> list[int] | None:
+        if u == target:
+            return [u]
+        visited.add(u)
+        for v in net.adj[u]:
+            if v in visited:
+                continue
+            # forward edge (u,v) carries flow iff its reverse residual is > 0
+            if net.capacity[(v, u)] > 0 and net.capacity[(u, v)] == 0:
+                net.capacity[(v, u)] -= 1   # consume this unit of flow
+                rest = find_used_path(v, target, visited)
+                if rest is not None:
+                    return [u] + rest
+                net.capacity[(v, u)] += 1   # backtrack: this branch was a dead end
+        return None
+
     paths = []
     for _ in range(num_paths):
-        path, u = [1], 1
-        while u != n:
-            for v in net.adj[u]:
-                if net.capacity[(v, u)] > 0 and net.capacity[(u, v)] == 0:
-                    # a forward edge (u,v) with original cap 1 that's now fully
-                    # "used" shows as capacity[(v,u)] > 0 (the reverse residual)
-                    net.capacity[(v, u)] -= 1
-                    path.append(v)
-                    u = v
-                    break
+        path = find_used_path(1, n, set())
         paths.append(path)
     return paths
 ```
 
-**Complexity.** O(E · max_flow) to compute flow, O(V · max_flow) to reconstruct all paths. Space: O(V + E).
+**Complexity.** O(E · max_flow) to compute flow, O(V · E · max_flow) worst case to reconstruct all paths (DFS with backtracking per path). Space: O(V + E).
 
 **Duplicate problems:**
 - Download Speed variant with path output - same reconstruction technique layered on top of problem 1's flow computation.

@@ -23,6 +23,7 @@ from pathlib import Path
 # [text](target) - capture target. Skip images ![..](..) via the negative lookbehind.
 LINK_RE = re.compile(r"(?<!\!)\[[^\]]*\]\(([^)]+)\)")
 H1_RE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 
 
 def slugify(text: str) -> str:
@@ -67,6 +68,7 @@ def check_title(path: Path, text: str) -> tuple[bool, str]:
 def check_links(path: Path, text: str) -> tuple[bool, list[str]]:
     broken = []
     base = path.resolve().parent
+    text = HTML_COMMENT_RE.sub("", text)  # pending links live in comments by convention - not live links
     for target in LINK_RE.findall(text):
         link = target.split("#", 1)[0].strip()  # drop anchors
         if not link:

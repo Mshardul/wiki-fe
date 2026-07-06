@@ -9,6 +9,13 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-07-07
+- `ford-fulkerson.md` - new article: max-flow via DFS augmenting paths, residual graph
+- `edmonds-karp.md` - new article: Ford-Fulkerson + BFS augmenting paths, O(VE²) bound
+- `maximum-flow.md` - hub completed: survey + decision layer for max-flow algorithms
+- `dsa_check.py` - fixed: link check now strips HTML comments before scanning
+- `ford-fulkerson.md` / `edmonds-karp.md` - fixed buggy path-reconstruction code, unverified trace claims
+
 ## 2026-07-06
 - `euclidean-gcd.md` - new article: Euclidean GCD (Recursive/build family via "State & recurrence"; two-direction ⊇/⊆ correctness proof of gcd(a,b)=gcd(b,a mod b); O(log min(a,b)) derivation via a mod b < a/2 case-split lemma + Fibonacci worst-case + Lamé's theorem; extended Euclid bottom-up Bézout-coefficient trace; 5-row comparison incl. Stein's/binary GCD; 6 edge cases incl. C++ negative-mod trap and LCM-overflow ordering; 2 misconceptions; 3 worked problems: GCD of Strings, Water and Jug Problem (LC 365, Bézout feasibility), modular inverse for composite modulus via extended Euclid; registered in index.md and linked from number-theory.md hub)
 - `sieve-of-eratosthenes.md` - new article: Sieve of Eratosthenes (Distribution family via "Key & distribution"; both-direction correctness proof; O(n log log n) derivation via harmonic-of-primes sum and Mertens' second theorem; n=30 worked trace with per-prime ASCII marking grid; linear sieve (SPF/O(n) factorization), bytearray/bit-packed, and segmented-sieve Python variants; 6-row constraints table (plain vs segmented vs Miller-Rabin crossover); 6 edge cases incl. p² marking-start off-by-one and Python bool-list memory blowup; 2 misconceptions; 3 worked problems: Count Primes, SPF-table factorization, segmented range-prime-count; registered in index.md and linked from number-theory.md hub)
