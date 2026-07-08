@@ -38,15 +38,14 @@ async function _request(method, path, body, { silent401 = false } = {}) {
       _sessionExpiredFired = true;
       state.session = { user: null, status: "out" };
       document.dispatchEvent(new CustomEvent("wiki:session-expired"));
-      // allow future 401s to fire again after the user re-auths
-      setTimeout(() => {
-        _sessionExpiredFired = false;
-      }, 0);
     }
     throw new ApiError("UNAUTHORIZED", "Session expired", 401);
   }
 
-  if (res.status === 204) return null;
+  if (res.status === 204) {
+    _sessionExpiredFired = false;
+    return null;
+  }
 
   let data = null;
   try {
@@ -59,6 +58,9 @@ async function _request(method, path, body, { silent401 = false } = {}) {
     const env = data?.error || {};
     throw new ApiError(env.code || "ERROR", env.message || res.statusText, res.status);
   }
+  // a real (non-401) response proves the session is valid again - allow the
+  // guard to fire on any future expiry rather than resetting on a timer
+  _sessionExpiredFired = false;
   return data;
 }
 

@@ -52,7 +52,7 @@ def mobile_page(page, base_url):
 
 
 def _go_to_index(page, base_url):
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=10_000)
     # wait for at least one available (non-stub) card
     page.wait_for_selector(".index-card:not(.index-card--unavailable)", timeout=10_000)
@@ -126,9 +126,11 @@ def test_long_press_link_opens_peek_sheet(mobile_page, base_url):
     """long-press on an internal .md link slides up the preview as a sheet."""
     page = mobile_page
     # An article known to contain internal links.
-    page.goto(f"{base_url}/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_selector("#markdown-body[data-render-done]", timeout=10_000)
+    # ResizeObserver-driven layout passes can still shift content after data-render-done.
+    page.wait_for_timeout(300)
 
     link = page.locator(
         "#markdown-body a[href$='.md'], #markdown-body a[href*='.md#']"
@@ -197,6 +199,8 @@ def test_pull_to_refresh_clears_index_cache_and_reloads(mobile_page, base_url):
     sessionStorage index cache and re-fetch/re-render."""
     page = mobile_page
     _go_to_index(page, base_url)
+    # Same settle gap as the long-press test above.
+    page.wait_for_timeout(300)
 
     page.evaluate(
         "() => sessionStorage.setItem('wiki-index-system-design', JSON.stringify([{stale: true}]))"
@@ -218,7 +222,7 @@ def test_pull_to_refresh_clears_index_cache_and_reloads(mobile_page, base_url):
 def test_edge_swipe_right_goes_back(mobile_page, base_url):
     """swipe right from the left edge in content view returns to the index."""
     page = mobile_page
-    page.goto(f"{base_url}/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
     _swipe(page, 5, 400, 200, 405)
@@ -228,7 +232,7 @@ def test_edge_swipe_right_goes_back(mobile_page, base_url):
 def test_edge_swipe_left_opens_toc(mobile_page, base_url):
     """swipe left from the right edge in content view opens the mobile TOC."""
     page = mobile_page
-    page.goto(f"{base_url}/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_selector("#markdown-body[data-render-done]", timeout=10_000)
     page.wait_for_selector("#toc-nav .toc-item", state="attached", timeout=10_000)
@@ -245,7 +249,7 @@ def test_edge_swipe_left_opens_toc(mobile_page, base_url):
 def test_swipe_down_closes_panel(mobile_page, base_url):
     """swipe down from the upper third closes the topmost open panel (TOC)."""
     page = mobile_page
-    page.goto(f"{base_url}/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_selector("#toc-nav .toc-item", state="attached", timeout=10_000)
 
@@ -269,7 +273,7 @@ def test_swipe_down_closes_panel(mobile_page, base_url):
 def test_swipe_down_from_mid_sheet_closes_prefs(mobile_page, base_url):
     """swipe down from mid-sheet (not upper third) closes prefs when open."""
     page = mobile_page
-    page.goto(f"{base_url}/")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=10_000)
 
     page.evaluate("() => Settings.open()")
@@ -284,7 +288,7 @@ def test_swipe_down_from_mid_sheet_closes_prefs(mobile_page, base_url):
 def test_search_modal_closes_on_resize(mobile_page, base_url):
     """search modal closes when viewport is resized (orientation change)."""
     page = mobile_page
-    page.goto(f"{base_url}/")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=10_000)
 
     page.keyboard.press("Meta+k")

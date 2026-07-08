@@ -87,6 +87,19 @@ async function fetchText(path, signal) {
   return res.text();
 }
 
+// Pre-built at deploy time (build_search_index.py): { [wikiId]: sections[] }
+let _prebuiltIndex;
+async function fetchPrebuiltSearchIndex() {
+  if (_prebuiltIndex !== undefined) return _prebuiltIndex;
+  try {
+    const res = await fetch(new URL("./content/search-index.json", location.href).href);
+    _prebuiltIndex = res.ok ? await res.json() : null;
+  } catch {
+    _prebuiltIndex = null;
+  }
+  return _prebuiltIndex;
+}
+
 export {
   normalizePath,
   dirOf,
@@ -95,4 +108,5 @@ export {
   resolvePath,
   setBreadcrumb,
   fetchText,
+  fetchPrebuiltSearchIndex,
 };

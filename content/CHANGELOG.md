@@ -13,7 +13,11 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `ford-fulkerson.md` - new article: max-flow via DFS augmenting paths, residual graph
 - `edmonds-karp.md` - new article: Ford-Fulkerson + BFS augmenting paths, O(VE²) bound
 - `maximum-flow.md` - hub completed: survey + decision layer for max-flow algorithms
+- `fenwick-tree.md` - new article: BIT point-update/prefix-sum in O(log n), i&-i decomposition, range-update variants
+- `lowest-common-ancestor.md` - new article: binary lifting for O(log n) LCA queries after O(n log n) preprocess
 - `dsa_check.py` - fixed: link check now strips HTML comments before scanning
+- `bipartite-matching.md` - new article: Kuhn's + Hopcroft-Karp augmenting-path matching, König's theorem
+- `skip-list.md` - new article: randomized express-lane linked list, expected O(log n), Redis ZSET backbone
 - `ford-fulkerson.md` / `edmonds-karp.md` - fixed buggy path-reconstruction code, unverified trace claims
 
 ## 2026-07-06

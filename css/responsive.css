@@ -4,6 +4,8 @@
 @media (max-width: 900px) {
   .content-layout {
     flex-direction: column;
+    /* base align-items:flex-start would let content-main overflow in column direction */
+    align-items: stretch;
     padding: var(--s5) var(--layout-padding, 10%) var(--s16);
   }
   .toc-sidebar:not(.mobile-open) {
@@ -14,6 +16,15 @@
   }
   .toc-mobile-btn {
     display: flex;
+  }
+}
+
+/* Wide content-width (5% padding) leaves almost no side margin on tablet
+   portrait widths - floor the padding so Wide stays readable. */
+@media (min-width: 641px) and (max-width: 900px) {
+  .content-layout {
+    padding-left: max(var(--layout-padding, 10%), var(--s10));
+    padding-right: max(var(--layout-padding, 10%), var(--s10));
   }
 }
 
@@ -143,6 +154,25 @@
   .index-filter-unread {
     min-height: 44px;
   }
+
+  .related-grid {
+    /* 160px didn't leave room for 2 columns once real content-layout padding is subtracted */
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  /* collapsible code blocks skip the right-fade in code.css (their ::after
+     is used for the bottom collapse fade) - give them one via ::before so
+     the scroll cue is consistent across all overflowing code blocks */
+  .markdown-body pre.pre--overflowing.pre--collapsible::before {
+    content: "";
+    position: absolute;
+    top: 32px;
+    right: 0;
+    bottom: 0;
+    width: 32px;
+    background: linear-gradient(to right, transparent, var(--code-bg, #1a1d2e));
+    pointer-events: none;
+  }
   .recents-clear-btn {
     min-width: 44px;
     min-height: 44px;
@@ -170,18 +200,28 @@
   }
 }
 
+@media (pointer: coarse) {
+  .anchor-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .anchor-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .topbar-inner {
     padding-left: max(var(--s4), env(safe-area-inset-left));
     padding-right: max(var(--s4), env(safe-area-inset-right));
   }
 
-  .content-layout {
-    padding-left: max(var(--layout-padding, 10%), env(safe-area-inset-left));
-    padding-right: max(var(--layout-padding, 10%), env(safe-area-inset-right));
-  }
-
   @media (max-width: 640px) {
+    .content-layout {
+      padding-left: max(var(--layout-padding, 10%), env(safe-area-inset-left));
+      padding-right: max(var(--layout-padding, 10%), env(safe-area-inset-right));
+    }
     .scroll-top-btn,
     .toc-mobile-btn {
       bottom: calc(var(--s5) + env(safe-area-inset-bottom));
@@ -200,7 +240,9 @@
 
 @media (min-width: 641px) and (max-width: 900px) {
   .content-layout {
-    padding: var(--s5) var(--s6) var(--s16);
+    /* horizontal padding owned by the floor rule above */
+    padding-top: var(--s5);
+    padding-bottom: var(--s16);
   }
   .home-header {
     padding: var(--s16) var(--s5) var(--s8);

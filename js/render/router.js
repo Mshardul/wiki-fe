@@ -9,7 +9,11 @@ import { showToast } from "./toast.js";
    ═══════════════════════════════════════════════════════════════ */
 const progressBar = document.getElementById("reading-progress");
 
-function showView(id) {
+const VIEW_DEPTH = { "view-home": 0, "view-index": 1, "view-content": 2 };
+let _lastViewDepth = null; // null = no prior view this session yet (boot render)
+const _reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+function _applyView(id) {
   document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
   document.getElementById(id).classList.add("active");
   state.currentView = id.replace("view-", "");
@@ -19,6 +23,37 @@ function showView(id) {
   const isContent = id === "view-content";
   progressBar.classList.toggle("visible", isContent);
   if (isContent) progressBar.style.width = "0%";
+}
+
+// Resolves once layout is safe to read (View Transitions freeze it until settled).
+function showView(id) {
+  const depth = VIEW_DEPTH[id] ?? 0;
+  const direction =
+    _lastViewDepth === null
+      ? null
+      : depth > _lastViewDepth
+        ? "forward"
+        : depth < _lastViewDepth
+          ? "back"
+          : null;
+  _lastViewDepth = depth;
+
+  // No transition on boot (direction===null) - nothing to animate from.
+  const canUseViewTransition =
+    typeof document.startViewTransition === "function" &&
+    !_reducedMotion.matches &&
+    direction !== null;
+
+  if (!canUseViewTransition) {
+    document.documentElement.classList.toggle("nav-forward", direction === "forward");
+    document.documentElement.classList.toggle("nav-back", direction === "back");
+    _applyView(id);
+    return Promise.resolve();
+  }
+
+  document.documentElement.setAttribute("data-nav-direction", direction || "");
+  const transition = document.startViewTransition(() => _applyView(id));
+  return transition.ready.catch(() => {});
 }
 
 /* ═══════════════════════════════════════════════════════════════

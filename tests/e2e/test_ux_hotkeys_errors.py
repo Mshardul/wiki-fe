@@ -73,7 +73,7 @@ def test_network_error_shows_connection_message(page, base_url):
 
 def test_broken_slug_shows_toast(page, base_url):
     """Navigating to an unknown slug shows a toast before redirecting home."""
-    page.goto(f"{base_url}/#system-design/this-slug-does-not-exist-xyz")
+    page.goto(f"{base_url}/#system-design/this-slug-does-not-exist-xyz", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=10_000)
 
     toast = page.locator("#wiki-toast")
@@ -84,7 +84,7 @@ def test_broken_slug_shows_toast(page, base_url):
 
 def test_broken_slug_redirects_home(page, base_url):
     """After a broken slug, the home view is shown."""
-    page.goto(f"{base_url}/#system-design/no-such-article-abc123")
+    page.goto(f"{base_url}/#system-design/no-such-article-abc123", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=10_000)
 
 
@@ -292,7 +292,7 @@ def test_distraction_free_clears_on_navigation(page, base_url):
 
     assert page.evaluate("() => document.body.classList.contains('distraction-free')")
 
-    page.goto(f"{base_url}/")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=5_000)
     # Navigate to article again
     page.locator(".wiki-card").first.click()

@@ -7,7 +7,7 @@ Navigation polish tests:
 
 
 def _go_to_index(page, base_url):
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=10_000)
     page.wait_for_selector(
         "#index-sections:not(.index-sections--loading)", timeout=15_000
@@ -15,7 +15,7 @@ def _go_to_index(page, base_url):
 
 
 def _go_to_article(page, base_url, slug="system-design/caching"):
-    page.goto(f"{base_url}/#{slug}")
+    page.goto(f"{base_url}/#{slug}", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
@@ -151,7 +151,7 @@ def test_w_hotkey_opens_switcher_from_index(page, base_url):
 
 def test_w_hotkey_inactive_on_home(page, base_url):
     """W hotkey does nothing on home view."""
-    page.goto(f"{base_url}/")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=5_000)
     page.keyboard.press("w")
     page.wait_for_timeout(100)

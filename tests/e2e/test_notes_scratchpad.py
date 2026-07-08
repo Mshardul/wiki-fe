@@ -11,7 +11,7 @@ import pytest
 
 @pytest.fixture
 def content_page(page, base_url):
-    page.goto(f"{base_url}/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_selector("#markdown-body[data-render-done]", timeout=10_000)
     page.wait_for_selector("#notes-scratchpad-input", timeout=5_000)
@@ -38,9 +38,9 @@ def test_notes_restored_on_revisit(content_page, base_url):
     page.locator("#notes-scratchpad-input").fill("a note that should persist")
     page.wait_for_timeout(400)
 
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=5_000)
-    page.goto(f"{base_url}/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#notes-scratchpad-input", timeout=10_000)
 
     value = page.locator("#notes-scratchpad-input").input_value()

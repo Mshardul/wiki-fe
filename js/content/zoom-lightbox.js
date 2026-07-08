@@ -180,7 +180,8 @@ function openZoomOverlay(node, caption = "") {
 }
 
 /* ─── Image Lightbox ─── */
-function addImageLightbox(contentEl) {
+// Attach before any await - a fast image failure can fire before a delayed listener exists.
+function wireImageErrorPlaceholders(contentEl) {
   contentEl.querySelectorAll("img").forEach((img) => {
     img.addEventListener(
       "error",
@@ -202,6 +203,11 @@ function addImageLightbox(contentEl) {
       },
       { once: true },
     );
+  });
+}
+
+function addImageLightbox(contentEl) {
+  contentEl.querySelectorAll("img").forEach((img) => {
     img.loading = "lazy";
     img.classList.add("zoomable-img");
     img.addEventListener("click", () => {
@@ -231,4 +237,10 @@ function addDiagramZoom(contentEl) {
   });
 }
 
-export { closeZoomOverlay, openZoomOverlay, addImageLightbox, addDiagramZoom };
+export {
+  closeZoomOverlay,
+  openZoomOverlay,
+  addImageLightbox,
+  addDiagramZoom,
+  wireImageErrorPlaceholders,
+};

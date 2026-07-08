@@ -37,7 +37,6 @@ import { clearRecents, getRecents, renderRecentsSection, saveRecents } from "./s
 import { saveScrollPos } from "./storage/scroll-collapse.js";
 import {
   Settings,
-  Theme,
   applySettingsToDOM,
   getSettings,
   initOsThemeListener,
@@ -111,6 +110,10 @@ document.addEventListener("click", (e) => {
     case "search-open":
       openGlobalSearch();
       break;
+    case "prefs-search-open":
+      Settings.close();
+      openGlobalSearch();
+      break;
     case "settings-open":
       Settings.open();
       break;
@@ -141,9 +144,6 @@ document.addEventListener("click", (e) => {
       break;
     case "distraction-free-exit":
       toggleDistractionFree();
-      break;
-    case "toggle-theme":
-      Theme.toggle();
       break;
     case "print-article":
       printArticle();

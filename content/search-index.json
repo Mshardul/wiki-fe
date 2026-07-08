@@ -1,0 +1,834 @@
+{
+  "system-design": [
+    {
+      "heading": "Components",
+      "cards": [
+        {
+          "title": "Message Queues",
+          "path": "./content/system-design/components/message-queues.md",
+          "slug": "message-queues",
+          "description": "Async messaging, delivery semantics, backpressure, partitioning"
+        },
+        {
+          "title": "DNS",
+          "path": "./content/system-design/components/dns.md",
+          "slug": "dns",
+          "description": "Domain resolution, record types, caching, propagation"
+        },
+        {
+          "title": "Load Balancer",
+          "path": "./content/system-design/components/load-balancer.md",
+          "slug": "load-balancer",
+          "description": "Traffic distribution, algorithms, health checks, L4 vs L7"
+        },
+        {
+          "title": "CDN",
+          "path": "./content/system-design/components/cdn.md",
+          "slug": "cdn",
+          "description": "Edge caching, cache invalidation, origin offload"
+        },
+        {
+          "title": "Caching",
+          "path": "./content/system-design/components/caching.md",
+          "slug": "caching",
+          "description": "In-memory caching, eviction policies, distributed cache patterns"
+        },
+        {
+          "title": "Databases",
+          "path": "./content/system-design/components/databases.md",
+          "slug": "databases",
+          "description": "SQL vs NoSQL, indexing, replication, consistency models"
+        },
+        {
+          "title": "API Gateway",
+          "path": "./content/system-design/components/api-gateway.md",
+          "slug": "api-gateway",
+          "description": "Routing, auth, rate limiting, request transformation"
+        },
+        {
+          "title": "Rate Limiter",
+          "path": "./content/system-design/components/rate-limiter.md",
+          "slug": "rate-limiter",
+          "description": "Throttling strategies, distributed rate limiting"
+        },
+        {
+          "title": "Proxies",
+          "path": "./content/system-design/components/proxies.md",
+          "slug": "proxies",
+          "description": "Forward vs reverse proxy, use cases, TLS termination"
+        },
+        {
+          "title": "Service Discovery",
+          "path": "./content/system-design/components/service-discovery.md",
+          "slug": "service-discovery",
+          "description": "Client-side vs server-side, health registration, DNS-based"
+        },
+        {
+          "title": "WebSockets / SSE / Long Polling",
+          "path": "./content/system-design/components/websockets-sse-long-polling.md",
+          "slug": "websockets-sse-long-polling",
+          "description": "Real-time communication patterns, trade-offs"
+        },
+        {
+          "title": "Blob / Object Storage",
+          "path": "./content/system-design/components/blob-object-storage.md",
+          "slug": "blob-object-storage",
+          "description": "Binary storage, chunking, multipart upload, durability"
+        },
+        {
+          "title": "Distributed File System",
+          "path": "./content/system-design/components/distributed-file-system.md",
+          "slug": "distributed-file-system",
+          "description": "Block storage, metadata management, fault tolerance"
+        },
+        {
+          "title": "Search",
+          "path": "./content/system-design/components/search.md",
+          "slug": "search",
+          "description": "Inverted index, relevance ranking, distributed search"
+        },
+        {
+          "title": "Authentication",
+          "path": "./content/system-design/components/authentication.md",
+          "slug": "authentication",
+          "description": "Session vs token auth, OAuth, OIDC, MFA, service-to-service"
+        }
+      ]
+    },
+    {
+      "heading": "Algorithms & Concepts",
+      "cards": [
+        {
+          "title": "Consistent Hashing",
+          "path": "./content/system-design/algorithms/consistent-hashing.md",
+          "slug": "consistent-hashing",
+          "description": "Ring-based key distribution, virtual nodes, rebalancing"
+        },
+        {
+          "title": "Bloom Filter",
+          "path": "./content/system-design/algorithms/bloom-filter.md",
+          "slug": "bloom-filter",
+          "description": "Probabilistic set membership, false positives, space trade-offs"
+        },
+        {
+          "title": "CAP Theorem",
+          "path": "./content/system-design/algorithms/cap-theorem.md",
+          "slug": "cap-theorem",
+          "description": "Consistency, availability, partition tolerance trade-offs"
+        },
+        {
+          "title": "ACID vs BASE",
+          "path": "./content/system-design/algorithms/acid-vs-base.md",
+          "slug": "acid-vs-base",
+          "description": "Transaction guarantees, eventual consistency"
+        },
+        {
+          "title": "Replication Strategies",
+          "path": "./content/system-design/algorithms/replication-strategies.md",
+          "slug": "replication-strategies",
+          "description": "Leader-follower, multi-leader, leaderless"
+        },
+        {
+          "title": "Sharding Strategies",
+          "path": "./content/system-design/algorithms/sharding-strategies.md",
+          "slug": "sharding-strategies",
+          "description": "Range, hash, directory-based sharding"
+        },
+        {
+          "title": "Rate Limiting Algorithms",
+          "path": "./content/system-design/algorithms/rate-limiting-algorithms.md",
+          "slug": "rate-limiting-algorithms",
+          "description": "Token bucket, leaky bucket, sliding window"
+        },
+        {
+          "title": "Circuit Breaker",
+          "path": "./content/system-design/algorithms/circuit-breaker.md",
+          "slug": "circuit-breaker",
+          "description": "Failure detection, states, fallback strategies"
+        },
+        {
+          "title": "Consensus (Raft / Paxos)",
+          "path": "./content/system-design/algorithms/consensus-raft-paxos.md",
+          "slug": "consensus-raft-paxos",
+          "description": "Leader election, log replication, split-brain prevention"
+        },
+        {
+          "title": "Saga Pattern",
+          "path": "./content/system-design/algorithms/saga-pattern.md",
+          "slug": "saga-pattern",
+          "description": "Distributed transactions, choreography vs orchestration"
+        }
+      ]
+    },
+    {
+      "heading": "HLD: Interview Systems",
+      "cards": [
+        {
+          "title": "URL Shortener",
+          "path": "./content/system-design/hld/url-shortener.md",
+          "slug": "url-shortener",
+          "description": "Hashing, redirects, analytics, scaling reads"
+        },
+        {
+          "title": "Twitter / News Feed",
+          "path": "./content/system-design/hld/twitter-news-feed.md",
+          "slug": "twitter-news-feed",
+          "description": "Fan-out, timeline generation, celebrity problem"
+        },
+        {
+          "title": "WhatsApp / Chat System",
+          "path": "./content/system-design/hld/whatsapp-chat-system.md",
+          "slug": "whatsapp-chat-system",
+          "description": "WebSockets, message ordering, delivery guarantees"
+        },
+        {
+          "title": "YouTube / Video Streaming",
+          "path": "./content/system-design/hld/youtube-video-streaming.md",
+          "slug": "youtube-video-streaming",
+          "description": "Chunked upload, transcoding, CDN, adaptive bitrate"
+        },
+        {
+          "title": "Uber / Ride Sharing",
+          "path": "./content/system-design/hld/uber-ride-sharing.md",
+          "slug": "uber-ride-sharing",
+          "description": "Geo-indexing, real-time matching, surge pricing"
+        },
+        {
+          "title": "Google Drive / File Storage",
+          "path": "./content/system-design/hld/google-drive-file-storage.md",
+          "slug": "google-drive-file-storage",
+          "description": "Chunking, deduplication, sync conflict resolution"
+        },
+        {
+          "title": "Web Crawler",
+          "path": "./content/system-design/hld/web-crawler.md",
+          "slug": "web-crawler",
+          "description": "BFS/DFS, politeness, deduplication, scheduling"
+        },
+        {
+          "title": "Search Autocomplete",
+          "path": "./content/system-design/hld/search-autocomplete.md",
+          "slug": "search-autocomplete",
+          "description": "Trie, top-k, personalization, latency"
+        },
+        {
+          "title": "Notification System",
+          "path": "./content/system-design/hld/notification-system.md",
+          "slug": "notification-system",
+          "description": "Push/pull, fan-out, delivery guarantees, retries"
+        },
+        {
+          "title": "Ticketmaster / Booking",
+          "path": "./content/system-design/hld/ticketmaster-booking.md",
+          "slug": "ticketmaster-booking",
+          "description": "Inventory locking, concurrency, seat reservation"
+        },
+        {
+          "title": "Distributed Cache",
+          "path": "./content/system-design/hld/distributed-cache.md",
+          "slug": "distributed-cache",
+          "description": "Consistent hashing, eviction, replication, thundering herd"
+        },
+        {
+          "title": "Payment System",
+          "path": "./content/system-design/hld/payment-system.md",
+          "slug": "payment-system",
+          "description": "Idempotency, exactly-once, ledger design, fraud detection"
+        },
+        {
+          "title": "Distributed ID Generator",
+          "path": "./content/system-design/hld/distributed-id-generator.md",
+          "slug": "distributed-id-generator",
+          "description": "Snowflake IDs, clock skew, monotonicity"
+        },
+        {
+          "title": "Key-Value Store",
+          "path": "./content/system-design/hld/key-value-store.md",
+          "slug": "key-value-store",
+          "description": "LSM tree, compaction, replication, consistency"
+        }
+      ]
+    }
+  ],
+  "dsa": [
+    {
+      "heading": "Data Structures",
+      "cards": [
+        {
+          "title": "Array",
+          "path": "./content/dsa/data-structures/array.md",
+          "slug": "array",
+          "description": "Contiguous block, O(1) indexed access, O(n) middle insert/delete. The foundation every other structure builds on."
+        },
+        {
+          "title": "Dynamic Array",
+          "path": "./content/dsa/data-structures/dynamic-array.md",
+          "slug": "dynamic-array",
+          "description": "Growable array that doubles when full. Amortized O(1) append - the canonical amortization argument."
+        },
+        {
+          "title": "Circular Buffer",
+          "path": "./content/dsa/data-structures/circular-buffer.md",
+          "slug": "circular-buffer",
+          "description": "Fixed-size ring with head/tail wraparound. True O(1) enqueue/dequeue, no resize - fixed-capacity FIFO and sliding windows."
+        },
+        {
+          "title": "Heap",
+          "path": "./content/dsa/data-structures/heap.md",
+          "slug": "heap",
+          "description": "Binary tree where every parent beats its children, stored in a flat array. O(1) peek, O(log n) push/pop - the priority queue and \"top-K\" workhorse."
+        },
+        {
+          "title": "String",
+          "path": "./content/dsa/data-structures/string.md",
+          "slug": "string",
+          "description": "Immutable sequence of characters. Indexing, slicing, and the building/scanning patterns that dominate text problems."
+        },
+        {
+          "title": "Linked List",
+          "path": "./content/dsa/data-structures/linked-list.md",
+          "slug": "linked-list",
+          "description": "Nodes chained by pointers. O(1) insert/delete at a known node, O(n) search - the pointer-manipulation classic."
+        },
+        {
+          "title": "Stack",
+          "path": "./content/dsa/data-structures/stack.md",
+          "slug": "stack",
+          "description": "LIFO. O(1) push/pop - function calls, matching, undo, and the monotonic-stack trick."
+        },
+        {
+          "title": "Queue",
+          "path": "./content/dsa/data-structures/queue.md",
+          "slug": "queue",
+          "description": "FIFO. O(1) enqueue/dequeue - BFS frontier, scheduling, and the deque generalization."
+        },
+        {
+          "title": "Deque",
+          "path": "./content/dsa/data-structures/deque.md",
+          "slug": "deque",
+          "description": "Double-ended queue. O(1) add/remove at both ends - generalizes stack + queue; engine of sliding-window max/min and 0/1-BFS."
+        },
+        {
+          "title": "Hash Table",
+          "path": "./content/dsa/data-structures/hash-table.md",
+          "slug": "hash-table",
+          "description": "Key→value via a hash function. Average O(1) insert/lookup/delete - the workhorse map; chaining vs open addressing, load factor, resize."
+        },
+        {
+          "title": "Hash Set",
+          "path": "./content/dsa/data-structures/hash-set.md",
+          "slug": "hash-set",
+          "description": "Membership-only hash structure. Average O(1) contains/add - dedup and seen-set patterns."
+        },
+        {
+          "title": "LRU Cache",
+          "path": "./content/dsa/data-structures/lru-cache.md",
+          "slug": "lru-cache",
+          "description": "Hash map welded to a doubly linked list: O(1) get/put with least-recently-used eviction. The canonical \"design a cache\" interview build."
+        },
+        {
+          "title": "LFU Cache",
+          "path": "./content/dsa/data-structures/lfu-cache.md",
+          "slug": "lfu-cache",
+          "description": "Frequency buckets of LRU lists + a min-freq pointer: O(1) get/put evicting the least-frequently-used key. LRU with a popularity axis."
+        },
+        {
+          "title": "Binary Tree",
+          "path": "./content/dsa/data-structures/binary-tree.md",
+          "slug": "binary-tree",
+          "description": "Each node has up to two children. The traversal orderings and the base for BST, heap, and trie."
+        },
+        {
+          "title": "Binary Search Tree (BST)",
+          "path": "./content/dsa/data-structures/binary-search-tree.md",
+          "slug": "binary-search-tree",
+          "description": "Ordered tree: left < node < right. O(log n) search/insert/delete when balanced, O(n) when skewed."
+        },
+        {
+          "title": "Trie",
+          "path": "./content/dsa/data-structures/trie.md",
+          "slug": "trie",
+          "description": "Prefix tree keyed by character path. O(L) lookup by length, not by count - autocomplete and prefix queries."
+        },
+        {
+          "title": "Balanced BST",
+          "path": "./content/dsa/data-structures/balanced-bst.md",
+          "slug": "balanced-bst",
+          "description": "**Hub** - survey + decision layer for self-balancing BSTs: what balancing buys, rotations, and which scheme when. Routes to AVL / Red-Black / B-tree."
+        },
+        {
+          "title": "Skip List",
+          "path": "./content/dsa/data-structures/skip-list.md",
+          "slug": "skip-list",
+          "description": "Sorted linked list with randomized express-lane towers - expected O(log n) search/insert/delete, no rotations. Redis sorted sets' backbone."
+        },
+        {
+          "title": "AVL Tree",
+          "path": "./content/dsa/data-structures/avl-tree.md",
+          "slug": "avl-tree",
+          "description": "Strictly height-balanced BST (subtree heights differ ≤ 1). Tighter balance → faster lookups, more rotations on writes. Read-heavy workloads."
+        },
+        {
+          "title": "Red-Black Tree",
+          "path": "./content/dsa/data-structures/red-black-tree.md",
+          "slug": "red-black-tree",
+          "description": "Loosely balanced via color invariants; recolor-first, rotate-rarely. Fewer write rotations - the library default (`std::map`, `TreeMap`, kernel)."
+        },
+        {
+          "title": "B-Tree",
+          "path": "./content/dsa/data-structures/b-tree.md",
+          "slug": "b-tree",
+          "description": "High-fan-out balanced tree, many keys per node, block-aligned to minimize disk seeks. The structure behind database and filesystem indexes."
+        },
+        {
+          "title": "Segment Tree",
+          "path": "./content/dsa/data-structures/segment-tree.md",
+          "slug": "segment-tree",
+          "description": "Tree over array ranges. O(log n) range query + point/range update - the CP range-aggregate workhorse."
+        },
+        {
+          "title": "Fenwick Tree (BIT)",
+          "path": "./content/dsa/data-structures/fenwick-tree.md",
+          "slug": "fenwick-tree",
+          "description": "Array where index `i` owns a range sized by its lowest set bit. O(log n) point update + prefix sum - segment tree's lighter sum-only sibling."
+        },
+        {
+          "title": "Union-Find (DSU)",
+          "path": "./content/dsa/data-structures/union-find.md",
+          "slug": "union-find",
+          "description": "Disjoint-set forest with path compression + union by rank. Near-O(1) connectivity - Kruskal's MST, cycle detection, grouping."
+        },
+        {
+          "title": "Graph",
+          "path": "./content/dsa/data-structures/graph.md",
+          "slug": "graph",
+          "description": "Nodes + edges. Adjacency list vs matrix, directed/weighted variants - the substrate every traversal algorithm walks."
+        },
+        {
+          "title": "Bloom Filter",
+          "path": "./content/dsa/data-structures/bloom-filter.md",
+          "slug": "bloom-filter",
+          "description": "Probabilistic membership structure - never false negatives, tunable false-positive rate. O(k) insert/lookup, O(m) bits for m bits and k hash functions."
+        },
+        {
+          "title": "B-Plus Tree",
+          "path": "./content/dsa/data-structures/b-plus-tree.md",
+          "slug": "b-plus-tree",
+          "description": "B-tree variant with all values at leaves, internal nodes as pure routing keys, leaves linked for range scans - the structure behind MySQL InnoDB and PostgreSQL indexes."
+        },
+        {
+          "title": "Interval Tree",
+          "path": "./content/dsa/data-structures/interval-tree.md",
+          "slug": "interval-tree",
+          "description": "Augmented BST storing intervals; O(log n + k) stabbing and overlap queries - the structure for sweep-line and scheduling problems."
+        },
+        {
+          "title": "Suffix Array",
+          "path": "./content/dsa/data-structures/suffix-array.md",
+          "slug": "suffix-array",
+          "description": "Sorted array of suffix indices. O(n log² n) prefix-doubling build, O(m log n) pattern search - lighter than a suffix tree; the CP string and genomics workhorse."
+        }
+      ]
+    },
+    {
+      "heading": "Algorithms",
+      "cards": [
+        {
+          "title": "Binary Search",
+          "path": "./content/dsa/algorithms/binary-search.md",
+          "slug": "binary-search",
+          "description": "Halve a sorted search space each step - O(log n). Generalizes to any monotonic predicate, the basis of \"binary search on the answer\"."
+        },
+        {
+          "title": "Sorting",
+          "path": "./content/dsa/algorithms/sorting.md",
+          "slug": "sorting",
+          "description": "Comparison sorts bottom out at O(n log n) (merge/quick/heap); counting & radix break it to O(n) on bounded keys. Stability, the lower bound."
+        },
+        {
+          "title": "Merge Sort",
+          "path": "./content/dsa/algorithms/merge-sort.md",
+          "slug": "merge-sort",
+          "description": "Divide in half, sort each, merge. Guaranteed O(n log n) in all cases and stable, at O(n) space - the safe choice and the basis of external sort."
+        },
+        {
+          "title": "Quicksort",
+          "path": "./content/dsa/algorithms/quicksort.md",
+          "slug": "quicksort",
+          "description": "Partition around a pivot in place, recurse on each side. O(n log n) average with the smallest constant; O(n²) tail unless randomized. Holds quickselect."
+        },
+        {
+          "title": "Insertion Sort",
+          "path": "./content/dsa/algorithms/insertion-sort.md",
+          "slug": "insertion-sort",
+          "description": "Grow a sorted prefix, sliding each new element into place. O(n²) worst but O(n) on nearly-sorted data; stable, in-place, online - Timsort's small-run sort."
+        },
+        {
+          "title": "Counting Sort",
+          "path": "./content/dsa/algorithms/counting-sort.md",
+          "slug": "counting-sort",
+          "description": "Tally each key, emit in key order. O(n + k), beating the comparison bound by not comparing - integer keys in a small range only. Radix's inner pass."
+        },
+        {
+          "title": "Radix Sort",
+          "path": "./content/dsa/algorithms/radix-sort.md",
+          "slug": "radix-sort",
+          "description": "Stable counting sort per digit, least-significant first. O(d·(n + b)) - linear for fixed-width keys, where counting sort's range would explode."
+        },
+        {
+          "title": "Heapsort",
+          "path": "./content/dsa/algorithms/heapsort.md",
+          "slug": "heapsort",
+          "description": "Build a max-heap, repeatedly extract the max into a sorted suffix. The only comparison sort with both worst-case O(n log n) and O(1) space; not stable."
+        },
+        {
+          "title": "Selection Sort",
+          "path": "./content/dsa/algorithms/selection-sort.md",
+          "slug": "selection-sort",
+          "description": "Repeatedly pick the min of the unsorted suffix. O(n²) always, minimal swaps - the simplest sort, mostly a teaching baseline."
+        },
+        {
+          "title": "Bucket Sort",
+          "path": "./content/dsa/algorithms/bucket-sort.md",
+          "slug": "bucket-sort",
+          "description": "Scatter into buckets by value range, sort each, concatenate. O(n) average on uniform data - the distribution sort for floats in a range."
+        },
+        {
+          "title": "Quickselect",
+          "path": "./content/dsa/algorithms/quickselect.md",
+          "slug": "quickselect",
+          "description": "Quicksort's partition without recursing on both sides. O(n) average to find the k-th smallest - selection without full sort."
+        },
+        {
+          "title": "Breadth-First Search (BFS)",
+          "path": "./content/dsa/algorithms/bfs.md",
+          "slug": "bfs",
+          "description": "Explore level by level with a queue. Shortest path in unweighted graphs, O(V + E)."
+        },
+        {
+          "title": "Depth-First Search (DFS)",
+          "path": "./content/dsa/algorithms/dfs.md",
+          "slug": "dfs",
+          "description": "Explore as deep as possible, backtrack. O(V + E) - cycle detection, components, topological order."
+        },
+        {
+          "title": "Topological Sort",
+          "path": "./content/dsa/algorithms/topological-sort.md",
+          "slug": "topological-sort",
+          "description": "Linear order of a DAG respecting edges. Kahn's BFS or DFS post-order - dependency resolution, build order."
+        },
+        {
+          "title": "Lowest Common Ancestor (LCA)",
+          "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+          "slug": "lowest-common-ancestor",
+          "description": "Deepest shared ancestor of two tree nodes. Binary lifting: O(n log n) preprocess, O(log n) per query - the many-queries-on-a-static-tree workhorse."
+        },
+        {
+          "title": "Dijkstra's Algorithm",
+          "path": "./content/dsa/algorithms/dijkstra.md",
+          "slug": "dijkstra",
+          "description": "Shortest paths from a source with non-negative weights via a priority queue. O((V + E) log V)."
+        },
+        {
+          "title": "Bellman-Ford",
+          "path": "./content/dsa/algorithms/bellman-ford.md",
+          "slug": "bellman-ford",
+          "description": "Shortest paths that tolerate negative edges and detect negative cycles. O(V·E) - slower than Dijkstra, more general."
+        },
+        {
+          "title": "Floyd-Warshall",
+          "path": "./content/dsa/algorithms/floyd-warshall.md",
+          "slug": "floyd-warshall",
+          "description": "All-pairs shortest paths by DP over intermediates. O(V³) - dense graphs, small V, transitive closure."
+        },
+        {
+          "title": "Minimum Spanning Tree (Kruskal / Prim)",
+          "path": "./content/dsa/algorithms/minimum-spanning-tree.md",
+          "slug": "minimum-spanning-tree",
+          "description": "Cheapest tree connecting all nodes. Kruskal (sort + DSU) or Prim (PQ) - network design."
+        },
+        {
+          "title": "Recursion",
+          "path": "./content/dsa/algorithms/recursion.md",
+          "slug": "recursion",
+          "description": "A function defined in terms of itself: base case + recursive case. The substrate under divide-and-conquer, backtracking, and DP."
+        },
+        {
+          "title": "Divide and Conquer",
+          "path": "./content/dsa/algorithms/divide-and-conquer.md",
+          "slug": "divide-and-conquer",
+          "description": "Split into independent subproblems, solve each recursively, combine. The paradigm behind merge sort, Karatsuba, and closest pair - O(n log n) via the Master Theorem."
+        },
+        {
+          "title": "Backtracking",
+          "path": "./content/dsa/algorithms/backtracking.md",
+          "slug": "backtracking",
+          "description": "Build candidates incrementally, abandon dead ends (prune). The systematic search for subsets, permutations, and constraint problems."
+        },
+        {
+          "title": "Dynamic Programming",
+          "path": "./content/dsa/algorithms/dynamic-programming.md",
+          "slug": "dynamic-programming",
+          "description": "Solve overlapping subproblems once, reuse via memo or table. Optimal substructure → the recurrence that collapses exponential to polynomial."
+        },
+        {
+          "title": "Bit Manipulation",
+          "path": "./content/dsa/algorithms/bit-manipulation.md",
+          "slug": "bit-manipulation",
+          "description": "Operate on individual bits: masks, shifts, XOR tricks. O(1) set operations and the bitmask-DP enabler."
+        },
+        {
+          "title": "Greedy",
+          "path": "./content/dsa/algorithms/greedy.md",
+          "slug": "greedy",
+          "description": "Take the locally best choice each step; prove it's globally optimal by an exchange argument. Interval scheduling, Huffman, MST choices."
+        },
+        {
+          "title": "String Matching (KMP)",
+          "path": "./content/dsa/algorithms/string-matching.md",
+          "slug": "string-matching",
+          "description": "Find a pattern in a text in O(n + m) via the failure function - slide the pattern on a mismatch without ever rewinding the text. The substring-search workhorse."
+        },
+        {
+          "title": "Z-Algorithm",
+          "path": "./content/dsa/algorithms/z-algorithm.md",
+          "slug": "z-algorithm",
+          "description": "Computes, for each position, the longest prefix starting there (the Z-array) in O(n) by reusing a sliding match window. KMP's twin; pattern search via `P$T`."
+        },
+        {
+          "title": "Number Theory",
+          "path": "./content/dsa/algorithms/number-theory.md",
+          "slug": "number-theory",
+          "description": "**Hub** - survey + decision layer for the contest math toolkit: GCD, modular exponentiation, the sieve. Routes to each member; ties them together via mod-prime arithmetic."
+        },
+        {
+          "title": "Modular Arithmetic",
+          "path": "./content/dsa/algorithms/modular-arithmetic.md",
+          "slug": "modular-arithmetic",
+          "description": "Arithmetic under a modulus: add/mul/pow in O(log n), modular inverse, the Chinese Remainder Theorem - the foundation of every contest problem that says \"answer mod 10⁹+7\"."
+        },
+        {
+          "title": "Modular Exponentiation",
+          "path": "./content/dsa/algorithms/modular-exponentiation.md",
+          "slug": "modular-exponentiation",
+          "description": "Compute base^exp mod m in O(log exp) by squaring instead of multiplying exp times - the engine behind RSA, Fermat's modular inverse, and matrix exponentiation for Fibonacci."
+        },
+        {
+          "title": "Euclidean GCD",
+          "path": "./content/dsa/algorithms/euclidean-gcd.md",
+          "slug": "euclidean-gcd",
+          "description": "`gcd(a,b) = gcd(b, a mod b)` in O(log min(a,b)) - the extended version recovers Bézout's coefficients, giving a modular inverse for any modulus, not just primes."
+        },
+        {
+          "title": "Sieve of Eratosthenes",
+          "path": "./content/dsa/algorithms/sieve-of-eratosthenes.md",
+          "slug": "sieve-of-eratosthenes",
+          "description": "Mark every composite up to n in O(n log log n) by striking multiples of each prime from p² on. Bulk primality/factorization - linear-sieve and segmented-sieve variants."
+        },
+        {
+          "title": "Strongly Connected Components",
+          "path": "./content/dsa/algorithms/strongly-connected-components.md",
+          "slug": "strongly-connected-components",
+          "description": "Find all maximal groups where every node can reach every other. Kosaraju (two-pass DFS + transpose) or Tarjan (single-pass, low-link values) - both O(V + E). Foundation of 2-SAT and condensation DAG analysis."
+        },
+        {
+          "title": "Maximum Flow",
+          "path": "./content/dsa/algorithms/maximum-flow.md",
+          "slug": "maximum-flow",
+          "description": "**[Hub]** Survey + decision layer for max-flow algorithms: Ford-Fulkerson, Edmonds-Karp, Dinic, and the bipartite-matching reduction."
+        },
+        {
+          "title": "Ford-Fulkerson",
+          "path": "./content/dsa/algorithms/ford-fulkerson.md",
+          "slug": "ford-fulkerson",
+          "description": "Augment flow along any path in the residual graph. O(E·\\"
+        },
+        {
+          "title": "Edmonds-Karp",
+          "path": "./content/dsa/algorithms/edmonds-karp.md",
+          "slug": "edmonds-karp",
+          "description": "Ford-Fulkerson with BFS for shortest augmenting paths. O(VE²) - polynomial regardless of capacity values."
+        },
+        {
+          "title": "Bipartite Matching",
+          "path": "./content/dsa/algorithms/bipartite-matching.md",
+          "slug": "bipartite-matching",
+          "description": "Maximum set of non-overlapping pairs in a bipartite graph via augmenting paths - Kuhn's O(VE) or Hopcroft-Karp O(E√V). Job/task assignment, König's theorem for min vertex cover."
+        },
+        {
+          "title": "Rabin-Karp",
+          "path": "./content/dsa/algorithms/rabin-karp.md",
+          "slug": "rabin-karp",
+          "description": "Rolling polynomial hash over a sliding window. O(n + m) average, O(nm) worst case - the primary choice for multi-pattern search and substring fingerprinting."
+        },
+        {
+          "title": "Kadane",
+          "path": "./content/dsa/algorithms/kadane.md",
+          "slug": "kadane",
+          "description": "Maximum subarray sum in O(n) via a single pass - extend the running subarray or restart, whichever is larger. The canonical space-compressed DP; extends to circular arrays and 2-D max-sum rectangle."
+        }
+      ]
+    },
+    {
+      "heading": "Patterns",
+      "cards": [
+        {
+          "title": "Two Pointers",
+          "path": "./content/dsa/patterns/two-pointers.md",
+          "slug": "two-pointers",
+          "description": "Two indices walking a sequence (same or opposite ends). Pair-sum, dedup, partition - O(n) where brute force is O(n²)."
+        },
+        {
+          "title": "Sliding Window",
+          "path": "./content/dsa/patterns/sliding-window.md",
+          "slug": "sliding-window",
+          "description": "A moving sub-range over a sequence: expand right, contract left on a constraint. Longest/shortest contiguous subarray in O(n)."
+        },
+        {
+          "title": "Prefix Sum",
+          "path": "./content/dsa/patterns/prefix-sum.md",
+          "slug": "prefix-sum",
+          "description": "Precompute cumulative sums for O(1) range queries. The \"subarray sum equals K\" and difference-array family."
+        },
+        {
+          "title": "Difference Array",
+          "path": "./content/dsa/patterns/difference-array.md",
+          "slug": "difference-array",
+          "description": "Two O(1) point writes per range update, one prefix-sum pass to reconstruct - O(n + q) vs O(n·q) naive. Batch range-increment problems."
+        },
+        {
+          "title": "Fast & Slow Pointers",
+          "path": "./content/dsa/patterns/fast-slow-pointers.md",
+          "slug": "fast-slow-pointers",
+          "description": "Two pointers at different speeds. Cycle detection, middle of a list, cycle start - Floyd's tortoise and hare."
+        },
+        {
+          "title": "Merge Intervals",
+          "path": "./content/dsa/patterns/merge-intervals.md",
+          "slug": "merge-intervals",
+          "description": "Sort by start, sweep, merge overlaps. The interval-overlap, meeting-rooms, insert-interval family."
+        },
+        {
+          "title": "Cyclic Sort",
+          "path": "./content/dsa/patterns/cyclic-sort.md",
+          "slug": "cyclic-sort",
+          "description": "Place each value at its index in O(n) when values are 1..n. Finds the missing/duplicate number without extra space."
+        },
+        {
+          "title": "Monotonic Stack",
+          "path": "./content/dsa/patterns/monotonic-stack.md",
+          "slug": "monotonic-stack",
+          "description": "A stack kept increasing or decreasing. Next-greater-element, daily temperatures, histogram - amortized O(n)."
+        },
+        {
+          "title": "Top-K Elements",
+          "path": "./content/dsa/patterns/top-k-elements.md",
+          "slug": "top-k-elements",
+          "description": "A size-k heap over a stream. K largest/smallest/most-frequent in O(n log k) without sorting everything."
+        },
+        {
+          "title": "Binary Search on Answer",
+          "path": "./content/dsa/patterns/binary-search-on-answer.md",
+          "slug": "binary-search-on-answer",
+          "description": "Binary search the answer space when feasibility is monotonic. \"Minimize the max\" / \"maximize the min\" problems."
+        },
+        {
+          "title": "Modified Binary Search",
+          "path": "./content/dsa/patterns/modified-binary-search.md",
+          "slug": "modified-binary-search",
+          "description": "Binary search on a transformed array (rotated, peaked, partially sorted) - same halving, different monotonic signal at `mid`. Rotated search, peak element, first/last position."
+        },
+        {
+          "title": "Subsets & Permutations",
+          "path": "./content/dsa/patterns/subsets-permutations.md",
+          "slug": "subsets-permutations",
+          "description": "Backtracking templates for the power set, permutations, and combinations - with dedup for repeats."
+        },
+        {
+          "title": "Backtracking",
+          "path": "./content/dsa/patterns/backtracking.md",
+          "slug": "backtracking",
+          "description": "Choose / explore / un-choose over a decision tree, pruning dead branches - the recognition + transfer layer for constraint-satisfaction search."
+        },
+        {
+          "title": "Tree & Graph Traversal",
+          "path": "./content/dsa/patterns/tree-graph-traversal.md",
+          "slug": "tree-graph-traversal",
+          "description": "The BFS/DFS skeletons applied as a problem pattern: level-order, path-sum, connected components, flood fill."
+        },
+        {
+          "title": "DP Patterns",
+          "path": "./content/dsa/patterns/dp-patterns.md",
+          "slug": "dp-patterns",
+          "description": "The recurring DP shapes: 0/1 knapsack, unbounded, LIS, LCS, grid paths, interval DP - recognition and the state to pick."
+        },
+        {
+          "title": "Pattern Selection Cheat Sheet",
+          "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+          "slug": "pattern-selection-cheatsheet",
+          "description": "The aggregator: trigger phrase → which pattern. The fast lookup that ships last, once every pattern exists."
+        },
+        {
+          "title": "Two Heaps",
+          "path": "./content/dsa/patterns/two-heaps.md",
+          "slug": "two-heaps",
+          "description": "A max-heap of the lower half + min-heap of the upper half. Median of a stream and sliding-window median in O(log n) per element."
+        },
+        {
+          "title": "K-Way Merge",
+          "path": "./content/dsa/patterns/k-way-merge.md",
+          "slug": "k-way-merge",
+          "description": "Min-heap of k sorted sequence heads - pop the global minimum, push its successor. O(N log k) to merge N total elements across k sorted lists."
+        },
+        {
+          "title": "Interval DP",
+          "path": "./content/dsa/patterns/interval-dp.md",
+          "slug": "interval-dp",
+          "description": "State is `dp[i][j]` for subrange `[i,j]`; fill by interval length, try every split point k. O(n³) - matrix chain, burst balloons, palindrome cost."
+        },
+        {
+          "title": "In-place Reversal of a Linked List",
+          "path": "./content/dsa/patterns/in-place-reversal.md",
+          "slug": "in-place-reversal",
+          "description": "Rewire next pointers with three variables (prev, curr, next). Reverse a list, reverse k-groups, palindrome check - O(n) time, O(1) space."
+        },
+        {
+          "title": "Matrix Traversal",
+          "path": "./content/dsa/patterns/matrix-traversal.md",
+          "slug": "matrix-traversal",
+          "description": "BFS/DFS on a 2D grid with direction vectors. Island count, flood fill, shortest path in grid - the implicit-graph pattern."
+        },
+        {
+          "title": "State Machine DP",
+          "path": "./content/dsa/patterns/state-machine-dp.md",
+          "slug": "state-machine-dp",
+          "description": "Finite named states with explicit allowed transitions, DP over (index, state). Stock cooldown, k-transactions, paint-house - O(n · S) time, O(S) space with rolling arrays."
+        },
+        {
+          "title": "Bitmask DP",
+          "path": "./content/dsa/patterns/bitmask-dp.md",
+          "slug": "bitmask-dp",
+          "description": "Encode a subset of n ≤ 20 items as an integer bitmask, DP over all 2ⁿ subsets. TSP, optimal assignment, minimum coverage - O(2ⁿ · n) or O(2ⁿ · n²)."
+        },
+        {
+          "title": "Frequency Array",
+          "path": "./content/dsa/patterns/frequency-array.md",
+          "slug": "frequency-array",
+          "description": "Array indexed by value: O(1) increment/lookup for bounded integer or character keys. Replaces a hash map when the key range fits - anagram detection, counting sort, sliding-window distribution matching."
+        },
+        {
+          "title": "Graph Coloring",
+          "path": "./content/dsa/patterns/graph-coloring.md",
+          "slug": "graph-coloring",
+          "description": "Assign colors to nodes so no two adjacent nodes match. 2-coloring (bipartite check) in O(V + E); k-coloring for k ≥ 3 is NP-complete - backtracking for small n, bitmask DP for n ≤ 20."
+        },
+        {
+          "title": "Meet in the Middle",
+          "path": "./content/dsa/patterns/meet-in-the-middle.md",
+          "slug": "meet-in-the-middle",
+          "description": "Split an exponential search space in half, enumerate each independently (2^(n/2) each), sort one, binary-search from the other. Turns O(2ⁿ) into O(2^(n/2) · n) - the go-to for n ≤ 40 subset-sum problems."
+        }
+      ]
+    }
+  ]
+}

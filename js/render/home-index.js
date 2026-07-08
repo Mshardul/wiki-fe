@@ -12,23 +12,81 @@ import { isRead, markRead, markUnread } from "../storage/read-tracking.js";
 import { renderRecentsSection } from "../storage/recents.js";
 import { toggleCollapse } from "../storage/scroll-collapse.js";
 import { showHoverPreview } from "./content-view.js";
-import { dirOf, fetchText, normalizePath, readingTime, setBreadcrumb } from "./nav-utils.js";
+import {
+  dirOf,
+  fetchPrebuiltSearchIndex,
+  fetchText,
+  normalizePath,
+  readingTime,
+  setBreadcrumb,
+} from "./nav-utils.js";
 import { showView } from "./router.js";
 import { showToast } from "./toast.js";
+
+/* ═══════════════════════════════════════════════════════════════
+   PINNED WIKIS - local-only, no backend sync (home card order)
+   ═══════════════════════════════════════════════════════════════ */
+const PINNED_WIKIS_KEY = "wiki-pinned-wikis";
+
+function getPinnedWikis() {
+  try {
+    return JSON.parse(localStorage.getItem(PINNED_WIKIS_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function setPinnedWikis(ids) {
+  localStorage.setItem(PINNED_WIKIS_KEY, JSON.stringify(ids));
+}
+
+function togglePinnedWiki(wikiId) {
+  const pinned = getPinnedWikis();
+  const next = pinned.includes(wikiId) ? pinned.filter((id) => id !== wikiId) : [...pinned, wikiId];
+  setPinnedWikis(next);
+  renderHome();
+}
+
+// Capture phase - must beat the ancestor .wiki-card's bubble-phase onclick=navigate(...).
+document.addEventListener(
+  "click",
+  (e) => {
+    const btn = e.target.closest("[data-pin-wiki-id]");
+    if (!btn) return;
+    e.stopPropagation();
+    togglePinnedWiki(btn.dataset.pinWikiId);
+  },
+  { capture: true },
+);
+
+function _sortWikisByPin(wikis) {
+  const pinned = getPinnedWikis();
+  const pinnedSet = new Set(pinned);
+  const pinnedWikis = pinned.map((id) => wikis.find((w) => w.id === id)).filter(Boolean);
+  const restWikis = wikis.filter((w) => !pinnedSet.has(w.id));
+  return [...pinnedWikis, ...restWikis];
+}
 
 /* ═══════════════════════════════════════════════════════════════
    VIEW 1 - HOME
    ═══════════════════════════════════════════════════════════════ */
 function renderHome() {
   const grid = document.getElementById("wiki-grid");
-  grid.innerHTML = WIKIS.map(
-    (w) => `
+  const pinnedSet = new Set(getPinnedWikis());
+  grid.innerHTML = _sortWikisByPin(WIKIS)
+    .map(
+      (w) => `
     <div class="wiki-card${
       state.currentWikiId === w.id ? " active" : ""
     }" data-wiki-id="${w.id}" onclick="navigate('${w.id}')" role="button" tabindex="0"
          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigate('${
            w.id
          }')}">
+      <button class="wiki-card-pin-btn${pinnedSet.has(w.id) ? " pinned" : ""}"
+              data-pin-wiki-id="${w.id}"
+              aria-label="${pinnedSet.has(w.id) ? "Unpin" : "Pin"} ${escHtml(w.title)}">${
+                pinnedSet.has(w.id) ? "★" : "☆"
+              }</button>
       <div class="wiki-card-icon">${w.icon}</div>
       <div class="wiki-card-body">
         <h2 class="wiki-card-title">${w.title}</h2>
@@ -40,7 +98,8 @@ function renderHome() {
       </div>
     </div>
   `,
-  ).join("");
+    )
+    .join("");
 
   state.tableResizeObservers.forEach((ro) => ro.disconnect());
   state.tableResizeObservers = [];
@@ -643,9 +702,16 @@ async function fetchWikiIndex(wiki) {
       return indexCache[wiki.id];
     }
   } catch {}
-  const md = await fetchText(wiki.indexPath);
-  const basePath = dirOf(wiki.indexPath);
-  const sections = parseIndexMd(md, basePath);
+
+  const prebuilt = await fetchPrebuiltSearchIndex();
+  let sections;
+  if (prebuilt?.[wiki.id]) {
+    sections = prebuilt[wiki.id];
+  } else {
+    const md = await fetchText(wiki.indexPath);
+    const basePath = dirOf(wiki.indexPath);
+    sections = parseIndexMd(md, basePath);
+  }
   indexCache[wiki.id] = sections;
   try {
     sessionStorage.setItem(ssKey, JSON.stringify(sections));
@@ -720,6 +786,8 @@ function parseIndexMd(markdown, basePath) {
 
 export {
   renderHome,
+  getPinnedWikis,
+  setPinnedWikis,
   renderIndex,
   renderIndexSections,
   renderIndexControls,

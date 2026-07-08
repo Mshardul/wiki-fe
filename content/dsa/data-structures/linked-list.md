@@ -137,7 +137,7 @@ How the linked list stacks up against the structures you'd weigh it against in a
 - **Circular linked list** - the tail's `next` points back to the head (singly) or head/tail link both ways (doubly). No null terminator; useful for round-robin scheduling and ring buffers built from nodes. A list-based cousin of the [circular buffer](./circular-buffer.md).
 - **Sentinel / dummy-node list** - a permanent placeholder head (and sometimes tail) node that is never deleted, so the "list is empty" and "operate on the head" edge cases vanish. A structural shape; the technique that wields it lives in [CP-primitives](#cp-primitives).
 - **XOR linked list** - a doubly list storing `prev XOR next` in one field instead of two pointers, recovering each from the other. A memory-saving party trick; brittle (breaks GC, debugging), rarely used in practice - name it, don't reach for it.
-- **Skip list** - a tower of linked lists with express lanes giving O(log n) search/insert, a probabilistic alternative to a balanced BST. <!-- skip-list / balanced-bst not yet written --> A structurally distinct cousin; mention it when asked "how do you make a list searchable in O(log n)".
+- **[Skip list](./skip-list.md)** - a tower of linked lists with express lanes giving O(log n) search/insert, a probabilistic alternative to a [balanced BST](./balanced-bst.md). A structurally distinct cousin; mention it when asked "how do you make a list searchable in O(log n)".
 
 ## Memory layout
 

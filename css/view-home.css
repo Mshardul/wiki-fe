@@ -161,6 +161,38 @@
   }
 }
 
+.wiki-card-pin-btn {
+  position: absolute;
+  top: var(--s3);
+  right: var(--s3);
+  /* wiki-card-icon's drop-shadow filter creates a stacking context that otherwise covers this */
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--r-sm);
+  font-size: var(--text-lg);
+  line-height: 1;
+  color: var(--text-subtle);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--t-fast), color var(--t-fast);
+}
+.wiki-card:hover .wiki-card-pin-btn,
+.wiki-card-pin-btn.pinned {
+  opacity: 1;
+}
+.wiki-card-pin-btn.pinned {
+  color: var(--accent-light);
+}
+.wiki-card-pin-btn:hover {
+  color: var(--accent-light);
+}
+
 .wiki-card-icon {
   font-size: var(--text-4xl);
   line-height: 1;

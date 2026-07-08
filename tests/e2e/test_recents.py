@@ -27,7 +27,7 @@ def _visit_article(page, base_url, slug="recents-mock"):
 
 
 def _go_to_index(page, base_url):
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=3_000)
 
 

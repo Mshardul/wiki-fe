@@ -24,6 +24,9 @@ precommit: ## Run all pre-commit hooks against all files (auto-fixes in place)
 precommit-ci: ## Run the CI gate locally (check-only, never writes; mirrors CI)
 	$(PRECOMMIT) run --all-files --config .pre-commit-config.ci.yaml
 
+test-verbose: ## Run the e2e test suite (headless)
+	$(PYTEST) tests/ -v
+
 test: ## Run the e2e test suite (headless)
 	$(PYTEST) tests/ -q
 

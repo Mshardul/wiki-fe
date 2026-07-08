@@ -173,6 +173,86 @@ kbd {
   animation: viewEnter 0.25s ease forwards;
 }
 
+/* Directional slide fallback for browsers without the View Transitions API
+   (or reduced-motion, where router.js skips startViewTransition entirely and
+   toggles these classes on <html> instead). Depth increases → forward/slide
+   left; depth decreases → back/slide right. */
+html.nav-forward .view.active {
+  animation: viewEnterForward 0.25s ease forwards;
+}
+html.nav-back .view.active {
+  animation: viewEnterBack 0.25s ease forwards;
+}
+@keyframes viewEnterForward {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes viewEnterBack {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* View Transitions API: real cross-document-style slide when supported.
+   router.js sets data-nav-direction on <html> right before calling
+   document.startViewTransition(). */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.25s;
+    animation-timing-function: ease;
+  }
+
+  html[data-nav-direction="forward"]::view-transition-old(root) {
+    animation-name: slideOutLeft;
+  }
+  html[data-nav-direction="forward"]::view-transition-new(root) {
+    animation-name: slideInRight;
+  }
+  html[data-nav-direction="back"]::view-transition-old(root) {
+    animation-name: slideOutRight;
+  }
+  html[data-nav-direction="back"]::view-transition-new(root) {
+    animation-name: slideInLeft;
+  }
+}
+
+@keyframes slideOutLeft {
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes slideOutRight {
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
 @keyframes viewEnter {
   from {
     opacity: 0;

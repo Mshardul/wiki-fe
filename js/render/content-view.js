@@ -42,7 +42,11 @@ import {
   cleanupStickySection,
   injectHeadingCollapseToggles,
 } from "../content/toc.js";
-import { addDiagramZoom, addImageLightbox } from "../content/zoom-lightbox.js";
+import {
+  addDiagramZoom,
+  addImageLightbox,
+  wireImageErrorPlaceholders,
+} from "../content/zoom-lightbox.js";
 import {
   WIKIS,
   escHtml,
@@ -174,7 +178,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
   const backBtn = document.getElementById("content-back-btn");
   backBtn.onclick = () => window.navigate(wiki.id);
 
-  showView("view-content");
+  const viewReady = showView("view-content");
 
   const heroGhost = document.getElementById("article-hero-ghost");
   if (heroGhost) heroGhost.textContent = title;
@@ -243,7 +247,15 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       rawHtml = mdConverter.makeHtml(markdown);
       cacheRenderedHtml(filePath, rawHtml);
     }
-    body.innerHTML = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(rawHtml) : rawHtml;
+    body.innerHTML =
+      typeof DOMPurify !== "undefined"
+        ? DOMPurify.sanitize(rawHtml, {
+            // Default allowlist rejects unknown URI schemes; add wiki:// for cross-wiki links (WIKI-199).
+            ALLOWED_URI_REGEXP:
+              /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|wiki):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+          })
+        : rawHtml;
+    wireImageErrorPlaceholders(body);
 
     // KaTeX rendering
     if (typeof renderMathInElement !== "undefined") {
@@ -276,6 +288,8 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       addLineNumbers(body);
       addCodeBlockHeader(body, () => showToast("Copy failed - clipboard access denied"));
       styleCallouts(body);
+      await viewReady; // scrollHeight below needs settled layout
+      if (gen !== _renderGen) return;
       addCollapsibleCallouts(body);
 
       // Quiz-me mode
@@ -458,6 +472,23 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
     if (href.startsWith("http")) {
       link.setAttribute("target", "_blank");
       link.setAttribute("rel", "noopener noreferrer");
+      return;
+    }
+
+    // Cross-wiki links: wiki://other-wiki-id/path/article.md
+    if (href.startsWith("wiki://")) {
+      const m = href.match(/^wiki:\/\/([^/]+)\/(.+?\.md)(#.*)?$/);
+      if (!m) return;
+      const [, targetWikiId, targetRelPath] = m;
+      const targetWiki = WIKIS.find((w) => w.id === targetWikiId);
+      if (!targetWiki) return;
+      const targetPath = `${dirOf(targetWiki.indexPath)}/${targetRelPath}`;
+
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const title = link.textContent.trim();
+        renderContent(targetWiki, targetPath, title);
+      });
       return;
     }
 

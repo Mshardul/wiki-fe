@@ -251,7 +251,7 @@ content-loading flow, persistence model, and the module-map-as-contract.
 - **`Read`** - only for files you will edit immediately after
 - **`ctx_batch_execute`** - multi-file exploration, any output >20 lines
 - Never raw `Bash` for reading files
-- **Never run tests** - user runs tests manually; write correct test code only
+- **Running tests** - may run individual tests when debugging (e.g. `pytest tests/e2e/test_x.py::test_y -v`). Never run the full suite unprompted; user runs that manually.
 
 ---
 
@@ -259,7 +259,7 @@ content-loading flow, persistence model, and the module-map-as-contract.
 
 After finishing any coding task:
 
-1. **Tests** - decide if new behaviour needs coverage. Add tests if: a new user-visible interaction was added, a bug was fixed (regression test), or a new code path exists that existing tests don't reach. Use the test file map below to pick the right file. Never run tests - write correct test code only.
+1. **Tests** - decide if new behaviour needs coverage. Add tests if: a new user-visible interaction was added, a bug was fixed (regression test), or a new code path exists that existing tests don't reach. Use the test file map below to pick the right file. May run the specific new/changed test to confirm it passes; never run the full suite unprompted.
 2. **Ticket closure** - if the task came from a ticket (`WIKI-xxx`), update its row in `docs/tickets.md`: set Status = `Done` and Impl. Date = today's date (YYYY-MM-DD).
 
 After finishing any **content task**:
@@ -275,7 +275,7 @@ After finishing any **content task**:
 ## TEST PATTERNS
 
 Prescriptive test rules live in **[CONVENTIONS.md](./CONVENTIONS.md) → Testing** (e2e-only,
-`conftest.py` first, no new fixtures, happy + error path, never run). Use the **test file map**
+`conftest.py` first, no new fixtures, happy + error path). Use the **test file map**
 above to pick which file a test belongs in.
 
 ---

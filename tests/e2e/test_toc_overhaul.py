@@ -4,7 +4,7 @@ TOC overhaul tests
 
 
 def _go_to_article(page, base_url, slug="system-design/caching"):
-    page.goto(f"{base_url}/#{slug}")
+    page.goto(f"{base_url}/#{slug}", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",

@@ -167,7 +167,7 @@ Step 3 - merge [36] with left sibling [30|32]:
 | B-Tree           | O(log_m n)   | O(log_m n + k) * | O(log_m n)  | Yes          | O(n)  | When point lookup only, or when key+value must be co-located at any level (no range scan needed)       |
 | Hash Table       | O(1) avg     | O(n)            | O(1) avg      | No           | O(n)  | Pure equality lookups with no ordering or range requirement; in-memory or hash index on a DB heap table |
 | Red-Black Tree   | O(log n)     | O(log n + k)    | O(log n)      | Yes          | O(n)  | In-memory ordered map at small-to-medium n; `std::map`, `TreeMap` - no disk concern                   |
-| Skip List        | O(log n) avg | O(log n + k)    | O(log n) avg  | Yes          | O(n log n) | In-memory ordered structure with simpler concurrent implementation (Redis sorted sets)            |
+| [Skip List](./skip-list.md) | O(log n) avg | O(log n + k) | O(log n) avg | Yes | O(n) | In-memory ordered structure with simpler concurrent implementation (Redis sorted sets) |
 
 \* B-tree range scan requires backtracking through the tree (no linked leaf list), so k matching records may each cost a separate root-to-node traversal in the worst case.
 

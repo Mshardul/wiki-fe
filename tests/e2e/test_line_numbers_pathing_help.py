@@ -8,7 +8,7 @@ Line numbers, multi-level pathing, clear-all confirmation, preferences modal:
 
 
 def _go_to_article(page, base_url, slug="system-design/caching"):
-    page.goto(f"{base_url}/#{slug}")
+    page.goto(f"{base_url}/#{slug}", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
@@ -179,7 +179,7 @@ def test_excess_dotdot_does_not_crash(page, base_url):
 def _seed_recents(page, base_url):
     """Navigate to an article so recents has at least one entry."""
     _go_to_article(page, base_url)
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=8_000)
     page.wait_for_selector("#recents-section:not(.hidden)", timeout=8_000)
 
@@ -222,7 +222,7 @@ def test_clear_bookmarks_shows_undo_toast(page, base_url):
     # Bookmark the article
     page.keyboard.press("b")
     # Go to index
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=8_000)
     page.wait_for_selector("#bookmarks-section:not(.hidden)", timeout=8_000)
 

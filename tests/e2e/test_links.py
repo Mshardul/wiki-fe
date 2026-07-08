@@ -1,6 +1,7 @@
 """
 - TLDR hover previews (017)
 - External and Anchor link handling (049)
+- Cross-wiki `wiki://` link navigation (199)
 - Author-curated "## Recommended" section feeds the related-articles panel (027)
 """
 
@@ -78,6 +79,36 @@ def test_external_links_target_blank(page, base_url):
     )
 
 
+def test_cross_wiki_link_navigates_to_target_wiki(page, base_url):
+    """199: `wiki://other-wiki-id/path/article.md` navigates to the target
+    wiki + article instead of being treated as an external or dead link."""
+    _load_mock_article(
+        page,
+        base_url,
+        "# Cross Wiki Source\n\n[Hash Table](wiki://dsa/data-structures/hash-table.md)",
+        slug="cross-wiki-source",
+        extra_routes=[
+            (
+                "**/content/dsa/data-structures/hash-table.md",
+                lambda r: r.fulfill(body="# Hash Table\n\nBody."),
+            ),
+        ],
+    )
+    link = page.locator("a:has-text('Hash Table')")
+    page.wait_for_selector("a:has-text('Hash Table')", timeout=5_000)
+
+    # Not treated as external.
+    assert link.get_attribute("target") is None
+
+    link.click()
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    assert "dsa/hash-table" in page.url
+    assert page.locator("#markdown-body h1").inner_text() == "Hash Table"
+
+
 def test_anchor_links_scroll_and_update_url(page, base_url):
     """049: Anchor links update the ?a= URL param without breaking the hash."""
     _load_mock_article(
@@ -136,6 +167,41 @@ def test_recommended_section_feeds_related_panel(page, base_url):
         timeout=10_000,
     )
     assert "Target One" in page.locator("#topbar-title").inner_text()
+
+
+def test_related_grid_narrower_min_column_on_mobile(page, base_url):
+    """Regression for WIKI-389: .related-grid used minmax(220px, 1fr), which
+    rendered a single (oversized) column on 390px mobile screens. Under
+    max-width: 640px the min column width drops to 160px so a 2-column
+    layout fits."""
+    page.set_viewport_size({"width": 390, "height": 844})
+    _load_mock_article(
+        page,
+        base_url,
+        "# Recommended Source\n\n"
+        "Some intro text.\n\n"
+        "## Recommended\n\n"
+        "- [Target One](target-one.md)\n"
+        "- [Target Two](target-two.md)\n",
+        slug="rec-source-mobile",
+        extra_routes=[
+            ("**/target-one.md", lambda r: r.fulfill(body="# Target One\n\nBody.")),
+            ("**/target-two.md", lambda r: r.fulfill(body="# Target Two\n\nBody.")),
+        ],
+    )
+    page.wait_for_selector("#related-articles .related-card", timeout=5_000)
+
+    min_col = page.evaluate("""() => {
+        const grid = document.querySelector('.related-grid');
+        return getComputedStyle(grid).gridTemplateColumns;
+    }""")
+    # computed value resolves to concrete pixel tracks; each should be >= ~160px
+    # and well under the old 220px floor for a 390px viewport to fit 2 columns.
+    widths = [float(w.replace("px", "")) for w in min_col.split()]
+    assert len(widths) >= 2, f"Expected at least 2 grid columns, got: {min_col}"
+    assert all(w < 220 for w in widths), (
+        f"Expected narrower columns than the old 220px floor, got: {min_col}"
+    )
 
 
 def test_article_without_recommended_section_uses_auto_related(page, base_url):

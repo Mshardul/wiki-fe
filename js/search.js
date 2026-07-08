@@ -21,7 +21,7 @@ import {
 } from "./state.js";
 import { isRead, markRead, markUnread } from "./storage/read-tracking.js";
 import { RecentSearches } from "./storage/scroll-collapse.js";
-import { Settings, Theme } from "./storage/settings-theme.js";
+import { Settings } from "./storage/settings-theme.js";
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL SEARCH (⌘K)
@@ -204,15 +204,6 @@ const SEARCH_COMMANDS = [
     run() {
       const id = _contextWikiId();
       if (id) window.confirmClearBookmarks(id);
-    },
-  },
-  {
-    id: "toggle-theme",
-    label: "Toggle light / dark theme",
-    hint: "Switch between light and dark",
-    icon: "◐",
-    run() {
-      Theme.toggle();
     },
   },
   {
@@ -471,6 +462,16 @@ function scoreMatch(q, entry) {
   return best;
 }
 
+// The typed query may only match via synonym expansion (e.g. "map" -> "hash table").
+// highlightMatch needs the actual matched term, not the literal typed query, or the
+// title renders with zero highlight even though it matched.
+function titleHighlightTerm(title, highlightQuery) {
+  if (!highlightQuery) return highlightQuery;
+  const tl = title.toLowerCase();
+  const terms = expandQuery(highlightQuery);
+  return terms.find((term) => tl.includes(term.toLowerCase())) || highlightQuery;
+}
+
 function renderResultItem(item, highlightQuery) {
   const snippet = highlightQuery ? extractSnippet(item.description || "", highlightQuery) : null;
   const snippetHtml = snippet ? `<span class="gsearch-result-snippet">${snippet}</span>` : "";
@@ -484,7 +485,7 @@ function renderResultItem(item, highlightQuery) {
          )}', '${item.slug}')"
          role="button" tabindex="0"
          onkeydown="if(event.key==='Enter')this.click()">
-      <span class="gsearch-result-title">${highlightMatch(item.title, highlightQuery)}</span>
+      <span class="gsearch-result-title">${highlightMatch(item.title, titleHighlightTerm(item.title, highlightQuery))}</span>
       <span class="gsearch-result-meta">${escHtml(item.section)}</span>
       ${snippetHtml}
     </div>`;

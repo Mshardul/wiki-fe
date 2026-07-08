@@ -148,6 +148,79 @@ def test_table_scroll_cue_absent_on_wide_viewport(page, base_url):
     )
 
 
+# ── Code block right-fade scroll cue ──────────────────────────────
+
+
+LONG_CODE_LINE = "x = " + " + ".join(f"variable_{i}" for i in range(40))
+ARTICLE_WITH_LONG_CODE_BLOCK = (
+    "# Long Code Block Test\n\n```python\n"
+    + "\n".join([LONG_CODE_LINE] + [f"y_{i} = {i}" for i in range(25)])
+    + "\n```\n"
+)
+
+
+def test_collapsible_code_block_gets_right_fade_on_mobile(page, base_url):
+    """Regression for WIKI-379: collapsible code blocks (>20 lines) skip the
+    right-edge scroll fade in code.css because their ::after is already used
+    for the bottom collapse fade. responsive.css adds a ::before fade for
+    them on mobile so the cue is consistent across all overflowing blocks."""
+    page.set_viewport_size({"width": 390, "height": 844})
+    _load_mock_article(page, base_url, ARTICLE_WITH_LONG_CODE_BLOCK, slug="long-code")
+    page.wait_for_selector("#markdown-body pre.pre--collapsible", timeout=5_000)
+
+    result = page.evaluate("""() => {
+        const pre = document.querySelector('#markdown-body pre.pre--collapsible');
+        if (!pre) return { found: false };
+        pre.classList.add('pre--overflowing'); // ResizeObserver timing unreliable headless
+        const before = getComputedStyle(pre, '::before');
+        return { found: true, content: before.content, bg: before.backgroundImage };
+    }""")
+    assert result["found"], "No .pre--collapsible code block found"
+    assert result["content"] not in ("none", ""), (
+        "Expected a ::before pseudo-element with a right-fade on the collapsible code block"
+    )
+    assert "linear-gradient" in result["bg"], (
+        f"Expected ::before to render a gradient fade, got: {result['bg']}"
+    )
+
+
+# ── Anchor button tap target on touch devices ─────────────────────
+
+
+def test_anchor_button_32px_on_coarse_pointer(browser, base_url, cdn_cache):
+    """Regression for WIKI-387: .anchor-btn was 16x16px on mobile viewports,
+    too small to reliably tap. On pointer:coarse devices it should be at
+    least 32x32px."""
+    ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 390, "height": 844},
+        service_workers="block",
+    )
+    page = ctx.new_page()
+    try:
+        def _make_handler(body, content_type):
+            return lambda route: route.fulfill(
+                status=200, content_type=content_type, body=body
+            )
+
+        for url, (body, content_type) in cdn_cache.items():
+            page.route(url, _make_handler(body, content_type))
+
+        page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+        page.wait_for_selector("#view-content.active", timeout=10_000)
+        page.wait_for_selector(".anchor-btn", timeout=10_000)
+
+        size = page.evaluate("""() => {
+            const r = document.querySelector('.anchor-btn').getBoundingClientRect();
+            return { width: r.width, height: r.height };
+        }""")
+        assert size["width"] >= 32, f"anchor-btn width too small: {size['width']}px"
+        assert size["height"] >= 32, f"anchor-btn height too small: {size['height']}px"
+    finally:
+        ctx.close()
+
+
 # ── Image lightbox zoom ───────────────────────────────────────────
 
 
@@ -1159,6 +1232,12 @@ def test_mermaid_copy_btn_copies_svg(page, base_url):
 
 def test_hljs_stylesheet_swaps_on_theme_change(page, base_url):
     """Toggling the theme swaps the hljs CSS href between dark and light variants."""
+    # Force a known dark starting point - boot otherwise follows OS/browser
+    # color-scheme (Chromium defaults to light), which made this test a no-op
+    # when it landed on light already and then clicked the light "White" swatch.
+    page.add_init_script(
+        "window.localStorage.setItem('wiki-settings', JSON.stringify({backgroundId: 'dark-void'}))"
+    )
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
 
@@ -1167,7 +1246,10 @@ def test_hljs_stylesheet_swaps_on_theme_change(page, base_url):
     )
     assert initial_href, "hljs-theme-css link not found"
 
-    page.evaluate("() => document.querySelector('[data-action=\"toggle-theme\"]')?.click()")
+    # quick dark/light toggle was removed; flip theme via a background swatch
+    page.locator('[title="Preferences (,)"]').first.click()
+    page.wait_for_selector("#prefs-modal:not(.hidden)")
+    page.locator('.settings-bg-swatch[title="White"]').click()
 
     new_href = page.evaluate(
         "() => document.getElementById('hljs-theme-css')?.href ?? ''"

@@ -74,6 +74,29 @@ def test_width_button_gets_active_class(wiki_page):
 # ── persistence ────────────────────────────────────────────────────────────────
 
 
+# ── tablet floor (WIKI-378) ─────────────────────────────────────────────────────
+
+
+def test_wide_has_min_margin_on_tablet_portrait(page, base_url):
+    """Regression for WIKI-378: Wide (5% padding) left almost no side margin
+    on tablet portrait widths (641-900px). A floor keeps content readable."""
+    page.set_viewport_size({"width": 768, "height": 1024})
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+
+    # `.first` would hit the hidden home-view button; only content-view's is visible here.
+    page.locator("[title='Preferences (,)']:visible").click()
+    page.wait_for_selector("#prefs-modal:not(.hidden)")
+    page.locator("#settings-widths .settings-size-btn").nth(2).click()  # Wide
+
+    # .content-layout has no margin of its own; .content-main is what's actually inset.
+    margin = page.evaluate("""() => {
+        const r = document.querySelector('.content-main').getBoundingClientRect();
+        return Math.min(r.left, window.innerWidth - r.right);
+    }""")
+    assert margin >= 40 - 1, f"Wide content-width margin too small on tablet: {margin}px"
+
+
 def test_content_width_persists_across_reload(page, base_url):
     """selected content width survives a page reload via localStorage."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")

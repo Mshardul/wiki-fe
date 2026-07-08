@@ -7,7 +7,7 @@ import pytest
 
 
 def _go_to_article(page, base_url):
-    page.goto(f"{base_url}/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
 
 
@@ -19,13 +19,13 @@ def _bookmark_current(page):
 
 
 def _go_to_index(page, base_url):
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=5_000)
 
 
 def test_bookmarks_not_on_home(page, base_url):
     """home view has no bookmarks section."""
-    page.goto(f"{base_url}/")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=5_000)
     assert page.locator("#view-home #bookmarks-section").count() == 0
 

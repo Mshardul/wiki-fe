@@ -5,6 +5,7 @@
 - result count badge
 - load-failure error state + retry
 - section-filter mode indicator
+- synonym-matched title highlight (401)
 """
 
 import pytest
@@ -62,12 +63,12 @@ def test_enter_navigates_to_article(wiki_page):
 def test_visited_stub_excluded_from_search(wiki_page, base_url):
     """A stub becomes excludable once visited (readTimeCache marks it null)."""
     # Visit the known stub so its readTimeCache entry is set to null.
-    wiki_page.goto(f"{base_url}/#system-design/api-gateway")
+    wiki_page.goto(f"{base_url}/#system-design/api-gateway", wait_until="domcontentloaded")
     wiki_page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
         timeout=10_000,
     )
-    wiki_page.goto(f"{base_url}/")
+    wiki_page.goto(f"{base_url}/", wait_until="domcontentloaded")
     wiki_page.wait_for_selector("#view-home.active", timeout=5_000)
 
     _open_search(wiki_page)
@@ -228,8 +229,9 @@ def test_result_count_clears_on_modal_reopen(wiki_page):
 
 def test_search_load_failure_shows_retry(page, base_url):
     """When every wiki index fails to load, search shows an error with a Retry button."""
-    # Fail all index.md requests so loadAllSearchEntries finds no usable cache.
+    # Fail all index.md + search-index.json requests so loadAllSearchEntries finds no usable cache.
     page.route("**/index.md", lambda route: route.abort())
+    page.route("**/search-index.json", lambda route: route.abort())
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
 
@@ -253,6 +255,7 @@ def test_search_retry_recovers_after_failure(page, base_url):
             route.continue_()
 
     page.route("**/index.md", handler)
+    page.route("**/search-index.json", handler)
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
 
@@ -275,6 +278,10 @@ def test_search_recovers_on_reopen_after_failure(page, base_url):
         "**/index.md",
         lambda route: route.abort() if failing["on"] else route.continue_(),
     )
+    page.route(
+        "**/search-index.json",
+        lambda route: route.abort() if failing["on"] else route.continue_(),
+    )
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
 
@@ -290,6 +297,31 @@ def test_search_recovers_on_reopen_after_failure(page, base_url):
     page.fill("#gsearch-input", "caching")
     page.wait_for_selector(".gsearch-result", timeout=8_000)
     assert page.locator(".gsearch-result").count() > 0
+
+
+# ── Pre-built search-index.json ──────────────────────────────────────
+
+
+def test_search_uses_prebuilt_index_without_fetching_index_md(page, base_url):
+    """loadAllSearchEntries must serve from search-index.json, not per-wiki index.md."""
+    index_md_requested = {"hit": False}
+
+    def flag_and_continue(route):
+        index_md_requested["hit"] = True
+        route.continue_()
+
+    page.route("**/index.md", flag_and_continue)
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+
+    page.keyboard.press("Meta+k")
+    page.fill("#gsearch-input", "caching")
+    page.wait_for_selector(".gsearch-result", timeout=8_000)
+
+    assert page.locator(".gsearch-result").count() > 0
+    assert not index_md_requested["hit"], (
+        "search must be served from search-index.json without fetching any index.md"
+    )
 
 
 # ── Section-filter mode indicator ────────────────────────────────────
@@ -399,7 +431,7 @@ def _open_scoped_search(page):
 
 def test_cmd_f_opens_scoped_search_with_badge(page, base_url):
     """⌘F on a wiki index opens search in scope mode and shows the wiki badge."""
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
     _open_scoped_search(page)
@@ -419,7 +451,7 @@ def test_cmd_f_opens_scoped_search_with_badge(page, base_url):
 
 def test_cmd_f_results_limited_to_current_wiki(page, base_url):
     """Scoped search returns results only from the active wiki's group."""
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
     _open_scoped_search(page)
@@ -436,7 +468,7 @@ def test_cmd_f_on_home_does_not_open_scoped_search(page, base_url):
 
     (The browser's native find may run instead - we only assert our modal
     does not enter scope-mode.)"""
-    page.goto(f"{base_url}/")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=5_000)
 
     page.keyboard.press("Meta+f")
@@ -454,7 +486,7 @@ def test_cmd_f_on_home_does_not_open_scoped_search(page, base_url):
 
 def test_scope_clears_on_close(page, base_url):
     """Closing a scoped search drops scope-mode; reopening ⌘K is global again."""
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
     _open_scoped_search(page)
@@ -473,7 +505,7 @@ def test_scope_clears_on_close(page, base_url):
 
 def test_slash_enters_command_mode(page, base_url):
     """Typing '/' switches ⌘K to command mode and lists commands."""
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
     _open_search(page)
@@ -491,7 +523,7 @@ def test_slash_enters_command_mode(page, base_url):
 
 def test_command_filter_narrows_list(page, base_url):
     """Typing after '/' filters commands by label."""
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
     _open_search(page)
@@ -507,7 +539,7 @@ def test_command_filter_narrows_list(page, base_url):
 
 def test_wiki_command_hidden_without_wiki_context(page, base_url):
     """Wiki-scoped commands (e.g. clear recents) are hidden on the home view."""
-    page.goto(f"{base_url}/")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=5_000)
 
     _open_search(page)
@@ -526,7 +558,7 @@ def test_wiki_command_hidden_without_wiki_context(page, base_url):
 
 def test_mark_all_read_command_marks_articles(page, base_url):
     """Running 'mark all read' sets read dots on the current wiki's index cards."""
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector(
         "#index-sections:not(.index-sections--loading)", timeout=15_000
     )
@@ -552,7 +584,7 @@ def test_mark_all_read_command_marks_articles(page, base_url):
 
 
 def _open_article(page, base_url):
-    page.goto(f"{base_url}/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
@@ -606,7 +638,7 @@ def test_scope_dropdown_exists_in_modal(wiki_page):
 
 def test_scope_dropdown_filters_results(page, base_url):
     """Selecting a wiki in the scope dropdown restricts results to that wiki."""
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
     _open_search(page)
@@ -632,7 +664,7 @@ def test_scope_dropdown_filters_results(page, base_url):
 
 def test_scope_dropdown_all_wikis_restores_full_results(page, base_url):
     """Switching back to 'All wikis' restores full result set."""
-    page.goto(f"{base_url}/#system-design")
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
     _open_search(page)
@@ -777,6 +809,21 @@ def test_synonym_expansion_returns_results(wiki_page):
     )
 
 
+def test_synonym_matched_title_is_highlighted(wiki_page):
+    """401: A title that only matches via synonym expansion (not the literal
+    typed query) must still render with its matched term highlighted."""
+    _open_search(wiki_page)
+    # 'map' is a synonym of 'hash table' (data/synonyms.json) - the literal
+    # query "map" never appears in the "Hash Table" title, only the expanded term does.
+    wiki_page.fill("#gsearch-input", "map")
+    result = wiki_page.locator(".gsearch-result", has_text="Hash Table")
+    result.wait_for(timeout=8_000)
+    marks = result.locator(".gsearch-result-title mark.gsearch-highlight")
+    assert marks.count() > 0, (
+        "Title matched via synonym expansion must still show a highlighted <mark>"
+    )
+
+
 # ── Search input semantics ──────────────────────────────────────────
 
 
@@ -802,7 +849,7 @@ def test_search_input_has_enterkeyhint_search(wiki_page):
 def test_article_find_bar_fits_320px(wiki_page, base_url):
     """Find bar must not overflow viewport at 320px width."""
     wiki_page.set_viewport_size({"width": 320, "height": 568})
-    wiki_page.goto(f"{base_url}/#system-design/caching")
+    wiki_page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     wiki_page.wait_for_selector("#view-content.active", timeout=10_000)
     wiki_page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
@@ -823,7 +870,7 @@ def test_article_find_bar_fits_320px(wiki_page, base_url):
 
 def test_find_bar_clears_sticky_header(wiki_page, base_url):
     """Find bar top must be below sticky section header bottom when header is visible."""
-    wiki_page.goto(f"{base_url}/#system-design/caching")
+    wiki_page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     wiki_page.wait_for_selector("#view-content.active", timeout=10_000)
     wiki_page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",

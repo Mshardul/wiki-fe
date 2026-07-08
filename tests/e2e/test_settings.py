@@ -754,7 +754,7 @@ def test_advanced_tab_has_reading_modes_buttons(wiki_page):
 
 def test_focus_mode_prefs_btn_toggles_active_state(page, base_url):
     """Focus Mode button in Advanced prefs sets aria-pressed and .active when toggled from content view."""
-    page.goto(f"{base_url}/#system-design/caching")
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
@@ -780,3 +780,38 @@ def test_focus_mode_prefs_btn_toggles_active_state(page, base_url):
         "() => document.getElementById('prefs-focus-toggle').getAttribute('aria-pressed') === 'false'"
     )
     assert "active" not in btn.get_attribute("class")
+
+
+# ── Topbar declutter (WIKI-240) ─────────────────────────────────────────────────
+
+
+def test_topbar_has_only_preferences_and_auth_buttons(wiki_page):
+    """Home/index/content topbars keep only the preferences + auth buttons -
+    search moved into the preferences panel; the standalone quick dark/light
+    toggle was removed entirely (theme is chosen via background swatches)."""
+    for selector in (".home-topbar", ".page-topbar .topbar-inner", ".content-topbar .topbar-inner"):
+        el = wiki_page.locator(selector).first
+        if el.count() == 0:
+            continue
+        assert el.locator('[data-action="search-open"]').count() == 0, selector
+        assert el.locator('[data-action="toggle-theme"]').count() == 0, selector
+
+
+def test_no_theme_toggle_button_anywhere(wiki_page):
+    """The quick dark/light toggle button was removed app-wide - theme is
+    chosen only via the background swatches in the preferences panel."""
+    assert wiki_page.locator('[data-action="toggle-theme"]').count() == 0
+    assert wiki_page.locator(".prefs-theme-toggle-btn").count() == 0
+
+
+def test_search_entry_is_first_in_preferences_panel(wiki_page):
+    """The search entry renders as the first control in the General tab,
+    ahead of the theme/appearance settings."""
+    _open_settings(wiki_page)
+    first_control = wiki_page.evaluate("""() => {
+        const panel = document.getElementById('prefs-panel-general');
+        const search = panel.querySelector('[data-action="prefs-search-open"]');
+        const all = [...panel.querySelectorAll('button, [id^="settings-"]')];
+        return all.indexOf(search) === 0;
+    }""")
+    assert first_control, "Search entry is not the first control in the General tab"

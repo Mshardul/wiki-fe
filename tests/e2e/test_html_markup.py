@@ -115,15 +115,19 @@ def test_no_inline_onchange_on_inputs(wiki_page):
 
 
 def test_data_action_search_open_works(wiki_page):
-    """Clicking a [data-action=search-open] button opens the global search modal."""
-    wiki_page.locator("[data-action='search-open']").first.click()
+    """Clicking the [data-action=prefs-search-open] entry in the preferences
+    panel (WIKI-240: search moved out of the topbar into Preferences) opens
+    the global search modal."""
+    wiki_page.locator("[data-action='settings-open']").first.click()
+    wiki_page.wait_for_selector("#prefs-modal:not(.hidden)")
+    wiki_page.locator("[data-action='prefs-search-open']").first.click()
     wiki_page.wait_for_function(
         "() => !document.getElementById('global-search-modal').classList.contains('hidden')"
     )
     is_hidden = wiki_page.evaluate(
         "() => document.getElementById('global-search-modal').classList.contains('hidden')"
     )
-    assert not is_hidden, "Global search modal did not open via data-action=search-open"
+    assert not is_hidden, "Global search modal did not open via data-action=prefs-search-open"
 
 
 def test_data_action_settings_open_works(wiki_page):

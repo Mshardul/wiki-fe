@@ -177,3 +177,43 @@ def test_bad_credentials_shows_error(page, base_url):
     err = page.locator("#auth-login-error")
     expect(err).to_be_visible()
     expect(err).to_have_text("Invalid email or password")
+
+
+def test_concurrent_401s_fire_session_expired_once(page, base_url):
+    """Regression for WIKI-403: the session-expired guard used to reset on
+    the next macrotask (setTimeout(...,0)), so concurrent 401s from a
+    Promise.all (e.g. Sync.pullAll) could each slip past it and fire the
+    global session-expired flow more than once."""
+    page.route(
+        "**/api/v1/auth/me",
+        lambda r: r.fulfill(
+            status=200, content_type="application/json",
+            body='{"user":{"id":1,"email":"a@example.com"}}',
+        ),
+    )
+    for path in ("bookmarks", "reads", "recents"):
+        page.route(
+            f"**/api/v1/{path}",
+            lambda r: r.fulfill(status=401, content_type="application/json", body=_UNAUTH),
+        )
+
+    # must exist before boot's own Sync.pullAll() races a listener attached after goto()
+    page.add_init_script("""
+        window.__sessionExpiredCount = 0;
+        document.addEventListener('wiki:session-expired', () => { window.__sessionExpiredCount++; });
+    """)
+    page.goto(base_url)
+    page.wait_for_function("window.api !== undefined || true")
+
+    page.evaluate("""async () => {
+        const { api } = await import('./js/api.js');
+        await Promise.all([
+            api.bookmarks.list().catch(() => []),
+            api.reads.list().catch(() => []),
+            api.recents.list().catch(() => []),
+        ]);
+    }""")
+    fire_count = page.evaluate("window.__sessionExpiredCount")
+    assert fire_count == 1, (
+        f"expected exactly one wiki:session-expired dispatch, got {fire_count}"
+    )

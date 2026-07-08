@@ -265,13 +265,6 @@ function applySettingsToDOM(s) {
   const theme = dark ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", theme);
 
-  document.querySelectorAll(".theme-icon-moon").forEach((el) => {
-    el.style.display = dark ? "" : "none";
-  });
-  document.querySelectorAll(".theme-icon-sun").forEach((el) => {
-    el.style.display = dark ? "none" : "";
-  });
-
   const bgList = dark ? DARK_BACKGROUNDS : LIGHT_BACKGROUNDS;
   const bg = bgList.find((b) => b.id === s.backgroundId) || bgList[0];
   const root = document.documentElement.style;
@@ -741,33 +734,6 @@ window.addEventListener("storage", (e) => {
 });
 
 /* ═══════════════════════════════════════════════════════════════
-   THEME (quick dark / light toggle)
-   ═══════════════════════════════════════════════════════════════ */
-const Theme = {
-  toggle() {
-    const s = getSettings();
-    const isDark = _isDark(s.backgroundId);
-    const savedKey = isDark ? "wiki-last-light-preset" : "wiki-last-dark-preset";
-    const saved = JSON.parse(localStorage.getItem(savedKey) || "null");
-    const next =
-      saved ||
-      (isDark
-        ? {
-            backgroundId: "light-white",
-            textColorId: "text-crisp-light",
-            accentId: "indigo-l",
-          }
-        : {
-            backgroundId: "dark-void",
-            textColorId: "text-crisp-dark",
-            accentId: "indigo",
-          });
-    saveSettings({ ...s, ...next });
-    applySettingsToDOM({ ...s, ...next });
-  },
-};
-
-/* ═══════════════════════════════════════════════════════════════
    SYNC - pull/merge on login & boot; cache clear on logout
    ═══════════════════════════════════════════════════════════════ */
 const Sync = {
@@ -820,12 +786,4 @@ const Sync = {
   },
 };
 
-export {
-  getSettings,
-  saveSettings,
-  applySettingsToDOM,
-  initOsThemeListener,
-  Settings,
-  Theme,
-  Sync,
-};
+export { getSettings, saveSettings, applySettingsToDOM, initOsThemeListener, Settings, Sync };
