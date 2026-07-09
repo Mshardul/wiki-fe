@@ -1089,6 +1089,23 @@ def test_print_button_stamps_source_url(page, base_url):
     assert url and url.startswith("http"), f"data-print-url not stamped, got {url!r}"
 
 
+def test_copy_markdown_button_present_in_content_topbar(page, base_url):
+    """Content topbar exposes a copy-raw-markdown action button."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CODE, slug="copy-md-btn")
+    btn = page.locator(".content-topbar [data-action='copy-markdown']")
+    assert btn.count() == 1, "Copy markdown button missing from content topbar"
+
+
+def test_copy_markdown_copies_raw_source(page, base_url):
+    """Clicking the copy-markdown button writes the fetched raw .md source to the clipboard."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CODE, slug="copy-md-source")
+    page.evaluate(_CLIPBOARD_SPY)
+    page.click(".content-topbar [data-action='copy-markdown']")
+    page.wait_for_function("() => window.__copied !== null", timeout=3_000)
+    copied = page.evaluate("() => window.__copied")
+    assert copied == ARTICLE_WITH_CODE, f"Copied text does not match raw markdown source: {copied!r}"
+
+
 def test_print_stylesheet_loaded(wiki_page):
     """The print stylesheet is imported via the CSS aggregator."""
     has_print = wiki_page.evaluate(
@@ -1688,6 +1705,41 @@ def test_glossary_popover_appears_on_hover(page, base_url):
     assert text and len(text) > 10, "Glossary popover text is empty or too short"
 
 
+def test_glossary_popover_survives_scroll_out_and_back(page, base_url):
+    """A glossary term keeps working after scrolling out of and back into
+    the IntersectionObserver's viewport margin (regression: WIKI-399 -
+    popover used to die permanently because the term's node was replaced
+    with an unobserved clone on exit)."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-scroll-cycle")
+    page.wait_for_function(
+        "() => document.querySelector('abbr.glossary-term') !== null",
+        timeout=5_000,
+    )
+    # Push the term far below the viewport, wait for the real
+    # IntersectionObserver to fire its "not intersecting" branch, then
+    # scroll it back into view.
+    page.evaluate(
+        """
+        () => {
+          const body = document.getElementById('markdown-body');
+          const spacer = document.createElement('div');
+          spacer.style.height = '4000px';
+          body.insertBefore(spacer, body.firstChild);
+        }
+        """
+    )
+    page.wait_for_timeout(300)
+    page.evaluate("() => document.querySelector('abbr.glossary-term').scrollIntoView({block: 'center', behavior: 'instant'})")
+    page.wait_for_timeout(300)
+    page.locator("abbr.glossary-term").first.hover()
+    page.wait_for_function(
+        "() => document.getElementById('glossary-popover')?.classList.contains('glossary-popover--visible')",
+        timeout=3_000,
+    )
+    text = page.evaluate("() => document.getElementById('glossary-popover')?.textContent")
+    assert text and len(text) > 10, "Glossary popover stopped working after scroll cycle"
+
+
 def test_no_glossary_popover_without_abbr(page, base_url):
     """An article without <abbr> tags does not create #glossary-popover."""
     _load_mock_article(page, base_url, ARTICLE_WITHOUT_ABBR, slug="no-glossary")
@@ -2049,3 +2101,122 @@ def test_find_button_opens_article_find(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="find-btn-touch")
     page.click('[data-action="find-open"]')
     page.wait_for_selector("#article-find:not(.hidden)", timeout=5_000)
+
+
+# ── Hide-and-reveal study mode (H hotkey) ──────────────────────────
+
+ARTICLE_WITH_H3_SECTIONS = """\
+# Study Mode Test
+
+## Section One
+
+Intro paragraph.
+
+### First subsection
+
+Body text for the first subsection.
+
+### Second subsection
+
+Body text for the second subsection.
+
+## Section Two
+
+Closing paragraph.
+"""
+
+
+def test_h_hotkey_enters_study_mode_and_hides_h3_bodies(page, base_url):
+    """Pressing H adds .study-mode to #markdown-body and hides all h3 section
+    bodies, leaving headings visible."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_H3_SECTIONS, slug="study-mode-on")
+    page.wait_for_selector("#markdown-body h3", timeout=5_000)
+    page.keyboard.press("h")
+    page.wait_for_function(
+        "() => document.getElementById('markdown-body').classList.contains('study-mode')",
+        timeout=3_000,
+    )
+    hidden_count = page.evaluate(
+        "() => document.querySelectorAll('#markdown-body [data-h3-body]').length"
+    )
+    all_hidden = page.evaluate(
+        "() => Array.from(document.querySelectorAll('#markdown-body [data-h3-body]')).every(el => el.hidden)"
+    )
+    assert hidden_count > 0, "No h3 section bodies were tagged for hide-and-reveal"
+    assert all_hidden, "Not all h3 section bodies were hidden after entering study mode"
+
+    h3_visible = page.evaluate(
+        "() => Array.from(document.querySelectorAll('#markdown-body h3')).every(h => !h.hidden)"
+    )
+    assert h3_visible, "H3 headings themselves must stay visible in study mode"
+
+
+def test_h_hotkey_toggles_off(page, base_url):
+    """Pressing H a second time exits study mode and reveals all bodies again."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_H3_SECTIONS, slug="study-mode-off")
+    page.wait_for_selector("#markdown-body h3", timeout=5_000)
+    page.keyboard.press("h")
+    page.wait_for_function(
+        "() => document.getElementById('markdown-body').classList.contains('study-mode')",
+        timeout=3_000,
+    )
+    page.keyboard.press("h")
+    page.wait_for_function(
+        "() => !document.getElementById('markdown-body').classList.contains('study-mode')",
+        timeout=3_000,
+    )
+    all_visible = page.evaluate(
+        "() => Array.from(document.querySelectorAll('#markdown-body [data-h3-body]')).every(el => !el.hidden)"
+    )
+    assert all_visible, "Section bodies must be revealed again after exiting study mode"
+
+
+def test_click_heading_reveals_its_section_in_study_mode(page, base_url):
+    """Clicking an h3 while in study mode reveals only that section's body,
+    leaving the other h3's body hidden."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_H3_SECTIONS, slug="study-mode-reveal")
+    page.wait_for_selector("#markdown-body h3", timeout=5_000)
+    page.keyboard.press("h")
+    page.wait_for_function(
+        "() => document.getElementById('markdown-body').classList.contains('study-mode')",
+        timeout=3_000,
+    )
+
+    first_h3 = page.locator("#markdown-body h3").first
+    first_h3.click()
+    page.wait_for_function(
+        "() => document.querySelector('#markdown-body h3').classList.contains('study-revealed')",
+        timeout=3_000,
+    )
+
+    first_hidden = page.evaluate(
+        """() => {
+            const h3 = document.querySelectorAll('#markdown-body h3')[0];
+            const id = h3.dataset.h3SectionId;
+            return Array.from(document.querySelectorAll(`[data-h3-body="${id}"]`)).some(el => el.hidden);
+        }"""
+    )
+    second_hidden = page.evaluate(
+        """() => {
+            const h3 = document.querySelectorAll('#markdown-body h3')[1];
+            const id = h3.dataset.h3SectionId;
+            return Array.from(document.querySelectorAll(`[data-h3-body="${id}"]`)).every(el => el.hidden);
+        }"""
+    )
+    assert not first_hidden, "Clicked heading's section body should be revealed"
+    assert second_hidden, "Other heading's section body should remain hidden"
+
+
+def test_study_mode_resets_on_navigation(page, base_url):
+    """Study mode must not leak into the next article render (cleanupStudyMode)."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_H3_SECTIONS, slug="study-mode-nav-1")
+    page.keyboard.press("h")
+    page.wait_for_function(
+        "() => document.getElementById('markdown-body').classList.contains('study-mode')",
+        timeout=3_000,
+    )
+    _load_mock_article(page, base_url, ARTICLE_WITH_H3_SECTIONS, slug="study-mode-nav-2")
+    is_study_mode = page.evaluate(
+        "() => document.getElementById('markdown-body').classList.contains('study-mode')"
+    )
+    assert not is_study_mode, "Study mode leaked into the next article render"

@@ -2,17 +2,29 @@ import { Auth, AuthModal } from "./auth.js";
 import "./app/home-parallax.js";
 import "./app/mobile-panels.js";
 import { mountDebugOverlay } from "./app/debug-overlay.js";
-import { toggleDistractionFree } from "./app/distraction-free.js";
+import {
+  exitDistractionFree,
+  isDistractionFree,
+  toggleDistractionFree,
+} from "./app/distraction-free.js";
 import { printArticle } from "./app/print.js";
 import { closeWikiSwitcher, openWikiSwitcher } from "./app/wiki-switcher.js";
-import { syncHljsTheme } from "./content/code-blocks.js";
-import { ArticleFind, toggleFocusMode } from "./content/formatting.js";
+import { syncHljsTheme, writeToClipboard } from "./content/code-blocks.js";
+import {
+  ArticleFind,
+  cleanupFocusMode,
+  cleanupStudyMode,
+  isFocusMode,
+  isStudyMode,
+  toggleFocusMode,
+  toggleStudyMode,
+} from "./content/formatting.js";
 import { rerenderMermaidDiagrams } from "./content/mermaid.js";
 import { QuizMode } from "./content/tables.js";
-import { initProgressRingScrollTop, updateProgressRing } from "./content/toc.js";
+import { expandAllSections, initProgressRingScrollTop, updateProgressRing } from "./content/toc.js";
 import { closeZoomOverlay } from "./content/zoom-lightbox.js";
-import { navigateToContent } from "./render/content-view.js";
-import { toggleSection } from "./render/home-index.js";
+import { getCurrentMarkdown, navigateToContent } from "./render/content-view.js";
+import { IndexFilter, toggleSection } from "./render/home-index.js";
 import { navigate, progressBar, route } from "./render/router.js";
 import { showToast } from "./render/toast.js";
 import {
@@ -148,6 +160,14 @@ document.addEventListener("click", (e) => {
     case "print-article":
       printArticle();
       break;
+    case "copy-markdown": {
+      const markdown = getCurrentMarkdown();
+      if (!markdown) break;
+      writeToClipboard(markdown)
+        .then(() => showToast("Markdown copied"))
+        .catch(() => showToast("Copy failed - clipboard access denied"));
+      break;
+    }
     case "find-open":
       ArticleFind.open();
       break;
@@ -191,6 +211,47 @@ function closeTopbarOverflow() {
   const btn = document.getElementById("content-overflow-btn");
   menu.classList.remove("open");
   btn.setAttribute("aria-expanded", "false");
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESET-VIEW ESCAPE HATCH (WIKI-278)
+   Escape resets an active reading mode / filter in place, confirmed,
+   instead of navigating away. Falls through to the normal Escape
+   chain (navigate back, etc.) when nothing is active to reset.
+   ═══════════════════════════════════════════════════════════════ */
+function hasResettableViewState() {
+  if (isFocusMode() || isStudyMode() || isDistractionFree()) return true;
+  if (state.currentView === "content") {
+    return !!document.querySelector("#markdown-body h2.section--collapsed");
+  }
+  if (state.currentView === "index") {
+    return IndexFilter.hasActiveFilter();
+  }
+  return false;
+}
+
+function resetView() {
+  if (!window.confirm("Reset view to default? This clears filters and exits any reading modes.")) {
+    return;
+  }
+  const scrollX = window.scrollX;
+  const scrollY = window.scrollY;
+
+  cleanupFocusMode();
+  cleanupStudyMode();
+  exitDistractionFree();
+  ArticleFind.close();
+  document.getElementById("resume-chip")?.remove();
+
+  if (state.currentView === "content") {
+    const body = document.getElementById("markdown-body");
+    if (body) expandAllSections(body);
+  } else if (state.currentView === "index") {
+    IndexFilter.clearAll();
+  }
+
+  window.scrollTo({ left: scrollX, top: scrollY, behavior: "instant" });
+  showToast("View reset");
 }
 document.addEventListener("click", (e) => {
   const menu = document.getElementById("content-overflow-menu");
@@ -327,6 +388,10 @@ document.addEventListener("keydown", (e) => {
       closeGlobalSearch();
     } else if (Settings.isOpen()) {
       Settings.close();
+    } else if (hasResettableViewState()) {
+      // A reading mode is active or the view is filtered - Escape resets it
+      // in place rather than navigating away (WIKI-278).
+      resetView();
     } else if (state.currentView === "content" && state.currentWikiId) {
       navigate(state.currentWikiId);
     }
@@ -348,6 +413,10 @@ document.addEventListener("keydown", (e) => {
       }
       if (e.key === "f" || e.key === "F") {
         toggleFocusMode();
+        e.preventDefault();
+      }
+      if (e.key === "h" || e.key === "H") {
+        toggleStudyMode();
         e.preventDefault();
       }
       if (e.key === "t" || e.key === "T") {

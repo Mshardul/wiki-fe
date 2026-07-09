@@ -250,6 +250,10 @@ let _focusObserver = null;
 
 const FOCUS_SELECTORS = "p, li, blockquote, pre, h2, h3";
 
+function isFocusMode() {
+  return _focusMode;
+}
+
 function _syncFocusBtn() {
   const btn = document.getElementById("content-focus-btn");
   if (btn) {
@@ -297,6 +301,66 @@ function cleanupFocusMode() {
   if (contentEl) {
     contentEl.classList.remove("focus-mode");
     _cleanupFocusObserver(contentEl);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HIDE-AND-REVEAL STUDY MODE
+   ═══════════════════════════════════════════════════════════════ */
+let _studyMode = false;
+
+function _setH3Revealed(h3, revealed) {
+  h3.classList.toggle("study-revealed", revealed);
+  const sectionId = h3.dataset.h3SectionId;
+  if (!sectionId) return;
+  h3.parentElement?.querySelectorAll(`[data-h3-body="${sectionId}"]`).forEach((el) => {
+    el.hidden = !revealed;
+  });
+}
+
+function _wireStudySection(h3) {
+  const sectionId = h3.dataset.h3SectionId || `h3-${Math.random().toString(36).slice(2)}`;
+  h3.dataset.h3SectionId = sectionId;
+
+  let next = h3.nextElementSibling;
+  while (next && !/^H[234]$/.test(next.tagName)) {
+    next.dataset.h3Body = sectionId;
+    next = next.nextElementSibling;
+  }
+
+  if (!h3._studyClickHandler) {
+    const handler = () => _setH3Revealed(h3, !h3.classList.contains("study-revealed"));
+    h3._studyClickHandler = handler;
+    h3.addEventListener("click", handler);
+  }
+}
+
+function isStudyMode() {
+  return _studyMode;
+}
+
+function toggleStudyMode() {
+  const contentEl = document.getElementById("markdown-body");
+  if (!contentEl) return;
+  _studyMode = !_studyMode;
+  contentEl.classList.toggle("study-mode", _studyMode);
+
+  contentEl.querySelectorAll("h3").forEach((h3) => {
+    _wireStudySection(h3);
+    _setH3Revealed(h3, !_studyMode);
+  });
+
+  const announcer = document.getElementById("a11y-announcer");
+  if (announcer) announcer.textContent = _studyMode ? "Study mode on" : "Study mode off";
+}
+
+function cleanupStudyMode() {
+  if (!_studyMode) return;
+  _studyMode = false;
+  const contentEl = document.getElementById("markdown-body");
+  if (contentEl) {
+    contentEl.classList.remove("study-mode");
+    contentEl.querySelectorAll("h3").forEach((h3) => _setH3Revealed(h3, true));
   }
 }
 
@@ -673,6 +737,10 @@ export {
   addLatexCopyButtons,
   toggleFocusMode,
   cleanupFocusMode,
+  isFocusMode,
+  toggleStudyMode,
+  cleanupStudyMode,
+  isStudyMode,
   ArticleFind,
   addTabbedCodeBlocks,
   addFootnotes,

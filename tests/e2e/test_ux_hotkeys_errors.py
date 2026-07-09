@@ -333,3 +333,139 @@ def test_distraction_free_exit_button_click_exits(page, base_url):
     assert not page.evaluate(
         "() => document.body.classList.contains('distraction-free')"
     ), "distraction-free class should be removed after clicking the exit button"
+
+
+# ── Reset-view escape hatch ────────────────────────────────────────
+# Escape resets an active reading mode/filter in place (confirmed) instead
+# of navigating away; with nothing active it falls through to the normal
+# Escape-navigates-back behavior (WIKI-278).
+
+
+def test_escape_prompts_confirm_dialog_when_mode_active(page, base_url):
+    """Escape shows a confirm dialog instead of navigating away when a
+    reading mode (e.g. focus mode) is active."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("f")  # enter focus mode so there is something to reset
+
+    dialogs = []
+    page.on("dialog", lambda d: dialogs.append(d) or d.dismiss())
+
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(200)
+
+    assert len(dialogs) == 1, "Escape should trigger the reset confirm when a mode is active"
+    # Dismissed - focus mode must NOT have been cleared, and we must still be on the article.
+    assert page.evaluate(
+        "() => document.getElementById('markdown-body').classList.contains('focus-mode')"
+    ), "Dismissing the confirm dialog must leave the view untouched"
+    assert page.locator("#view-content.active").count() == 1, (
+        "Dismissing the confirm dialog must not navigate away"
+    )
+
+
+def test_escape_confirmed_exits_focus_mode(page, base_url):
+    """Accepting the reset-view confirm turns off focus mode without navigating away."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("f")
+    assert page.evaluate(
+        "() => document.getElementById('markdown-body').classList.contains('focus-mode')"
+    )
+
+    page.on("dialog", lambda d: d.accept())
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        "() => !document.getElementById('markdown-body').classList.contains('focus-mode')",
+        timeout=3_000,
+    )
+    assert page.locator("#view-content.active").count() == 1, (
+        "Resetting the view must not navigate away from the article"
+    )
+
+
+def test_escape_confirmed_exits_distraction_free(page, base_url):
+    """Accepting the reset-view confirm turns off distraction-free mode too."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("d")
+    assert page.evaluate("() => document.body.classList.contains('distraction-free')")
+
+    page.on("dialog", lambda d: d.accept())
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        "() => !document.body.classList.contains('distraction-free')",
+        timeout=3_000,
+    )
+
+
+def test_escape_reset_preserves_scroll_position(page, base_url):
+    """Resetting the view keeps the reader's scroll position."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("f")
+    page.evaluate('() => window.scrollTo({top: 400, behavior: "instant"})')
+    page.wait_for_timeout(100)
+    scroll_before = page.evaluate("() => window.scrollY")
+
+    page.on("dialog", lambda d: d.accept())
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        "() => !document.getElementById('markdown-body').classList.contains('focus-mode')",
+        timeout=3_000,
+    )
+    scroll_after = page.evaluate("() => window.scrollY")
+    assert scroll_after == scroll_before, (
+        f"Scroll position should be preserved: before={scroll_before}, after={scroll_after}"
+    )
+
+
+def test_escape_navigates_back_when_no_mode_active(page, base_url):
+    """With no reading mode active, Escape still behaves as before (navigate back)
+    - the reset hatch must not hijack the plain single-Escape case."""
+    _go_to_article(page, base_url)
+
+    dialogs = []
+    page.on("dialog", lambda d: dialogs.append(d) or d.dismiss())
+
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#view-index.active", timeout=5_000)
+
+    assert len(dialogs) == 0, "Plain Escape with nothing active must not show the reset confirm"
+
+
+def test_escape_confirmed_expands_collapsed_toc_sections(page, base_url):
+    """Accepting the reset-view confirm re-expands a collapsed h2 section."""
+    _go_to_article(page, base_url)
+    page.wait_for_selector(".heading-collapse-btn", timeout=8_000)
+    page.locator(".heading-collapse-btn").first.click()
+    page.wait_for_function(
+        "() => document.querySelector('#markdown-body h2')?.classList.contains('section--collapsed')",
+        timeout=3_000,
+    )
+
+    page.on("dialog", lambda d: d.accept())
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        "() => !document.querySelector('#markdown-body h2')?.classList.contains('section--collapsed')",
+        timeout=3_000,
+    )
+    assert page.locator("#view-content.active").count() == 1, (
+        "Resetting collapsed sections must not navigate away from the article"
+    )
+
+
+def test_escape_confirmed_clears_index_filter(page, base_url):
+    """On the index view, accepting the reset-view confirm clears an active text filter."""
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-index.active", timeout=8_000)
+    page.wait_for_selector("#index-filter-input", timeout=8_000)
+
+    page.fill("#index-filter-input", "cache")
+    page.wait_for_timeout(200)  # let the 120ms input debounce apply the query
+
+    page.on("dialog", lambda d: d.accept())
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        "() => document.getElementById('index-filter-input').value === ''",
+        timeout=3_000,
+    )
+    assert page.locator("#view-index.active").count() == 1, (
+        "Resetting the index filter must not navigate away"
+    )

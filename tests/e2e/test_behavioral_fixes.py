@@ -155,7 +155,9 @@ def test_successful_copy_does_not_show_toast(page, base_url):
 
 
 def test_scroll_position_restored_after_navigation(page, base_url):
-    """scroll position is saved and restored on article revisit."""
+    """scroll position is saved on article revisit; since a heading exists
+    above the saved position, the resume chip (WIKI-253) is offered instead
+    of an automatic scroll, and clicking it restores the position."""
     page.set_viewport_size({"width": 1280, "height": 800})
     page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
@@ -193,10 +195,12 @@ def test_scroll_position_restored_after_navigation(page, base_url):
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
         timeout=8_000,
     )
+    page.wait_for_selector("#resume-chip", timeout=3_000)
+    page.click(".resume-chip-jump")
     page.wait_for_function("() => window.scrollY > 0", timeout=3_000)
 
     scroll_y = page.evaluate("() => window.scrollY")
-    assert scroll_y > 0, f"Scroll not restored after navigation (scrollY={scroll_y})"
+    assert scroll_y > 0, f"Scroll not restored after clicking resume chip (scrollY={scroll_y})"
 
 
 def test_scroll_position_stable_after_revisit(page, base_url):

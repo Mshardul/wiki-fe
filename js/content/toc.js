@@ -284,6 +284,19 @@ function _syncContentH2(h2Id, collapsed) {
   _setSectionCollapsed(h2, collapsed);
 }
 
+/* Expand every collapsed h2 section in the current article (reset-view escape hatch). */
+function expandAllSections(contentEl) {
+  contentEl.querySelectorAll("h2.section--collapsed").forEach((h2) => {
+    const sectionId = h2.dataset.sectionId;
+    _setSectionCollapsed(h2, false);
+    if (sectionId) {
+      const key = `wiki-heading-collapsed-${state.currentWikiId}-${state.currentFilePath?.replace(/\//g, "-")}-${h2.id}`;
+      toggleCollapse(key, h2, false);
+      _syncTocGroup(sectionId, false);
+    }
+  });
+}
+
 export {
   buildTOC,
   injectHeadingCollapseToggles,
@@ -291,4 +304,5 @@ export {
   cleanupStickySection,
   initProgressRingScrollTop,
   updateProgressRing,
+  expandAllSections,
 };

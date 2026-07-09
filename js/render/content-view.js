@@ -18,6 +18,7 @@ import {
   addLatexCopyButtons,
   addTabbedCodeBlocks,
   cleanupFocusMode,
+  cleanupStudyMode,
   renderPrerequisites,
   styleCallouts,
 } from "../content/formatting.js";
@@ -142,6 +143,58 @@ async function inlineSvgImages(contentEl) {
 }
 
 let _renderGen = 0;
+let _currentMarkdown = "";
+
+function getCurrentMarkdown() {
+  return _currentMarkdown;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESUME-BY-IDEA CHIP (WIKI-253)
+   ═══════════════════════════════════════════════════════════════ */
+function _findNearestHeadingAbove(contentEl, targetY) {
+  const headings = Array.from(contentEl.querySelectorAll("h2, h3"));
+  let nearest = null;
+  for (const h of headings) {
+    if (h.offsetTop <= targetY) {
+      nearest = h;
+    } else {
+      break;
+    }
+  }
+  return nearest;
+}
+
+function _removeResumeChip() {
+  document.getElementById("resume-chip")?.remove();
+}
+
+function _showResumeChip(heading, targetY) {
+  _removeResumeChip();
+  const chip = document.createElement("div");
+  chip.id = "resume-chip";
+  chip.className = "resume-chip";
+  chip.innerHTML = `
+    <button type="button" class="resume-chip-jump">
+      <span class="resume-chip-label">Last time you stopped at:</span>
+      <span class="resume-chip-heading"></span>
+    </button>
+    <button type="button" class="resume-chip-dismiss" aria-label="Dismiss">&times;</button>
+  `;
+  chip.querySelector(".resume-chip-heading").textContent = heading.textContent
+    .replace(/#+\s*$/, "")
+    .trim();
+
+  chip.querySelector(".resume-chip-jump").addEventListener("click", () => {
+    window.scrollTo({ top: targetY, behavior: "smooth" });
+    _removeResumeChip();
+  });
+  chip.querySelector(".resume-chip-dismiss").addEventListener("click", () => {
+    _removeResumeChip();
+  });
+
+  document.body.appendChild(chip);
+}
 
 function navigateToContent(wikiId, encodedPath, encodedTitle, slug) {
   const filePath = decodeURIComponent(encodedPath);
@@ -186,6 +239,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
   const body = document.getElementById("markdown-body");
   delete body.dataset.renderDone;
   body.innerHTML = buildLoadingSkeleton(getShapeFingerprint(filePath));
+  _currentMarkdown = "";
 
   // Clear old observers and modes
   if (state.tocObserver) {
@@ -202,10 +256,12 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
   state.preResizeObservers.forEach((ro) => ro.disconnect());
   state.preResizeObservers = [];
   cleanupFocusMode();
+  cleanupStudyMode();
   cleanupStickySection();
   ArticleFind.close();
   document.body.classList.remove("distraction-free");
   document.getElementById("toc-nav").innerHTML = "";
+  _removeResumeChip();
 
   const readTimeBadge = document.getElementById("content-read-time");
   if (readTimeBadge) readTimeBadge.textContent = "";
@@ -213,6 +269,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
   try {
     const markdown = await fetchText(filePath);
     if (gen !== _renderGen) return;
+    _currentMarkdown = markdown;
 
     // Only track successful loads.
     addToRecents({ wikiId: wiki.id, path: filePath, title, slug: derivedSlug });
@@ -411,7 +468,13 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
           requestAnimationFrame(() =>
             requestAnimationFrame(() => {
               if (gen !== _renderGen || state.currentView !== "content") return;
-              window.scrollTo({ top: _targetY, behavior: "instant" });
+              const nearestHeading =
+                _targetY > 100 ? _findNearestHeadingAbove(body, _targetY) : null;
+              if (nearestHeading) {
+                _showResumeChip(nearestHeading, _targetY);
+              } else {
+                window.scrollTo({ top: _targetY, behavior: "instant" });
+              }
             }),
           ),
         );
@@ -692,4 +755,11 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
   }
 }
 
-export { navigateToContent, renderContent, interceptMdLinks, closePeekSheet, showHoverPreview };
+export {
+  navigateToContent,
+  renderContent,
+  interceptMdLinks,
+  closePeekSheet,
+  showHoverPreview,
+  getCurrentMarkdown,
+};

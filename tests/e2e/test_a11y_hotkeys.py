@@ -130,7 +130,11 @@ def test_t_hotkey_uppercase(page, base_url):
 
 
 def test_content_scroll_restored_after_navigation(page, base_url):
-    """Scroll position in an article is saved and restored after navigating away."""
+    """Scroll position in an article is saved and restored after navigating away.
+
+    Since a heading exists above the saved position, revisiting shows the
+    resume chip (WIKI-253) instead of auto-scrolling; clicking it restores
+    the position."""
     _go_to_article(page, base_url)
 
     # Scroll partway down and wait for debounced save (400ms)
@@ -157,7 +161,11 @@ def test_content_scroll_restored_after_navigation(page, base_url):
     )
     # Wait for fonts to finish loading so layout is stable before rAF scroll fires
     page.wait_for_function("() => document.fonts.status === 'loaded'", timeout=8_000)
-    page.wait_for_function("() => window.scrollY > 0", timeout=5_000)
+    page.wait_for_selector("#resume-chip", timeout=5_000)
+    page.click(".resume-chip-jump")
+    # The jump uses a smooth scroll - wait for it to settle near the target
+    # rather than the first non-zero frame.
+    page.wait_for_function(f"() => window.scrollY >= {saved_y} * 0.6", timeout=5_000)
 
     restored_y = page.evaluate("() => window.scrollY")
     assert restored_y >= saved_y * 0.6, (

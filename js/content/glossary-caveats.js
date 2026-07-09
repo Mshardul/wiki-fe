@@ -228,12 +228,15 @@ function addGlossaryTerms(contentEl) {
         entries.forEach((entry) => {
           const el = entry.target;
           if (entry.isIntersecting) {
-            el.addEventListener("mouseenter", () => show(el));
+            el.addEventListener("mouseenter", el._glossaryShow);
+            el.addEventListener("focus", el._glossaryShow);
             el.addEventListener("mouseleave", hide);
-            el.addEventListener("focus", () => show(el));
             el.addEventListener("blur", hide);
           } else {
-            el.replaceWith(el.cloneNode(true));
+            el.removeEventListener("mouseenter", el._glossaryShow);
+            el.removeEventListener("focus", el._glossaryShow);
+            el.removeEventListener("mouseleave", hide);
+            el.removeEventListener("blur", hide);
           }
         });
       },
@@ -242,6 +245,7 @@ function addGlossaryTerms(contentEl) {
 
     matched.forEach((el) => {
       el.classList.add("glossary-term");
+      el._glossaryShow = () => show(el);
       observer.observe(el);
     });
   });

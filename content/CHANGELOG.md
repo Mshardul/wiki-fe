@@ -9,6 +9,11 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-07-09
+- `monotonic-queue.md` - new article: sliding-window max/min pattern via monotonic deque, DP-transition speedup, dual-queue variable-window variant
+- `string-hashing.md` - new article: polynomial prefix hashing, O(1) substring equality, double hashing, collision-probability correctness argument
+- `manacher-algorithm.md` - new article: O(n) longest palindromic substring via mirror-seeded center expansion, amortized correctness proof
+
 ## 2026-07-07
 - `ford-fulkerson.md` - new article: max-flow via DFS augmenting paths, residual graph
 - `edmonds-karp.md` - new article: Ford-Fulkerson + BFS augmenting paths, O(VE²) bound

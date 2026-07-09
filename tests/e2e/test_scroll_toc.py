@@ -10,7 +10,9 @@
 
 
 def test_scroll_position_saved_and_restored(page, base_url):
-    """scroll position is restored when revisiting the same article.
+    """Revisiting an article with a saved position at/above a heading shows the
+    resume chip (WIKI-253) instead of silently auto-scrolling; clicking it jumps
+    to the saved position.
 
     Writes the saved position directly to localStorage using the app's own key
     (read from state.currentFilePath) to avoid relying on headless scroll events
@@ -39,13 +41,14 @@ def test_scroll_position_saved_and_restored(page, base_url):
     page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#markdown-body pre", timeout=10_000)
 
-    # Wait until scroll is actually restored (fires at ~150ms) rather than a fixed sleep.
-    # If this times out, window.scrollTo genuinely doesn't work in this environment.
+    page.wait_for_selector("#resume-chip", timeout=3_000)
+    page.click(".resume-chip-jump")
+
     try:
         page.wait_for_function("() => window.scrollY > 100", timeout=3_000)
     except Exception:
         scroll_y = page.evaluate("() => window.scrollY")
-        assert False, f"Scroll not restored after 3s; scrollY={scroll_y}"
+        assert False, f"Scroll not restored after clicking resume chip; scrollY={scroll_y}"
 
 
 def test_scroll_restored_after_bfcache_pageshow(page, base_url):
@@ -119,6 +122,134 @@ def test_scroll_position_not_restored_with_anchor(page, base_url):
     # Anchor scroll targets near-0 if heading is at top, or some other position -
     # key assertion is that the restore path did not fire (no error thrown).
     assert page.locator("#view-content.active").count() == 1
+
+
+# ── Resume-by-idea chip (WIKI-253) ───────────────────────────────────────────────
+
+
+def _load_mock_article(page, base_url, content, slug="mock"):
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
+    page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
+    page.evaluate(
+        f"""() => navigateToContent(
+        'system-design',
+        encodeURIComponent('../content/system-design/{slug}.md'),
+        encodeURIComponent('{slug.capitalize()}'),
+        '{slug}'
+    )"""
+    )
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+
+
+_RESUME_CHIP_ARTICLE = (
+    "# Resume Chip Test\n\n"
+    + "Intro paragraph.\n\n" * 5
+    + "## First Section\n\n"
+    + "Body text.\n\n" * 5
+    + "## Second Section\n\n"
+    + "Body text.\n\n" * 40
+)
+
+
+def _save_scroll_and_revisit(page, base_url, slug, target_y):
+    _load_mock_article(page, base_url, _RESUME_CHIP_ARTICLE, slug=slug)
+    file_path = page.evaluate("() => state.currentFilePath")
+    wiki_id = page.evaluate("() => state.currentWikiId")
+    page.evaluate(
+        "([wid, fp, y]) => localStorage.setItem('scroll-' + wid + '-' + fp, String(y))",
+        [wiki_id, file_path, target_y],
+    )
+    _load_mock_article(page, base_url, _RESUME_CHIP_ARTICLE, slug=slug)
+
+
+def test_resume_chip_shows_nearest_heading_above_saved_position(page, base_url):
+    """The resume chip names the nearest h2/h3 above the saved scroll offset,
+    not an automatic silent scroll."""
+    _save_scroll_and_revisit(page, base_url, "resume-chip-shows", target_y=900)
+    page.wait_for_selector("#resume-chip", timeout=3_000)
+    heading_text = page.evaluate(
+        "() => document.querySelector('.resume-chip-heading')?.textContent"
+    )
+    assert heading_text == "Second Section", f"Expected 'Second Section', got {heading_text!r}"
+    # No silent auto-scroll should have happened.
+    assert page.evaluate("() => window.scrollY") == 0
+
+
+def test_resume_chip_click_scrolls_to_saved_position(page, base_url):
+    """Clicking the resume chip's jump button scrolls to the originally saved offset."""
+    _save_scroll_and_revisit(page, base_url, "resume-chip-jump", target_y=900)
+    page.wait_for_selector("#resume-chip", timeout=3_000)
+    page.click(".resume-chip-jump")
+    # The jump uses a smooth scroll - wait for it to settle near the target
+    # rather than the first non-zero frame.
+    page.wait_for_function("() => window.scrollY > 850", timeout=3_000)
+    scroll_y = page.evaluate("() => window.scrollY")
+    assert abs(scroll_y - 900) < 50, f"Expected scroll near 900, got {scroll_y}"
+
+
+def test_resume_chip_dismiss_does_not_scroll(page, base_url):
+    """Dismissing the resume chip removes it without scrolling the page."""
+    _save_scroll_and_revisit(page, base_url, "resume-chip-dismiss", target_y=900)
+    page.wait_for_selector("#resume-chip", timeout=3_000)
+    page.click(".resume-chip-dismiss")
+    page.wait_for_selector("#resume-chip", state="detached", timeout=3_000)
+    assert page.evaluate("() => window.scrollY") == 0
+
+
+def test_resume_chip_absent_when_no_heading_above_saved_position(page, base_url):
+    """Falls back to silent restore when the saved position is above any heading."""
+    _save_scroll_and_revisit(page, base_url, "resume-chip-fallback", target_y=50)
+    page.wait_for_function("() => window.scrollY > 0 || true", timeout=1_000)
+    assert page.locator("#resume-chip").count() == 0, (
+        "Resume chip should not appear when no heading precedes the saved position"
+    )
+
+
+def test_resume_chip_does_not_leak_across_navigation(page, base_url):
+    """The resume chip from one article must not persist into the next render."""
+    _save_scroll_and_revisit(page, base_url, "resume-chip-leak-1", target_y=900)
+    page.wait_for_selector("#resume-chip", timeout=3_000)
+
+    _load_mock_article(page, base_url, _RESUME_CHIP_ARTICLE, slug="resume-chip-leak-2")
+    assert page.locator("#resume-chip").count() == 0, (
+        "Resume chip leaked into an article render with no saved scroll position"
+    )
+
+
+def test_resume_chip_removed_when_navigating_to_home(page, base_url):
+    """Regression: the resume chip is appended to document.body, outside any
+    .view container, so leaving the article for home/index (not another
+    article) must still remove it - otherwise it and its listeners leak
+    forever across the session (found via a full-suite run degrading late
+    tests after ~500 accumulated chips)."""
+    _save_scroll_and_revisit(page, base_url, "resume-chip-home-leak", target_y=900)
+    page.wait_for_selector("#resume-chip", timeout=3_000)
+
+    page.evaluate("() => navigateHome()")
+    page.wait_for_selector("#view-home.active", timeout=5_000)
+
+    assert page.locator("#resume-chip").count() == 0, (
+        "Resume chip leaked into document.body after navigating to home"
+    )
+
+
+def test_resume_chip_removed_when_navigating_to_index(page, base_url):
+    """Same leak as the home case, but via the back button to the index view."""
+    _save_scroll_and_revisit(page, base_url, "resume-chip-index-leak", target_y=900)
+    page.wait_for_selector("#resume-chip", timeout=3_000)
+
+    page.click("#content-back-btn")
+    page.wait_for_selector("#view-index.active", timeout=5_000)
+
+    assert page.locator("#resume-chip").count() == 0, (
+        "Resume chip leaked into document.body after navigating to the index"
+    )
 
 
 # ── TOC Sidebar Behavior ────────────────────────────────────────────────────────
@@ -248,6 +379,28 @@ def test_sticky_section_header_shows_section_on_scroll(page, base_url):
         "() => document.getElementById('sticky-section-header')?.textContent?.trim()"
     )
     assert text, "Sticky section header is empty after scrolling past h2"
+
+
+def test_sticky_section_scroll_listener_cleared_on_navigate_home(page, base_url):
+    """Regression: addStickySection's window scroll listener closes over the
+    article's headings via state.stickySectionHandler. cleanupStickySection()
+    was only wired into content->content navigation (navigateToContent), so
+    leaving an article for home/index instead of another article leaked the
+    listener (and the abandoned heading DOM) forever - found via a full-suite
+    run where accumulated leaks degraded unrelated late-running tests."""
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    has_handler = page.evaluate("() => !!window.state?.stickySectionHandler")
+    assert has_handler, "Expected stickySectionHandler to be set after entering an article"
+
+    page.evaluate("() => navigateHome()")
+    page.wait_for_selector("#view-home.active", timeout=5_000)
+
+    leaked = page.evaluate("() => !!window.state?.stickySectionHandler")
+    assert not leaked, "stickySectionHandler leaked after navigating to home"
 
 
 def test_mobile_toc_open_locks_body_scroll(page, base_url):

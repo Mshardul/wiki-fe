@@ -387,6 +387,22 @@ const IndexFilter = {
     this._syncUnreadBtn();
   },
 
+  hasActiveFilter() {
+    return !!this._query || this._unread;
+  },
+
+  /* Full clear for the reset-view escape hatch (WIKI-278) - unlike reset(),
+     this also drops the unread toggle rather than honouring a pending request. */
+  clearAll() {
+    this._query = "";
+    this._unread = false;
+    this._pendingUnread = false;
+    const input = document.getElementById("index-filter-input");
+    if (input) input.value = "";
+    this._syncUnreadBtn();
+    this.apply();
+  },
+
   _syncUnreadBtn() {
     const btn = document.getElementById("index-filter-unread");
     if (!btn) return;

@@ -1,3 +1,4 @@
+import { cleanupStickySection } from "../content/toc.js";
 import { WIKIS, fuzzyMatch, state } from "../state.js";
 import { renderContent } from "./content-view.js";
 import { parseIndexMd, renderHome, renderIndex } from "./home-index.js";
@@ -17,6 +18,16 @@ function _applyView(id) {
   document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
   document.getElementById(id).classList.add("active");
   state.currentView = id.replace("view-", "");
+
+  // Resume chip (WIKI-253) is appended to document.body, outside any .view
+  // container, so it must be cleared on every view change, not just
+  // content->content navigation - otherwise it (and its listeners) leak.
+  if (id !== "view-content") document.getElementById("resume-chip")?.remove();
+
+  // Sticky section header's scroll listener closes over the abandoned
+  // article's headings. navigateToContent() only tears this down for
+  // content->content transitions; content->home/index leaked it forever.
+  if (id !== "view-content") cleanupStickySection();
 
   if (id !== "view-index") window.scrollTo(0, 0);
 
