@@ -596,6 +596,12 @@
           "description": "Computes, for each position, the longest prefix starting there (the Z-array) in O(n) by reusing a sliding match window. KMP's twin; pattern search via `P$T`."
         },
         {
+          "title": "Manacher Algorithm",
+          "path": "./content/dsa/algorithms/manacher-algorithm.md",
+          "slug": "manacher-algorithm",
+          "description": "Finds the longest palindromic substring in O(n) by mirroring already-computed radii across a known palindrome's center - collapses O(n²) expand-around-center to linear."
+        },
+        {
           "title": "Number Theory",
           "path": "./content/dsa/algorithms/number-theory.md",
           "slug": "number-theory",
@@ -662,6 +668,12 @@
           "description": "Rolling polynomial hash over a sliding window. O(n + m) average, O(nm) worst case - the primary choice for multi-pattern search and substring fingerprinting."
         },
         {
+          "title": "String Hashing",
+          "path": "./content/dsa/algorithms/string-hashing.md",
+          "slug": "string-hashing",
+          "description": "Prefix-hash a string once in O(n), then compare any two substrings in O(1) - the general polynomial-hash toolkit behind Rabin-Karp, double hashing, and hash + binary-search-on-answer."
+        },
+        {
           "title": "Kadane",
           "path": "./content/dsa/algorithms/kadane.md",
           "slug": "kadane",
@@ -719,6 +731,12 @@
           "path": "./content/dsa/patterns/monotonic-stack.md",
           "slug": "monotonic-stack",
           "description": "A stack kept increasing or decreasing. Next-greater-element, daily temperatures, histogram - amortized O(n)."
+        },
+        {
+          "title": "Monotonic Queue",
+          "path": "./content/dsa/patterns/monotonic-queue.md",
+          "slug": "monotonic-queue",
+          "description": "A deque kept increasing or decreasing. Sliding-window max/min in O(n) - the two-ended sibling of monotonic stack."
         },
         {
           "title": "Top-K Elements",
