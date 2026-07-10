@@ -214,6 +214,16 @@
 #index-sections {
   transition: transform 0.15s ease-out;
 }
+#index-sections .index-card,
+#index-sections .index-section {
+  /* Read-time/stub badges populate async and change card/section height.
+     The viewport is the scrolling box, so scroll anchoring must be disabled
+     on the elements that actually resize, not on their non-scrolling
+     ancestor - otherwise Chromium still silently shifts window.scrollY to
+     compensate, and that shift gets mistaken for a real user scroll by the
+     scroll-position-persistence listeners in app.js. */
+  overflow-anchor: none;
+}
 #index-sections.index-pulling {
   transition: none;
 }

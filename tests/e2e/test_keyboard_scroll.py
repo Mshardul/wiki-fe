@@ -93,6 +93,8 @@ def test_toc_pulse_on_click(page, base_url):
 
 def test_index_scroll_persistence(page, base_url):
     """Scroll position on wiki index is restored when revisiting."""
+    logs = []
+    page.on("console", lambda m: logs.append(m.text))
     # 1. Go to index and scroll down
     page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector(

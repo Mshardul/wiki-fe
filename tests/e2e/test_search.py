@@ -17,6 +17,24 @@ def _open_search(page):
     page.wait_for_selector("#gsearch-input")
 
 
+def test_home_topbar_search_button_opens_search(page, base_url):
+    """The search icon in the home topbar opens the global search modal."""
+    page.set_viewport_size({"width": 375, "height": 812})
+    page.goto(base_url, wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.locator(".home-topbar [data-action='search-open']").click()
+    page.wait_for_selector("#global-search-modal:not(.hidden)")
+
+
+def test_content_topbar_search_button_opens_search(page, base_url):
+    """The search icon in the content topbar opens the global search modal."""
+    page.set_viewport_size({"width": 375, "height": 812})
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.locator(".content-topbar [data-action='search-open']").click()
+    page.wait_for_selector("#global-search-modal:not(.hidden)")
+
+
 @pytest.mark.smoke
 def test_arrow_down_selects_first_result(wiki_page):
     """ArrowDown marks first result with .selected class."""

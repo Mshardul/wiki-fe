@@ -63,7 +63,7 @@ Each member uses a different path-finding strategy, trading implementation simpl
 
 - **[Ford-Fulkerson](./ford-fulkerson.md)** - the **baseline**. Finds any augmenting path via DFS - simplest to implement, but its runtime is O(E·\|max_flow\|), which depends on the *numeric value* of the max flow, not just the graph size. On graphs with large capacities, this can be catastrophically slow even though the graph itself is tiny.
 - **[Edmonds-Karp](./edmonds-karp.md)** - the **disciplined** one. Identical to Ford-Fulkerson except the augmenting path is found via BFS (always shortest path by edge count). That one rule bounds the runtime to O(VE²) - a true polynomial bound, independent of capacity magnitude.
-- **Dinic** - the **fast** one. <!-- [Dinic's Algorithm](./dinic.md) [pending] - builds a level graph via BFS, then finds a blocking flow (multiple augmenting paths at once) via DFS within that level graph, repeating until no more levels exist. O(V²E) in general, O(E√V) on unit-capacity graphs (e.g. bipartite matching) - faster than Edmonds-Karp on large or dense graphs. -->
+- **[Dinic](./dinic.md)** - the **fast** one. Builds a level graph via BFS, then finds a blocking flow (multiple augmenting paths at once) via DFS within that level graph, repeating until no more levels exist. O(V²E) in general, O(E√V) on unit-capacity graphs (e.g. bipartite matching) - faster than Edmonds-Karp on large or dense graphs.
 - **[Bipartite Matching](./bipartite-matching.md)** - not a distinct algorithm but the most common **application**: model a bipartite compatibility graph as a unit-capacity flow network (source → left nodes → right nodes → sink, all capacity 1), and the max flow equals the maximum matching size. Covers the reduction in depth plus the direct (non-flow) Kuhn's/Hopcroft-Karp alternatives.
 
 ## Comparison
@@ -80,7 +80,7 @@ All three compute the **same max-flow value** on any given input - this table is
 
 - **Small graph, small integer capacities, need the simplest possible code** → **[Ford-Fulkerson](./ford-fulkerson.md)**. The pseudo-polynomial bound is a real risk only when capacities are large relative to the graph; at small scale it's rarely worth the extra BFS bookkeeping.
 - **Capacities are large, unknown, or adversarial (the common competitive-programming case)** → **[Edmonds-Karp](./edmonds-karp.md)**. The capacity-independent O(VE²) bound is the textbook-safe default whenever you can't bound the flow value in advance.
-- **Graph is large/dense, or the problem is unit-capacity bipartite matching** → **Dinic**. Its blocking-flow-per-level-graph approach amortizes far better than one-BFS-per-augmentation, and its O(E√V) unit-capacity special case makes it the standard choice for matching problems at scale.
+- **Graph is large/dense, or the problem is unit-capacity bipartite matching** → **[Dinic](./dinic.md)**. Its blocking-flow-per-level-graph approach amortizes far better than one-BFS-per-augmentation, and its O(E√V) unit-capacity special case makes it the standard choice for matching problems at scale.
 - **The problem isn't phrased as "flow" at all but involves "maximum pairs," "maximum disjoint paths," or "feasibility under prerequisite constraints"** → recognize it as a max-flow reduction first, then pick the member above based on graph size and capacity magnitude.
 
 ## Interview soundbite

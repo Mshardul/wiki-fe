@@ -56,6 +56,16 @@ def _go_to_index(page, base_url):
     page.wait_for_selector("#view-index.active", timeout=10_000)
     # wait for at least one available (non-stub) card
     page.wait_for_selector(".index-card:not(.index-card--unavailable)", timeout=10_000)
+    # populateIndexReadTimes() runs on requestIdleCallback and can still be mutating
+    # card layout (removing read-dots, adding --unavailable) after the cards first
+    # appear - wait for it to settle so bounding_box() coords used by swipes stay valid.
+    page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
+    # document.elementFromPoint() hit-testing lags behind layout for a brief window
+    # right after navigation in headless Chromium - no DOM-observable signal for when
+    # it catches up, so _swipe()'s elementFromPoint(sx, sy) can transiently return
+    # <html> instead of the real target even though bounding_box() is already correct.
+    # A short settle avoids dispatching synthetic touch events on the wrong element.
+    page.wait_for_timeout(300)
 
 
 def _first_card_box(page):

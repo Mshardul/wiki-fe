@@ -135,7 +135,8 @@
   }
   .breadcrumb a,
   .breadcrumb-link {
-    min-width: 0;
+    flex-shrink: 1;
+    min-width: 2.5em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -144,9 +145,10 @@
     flex-shrink: 0;
   }
   .breadcrumb span:last-child {
-    flex-shrink: 0;
+    flex-shrink: 1;
+    min-width: 3.5em;
     overflow: hidden;
-    text-overflow: clip;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 

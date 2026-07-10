@@ -301,8 +301,11 @@ window.addEventListener(
 
     if (state.currentView === "index" && state.currentWikiId) {
       clearTimeout(_indexScrollTimer);
+      const _wikiAtIndexScroll = state.currentWikiId;
+      const _yAtIndexScroll = window.scrollY;
       _indexScrollTimer = setTimeout(() => {
-        saveScrollPos(`wiki-index-scroll-${state.currentWikiId}`, window.scrollY);
+        if (state.currentView !== "index" || state.currentWikiId !== _wikiAtIndexScroll) return;
+        saveScrollPos(`wiki-index-scroll-${_wikiAtIndexScroll}`, _yAtIndexScroll);
       }, 300);
     }
   },

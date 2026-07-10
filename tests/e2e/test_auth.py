@@ -3,6 +3,8 @@ import re
 import pytest
 from playwright.sync_api import expect
 
+from conftest import _make_cdn_fulfill_handler
+
 _UNAUTH = '{"error":{"code":"UNAUTHORIZED","message":"no session"}}'
 
 
@@ -50,6 +52,85 @@ def test_auth_modal_is_bottom_sheet_on_mobile(page, base_url):
         "() => getComputedStyle(document.querySelector('.auth-drag-handle')).display"
     )
     assert handle_display != "none", "Drag handle should be visible on mobile"
+
+
+def test_auth_btn_shows_icon_on_mobile(page, base_url):
+    """Topbar auth button keeps a visible icon on mobile once its text label hides."""
+    _stub_logged_out(page)
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(base_url)
+
+    label_display = page.evaluate(
+        "() => getComputedStyle(document.querySelector('#auth-btn-home .auth-btn-label')).display"
+    )
+    assert label_display == "none"
+
+    svg = page.locator("#auth-btn-home svg")
+    expect(svg).to_be_visible()
+
+
+def test_auth_swap_links_meet_touch_target_on_mobile(page, base_url, cdn_cache):
+    """Swap links (Forgot password?, Register) are at least 44px tall on touch devices."""
+    ctx = page.context.browser.new_context(
+        viewport={"width": 390, "height": 844},
+        has_touch=True,
+        is_mobile=True,
+        service_workers="block",
+    )
+    touch_page = ctx.new_page()
+    for url, (body, content_type) in cdn_cache.items():
+        touch_page.route(url, _make_cdn_fulfill_handler(body, content_type))
+    _stub_logged_out(touch_page)
+    touch_page.goto(base_url)
+    touch_page.locator("#auth-btn-home").click()
+    expect(touch_page.locator("#auth-modal")).not_to_have_class(re.compile(r"\bhidden\b"))
+
+    for link_id in ("auth-to-forgot", "auth-to-register"):
+        height = touch_page.evaluate(
+            f"() => document.getElementById('{link_id}').getBoundingClientRect().height"
+        )
+        assert height >= 44, f"#{link_id} is only {height}px tall, expected >= 44px"
+    ctx.close()
+
+
+def test_auth_modal_swipe_down_closes_on_mobile(page, base_url, cdn_cache):
+    """Swiping down from the drag-handle area dismisses the mobile auth sheet."""
+    ctx = page.context.browser.new_context(
+        viewport={"width": 390, "height": 844},
+        has_touch=True,
+        is_mobile=True,
+        service_workers="block",
+    )
+    touch_page = ctx.new_page()
+    for url, (body, content_type) in cdn_cache.items():
+        touch_page.route(url, _make_cdn_fulfill_handler(body, content_type))
+    _stub_logged_out(touch_page)
+    touch_page.goto(base_url)
+    touch_page.wait_for_selector("#view-home.active", timeout=8_000)
+    touch_page.locator("#auth-btn-home").click()
+    expect(touch_page.locator("#auth-modal")).not_to_have_class(re.compile(r"\bhidden\b"))
+
+    touch_page.evaluate("""() => {
+        function touch(type, x, y, target) {
+            const t = new Touch({identifier: 1, target, clientX: x, clientY: y});
+            const ev = new TouchEvent(type, {
+                touches: type === 'touchend' ? [] : [t],
+                changedTouches: [t],
+                bubbles: true,
+                cancelable: true,
+            });
+            target.dispatchEvent(ev);
+        }
+        const el = document.body;
+        touch('touchstart', 195, 150, el);
+        touch('touchmove', 195, 250, el);
+        touch('touchend', 195, 250, el);
+    }""")
+    touch_page.wait_for_function(
+        "() => document.getElementById('auth-modal').classList.contains('hidden')",
+        timeout=3_000,
+    )
+    ctx.close()
 
 
 def test_auth_modal_centered_on_desktop(page, base_url):

@@ -431,3 +431,52 @@ def test_mobile_toc_close_via_overlay_unlocks_scroll(page, base_url):
         "() => !document.getElementById('toc-sidebar').classList.contains('mobile-open')"
     )
     assert not page.evaluate("() => document.body.classList.contains('toc-open')")
+
+
+def test_mobile_toc_drawer_stays_onscreen_after_view_animation(page, base_url):
+    """Drawer stays pinned to viewport top after scroll, not offset by a stale transform."""
+    page.set_viewport_size({"width": 375, "height": 812})
+    _load_mock_article(page, base_url, _RESUME_CHIP_ARTICLE, slug="toc-drawer-onscreen")
+    page.wait_for_timeout(400)
+    page.evaluate("() => window.scrollTo(0, 200)")
+
+    page.locator("#toc-mobile-btn").click()
+    page.wait_for_function(
+        "() => document.getElementById('toc-sidebar').classList.contains('mobile-open')"
+    )
+    page.wait_for_timeout(300)
+    box = page.locator("#toc-sidebar").bounding_box()
+    assert box["x"] >= 0 and box["x"] + box["width"] <= page.viewport_size["width"]
+    assert box["y"] == 0, f"expected drawer pinned to viewport top, got y={box['y']}"
+
+
+def test_mobile_toc_collapse_button_hidden_in_drawer(page, base_url):
+    """Desktop collapse chevron hidden in mobile drawer - can't empty it."""
+    page.set_viewport_size({"width": 375, "height": 812})
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_selector("#toc-nav .toc-item", state="attached")
+
+    page.locator("#toc-mobile-btn").click()
+    page.wait_for_function(
+        "() => document.getElementById('toc-sidebar').classList.contains('mobile-open')"
+    )
+    assert not page.locator("#toc-collapse").is_visible()
+    assert page.locator("#toc-nav .toc-item").first.is_visible()
+
+
+def test_mobile_toc_drawer_nav_visible_even_if_collapsed_class_set(page, base_url):
+    """Drawer nav stays visible even if .collapsed leaked in from desktop."""
+    page.set_viewport_size({"width": 375, "height": 812})
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_selector("#toc-nav .toc-item", state="attached")
+
+    page.evaluate(
+        "() => document.getElementById('toc-sidebar').classList.add('collapsed')"
+    )
+    page.locator("#toc-mobile-btn").click()
+    page.wait_for_function(
+        "() => document.getElementById('toc-sidebar').classList.contains('mobile-open')"
+    )
+    assert page.locator("#toc-nav .toc-item").first.is_visible()

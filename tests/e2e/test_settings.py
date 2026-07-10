@@ -7,6 +7,8 @@ Reading modes (focus mode, offline save) in Advanced tab.
 
 import pytest
 
+from conftest import _make_cdn_fulfill_handler
+
 
 def _settings_is_closed(page):
     page.wait_for_function(
@@ -45,6 +47,35 @@ def test_settings_closes_on_escape(wiki_page):
     _open_settings(wiki_page)
     _close_settings_via_escape(wiki_page)
     assert "hidden" in wiki_page.locator("#prefs-modal").get_attribute("class")
+
+
+def test_keyboard_tab_hidden_on_touch_device(page, base_url, cdn_cache):
+    """Keyboard-shortcuts tab is hidden under pointer:coarse (touch devices)."""
+    ctx = page.context.browser.new_context(
+        viewport={"width": 390, "height": 844},
+        has_touch=True,
+        is_mobile=True,
+        service_workers="block",
+    )
+    touch_page = ctx.new_page()
+    for url, (body, content_type) in cdn_cache.items():
+        touch_page.route(url, _make_cdn_fulfill_handler(body, content_type))
+    touch_page.goto(base_url, wait_until="domcontentloaded")
+    touch_page.wait_for_selector("#view-home.active", timeout=8_000)
+    _open_settings(touch_page)
+
+    display = touch_page.evaluate(
+        "() => getComputedStyle(document.querySelector('.prefs-tab[data-tab=\"keyboard\"]')).display"
+    )
+    assert display == "none"
+    ctx.close()
+
+
+def test_keyboard_tab_visible_on_desktop(wiki_page):
+    """Keyboard-shortcuts tab stays visible for mouse/keyboard (fine pointer) users."""
+    _open_settings(wiki_page)
+    expect = wiki_page.locator('.prefs-tab[data-tab="keyboard"]')
+    assert expect.is_visible()
 
 
 def test_settings_closes_on_backdrop_click(wiki_page):
@@ -785,15 +816,16 @@ def test_focus_mode_prefs_btn_toggles_active_state(page, base_url):
 # ── Topbar declutter (WIKI-240) ─────────────────────────────────────────────────
 
 
-def test_topbar_has_only_preferences_and_auth_buttons(wiki_page):
-    """Home/index/content topbars keep only the preferences + auth buttons -
-    search moved into the preferences panel; the standalone quick dark/light
-    toggle was removed entirely (theme is chosen via background swatches)."""
+def test_topbar_has_no_theme_toggle_button(wiki_page):
+    """Home/index/content topbars have no standalone quick dark/light toggle -
+    theme is chosen only via the background swatches in preferences. (Search
+    was reintroduced into home/content topbars by WIKI-412 - see
+    test_home_topbar_search_button_opens_search / test_content_topbar_search_button_opens_search
+    in test_search.py.)"""
     for selector in (".home-topbar", ".page-topbar .topbar-inner", ".content-topbar .topbar-inner"):
         el = wiki_page.locator(selector).first
         if el.count() == 0:
             continue
-        assert el.locator('[data-action="search-open"]').count() == 0, selector
         assert el.locator('[data-action="toggle-theme"]').count() == 0, selector
 
 

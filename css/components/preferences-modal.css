@@ -260,6 +260,11 @@
   color: var(--text-heading);
   border-bottom-color: var(--accent);
 }
+@media (pointer: coarse) {
+  .prefs-tab[data-tab="keyboard"] {
+    display: none;
+  }
+}
 .prefs-body {
   flex: 1;
   overflow: hidden;

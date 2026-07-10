@@ -225,12 +225,6 @@ function addDiagramZoom(contentEl) {
       const svgEl = diagram.querySelector("svg");
       if (!svgEl) return;
       const clone = svgEl.cloneNode(true);
-      // Preserve viewBox so CSS can size it; set explicit 100% dims so
-      // the element has a non-zero bounding box inside the flex overlay.
-      clone.removeAttribute("width");
-      clone.removeAttribute("height");
-      clone.setAttribute("width", "100%");
-      clone.setAttribute("height", "100%");
       clone.classList.add("zoom-diagram-svg");
       openZoomOverlay(clone);
     });

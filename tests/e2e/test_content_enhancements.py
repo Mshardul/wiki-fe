@@ -383,14 +383,26 @@ def test_diagram_zoom_overlay_contains_svg(page, base_url):
     page.locator(".mermaid-diagram").first.click()
     page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
 
-    # Use evaluate rather than wait_for_selector(visible) - the cloned SVG has
-    # no explicit dimensions after stripping width/height attrs, so Playwright's
-    # visibility check (non-zero bounding box) may fail even though it is attached.
     svg_in_overlay = page.evaluate("""() => {
         const overlay = document.getElementById('zoom-overlay');
         return overlay?.querySelector('.zoom-overlay-content svg') !== null;
     }""")
     assert svg_in_overlay, "Zoom overlay does not contain an <svg> element"
+
+
+def test_diagram_zoom_overlay_svg_has_nonzero_size(page, base_url):
+    """Zoomed diagram SVG renders with real dimensions, not collapsed to 0x0."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-size")
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
+
+    page.locator(".mermaid-diagram").first.click()
+    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+
+    box = page.locator(".zoom-diagram-svg").bounding_box()
+    assert box is not None
+    assert box["width"] > 0 and box["height"] > 0, (
+        f"Zoomed diagram SVG collapsed to a zero-size box: {box}"
+    )
 
 
 # ── Diagram theme sync ────────────────────────────────────────────

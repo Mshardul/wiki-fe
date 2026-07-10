@@ -117,7 +117,7 @@ The constraints decide whether the naive O(n·m) / O(n²) scan survives or you n
 | Many prefix-match queries       | O(n) build, O(1) each | Precompute the Z-array once; each "does the prefix start at `i`, how far?" is then an O(1) lookup.                  |
 | Counting / probabilistic match | O(n + m) expected   | "Count occurrences", multi-substring equality → [Rabin–Karp](./string-matching.md) rolling hash may be simpler.    |
 | `n` near a memory limit, search | O(n + m) time, O(n) space | Z needs the full `P + sep + T` concatenation in memory; if `n` is at the RAM ceiling this pushes you _off_ Z → **KMP**, which keeps only the O(m) failure array and streams the text. |
-| Many patterns vs one text       | O(Σm) preprocess    | Z per pattern is O(k·n); the constraint _rules it out_ → **Aho–Corasick** (a trie + failure links), which Z does not generalize to. |
+| Many patterns vs one text       | O(Σm) preprocess    | Z per pattern is O(k·n); the constraint _rules it out_ → **[Aho-Corasick](./aho-corasick.md)** (a trie + failure links), which Z does not generalize to. |
 
 The senior reading: the Z-array shines specifically when the question is **about the string's relationship to its own prefix** (periodicity, borders, prefix recurrence). For raw single-pattern search, Z and KMP are interchangeable in cost - pick the one you can derive correctly under pressure; Z is often easier to reason about because there's no separate failure-function recurrence to recall. The two off-ramps above are where the constraint stops being neutral and actively picks against Z: a memory ceiling favors KMP's O(m) footprint, and multiple patterns force Aho–Corasick because the failure function generalizes and the Z-array doesn't.
 

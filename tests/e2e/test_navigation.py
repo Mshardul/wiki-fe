@@ -43,6 +43,19 @@ def test_breadcrumb_wiki_link_works(wiki_page, base_url):
     wiki_page.wait_for_selector("#view-index.active", timeout=5_000)
 
 
+def test_breadcrumb_crumbs_not_zero_width_on_narrow_viewport(page, base_url):
+    """Parent crumbs stay visible (non-zero width) at 360px instead of collapsing."""
+    page.set_viewport_size({"width": 360, "height": 740})
+    _go_to_article(page, base_url)
+    page.wait_for_selector("#content-breadcrumb .breadcrumb-link")
+
+    widths = page.evaluate("""() => {
+        const els = document.querySelectorAll('#content-breadcrumb > *');
+        return Array.from(els).map(el => el.getBoundingClientRect().width);
+    }""")
+    assert all(w > 0 for w in widths), f"a breadcrumb crumb collapsed to 0 width: {widths}"
+
+
 @pytest.mark.smoke
 def test_escape_closes_search_modal(wiki_page):
     """Escape closes open search modal (takes priority over index nav)."""

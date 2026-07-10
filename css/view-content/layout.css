@@ -140,7 +140,7 @@ body.distraction-free .sticky-section-header {
   color: var(--text-body);
   background: var(--surface-hover);
 }
-.toc-sidebar.collapsed .toc-nav {
+.toc-sidebar.collapsed:not(.mobile-open) .toc-nav {
   display: none;
 }
 .toc-sidebar.collapsed .toc-collapse svg {
@@ -662,6 +662,9 @@ body.distraction-free .sticky-section-header {
 .toc-sidebar.mobile-open {
   display: flex !important;
   flex-direction: column;
+}
+.toc-sidebar.mobile-open .toc-collapse {
+  display: none;
 }
 
 /* ── Lede paragraph ── */

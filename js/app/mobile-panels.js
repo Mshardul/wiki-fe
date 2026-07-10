@@ -1,3 +1,4 @@
+import { AuthModal } from "../auth.js";
 import { rerenderMermaidDiagrams } from "../content/mermaid.js";
 import { closeZoomOverlay } from "../content/zoom-lightbox.js";
 import { navigate } from "../render/router.js";
@@ -61,6 +62,10 @@ function closeTopPanel() {
   }
   if (isMobileTocOpen()) {
     closeMobileToc();
+    return true;
+  }
+  if (AuthModal.isOpen()) {
+    AuthModal.close();
     return true;
   }
   return false;
@@ -150,6 +155,7 @@ function axisLock(dx, dy) {
       } else if (axis === "y") {
         const panelOpen =
           Settings.isOpen() ||
+          AuthModal.isOpen() ||
           document.getElementById("hover-preview")?.classList.contains("hover-preview--sheet-open");
         if (dy > SWIPE_THRESHOLD && (panelOpen || sy < window.innerHeight / 3)) {
           closeTopPanel();

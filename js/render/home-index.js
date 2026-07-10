@@ -142,25 +142,20 @@ async function renderIndex(wiki) {
     attachIndexCardHoverPreview();
     IndexFilter.apply();
 
+    const savedScroll = localStorage.getItem(`wiki-index-scroll-${wiki.id}`);
+    const targetY = savedScroll ? Number.parseInt(savedScroll, 10) : null;
+
     sectionsEl.classList.add("index-sections--loading");
     const scheduleIdle = window.requestIdleCallback ?? ((fn) => setTimeout(fn, 1));
     scheduleIdle(() =>
-      populateIndexReadTimes().finally(() =>
-        sectionsEl.classList.remove("index-sections--loading"),
-      ),
+      populateIndexReadTimes().finally(() => {
+        sectionsEl.classList.remove("index-sections--loading");
+        // Read-time/stub badges can change section height, so only restore scroll
+        // once that layout-affecting work is done - restoring earlier (e.g. on
+        // fonts.ready) risks the browser clamping targetY to a still-short page.
+        if (targetY !== null) window.scrollTo({ top: targetY, behavior: "instant" });
+      }),
     );
-
-    const savedScroll = localStorage.getItem(`wiki-index-scroll-${wiki.id}`);
-    if (savedScroll) {
-      const targetY = Number.parseInt(savedScroll, 10);
-      const restore = () =>
-        requestAnimationFrame(() => window.scrollTo({ top: targetY, behavior: "instant" }));
-      if (document.fonts?.ready) {
-        document.fonts.ready.then(restore);
-      } else {
-        restore();
-      }
-    }
   } catch (err) {
     sectionsEl.innerHTML = `<p class="error">Failed to load index. (${escHtml(err.message)})</p>`;
   }

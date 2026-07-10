@@ -9,6 +9,12 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-07-10
+- `longest-increasing-subsequence.md` - new article
+- `aho-corasick.md` - new article
+- `longest-common-subsequence.md` - new article
+- `dinic.md` - new article
+
 ## 2026-07-09
 - `monotonic-queue.md` - new article: sliding-window max/min pattern via monotonic deque, DP-transition speedup, dual-queue variable-window variant
 - `string-hashing.md` - new article: polynomial prefix hashing, O(1) substring equality, double hashing, collision-probability correctness argument
