@@ -572,6 +572,18 @@
           "description": "Solve overlapping subproblems once, reuse via memo or table. Optimal substructure → the recurrence that collapses exponential to polynomial."
         },
         {
+          "title": "Longest Increasing Subsequence",
+          "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
+          "slug": "longest-increasing-subsequence",
+          "description": "O(n²) DP comparing every pair, or O(n log n) patience sorting via a binary-searched `tails` array - same answer, different state representation."
+        },
+        {
+          "title": "Longest Common Subsequence",
+          "path": "./content/dsa/algorithms/longest-common-subsequence.md",
+          "slug": "longest-common-subsequence",
+          "description": "Compare two strings with a 2D `dp[i][j]` table - match extends the diagonal, mismatch takes the max of dropping a char from either side. O(n·m) time/space, the basis of `diff`, edit distance, and DNA alignment."
+        },
+        {
           "title": "Bit Manipulation",
           "path": "./content/dsa/algorithms/bit-manipulation.md",
           "slug": "bit-manipulation",
@@ -600,6 +612,12 @@
           "path": "./content/dsa/algorithms/manacher-algorithm.md",
           "slug": "manacher-algorithm",
           "description": "Finds the longest palindromic substring in O(n) by mirroring already-computed radii across a known palindrome's center - collapses O(n²) expand-around-center to linear."
+        },
+        {
+          "title": "Aho-Corasick",
+          "path": "./content/dsa/algorithms/aho-corasick.md",
+          "slug": "aho-corasick",
+          "description": "KMP's failure function generalized to a trie - build once over all patterns, scan the text once, O(n + Σm + matches) deterministic multi-pattern matching."
         },
         {
           "title": "Number Theory",
@@ -654,6 +672,12 @@
           "path": "./content/dsa/algorithms/edmonds-karp.md",
           "slug": "edmonds-karp",
           "description": "Ford-Fulkerson with BFS for shortest augmenting paths. O(VE²) - polynomial regardless of capacity values."
+        },
+        {
+          "title": "Dinic",
+          "path": "./content/dsa/algorithms/dinic.md",
+          "slug": "dinic",
+          "description": "BFS level graph + DFS blocking flow with current-arc optimization. O(V²E) general, O(E√V) on unit-capacity graphs - the fast max-flow choice."
         },
         {
           "title": "Bipartite Matching",

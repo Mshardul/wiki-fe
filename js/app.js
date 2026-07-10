@@ -510,6 +510,11 @@ window.addEventListener("hashchange", () => {
   initProgressRingScrollTop();
 
   if ("serviceWorker" in navigator) {
+    // First install has no prior controller - a controllerchange there is the
+    // initial claim, not an update, and must not reload (would drop boot params
+    // like ?mode=verify/reset already stripped from the URL by handleBootParams).
+    const hadController = !!navigator.serviceWorker.controller;
+
     navigator.serviceWorker
       .register("./wiki-sw.js")
       .then((reg) => {
@@ -540,7 +545,7 @@ window.addEventListener("hashchange", () => {
 
     let _swRefreshing = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (_swRefreshing) return;
+      if (!hadController || _swRefreshing) return;
       _swRefreshing = true;
       location.reload();
     });
