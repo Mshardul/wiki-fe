@@ -1035,3 +1035,39 @@ def test_scope_custom_dropdown(wiki_page):
         options.nth(1).click()
         wiki_page.locator(".gsearch-dialog.scope-mode").wait_for(state="visible", timeout=5_000)
         assert "scope-mode" in (wiki_page.locator(".gsearch-dialog").get_attribute("class") or "")
+
+
+def test_scope_btn_44px_on_coarse_pointer(browser, base_url, cdn_cache):
+    """Regression for WIKI-406: .gsearch-scope-btn is ~20px tall with no
+    pointer:coarse fallback, well under the 44px touch-target minimum."""
+    from conftest import _make_cdn_fulfill_handler
+
+    ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 375, "height": 700},
+        service_workers="block",
+    )
+    page = ctx.new_page()
+    try:
+        for url, (body, content_type) in cdn_cache.items():
+            page.route(url, _make_cdn_fulfill_handler(body, content_type))
+
+        page.goto(f"{base_url}/", wait_until="domcontentloaded")
+        page.wait_for_timeout(200)
+        page.keyboard.press("Meta+k")
+        page.wait_for_selector("#global-search-modal:not(.hidden)")
+        page.fill("#gsearch-input", "array")
+        page.wait_for_selector(".gsearch-result", state="attached", timeout=10_000)
+        page.wait_for_function(
+            "() => getComputedStyle(document.querySelector('.gsearch-scope-custom')).display !== 'none'",
+            timeout=3_000,
+        )
+        page.wait_for_selector(".gsearch-scope-btn", timeout=5_000)
+
+        height = page.evaluate(
+            "() => document.querySelector('.gsearch-scope-btn').getBoundingClientRect().height"
+        )
+        assert height >= 44, f"gsearch-scope-btn height too small: {height}px"
+    finally:
+        ctx.close()

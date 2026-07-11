@@ -477,3 +477,78 @@ def test_unread_toggle_filters_read_cards(page, base_url):
               .filter(c => c.querySelector('.index-card-read-dot.visible')).length"""
     )
     assert leaked == 0, "Unread-only filter must hide cards marked read"
+
+
+def test_index_ctrl_and_filter_44px_on_coarse_pointer(browser, base_url, cdn_cache):
+    """Regression for WIKI-406: .index-ctrl-btn and .index-filter-input are
+    under 44px on touch devices with no pointer:coarse fallback."""
+    ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 768, "height": 1024},
+        service_workers="block",
+    )
+    page = ctx.new_page()
+    try:
+        def _make_handler(body, content_type):
+            return lambda route: route.fulfill(
+                status=200, content_type=content_type, body=body
+            )
+
+        for url, (body, content_type) in cdn_cache.items():
+            page.route(url, _make_handler(body, content_type))
+
+        _go_to_index(page, base_url)
+        page.wait_for_selector(".index-ctrl-btn", timeout=10_000)
+
+        sizes = page.evaluate("""() => {
+            const ctrl = document.querySelector('.index-ctrl-btn').getBoundingClientRect();
+            const filterInput = document.getElementById('index-filter-input').getBoundingClientRect();
+            return { ctrlHeight: ctrl.height, filterHeight: filterInput.height };
+        }""")
+        assert sizes["ctrlHeight"] >= 44, f"index-ctrl-btn height too small: {sizes['ctrlHeight']}px"
+        assert sizes["filterHeight"] >= 44, f"index-filter-input height too small: {sizes['filterHeight']}px"
+    finally:
+        ctx.close()
+
+
+def test_swipe_hint_visible_on_coarse_pointer_only(browser, base_url, cdn_cache):
+    """WIKI-414: index cards show a persistent swipe-hint icon on touch
+    devices (pointer:coarse), and never on mouse-driven viewports."""
+    def _make_handler(body, content_type):
+        return lambda route: route.fulfill(status=200, content_type=content_type, body=body)
+
+    touch_ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 390, "height": 844},
+        service_workers="block",
+    )
+    mouse_ctx = browser.new_context(
+        has_touch=False,
+        viewport={"width": 1280, "height": 900},
+        service_workers="block",
+    )
+    try:
+        touch_page = touch_ctx.new_page()
+        for url, (body, content_type) in cdn_cache.items():
+            touch_page.route(url, _make_handler(body, content_type))
+        _go_to_index(touch_page, base_url)
+        touch_page.wait_for_selector(".index-card-swipe-hint", timeout=10_000)
+        touch_display = touch_page.evaluate(
+            "() => getComputedStyle(document.querySelector('.index-card-swipe-hint')).display"
+        )
+        assert touch_display != "none", "Swipe hint should be visible on pointer:coarse"
+
+        mouse_page = mouse_ctx.new_page()
+        for url, (body, content_type) in cdn_cache.items():
+            mouse_page.route(url, _make_handler(body, content_type))
+        _go_to_index(mouse_page, base_url)
+        mouse_page.wait_for_selector(".index-card", timeout=10_000)
+        mouse_display = mouse_page.evaluate(
+            "() => getComputedStyle(document.querySelector('.index-card-swipe-hint')).display"
+        )
+        assert mouse_display == "none", "Swipe hint must stay hidden on mouse-driven viewports"
+    finally:
+        touch_ctx.close()
+        mouse_ctx.close()

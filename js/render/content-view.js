@@ -51,9 +51,9 @@ import {
 import {
   WIKIS,
   escHtml,
+  getMdConverter,
   getShapeFingerprint,
   markStubPath,
-  mdConverter,
   readTimeCache,
   saveShapeFingerprint,
   state,
@@ -301,7 +301,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     // DOMPurify (XSS Protection)
     let rawHtml = getCachedHtml(filePath);
     if (!rawHtml) {
-      rawHtml = mdConverter.makeHtml(markdown);
+      rawHtml = getMdConverter().makeHtml(markdown);
       cacheRenderedHtml(filePath, rawHtml);
     }
     body.innerHTML =
@@ -737,7 +737,7 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
     if (!extract) throw new Error("Empty");
     if (extract.length > 350) extract = `${extract.slice(0, 350)}...`;
 
-    const rawHtml = mdConverter.makeHtml(extract);
+    const rawHtml = getMdConverter().makeHtml(extract);
     previewEl.innerHTML = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(rawHtml) : rawHtml;
 
     if (typeof renderMathInElement !== "undefined") {

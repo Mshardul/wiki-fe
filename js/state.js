@@ -80,16 +80,22 @@ const tabsExtension = () => {
   ];
 };
 
-const mdConverter = new showdown.Converter({
-  ghCompatibleHeaderId: true,
-  noHeaderId: false,
-  tables: true,
-  strikethrough: true,
-  simpleLineBreaks: true,
-  openLinksInNewWindow: false,
-  disableForced4SpacesIndentedSublists: true,
-  extensions: [mathExtension, tabsExtension],
-});
+let _mdConverter = null;
+function getMdConverter() {
+  if (!_mdConverter) {
+    _mdConverter = new showdown.Converter({
+      ghCompatibleHeaderId: true,
+      noHeaderId: false,
+      tables: true,
+      strikethrough: true,
+      simpleLineBreaks: true,
+      openLinksInNewWindow: false,
+      disableForced4SpacesIndentedSublists: true,
+      extensions: [mathExtension, tabsExtension],
+    });
+  }
+  return _mdConverter;
+}
 
 if (typeof mermaid !== "undefined") {
   mermaid.initialize({
@@ -229,7 +235,7 @@ export {
   synonymCache,
   loadSynonyms,
   STUB_THRESHOLD,
-  mdConverter,
+  getMdConverter,
   escHtml,
   fuzzyMatch,
 };

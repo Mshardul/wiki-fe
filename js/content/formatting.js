@@ -96,7 +96,8 @@ function addAnchorLinks(contentEl, onCopyError = () => {}, onCopySuccess = () =>
     btn.title = "Copy link";
     btn.setAttribute("aria-label", "Copy link to section");
     btn.innerHTML = anchorIcon();
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
       const url = new URL(location.href);
       url.searchParams.set("a", h.id);
       writeToClipboard(url.toString())

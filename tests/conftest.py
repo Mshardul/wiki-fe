@@ -27,8 +27,10 @@ _CDN_ASSETS = [
 # mermaid.min.js is deliberately NOT fetched for real: disable_animations below stubs
 # window.mermaid before any page script runs, and existing tests assert on that stub's
 # fake SVG output. The live <script src="...mermaid..."> tag still fires a real request
-# though (it's what was hanging goto), so it needs a route fulfilled too - just with an
-# empty body instead of the real library, so it never overwrites the stub.
+# though (it's what was hanging goto), so it needs a route too. index.html pins this
+# script's `integrity="sha384-..."` attribute, and any fulfilled body that doesn't hash
+# to that exact value gets blocked by the browser's own SRI check - so the route aborts
+# the request instead of fulfilling it, skipping SRI hashing entirely.
 _MERMAID_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/mermaid@10.9.5/dist/mermaid.min.js"
 
 # On-disk cache so re-running tests (and every xdist worker) doesn't re-hit live CDNs.
@@ -44,7 +46,7 @@ def _disk_cache_path(url):
 
 @pytest.fixture(scope="session")
 def cdn_cache():
-    cache = {_MERMAID_SCRIPT_URL: (b"/* stubbed for tests */", "application/javascript")}
+    cache = {}
     for url in _CDN_ASSETS:
         cache_path = _disk_cache_path(url)
         if cache_path.exists():
@@ -73,6 +75,10 @@ def _make_cdn_fulfill_handler(body, content_type):
 def mock_cdn_assets(page, cdn_cache):
     for url, (body, content_type) in cdn_cache.items():
         page.route(url, _make_cdn_fulfill_handler(body, content_type))
+    # window.mermaid is already provided by the stub init script (see disable_animations,
+    # runs before any page script). Abort rather than fulfill so the browser never hashes
+    # a body against the page's pinned `integrity` attribute for this script.
+    page.route(_MERMAID_SCRIPT_URL, lambda route: route.abort())
 
 
 @pytest.fixture
@@ -113,7 +119,13 @@ def disable_animations(page):
         (() => {
             const s = document.createElement('style');
             s.textContent = '*, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; transition-delay: 0s !important; animation-delay: 0s !important; }';
-            document.head.appendChild(s);
+            // Init scripts also fire on the initial about:blank document, where
+            // <head> may not exist yet - wait for it rather than assuming it's there.
+            if (document.head) {
+                document.head.appendChild(s);
+            } else {
+                document.addEventListener('DOMContentLoaded', () => document.head.appendChild(s));
+            }
         })();
     """)
 

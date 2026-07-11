@@ -208,6 +208,7 @@ function renderIndexSections(sections, wiki) {
                 isRead(card.path) ? "visible" : ""
               }" title="Read"></span>
             </div>
+            <span class="index-card-swipe-hint" aria-hidden="true"></span>
           </div>
         `,
           )
@@ -632,19 +633,21 @@ function animateGridHeight(section, collapsed) {
     grid.style.height = `${grid.scrollHeight}px`;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        grid.style.height = "0px";
+        if (section.classList.contains("section--collapsed")) grid.style.height = "0px";
       });
     });
   } else {
     const target = grid.scrollHeight;
     grid.style.height = `${target}px`;
-    grid.addEventListener(
-      "transitionend",
-      () => {
-        if (!section.classList.contains("section--collapsed")) grid.style.height = "";
-      },
-      { once: true },
-    );
+    const clear = () => {
+      if (!section.classList.contains("section--collapsed")) grid.style.height = "";
+    };
+    const duration = Number.parseFloat(getComputedStyle(grid).transitionDuration) || 0;
+    if (duration === 0) {
+      clear();
+    } else {
+      grid.addEventListener("transitionend", clear, { once: true });
+    }
   }
 }
 

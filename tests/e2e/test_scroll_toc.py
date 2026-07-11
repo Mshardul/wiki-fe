@@ -426,7 +426,7 @@ def test_mobile_toc_close_via_overlay_unlocks_scroll(page, base_url):
     page.wait_for_function(
         "() => document.getElementById('toc-sidebar').classList.contains('mobile-open')"
     )
-    page.locator("#toc-mobile-overlay").click()
+    page.locator("#toc-mobile-overlay").click(position={"x": 10, "y": 10})
     page.wait_for_function(
         "() => !document.getElementById('toc-sidebar').classList.contains('mobile-open')"
     )

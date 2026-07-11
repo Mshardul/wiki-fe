@@ -7,9 +7,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <style>
       *,
       *::before,
@@ -428,11 +436,6 @@
       });
     </script>
 
-    <script
-      src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"
-      integrity="sha384-GP2+CwBlakZSDJUr+E4JvbxpM75i1i8+RKkieQxzuyDZLG+5105E1OfHIjzcXyWH"
-      crossorigin="anonymous"
-    ></script>
     <script>
       (async function rescueSearch() {
         if (!title) return;

@@ -250,3 +250,38 @@ def test_pin_button_click_does_not_navigate(wiki_page):
     assert wiki_page.locator("#view-home").evaluate(
         "el => el.classList.contains('active')"
     )
+
+
+def test_pin_btn_44px_and_visible_on_coarse_pointer(browser, base_url, cdn_cache):
+    """Regression for WIKI-406: .wiki-card-pin-btn is 28x28px and opacity:0
+    (hover-only) with no pointer:coarse fallback, making it invisible and
+    under the 44px touch-target minimum on touch devices."""
+    ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 390, "height": 844},
+        service_workers="block",
+    )
+    page = ctx.new_page()
+    try:
+        def _make_handler(body, content_type):
+            return lambda route: route.fulfill(
+                status=200, content_type=content_type, body=body
+            )
+
+        for url, (body, content_type) in cdn_cache.items():
+            page.route(url, _make_handler(body, content_type))
+
+        page.goto(f"{base_url}/", wait_until="domcontentloaded")
+        page.wait_for_selector(".wiki-card-pin-btn", timeout=10_000)
+
+        result = page.evaluate("""() => {
+            const el = document.querySelector('.wiki-card-pin-btn');
+            const r = el.getBoundingClientRect();
+            return { width: r.width, height: r.height, opacity: getComputedStyle(el).opacity };
+        }""")
+        assert result["width"] >= 44, f"pin-btn width too small: {result['width']}px"
+        assert result["height"] >= 44, f"pin-btn height too small: {result['height']}px"
+        assert result["opacity"] == "1", f"pin-btn should be visible on touch, opacity={result['opacity']}"
+    finally:
+        ctx.close()

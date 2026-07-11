@@ -221,7 +221,103 @@ def test_anchor_button_32px_on_coarse_pointer(browser, base_url, cdn_cache):
         ctx.close()
 
 
+def test_copy_btn_and_sortable_th_44px_on_coarse_pointer(browser, base_url, cdn_cache):
+    """Regression for WIKI-406: .copy-btn and .sortable-th are under 44px on
+    touch devices with no pointer:coarse fallback. Both should be at least
+    44px on their constrained dimension."""
+    ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 768, "height": 1024},
+        service_workers="block",
+    )
+    page = ctx.new_page()
+    try:
+        def _make_handler(body, content_type):
+            return lambda route: route.fulfill(
+                status=200, content_type=content_type, body=body
+            )
+
+        for url, (body, content_type) in cdn_cache.items():
+            page.route(url, _make_handler(body, content_type))
+
+        page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+        page.wait_for_selector("#view-content.active", timeout=10_000)
+        page.wait_for_selector(".copy-btn", timeout=10_000)
+
+        copy_size = page.evaluate("""() => {
+            const r = document.querySelector('.copy-btn').getBoundingClientRect();
+            return { width: r.width, height: r.height };
+        }""")
+        assert copy_size["width"] >= 44, f"copy-btn width too small: {copy_size['width']}px"
+        assert copy_size["height"] >= 44, f"copy-btn height too small: {copy_size['height']}px"
+
+        th = page.query_selector(".sortable-th")
+        if th:
+            th_size = page.evaluate(
+                "() => document.querySelector('.sortable-th').getBoundingClientRect().height"
+            )
+            assert th_size >= 44, f"sortable-th height too small: {th_size}px"
+    finally:
+        ctx.close()
+
+
 # ── Image lightbox zoom ───────────────────────────────────────────
+
+
+def _pinch(page, el_selector, overlay_selector, start_dx, end_dx):
+    return page.evaluate(
+        """([elSel, overlaySel, startDx, endDx]) => {
+        const el = document.querySelector(elSel);
+        const overlay = document.querySelector(overlaySel);
+        const rect = el.getBoundingClientRect();
+        const cx = rect.x + rect.width / 2;
+        const cy = rect.y + rect.height / 2;
+
+        function makeTouches(dx) {
+            const t1 = new Touch({ identifier: 1, target: el, clientX: cx - dx, clientY: cy });
+            const t2 = new Touch({ identifier: 2, target: el, clientX: cx + dx, clientY: cy });
+            return [t1, t2];
+        }
+
+        const startTouches = makeTouches(startDx);
+        overlay.dispatchEvent(new TouchEvent('touchstart', {
+            bubbles: true, cancelable: true,
+            touches: startTouches, targetTouches: startTouches, changedTouches: startTouches,
+        }));
+
+        const moveTouches = makeTouches(endDx);
+        overlay.dispatchEvent(new TouchEvent('touchmove', {
+            bubbles: true, cancelable: true,
+            touches: moveTouches, targetTouches: moveTouches, changedTouches: moveTouches,
+        }));
+
+        return getComputedStyle(el).transform;
+    }""",
+        [el_selector, overlay_selector, start_dx, end_dx],
+    )
+
+
+def test_pinch_zoom_scales_image_in_lightbox(page, base_url):
+    """Two-finger pinch on the image lightbox scales the zoomed image up."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_IMAGE, slug="pinch-image")
+    page.wait_for_selector(".zoomable-img", timeout=8_000)
+    page.click(".zoomable-img")
+    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+
+    transform = _pinch(page, ".zoom-overlay-content > *", "#zoom-overlay", 20, 100)
+    assert "matrix(4" in transform, f"Expected scale to clamp at ZOOM_MAX (4), got: {transform}"
+
+
+def test_pinch_zoom_scales_mermaid_diagram_in_lightbox(page, base_url):
+    """Two-finger pinch on the Mermaid diagram zoom overlay scales the diagram up."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="pinch-diagram")
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
+    page.click(".mermaid-diagram")
+    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+
+    transform = _pinch(page, ".zoom-overlay-content > *", "#zoom-overlay", 20, 100)
+    assert "matrix(4" in transform, f"Expected scale to clamp at ZOOM_MAX (4), got: {transform}"
 
 
 def test_image_has_zoomable_class(page, base_url):
@@ -529,6 +625,38 @@ def test_mermaid_step_through_next_advances_step(page, base_url):
     )
 
 
+def test_mermaid_step_prev_next_44px_on_coarse_pointer(browser, base_url, cdn_cache):
+    """Regression for WIKI-406: .mermaid-step-prev/.mermaid-step-next use
+    small padding with no pointer:coarse fallback, under the 44px minimum."""
+    from conftest import _make_cdn_fulfill_handler
+
+    ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 390, "height": 844},
+        service_workers="block",
+    )
+    page = ctx.new_page()
+    try:
+        for url, (body, content_type) in cdn_cache.items():
+            page.route(url, _make_cdn_fulfill_handler(body, content_type))
+
+        _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_STEPS, slug="steps-touch")
+        page.wait_for_selector(".mermaid-step-play-btn", timeout=8_000)
+        page.locator(".mermaid-step-play-btn").click()
+        page.wait_for_selector(".mermaid-step-rail", state="visible", timeout=3_000)
+
+        heights = page.evaluate("""() => {
+            const prev = document.querySelector('.mermaid-step-prev').getBoundingClientRect();
+            const next = document.querySelector('.mermaid-step-next').getBoundingClientRect();
+            return { prev: prev.height, next: next.height };
+        }""")
+        assert heights["prev"] >= 44, f"mermaid-step-prev height too small: {heights['prev']}px"
+        assert heights["next"] >= 44, f"mermaid-step-next height too small: {heights['next']}px"
+    finally:
+        ctx.close()
+
+
 # ── Anchor link toast ─────────────────────────────────────────────
 
 ARTICLE_WITH_SECTIONS = """\
@@ -571,6 +699,25 @@ def test_anchor_link_toast_does_not_show_on_page_load(page, base_url):
         "() => document.getElementById('wiki-toast')?.classList.contains('visible') ?? false"
     )
     assert not toast_visible, "Toast must not be visible on article load"
+
+
+def test_toast_has_opaque_background(page, base_url):
+    """Regression for WIKI-415: .wiki-toast referenced the undefined token
+    --surface-raised, resolving to a transparent background that let it
+    fully overlap article text unreadably mid-scroll."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="toast-bg")
+    page.context.grant_permissions(["clipboard-read", "clipboard-write"])
+    page.wait_for_selector("#markdown-body h2 .anchor-btn", timeout=5_000)
+
+    page.locator("#markdown-body h2 .anchor-btn").first.click()
+    page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
+
+    bg = page.evaluate(
+        "() => getComputedStyle(document.getElementById('wiki-toast')).backgroundColor"
+    )
+    assert bg not in ("rgba(0, 0, 0, 0)", "transparent"), (
+        f"Toast background must be opaque, got: {bg}"
+    )
 
 
 # ── Reading progress bar glow ────────────────────────────────────
@@ -1043,6 +1190,60 @@ def test_quiz_topbar_button_toggles_blur(page, base_url):
         "() => document.querySelectorAll('#markdown-body .quiz-cell.quiz-blurred').length"
     )
     assert blurred_after == 0, "Second click on quiz button should clear blur"
+
+
+ARTICLE_WITH_TOPBAR_H3_SECTIONS = """\
+# Study Mode Test
+
+## Section Alpha
+
+### Sub One
+
+Content one.
+
+### Sub Two
+
+Content two.
+"""
+
+
+def test_study_topbar_button_toggles_study_mode(page, base_url):
+    """Tapping the content-topbar study button is a touch-accessible equivalent of the H hotkey."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_TOPBAR_H3_SECTIONS, slug="study-btn-toggle")
+    page.wait_for_selector("#markdown-body h3", timeout=5_000)
+
+    page.click('[data-action="study-toggle"]')
+    page.wait_for_selector("#markdown-body.study-mode", timeout=2_000)
+
+    page.click('[data-action="study-toggle"]')
+    is_study_mode = page.evaluate(
+        "() => document.getElementById('markdown-body').classList.contains('study-mode')"
+    )
+    assert not is_study_mode, "Second click on study button should exit study mode"
+
+
+def test_distraction_free_topbar_button_toggles(page, base_url):
+    """Tapping the content-topbar distraction-free button is a touch-accessible equivalent of the D hotkey."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="df-btn-toggle")
+    page.wait_for_selector("#markdown-body", timeout=5_000)
+
+    page.click('[data-action="distraction-free-toggle"]')
+    page.wait_for_selector("body.distraction-free", timeout=2_000)
+
+    page.click('[data-action="distraction-free-exit"]')
+    is_distraction_free = page.evaluate(
+        "() => document.body.classList.contains('distraction-free')"
+    )
+    assert not is_distraction_free, "Distraction-free exit button should exit mode"
+
+
+def test_wiki_switcher_topbar_button_opens_modal(page, base_url):
+    """Tapping the content-topbar wiki-switcher button is a touch-accessible equivalent of the W hotkey."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="switcher-btn-open")
+    page.wait_for_selector("#markdown-body", timeout=5_000)
+
+    page.click('[data-action="wiki-switcher-open"]')
+    page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=2_000)
 
 
 @pytest.mark.parametrize("width", [320, 360, 375])
@@ -2217,6 +2418,26 @@ def test_click_heading_reveals_its_section_in_study_mode(page, base_url):
     )
     assert not first_hidden, "Clicked heading's section body should be revealed"
     assert second_hidden, "Other heading's section body should remain hidden"
+
+
+def test_anchor_btn_click_does_not_bubble_into_study_mode_toggle(page, base_url):
+    """Regression for WIKI-415: clicking the anchor-copy button on an h3 must
+    not also trigger study-mode's reveal toggle for that heading (bubbling)."""
+    page.context.grant_permissions(["clipboard-read", "clipboard-write"])
+    _load_mock_article(page, base_url, ARTICLE_WITH_H3_SECTIONS, slug="study-mode-anchor-btn")
+    page.wait_for_selector("#markdown-body h3 .anchor-btn", timeout=5_000)
+    page.keyboard.press("h")
+    page.wait_for_function(
+        "() => document.getElementById('markdown-body').classList.contains('study-mode')",
+        timeout=3_000,
+    )
+
+    page.locator("#markdown-body h3 .anchor-btn").first.click()
+
+    revealed = page.evaluate(
+        "() => document.querySelector('#markdown-body h3').classList.contains('study-revealed')"
+    )
+    assert not revealed, "Clicking anchor-btn must not bubble into the h3 study-mode toggle"
 
 
 def test_study_mode_resets_on_navigation(page, base_url):

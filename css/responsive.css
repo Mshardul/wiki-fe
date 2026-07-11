@@ -345,9 +345,11 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   /* Collapse low-frequency actions (read, focus, quiz, offline, print, find)
-     into a "more" dropdown so the topbar fits on narrow screens. */
+     into a "more" dropdown so the topbar fits on narrow screens - the full
+     row of icon buttons overflows the viewport up through tablet-portrait
+     widths (641-900px), not just phones. */
   #content-overflow-btn {
     display: inline-flex;
   }
@@ -419,6 +421,61 @@
 
   .code-tab {
     padding: var(--s3) var(--s4);
+    min-height: 44px;
+  }
+
+  .topbar-icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .toc-mobile-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .wiki-card-pin-btn {
+    width: 44px;
+    height: 44px;
+    opacity: 1;
+  }
+
+  .index-ctrl-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .index-filter-input,
+  .index-filter-unread {
+    min-height: 44px;
+  }
+
+  .copy-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .markdown-body th.sortable-th {
+    padding-top: var(--s4);
+    padding-bottom: var(--s4);
+  }
+
+  .settings-bg-swatch,
+  .settings-text-swatch {
+    min-height: 44px;
+  }
+
+  .settings-accent-swatch {
+    width: 44px;
+    height: 44px;
+  }
+
+  .mermaid-step-prev,
+  .mermaid-step-next {
+    min-height: 44px;
+  }
+
+  .gsearch-scope-btn {
     min-height: 44px;
   }
 }

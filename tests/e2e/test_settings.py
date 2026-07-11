@@ -847,3 +847,31 @@ def test_search_entry_is_first_in_preferences_panel(wiki_page):
         return all.indexOf(search) === 0;
     }""")
     assert first_control, "Search entry is not the first control in the General tab"
+
+
+def test_accent_swatch_44px_on_coarse_pointer(browser, base_url, cdn_cache):
+    """Regression for WIKI-406: .settings-accent-swatch is 30x30px with no
+    pointer:coarse fallback, under the 44px touch-target minimum."""
+    ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 390, "height": 844},
+        service_workers="block",
+    )
+    page = ctx.new_page()
+    try:
+        for url, (body, content_type) in cdn_cache.items():
+            page.route(url, _make_cdn_fulfill_handler(body, content_type))
+
+        page.goto(f"{base_url}/", wait_until="domcontentloaded")
+        _open_settings(page)
+        page.wait_for_selector(".settings-accent-swatch", timeout=10_000)
+
+        size = page.evaluate("""() => {
+            const r = document.querySelector('.settings-accent-swatch').getBoundingClientRect();
+            return { width: r.width, height: r.height };
+        }""")
+        assert size["width"] >= 44, f"accent-swatch width too small: {size['width']}px"
+        assert size["height"] >= 44, f"accent-swatch height too small: {size['height']}px"
+    finally:
+        ctx.close()

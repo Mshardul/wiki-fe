@@ -154,6 +154,15 @@ document.addEventListener("click", (e) => {
     case "quiz-toggle":
       QuizMode.toggle();
       break;
+    case "study-toggle":
+      toggleStudyMode();
+      break;
+    case "distraction-free-toggle":
+      toggleDistractionFree();
+      break;
+    case "wiki-switcher-open":
+      openWikiSwitcher();
+      break;
     case "distraction-free-exit":
       toggleDistractionFree();
       break;
