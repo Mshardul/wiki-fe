@@ -1,0 +1,111 @@
+/* ═══════════════════════════════════════════════
+   TEXT HIGHLIGHTS
+   ═══════════════════════════════════════════════ */
+.wiki-highlight {
+  background: var(--highlight-bg);
+  border-radius: var(--r-xs);
+  padding: 0 1px;
+  cursor: pointer;
+}
+.wiki-highlight:hover,
+.wiki-highlight:focus-visible {
+  background: var(--highlight-bg-hover);
+}
+
+/* ═══════════════════════════════════════════════
+   INLINE EMOJI MARKERS
+   ═══════════════════════════════════════════════ */
+.wiki-marker {
+  display: inline-block;
+  cursor: pointer;
+  font-size: 0.85em;
+  line-height: 1;
+  margin: 0 1px;
+  vertical-align: middle;
+  border-radius: var(--r-full);
+  transition: transform var(--t-fast);
+}
+.wiki-marker:hover,
+.wiki-marker:focus-visible {
+  transform: scale(1.25);
+}
+
+/* ═══════════════════════════════════════════════
+   SELECTION TOOLBAR
+   ═══════════════════════════════════════════════ */
+.highlight-toolbar {
+  position: absolute;
+  z-index: var(--z-tooltip);
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: var(--s1) var(--s2);
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-lg);
+  transform: translate(-50%, -100%);
+}
+.highlight-toolbar.hidden {
+  display: none;
+}
+.highlight-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--s8);
+  height: var(--s8);
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-body);
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.highlight-toolbar-btn:hover,
+.highlight-toolbar-btn:focus-visible {
+  background: var(--surface-hover);
+}
+.highlight-toolbar-btn--highlight {
+  color: var(--accent-light);
+}
+.highlight-toolbar-btn--card {
+  color: var(--accent-light);
+}
+.highlight-toolbar-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border-2);
+  margin: 0 var(--s1);
+}
+
+/* ═══════════════════════════════════════════════
+   REMOVE POPOVER
+   ═══════════════════════════════════════════════ */
+.highlight-remove-popover {
+  position: absolute;
+  z-index: var(--z-tooltip);
+  padding: var(--s1);
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow);
+}
+.highlight-remove-popover.hidden {
+  display: none;
+}
+.highlight-remove-btn {
+  padding: var(--s1) var(--s3);
+  border: none;
+  border-radius: var(--r-xs);
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.highlight-remove-btn:hover,
+.highlight-remove-btn:focus-visible {
+  background: var(--color-error-border);
+}

@@ -11,6 +11,8 @@ Content view enhancements:
 - Diff block addition/deletion highlighting
 - Collapsible tall callouts
 - Broken image error placeholder
+- Depth-N content folding slider (skim/study/reference)
+- Interview mode (collapse below problem statement, timer, scratchpad, reveal)
 """
 
 import pytest
@@ -45,6 +47,22 @@ graph LR
 Some text.
 """
 
+ARTICLE_WITH_VIDEO = """\
+# Video Test
+
+https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+Some text after the video.
+"""
+
+ARTICLE_WITH_BARE_URL_NOT_VIDEO = """\
+# Bare URL Test
+
+https://example.com/not-a-video
+
+Some text after the link.
+"""
+
 ARTICLE_WITH_MERMAID_STEPS = """\
 # Mermaid Step-Through Test
 
@@ -76,6 +94,34 @@ def _load_mock_article(page, base_url, content, slug="mock"):
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
         timeout=8_000,
     )
+
+
+# ── Video embed ───────────────────────────────────────────────────
+
+
+def test_bare_youtube_url_converts_to_iframe_embed(page, base_url):
+    """WIKI-205: a bare YouTube URL on its own line becomes a responsive iframe."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_VIDEO, slug="video-embed")
+    page.wait_for_selector(".video-embed iframe", timeout=5_000)
+
+    result = page.evaluate("""() => {
+        const iframe = document.querySelector('.video-embed iframe');
+        return { src: iframe?.getAttribute('src'), loading: iframe?.getAttribute('loading') };
+    }""")
+    assert result["src"] == "https://www.youtube.com/embed/dQw4w9WgXcQ"
+    assert result["loading"] == "lazy"
+
+
+def test_bare_non_video_url_left_unconverted(page, base_url):
+    """A bare URL that isn't YouTube/Vimeo must not be turned into an embed."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_BARE_URL_NOT_VIDEO, slug="not-video")
+
+    result = page.evaluate("""() => ({
+        embeds: document.querySelectorAll('.video-embed').length,
+        text: document.getElementById('markdown-body').textContent,
+    })""")
+    assert result["embeds"] == 0
+    assert "https://example.com/not-a-video" in result["text"]
 
 
 # ── Table scroll cue ──────────────────────────────────────────────
@@ -2453,3 +2499,509 @@ def test_study_mode_resets_on_navigation(page, base_url):
         "() => document.getElementById('markdown-body').classList.contains('study-mode')"
     )
     assert not is_study_mode, "Study mode leaked into the next article render"
+
+
+# ── Text highlights + inline emoji markers ───────────────────────────────────────
+
+ARTICLE_FOR_HIGHLIGHTS = """\
+# Highlights Test
+
+## Section
+
+This is a paragraph with some selectable text in it for testing highlights and markers.
+"""
+
+
+def _select_word(page, word):
+    """Selects the first occurrence of `word` inside #markdown-body via a real Range,
+    then fires the mouseup our production code listens on."""
+    page.evaluate(
+        """(word) => {
+            const body = document.getElementById('markdown-body');
+            const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+            let node;
+            while ((node = walker.nextNode())) {
+                const idx = node.nodeValue.indexOf(word);
+                if (idx !== -1) {
+                    const range = document.createRange();
+                    range.setStart(node, idx);
+                    range.setEnd(node, idx + word.length);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    body.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                    return;
+                }
+            }
+            throw new Error('word not found: ' + word);
+        }""",
+        word,
+    )
+
+
+def test_selecting_text_shows_highlight_toolbar(page, base_url):
+    """Selecting text inside the article body reveals the floating highlight toolbar."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-toolbar-show")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    assert page.locator(".highlight-toolbar-btn--highlight").is_visible()
+    assert page.locator(".highlight-toolbar-btn--emoji").count() == 6
+
+
+def test_creating_highlight_wraps_text_and_persists(page, base_url):
+    """Clicking the highlight button wraps the selection in .wiki-highlight and saves it."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-create")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+
+    page.locator(".highlight-toolbar-btn--highlight").click()
+    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
+
+    mark = page.locator("#markdown-body .wiki-highlight").first
+    assert mark.inner_text() == "selectable"
+
+    stored = page.evaluate(
+        """() => {
+            const key = Object.keys(localStorage).find(k => k.startsWith('wiki-highlights-'));
+            if (!key) return null;
+            return JSON.parse(localStorage.getItem(key));
+        }"""
+    )
+    assert stored is not None and len(stored) == 1, (
+        f"Expected exactly one persisted highlight entry, got: {stored}"
+    )
+    assert stored[0]["snippet"] == "selectable"
+
+
+def test_highlight_persists_and_reapplies_on_reload(page, base_url):
+    """A highlight created in one render re-appears after reloading the same article."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reload")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-toolbar-btn--highlight").click()
+    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
+
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reload")
+    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
+    assert page.locator("#markdown-body .wiki-highlight").first.inner_text() == "selectable"
+
+
+def test_creating_emoji_marker_inserts_badge_and_persists(page, base_url):
+    """Clicking an emoji option in the toolbar inserts a .wiki-marker badge and saves it."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-create")
+    _select_word(page, "testing")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+
+    page.locator(".highlight-toolbar-btn--emoji").first.click()
+    page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
+
+    stored = page.evaluate(
+        """() => Object.keys(localStorage).find(k => k.startsWith('wiki-markers-'))"""
+    )
+    assert stored is not None, "No wiki-markers-* key written to localStorage"
+
+
+def test_emoji_marker_persists_and_reapplies_on_reload(page, base_url):
+    """A marker created in one render re-appears after reloading the same article."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-reload")
+    _select_word(page, "testing")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-toolbar-btn--emoji").first.click()
+    page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
+
+    marker_emoji = page.locator("#markdown-body .wiki-marker").first.text_content()
+
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-reload")
+    page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
+    assert page.locator("#markdown-body .wiki-marker").first.text_content() == marker_emoji
+
+
+def test_removing_highlight_via_popover(page, base_url):
+    """Clicking an existing highlight shows a remove popover; Remove strips the wrap and storage entry."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-remove")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-toolbar-btn--highlight").click()
+    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
+
+    page.locator("#markdown-body .wiki-highlight").first.click()
+    page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-remove-btn").click()
+
+    page.wait_for_function(
+        "() => document.querySelectorAll('#markdown-body .wiki-highlight').length === 0",
+        timeout=3_000,
+    )
+    remaining = page.evaluate(
+        """() => {
+            const key = Object.keys(localStorage).find(k => k.startsWith('wiki-highlights-'));
+            if (!key) return 0;
+            return JSON.parse(localStorage.getItem(key)).length;
+        }"""
+    )
+    assert remaining == 0, "Highlight entry still present in localStorage after removal"
+
+
+def test_removing_marker_via_popover(page, base_url):
+    """Clicking an existing marker shows a remove popover; Remove strips the badge and storage entry."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-remove")
+    _select_word(page, "testing")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-toolbar-btn--emoji").first.click()
+    page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
+
+    page.locator("#markdown-body .wiki-marker").first.click()
+    page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-remove-btn").click()
+
+    page.wait_for_function(
+        "() => document.querySelectorAll('#markdown-body .wiki-marker').length === 0",
+        timeout=3_000,
+    )
+    remaining = page.evaluate(
+        """() => {
+            const key = Object.keys(localStorage).find(k => k.startsWith('wiki-markers-'));
+            if (!key) return 0;
+            return JSON.parse(localStorage.getItem(key)).length;
+        }"""
+    )
+    assert remaining == 0, "Marker entry still present in localStorage after removal"
+
+
+def test_highlight_toolbar_buttons_are_keyboard_labeled(page, base_url):
+    """Every toolbar button (highlight + 6 emoji + save-as-card) has a discernible aria-label."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-toolbar-a11y")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+
+    labels = page.evaluate(
+        """() => [...document.querySelectorAll('.highlight-toolbar-btn')]
+            .map(b => b.getAttribute('aria-label'))"""
+    )
+    assert len(labels) == 8, (
+        f"Expected 8 toolbar buttons (1 highlight + 6 emoji + 1 save-as-card), got {len(labels)}"
+    )
+    assert all(label and label.strip() for label in labels), (
+        f"Every toolbar button must have a non-empty aria-label, got: {labels}"
+    )
+
+
+def test_highlight_mark_is_keyboard_focusable(page, base_url):
+    """A created highlight is a keyboard-reachable, labeled element (tabindex + aria-label)."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-focusable")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-toolbar-btn--highlight").click()
+    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
+
+    result = page.evaluate(
+        """() => {
+            const mark = document.querySelector('#markdown-body .wiki-highlight');
+            return { tabindex: mark.getAttribute('tabindex'), label: mark.getAttribute('aria-label') };
+        }"""
+    )
+    assert result["tabindex"] == "0", "Highlight mark must be keyboard-focusable (tabindex=0)"
+    assert result["label"], "Highlight mark must have an aria-label"
+
+
+def test_keyboard_enter_removes_focused_highlight(page, base_url):
+    """Pressing Enter on a focused highlight opens the remove popover and Remove clears it."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-kbd-remove")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-toolbar-btn--highlight").click()
+    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
+
+    page.locator("#markdown-body .wiki-highlight").first.focus()
+    page.keyboard.press("Enter")
+    page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
+
+    page.locator(".highlight-remove-btn").click()
+    page.wait_for_function(
+        "() => document.querySelectorAll('#markdown-body .wiki-highlight').length === 0",
+        timeout=3_000,
+    )
+
+
+# ── Freeze-frame: save selection as themed image card ────────────────────────────
+
+def test_save_as_card_button_appears_on_selection(page, base_url):
+    """Selecting text reveals a save-as-card button alongside the highlight/marker actions."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="card-toolbar-show")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    assert page.locator(".highlight-toolbar-btn--card").is_visible()
+
+
+def test_save_as_card_button_has_aria_label(page, base_url):
+    """The save-as-card button has a discernible aria-label for keyboard/screen-reader users."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="card-a11y")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    label = page.locator(".highlight-toolbar-btn--card").get_attribute("aria-label")
+    assert label and label.strip()
+
+
+def test_save_as_card_triggers_png_download(page, base_url):
+    """Clicking save-as-card downloads a PNG file without clearing the toolbar/selection."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="card-download")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+
+    with page.expect_download() as download_info:
+        page.locator(".highlight-toolbar-btn--card").click()
+    download = download_info.value
+    assert download.suggested_filename.endswith(".png")
+
+    # One-shot export: the toolbar and its other actions remain usable afterward.
+    assert page.locator(".highlight-toolbar:not(.hidden)").is_visible()
+    assert page.locator(".highlight-toolbar-btn--highlight").is_visible()
+
+
+def test_save_as_card_does_not_create_highlight_or_marker(page, base_url):
+    """Save-as-card is a stateless export - it must not write a highlight or marker entry."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="card-no-persist")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+
+    with page.expect_download():
+        page.locator(".highlight-toolbar-btn--card").click()
+
+    assert page.locator("#markdown-body .wiki-highlight").count() == 0
+    assert page.locator("#markdown-body .wiki-marker").count() == 0
+    stored = page.evaluate(
+        """() => Object.keys(localStorage).some(
+            k => k.startsWith('wiki-highlights-') || k.startsWith('wiki-markers-')
+        )"""
+    )
+    assert stored is False, "Save-as-card must not persist a highlight or marker entry"
+
+
+# ── Depth-N content folding slider ────────────────────────────────
+
+ARTICLE_FOR_DEPTH_FOLD = """\
+# Depth Fold Test
+
+## First Section
+
+First section intro text.
+
+### First Sub
+
+First sub content.
+
+### Second Sub
+
+Second sub content.
+
+## Second Section
+
+Second section intro text.
+
+### Third Sub
+
+Third sub content.
+"""
+
+
+def test_depth_fold_control_renders_in_content_view(page, base_url):
+    """The three-position skim/study/reference control is present in the content topbar."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_DEPTH_FOLD, slug="depth-fold-render")
+    assert page.locator('[data-action="depth-fold-set"][data-depth-fold="1"]').is_visible()
+    assert page.locator('[data-action="depth-fold-set"][data-depth-fold="2"]').is_visible()
+    assert page.locator('[data-action="depth-fold-set"][data-depth-fold="3"]').is_visible()
+
+
+def test_depth_1_shows_only_h2_summaries(page, base_url):
+    """Clicking Skim (depth 1) hides H3 headings/bodies, leaving only H2-level content."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_DEPTH_FOLD, slug="depth-fold-skim")
+    page.wait_for_selector("#markdown-body h3", timeout=5_000)
+
+    page.click('[data-action="depth-fold-set"][data-depth-fold="1"]')
+    page.wait_for_function(
+        "() => document.getElementById('markdown-body').dataset.depth === '1'",
+        timeout=2_000,
+    )
+
+    assert page.locator("#markdown-body").get_attribute("data-depth") == "1"
+    for h3 in page.locator("#markdown-body h3").all():
+        assert not h3.is_visible()
+    assert page.locator("#markdown-body h2").first.is_visible()
+
+
+def test_depth_3_reveals_everything(page, base_url):
+    """Clicking Reference (depth 3) shows all heading levels again."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_DEPTH_FOLD, slug="depth-fold-reference")
+    page.wait_for_selector("#markdown-body h3", timeout=5_000)
+
+    page.click('[data-action="depth-fold-set"][data-depth-fold="1"]')
+    page.wait_for_function(
+        "() => document.getElementById('markdown-body').dataset.depth === '1'",
+        timeout=2_000,
+    )
+
+    page.click('[data-action="depth-fold-set"][data-depth-fold="3"]')
+    page.wait_for_function(
+        "() => document.getElementById('markdown-body').dataset.depth === '3'",
+        timeout=2_000,
+    )
+
+    for h3 in page.locator("#markdown-body h3").all():
+        assert h3.is_visible()
+
+
+def test_depth_fold_persists_across_navigation_within_session(page, base_url):
+    """Setting depth 1 on article A carries over as the default depth when opening article B."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_DEPTH_FOLD, slug="depth-fold-a")
+    page.wait_for_selector("#markdown-body h3", timeout=5_000)
+
+    page.click('[data-action="depth-fold-set"][data-depth-fold="1"]')
+    page.wait_for_function(
+        "() => document.getElementById('markdown-body').dataset.depth === '1'",
+        timeout=2_000,
+    )
+
+    _load_mock_article(page, base_url, ARTICLE_FOR_DEPTH_FOLD, slug="depth-fold-b")
+    page.wait_for_function(
+        "() => document.getElementById('markdown-body').dataset.depth === '1'",
+        timeout=5_000,
+    )
+    assert page.locator("#markdown-body").get_attribute("data-depth") == "1"
+
+
+def test_depth_fold_defaults_to_fully_expanded_on_first_visit(page, base_url):
+    """With no prior session preference, an article opens at depth 3 (fully expanded)."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_DEPTH_FOLD, slug="depth-fold-default")
+    page.wait_for_function(
+        "() => !!document.getElementById('markdown-body').dataset.depth",
+        timeout=5_000,
+    )
+    assert page.locator("#markdown-body").get_attribute("data-depth") == "3"
+    for h3 in page.locator("#markdown-body h3").all():
+        assert h3.is_visible()
+
+
+# ── Interview mode (toggle, timer, scratchpad, reveal, elapsed-time log) ────────
+
+ARTICLE_FOR_INTERVIEW_MODE = """\
+# Two Sum
+
+## Problem Statement
+
+Given an array of integers, return indices of the two numbers that add up to a target.
+
+## Approach
+
+Use a hash map to track complements while scanning.
+
+## Complexity
+
+O(n) time, O(n) space.
+"""
+
+
+def test_interview_toggle_hides_content_below_first_section(page, base_url):
+    """Activating interview mode hides every heading/region after the first."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-toggle")
+    page.wait_for_selector("#markdown-body h2", timeout=5_000)
+
+    page.click('[data-action="interview-toggle"]')
+    page.wait_for_selector("#interview-bar:not(.hidden)", timeout=3_000)
+
+    headings = page.locator("#markdown-body h2").all()
+    assert headings[0].is_visible()
+    for h in headings[1:]:
+        assert not h.is_visible()
+
+
+def test_interview_toggle_opens_scratchpad_and_starts_timer(page, base_url):
+    """Entering interview mode force-opens the notes panel and shows a running timer."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-scratchpad")
+
+    # Collapse the scratchpad first so activation has to force it back open.
+    page.click("#notes-scratchpad-toggle")
+    page.wait_for_selector("#notes-scratchpad.notes-scratchpad--collapsed", timeout=3_000)
+
+    page.click('[data-action="interview-toggle"]')
+    page.wait_for_selector("#interview-bar:not(.hidden)", timeout=3_000)
+
+    assert "notes-scratchpad--collapsed" not in (
+        page.locator("#notes-scratchpad").get_attribute("class") or ""
+    )
+    assert page.locator("#interview-timer").is_visible()
+    page.wait_for_function(
+        "() => document.getElementById('interview-timer').textContent !== '00:00'",
+        timeout=3_000,
+    )
+
+
+def test_interview_reveal_restores_content_and_hides_timer(page, base_url):
+    """Reveal un-hides every heading/region and hides the interview bar."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-reveal")
+    page.wait_for_selector("#markdown-body h2", timeout=5_000)
+
+    page.click('[data-action="interview-toggle"]')
+    page.wait_for_selector("#interview-bar:not(.hidden)", timeout=3_000)
+
+    page.click('[data-action="interview-reveal"]')
+    # state="hidden" - default state is "visible", which a .hidden element
+    # (display:none) can never satisfy.
+    page.wait_for_selector("#interview-bar.hidden", state="hidden", timeout=3_000)
+
+    for h in page.locator("#markdown-body h2").all():
+        assert h.is_visible()
+
+
+def test_interview_reveal_persists_elapsed_time(page, base_url):
+    """Reveal logs an {completedAt, elapsedMs} entry under the interview storage key."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-log")
+    page.wait_for_selector("#markdown-body h2", timeout=5_000)
+
+    page.click('[data-action="interview-toggle"]')
+    page.wait_for_selector("#interview-bar:not(.hidden)", timeout=3_000)
+    page.click('[data-action="interview-reveal"]')
+    page.wait_for_selector("#interview-bar.hidden", state="hidden", timeout=3_000)
+
+    stored = page.evaluate(
+        """() => {
+            const key = Object.keys(localStorage).find(k => k.startsWith('wiki-interview-'));
+            if (!key) return null;
+            return JSON.parse(localStorage.getItem(key));
+        }"""
+    )
+    assert stored is not None and len(stored) == 1, f"Expected one logged attempt, got: {stored}"
+    assert "completedAt" in stored[0]
+    assert isinstance(stored[0]["elapsedMs"], int)
+
+
+def test_interview_mode_navigating_away_does_not_log_elapsed_time(page, base_url):
+    """Leaving mid-interview (teardown) must not persist an abandoned attempt."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-abandon-1")
+    page.wait_for_selector("#markdown-body h2", timeout=5_000)
+
+    page.click('[data-action="interview-toggle"]')
+    page.wait_for_selector("#interview-bar:not(.hidden)", timeout=3_000)
+
+    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-abandon-2")
+    page.wait_for_selector("#markdown-body h2", timeout=5_000)
+
+    stored = page.evaluate(
+        """() => {
+            const key = Object.keys(localStorage).find(k => k.startsWith('wiki-interview-'));
+            if (!key) return null;
+            return JSON.parse(localStorage.getItem(key));
+        }"""
+    )
+    assert stored is None, f"Expected no logged attempt after abandoning mid-interview, got: {stored}"
+
+
+def test_interview_mode_resets_on_navigation(page, base_url):
+    """Interview mode must not leak into the next article render (cleanupInterviewMode)."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-nav-1")
+    page.click('[data-action="interview-toggle"]')
+    page.wait_for_selector("#interview-bar:not(.hidden)", timeout=3_000)
+
+    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-nav-2")
+    assert page.locator("#interview-bar").get_attribute("class") and "hidden" in (
+        page.locator("#interview-bar").get_attribute("class") or ""
+    )

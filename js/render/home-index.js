@@ -1,14 +1,17 @@
+import { fireStudyMilestone } from "../app/study-feedback.js";
 import {
   STUB_THRESHOLD,
   WIKIS,
   escHtml,
+  fadeFactorForDaysSinceRead,
   indexCache,
   markStubPath,
   readTimeCache,
   state,
+  updatedDateCache,
 } from "../state.js";
 import { Bookmarks, renderBookmarksSection } from "../storage/bookmarks.js";
-import { isRead, markRead, markUnread } from "../storage/read-tracking.js";
+import { getLastOpened, isRead, markRead, markUnread } from "../storage/read-tracking.js";
 import { renderRecentsSection } from "../storage/recents.js";
 import { toggleCollapse } from "../storage/scroll-collapse.js";
 import { showHoverPreview } from "./content-view.js";
@@ -17,6 +20,7 @@ import {
   fetchPrebuiltSearchIndex,
   fetchText,
   normalizePath,
+  parseUpdatedDate,
   readingTime,
   setBreadcrumb,
 } from "./nav-utils.js";
@@ -207,6 +211,7 @@ function renderIndexSections(sections, wiki) {
               <span class="index-card-read-dot ${
                 isRead(card.path) ? "visible" : ""
               }" title="Read"></span>
+              <span class="index-card-updated-dot" title="Updated since you last read it"></span>
             </div>
             <span class="index-card-swipe-hint" aria-hidden="true"></span>
           </div>
@@ -232,22 +237,10 @@ function renderIndexControls(wiki) {
 
   controls.innerHTML = `
     <button id="index-collapse-all" class="index-ctrl-btn" title="Collapse all sections" aria-label="Collapse all sections">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="2" y1="3" x2="12" y2="3"/>
-        <line x1="2" y1="7" x2="12" y2="7"/>
-        <line x1="2" y1="11" x2="12" y2="11"/>
-        <polyline points="5,13 7,11 9,13"/>
-        <polyline points="5,1 7,3 9,1"/>
-      </svg>
+      <svg class="icon"><use href="#icon-collapse-all"></use></svg>
     </button>
     <button id="index-expand-all" class="index-ctrl-btn" title="Expand all sections" aria-label="Expand all sections">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="2" y1="3" x2="12" y2="3"/>
-        <line x1="2" y1="7" x2="12" y2="7"/>
-        <line x1="2" y1="11" x2="12" y2="11"/>
-        <polyline points="5,5 7,3 9,5"/>
-        <polyline points="5,9 7,11 9,9"/>
-      </svg>
+      <svg class="icon"><use href="#icon-expand-all"></use></svg>
     </button>
   `;
 
@@ -549,6 +542,7 @@ function bindIndexCardSwipe(wiki) {
         } else {
           markRead(path);
           showToast("Marked read");
+          fireStudyMilestone();
         }
       }
       reset();
@@ -659,6 +653,27 @@ function toggleSection(headerEl, wikiId, heading) {
   headerEl.setAttribute("aria-expanded", nowCollapsed ? "false" : "true");
 }
 
+// Only meaningful once there's a prior visit to compare against - never opened means no baseline.
+function _applyUpdatedDot(card, path, updatedDate) {
+  const dot = card.querySelector(".index-card-updated-dot");
+  if (!dot) return;
+  const lastOpened = getLastOpened(path);
+  const isNewer = !!lastOpened && !!updatedDate && new Date(updatedDate) > new Date(lastOpened);
+  dot.classList.toggle("visible", isNewer);
+}
+
+// Ambient memory-decay cue: only read articles with a recorded visit fade -
+// unread cards have nothing to be "stale" about, so they're left at full opacity.
+function _applyFade(card, path) {
+  const lastOpened = getLastOpened(path);
+  if (!isRead(path) || !lastOpened) {
+    card.style.removeProperty("--fade");
+    return;
+  }
+  const daysSince = (Date.now() - new Date(lastOpened).getTime()) / 86_400_000;
+  card.style.setProperty("--fade", fadeFactorForDaysSinceRead(daysSince));
+}
+
 async function populateIndexReadTimes() {
   const badges = Array.from(document.querySelectorAll(".index-card-read-time[data-path]"));
 
@@ -668,10 +683,14 @@ async function populateIndexReadTimes() {
       if (!rawPath) return;
       const path = normalizePath(rawPath);
       try {
-        if (readTimeCache[path] === undefined) {
-          const md = await fetchText(rawPath);
-          if (md.length < STUB_THRESHOLD) markStubPath(path);
-          else readTimeCache[path] = readingTime(md);
+        let md;
+        if (readTimeCache[path] === undefined || updatedDateCache[path] === undefined) {
+          md = await fetchText(rawPath);
+          if (readTimeCache[path] === undefined) {
+            if (md.length < STUB_THRESHOLD) markStubPath(path);
+            else readTimeCache[path] = readingTime(md);
+          }
+          if (updatedDateCache[path] === undefined) updatedDateCache[path] = parseUpdatedDate(md);
         }
         const isStub = readTimeCache[path] === null;
         const card = badge.closest(".index-card");
@@ -682,6 +701,11 @@ async function populateIndexReadTimes() {
           card.title = "Coming soon - this article hasn't been written yet";
           const dot = card.querySelector(".index-card-read-dot");
           if (dot) dot.remove();
+          const updatedDot = card.querySelector(".index-card-updated-dot");
+          if (updatedDot) updatedDot.remove();
+        } else if (card) {
+          _applyUpdatedDot(card, rawPath, updatedDateCache[path]);
+          _applyFade(card, rawPath);
         }
         badge.textContent = isStub ? "Coming soon" : readTimeCache[path];
       } catch {

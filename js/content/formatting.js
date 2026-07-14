@@ -113,11 +113,7 @@ function addAnchorLinks(contentEl, onCopyError = () => {}, onCopySuccess = () =>
 }
 
 function anchorIcon() {
-  return `<svg viewBox="0 0 16 16" fill="none">
-    <path d="M6.5 9.5l3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-    <path d="M4.5 11.5a2.5 2.5 0 010-3.54L6 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M11.5 4.5a2.5 2.5 0 010 3.54L10 9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>`;
+  return `<svg class="icon"><use href="#icon-anchor"></use></svg>`;
 }
 
 /* ═══════════════════════════════════════════════════════════════

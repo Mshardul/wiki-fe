@@ -197,7 +197,8 @@
   flex-direction: column;
   gap: var(--s2);
   contain: layout style;
-  transition: border-color var(--t), background var(--t), transform var(--t-fast), opacity var(--t);
+  transition: border-color var(--t), background var(--t), transform var(--t-fast), opacity var(--t),
+    filter var(--t-slow);
 }
 .index-card:hover {
   border-color: var(--accent);
@@ -207,6 +208,11 @@
   cursor: not-allowed;
   opacity: 0.45;
   filter: grayscale(1);
+}
+
+/* Stale-knowledge fade - --fade is set per card by JS from read-recency (1 = fresh). */
+.index-card {
+  filter: grayscale(calc(1 - var(--fade, 1))) opacity(var(--fade, 1));
 }
 .index-sections--loading .index-card {
   pointer-events: none;
@@ -337,6 +343,19 @@
   transition: opacity var(--t-fast);
 }
 .index-card-read-dot.visible {
+  opacity: 1;
+}
+.index-card-updated-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--color-warning);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--t-fast);
+}
+.index-card-updated-dot.visible {
   opacity: 1;
 }
 .index-card-meta {

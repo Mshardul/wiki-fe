@@ -327,9 +327,9 @@
   .home-header {
     padding-top: var(--s16);
   }
-}
-
-@media (max-width: 375px) {
+  /* content-topbar row (back + breadcrumb + read-time + 4 icon btns) overflows
+     390px viewports (iPhone 13) once breadcrumb hits min-width:0 - shed the
+     read-time badge and back-btn label same as the 375px tier below. */
   #content-read-time {
     display: none;
   }
@@ -339,6 +339,9 @@
   .content-topbar .back-btn-label {
     display: none;
   }
+}
+
+@media (max-width: 375px) {
   .content-topbar .topbar-icon-btn {
     min-width: 34px;
     min-height: 34px;

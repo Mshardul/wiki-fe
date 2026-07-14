@@ -46,7 +46,7 @@ function buildTOC(contentEl, wikiId, articlePath) {
       const chevron = document.createElement("button");
       chevron.className = "toc-group-chevron";
       chevron.setAttribute("aria-label", "Toggle section");
-      chevron.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,3 5,7 8,3"/></svg>`;
+      chevron.innerHTML = `<svg class="icon"><use href="#icon-chevron-down"></use></svg>`;
       chevron.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -156,7 +156,7 @@ function injectHeadingCollapseToggles(contentEl, wikiId, articlePath) {
     btn.type = "button";
     btn.setAttribute("aria-label", "Toggle section");
     btn.innerHTML =
-      '<svg viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      '<svg class="icon" aria-hidden="true"><use href="#icon-chevron-down"></use></svg>';
     h2.appendChild(btn);
 
     let next = h2.nextElementSibling;

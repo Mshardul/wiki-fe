@@ -313,6 +313,49 @@ body.sticky-header-visible .article-find {
 }
 
 /* ═══════════════════════════════════════════════
+   DEPTH-N CONTENT FOLDING
+   ═══════════════════════════════════════════════ */
+.markdown-body[data-depth="1"] .fold-region[data-fold-level="2"],
+.markdown-body[data-depth="1"] .fold-region[data-fold-level="3"],
+.markdown-body[data-depth="2"] .fold-region[data-fold-level="3"] {
+  display: none;
+}
+.markdown-body[data-depth="1"] h3,
+.markdown-body[data-depth="1"] h4,
+.markdown-body[data-depth="2"] h4 {
+  display: none;
+}
+
+.depth-fold-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  margin: var(--s1) 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+}
+.depth-fold-btn {
+  font: inherit;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--r-full);
+  padding: var(--s1) var(--s3);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.depth-fold-btn:hover {
+  color: var(--text-body);
+}
+.depth-fold-btn.active {
+  background: var(--accent-dim);
+  color: var(--accent-light);
+}
+
+/* ═══════════════════════════════════════════════
    FORMULA VARIABLE-SUBSTITUTION TOGGLE
    ═══════════════════════════════════════════════ */
 .formula-toggle-btn {

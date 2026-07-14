@@ -182,7 +182,10 @@ def test_data_action_wiki_home_navigates_home(page, base_url):
     page.locator(".wiki-card").first.click()
     page.wait_for_selector("#view-index.active", timeout=5_000)
 
-    page.locator("[data-action='wiki-home']").click()
+    # Multiple [data-action='wiki-home'] buttons exist (one per view); only
+    # the active view's is visible - scope to it to avoid strict-mode
+    # ambiguity between it and e.g. the changelog view's copy.
+    page.locator("[data-action='wiki-home']:visible").click()
     page.wait_for_selector("#view-home.active", timeout=5_000)
 
     is_active = page.evaluate(

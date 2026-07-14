@@ -17,7 +17,16 @@ class ApiError extends Error {
 
 let _sessionExpiredFired = false;
 
-async function _request(method, path, body, { silent401 = false } = {}) {
+const _DEFAULT_TIMEOUT_MS = 15000;
+
+async function _request(
+  method,
+  path,
+  body,
+  { silent401 = false, timeoutMs = _DEFAULT_TIMEOUT_MS } = {},
+) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   let res;
   try {
     res = await fetch(`${API}${path}`, {
@@ -25,9 +34,15 @@ async function _request(method, path, body, { silent401 = false } = {}) {
       credentials: "include",
       headers: body ? { "Content-Type": "application/json" } : undefined,
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
   } catch (networkErr) {
+    if (networkErr.name === "AbortError") {
+      throw new ApiError("TIMEOUT", "Request timed out. Please try again.", 0);
+    }
     throw new ApiError("NETWORK", networkErr.message, 0);
+  } finally {
+    clearTimeout(timer);
   }
 
   if (res.status === 401 && !silent401) {

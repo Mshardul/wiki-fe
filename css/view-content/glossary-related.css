@@ -1,12 +1,14 @@
 /* ═══════════════════════════════════════════════
    RELATED ARTICLES
    ═══════════════════════════════════════════════ */
-.related-articles {
+.related-articles,
+.backlink-spine {
   margin-top: var(--s12);
   padding-top: var(--s8);
   border-top: 1px solid var(--border);
 }
-.related-articles:empty {
+.related-articles:empty,
+.backlink-spine:empty {
   display: none;
 }
 .related-header {

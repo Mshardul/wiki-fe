@@ -22,6 +22,14 @@ function readingTime(text) {
   return `${mins} min read`;
 }
 
+/* ─── Front-matter "updated:" date ─── */
+function parseUpdatedDate(text) {
+  const fmMatch = text.match(/^---\n([\s\S]*?)\n---/);
+  if (!fmMatch) return null;
+  const dateMatch = fmMatch[1].match(/^updated:\s*(\S+)/m);
+  return dateMatch ? dateMatch[1] : null;
+}
+
 /* ─── Dynamic Page Title ─── */
 function updatePageTitle(title) {
   document.title = `${title} | Wiki App`;
@@ -100,13 +108,28 @@ async function fetchPrebuiltSearchIndex() {
   return _prebuiltIndex;
 }
 
+// Pre-built at deploy time (build_backlinks.py): { [articlePath]: {title, path}[] }
+let _prebuiltBacklinks;
+async function fetchPrebuiltBacklinks() {
+  if (_prebuiltBacklinks !== undefined) return _prebuiltBacklinks;
+  try {
+    const res = await fetch(new URL("./content/backlinks.json", location.href).href);
+    _prebuiltBacklinks = res.ok ? await res.json() : null;
+  } catch {
+    _prebuiltBacklinks = null;
+  }
+  return _prebuiltBacklinks;
+}
+
 export {
   normalizePath,
   dirOf,
   readingTime,
+  parseUpdatedDate,
   updatePageTitle,
   resolvePath,
   setBreadcrumb,
   fetchText,
   fetchPrebuiltSearchIndex,
+  fetchPrebuiltBacklinks,
 };

@@ -89,7 +89,7 @@ Do this before any file reads or skill invocations - every session:
 
 | File / domain      | Owns                                                                                                                                                                     |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `app.js` + `app/`  | ES module entry; bootstraps app, wires hash router, exposes window globals for inline onclick handlers, keyboard shortcuts, click delegation, scroll-to-top. `app/` holds mobile gestures, wiki switcher, debug overlay, home parallax, print, distraction-free |
+| `app.js` + `app/`  | ES module entry; bootstraps app, wires hash router, exposes window globals for inline onclick handlers, keyboard shortcuts, click delegation, scroll-to-top. `app/` holds mobile gestures, wiki switcher, debug overlay, home parallax, print, distraction-free, study feedback, bookmarks modal - see subtable below |
 | `state.js`         | WIKIS registry, Showdown/Mermaid config, shared caches (readTimeCache, indexCache, allSearchCache), app state object, shared pure utilities (escHtml, fuzzyMatch)        |
 | `content/`         | Content post-processing after markdown→HTML - see subtable below                                                                                                        |
 | `render/`          | Routing + view rendering - see subtable below                                                                                                                            |
@@ -99,6 +99,19 @@ Do this before any file reads or skill invocations - every session:
 | `storage/`         | All localStorage operations - see subtable below                                                                                                                         |
 
 **Never read every file in a domain folder** (`content/`, `render/`, `storage/`, `app/`) - the subtables below say exactly which file owns which behavior.
+
+#### `js/app/`
+
+| File                  | Owns                                                                     |
+| --------------------- | ------------------------------------------------------------------------- |
+| `mobile-panels.js`    | Mobile TOC drawer, swipe gestures, panel-close registry, viewport resize  |
+| `wiki-switcher.js`    | Wiki switcher modal open/close/render                                     |
+| `debug-overlay.js`    | `?debug` diagnostic overlay                                                |
+| `home-parallax.js`    | Home hero mouse-parallax effect                                            |
+| `print.js`            | Print-article trigger                                                     |
+| `distraction-free.js` | Distraction-free mode toggle                                              |
+| `study-feedback.js`   | Haptic + tone feedback on study milestones, gated by settings flag         |
+| `bookmarks-modal.js`  | Bookmarks modal open/close/render, focus trap, entry click → navigate     |
 
 #### `js/content/`
 
@@ -119,7 +132,8 @@ Do this before any file reads or skill invocations - every session:
 | `router.js`            | Hash router (`navigate`/`route`), view switching, slug resolution                    |
 | `home-index.js`        | Home grid, wiki index sections, card filter/swipe/hover, article counts              |
 | `content-view.js`      | Content render pipeline: fetch → parse → post-process → wire links/hover-preview      |
-| `related-articles.js` | Related-article ranking + rendering                                                  |
+| `related-articles.js` | Related-article ranking + rendering, backlink spine ("Mentioned by" panel)            |
+| `changelog-view.js`   | `#changelog` view: parses `content/CHANGELOG.md`, date-grouped entries, filename filter, filename→article resolution via search index |
 | `nav-utils.js`         | Path resolution, breadcrumb, page title, `fetchText`, `readingTime`                   |
 | `toast.js`             | Toast queue + display                                                                |
 
@@ -145,6 +159,7 @@ Do this before any file reads or skill invocations - every session:
 | `components-auth.css`   | Auth modal + topbar auth button styles (tokens only)                                                                                              |
 | `view-home.css`         | Home view: background grid/glow, wiki card grid, home topbar, hero section                                                                            |
 | `view-index.css`        | Index view: hero, section headers, index card grid, recents strip, bookmarks strip                                                                    |
+| `view-changelog.css`    | Changelog view: date groups, entry list, filename-link chips                                                                                          |
 | `view-content/`         | Content view - see subtable below                                                                                                                      |
 | `responsive.css`        | Mobile/tablet media queries - overrides layout, TOC visibility, topbar density for narrow viewports                                                   |
 | `wiki.css`              | CSS aggregator - imports all CSS modules via @import; never add rules here                                                                            |
@@ -270,6 +285,7 @@ After finishing any **content task**:
    - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
    ```
 4. **Search index** - after adding, renaming, or removing an article, regenerate `content/search-index.json`: run `python3 docs/_meta/ai-instructions/scripts/build_search_index.py` and commit the result alongside the content change. CI's `search-index` job runs the same generator and fails the build (`git diff --exit-code`) if the committed file is stale.
+5. **Backlinks** - after adding, renaming, removing, or changing internal links in an article, regenerate `content/backlinks.json`: run `python3 docs/_meta/ai-instructions/scripts/build_backlinks.py` (reads `search-index.json`, so regenerate that first) and commit the result. CI's `backlinks` job does the same and fails the build if the committed file is stale.
 
 ---
 

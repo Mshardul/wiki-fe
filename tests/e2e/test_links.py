@@ -3,7 +3,10 @@
 - External and Anchor link handling (049)
 - Cross-wiki `wiki://` link navigation (199)
 - Author-curated "## Recommended" section feeds the related-articles panel (027)
+- Backlink spine: "Mentioned by" reverse links (250)
 """
+
+import json
 
 
 def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
@@ -219,3 +222,52 @@ def test_article_without_recommended_section_uses_auto_related(page, base_url):
     assert "Some Other Section" in h2_texts, (
         "Non-recommended headings must still render normally"
     )
+
+
+def test_backlink_spine_shows_mentioned_by(page, base_url):
+    """WIKI-250: content/backlinks.json (built by build_backlinks.py) maps a
+    target article to the articles that link to it; the content view renders
+    that list as a 'Mentioned by' panel below related articles."""
+    backlinks = {
+        "./content/system-design/backlink-target.md": [
+            {"title": "Source One", "path": "./content/system-design/source-one.md"},
+        ],
+    }
+    _load_mock_article(
+        page,
+        base_url,
+        "# Backlink Target\n\nBody with no outgoing links.\n",
+        slug="backlink-target",
+        extra_routes=[
+            (
+                "**/content/backlinks.json",
+                lambda r: r.fulfill(
+                    content_type="application/json", body=json.dumps(backlinks)
+                ),
+            ),
+        ],
+    )
+    page.wait_for_selector("#backlink-spine .related-card", timeout=5_000)
+
+    label = page.locator("#backlink-spine .related-label").inner_text()
+    assert label.lower() == "mentioned by"
+
+    titles = page.locator("#backlink-spine .related-card-title").all_inner_texts()
+    assert titles == ["Source One"]
+
+
+def test_backlink_spine_empty_when_no_incoming_links(page, base_url):
+    """An article with no entry in backlinks.json shows no 'Mentioned by' panel."""
+    _load_mock_article(
+        page,
+        base_url,
+        "# No Backlinks Here\n\nBody.\n",
+        slug="no-backlinks",
+        extra_routes=[
+            (
+                "**/content/backlinks.json",
+                lambda r: r.fulfill(content_type="application/json", body=json.dumps({})),
+            ),
+        ],
+    )
+    assert page.locator("#backlink-spine .related-card").count() == 0

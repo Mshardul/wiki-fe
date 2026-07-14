@@ -1,6 +1,7 @@
 {
   "global": [
     { "keys": ["⌘K"], "description": "Open search" },
+    { "keys": ["⌘B"], "description": "Open all bookmarks" },
     { "keys": ["?"], "description": "Open keyboard shortcuts" },
     { "keys": [","], "description": "Open preferences" },
     { "keys": ["W"], "description": "Switch wiki (index + content views)" },

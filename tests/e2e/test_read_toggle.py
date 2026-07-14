@@ -144,3 +144,58 @@ def test_anon_read_makes_no_api_call(page, base_url):
         btn.click()
     page.wait_for_timeout(150)
     assert all("/reads" not in u for u in calls)
+
+
+# ── Haptic + sound on study milestone ───────────────────────────────────────
+
+_VIBRATE_SPY = """
+navigator.vibrate = function(pattern) {
+    window.__vibrateCalls = window.__vibrateCalls || [];
+    window.__vibrateCalls.push(pattern);
+    return true;
+};
+"""
+
+
+def test_read_toggle_calls_vibrate_when_setting_on(page, base_url):
+    """Marking an article read fires navigator.vibrate when hapticFeedback is on."""
+    page.add_init_script(_VIBRATE_SPY)
+    _go_to_article(page, base_url)
+    page.evaluate("""() => {
+        // getSettings() only treats a stored blob as valid if it has
+        // backgroundId - otherwise it discards it and falls back to
+        // defaults (hapticFeedback: false), silently dropping this seed.
+        const s = JSON.parse(localStorage.getItem('wiki-settings') || '{}');
+        s.backgroundId = s.backgroundId || 'dark-void';
+        s.hapticFeedback = true;
+        localStorage.setItem('wiki-settings', JSON.stringify(s));
+    }""")
+    page.locator("#content-read-btn").click()
+    calls = page.evaluate("() => window.__vibrateCalls || []")
+    assert len(calls) == 1
+
+
+def test_read_toggle_skips_vibrate_when_setting_off(page, base_url):
+    """Marking an article read does not call navigator.vibrate by default (off)."""
+    page.add_init_script(_VIBRATE_SPY)
+    _go_to_article(page, base_url)
+    page.locator("#content-read-btn").click()
+    calls = page.evaluate("() => window.__vibrateCalls || []")
+    assert len(calls) == 0
+
+
+def test_unmarking_read_does_not_call_vibrate(page, base_url):
+    """Marking an article back to unread is not a milestone - no vibrate call."""
+    page.add_init_script(_VIBRATE_SPY)
+    _go_to_article(page, base_url)
+    page.evaluate("""() => {
+        const s = JSON.parse(localStorage.getItem('wiki-settings') || '{}');
+        s.backgroundId = s.backgroundId || 'dark-void';
+        s.hapticFeedback = true;
+        localStorage.setItem('wiki-settings', JSON.stringify(s));
+    }""")
+    btn = page.locator("#content-read-btn")
+    btn.click()  # mark read - fires once
+    btn.click()  # mark unread - should not fire again
+    calls = page.evaluate("() => window.__vibrateCalls || []")
+    assert len(calls) == 1

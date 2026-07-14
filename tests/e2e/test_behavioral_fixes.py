@@ -22,23 +22,37 @@ def test_no_duplicate_hotkey_bindings():
     """No two key+modifier combos in app.js keydown handlers share the same binding."""
     src = (JS_DIR / "app.js").read_text()
 
-    # Extract key bindings: lines matching e.key === "X" with optional modifier checks
-    # Look for patterns like: e.key === "k" or e.key === "K"
-    binding_pattern = re.compile(
-        r'(?:(e\.metaKey|e\.ctrlKey|e\.shiftKey|e\.altKey)[^;]*?&&[^;]*?)?e\.key\s*===\s*["\'](.+?)["\']',
-    )
+    # Extract key bindings: e.key === "X" comparisons, classified by whether
+    # their enclosing `if` line requires meta/ctrl, explicitly excludes it
+    # (e.g. `!e.metaKey && !e.ctrlKey`), or says nothing either way - these
+    # are three distinct binding spaces, not one, since e.g. plain "B" and
+    # Cmd/Ctrl+B never fire on the same keypress.
+    key_pattern = re.compile(r'e\.key\s*===\s*["\'](.+?)["\']')
 
     seen = {}
     conflicts = []
-    for m in binding_pattern.finditer(src):
-        modifier = m.group(1) or "none"
-        key = m.group(2)
-        combo = f"{modifier}+{key}"
-        line_no = src[: m.start()].count("\n") + 1
-        if combo in seen:
-            conflicts.append(f"{combo} at lines {seen[combo]} and {line_no}")
+    for line_no, line in enumerate(src.splitlines(), start=1):
+        keys = key_pattern.findall(line)
+        if not keys:
+            continue
+        excludes_modifier = bool(re.search(r"!e\.(metaKey|ctrlKey)", line))
+        requires_modifier = bool(
+            re.search(r"(?<!!)e\.(metaKey|ctrlKey|shiftKey|altKey)", line)
+        )
+        if excludes_modifier:
+            modifier = "no-meta-ctrl"
+        elif requires_modifier:
+            modifier = "meta-ctrl-or-other"
         else:
-            seen[combo] = line_no
+            modifier = "none"
+        # dedupe within the line first - `e.key === "b" || e.key === "B"` is
+        # one case-insensitive binding, not a self-conflict.
+        for key in {k.lower() for k in keys}:
+            combo = f"{modifier}+{key}"
+            if combo in seen:
+                conflicts.append(f"{combo} at lines {seen[combo]} and {line_no}")
+            else:
+                seen[combo] = line_no
 
     assert not conflicts, f"Duplicate hotkey bindings found:\n" + "\n".join(conflicts)
 

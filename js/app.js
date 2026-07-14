@@ -1,6 +1,11 @@
 import { Auth, AuthModal } from "./auth.js";
 import "./app/home-parallax.js";
 import "./app/mobile-panels.js";
+import {
+  closeBookmarksModal,
+  isBookmarksModalOpen,
+  openBookmarksModal,
+} from "./app/bookmarks-modal.js";
 import { mountDebugOverlay } from "./app/debug-overlay.js";
 import {
   exitDistractionFree,
@@ -8,8 +13,10 @@ import {
   toggleDistractionFree,
 } from "./app/distraction-free.js";
 import { printArticle } from "./app/print.js";
+import { fireStudyMilestone } from "./app/study-feedback.js";
 import { closeWikiSwitcher, openWikiSwitcher } from "./app/wiki-switcher.js";
 import { syncHljsTheme, writeToClipboard } from "./content/code-blocks.js";
+import { setFoldDepth } from "./content/depth-fold.js";
 import {
   ArticleFind,
   cleanupFocusMode,
@@ -19,10 +26,18 @@ import {
   toggleFocusMode,
   toggleStudyMode,
 } from "./content/formatting.js";
+import {
+  cleanupInterviewMode,
+  isInterviewMode,
+  revealInterviewMode,
+  toggleInterviewMode,
+} from "./content/interview-mode.js";
 import { rerenderMermaidDiagrams } from "./content/mermaid.js";
 import { QuizMode } from "./content/tables.js";
 import { expandAllSections, initProgressRingScrollTop, updateProgressRing } from "./content/toc.js";
 import { closeZoomOverlay } from "./content/zoom-lightbox.js";
+import { loadIconSprite } from "./icon-sprite.js";
+import { renderChangelog } from "./render/changelog-view.js";
 import { getCurrentMarkdown, navigateToContent } from "./render/content-view.js";
 import { IndexFilter, toggleSection } from "./render/home-index.js";
 import { navigate, progressBar, route } from "./render/router.js";
@@ -139,9 +154,13 @@ document.addEventListener("click", (e) => {
     case "wiki-home":
       navigate("");
       break;
-    case "read-toggle":
-      ReadToggle.toggle();
+    case "changelog-open":
+      navigate("changelog");
       break;
+    case "read-toggle": {
+      if (ReadToggle.toggle()) fireStudyMilestone();
+      break;
+    }
     case "bookmark-toggle":
       Bookmarks.toggle();
       break;
@@ -157,11 +176,23 @@ document.addEventListener("click", (e) => {
     case "study-toggle":
       toggleStudyMode();
       break;
+    case "interview-toggle":
+      toggleInterviewMode();
+      break;
+    case "interview-reveal":
+      revealInterviewMode();
+      break;
+    case "depth-fold-set":
+      setFoldDepth(Number.parseInt(btn.dataset.depthFold, 10));
+      break;
     case "distraction-free-toggle":
       toggleDistractionFree();
       break;
     case "wiki-switcher-open":
       openWikiSwitcher();
+      break;
+    case "bookmarks-modal-open":
+      openBookmarksModal();
       break;
     case "distraction-free-exit":
       toggleDistractionFree();
@@ -186,11 +217,23 @@ document.addEventListener("click", (e) => {
     case "copy-source-toggle":
       Settings._toggleCopySourceHeader();
       break;
+    case "haptic-feedback-toggle":
+      Settings._toggleHapticFeedback();
+      break;
     case "settings-export":
       Settings.exportData();
       break;
     case "import-trigger":
       document.getElementById("import-upload").click();
+      break;
+    case "data-clear-request":
+      Settings.requestDataClear();
+      break;
+    case "data-clear-confirm":
+      Settings.confirmDataClear();
+      break;
+    case "data-clear-cancel":
+      Settings._cancelDataClearConfirm();
       break;
     case "auth-toggle":
       Auth.toggle();
@@ -229,7 +272,7 @@ function closeTopbarOverflow() {
    chain (navigate back, etc.) when nothing is active to reset.
    ═══════════════════════════════════════════════════════════════ */
 function hasResettableViewState() {
-  if (isFocusMode() || isStudyMode() || isDistractionFree()) return true;
+  if (isFocusMode() || isStudyMode() || isDistractionFree() || isInterviewMode()) return true;
   if (state.currentView === "content") {
     return !!document.querySelector("#markdown-body h2.section--collapsed");
   }
@@ -248,6 +291,7 @@ function resetView() {
 
   cleanupFocusMode();
   cleanupStudyMode();
+  cleanupInterviewMode();
   exitDistractionFree();
   ArticleFind.close();
   document.getElementById("resume-chip")?.remove();
@@ -294,7 +338,7 @@ window.addEventListener(
 
       // Auto-mark as read at 85%
       if (pct > 0.85 && state.currentFilePath) {
-        markRead(state.currentFilePath);
+        if (markRead(state.currentFilePath)) fireStudyMilestone();
         updateReadBtn();
       }
 
@@ -362,6 +406,12 @@ document.addEventListener("keydown", (e) => {
     openGlobalSearch({ scope: state.currentWikiId });
   }
 
+  // ⌘B: Global bookmarks modal - all bookmarks across wikis
+  if ((e.metaKey || e.ctrlKey) && (e.key === "b" || e.key === "B")) {
+    e.preventDefault();
+    openBookmarksModal();
+  }
+
   // ?: Open preferences on Keyboard tab (when not focused on input/textarea)
   if (e.key === "?") {
     const tag = document.activeElement.tagName;
@@ -390,6 +440,8 @@ document.addEventListener("keydown", (e) => {
       closeTopbarOverflow();
     } else if (!document.getElementById("wiki-switcher-modal").classList.contains("hidden")) {
       closeWikiSwitcher();
+    } else if (isBookmarksModalOpen()) {
+      closeBookmarksModal();
     } else if (ArticleFind.isOpen()) {
       ArticleFind.close();
     } else if (document.getElementById("zoom-overlay")?.classList.contains("open")) {
@@ -415,7 +467,7 @@ document.addEventListener("keydown", (e) => {
     const isInput =
       tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable;
     if (!isInput) {
-      if (e.key === "b" || e.key === "B") {
+      if ((e.key === "b" || e.key === "B") && !e.metaKey && !e.ctrlKey) {
         Bookmarks.toggle();
         e.preventDefault();
       }
@@ -429,6 +481,10 @@ document.addEventListener("keydown", (e) => {
       }
       if (e.key === "h" || e.key === "H") {
         toggleStudyMode();
+        e.preventDefault();
+      }
+      if (e.key === "i" || e.key === "I") {
+        toggleInterviewMode();
         e.preventDefault();
       }
       if (e.key === "t" || e.key === "T") {
@@ -508,6 +564,7 @@ window.addEventListener("hashchange", () => {
    ═══════════════════════════════════════════════════════════════ */
 (function init() {
   history.scrollRestoration = "manual";
+  loadIconSprite();
   applySettingsToDOM(getSettings());
   syncHljsTheme();
   initOsThemeListener();

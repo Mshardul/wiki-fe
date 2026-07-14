@@ -139,11 +139,25 @@ def base_url():
         def log_message(self, *args):
             pass
 
+        def handle_one_request(self):
+            # The client (Playwright) can abort a request at any point - not
+            # just mid-body (copyfile), but before headers are even fully
+            # written (send_response/send_header/send_error all write to
+            # the same socket). An abort during send_error specifically
+            # happens on every 404 for a stray/incorrect asset path the app
+            # requests, which happens often enough over a long run to matter.
+            # Wrapping the whole request here, rather than just copyfile,
+            # is the only place that covers every write path at once.
+            try:
+                super().handle_one_request()
+            except (BrokenPipeError, ConnectionResetError):
+                self.close_connection = True
+
         def copyfile(self, source, outputfile):
             try:
                 super().copyfile(source, outputfile)
             except (BrokenPipeError, ConnectionResetError):
-                pass
+                self.close_connection = True
 
     class Server(ThreadingHTTPServer):
         daemon_threads = True

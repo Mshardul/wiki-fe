@@ -134,6 +134,7 @@ const state = {
 
 /* ─── Shared caches (mutated by render.js and search.js - must live here) ─── */
 const readTimeCache = {};
+const updatedDateCache = {};
 const indexCache = {};
 const allSearchCache = { loaded: false, loading: false, entries: [] };
 const synonymCache = { loaded: false, map: {} };
@@ -223,11 +224,35 @@ function fuzzyMatch(query, text) {
   return qi === q.length;
 }
 
+/* ─── Stale-knowledge fade curve ───
+   Linear decay from 1.0 (just read) to FADE_FLOOR over FADE_PERIOD_DAYS,
+   then held at the floor - an ambient "fading memory" cue, not a hard cutoff. */
+const FADE_FLOOR = 0.4;
+const FADE_PERIOD_DAYS = 70; // ~10 weeks to reach the floor
+
+function fadeFactorForDaysSinceRead(days) {
+  if (!Number.isFinite(days) || days <= 0) return 1;
+  const t = Math.min(days / FADE_PERIOD_DAYS, 1);
+  return Math.max(FADE_FLOOR, 1 - t * (1 - FADE_FLOOR));
+}
+
+// Removes every localStorage key starting with `prefix` - the shared bulk-clear
+// primitive for per-article-keyed domains (highlights, notes, interview logs).
+function removeLocalStorageByPrefix(prefix) {
+  const toRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(prefix)) toRemove.push(key);
+  }
+  toRemove.forEach((key) => localStorage.removeItem(key));
+}
+
 export {
   WIKIS,
   state,
   indexCache,
   readTimeCache,
+  updatedDateCache,
   markStubPath,
   getShapeFingerprint,
   saveShapeFingerprint,
@@ -238,4 +263,7 @@ export {
   getMdConverter,
   escHtml,
   fuzzyMatch,
+  fadeFactorForDaysSinceRead,
+  FADE_FLOOR,
+  removeLocalStorageByPrefix,
 };

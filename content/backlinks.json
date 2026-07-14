@@ -1,0 +1,1900 @@
+{
+  "./content/dsa/algorithms/aho-corasick.md": [
+    {
+      "path": "./content/dsa/algorithms/string-matching.md",
+      "title": "String Matching (KMP)"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    },
+    {
+      "path": "./content/dsa/algorithms/rabin-karp.md",
+      "title": "Rabin-Karp"
+    }
+  ],
+  "./content/dsa/algorithms/backtracking.md": [
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/dynamic-programming.md",
+      "title": "Dynamic Programming"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    }
+  ],
+  "./content/dsa/algorithms/bfs.md": [
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/aho-corasick.md",
+      "title": "Aho-Corasick"
+    },
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/algorithms/edmonds-karp.md",
+      "title": "Edmonds-Karp"
+    },
+    {
+      "path": "./content/dsa/algorithms/dinic.md",
+      "title": "Dinic"
+    },
+    {
+      "path": "./content/dsa/algorithms/bipartite-matching.md",
+      "title": "Bipartite Matching"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/graph-coloring.md",
+      "title": "Graph Coloring"
+    }
+  ],
+  "./content/dsa/algorithms/binary-search.md": [
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-array.md",
+      "title": "Suffix Array"
+    },
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/merge-sort.md",
+      "title": "Merge Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/algorithms/dynamic-programming.md",
+      "title": "Dynamic Programming"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
+      "title": "Longest Increasing Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/modular-arithmetic.md",
+      "title": "Modular Arithmetic"
+    },
+    {
+      "path": "./content/dsa/patterns/modified-binary-search.md",
+      "title": "Modified Binary Search"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    }
+  ],
+  "./content/dsa/algorithms/bipartite-matching.md": [
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/algorithms/dinic.md",
+      "title": "Dinic"
+    }
+  ],
+  "./content/dsa/algorithms/bit-manipulation.md": [
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+      "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/algorithms/number-theory.md",
+      "title": "Number Theory"
+    },
+    {
+      "path": "./content/dsa/algorithms/modular-arithmetic.md",
+      "title": "Modular Arithmetic"
+    },
+    {
+      "path": "./content/dsa/algorithms/modular-exponentiation.md",
+      "title": "Modular Exponentiation"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/bitmask-dp.md",
+      "title": "Bitmask DP"
+    }
+  ],
+  "./content/dsa/algorithms/counting-sort.md": [
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/radix-sort.md",
+      "title": "Radix Sort"
+    },
+    {
+      "path": "./content/dsa/patterns/frequency-array.md",
+      "title": "Frequency Array"
+    }
+  ],
+  "./content/dsa/algorithms/dfs.md": [
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+      "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/algorithms/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/algorithms/strongly-connected-components.md",
+      "title": "Strongly Connected Components"
+    },
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/algorithms/ford-fulkerson.md",
+      "title": "Ford-Fulkerson"
+    },
+    {
+      "path": "./content/dsa/algorithms/dinic.md",
+      "title": "Dinic"
+    },
+    {
+      "path": "./content/dsa/algorithms/bipartite-matching.md",
+      "title": "Bipartite Matching"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/graph-coloring.md",
+      "title": "Graph Coloring"
+    }
+  ],
+  "./content/dsa/algorithms/dijkstra.md": [
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    }
+  ],
+  "./content/dsa/algorithms/dinic.md": [
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    }
+  ],
+  "./content/dsa/algorithms/divide-and-conquer.md": [
+    {
+      "path": "./content/dsa/algorithms/bit-manipulation.md",
+      "title": "Bit Manipulation"
+    },
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    }
+  ],
+  "./content/dsa/algorithms/dynamic-programming.md": [
+    {
+      "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+      "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/algorithms/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
+      "title": "Longest Increasing Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-common-subsequence.md",
+      "title": "Longest Common Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/bit-manipulation.md",
+      "title": "Bit Manipulation"
+    },
+    {
+      "path": "./content/dsa/algorithms/greedy.md",
+      "title": "Greedy"
+    },
+    {
+      "path": "./content/dsa/algorithms/kadane.md",
+      "title": "Kadane"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    },
+    {
+      "path": "./content/dsa/patterns/state-machine-dp.md",
+      "title": "State Machine DP"
+    },
+    {
+      "path": "./content/dsa/patterns/bitmask-dp.md",
+      "title": "Bitmask DP"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    }
+  ],
+  "./content/dsa/algorithms/edmonds-karp.md": [
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/algorithms/ford-fulkerson.md",
+      "title": "Ford-Fulkerson"
+    },
+    {
+      "path": "./content/dsa/algorithms/dinic.md",
+      "title": "Dinic"
+    }
+  ],
+  "./content/dsa/algorithms/euclidean-gcd.md": [
+    {
+      "path": "./content/dsa/algorithms/number-theory.md",
+      "title": "Number Theory"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    }
+  ],
+  "./content/dsa/algorithms/ford-fulkerson.md": [
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/algorithms/edmonds-karp.md",
+      "title": "Edmonds-Karp"
+    },
+    {
+      "path": "./content/dsa/algorithms/dinic.md",
+      "title": "Dinic"
+    }
+  ],
+  "./content/dsa/algorithms/greedy.md": [
+    {
+      "path": "./content/dsa/algorithms/dynamic-programming.md",
+      "title": "Dynamic Programming"
+    }
+  ],
+  "./content/dsa/algorithms/heapsort.md": [
+    {
+      "path": "./content/dsa/data-structures/heap.md",
+      "title": "Heap"
+    },
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    }
+  ],
+  "./content/dsa/algorithms/insertion-sort.md": [
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    }
+  ],
+  "./content/dsa/algorithms/kadane.md": [
+    {
+      "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
+      "title": "Longest Increasing Subsequence"
+    }
+  ],
+  "./content/dsa/algorithms/longest-increasing-subsequence.md": [
+    {
+      "path": "./content/dsa/algorithms/longest-common-subsequence.md",
+      "title": "Longest Common Subsequence"
+    }
+  ],
+  "./content/dsa/algorithms/maximum-flow.md": [
+    {
+      "path": "./content/dsa/algorithms/ford-fulkerson.md",
+      "title": "Ford-Fulkerson"
+    },
+    {
+      "path": "./content/dsa/algorithms/edmonds-karp.md",
+      "title": "Edmonds-Karp"
+    },
+    {
+      "path": "./content/dsa/algorithms/bipartite-matching.md",
+      "title": "Bipartite Matching"
+    }
+  ],
+  "./content/dsa/algorithms/merge-sort.md": [
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/quicksort.md",
+      "title": "Quicksort"
+    },
+    {
+      "path": "./content/dsa/algorithms/insertion-sort.md",
+      "title": "Insertion Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/counting-sort.md",
+      "title": "Counting Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/radix-sort.md",
+      "title": "Radix Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/algorithms/divide-and-conquer.md",
+      "title": "Divide and Conquer"
+    },
+    {
+      "path": "./content/dsa/patterns/k-way-merge.md",
+      "title": "K-Way Merge"
+    }
+  ],
+  "./content/dsa/algorithms/minimum-spanning-tree.md": [
+    {
+      "path": "./content/dsa/algorithms/greedy.md",
+      "title": "Greedy"
+    }
+  ],
+  "./content/dsa/algorithms/modular-arithmetic.md": [
+    {
+      "path": "./content/dsa/algorithms/modular-exponentiation.md",
+      "title": "Modular Exponentiation"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    }
+  ],
+  "./content/dsa/algorithms/modular-exponentiation.md": [
+    {
+      "path": "./content/dsa/algorithms/number-theory.md",
+      "title": "Number Theory"
+    },
+    {
+      "path": "./content/dsa/algorithms/euclidean-gcd.md",
+      "title": "Euclidean GCD"
+    },
+    {
+      "path": "./content/dsa/algorithms/sieve-of-eratosthenes.md",
+      "title": "Sieve of Eratosthenes"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    }
+  ],
+  "./content/dsa/algorithms/number-theory.md": [
+    {
+      "path": "./content/dsa/algorithms/modular-arithmetic.md",
+      "title": "Modular Arithmetic"
+    },
+    {
+      "path": "./content/dsa/algorithms/modular-exponentiation.md",
+      "title": "Modular Exponentiation"
+    },
+    {
+      "path": "./content/dsa/algorithms/euclidean-gcd.md",
+      "title": "Euclidean GCD"
+    },
+    {
+      "path": "./content/dsa/algorithms/sieve-of-eratosthenes.md",
+      "title": "Sieve of Eratosthenes"
+    }
+  ],
+  "./content/dsa/algorithms/quicksort.md": [
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/merge-sort.md",
+      "title": "Merge Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/insertion-sort.md",
+      "title": "Insertion Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/counting-sort.md",
+      "title": "Counting Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/radix-sort.md",
+      "title": "Radix Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    }
+  ],
+  "./content/dsa/algorithms/rabin-karp.md": [
+    {
+      "path": "./content/dsa/data-structures/suffix-array.md",
+      "title": "Suffix Array"
+    },
+    {
+      "path": "./content/dsa/algorithms/aho-corasick.md",
+      "title": "Aho-Corasick"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    }
+  ],
+  "./content/dsa/algorithms/radix-sort.md": [
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/counting-sort.md",
+      "title": "Counting Sort"
+    }
+  ],
+  "./content/dsa/algorithms/recursion.md": [
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/divide-and-conquer.md",
+      "title": "Divide and Conquer"
+    },
+    {
+      "path": "./content/dsa/algorithms/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/algorithms/dynamic-programming.md",
+      "title": "Dynamic Programming"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-common-subsequence.md",
+      "title": "Longest Common Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/number-theory.md",
+      "title": "Number Theory"
+    },
+    {
+      "path": "./content/dsa/algorithms/euclidean-gcd.md",
+      "title": "Euclidean GCD"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    }
+  ],
+  "./content/dsa/algorithms/sieve-of-eratosthenes.md": [
+    {
+      "path": "./content/dsa/algorithms/number-theory.md",
+      "title": "Number Theory"
+    }
+  ],
+  "./content/dsa/algorithms/sorting.md": [
+    {
+      "path": "./content/dsa/algorithms/binary-search.md",
+      "title": "Binary Search"
+    },
+    {
+      "path": "./content/dsa/algorithms/merge-sort.md",
+      "title": "Merge Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/quicksort.md",
+      "title": "Quicksort"
+    },
+    {
+      "path": "./content/dsa/algorithms/insertion-sort.md",
+      "title": "Insertion Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/counting-sort.md",
+      "title": "Counting Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/radix-sort.md",
+      "title": "Radix Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/algorithms/greedy.md",
+      "title": "Greedy"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    }
+  ],
+  "./content/dsa/algorithms/string-matching.md": [
+    {
+      "path": "./content/dsa/data-structures/suffix-array.md",
+      "title": "Suffix Array"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    },
+    {
+      "path": "./content/dsa/algorithms/aho-corasick.md",
+      "title": "Aho-Corasick"
+    },
+    {
+      "path": "./content/dsa/algorithms/rabin-karp.md",
+      "title": "Rabin-Karp"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    }
+  ],
+  "./content/dsa/algorithms/strongly-connected-components.md": [
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    }
+  ],
+  "./content/dsa/algorithms/topological-sort.md": [
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/strongly-connected-components.md",
+      "title": "Strongly Connected Components"
+    }
+  ],
+  "./content/dsa/algorithms/z-algorithm.md": [
+    {
+      "path": "./content/dsa/data-structures/suffix-array.md",
+      "title": "Suffix Array"
+    },
+    {
+      "path": "./content/dsa/algorithms/aho-corasick.md",
+      "title": "Aho-Corasick"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    }
+  ],
+  "./content/dsa/data-structures/array.md": [
+    {
+      "path": "./content/dsa/data-structures/dynamic-array.md",
+      "title": "Dynamic Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/circular-buffer.md",
+      "title": "Circular Buffer"
+    },
+    {
+      "path": "./content/dsa/data-structures/heap.md",
+      "title": "Heap"
+    },
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
+      "path": "./content/dsa/data-structures/bloom-filter.md",
+      "title": "Bloom Filter"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-array.md",
+      "title": "Suffix Array"
+    },
+    {
+      "path": "./content/dsa/algorithms/binary-search.md",
+      "title": "Binary Search"
+    },
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/merge-sort.md",
+      "title": "Merge Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/quicksort.md",
+      "title": "Quicksort"
+    },
+    {
+      "path": "./content/dsa/algorithms/insertion-sort.md",
+      "title": "Insertion Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/counting-sort.md",
+      "title": "Counting Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/radix-sort.md",
+      "title": "Radix Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/algorithms/divide-and-conquer.md",
+      "title": "Divide and Conquer"
+    },
+    {
+      "path": "./content/dsa/algorithms/dynamic-programming.md",
+      "title": "Dynamic Programming"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
+      "title": "Longest Increasing Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-common-subsequence.md",
+      "title": "Longest Common Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-matching.md",
+      "title": "String Matching (KMP)"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    },
+    {
+      "path": "./content/dsa/algorithms/manacher-algorithm.md",
+      "title": "Manacher Algorithm"
+    },
+    {
+      "path": "./content/dsa/algorithms/sieve-of-eratosthenes.md",
+      "title": "Sieve of Eratosthenes"
+    },
+    {
+      "path": "./content/dsa/algorithms/kadane.md",
+      "title": "Kadane"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/difference-array.md",
+      "title": "Difference Array"
+    },
+    {
+      "path": "./content/dsa/patterns/modified-binary-search.md",
+      "title": "Modified Binary Search"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/frequency-array.md",
+      "title": "Frequency Array"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    }
+  ],
+  "./content/dsa/data-structures/avl-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    }
+  ],
+  "./content/dsa/data-structures/b-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-plus-tree.md",
+      "title": "B-Plus Tree"
+    }
+  ],
+  "./content/dsa/data-structures/balanced-bst.md": [
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-plus-tree.md",
+      "title": "B-Plus Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/interval-tree.md",
+      "title": "Interval Tree"
+    }
+  ],
+  "./content/dsa/data-structures/binary-search-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/interval-tree.md",
+      "title": "Interval Tree"
+    }
+  ],
+  "./content/dsa/data-structures/binary-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/union-find.md",
+      "title": "Union-Find (DSU)"
+    },
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
+      "path": "./content/dsa/data-structures/interval-tree.md",
+      "title": "Interval Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+      "title": "Lowest Common Ancestor (LCA)"
+    }
+  ],
+  "./content/dsa/data-structures/circular-buffer.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/dynamic-array.md",
+      "title": "Dynamic Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    }
+  ],
+  "./content/dsa/data-structures/deque.md": [
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    }
+  ],
+  "./content/dsa/data-structures/dynamic-array.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/circular-buffer.md",
+      "title": "Circular Buffer"
+    },
+    {
+      "path": "./content/dsa/data-structures/heap.md",
+      "title": "Heap"
+    },
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-matching.md",
+      "title": "String Matching (KMP)"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    }
+  ],
+  "./content/dsa/data-structures/fenwick-tree.md": [
+    {
+      "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+      "title": "Lowest Common Ancestor (LCA)"
+    }
+  ],
+  "./content/dsa/data-structures/graph.md": [
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/union-find.md",
+      "title": "Union-Find (DSU)"
+    },
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/strongly-connected-components.md",
+      "title": "Strongly Connected Components"
+    },
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/algorithms/ford-fulkerson.md",
+      "title": "Ford-Fulkerson"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/graph-coloring.md",
+      "title": "Graph Coloring"
+    }
+  ],
+  "./content/dsa/data-structures/hash-set.md": [
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/bloom-filter.md",
+      "title": "Bloom Filter"
+    }
+  ],
+  "./content/dsa/data-structures/hash-table.md": [
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
+      "path": "./content/dsa/data-structures/bloom-filter.md",
+      "title": "Bloom Filter"
+    },
+    {
+      "path": "./content/dsa/algorithms/rabin-karp.md",
+      "title": "Rabin-Karp"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/state-machine-dp.md",
+      "title": "State Machine DP"
+    },
+    {
+      "path": "./content/dsa/patterns/frequency-array.md",
+      "title": "Frequency Array"
+    }
+  ],
+  "./content/dsa/data-structures/heap.md": [
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/algorithms/greedy.md",
+      "title": "Greedy"
+    },
+    {
+      "path": "./content/dsa/patterns/two-heaps.md",
+      "title": "Two Heaps"
+    },
+    {
+      "path": "./content/dsa/patterns/k-way-merge.md",
+      "title": "K-Way Merge"
+    }
+  ],
+  "./content/dsa/data-structures/linked-list.md": [
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-plus-tree.md",
+      "title": "B-Plus Tree"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/in-place-reversal.md",
+      "title": "In-place Reversal of a Linked List"
+    }
+  ],
+  "./content/dsa/data-structures/lru-cache.md": [
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    }
+  ],
+  "./content/dsa/data-structures/queue.md": [
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/aho-corasick.md",
+      "title": "Aho-Corasick"
+    }
+  ],
+  "./content/dsa/data-structures/red-black-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    }
+  ],
+  "./content/dsa/data-structures/segment-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/data-structures/interval-tree.md",
+      "title": "Interval Tree"
+    },
+    {
+      "path": "./content/dsa/patterns/difference-array.md",
+      "title": "Difference Array"
+    }
+  ],
+  "./content/dsa/data-structures/skip-list.md": [
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-plus-tree.md",
+      "title": "B-Plus Tree"
+    }
+  ],
+  "./content/dsa/data-structures/stack.md": [
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    }
+  ],
+  "./content/dsa/data-structures/string.md": [
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-array.md",
+      "title": "Suffix Array"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-matching.md",
+      "title": "String Matching (KMP)"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    },
+    {
+      "path": "./content/dsa/algorithms/manacher-algorithm.md",
+      "title": "Manacher Algorithm"
+    },
+    {
+      "path": "./content/dsa/algorithms/rabin-karp.md",
+      "title": "Rabin-Karp"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    }
+  ],
+  "./content/dsa/data-structures/suffix-array.md": [
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    }
+  ],
+  "./content/dsa/data-structures/trie.md": [
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-array.md",
+      "title": "Suffix Array"
+    },
+    {
+      "path": "./content/dsa/algorithms/aho-corasick.md",
+      "title": "Aho-Corasick"
+    }
+  ],
+  "./content/dsa/patterns/backtracking.md": [
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/patterns/state-machine-dp.md",
+      "title": "State Machine DP"
+    },
+    {
+      "path": "./content/dsa/patterns/bitmask-dp.md",
+      "title": "Bitmask DP"
+    },
+    {
+      "path": "./content/dsa/patterns/graph-coloring.md",
+      "title": "Graph Coloring"
+    }
+  ],
+  "./content/dsa/patterns/binary-search-on-answer.md": [
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/modified-binary-search.md",
+      "title": "Modified Binary Search"
+    },
+    {
+      "path": "./content/dsa/patterns/two-heaps.md",
+      "title": "Two Heaps"
+    },
+    {
+      "path": "./content/dsa/patterns/k-way-merge.md",
+      "title": "K-Way Merge"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    }
+  ],
+  "./content/dsa/patterns/bitmask-dp.md": [
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    },
+    {
+      "path": "./content/dsa/patterns/state-machine-dp.md",
+      "title": "State Machine DP"
+    },
+    {
+      "path": "./content/dsa/patterns/graph-coloring.md",
+      "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    }
+  ],
+  "./content/dsa/patterns/difference-array.md": [
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    }
+  ],
+  "./content/dsa/patterns/dp-patterns.md": [
+    {
+      "path": "./content/dsa/algorithms/dynamic-programming.md",
+      "title": "Dynamic Programming"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
+      "title": "Longest Increasing Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-common-subsequence.md",
+      "title": "Longest Common Subsequence"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    },
+    {
+      "path": "./content/dsa/patterns/state-machine-dp.md",
+      "title": "State Machine DP"
+    },
+    {
+      "path": "./content/dsa/patterns/bitmask-dp.md",
+      "title": "Bitmask DP"
+    }
+  ],
+  "./content/dsa/patterns/fast-slow-pointers.md": [
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/in-place-reversal.md",
+      "title": "In-place Reversal of a Linked List"
+    }
+  ],
+  "./content/dsa/patterns/graph-coloring.md": [
+    {
+      "path": "./content/dsa/algorithms/bipartite-matching.md",
+      "title": "Bipartite Matching"
+    }
+  ],
+  "./content/dsa/patterns/interval-dp.md": [
+    {
+      "path": "./content/dsa/algorithms/manacher-algorithm.md",
+      "title": "Manacher Algorithm"
+    }
+  ],
+  "./content/dsa/patterns/matrix-traversal.md": [
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    }
+  ],
+  "./content/dsa/patterns/merge-intervals.md": [
+    {
+      "path": "./content/dsa/algorithms/greedy.md",
+      "title": "Greedy"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    }
+  ],
+  "./content/dsa/patterns/monotonic-stack.md": [
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-matching.md",
+      "title": "String Matching (KMP)"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    }
+  ],
+  "./content/dsa/patterns/prefix-sum.md": [
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+      "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/algorithms/kadane.md",
+      "title": "Kadane"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/difference-array.md",
+      "title": "Difference Array"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    },
+    {
+      "path": "./content/dsa/patterns/frequency-array.md",
+      "title": "Frequency Array"
+    }
+  ],
+  "./content/dsa/patterns/sliding-window.md": [
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/patterns/two-heaps.md",
+      "title": "Two Heaps"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/frequency-array.md",
+      "title": "Frequency Array"
+    }
+  ],
+  "./content/dsa/patterns/subsets-permutations.md": [
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/algorithms/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/bitmask-dp.md",
+      "title": "Bitmask DP"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    }
+  ],
+  "./content/dsa/patterns/top-k-elements.md": [
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/patterns/two-heaps.md",
+      "title": "Two Heaps"
+    },
+    {
+      "path": "./content/dsa/patterns/k-way-merge.md",
+      "title": "K-Way Merge"
+    }
+  ],
+  "./content/dsa/patterns/tree-graph-traversal.md": [
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/graph-coloring.md",
+      "title": "Graph Coloring"
+    }
+  ],
+  "./content/dsa/patterns/two-heaps.md": [
+    {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/patterns/in-place-reversal.md",
+      "title": "In-place Reversal of a Linked List"
+    }
+  ],
+  "./content/dsa/patterns/two-pointers.md": [
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/algorithms/manacher-algorithm.md",
+      "title": "Manacher Algorithm"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/modified-binary-search.md",
+      "title": "Modified Binary Search"
+    },
+    {
+      "path": "./content/dsa/patterns/k-way-merge.md",
+      "title": "K-Way Merge"
+    },
+    {
+      "path": "./content/dsa/patterns/in-place-reversal.md",
+      "title": "In-place Reversal of a Linked List"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    }
+  ],
+  "./content/system-design/algorithms/acid-vs-base.md": [
+    {
+      "path": "./content/system-design/algorithms/cap-theorem.md",
+      "title": "CAP Theorem"
+    }
+  ],
+  "./content/system-design/algorithms/cap-theorem.md": [
+    {
+      "path": "./content/system-design/components/message-queues.md",
+      "title": "Message Queues"
+    },
+    {
+      "path": "./content/system-design/components/caching.md",
+      "title": "Caching"
+    }
+  ],
+  "./content/system-design/algorithms/consensus-raft-paxos.md": [
+    {
+      "path": "./content/system-design/components/message-queues.md",
+      "title": "Message Queues"
+    }
+  ],
+  "./content/system-design/algorithms/consistent-hashing.md": [
+    {
+      "path": "./content/system-design/components/load-balancer.md",
+      "title": "Load Balancer"
+    },
+    {
+      "path": "./content/system-design/components/caching.md",
+      "title": "Caching"
+    },
+    {
+      "path": "./content/system-design/components/rate-limiter.md",
+      "title": "Rate Limiter"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    }
+  ],
+  "./content/system-design/algorithms/rate-limiting-algorithms.md": [
+    {
+      "path": "./content/system-design/components/rate-limiter.md",
+      "title": "Rate Limiter"
+    }
+  ],
+  "./content/system-design/algorithms/replication-strategies.md": [
+    {
+      "path": "./content/system-design/components/message-queues.md",
+      "title": "Message Queues"
+    },
+    {
+      "path": "./content/system-design/components/caching.md",
+      "title": "Caching"
+    },
+    {
+      "path": "./content/system-design/algorithms/cap-theorem.md",
+      "title": "CAP Theorem"
+    }
+  ],
+  "./content/system-design/algorithms/saga-pattern.md": [
+    {
+      "path": "./content/system-design/components/message-queues.md",
+      "title": "Message Queues"
+    }
+  ],
+  "./content/system-design/components/caching.md": [
+    {
+      "path": "./content/system-design/components/rate-limiter.md",
+      "title": "Rate Limiter"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    }
+  ],
+  "./content/system-design/components/cdn.md": [
+    {
+      "path": "./content/system-design/components/caching.md",
+      "title": "Caching"
+    }
+  ],
+  "./content/system-design/components/dns.md": [
+    {
+      "path": "./content/system-design/components/load-balancer.md",
+      "title": "Load Balancer"
+    }
+  ],
+  "./content/system-design/components/load-balancer.md": [
+    {
+      "path": "./content/system-design/components/rate-limiter.md",
+      "title": "Rate Limiter"
+    }
+  ],
+  "./content/system-design/components/message-queues.md": [
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    }
+  ],
+  "./content/system-design/components/rate-limiter.md": [
+    {
+      "path": "./content/system-design/components/load-balancer.md",
+      "title": "Load Balancer"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    }
+  ]
+}

@@ -4,6 +4,25 @@
 const SCROLL_KEYS_MANIFEST = "wiki-scroll-keys";
 const SCROLL_CACHE_MAX = 50;
 
+// wikiId omitted clears every cached scroll position; passed, scopes to keys
+// containing "-{wikiId}-" (manifest keys are TOC-scroll paths built from wikiId+article path).
+function clearScrollPositions(wikiId) {
+  let keys;
+  try {
+    keys = JSON.parse(localStorage.getItem(SCROLL_KEYS_MANIFEST) || "[]");
+  } catch {
+    keys = [];
+  }
+  const remove = wikiId ? keys.filter((k) => k.includes(`-${wikiId}-`)) : keys;
+  remove.forEach((k) => localStorage.removeItem(k));
+  const remaining = wikiId ? keys.filter((k) => !k.includes(`-${wikiId}-`)) : [];
+  if (remaining.length) {
+    localStorage.setItem(SCROLL_KEYS_MANIFEST, JSON.stringify(remaining));
+  } else {
+    localStorage.removeItem(SCROLL_KEYS_MANIFEST);
+  }
+}
+
 function saveScrollPos(key, value) {
   let keys;
   try {
@@ -86,4 +105,5 @@ export {
   saveTOCScroll,
   restoreTOCScroll,
   RecentSearches,
+  clearScrollPositions,
 };

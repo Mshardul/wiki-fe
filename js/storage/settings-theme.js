@@ -7,6 +7,7 @@ import {
   renderBookmarksSection,
   updateBookmarkBtn,
 } from "./bookmarks.js";
+import { DATA_CATEGORIES, clearSelectedData } from "./data-clear.js";
 import { _readKey, isRead, updateReadBtn } from "./read-tracking.js";
 import { RECENTS_KEY, RECENTS_MAX, renderRecentsSection } from "./recents.js";
 
@@ -223,6 +224,7 @@ const DEFAULT_SETTINGS = {
   lineHeight: "Normal",
   paraSpacing: "Normal",
   copySourceHeader: false,
+  hapticFeedback: false,
 };
 
 function _isDark(backgroundId) {
@@ -476,15 +478,94 @@ const Settings = {
     this._renderLineHeights(s);
     this._renderParaSpacings(s);
     this._renderToggles(s);
+    this._renderDataClear();
   },
 
   _renderToggles(s) {
     const btn = document.getElementById("settings-copy-source");
+    if (btn) {
+      const on = Boolean(s.copySourceHeader);
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-pressed", String(on));
+      btn.textContent = on ? "On" : "Off";
+    }
+    const hapticBtn = document.getElementById("settings-haptic-feedback");
+    if (hapticBtn) {
+      const on = Boolean(s.hapticFeedback);
+      hapticBtn.classList.toggle("active", on);
+      hapticBtn.setAttribute("aria-pressed", String(on));
+      hapticBtn.textContent = on ? "On" : "Off";
+    }
+  },
+
+  _renderDataClear() {
+    const select = document.getElementById("data-clear-scope");
+    const checklist = document.getElementById("data-clear-checklist");
+    if (!select || !checklist) return;
+
+    if (!select.dataset.populated) {
+      select.insertAdjacentHTML(
+        "beforeend",
+        WIKIS.map((w) => `<option value="${w.id}">${escHtml(w.title)}</option>`).join(""),
+      );
+      select.dataset.populated = "1";
+    }
+
+    if (!checklist.dataset.populated) {
+      checklist.innerHTML = Object.entries(DATA_CATEGORIES)
+        .map(
+          ([key, cat]) =>
+            `<label class="data-clear-item">
+              <input type="checkbox" class="data-clear-checkbox" value="${key}" />
+              <span>${escHtml(cat.label)}</span>
+            </label>`,
+        )
+        .join("");
+      checklist.dataset.populated = "1";
+      checklist.addEventListener("change", () => this._updateClearButtonState());
+    }
+    this._updateClearButtonState();
+  },
+
+  _selectedDataCategories() {
+    return [...document.querySelectorAll(".data-clear-checkbox:checked")].map((el) => el.value);
+  },
+
+  _updateClearButtonState() {
+    const btn = document.getElementById("data-clear-btn");
     if (!btn) return;
-    const on = Boolean(s.copySourceHeader);
-    btn.classList.toggle("active", on);
-    btn.setAttribute("aria-pressed", String(on));
-    btn.textContent = on ? "On" : "Off";
+    btn.disabled = this._selectedDataCategories().length === 0;
+    this._cancelDataClearConfirm();
+  },
+
+  requestDataClear() {
+    const categories = this._selectedDataCategories();
+    if (!categories.length) return;
+    document.getElementById("data-clear-confirm")?.classList.remove("hidden");
+  },
+
+  _cancelDataClearConfirm() {
+    document.getElementById("data-clear-confirm")?.classList.add("hidden");
+  },
+
+  confirmDataClear() {
+    const categories = this._selectedDataCategories();
+    if (!categories.length) return;
+    const scope = document.getElementById("data-clear-scope")?.value || "all";
+
+    clearSelectedData(categories, scope);
+    this._cancelDataClearConfirm();
+    document.querySelectorAll(".data-clear-checkbox:checked").forEach((el) => {
+      el.checked = false;
+    });
+    this._updateClearButtonState();
+
+    const wiki = WIKIS.find((w) => w.id === state.currentWikiId);
+    if (wiki) {
+      renderBookmarksSection(wiki);
+      renderRecentsSection(wiki);
+    }
+    _toast("Selected data cleared");
   },
 
   _renderBackgrounds(s) {
@@ -636,6 +717,12 @@ const Settings = {
   _toggleCopySourceHeader() {
     const s = getSettings();
     saveSettings({ ...s, copySourceHeader: !s.copySourceHeader });
+    this._render();
+  },
+
+  _toggleHapticFeedback() {
+    const s = getSettings();
+    saveSettings({ ...s, hapticFeedback: !s.hapticFeedback });
     this._render();
   },
 

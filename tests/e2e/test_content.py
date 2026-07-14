@@ -283,7 +283,10 @@ def test_lede_paragraph_has_larger_font_than_body(page, base_url):
     page.wait_for_selector("#markdown-body p", timeout=5_000)
 
     result = page.evaluate("""() => {
-        const ps = document.querySelectorAll('#markdown-body > p');
+        // Body paragraphs under a heading are wrapped in a .fold-region
+        // container (depth-fold.js collapsible sections), so they're no
+        // longer direct children of #markdown-body - query at any depth.
+        const ps = document.querySelectorAll('#markdown-body p');
         if (ps.length < 2) return null;
         return {
             lede: parseFloat(window.getComputedStyle(ps[0]).fontSize),
@@ -309,7 +312,9 @@ def test_lede_paragraph_has_heading_color(page, base_url):
     page.wait_for_selector("#markdown-body p", timeout=5_000)
 
     result = page.evaluate("""() => {
-        const ps = document.querySelectorAll('#markdown-body > p');
+        // See test_lede_paragraph_has_larger_font_than_body - body paragraphs
+        // are wrapped in .fold-region containers, so query at any depth.
+        const ps = document.querySelectorAll('#markdown-body p');
         if (ps.length < 2) return null;
         return {
             lede: window.getComputedStyle(ps[0]).color,

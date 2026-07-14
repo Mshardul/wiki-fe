@@ -22,6 +22,19 @@ async function isArticleCached(filePath) {
   return !!(await cache.match(filePath));
 }
 
+// wikiId omitted clears every offline download; passed, scopes to that wiki's
+// content path (cache keys are fetched article URLs, e.g. "./content/{wikiId}/...").
+async function clearAllDownloads(wikiId) {
+  if (!("caches" in window)) return;
+  const cache = await caches.open("wiki-articles-v1");
+  const requests = await cache.keys();
+  for (const req of requests) {
+    if (!wikiId || req.url.includes(`/content/${wikiId}/`)) {
+      await cache.delete(req);
+    }
+  }
+}
+
 async function updateOfflineBtn() {
   const btn = document.getElementById("content-offline-btn");
   if (!btn || !state.currentFilePath) return;
@@ -51,4 +64,11 @@ const Offline = {
   },
 };
 
-export { downloadArticle, removeArticleDownload, isArticleCached, updateOfflineBtn, Offline };
+export {
+  downloadArticle,
+  removeArticleDownload,
+  isArticleCached,
+  updateOfflineBtn,
+  Offline,
+  clearAllDownloads,
+};

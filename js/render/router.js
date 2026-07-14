@@ -1,5 +1,6 @@
 import { cleanupStickySection } from "../content/toc.js";
 import { WIKIS, fuzzyMatch, state } from "../state.js";
+import { renderChangelog } from "./changelog-view.js";
 import { renderContent } from "./content-view.js";
 import { parseIndexMd, renderHome, renderIndex } from "./home-index.js";
 import { dirOf, fetchText, updatePageTitle } from "./nav-utils.js";
@@ -10,7 +11,7 @@ import { showToast } from "./toast.js";
    ═══════════════════════════════════════════════════════════════ */
 const progressBar = document.getElementById("reading-progress");
 
-const VIEW_DEPTH = { "view-home": 0, "view-index": 1, "view-content": 2 };
+const VIEW_DEPTH = { "view-home": 0, "view-index": 1, "view-content": 2, "view-changelog": 1 };
 let _lastViewDepth = null; // null = no prior view this session yet (boot render)
 const _reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -94,6 +95,12 @@ function _execRoute(hash) {
   }
 
   const wikiId = parts[0];
+  if (wikiId === "changelog") {
+    updatePageTitle("Changelog");
+    renderChangelog();
+    return;
+  }
+
   const wiki = WIKIS.find((w) => w.id === wikiId);
   if (!wiki) {
     updatePageTitle("Not Found");

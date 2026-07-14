@@ -113,6 +113,10 @@
   --z-tooltip: 9998;
   --z-zoom: 10000;
 
+  /* Text highlight (translucent yellow) */
+  --highlight-bg: rgba(234, 179, 8, 0.28);
+  --highlight-bg-hover: rgba(234, 179, 8, 0.42);
+
   /* Semantic status colors */
   --color-success: #10b981;
   --color-success-bg: rgba(16, 185, 129, 0.08);

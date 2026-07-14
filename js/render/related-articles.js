@@ -1,6 +1,6 @@
-import { escHtml } from "../state.js";
+import { WIKIS, escHtml } from "../state.js";
 import { fetchWikiIndex } from "./home-index.js";
-import { dirOf, normalizePath, resolvePath } from "./nav-utils.js";
+import { dirOf, fetchPrebuiltBacklinks, normalizePath, resolvePath } from "./nav-utils.js";
 
 /* ═══════════════════════════════════════════════════════════════
    RELATED ARTICLES
@@ -161,4 +161,51 @@ async function renderRelatedArticles(wiki, currentPath, recommendedLinks) {
   } catch {}
 }
 
-export { extractRecommendedLinks, renderRelatedArticles };
+/* ─── Backlink spine: "Mentioned by" reverse links (WIKI-250) ───
+   Built at deploy time (build_backlinks.py) from every article's internal
+   .md links, inverted into target -> [source articles]. Static per deploy -
+   only reflects content as of the last commit, not same-session edits. */
+function _wikiIdForPath(path) {
+  const wiki = WIKIS.find((w) => path.startsWith(`./content/${w.id}/`));
+  return wiki?.id;
+}
+
+async function renderBacklinks(currentPath) {
+  const container = document.getElementById("backlink-spine");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const backlinks = await fetchPrebuiltBacklinks();
+  if (!backlinks) return;
+  // Keys/paths in backlinks.json carry the "./content/..." prefix used by
+  // search-index.json; currentPath and interceptMdLinks hrefs are normalized
+  // (no leading "./"), so both sides must go through normalizePath to compare.
+  const entry = Object.entries(backlinks).find(([target]) => normalizePath(target) === currentPath);
+  const sources = entry?.[1];
+  if (!sources?.length) return;
+
+  container.innerHTML = `
+    <div class="related-header">
+      <span class="related-label">Mentioned by</span>
+    </div>
+    <div class="related-grid">
+      ${sources
+        .map((src) => {
+          const wikiId = _wikiIdForPath(src.path);
+          if (!wikiId) return "";
+          return `
+          <div class="related-card"
+               onclick="navigateToContent('${wikiId}','${encodeURIComponent(
+                 src.path,
+               )}','${encodeURIComponent(src.title)}')"
+               role="button" tabindex="0"
+               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+            <span class="related-card-title">${escHtml(src.title)}</span>
+            <span class="related-card-arrow">→</span>
+          </div>`;
+        })
+        .join("")}
+    </div>`;
+}
+
+export { extractRecommendedLinks, renderRelatedArticles, renderBacklinks };

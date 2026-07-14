@@ -10,7 +10,7 @@ This file is the *how to write the code*. The operational map (which file owns w
 
 - **SRP (Single Responsibility).** One module, one concern. Each `js/` file owns exactly one slice of the app (see the module map below); a function does one thing. If you can't name what a module owns in one phrase, it's doing too much.
 - **Size is a signal, not a rule to game.** A file crossing **~400 lines** is a prompt to split it by sub-concern into a domain subfolder (`js/domain/sub-file.js`, `css/view-x/sub-file.css`) - don't wait for a "refactor" ticket to do it. Exception: a single cohesive pipeline (fetch → render → wire, no independently reusable piece) may stay one file past the threshold if splitting would only fragment one linear flow - note the exception in a one-line comment at the top of that file.
-- **DRY (Don't Repeat Yourself).** Logic lives in one place. Shared pure helpers belong in `state.js` (`escHtml`, `fuzzyMatch`). A repeated literal → a named constant. A CSS value used twice → a token in `tokens.css`, never copied.
+- **DRY (Don't Repeat Yourself).** Logic lives in one place. Shared pure helpers belong in `state.js` (`escHtml`, `fuzzyMatch`). A repeated literal → a named constant. A CSS value used twice → a token in `tokens.css`, never copied. **Exception:** a small (**<20 line**) render/UI helper duplicated across exactly 2 files (e.g. `_buildChipStrip` in `storage/bookmarks.js` and `storage/recents.js`) may stay duplicated rather than get its own shared module - the indirection cost of a module for one tiny function used twice outweighs the DRY win. Re-evaluate once a 3rd caller needs it.
 - **SoC (Separation of Concerns).** Rendering, persistence, content processing, and search never bleed into each other - that's why they're separate modules. Keep the boundaries.
 - **YAGNI.** Build for the current version. No framework, no abstraction layer, no config knob until a real second caller needs it. The app is deliberately small and dependency-light.
 - **Explicit over implicit.** No magic globals beyond the documented `window.*` handlers. Dynamic behaviour is wired in code you can grep, not inferred.
@@ -32,7 +32,7 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 
 | Domain            | Owns                                                                                                             |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `app.js` + `app/`  | Entry/bootstrap, hash router wiring, `window.*` globals, keyboard shortcuts, mobile gestures, wiki switcher, debug overlay |
+| `app.js` + `app/`  | Entry/bootstrap, hash router wiring, `window.*` globals, keyboard shortcuts - see `js/app/` subtable below for the full domain |
 | `state.js`         | App state object, WIKIS registry, shared caches, shared pure utilities                                           |
 | `content/`         | Post-markdown content processing (callouts, copy buttons, Mermaid, TOC, focus mode, glossary, footnotes, …)      |
 | `render/`          | Routing + view rendering (home grid, index sections, content pipeline, breadcrumbs, related articles, toast)     |
@@ -97,6 +97,7 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 - **No inline styles** except dynamic values set programmatically via JS (e.g. a computed width). Everything static is a CSS class.
 - **Inline `onclick` handlers require a `window.*` global** (see the WINDOW GLOBALS block in `app.js`). Prefer the existing `data-action` delegation for new static buttons over adding globals.
 - **Naming:** `camelCase` for vars/functions, `UPPER_SNAKE` for module-level constants with a one-line reason if non-obvious.
+- **Leading underscore (`_name`) marks "not part of this file's public contract"** - applies the same way at both granularities: a top-level function not in the module's exports (`_collectLocalReads` in `auth.js`), or a method on an exported object literal not meant for outside callers (`AuthModal._trapFocus`, `._renderChecklist`). No prefix = part of the public export or the object's intended external API.
 - **No new runtime dependencies** without a deliberate decision - the no-build, offline-first model depends on staying lean.
 - **Comments are sparse and short.** A comment earns its place only when the code can't say it itself - the *why*, a non-obvious constraint, a gotcha. Default to none. When you do comment, **one line**, not a paragraph. Never narrate *what* the next lines do (the code shows that), never restate the function name, never write multi-line block comments explaining mechanics. Section-divider banners (`/* ─── X ─── */`) are fine; prose explanations of straightforward code are not.
 - **Comments are project-level, never ticket- or task-level.** Never reference a ticket number (`WIKI-xxx`), task number, PR number, or branch name in a code comment or CSS section header. Those belong in the commit message or PR description - not in the source file, where they rot.
@@ -132,8 +133,6 @@ For the full model and the *why*, see the decisions docs:
 ---
 
 ## Errors & API
-
-> Applies fully once `js/api.js` lands; the rules below are the standing contract for that code.
 
 - **All backend calls go through one wrapper (`api.js`).** No module makes its own `fetch` to the backend. The wrapper sets `credentials: "include"` once, parses JSON, and owns the base-URL detect.
 - **Never read the session cookie in JS.** It's httpOnly by design - JS cannot and must not try. The "logged-in?" signal is `state.session`, set from `GET /auth/me`.
@@ -173,6 +172,7 @@ For the full model and the *why*, see the decisions docs:
 - **Surface loading, empty, and error states** via `state.js` flags for any async operation that drives visible UI. One-off internal fetches that don't affect UI directly are exempt.
 - **Fetches interruptible by a view change must accept an `AbortSignal`** and cancel cleanly on signal.
 - **Clean up on view teardown** (cancel in-flight work, reset transient UI state). Teardown is managed in `app.js` via the hash router.
+- **Two allowed shapes for backend calls, don't mix them:** (1) **best-effort background sync** (optimistic localStorage-then-API writes in `storage/*.js`, e.g. `bookmarks.js`, `recents.js`) - un-awaited, `.catch(() => {})`, never blocks the UI, never surfaces the error. (2) **user-initiated request flows** (`auth.js` login/register/verify/etc.) - always `await`ed, errors caught and surfaced via `ApiError`. Don't `await` a best-effort sync call (blocks UI on a call the user doesn't need to wait for) and don't fire-and-forget a user-initiated one (swallows an error the user needs to see).
 
 ---
 

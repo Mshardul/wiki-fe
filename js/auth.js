@@ -1,4 +1,5 @@
 import { ApiError, api } from "./api.js";
+import { showToast } from "./render/toast.js";
 import { WIKIS, state } from "./state.js";
 import { getBookmarks } from "./storage/bookmarks.js";
 import { getRecents } from "./storage/recents.js";
@@ -97,6 +98,7 @@ const AuthModal = {
     m.classList.remove("hidden");
     m.setAttribute("aria-hidden", "false");
     this._swap(panel);
+    document.addEventListener("keydown", this._trapFocus);
   },
 
   close() {
@@ -104,7 +106,31 @@ const AuthModal = {
     m.classList.add("hidden");
     m.setAttribute("aria-hidden", "true");
     this._clearErrors();
+    document.removeEventListener("keydown", this._trapFocus);
     if (this._lastFocus?.focus) this._lastFocus.focus();
+  },
+
+  // Bound as a property (not a method) so add/removeEventListener see the
+  // same reference; cycles Tab/Shift+Tab between first/last focusable
+  // elements in .auth-dialog so keyboard focus can't leak to the page behind.
+  _trapFocus: (e) => {
+    if (e.key !== "Tab") return;
+    const dialog = document.querySelector(".auth-dialog");
+    if (!dialog) return;
+    const focusable = dialog.querySelectorAll(
+      "button:not([disabled]):not([hidden]), input:not([disabled]):not([hidden]), a[href]",
+    );
+    const visible = Array.from(focusable).filter((el) => el.offsetParent !== null);
+    if (!visible.length) return;
+    const first = visible[0];
+    const last = visible[visible.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
   },
 
   isOpen() {
@@ -161,6 +187,32 @@ const AuthModal = {
   },
 };
 
+// Disables btnId synchronously (blocks double-fire from rapid clicks/Enter),
+// awaits fn(), then always re-enables - success paths that close/swap the
+// modal make the disabled state moot, error paths need the button back.
+async function _withSubmitGuard(btnId, fn) {
+  const btn = document.getElementById(btnId);
+  if (btn?.disabled) return;
+  if (btn) btn.disabled = true;
+  try {
+    await fn();
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// Cross-tab session sync: bumping this key fires a `storage` event in every
+// *other* tab (same-tab writes don't self-fire), which re-probes /auth/me
+// there so a login/logout in one tab reflects in the rest without a manual reload.
+const SESSION_SYNC_KEY = "wiki-session-sync";
+function _broadcastSessionChange() {
+  try {
+    localStorage.setItem(SESSION_SYNC_KEY, String(Date.now()));
+  } catch {
+    /* storage unavailable (private mode etc.) - single-tab still works */
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    AUTH - boot + flows
    ═══════════════════════════════════════════════════════════════ */
@@ -210,8 +262,16 @@ const Auth = {
       await maybeMigrate();
       await Sync.pullAll();
       document.dispatchEvent(new CustomEvent("wiki:session-changed"));
+      _broadcastSessionChange();
     } catch (e) {
       if (e instanceof ApiError && e.status === 403) {
+        const title = document.getElementById("auth-verify-title");
+        const copy = document.getElementById("auth-verify-copy");
+        if (title) title.textContent = "Account not verified";
+        if (copy) {
+          copy.textContent =
+            "This account hasn't been verified yet. Resend the verification email to finish signing up.";
+        }
         AuthModal._swap("verify");
       } else {
         AuthModal._showError(
@@ -230,6 +290,13 @@ const Auth = {
     }
     try {
       await api.auth.register(email, password);
+      const title = document.getElementById("auth-verify-title");
+      const copy = document.getElementById("auth-verify-copy");
+      if (title) title.textContent = "Check your email";
+      if (copy) {
+        copy.textContent =
+          "We sent a verification link to your inbox. Click it to finish signing up.";
+      }
       AuthModal._swap("verify");
     } catch (e) {
       AuthModal._showError(
@@ -242,8 +309,10 @@ const Auth = {
   async resend(email) {
     try {
       await api.auth.resend(email);
+      showToast("Verification email sent");
     } catch {
-      /* generic 200 either way; ignore */
+      /* generic 200 either way; still confirm so the click isn't silent */
+      showToast("Verification email sent");
     }
   },
 
@@ -288,6 +357,7 @@ const Auth = {
       this.refreshButtons();
       await Sync.pullAll();
       document.dispatchEvent(new CustomEvent("wiki:session-changed"));
+      _broadcastSessionChange();
     } catch (e) {
       AuthModal._showError(
         "auth-reset-error",
@@ -325,6 +395,7 @@ const Auth = {
     Sync.clearUserDataCache();
     this.refreshButtons();
     document.dispatchEvent(new CustomEvent("wiki:session-changed"));
+    _broadcastSessionChange();
   },
 
   _wireModalInputs() {
@@ -338,22 +409,28 @@ const Auth = {
     // submit handlers - wired to each panel's <form> submit so Enter-in-field works
     document.getElementById("auth-form-login")?.addEventListener("submit", (e) => {
       e.preventDefault();
-      this.login(
-        document.getElementById("auth-login-email").value.trim(),
-        document.getElementById("auth-login-password").value,
+      _withSubmitGuard("auth-login-submit", () =>
+        this.login(
+          document.getElementById("auth-login-email").value.trim(),
+          document.getElementById("auth-login-password").value,
+        ),
       );
     });
     document.getElementById("auth-form-register")?.addEventListener("submit", (e) => {
       e.preventDefault();
-      this.register(
-        document.getElementById("auth-reg-email").value.trim(),
-        document.getElementById("auth-reg-password").value,
+      _withSubmitGuard("auth-reg-submit", () =>
+        this.register(
+          document.getElementById("auth-reg-email").value.trim(),
+          document.getElementById("auth-reg-password").value,
+        ),
       );
     });
     document
       .getElementById("auth-resend-btn")
       ?.addEventListener("click", () =>
-        this.resend(document.getElementById("auth-reg-email").value.trim()),
+        _withSubmitGuard("auth-resend-btn", () =>
+          this.resend(document.getElementById("auth-reg-email").value.trim()),
+        ),
       );
     document
       .getElementById("auth-to-forgot")
@@ -363,7 +440,9 @@ const Auth = {
       ?.addEventListener("click", () => AuthModal._swap("login"));
     document.getElementById("auth-form-forgot")?.addEventListener("submit", (e) => {
       e.preventDefault();
-      this.forgotPassword(document.getElementById("auth-forgot-email").value.trim());
+      _withSubmitGuard("auth-forgot-submit", () =>
+        this.forgotPassword(document.getElementById("auth-forgot-email").value.trim()),
+      );
     });
     document
       .getElementById("auth-verify-result-to-login")
@@ -377,7 +456,9 @@ const Auth = {
     });
     document.getElementById("auth-form-reset")?.addEventListener("submit", (e) => {
       e.preventDefault();
-      this.resetPassword(this._pendingResetToken, resetPw.value);
+      _withSubmitGuard("auth-reset-submit", () =>
+        this.resetPassword(this._pendingResetToken, resetPw.value),
+      );
     });
     // panel swaps
     document
@@ -389,7 +470,31 @@ const Auth = {
     document
       .getElementById("auth-verify-to-login")
       ?.addEventListener("click", () => AuthModal._swap("login"));
+    document
+      .getElementById("auth-reset-to-forgot")
+      ?.addEventListener("click", () => AuthModal._swap("forgot"));
+    document
+      .getElementById("auth-reset-to-login")
+      ?.addEventListener("click", () => AuthModal._swap("login"));
   },
 };
+
+// Another tab logged in/out - re-probe /auth/me here and re-render so this
+// tab's session state and UI catch up without a manual reload.
+window.addEventListener("storage", (e) => {
+  if (e.key !== SESSION_SYNC_KEY) return;
+  api.auth
+    .me()
+    .then((data) => {
+      state.session = { user: data.user, status: "in" };
+    })
+    .catch(() => {
+      state.session = { user: null, status: "out" };
+    })
+    .finally(() => {
+      Auth.refreshButtons();
+      document.dispatchEvent(new CustomEvent("wiki:session-changed"));
+    });
+});
 
 export { validatePassword, PW_RULES, AuthModal, Auth };

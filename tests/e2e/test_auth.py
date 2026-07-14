@@ -239,6 +239,61 @@ def test_login_unverified_shows_verify_panel(page, base_url):
     expect(page.locator("#auth-panel-verify.active")).to_be_visible()
 
 
+def test_login_unverified_verify_panel_copy_distinct_from_register(page, base_url):
+    """Regression for WIKI-420: login-triggered verify panel must not claim
+    a new email was just sent - no email is dispatched on this path."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/login",
+        lambda r: r.fulfill(
+            status=403,
+            content_type="application/json",
+            body='{"error":{"code":"UNVERIFIED","message":"verify first"}}',
+        ),
+    )
+
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+    page.locator("#auth-login-submit").click()
+    expect(page.locator("#auth-panel-verify.active")).to_be_visible()
+    expect(page.locator("#auth-verify-copy")).not_to_contain_text("We sent a verification link")
+
+
+def test_login_empty_submit_blocked_by_required_fields(page, base_url):
+    """Regression for WIKI-418: empty login submit must not reach the
+    network - native required-field validation blocks it client-side."""
+    _stub_logged_out(page)
+    login_called = {"hit": False}
+    page.route(
+        "**/api/v1/auth/login",
+        lambda r: (login_called.__setitem__("hit", True), r.continue_())[1],
+    )
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-submit").click()
+    assert not login_called["hit"], "login request must not fire with empty required fields"
+    expect(page.locator("#auth-login-email")).to_have_js_property("validity.valid", False)
+
+
+def test_forgot_empty_submit_blocked_by_required_field(page, base_url):
+    """Regression for WIKI-418: empty forgot-password submit is blocked
+    client-side by the required attribute."""
+    _stub_logged_out(page)
+    forgot_called = {"hit": False}
+    page.route(
+        "**/api/v1/auth/forgot-password",
+        lambda r: (forgot_called.__setitem__("hit", True), r.continue_())[1],
+    )
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-to-forgot").click()
+    page.locator("#auth-forgot-submit").click()
+    assert not forgot_called["hit"], "forgot-password request must not fire with empty email"
+    expect(page.locator("#auth-forgot-email")).to_have_js_property("validity.valid", False)
+
+
 def test_bad_credentials_shows_error(page, base_url):
     _stub_logged_out(page)
     page.route(
@@ -298,3 +353,332 @@ def test_concurrent_401s_fire_session_expired_once(page, base_url):
     assert fire_count == 1, (
         f"expected exactly one wiki:session-expired dispatch, got {fire_count}"
     )
+
+
+def test_reset_panel_has_recovery_links(page, base_url):
+    """Regression for WIKI-422: the reset-password panel must offer a way
+    back to login and a way to request a fresh link, so an expired/invalid
+    reset link doesn't dead-end the user."""
+    _stub_logged_out(page)
+    page.goto(f"{base_url}?mode=reset&token=expiredtoken")
+    expect(page.locator("#auth-panel-reset.active")).to_be_visible()
+
+    back_to_login = page.locator("#auth-reset-to-login")
+    request_new = page.locator("#auth-reset-to-forgot")
+    expect(back_to_login).to_be_visible()
+    expect(request_new).to_be_visible()
+
+    request_new.click()
+    expect(page.locator("#auth-panel-forgot.active")).to_be_visible()
+
+
+def test_reset_panel_back_to_login_link_works(page, base_url):
+    """Regression for WIKI-422: back-to-login link from the reset panel
+    swaps to the login panel."""
+    _stub_logged_out(page)
+    page.goto(f"{base_url}?mode=reset&token=expiredtoken")
+    expect(page.locator("#auth-panel-reset.active")).to_be_visible()
+    page.locator("#auth-reset-to-login").click()
+    expect(page.locator("#auth-panel-login.active")).to_be_visible()
+
+
+def test_reset_link_boot_param_opens_panel_and_strips_url(page, base_url):
+    """Regression for WIKI-417: handleBootParams must consume mode/token
+    synchronously on boot and strip them from the URL, independent of any
+    later service-worker controllerchange reload."""
+    _stub_logged_out(page)
+    page.goto(f"{base_url}?mode=reset&token=abc123")
+    expect(page.locator("#auth-modal")).not_to_have_class(re.compile(r"\bhidden\b"))
+    expect(page.locator("#auth-panel-reset.active")).to_be_visible()
+    assert "mode=" not in page.url
+    assert "token=" not in page.url
+
+
+def test_auth_modal_traps_focus_with_shift_tab(page, base_url):
+    """Regression for WIKI-423: Shift+Tab on the first focusable element in
+    the auth dialog must wrap to the last, instead of leaking focus to the
+    hidden background page."""
+    _stub_logged_out(page)
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    expect(page.locator("#auth-panel-login.active")).to_be_visible()
+
+    first = page.locator("#auth-close")
+    first.focus()
+    page.keyboard.press("Shift+Tab")
+    active_id = page.evaluate("document.activeElement.id")
+    assert active_id != "", "focus must stay on a named element inside the dialog"
+    is_inside_dialog = page.evaluate(
+        "document.querySelector('.auth-dialog').contains(document.activeElement)"
+    )
+    assert is_inside_dialog, "focus escaped .auth-dialog on Shift+Tab from first element"
+
+
+def test_auth_modal_traps_focus_with_tab_forward(page, base_url):
+    """Regression for WIKI-423: Tab on the last focusable element must wrap
+    back to the first, not leak past the dialog."""
+    _stub_logged_out(page)
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    expect(page.locator("#auth-panel-login.active")).to_be_visible()
+
+    last_visible = page.evaluate("""() => {
+        const dialog = document.querySelector('.auth-dialog');
+        const focusable = dialog.querySelectorAll(
+            'button:not([disabled]):not([hidden]), input:not([disabled]):not([hidden]), a[href]'
+        );
+        const visible = Array.from(focusable).filter(el => el.offsetParent !== null);
+        const last = visible[visible.length - 1];
+        last.focus();
+        return last.id;
+    }""")
+    page.keyboard.press("Tab")
+    is_inside_dialog = page.evaluate(
+        "document.querySelector('.auth-dialog').contains(document.activeElement)"
+    )
+    assert is_inside_dialog, "focus escaped .auth-dialog on Tab from last element"
+
+
+def test_auth_modal_removes_focus_trap_on_close(page, base_url):
+    """Regression for WIKI-423: closing the modal must remove the keydown
+    listener so Tab behaves normally on the page again."""
+    _stub_logged_out(page)
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    expect(page.locator("#auth-panel-login.active")).to_be_visible()
+    page.locator("#auth-close").click()
+    expect(page.locator("#auth-modal")).to_have_class(re.compile(r"\bhidden\b"))
+
+
+def test_login_syncs_across_tabs(page, base_url):
+    """Regression for WIKI-421: a login in one tab must reflect in another
+    open tab (same browser context) without a manual reload - via the
+    wiki-session-sync localStorage key + storage-event listener.
+
+    Both tabs share one real session cookie via the browser context, so
+    /auth/me is mocked as stateful (shared `logged_in` flag) to mirror that -
+    a plain per-tab 401 stub would never observe tab1's login."""
+    session = {"logged_in": False}
+
+    def _route_common(pg):
+        pg.route(
+            "**/api/v1/auth/me",
+            lambda r: r.fulfill(
+                status=200 if session["logged_in"] else 401,
+                content_type="application/json",
+                body='{"user":{"id":1,"email":"a@example.com"}}' if session["logged_in"] else _UNAUTH,
+            ),
+        )
+        pg.route(
+            "**/api/v1/auth/login",
+            lambda r: (
+                session.__setitem__("logged_in", True),
+                r.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body='{"user":{"id":1,"email":"a@example.com"}}',
+                ),
+            )[1],
+        )
+        for path in ("bookmarks", "reads", "recents"):
+            pg.route(
+                f"**/api/v1/{path}",
+                lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
+            )
+
+    _route_common(page)
+    page.goto(base_url)
+
+    tab2 = page.context.new_page()
+    _route_common(tab2)
+    tab2.goto(base_url)
+    expect(tab2.locator("#auth-btn-home .auth-btn-label")).to_have_text("Login")
+
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+    page.locator("#auth-login-submit").click()
+    expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
+
+    expect(tab2.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
+    tab2.close()
+
+
+def test_login_error_announced_to_screen_readers(page, base_url):
+    """Regression for WIKI-419: auth error elements need role=alert (or
+    aria-live) so assistive tech announces them, and the field must be
+    linked via aria-describedby."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/login",
+        lambda r: r.fulfill(
+            status=401,
+            content_type="application/json",
+            body='{"error":{"code":"BAD_CREDENTIALS","message":"Invalid email or password"}}',
+        ),
+    )
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("WrongPass123!")
+    page.locator("#auth-login-submit").click()
+
+    err = page.locator("#auth-login-error")
+    expect(err).to_be_visible()
+    assert err.get_attribute("role") == "alert"
+    email_describedby = page.locator("#auth-login-email").get_attribute("aria-describedby")
+    pw_describedby = page.locator("#auth-login-password").get_attribute("aria-describedby")
+    assert email_describedby == "auth-login-error"
+    assert pw_describedby == "auth-login-error"
+
+
+def test_forgot_error_has_alert_role(page, base_url):
+    """Regression for WIKI-419: forgot-password error is announced too."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/forgot-password",
+        lambda r: r.fulfill(
+            status=500,
+            content_type="application/json",
+            body='{"error":{"code":"SERVER_ERROR","message":"Could not send reset link."}}',
+        ),
+    )
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-to-forgot").click()
+    page.locator("#auth-forgot-email").fill("a@example.com")
+    page.locator("#auth-forgot-submit").click()
+    err = page.locator("#auth-forgot-error")
+    expect(err).to_be_visible()
+    assert err.get_attribute("role") == "alert"
+
+
+def test_login_double_click_fires_single_request(page, base_url):
+    """Regression for WIKI-416: rapid double-click/double-submit must not
+    fire duplicate POSTs - the submit button is disabled synchronously
+    before the request resolves."""
+    _stub_logged_out(page)
+    call_count = {"n": 0}
+
+    def _handle_login(route):
+        call_count["n"] += 1
+        route.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"user":{"id":1,"email":"a@example.com"}}',
+        )
+
+    page.route("**/api/v1/auth/login", _handle_login)
+    for path in ("bookmarks", "reads", "recents"):
+        page.route(
+            f"**/api/v1/{path}",
+            lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
+        )
+
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+
+    # Dispatch both clicks synchronously from within the page instead of two
+    # separate Playwright Locator.click() calls. A real Locator.click() on a
+    # type="submit" button waits on Playwright's own actionability/navigation
+    # heuristics, which can take long enough for the whole login+modal-close
+    # chain to finish between the two Python-side calls - making "rapid
+    # double-click" impossible to land reliably from the test-runner side.
+    # Dispatching both click events in one JS pass guarantees the second
+    # click's guard check happens the instant after the first, which is what
+    # this test is actually meant to verify (the JS-side guard, not click
+    # timing).
+    page.evaluate("""() => {
+        const btn = document.getElementById('auth-login-submit');
+        btn.click();
+        btn.click();
+    }""")
+
+    expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
+    assert call_count["n"] == 1, f"expected exactly one login request, got {call_count['n']}"
+
+
+def test_login_submit_disabled_during_inflight_request(page, base_url):
+    """Regression for WIKI-416: submit button is disabled while the login
+    request is in flight, and re-enabled after an error response."""
+    _stub_logged_out(page)
+
+    def _handle_login(route):
+        route.fulfill(
+            status=401,
+            content_type="application/json",
+            body='{"error":{"code":"BAD_CREDENTIALS","message":"Invalid email or password"}}',
+        )
+
+    page.route("**/api/v1/auth/login", _handle_login)
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("WrongPass123!")
+    submit = page.locator("#auth-login-submit")
+    submit.click()
+    expect(page.locator("#auth-login-error")).to_be_visible()
+    expect(submit).to_be_enabled()
+
+
+def test_resend_button_debounced_and_shows_feedback(page, base_url):
+    """Regression for WIKI-416: resend gives visible feedback and cannot be
+    double-fired by rapid clicks."""
+    _stub_logged_out(page)
+    call_count = {"n": 0}
+    page.route(
+        "**/api/v1/auth/login",
+        lambda r: r.fulfill(
+            status=403,
+            content_type="application/json",
+            body='{"error":{"code":"UNVERIFIED","message":"verify first"}}',
+        ),
+    )
+
+    def _handle_resend(route):
+        call_count["n"] += 1
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/v1/auth/resend-verification", _handle_resend)
+
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+    # #auth-login-submit is type="submit" inside a <form> - a real
+    # Locator.click() waits on Playwright's navigation-related actionability
+    # heuristics for submit buttons, which can take several seconds even
+    # though the app calls preventDefault(). Dispatch via JS to skip that.
+    page.evaluate("() => document.getElementById('auth-login-submit').click()")
+    expect(page.locator("#auth-panel-verify.active")).to_be_visible()
+
+    # Same reasoning as test_login_double_click_fires_single_request: dispatch
+    # both clicks in one JS pass so they land back-to-back, verifying the
+    # debounce guard itself rather than racing Playwright's click timing.
+    page.evaluate("""() => {
+        const btn = document.getElementById('auth-resend-btn');
+        btn.click();
+        btn.click();
+    }""")
+    expect(page.locator(".wiki-toast")).to_be_visible()
+    assert call_count["n"] == 1, f"expected exactly one resend request, got {call_count['n']}"
+
+
+def test_verify_link_boot_param_calls_verify_and_strips_url(page, base_url):
+    """Regression for WIKI-417: ?mode=verify&token=... must trigger
+    verification and strip params from the URL on first load."""
+    _stub_logged_out(page)
+    verify_called = {"hit": False}
+
+    def _handle_verify(route):
+        verify_called["hit"] = True
+        route.fulfill(status=200, content_type="application/json", body='{"ok":true}')
+
+    page.route("**/api/v1/auth/verify*", _handle_verify)
+    page.goto(f"{base_url}?mode=verify&token=xyz789")
+    page.wait_for_timeout(200)
+    assert verify_called["hit"], "expected verify endpoint to be called from boot params"
+    assert "mode=" not in page.url
+    assert "token=" not in page.url

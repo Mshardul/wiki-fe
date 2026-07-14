@@ -1,7 +1,10 @@
+import { removeLocalStorageByPrefix } from "../state.js";
 import { getCollapsed } from "./scroll-collapse.js";
 
 /* ─── Per-Article Notes Scratchpad ─── */
-const _keyFor = (wikiId, articlePath) => `wiki-notes-${wikiId}-${articlePath.replace(/\//g, "-")}`;
+const NOTES_PREFIX = "wiki-notes-";
+const _keyFor = (wikiId, articlePath) =>
+  `${NOTES_PREFIX}${wikiId}-${articlePath.replace(/\//g, "-")}`;
 
 const Notes = {
   get(wikiId, articlePath) {
@@ -11,6 +14,10 @@ const Notes = {
     const key = _keyFor(wikiId, articlePath);
     if (text.trim()) localStorage.setItem(key, text);
     else localStorage.removeItem(key);
+  },
+  // wikiId omitted clears every wiki's notes; passed, scopes to that wiki.
+  clear(wikiId) {
+    removeLocalStorageByPrefix(wikiId ? `${NOTES_PREFIX}${wikiId}-` : NOTES_PREFIX);
   },
 };
 

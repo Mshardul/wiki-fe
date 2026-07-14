@@ -80,7 +80,7 @@ function renderRecentsSection(wiki) {
       <button class="recents-clear-btn" onclick="confirmClearRecents('${
         wiki.id
       }')" title="Clear all">
-        <svg viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <svg class="icon"><use href="#icon-x"></use></svg>
       </button>
     </div>
     ${_buildChipStrip(chips)}`;

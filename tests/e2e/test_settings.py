@@ -791,7 +791,7 @@ def test_focus_mode_prefs_btn_toggles_active_state(page, base_url):
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
         timeout=10_000,
     )
-    page.locator("[title='Preferences (,)']").last.click()
+    page.locator("[title='Preferences (,)']:visible").first.click()
     page.wait_for_function(
         "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
     )
@@ -811,6 +811,43 @@ def test_focus_mode_prefs_btn_toggles_active_state(page, base_url):
         "() => document.getElementById('prefs-focus-toggle').getAttribute('aria-pressed') === 'false'"
     )
     assert "active" not in btn.get_attribute("class")
+
+
+# ── Haptic + sound on study milestone ────────────────────────────────────────
+
+
+def test_haptic_feedback_toggle_present_in_advanced_tab(wiki_page):
+    """Advanced prefs tab contains the haptic feedback toggle button."""
+    _open_advanced_tab(wiki_page)
+    assert wiki_page.locator("#settings-haptic-feedback").count() == 1
+
+
+def test_haptic_feedback_defaults_off(wiki_page):
+    """hapticFeedback is unset (falsy) in a fresh settings object - off by default."""
+    on = wiki_page.evaluate(
+        "() => (JSON.parse(localStorage.getItem('wiki-settings')||'{}').hapticFeedback) === true"
+    )
+    assert on is False
+    _open_advanced_tab(wiki_page)
+    btn = wiki_page.locator("#settings-haptic-feedback")
+    assert btn.get_attribute("aria-pressed") == "false"
+    assert btn.inner_text() == "Off"
+
+
+def test_haptic_feedback_toggle_persists(wiki_page):
+    """Clicking the Advanced-panel toggle flips hapticFeedback in localStorage."""
+    _open_advanced_tab(wiki_page)
+    btn = wiki_page.locator("#settings-haptic-feedback")
+    before = wiki_page.evaluate(
+        "() => (JSON.parse(localStorage.getItem('wiki-settings')||'{}').hapticFeedback) === true"
+    )
+    btn.click()
+    after = wiki_page.evaluate(
+        "() => (JSON.parse(localStorage.getItem('wiki-settings')||'{}').hapticFeedback) === true"
+    )
+    assert after != before, "Toggle did not flip the stored hapticFeedback value"
+    assert ("active" in (btn.get_attribute("class") or "")) == after
+    assert btn.inner_text() == ("On" if after else "Off")
 
 
 # ── Topbar declutter (WIKI-240) ─────────────────────────────────────────────────

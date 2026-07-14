@@ -8,6 +8,7 @@ import {
   addLineNumbers,
   addPreOverflowDetection,
 } from "../content/code-blocks.js";
+import { applyContentFold, getFoldDepth, setFoldDepth } from "../content/depth-fold.js";
 import {
   ArticleFind,
   addAnchorLinks,
@@ -30,6 +31,8 @@ import {
   getCachedHtml,
   resetGlossaryExpandTracking,
 } from "../content/glossary-caveats.js";
+import { applyHighlightsAndMarkers, wireHighlights } from "../content/highlights.js";
+import { cleanupInterviewMode } from "../content/interview-mode.js";
 import {
   addMermaidNodeCaptions,
   addMermaidStepThrough,
@@ -43,6 +46,7 @@ import {
   cleanupStickySection,
   injectHeadingCollapseToggles,
 } from "../content/toc.js";
+import { addVideoEmbeds } from "../content/video-embed.js";
 import {
   addDiagramZoom,
   addImageLightbox,
@@ -61,7 +65,7 @@ import {
 import { updateBookmarkBtn } from "../storage/bookmarks.js";
 import { renderNotesScratchpad } from "../storage/notes.js";
 import { updateOfflineBtn } from "../storage/offline.js";
-import { updateReadBtn } from "../storage/read-tracking.js";
+import { recordOpened, updateReadBtn } from "../storage/read-tracking.js";
 import { addToRecents } from "../storage/recents.js";
 import {
   dirOf,
@@ -72,7 +76,11 @@ import {
   setBreadcrumb,
   updatePageTitle,
 } from "./nav-utils.js";
-import { extractRecommendedLinks, renderRelatedArticles } from "./related-articles.js";
+import {
+  extractRecommendedLinks,
+  renderBacklinks,
+  renderRelatedArticles,
+} from "./related-articles.js";
 import { showView } from "./router.js";
 import { showToast } from "./toast.js";
 
@@ -257,6 +265,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
   state.preResizeObservers = [];
   cleanupFocusMode();
   cleanupStudyMode();
+  cleanupInterviewMode();
   cleanupStickySection();
   ArticleFind.close();
   document.body.classList.remove("distraction-free");
@@ -273,6 +282,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
 
     // Only track successful loads.
     addToRecents({ wikiId: wiki.id, path: filePath, title, slug: derivedSlug });
+    recordOpened(filePath);
 
     // Set reading time immediately after fetch
     if (readTimeBadge) {
@@ -341,6 +351,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     try {
       const recommendedLinks = extractRecommendedLinks(body, filePath);
 
+      addVideoEmbeds(body);
       addTabbedCodeBlocks(body);
       addLineNumbers(body);
       addCodeBlockHeader(body, () => showToast("Copy failed - clipboard access denied"));
@@ -381,6 +392,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       }
 
       injectHeadingCollapseToggles(body, wiki.id, filePath);
+      applyContentFold(body);
       buildTOC(body, wiki.id, filePath);
       renderNotesScratchpad(wiki.id, filePath);
       addStickySection(body);
@@ -404,13 +416,21 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       addMermaidStepThrough(body); // MUST run after addDiagramZoom - same reason, keeps Play button
       addTableScrollCues(body);
       addPreOverflowDetection(body);
+      // Applied after the measurements above - folded (display:none) regions would
+      // report zero scrollWidth/scrollHeight and break the overflow/scroll-cue checks.
+      setFoldDepth(getFoldDepth(), body);
       addTableSort(body);
       addLatexCopyButtons(body, () => showToast("Copy failed - clipboard access denied"));
       addFormulaToggle(body);
       addFootnotes(body);
+      // Must run after every other text-node-mutating enhancer above - offsets are
+      // computed against body's final text-node structure.
+      applyHighlightsAndMarkers(body, wiki.id, filePath);
+      wireHighlights();
       addArticleEndMarker(body);
 
       renderRelatedArticles(wiki, filePath, recommendedLinks);
+      renderBacklinks(filePath);
 
       updateBookmarkBtn();
       updateReadBtn();

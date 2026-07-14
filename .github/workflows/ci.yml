@@ -63,6 +63,19 @@ jobs:
           python3 docs/_meta/ai-instructions/scripts/build_search_index.py
           git diff --exit-code content/search-index.json
 
+  backlinks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Regenerate backlinks.json and check it's committed
+        run: |
+          python3 docs/_meta/ai-instructions/scripts/build_search_index.py
+          python3 docs/_meta/ai-instructions/scripts/build_backlinks.py
+          git diff --exit-code content/backlinks.json
+
   dead-links:
     runs-on: ubuntu-latest
     steps:

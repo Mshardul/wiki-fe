@@ -121,14 +121,21 @@ def test_index_scroll_persistence(page, base_url):
 
     # 3. Go back to index
     page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector(
-        ".index-card", timeout=10_000
-    )  # Content loaded → scroll restored
+    page.wait_for_selector(".index-card", timeout=10_000)  # Content loaded
 
-    scroll_y = page.evaluate("() => window.scrollY")
+    # Scroll restore itself runs inside a requestIdleCallback (home-index.js),
+    # scheduled only after populateIndexReadTimes() resolves - it is not done
+    # just because .index-card exists. Wait for the actual restore instead of
+    # assuming it already happened; under load, idle time can take a while.
     saved = int(
         page.evaluate(
             "() => localStorage.getItem('wiki-index-scroll-system-design') || '0'"
         )
     )
+    page.wait_for_function(
+        f"() => window.scrollY >= {saved} * 0.7",
+        timeout=10_000,
+    )
+
+    scroll_y = page.evaluate("() => window.scrollY")
     assert scroll_y >= saved * 0.7  # Restored to within 30% of saved position

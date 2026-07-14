@@ -10,9 +10,7 @@ function getZoomOverlay() {
     overlay.innerHTML = `
       <div class="zoom-overlay-backdrop"></div>
       <button class="zoom-overlay-close" aria-label="Close">
-        <svg viewBox="0 0 16 16" fill="none">
-          <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
+        <svg class="icon"><use href="#icon-x"></use></svg>
       </button>
       <div class="zoom-overlay-content"></div>`;
     document.body.appendChild(overlay);

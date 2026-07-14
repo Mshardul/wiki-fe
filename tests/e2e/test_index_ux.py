@@ -512,6 +512,254 @@ def test_index_ctrl_and_filter_44px_on_coarse_pointer(browser, base_url, cdn_cac
         ctx.close()
 
 
+# ── "Changed since you last read" index dot ──────────────────────────
+
+_CACHING_ROUTE_GLOB = "**/content/system-design/components/caching.md"
+# Index cards render data-path from the search-index entry, which is
+# "./"-prefixed - getLastOpened() is keyed on that same prefixed path, so
+# this must match exactly or the card/read-date lookup silently misses.
+_CACHING_PATH = "./content/system-design/components/caching.md"
+_CACHING_KEY = "wiki-read-dates-system-design"
+
+
+def _mock_caching_article(page, updated_date):
+    # Body must be >= STUB_THRESHOLD (state.js, 5000 bytes) or home-index.js
+    # marks the card a stub, strips its .index-card-updated-dot entirely,
+    # and any wait for that element hangs forever.
+    padding = "Filler paragraph text to clear the stub-detection length threshold. " * 80
+    body = f"---\nupdated: {updated_date}\n---\n# Caching\n\n{padding}\n"
+    page.route(
+        _CACHING_ROUTE_GLOB,
+        lambda r: r.fulfill(status=200, content_type="text/markdown", body=body),
+    )
+
+
+def _seed_last_opened(page, iso_date):
+    page.evaluate(
+        f"""() => {{
+            const map = {{}};
+            map[{_CACHING_PATH!r}] = {iso_date!r};
+            localStorage.setItem({_CACHING_KEY!r}, JSON.stringify(map));
+        }}"""
+    )
+
+
+def _caching_card(page):
+    return page.locator(f'.index-card:has(.index-card-read-time[data-path="{_CACHING_PATH}"])')
+
+
+def test_updated_dot_shown_when_newer_than_last_opened(page, base_url):
+    """Dot appears when the article's updated: date is newer than the recorded last-opened date."""
+    _mock_caching_article(page, "2026-06-01")
+    # localStorage needs a real origin - page starts at about:blank.
+    page.goto(base_url, wait_until="domcontentloaded")
+    _seed_last_opened(page, "2025-01-01T00:00:00.000Z")
+
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+
+    dot = _caching_card(page).locator(".index-card-updated-dot")
+    dot.wait_for(state="attached")
+    page.wait_for_function(
+        f"""() => {{
+            const card = [...document.querySelectorAll('.index-card')]
+                .find(c => c.querySelector('.index-card-read-time[data-path="{_CACHING_PATH}"]'));
+            return !!card?.querySelector('.index-card-updated-dot.visible');
+        }}""",
+        timeout=10_000,
+    )
+
+
+def test_updated_dot_hidden_when_never_opened(page, base_url):
+    """No last-opened baseline means no dot, even if the article has an updated: date."""
+    _mock_caching_article(page, "2026-06-01")
+    page.goto(base_url, wait_until="domcontentloaded")
+    page.evaluate(f"() => localStorage.removeItem({_CACHING_KEY!r})")
+
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+    page.wait_for_function(
+        f"""() => {{
+            const card = [...document.querySelectorAll('.index-card')]
+                .find(c => c.querySelector('.index-card-read-time[data-path="{_CACHING_PATH}"]'));
+            return card && card.querySelector('.index-card-read-time').textContent !== '…';
+        }}""",
+        timeout=10_000,
+    )
+
+    dot = _caching_card(page).locator(".index-card-updated-dot")
+    assert "visible" not in (dot.get_attribute("class") or ""), (
+        "updated-dot must not show without a recorded last-opened date"
+    )
+
+
+def test_updated_dot_hidden_when_up_to_date(page, base_url):
+    """No dot when the recorded last-opened date is at or after the article's updated: date."""
+    _mock_caching_article(page, "2025-01-01")
+    page.goto(base_url, wait_until="domcontentloaded")
+    _seed_last_opened(page, "2026-06-01T00:00:00.000Z")
+
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+    page.wait_for_function(
+        f"""() => {{
+            const card = [...document.querySelectorAll('.index-card')]
+                .find(c => c.querySelector('.index-card-read-time[data-path="{_CACHING_PATH}"]'));
+            return card && card.querySelector('.index-card-read-time').textContent !== '…';
+        }}""",
+        timeout=10_000,
+    )
+
+    dot = _caching_card(page).locator(".index-card-updated-dot")
+    assert "visible" not in (dot.get_attribute("class") or ""), (
+        "updated-dot must not show when the reader is already up to date"
+    )
+
+
+def test_last_opened_date_recorded_on_article_visit(page, base_url):
+    """Visiting an article records a last-opened timestamp for it, per wiki."""
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+
+    # recordOpened() (content-view.js) keys this map on normalizePath()'s
+    # output, which strips a leading "./" - unlike the search-index-sourced
+    # card.path used by the updated-dot tests above (_CACHING_PATH), which
+    # keeps it. Same article, two different key formats in this app.
+    recorded = page.evaluate(
+        f"""() => {{
+            const map = JSON.parse(localStorage.getItem({_CACHING_KEY!r}) || '{{}}');
+            return map["content/system-design/components/caching.md"] || null;
+        }}"""
+    )
+    assert recorded is not None, "last-opened date must be recorded after visiting the article"
+    # Recorded value must be a real, parseable ISO timestamp - not a truthy placeholder.
+    parsed = page.evaluate(f"() => !Number.isNaN(new Date({recorded!r}).getTime())")
+    assert parsed, f"recorded last-opened value is not a valid date: {recorded!r}"
+
+
+# ── Stale-knowledge fade on index cards ───────────────────────────────
+
+_READ_SET_KEY = "wiki-read-system-design"
+
+
+def _mark_caching_read(page):
+    page.evaluate(
+        f"""() => {{
+            const cur = JSON.parse(localStorage.getItem({_READ_SET_KEY!r}) || '[]');
+            if (!cur.includes({_CACHING_PATH!r})) cur.push({_CACHING_PATH!r});
+            localStorage.setItem({_READ_SET_KEY!r}, JSON.stringify(cur));
+        }}"""
+    )
+
+
+def _card_fade(page):
+    return page.evaluate(
+        f"""() => {{
+            const card = [...document.querySelectorAll('.index-card')]
+                .find(c => c.querySelector('.index-card-read-time[data-path="{_CACHING_PATH}"]'));
+            return card ? card.style.getPropertyValue('--fade') : null;
+        }}"""
+    )
+
+
+def _wait_for_read_time_loaded(page):
+    page.wait_for_function(
+        f"""() => {{
+            const card = [...document.querySelectorAll('.index-card')]
+                .find(c => c.querySelector('.index-card-read-time[data-path="{_CACHING_PATH}"]'));
+            return card && card.querySelector('.index-card-read-time').textContent !== '…';
+        }}""",
+        timeout=10_000,
+    )
+
+
+def test_recently_read_card_has_no_or_full_fade(page, base_url):
+    """A card read moments ago gets --fade at/near 1, or no --fade set at all."""
+    _mock_caching_article(page, "2020-01-01")
+    page.goto(base_url, wait_until="domcontentloaded")
+    _mark_caching_read(page)
+    # _seed_last_opened takes a literal ISO string, so stamp "now" directly via JS.
+    page.evaluate(
+        f"""() => {{
+            const map = {{}};
+            map[{_CACHING_PATH!r}] = new Date().toISOString();
+            localStorage.setItem({_CACHING_KEY!r}, JSON.stringify(map));
+        }}"""
+    )
+
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+    _wait_for_read_time_loaded(page)
+
+    fade = _card_fade(page)
+    if fade in (None, ""):
+        return  # no fade applied at all is an acceptable "fresh" representation
+    assert float(fade) >= 0.95, f"Recently-read card should be near-full fade, got {fade!r}"
+
+
+def test_long_ago_read_card_has_reduced_fade(page, base_url):
+    """A card read long ago gets a visibly reduced --fade value."""
+    _mock_caching_article(page, "2020-01-01")
+    page.goto(base_url, wait_until="domcontentloaded")
+    _mark_caching_read(page)
+    _seed_last_opened(page, "2020-01-01T00:00:00.000Z")
+
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+    _wait_for_read_time_loaded(page)
+
+    fade = _card_fade(page)
+    assert fade not in (None, ""), "Long-ago-read card must have a --fade value set"
+    assert float(fade) < 0.9, f"Long-ago-read card should be visibly faded, got {fade!r}"
+
+
+def test_fade_never_drops_below_floor(page, base_url):
+    """Even a very old read date is clamped to the fade floor, never fully desaturated."""
+    _mock_caching_article(page, "2020-01-01")
+    page.goto(base_url, wait_until="domcontentloaded")
+    _mark_caching_read(page)
+    _seed_last_opened(page, "2000-01-01T00:00:00.000Z")
+
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+    _wait_for_read_time_loaded(page)
+
+    fade = _card_fade(page)
+    assert fade not in (None, ""), "Very-old-read card must have a --fade value set"
+    fade_val = float(fade)
+    assert fade_val > 0, "Fade floor must be above 0 so cards never fully vanish"
+    assert fade_val >= 0.3, f"Fade floor seems too low ({fade_val}), cards should stay legible"
+
+
+def test_unread_card_has_no_fade(page, base_url):
+    """A never-opened card gets no --fade applied - fade is only for read articles."""
+    _mock_caching_article(page, "2020-01-01")
+    page.goto(base_url, wait_until="domcontentloaded")
+    page.evaluate(f"() => localStorage.removeItem({_CACHING_KEY!r})")
+    page.evaluate(f"() => localStorage.removeItem({_READ_SET_KEY!r})")
+
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+    _wait_for_read_time_loaded(page)
+
+    fade = _card_fade(page)
+    assert fade in (None, ""), f"Unread card must not have --fade set, got {fade!r}"
+
+
 def test_swipe_hint_visible_on_coarse_pointer_only(browser, base_url, cdn_cache):
     """WIKI-414: index cards show a persistent swipe-hint icon on touch
     devices (pointer:coarse), and never on mouse-driven viewports."""
