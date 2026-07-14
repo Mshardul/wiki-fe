@@ -394,6 +394,31 @@ def test_reset_link_boot_param_opens_panel_and_strips_url(page, base_url):
     assert "token=" not in page.url
 
 
+def test_reset_password_used_token_shows_actionable_error(page, base_url):
+    """A reset token already consumed (e.g. reset link opened/submitted twice)
+    must not show the generic 'Reset failed' message - it should tell the
+    user they may already be reset and to try logging in instead."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/reset-password",
+        lambda r: r.fulfill(
+            status=400,
+            content_type="application/json",
+            body='{"error":{"code":"INVALID_TOKEN","message":"This verification link is invalid or has expired."}}',
+        ),
+    )
+    page.goto(f"{base_url}?mode=reset&token=usedtoken")
+    expect(page.locator("#auth-panel-reset.active")).to_be_visible()
+
+    page.locator("#auth-reset-password").fill("Correct-Horse9!")
+    page.locator("#auth-reset-submit").click()
+
+    error = page.locator("#auth-reset-error")
+    expect(error).to_be_visible()
+    expect(error).to_contain_text("already used")
+    expect(error).to_contain_text("try logging in")
+
+
 def test_auth_modal_traps_focus_with_shift_tab(page, base_url):
     """Regression for WIKI-423: Shift+Tab on the first focusable element in
     the auth dialog must wrap to the last, instead of leaking focus to the

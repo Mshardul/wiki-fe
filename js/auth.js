@@ -352,6 +352,7 @@ const Auth = {
     }
     try {
       const data = await api.auth.resetPassword(token, password);
+      this._pendingResetToken = null;
       state.session = { user: data.user, status: "in" };
       AuthModal.close();
       this.refreshButtons();
@@ -359,9 +360,14 @@ const Auth = {
       document.dispatchEvent(new CustomEvent("wiki:session-changed"));
       _broadcastSessionChange();
     } catch (e) {
+      if (e instanceof ApiError && e.status === 400 && e.code === "INVALID_TOKEN") {
+        this._pendingResetToken = null;
+      }
       AuthModal._showError(
         "auth-reset-error",
-        e instanceof ApiError ? e.message : "Reset failed. The link may have expired.",
+        e instanceof ApiError && e.code !== "INVALID_TOKEN"
+          ? e.message
+          : "This reset link was already used or has expired. If you already reset your password, try logging in with your new password.",
       );
     }
   },
