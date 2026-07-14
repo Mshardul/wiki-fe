@@ -227,6 +227,50 @@ def test_logout_clears_stored_session_token(page, base_url):
     assert stored is None
 
 
+def test_logout_clears_highlights_markers_notes_interview_log(page, base_url):
+    """Regression for WIKI-435: logout must wipe highlights, markers, notes,
+    and interview-mode logs, not just bookmarks/recents/read-tracking -
+    otherwise private data survives on a shared/public computer."""
+    page.route(
+        "**/api/v1/auth/me",
+        lambda r: r.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"user":{"id":1,"email":"a@example.com"}}',
+        ),
+    )
+    page.route("**/api/v1/auth/logout", lambda r: r.fulfill(status=204))
+    for path in ("bookmarks", "reads", "recents"):
+        page.route(
+            f"**/api/v1/{path}",
+            lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
+        )
+    page.add_init_script(
+        """
+        localStorage.setItem('wiki-session-token', 'pre-existing-token');
+        localStorage.setItem('wiki-highlights-dsa-arrays', '["h1"]');
+        localStorage.setItem('wiki-markers-dsa-arrays', '["m1"]');
+        localStorage.setItem('wiki-notes-dsa-arrays', 'secret note');
+        localStorage.setItem('wiki-interview-dsa-arrays', '["log1"]');
+        """
+    )
+    page.goto(base_url)
+    expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
+
+    page.locator("#auth-btn-home").click()
+    expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Login")
+
+    remaining = page.evaluate(
+        """() => Object.keys(localStorage).filter(k =>
+            k.startsWith('wiki-highlights-') ||
+            k.startsWith('wiki-markers-') ||
+            k.startsWith('wiki-notes-') ||
+            k.startsWith('wiki-interview-')
+        )"""
+    )
+    assert remaining == [], f"expected all cleared, still present: {remaining}"
+
+
 def test_login_submits_on_enter_key(page, base_url):
     """Pressing Enter in the login password field must submit the form -
     regression for auth panels having no <form> element, so Enter did nothing."""
@@ -726,6 +770,39 @@ def test_resend_button_debounced_and_shows_feedback(page, base_url):
     }""")
     expect(page.locator(".wiki-toast")).to_be_visible()
     assert call_count["n"] == 1, f"expected exactly one resend request, got {call_count['n']}"
+
+
+def test_resend_after_login_403_uses_login_email(page, base_url):
+    """Regression for WIKI-432: resend on the login->verify path must send
+    the email typed into the login form, not the (empty) register form."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/login",
+        lambda r: r.fulfill(
+            status=403,
+            content_type="application/json",
+            body='{"error":{"code":"UNVERIFIED","message":"verify first"}}',
+        ),
+    )
+
+    sent = {}
+
+    def _handle_resend(route):
+        sent["email"] = route.request.post_data_json.get("email")
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/v1/auth/resend-verification", _handle_resend)
+
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("login-user@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+    page.evaluate("() => document.getElementById('auth-login-submit').click()")
+    expect(page.locator("#auth-panel-verify.active")).to_be_visible()
+
+    page.evaluate("() => document.getElementById('auth-resend-btn').click()")
+    expect(page.locator(".wiki-toast")).to_be_visible()
+    assert sent.get("email") == "login-user@example.com"
 
 
 def test_verify_link_boot_param_calls_verify_and_strips_url(page, base_url):

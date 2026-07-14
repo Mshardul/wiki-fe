@@ -38,9 +38,7 @@ function parseChangelog(markdown) {
   return groups;
 }
 
-// filename basename (e.g. "treap.md" from "data-structures/treap.md") ->
-// { wikiId, path, title }, built once from the prebuilt search index - the
-// only source of truth for which articles actually exist and where.
+// Maps filename basename -> { wikiId, path, title }, built once from the prebuilt search index.
 let _filenameIndex = null;
 
 async function _buildFilenameIndex() {

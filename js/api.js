@@ -19,9 +19,7 @@ let _sessionExpiredFired = false;
 
 const _DEFAULT_TIMEOUT_MS = 15000;
 
-// Bearer session token. Owned here (not auth.js) since api.js is the only
-// thing that needs to read it to attach the Authorization header; auth.js
-// writes it via setSessionToken() on login/reset/logout.
+// Bearer session token key - owned here since only api.js reads it (for the Authorization header); auth.js writes via setSessionToken().
 const SESSION_TOKEN_KEY = "wiki-session-token";
 
 function getSessionToken() {
@@ -73,10 +71,7 @@ async function _request(
   }
 
   if (res.status === 401 && !silent401) {
-    // silent401 routes (boot probe, login) handle their own 401 below via the
-    // normal envelope parse. Everything else: a 401 means the session expired
-    // mid-use → clear the dead token (else every future request 401s again),
-    // global staleness handler (Option A), fired once.
+    // A 401 here means the session expired mid-use - clear the dead token (else every future request 401s again); fires once.
     if (!_sessionExpiredFired) {
       _sessionExpiredFired = true;
       setSessionToken(null);
@@ -102,8 +97,7 @@ async function _request(
     const env = data?.error || {};
     throw new ApiError(env.code || "ERROR", env.message || res.statusText, res.status);
   }
-  // a real (non-401) response proves the session is valid again - allow the
-  // guard to fire on any future expiry rather than resetting on a timer
+  // A real (non-401) response proves the session is valid again - re-arm the guard.
   _sessionExpiredFired = false;
   return data;
 }
@@ -114,11 +108,10 @@ const api = {
   del: (p, b) => _request("DELETE", p, b),
 
   auth: {
-    // boot probe: 401 = anonymous, must not trigger the global session-expired flow
+    // Boot probe: 401 = anonymous, must not trigger the global session-expired flow.
     me: () => _request("GET", "/auth/me", undefined, { silent401: true }),
     register: (email, password) => api.post("/auth/register", { email, password }),
-    // login 401 = bad credentials (a normal auth failure), not an expired
-    // session - bypass the global handler so the real error reaches the caller
+    // Login 401 = bad credentials, not an expired session - bypass the global handler.
     login: (email, password) =>
       _request("POST", "/auth/login", { email, password }, { silent401: true }),
     logout: () => api.post("/auth/logout"),

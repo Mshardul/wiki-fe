@@ -69,7 +69,6 @@ function buildTOC(contentEl, wikiId, articlePath) {
     }
   });
 
-  // IntersectionObserver for active highlight + breathing states
   state.tocObserver = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
@@ -284,7 +283,7 @@ function _syncContentH2(h2Id, collapsed) {
   _setSectionCollapsed(h2, collapsed);
 }
 
-/* Expand every collapsed h2 section in the current article (reset-view escape hatch). */
+// reset-view escape hatch
 function expandAllSections(contentEl) {
   contentEl.querySelectorAll("h2.section--collapsed").forEach((h2) => {
     const sectionId = h2.dataset.sectionId;

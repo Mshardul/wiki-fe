@@ -120,7 +120,6 @@ function renderHome() {
 async function renderIndex(wiki) {
   state.currentWikiId = wiki.id;
 
-  // Breadcrumb & hero
   setBreadcrumb("index-breadcrumb", [{ label: "Home", href: "#" }, { label: wiki.title }]);
   document.getElementById("index-title").textContent = wiki.title;
   document.getElementById("index-subtitle").textContent = wiki.description;
@@ -380,8 +379,8 @@ const IndexFilter = {
     return !!this._query || this._unread;
   },
 
-  /* Full clear for the reset-view escape hatch (WIKI-278) - unlike reset(),
-     this also drops the unread toggle rather than honouring a pending request. */
+  // Full clear for the reset-view escape hatch - unlike reset(), this also drops
+  // the unread toggle rather than honouring a pending request.
   clearAll() {
     this._query = "";
     this._unread = false;
@@ -473,7 +472,13 @@ function bindIndexCardSwipe(wiki) {
     }
     card = null;
     axis = null;
-    state._cardSwipeActive = false;
+    // Deferred: this touchend is still bubbling up to the document-level edge-swipe
+    // listener, which reads this flag to stand down. Clearing it synchronously here
+    // would race that read (container's listener fires before document's in bubble
+    // order) and re-arm back-nav before the document handler ever sees it was active.
+    setTimeout(() => {
+      state._cardSwipeActive = false;
+    }, 0);
   };
 
   container.addEventListener(
@@ -662,8 +667,7 @@ function _applyUpdatedDot(card, path, updatedDate) {
   dot.classList.toggle("visible", isNewer);
 }
 
-// Ambient memory-decay cue: only read articles with a recorded visit fade -
-// unread cards have nothing to be "stale" about, so they're left at full opacity.
+// Ambient memory-decay cue - only read articles with a recorded visit fade; unread cards stay at full opacity.
 function _applyFade(card, path) {
   const lastOpened = getLastOpened(path);
   if (!isRead(path) || !lastOpened) {
@@ -714,7 +718,7 @@ async function populateIndexReadTimes() {
     }),
   );
 
-  // Update section counts to available (non-stub) articles only
+  // Section count reflects available (non-stub) articles only, not raw card count
   document.querySelectorAll(".index-section").forEach((sectionEl) => {
     const countEl = sectionEl.querySelector(".section-count");
     if (!countEl) return;
@@ -722,7 +726,6 @@ async function populateIndexReadTimes() {
     const available = sectionEl.querySelectorAll(".index-card:not(.index-card--unavailable)");
     countEl.textContent = available.length;
 
-    // Mark sections where every card is a stub
     if (cards.length > 0 && available.length === 0) {
       sectionEl.classList.add("section--all-stubs");
     }
@@ -799,14 +802,12 @@ function parseIndexMd(markdown, basePath) {
       if (!line.startsWith("|")) continue;
       if (/^\|\s*[-:]+/.test(line)) continue; // separator row
 
-      // Match table data rows: | [Title](./path.md) | Description text |
       const m = line.match(/^\|\s*\[([^\]]+)\]\(([^)]+\.md)\)\s*\|\s*([^|]+?)\s*\|/);
       if (m) {
         const title = m[1].trim();
         const relPath = m[2].trim();
         const description = m[3].trim();
 
-        // Resolve relative path: ./components/foo.md → basePath/components/foo.md
         const fullPath = `${basePath}/${relPath.replace(/^\.\//, "")}`;
         const slug = relPath.split("/").pop().replace(/\.md$/, "");
 

@@ -322,14 +322,8 @@ async function rerenderMermaidDiagrams() {
   const theme = document.documentElement.getAttribute("data-theme") || "dark";
   mermaid.initialize({ startOnLoad: false, ...getMermaidThemeConfig(theme) });
 
-  const inViewport = (el) => {
-    const r = el.getBoundingClientRect();
-    return r.bottom > 0 && r.top < window.innerHeight;
-  };
-
   let i = 0;
   for (const wrapper of diagrams) {
-    if (!inViewport(wrapper)) continue;
     const code = wrapper.dataset.mermaidSrc;
     try {
       wrapper._stepThroughCleanup?.();

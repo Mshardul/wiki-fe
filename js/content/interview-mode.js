@@ -3,11 +3,9 @@ import { InterviewLog } from "../storage/interview-mode.js";
 
 /* ═══════════════════════════════════════════════════════════════
    INTERVIEW MODE
-   Composes depth-fold's region DOM with the notes scratchpad and a
-   running timer: collapses every fold-region after the first (a
-   position-based cut below the problem statement, not the 1/2/3
-   depth dial), opens the notes panel, and times the attempt until
-   the reader reveals the rest of the article.
+   Collapses every fold-region after the first (a position-based cut
+   below the problem statement, not the 1/2/3 depth dial), opens the
+   notes panel, and times the attempt until the reader reveals the rest.
    ═══════════════════════════════════════════════════════════════ */
 let _interviewMode = false;
 let _startedAt = 0;
@@ -41,8 +39,7 @@ function _syncToggleBtn() {
   if (announcer) announcer.textContent = _interviewMode ? "Interview mode on" : "Interview mode off";
 }
 
-/* Position-based cut: the first heading + its fold-region is the problem
-   statement and stays visible; every heading/region after it hides. */
+// Position-based cut: first heading + its fold-region stays visible, everything after hides
 function _foldRegions(contentEl) {
   contentEl.querySelectorAll(".fold-region").forEach((region, i) => {
     region.classList.toggle("interview-hidden", i > 0);
@@ -99,8 +96,7 @@ function revealInterviewMode() {
   _syncToggleBtn();
 }
 
-/* Called on per-article teardown - clears timer/UI without logging an
-   elapsed time, since navigating away mid-interview isn't a completed rep. */
+// Per-article teardown: clears timer/UI without logging elapsed time - navigating away isn't a completed rep
 function cleanupInterviewMode() {
   if (!_interviewMode) return;
   clearInterval(_tickHandle);

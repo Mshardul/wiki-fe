@@ -57,8 +57,7 @@ function renderRecentsSection(wiki) {
   if (!section) return;
   const recents = getRecents().filter((r) => r.wikiId === wiki.id);
   if (!recents.length) {
-    section.classList.remove("hidden");
-    section.innerHTML = `<p class="recents-empty">// nothing visited yet - open any article to start</p>`;
+    section.classList.add("hidden");
     return;
   }
   section.classList.remove("hidden");
@@ -86,8 +85,7 @@ function renderRecentsSection(wiki) {
     ${_buildChipStrip(chips)}`;
 }
 
-/* Duplicated small chip-strip builder (also in bookmarks.js) - kept local to
-   avoid a shared-helpers module for a single 15-line function used by 2 files. */
+// Duplicated small chip-strip builder (also in bookmarks.js) - kept local to avoid a shared-helpers module for a single 15-line function used by 2 files.
 const CHIP_VISIBLE_MAX = 4;
 function _buildChipStrip(chips) {
   const overflow = chips.length > CHIP_VISIBLE_MAX ? chips.length - CHIP_VISIBLE_MAX : 0;

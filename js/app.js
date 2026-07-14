@@ -102,7 +102,6 @@ document.addEventListener("wiki:session-expired", () => {
 });
 
 document.addEventListener("wiki:session-changed", () => {
-  // re-render current view so synced data appears
   route(location.hash.slice(1));
 });
 
@@ -266,11 +265,9 @@ function closeTopbarOverflow() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   RESET-VIEW ESCAPE HATCH (WIKI-278)
-   Escape resets an active reading mode / filter in place, confirmed,
-   instead of navigating away. Falls through to the normal Escape
-   chain (navigate back, etc.) when nothing is active to reset.
+   RESET-VIEW ESCAPE HATCH
    ═══════════════════════════════════════════════════════════════ */
+// Escape resets an active reading mode/filter in place instead of navigating away; falls through to the normal Escape chain otherwise.
 function hasResettableViewState() {
   if (isFocusMode() || isStudyMode() || isDistractionFree() || isInterviewMode()) return true;
   if (state.currentView === "content") {
@@ -336,19 +333,18 @@ window.addEventListener(
       progressBar.style.width = `${pct * 100}%`;
       updateProgressRing(pct);
 
-      // Auto-mark as read at 85%
       if (pct > 0.85 && state.currentFilePath) {
         if (markRead(state.currentFilePath)) fireStudyMilestone();
         updateReadBtn();
       }
 
-      // Persist scroll position (debounced) - capture path now, not at fire time
+      // Capture path + scrollY now, not at fire time - state may have moved on by then.
       clearTimeout(_scrollSaveTimer);
       const _pathAtScroll = state.currentFilePath;
       const _wikiAtScroll = state.currentWikiId;
+      const _yAtScroll = window.scrollY;
       _scrollSaveTimer = setTimeout(() => {
-        if (_pathAtScroll)
-          saveScrollPos(`scroll-${_wikiAtScroll}-${_pathAtScroll}`, window.scrollY);
+        if (_pathAtScroll) saveScrollPos(`scroll-${_wikiAtScroll}-${_pathAtScroll}`, _yAtScroll);
       }, 400);
     }
 
@@ -394,25 +390,22 @@ document.getElementById("prefs-backdrop").addEventListener("click", () => Settin
 document.getElementById("auth-backdrop").addEventListener("click", () => AuthModal.close());
 
 document.addEventListener("keydown", (e) => {
-  // ⌘K: Global Search
   if ((e.metaKey || e.ctrlKey) && e.key === "k") {
     e.preventDefault();
     openGlobalSearch();
   }
 
-  // ⌘F: Search scoped to the current wiki (falls back to browser find on home)
+  // Falls back to browser find on home, since there's no wiki scope there.
   if ((e.metaKey || e.ctrlKey) && e.key === "f" && state.currentWikiId) {
     e.preventDefault();
     openGlobalSearch({ scope: state.currentWikiId });
   }
 
-  // ⌘B: Global bookmarks modal - all bookmarks across wikis
   if ((e.metaKey || e.ctrlKey) && (e.key === "b" || e.key === "B")) {
     e.preventDefault();
     openBookmarksModal();
   }
 
-  // ?: Open preferences on Keyboard tab (when not focused on input/textarea)
   if (e.key === "?") {
     const tag = document.activeElement.tagName;
     const isInput =
@@ -423,7 +416,6 @@ document.addEventListener("keydown", (e) => {
     }
   }
 
-  // ,: Open preferences on General tab (global shortcut)
   if (e.key === ",") {
     const tag = document.activeElement.tagName;
     const isInput =
@@ -454,7 +446,7 @@ document.addEventListener("keydown", (e) => {
       Settings.close();
     } else if (hasResettableViewState()) {
       // A reading mode is active or the view is filtered - Escape resets it
-      // in place rather than navigating away (WIKI-278).
+      // in place rather than navigating away.
       resetView();
     } else if (state.currentView === "content" && state.currentWikiId) {
       navigate(state.currentWikiId);
@@ -523,7 +515,6 @@ document.addEventListener("keydown", (e) => {
     }
   }
 
-  // W: Wiki switcher (content + index views only, not in inputs)
   if (e.key === "w" || e.key === "W") {
     if (state.currentView === "content" || state.currentView === "index") {
       const tag = document.activeElement.tagName;
@@ -569,16 +560,13 @@ window.addEventListener("hashchange", () => {
   syncHljsTheme();
   initOsThemeListener();
 
-  // async; fires GET /auth/me, pulls data, refreshes UI + re-renders when done.
   // Not awaited - boot/render proceeds anonymously, re-renders on wiki:session-changed.
   Auth.init();
   Auth.handleBootParams();
   initProgressRingScrollTop();
 
   if ("serviceWorker" in navigator) {
-    // First install has no prior controller - a controllerchange there is the
-    // initial claim, not an update, and must not reload (would drop boot params
-    // like ?mode=verify/reset already stripped from the URL by handleBootParams).
+    // First install has no prior controller - a controllerchange there is the initial claim, not an update, and must not reload.
     const hadController = !!navigator.serviceWorker.controller;
 
     navigator.serviceWorker
@@ -631,9 +619,7 @@ window.addEventListener("pageshow", (e) => {
     const hash = location.hash.slice(1);
     route(hash);
 
-    // route() renders async (content fetch + double rAF) - the browser's own
-    // post-bfcache scroll adjustment can land after that and override it, so
-    // reassert the saved position once the route has had time to settle.
+    // The browser's own post-bfcache scroll adjustment can land after route() settles and override it - reassert once it has had time.
     const wikiId = state.currentWikiId;
     const filePath = state.currentFilePath;
     if (filePath) {

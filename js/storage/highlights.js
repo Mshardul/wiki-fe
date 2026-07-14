@@ -25,7 +25,6 @@ function _writeList(key, list) {
 }
 
 const Highlights = {
-  // { id, start, end, snippet }
   getAll(wikiId, articlePath) {
     return _readList(_highlightsKeyFor(wikiId, articlePath));
   },
@@ -56,7 +55,6 @@ const Highlights = {
 };
 
 const Markers = {
-  // { id, offset, emoji, snippet }
   getAll(wikiId, articlePath) {
     return _readList(_markersKeyFor(wikiId, articlePath));
   },

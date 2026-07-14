@@ -71,9 +71,7 @@ const DATA_CATEGORIES = {
   },
 };
 
-// scope: 'all' clears every wiki-scoped category for every wiki; a wikiId
-// clears wiki-scoped categories for that wiki only. Global-only categories
-// (recentSearches, pinnedWikis) always clear fully regardless of scope.
+// scope: 'all' clears every wiki-scoped category for every wiki; a wikiId scopes to that wiki. Global-only categories always clear fully.
 function clearSelectedData(categories, scope) {
   for (const key of categories) {
     const category = DATA_CATEGORIES[key];

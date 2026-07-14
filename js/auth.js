@@ -110,9 +110,7 @@ const AuthModal = {
     if (this._lastFocus?.focus) this._lastFocus.focus();
   },
 
-  // Bound as a property (not a method) so add/removeEventListener see the
-  // same reference; cycles Tab/Shift+Tab between first/last focusable
-  // elements in .auth-dialog so keyboard focus can't leak to the page behind.
+  // Bound as a property (not a method) so add/removeEventListener see the same reference.
   _trapFocus: (e) => {
     if (e.key !== "Tab") return;
     const dialog = document.querySelector(".auth-dialog");
@@ -187,9 +185,7 @@ const AuthModal = {
   },
 };
 
-// Disables btnId synchronously (blocks double-fire from rapid clicks/Enter),
-// awaits fn(), then always re-enables - success paths that close/swap the
-// modal make the disabled state moot, error paths need the button back.
+// Disables btnId during fn() to block double-fire from rapid clicks/Enter, always re-enables after.
 async function _withSubmitGuard(btnId, fn) {
   const btn = document.getElementById(btnId);
   if (btn?.disabled) return;
@@ -201,9 +197,7 @@ async function _withSubmitGuard(btnId, fn) {
   }
 }
 
-// Cross-tab session sync: bumping this key fires a `storage` event in every
-// *other* tab (same-tab writes don't self-fire), which re-probes /auth/me
-// there so a login/logout in one tab reflects in the rest without a manual reload.
+// Cross-tab session sync key - bumping it fires a `storage` event in every other tab, triggering an /auth/me re-probe there.
 const SESSION_SYNC_KEY = "wiki-session-sync";
 function _broadcastSessionChange() {
   try {
@@ -218,9 +212,9 @@ function _broadcastSessionChange() {
    ═══════════════════════════════════════════════════════════════ */
 const Auth = {
   _pendingResetToken: null,
+  _pendingVerifyEmail: null,
 
-  // Called once on app boot (real page load only). One GET /auth/me - skipped
-  // entirely if no token is stored, since that's definitely anonymous.
+  // Skips the GET /auth/me entirely if no token is stored - that's definitely anonymous.
   async init() {
     if (getSessionToken()) {
       try {
@@ -248,7 +242,6 @@ const Auth = {
     });
   },
 
-  // Topbar button handler.
   toggle() {
     if (state.session.status === "in") {
       this.logout();
@@ -264,13 +257,13 @@ const Auth = {
       state.session = { user: data.user, status: "in" };
       AuthModal.close();
       this.refreshButtons();
-      // migration prompt then pull server truth
       await maybeMigrate();
       await Sync.pullAll();
       document.dispatchEvent(new CustomEvent("wiki:session-changed"));
       _broadcastSessionChange();
     } catch (e) {
       if (e instanceof ApiError && e.status === 403) {
+        this._pendingVerifyEmail = email;
         const title = document.getElementById("auth-verify-title");
         const copy = document.getElementById("auth-verify-copy");
         if (title) title.textContent = "Account not verified";
@@ -296,6 +289,7 @@ const Auth = {
     }
     try {
       await api.auth.register(email, password);
+      this._pendingVerifyEmail = email;
       const title = document.getElementById("auth-verify-title");
       const copy = document.getElementById("auth-verify-copy");
       if (title) title.textContent = "Check your email";
@@ -379,7 +373,6 @@ const Auth = {
     }
   },
 
-  // Reads ?mode=verify|reset&token=... once on boot; opens the matching panel.
   // Strips the query string afterward so a page refresh doesn't re-trigger it.
   handleBootParams() {
     const params = new URLSearchParams(location.search);
@@ -401,7 +394,7 @@ const Auth = {
   },
 
   async logout() {
-    // B-lite: best-effort flush, then clear + logout regardless of result.
+    // Best-effort flush; clear + logout regardless of result.
     await Sync.flushBestEffort().catch(() => {});
     await api.auth.logout().catch(() => {});
     setSessionToken(null);
@@ -413,14 +406,12 @@ const Auth = {
   },
 
   _wireModalInputs() {
-    // live checklist + submit gating
     const pw = document.getElementById("auth-reg-password");
     const submit = document.getElementById("auth-reg-submit");
     pw?.addEventListener("input", () => {
       AuthModal._renderChecklist("auth-pw-checklist", pw.value);
       if (submit) submit.disabled = !validatePassword(pw.value).valid;
     });
-    // submit handlers - wired to each panel's <form> submit so Enter-in-field works
     document.getElementById("auth-form-login")?.addEventListener("submit", (e) => {
       e.preventDefault();
       _withSubmitGuard("auth-login-submit", () =>
@@ -442,9 +433,7 @@ const Auth = {
     document
       .getElementById("auth-resend-btn")
       ?.addEventListener("click", () =>
-        _withSubmitGuard("auth-resend-btn", () =>
-          this.resend(document.getElementById("auth-reg-email").value.trim()),
-        ),
+        _withSubmitGuard("auth-resend-btn", () => this.resend(this._pendingVerifyEmail)),
       );
     document
       .getElementById("auth-to-forgot")
@@ -474,7 +463,6 @@ const Auth = {
         this.resetPassword(this._pendingResetToken, resetPw.value),
       );
     });
-    // panel swaps
     document
       .getElementById("auth-to-register")
       ?.addEventListener("click", () => AuthModal._swap("register"));
@@ -493,8 +481,7 @@ const Auth = {
   },
 };
 
-// Another tab logged in/out - re-probe /auth/me here and re-render so this
-// tab's session state and UI catch up without a manual reload.
+// Another tab logged in/out - re-probe /auth/me and re-render so this tab catches up.
 window.addEventListener("storage", (e) => {
   if (e.key !== SESSION_SYNC_KEY) return;
   api.auth

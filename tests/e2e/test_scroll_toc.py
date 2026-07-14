@@ -87,6 +87,36 @@ def test_scroll_restored_after_bfcache_pageshow(page, base_url):
         assert False, f"Scroll not restored after bfcache pageshow; scrollY={scroll_y}"
 
 
+def test_toc_scroll_position_tracked_in_eviction_manifest(page, base_url):
+    """Regression for WIKI-437: saveTOCScroll must route through the shared
+    saveScrollPos wrapper so its key is tracked in the wiki-scroll-keys
+    manifest and covered by clearScrollPositions' eviction/cleanup, not
+    written directly via a bare localStorage.setItem."""
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body pre", timeout=10_000)
+
+    file_path = page.evaluate(
+        "() => (typeof state !== 'undefined' ? state.currentFilePath : null)"
+    )
+    wiki_id = page.evaluate(
+        "() => (typeof state !== 'undefined' ? state.currentWikiId : null)"
+    )
+    assert file_path, "Could not read state.currentFilePath from app"
+    assert wiki_id, "Could not read state.currentWikiId from app"
+    toc_key = f"wiki-toc-scroll-{wiki_id}-{file_path.replace('/', '-')}"
+
+    sidebar = page.locator(".toc-sidebar")
+    sidebar.evaluate("(el) => el.scrollTo(0, 40)")
+    page.wait_for_timeout(500)  # debounce (300ms) + margin
+
+    manifest = page.evaluate(
+        "() => JSON.parse(localStorage.getItem('wiki-scroll-keys') || '[]')"
+    )
+    assert toc_key in manifest, (
+        f"expected {toc_key!r} in wiki-scroll-keys manifest, got: {manifest}"
+    )
+
+
 def test_scroll_position_not_restored_with_anchor(page, base_url):
     """?a= anchor param takes priority over saved scroll position."""
     # First visit and scroll to persist a position.

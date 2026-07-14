@@ -8,6 +8,9 @@ import {
   updateBookmarkBtn,
 } from "./bookmarks.js";
 import { DATA_CATEGORIES, clearSelectedData } from "./data-clear.js";
+import { Highlights, Markers } from "./highlights.js";
+import { InterviewLog } from "./interview-mode.js";
+import { Notes } from "./notes.js";
 import { _readKey, isRead, updateReadBtn } from "./read-tracking.js";
 import { RECENTS_KEY, RECENTS_MAX, renderRecentsSection } from "./recents.js";
 
@@ -246,7 +249,6 @@ function getSettings() {
     if (stored?.backgroundId) return { ...DEFAULT_SETTINGS, ...stored };
   } catch {}
 
-  // First visit or unrecognized format: use OS preference
   const prefersLight = window.matchMedia?.("(prefers-color-scheme: light)").matches;
   return prefersLight
     ? {
@@ -322,7 +324,6 @@ function applySettingsToDOM(s) {
   document.dispatchEvent(new CustomEvent("wiki:themechange", { detail: { theme } }));
 }
 
-// Follow OS dark/light changes live
 function initOsThemeListener() {
   const mq = window.matchMedia?.("(prefers-color-scheme: light)");
   mq?.addEventListener?.("change", () => {
@@ -838,7 +839,6 @@ const Sync = {
       JSON.stringify((bm || []).map((r) => _deriveBookmark(r.wiki_id, r.path))),
     );
 
-    // Reads → per-wiki Sets
     const byWiki = {};
     for (const r of rd || []) {
       // biome-ignore lint/suspicious/noAssignInExpressions: ||= logical-assign idiom
@@ -864,10 +864,13 @@ const Sync = {
     localStorage.removeItem(BOOKMARKS_KEY);
     localStorage.removeItem(RECENTS_KEY);
     for (const wiki of WIKIS) localStorage.removeItem(`wiki-read-${wiki.id}`);
+    Highlights.clear();
+    Markers.clear();
+    Notes.clear();
+    InterviewLog.clear();
   },
 
-  // Logout B-lite flush. Fire-and-forget writes already synced per-action,
-  // so this is effectively a no-op safety net; returns immediately.
+  // Logout flush is a no-op safety net: fire-and-forget writes already synced per-action.
   flushBestEffort() {
     return Promise.resolve();
   },

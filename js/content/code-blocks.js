@@ -52,7 +52,6 @@ function addCodeBlockHeader(contentEl, onCopyError = () => {}) {
     const header = document.createElement("div");
     header.className = "code-header";
 
-    // Traffic lights
     const lights = document.createElement("div");
     lights.className = "code-traffic-lights";
     lights.setAttribute("aria-hidden", "true");
@@ -63,8 +62,7 @@ function addCodeBlockHeader(contentEl, onCopyError = () => {}) {
     });
     header.appendChild(lights);
 
-    // Lang label (centered in header) - only for languages from the fence info string,
-    // not hljs auto-detection guesses on untagged blocks
+    // Only for languages from the fence info string, not hljs auto-detection guesses on untagged blocks
     const langMatch = code?.className.match(/language-(\w+)/);
     if (langMatch && langMatch[1] !== "mermaid" && code?.dataset.langExplicit === "true") {
       const label = document.createElement("span");
@@ -76,7 +74,6 @@ function addCodeBlockHeader(contentEl, onCopyError = () => {}) {
 
     pre.insertBefore(header, pre.firstChild);
 
-    // Copy button - floats inside code body, hidden until hover
     const btn = document.createElement("button");
     btn.className = "copy-btn";
     btn.title = "Copy code";
@@ -156,7 +153,6 @@ function addPreOverflowDetection(contentEl) {
 /* ═══════════════════════════════════════════════════════════════
    CODE BLOCK LINE NUMBERS
    ═══════════════════════════════════════════════════════════════ */
-/* Splits highlighted innerHTML into per-line chunks. */
 function splitHighlightedLines(html) {
   const lines = [];
   let current = "";
@@ -208,7 +204,7 @@ function addLineNumbers(contentEl) {
 /* ═══════════════════════════════════════════════════════════════
    CODE LANGUAGE LABELS
    ═══════════════════════════════════════════════════════════════ */
-/* Label is now rendered inside code-header by addCodeBlockHeader */
+// no-op: label is now rendered inside code-header by addCodeBlockHeader
 function addCodeLangLabels(_contentEl) {}
 
 export {

@@ -22,7 +22,6 @@ function _truncatePassage(text) {
   return `${trimmed.slice(0, MAX_PASSAGE_CHARS).trimEnd()}…`;
 }
 
-/* Standard canvas word-wrap: measure each candidate line, break when it overflows maxWidth. */
 function _wrapText(ctx, text, maxWidth) {
   const words = text.split(" ");
   const lines = [];
@@ -91,15 +90,12 @@ function exportSelectionAsCard(selectedText) {
   canvas.style.height = `${height}px`;
   ctx.scale(dpr, dpr);
 
-  // Background
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, CARD_WIDTH, height);
 
-  // Accent bar along the left edge
   ctx.fillStyle = accent;
   ctx.fillRect(0, 0, ACCENT_BAR_WIDTH, height);
 
-  // Passage text
   ctx.font = `${TEXT_FONT_SIZE}px ${fontMono}`;
   ctx.fillStyle = heading;
   ctx.textBaseline = "top";
@@ -111,7 +107,6 @@ function exportSelectionAsCard(selectedText) {
     textY += TEXT_LINE_HEIGHT;
   });
 
-  // Footer divider
   const footerY = height - footerBlockHeight;
   ctx.strokeStyle = accentLight;
   ctx.globalAlpha = 0.35;
@@ -121,7 +116,6 @@ function exportSelectionAsCard(selectedText) {
   ctx.stroke();
   ctx.globalAlpha = 1;
 
-  // Footer branding: wiki name (+ article title if known)
   ctx.font = `${FOOTER_FONT_SIZE}px ${fontMono}`;
   ctx.fillStyle = body;
   const footerLabel = articleTitle ? `${wikiTitle} · ${articleTitle}` : wikiTitle;

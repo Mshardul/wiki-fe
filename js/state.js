@@ -24,7 +24,6 @@ const WIKIS = [
   },
 ];
 
-// Duplicate ids - Warn loudly at startup.
 {
   const seen = new Set();
   const dupes = WIKIS.map((w) => w.id).filter((id) => seen.size === seen.add(id).size);
@@ -128,7 +127,6 @@ const state = {
   tableResizeObservers: [],
   preResizeObservers: [],
   // Auth identity - in-memory only, NEVER persisted to localStorage.
-  // status: "loading" until GET /auth/me resolves, then "in" | "out".
   session: { user: null, status: "loading" },
 };
 
@@ -214,9 +212,7 @@ function fuzzyMatch(query, text) {
   if (!query) return true;
   const q = query.toLowerCase();
   const t = text.toLowerCase();
-  // Check substring first (fast path)
   if (t.includes(q)) return true;
-  // Fuzzy: all chars of query appear in order in text
   let qi = 0;
   for (let i = 0; i < t.length && qi < q.length; i++) {
     if (t[i] === q[qi]) qi++;
@@ -236,8 +232,7 @@ function fadeFactorForDaysSinceRead(days) {
   return Math.max(FADE_FLOOR, 1 - t * (1 - FADE_FLOOR));
 }
 
-// Removes every localStorage key starting with `prefix` - the shared bulk-clear
-// primitive for per-article-keyed domains (highlights, notes, interview logs).
+// Removes every localStorage key starting with `prefix` - shared bulk-clear primitive for per-article-keyed domains.
 function removeLocalStorageByPrefix(prefix) {
   const toRemove = [];
   for (let i = 0; i < localStorage.length; i++) {

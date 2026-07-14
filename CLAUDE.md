@@ -17,6 +17,14 @@ CONVENTIONS.md is prescriptive: how the code must be written.
 - **Tests** - pytest + Playwright (e2e, Python-driven browser tests)
 - **CI** - GitHub Actions (`.github/workflows/ci.yml`)
 
+## Playwright MCP browser
+
+Browsers are pre-installed under `~/Library/Caches/ms-playwright` (chromium, not system Chrome
+channel). If the `playwright` MCP tool errors with `Chromium distribution 'chrome' is not found at
+/Applications/Google Chrome.app/...`, that's the MCP server defaulting to the system-Chrome
+channel instead of the installed bundle - don't run `npx playwright install chrome`; the browser
+already exists, it's an MCP server config issue.
+
 ---
 
 ## SESSION START PROTOCOL

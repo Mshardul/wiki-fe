@@ -287,7 +287,6 @@ async function loadAllSearchEntries() {
       } catch {}
     }
 
-    // Every wiki index failed → no usable cache.
     if (!anySucceeded) {
       gSearchResults.innerHTML =
         '<div class="gsearch-error">Couldn\'t load search index. ' +
@@ -379,8 +378,7 @@ function openGlobalSearch(opts = {}) {
   gSearchCount.textContent = "";
   gSearchSelectedIdx = -1;
   _syncModeBadge("");
-  // Synchronous focus for iOS (must run in user-gesture call stack).
-  // setTimeout(0) fallback covers non-gesture paths (e.g. iPad bluetooth ⌘K).
+  // Synchronous focus for iOS (must run in user-gesture call stack); setTimeout(0) fallback covers non-gesture paths (e.g. iPad bluetooth ⌘K).
   gSearchInput.focus();
   setTimeout(() => gSearchInput.focus(), 0);
   _populateScopeDropdown();
@@ -462,9 +460,7 @@ function scoreMatch(q, entry) {
   return best;
 }
 
-// The typed query may only match via synonym expansion (e.g. "map" -> "hash table").
-// highlightMatch needs the actual matched term, not the literal typed query, or the
-// title renders with zero highlight even though it matched.
+// Query may match only via synonym expansion (e.g. "map"->"hash table"); highlightMatch needs the matched term, not the typed query.
 function titleHighlightTerm(title, highlightQuery) {
   if (!highlightQuery) return highlightQuery;
   const tl = title.toLowerCase();
@@ -593,7 +589,6 @@ function applyGlobalSearch(query) {
 
   gSearchCount.textContent = `${scored.length} result${scored.length === 1 ? "" : "s"}`;
 
-  // Group by wiki, preserving score order within each group
   const grouped = {};
   for (const m of scored) {
     if (!grouped[m.wiki.id]) grouped[m.wiki.id] = { wiki: m.wiki, items: [] };

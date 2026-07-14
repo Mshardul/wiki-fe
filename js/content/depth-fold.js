@@ -1,15 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════
    DEPTH-N CONTENT FOLDING
-   Wraps content between headings into fold-region containers keyed by
-   heading depth, then a single control (data-depth on #markdown-body)
-   shows/hides regions at or below that depth. Distinct from the
-   per-heading collapse toggle in toc.js: that's a manual, per-section
-   open/close the reader drives one heading at a time; this is one
-   global dial that redraws the whole article's fold state at once.
-   The two don't share region-wrapping logic because they wrap at
-   different granularities (h2-only vs h2/h3/h4) and serve different
-   DOM lifecycles - trying to unify them would couple an ephemeral
-   per-visit read mode to a persisted per-section preference.
+   One global dial (data-depth on #markdown-body) that shows/hides
+   fold-region containers by heading depth. Distinct from toc.js's
+   per-heading collapse (manual, per-section) - the two don't share
+   region-wrapping logic because they wrap at different granularities
+   (h2-only vs h2/h3/h4) and serve different DOM lifecycles.
    ═══════════════════════════════════════════════════════════════ */
 const FOLD_DEPTH_KEY = "wiki-fold-depth";
 const MIN_DEPTH = 1;
@@ -18,10 +13,7 @@ const DEFAULT_DEPTH = MAX_DEPTH;
 
 const HEADING_TO_LEVEL = { H2: 1, H3: 2, H4: 3 };
 
-/* Wraps the run of siblings following each h2/h3/h4 (up to the next
-   heading of equal-or-higher rank) into a .fold-region tagged with the
-   depth level that heading belongs to. Idempotent - safe to call once
-   per render since content is rebuilt from scratch each time. */
+// Idempotent - safe to call once per render since content is rebuilt from scratch each time
 function applyContentFold(contentEl) {
   const headings = Array.from(contentEl.querySelectorAll("h2, h3, h4"));
 
@@ -60,8 +52,7 @@ function _syncFoldControl(depth) {
   });
 }
 
-/* Sets the fold depth on #markdown-body and persists it session-wide
-   (one global preference, not per-article - see ticket remarks). */
+// Persisted session-wide - one global preference, not per-article
 function setFoldDepth(depth, contentEl = document.getElementById("markdown-body")) {
   const clamped = Math.min(MAX_DEPTH, Math.max(MIN_DEPTH, depth));
   sessionStorage.setItem(FOLD_DEPTH_KEY, String(clamped));

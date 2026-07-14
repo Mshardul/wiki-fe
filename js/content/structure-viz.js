@@ -36,8 +36,7 @@ function _svgEl(tag, attrs) {
 }
 
 function _renderTree(data, { heap = false } = {}) {
-  // Build a binary tree from level-order array data (works for both BST-as-given
-  // and heap - both are rendered the same way, level-order).
+  // BST and heap are both level-order arrays, so rendered identically here
   const n = data.length;
   const depth = Math.floor(Math.log2(n || 1)) + 1;
   const width = Math.max(2 ** (depth - 1) * NODE_R * 2.5, 120);
@@ -198,13 +197,13 @@ function renderStructureViz(contentEl) {
     const pre = block.parentElement;
     const parsed = _parseVizBlock(block.textContent);
     const renderer = parsed && RENDERERS[parsed.type];
-    if (!renderer) return; // unknown type / bad literal - leave raw code block as fallback
+    if (!renderer) return; // leaves raw code block as fallback
 
     let svg;
     try {
       svg = renderer(parsed.data);
     } catch {
-      return; // renderer failure - leave raw code block as fallback
+      return; // leaves raw code block as fallback
     }
 
     const wrapper = document.createElement("div");

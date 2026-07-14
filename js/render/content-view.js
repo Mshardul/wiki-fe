@@ -158,7 +158,7 @@ function getCurrentMarkdown() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   RESUME-BY-IDEA CHIP (WIKI-253)
+   RESUME-BY-IDEA CHIP
    ═══════════════════════════════════════════════════════════════ */
 function _findNearestHeadingAbove(contentEl, targetY) {
   const headings = Array.from(contentEl.querySelectorAll("h2, h3"));
@@ -228,14 +228,12 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     history.pushState({ hash: `${wiki.id}/${derivedSlug}`, filePath, title }, "", url);
   }
 
-  // Breadcrumb
   setBreadcrumb("content-breadcrumb", [
     { label: "Home", href: "#" },
     { label: wiki.title, href: `#${wiki.id}` },
     { label: title },
   ]);
 
-  // Back button → return to index
   const backBtn = document.getElementById("content-back-btn");
   backBtn.onclick = () => window.navigate(wiki.id);
 
@@ -249,7 +247,6 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
   body.innerHTML = buildLoadingSkeleton(getShapeFingerprint(filePath));
   _currentMarkdown = "";
 
-  // Clear old observers and modes
   if (state.tocObserver) {
     state.tocObserver.disconnect();
     state.tocObserver = null;
@@ -280,11 +277,9 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     if (gen !== _renderGen) return;
     _currentMarkdown = markdown;
 
-    // Only track successful loads.
     addToRecents({ wikiId: wiki.id, path: filePath, title, slug: derivedSlug });
     recordOpened(filePath);
 
-    // Set reading time immediately after fetch
     if (readTimeBadge) {
       readTimeBadge.textContent = readTimeCache[filePath] || readingTime(markdown);
       readTimeCache[filePath] = readTimeBadge.textContent;
@@ -308,7 +303,6 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       return;
     }
 
-    // DOMPurify (XSS Protection)
     let rawHtml = getCachedHtml(filePath);
     if (!rawHtml) {
       rawHtml = getMdConverter().makeHtml(markdown);
@@ -317,14 +311,13 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     body.innerHTML =
       typeof DOMPurify !== "undefined"
         ? DOMPurify.sanitize(rawHtml, {
-            // Default allowlist rejects unknown URI schemes; add wiki:// for cross-wiki links (WIKI-199).
+            // Default allowlist rejects unknown URI schemes; add wiki:// for cross-wiki links.
             ALLOWED_URI_REGEXP:
               /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|wiki):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
           })
         : rawHtml;
     wireImageErrorPlaceholders(body);
 
-    // KaTeX rendering
     if (typeof renderMathInElement !== "undefined") {
       renderMathInElement(body, {
         delimiters: [
@@ -339,7 +332,6 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     await renderMermaidDiagrams(body);
     renderStructureViz(body);
 
-    // Syntax highlighting
     if (typeof hljs !== "undefined") {
       body.querySelectorAll("pre code").forEach((block) => {
         if (block.className.match(/language-(\w+)/)) block.dataset.langExplicit = "true";
@@ -360,12 +352,10 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       if (gen !== _renderGen) return;
       addCollapsibleCallouts(body);
 
-      // Quiz-me mode
       addQuizTables(body);
       QuizMode.reset();
       QuizMode.bind(body);
 
-      // Prerequisites Chips
       renderPrerequisites(body);
 
       interceptMdLinks(body, wiki, filePath);
@@ -375,7 +365,6 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
         () => showToast("Link copied"),
       );
 
-      // Accent first word of h1 with gradient
       const h1El = body.querySelector("h1");
       if (h1El && h1El.childNodes.length > 0) {
         const firstNode = h1El.childNodes[0];
@@ -531,7 +520,6 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
     const href = link.getAttribute("href");
     if (!href) return;
 
-    // Anchor links
     if (href.startsWith("#")) {
       link.addEventListener("click", (e) => {
         e.preventDefault();
@@ -542,7 +530,6 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
         if (target) {
           target.scrollIntoView({ behavior: "smooth", block: "start" });
 
-          // Update the URL with the deep-link query param without breaking the hash route
           const url = new URL(location.href);
           url.searchParams.set("a", targetId);
           history.replaceState(history.state, "", url.toString());
@@ -551,7 +538,6 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
       return;
     }
 
-    // External links navigate away in new tab
     if (href.startsWith("http")) {
       link.setAttribute("target", "_blank");
       link.setAttribute("rel", "noopener noreferrer");
@@ -578,7 +564,6 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
     // Ignore missing or non-md links (strip fragment before checking extension)
     if (!href.split("#")[0].endsWith(".md")) return;
 
-    // Handle internal markdown links (strip fragment for fetch/storage)
     const resolvedPath = resolvePath(baseDir, href).split("#")[0];
 
     link.addEventListener("click", (e) => {
@@ -591,7 +576,6 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
       }
     });
 
-    // Hover logic - skip on touch
     link.addEventListener("mouseenter", () => {
       if (_lastPointerWasTouch) return;
       hoverPreviewTimer = setTimeout(() => showHoverPreview(link, resolvedPath), 400);
@@ -695,7 +679,6 @@ document.addEventListener(
 async function showHoverPreview(link, path, { asSheet = false } = {}) {
   const previewEl = document.getElementById("hover-preview");
 
-  // Cancel any in-flight fetch from a previous hover
   if (_previewAbortController) _previewAbortController.abort();
   _previewAbortController = new AbortController();
   const { signal } = _previewAbortController;
@@ -735,7 +718,6 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
     if (!previewEl.classList.contains("visible")) return;
     let extract = "";
 
-    // Search whole doc for TLDR section
     const tldrMatch = md.match(/##\s*TL;?DR\s*\n([\s\S]*?)(?=\n##|\n#|$)/i);
     if (tldrMatch?.[1].trim()) {
       extract = tldrMatch[1].trim();

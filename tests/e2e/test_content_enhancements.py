@@ -63,6 +63,23 @@ https://example.com/not-a-video
 Some text after the link.
 """
 
+ARTICLE_WITH_TWO_MERMAID_DIAGRAMS = """\
+# Two Diagrams Test
+
+```mermaid
+graph LR
+  A[Start] --> B[Middle] --> C[End]
+```
+
+""" + ("Filler paragraph to push the second diagram off-screen.\n\n" * 80) + """
+```mermaid
+graph LR
+  X[Foo] --> Y[Bar] --> Z[Baz]
+```
+
+Some text.
+"""
+
 ARTICLE_WITH_MERMAID_STEPS = """\
 # Mermaid Step-Through Test
 
@@ -611,6 +628,52 @@ def test_diagram_src_preserved_after_theme_change(page, base_url):
     )
     assert src_before == src_after, (
         "data-mermaid-src changed after re-render - re-render should preserve source attribute"
+    )
+
+
+def test_offscreen_diagram_rerenders_on_theme_change(page, base_url):
+    """Regression for WIKI-438: a Mermaid diagram scrolled out of the
+    viewport must still re-render on theme change, not keep the stale
+    theme's colors until it happens to scroll back into view."""
+    _load_mock_article(
+        page, base_url, ARTICLE_WITH_TWO_MERMAID_DIAGRAMS, slug="diag-offscreen"
+    )
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
+    page.wait_for_function(
+        "() => document.querySelectorAll('.mermaid-diagram svg').length === 2",
+        timeout=8_000,
+    )
+
+    # Scroll to top so the second diagram sits well below the viewport.
+    page.evaluate("() => window.scrollTo(0, 0)")
+    second_in_viewport = page.evaluate("""() => {
+        const wrappers = document.querySelectorAll('.mermaid-diagram');
+        const r = wrappers[1].getBoundingClientRect();
+        return r.top < window.innerHeight;
+    }""")
+    assert not second_in_viewport, "test setup invalid: second diagram is still in viewport"
+
+    svg_before = page.evaluate(
+        "() => document.querySelectorAll('.mermaid-diagram svg')[1]?.outerHTML"
+    )
+    assert svg_before, "No mermaid SVG found for second (off-screen) diagram"
+
+    page.evaluate("() => Settings._setBackground('light-white')")
+
+    page.wait_for_function(
+        f"""() => {{
+            const svg = document.querySelectorAll('.mermaid-diagram svg')[1];
+            return svg && svg.outerHTML !== {repr(svg_before)};
+        }}""",
+        timeout=5_000,
+    )
+
+    svg_after = page.evaluate(
+        "() => document.querySelectorAll('.mermaid-diagram svg')[1]?.outerHTML"
+    )
+    assert svg_before != svg_after, (
+        "off-screen diagram's SVG did not change after theme switch - "
+        "the inViewport gate is still skipping it"
     )
 
 
@@ -1533,7 +1596,22 @@ def test_hljs_stylesheet_swaps_on_theme_change(page, base_url):
     assert new_href != initial_href, (
         f"hljs stylesheet href did not change after theme toggle: {new_href!r}"
     )
-    assert "atom-one" in new_href, f"Unexpected hljs stylesheet: {new_href!r}"
+
+
+def test_hljs_link_has_no_stale_integrity_hash(page, base_url):
+    """Regression for WIKI-441: the hljs theme <link> must not carry a
+    hardcoded SRI integrity hash, since syncHljsTheme() swaps href at
+    runtime and a stale hash for the wrong variant blocks the browser
+    from loading the (correct) swapped-in stylesheet."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+
+    attrs = page.evaluate("""() => {
+        const link = document.getElementById('hljs-theme-css');
+        return { integrity: link?.getAttribute('integrity'), crossorigin: link?.getAttribute('crossorigin'), href: link?.getAttribute('href') };
+    }""")
+    assert not attrs["integrity"], f"expected no integrity attr, got: {attrs['integrity']!r}"
+    assert "atom-one" in attrs["href"], f"Unexpected hljs stylesheet: {attrs['href']!r}"
 
 
 # ── Formula variable-substitution toggle ────────────────────────────

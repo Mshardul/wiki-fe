@@ -2,8 +2,8 @@ import { cleanupStickySection } from "../content/toc.js";
 import { WIKIS, fuzzyMatch, state } from "../state.js";
 import { renderChangelog } from "./changelog-view.js";
 import { renderContent } from "./content-view.js";
-import { parseIndexMd, renderHome, renderIndex } from "./home-index.js";
-import { dirOf, fetchText, updatePageTitle } from "./nav-utils.js";
+import { fetchWikiIndex, renderHome, renderIndex } from "./home-index.js";
+import { updatePageTitle } from "./nav-utils.js";
 import { showToast } from "./toast.js";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -20,9 +20,9 @@ function _applyView(id) {
   document.getElementById(id).classList.add("active");
   state.currentView = id.replace("view-", "");
 
-  // Resume chip (WIKI-253) is appended to document.body, outside any .view
-  // container, so it must be cleared on every view change, not just
-  // content->content navigation - otherwise it (and its listeners) leak.
+  // Resume chip is appended to document.body, outside any .view container, so
+  // it must be cleared on every view change, not just content->content
+  // navigation - otherwise it (and its listeners) leak.
   if (id !== "view-content") document.getElementById("resume-chip")?.remove();
 
   // Sticky section header's scroll listener closes over the abandoned
@@ -74,7 +74,7 @@ function showView(id) {
    ═══════════════════════════════════════════════════════════════ */
 function navigate(hash, pushHistory = true) {
   if (pushHistory) {
-    // Explicitly reconstruct URL with pathname to strip away location.search query params
+    // Reconstruct URL with pathname only to strip away location.search query params
     const url = location.pathname + (hash ? `#${hash}` : "");
     history.pushState({ hash }, "", url);
   }
@@ -115,7 +115,6 @@ function _execRoute(hash) {
     return;
   }
 
-  // Content view
   const slug = parts[1];
   const stateMatches = history.state?.hash === hash;
   const savedPath = stateMatches ? history.state?.filePath : null;
@@ -129,9 +128,7 @@ function _execRoute(hash) {
 
 async function resolveSlugAndRender(wiki, slug) {
   try {
-    const md = await fetchText(wiki.indexPath);
-    const basePath = dirOf(wiki.indexPath);
-    const sections = parseIndexMd(md, basePath);
+    const sections = await fetchWikiIndex(wiki);
     const cards = [];
     for (const section of sections) {
       for (const card of section.cards) {
@@ -158,7 +155,6 @@ async function resolveSlugAndRender(wiki, slug) {
     }
   } catch {}
 
-  // Slug not found, no near match
   updatePageTitle("Not Found");
   showToast(`Article not found: "${slug}"`);
   history.replaceState(null, "", location.pathname);

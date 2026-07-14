@@ -4,8 +4,7 @@
 const SCROLL_KEYS_MANIFEST = "wiki-scroll-keys";
 const SCROLL_CACHE_MAX = 50;
 
-// wikiId omitted clears every cached scroll position; passed, scopes to keys
-// containing "-{wikiId}-" (manifest keys are TOC-scroll paths built from wikiId+article path).
+// wikiId omitted clears every cached scroll position; passed, scopes to keys containing "-{wikiId}-".
 function clearScrollPositions(wikiId) {
   let keys;
   try {
@@ -59,7 +58,7 @@ function getCollapsed(key) {
 /* ─── TOC Scroll Persistence ─── */
 function saveTOCScroll(wikiId, articlePath, offset) {
   const key = `wiki-toc-scroll-${wikiId}-${articlePath.replace(/\//g, "-")}`;
-  localStorage.setItem(key, String(offset));
+  saveScrollPos(key, String(offset));
 }
 
 function restoreTOCScroll(wikiId, articlePath) {

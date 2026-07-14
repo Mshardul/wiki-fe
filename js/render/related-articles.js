@@ -161,10 +161,8 @@ async function renderRelatedArticles(wiki, currentPath, recommendedLinks) {
   } catch {}
 }
 
-/* ─── Backlink spine: "Mentioned by" reverse links (WIKI-250) ───
-   Built at deploy time (build_backlinks.py) from every article's internal
-   .md links, inverted into target -> [source articles]. Static per deploy -
-   only reflects content as of the last commit, not same-session edits. */
+/* ─── Backlink spine: "Mentioned by" reverse links ─── */
+// backlinks.json is built at deploy time (build_backlinks.py); doesn't reflect same-session edits.
 function _wikiIdForPath(path) {
   const wiki = WIKIS.find((w) => path.startsWith(`./content/${w.id}/`));
   return wiki?.id;

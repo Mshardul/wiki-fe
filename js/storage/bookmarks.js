@@ -74,8 +74,7 @@ function renderBookmarksSection(wiki) {
   if (!section) return;
   const bookmarks = getBookmarks().filter((b) => b.wikiId === wiki.id);
   if (!bookmarks.length) {
-    section.classList.remove("hidden");
-    section.innerHTML = `<p class="recents-empty">// no bookmarks yet - press <kbd>b</kbd> on any article</p>`;
+    section.classList.add("hidden");
     return;
   }
   section.classList.remove("hidden");
@@ -98,7 +97,6 @@ function renderBookmarksSection(wiki) {
 }
 
 const Bookmarks = {
-  // Path-based core: add/remove a bookmark for any wiki+path.
   togglePath(wikiId, path, title) {
     if (!path) return false;
     const bookmarks = getBookmarks();

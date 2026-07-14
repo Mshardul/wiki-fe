@@ -33,16 +33,13 @@ function bindZoomGestures(overlay) {
   let tx = 0;
   let ty = 0;
 
-  // pinch state
   let startDist = 0;
   let startScale = 1;
-  // single-finger state
   let startX = 0;
   let startY = 0;
   let startTx = 0;
   let startTy = 0;
   let panning = false;
-  // double-tap
   let lastTap = 0;
 
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
@@ -178,7 +175,7 @@ function openZoomOverlay(node, caption = "") {
 }
 
 /* ─── Image Lightbox ─── */
-// Attach before any await - a fast image failure can fire before a delayed listener exists.
+// Attach before any await - a fast image failure can fire before a delayed listener exists
 function wireImageErrorPlaceholders(contentEl) {
   contentEl.querySelectorAll("img").forEach((img) => {
     img.addEventListener(

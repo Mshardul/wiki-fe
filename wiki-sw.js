@@ -1,4 +1,4 @@
-const SHELL_CACHE = "wiki-shell-v12";
+const SHELL_CACHE = "wiki-shell-v13";
 const ARTICLE_CACHE = "wiki-articles-v1";
 
 // Served for an uncached article request while offline, in place of a failed fetch.
@@ -25,16 +25,8 @@ self.addEventListener("install", (e) => {
             "./404.html",
             "./manifest.json",
             "./icon.svg",
-            "./css/wiki.css",
             "./js/app.js",
             "./js/state.js",
-            "./js/render.js",
-            "./js/content.js",
-            "./js/search.js",
-            "./js/search-features.js",
-            "./js/storage.js",
-            "./js/auth.js",
-            "./js/api.js",
           ])
           .catch(() => {}),
       ),

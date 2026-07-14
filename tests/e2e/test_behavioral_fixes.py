@@ -409,64 +409,6 @@ def test_rapid_theme_changes_do_not_crash(page, base_url):
     )
 
 
-def test_mermaid_rerender_skips_offscreen_diagrams(page, base_url):
-    """rerenderMermaidDiagrams does not update diagrams outside the viewport."""
-    page.set_viewport_size({"width": 1280, "height": 600})
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-
-    page.route(
-        "**/two-diagrams.md",
-        lambda r: r.fulfill(
-            body=(
-                "# Diagrams\n\n"
-                "```mermaid\ngraph TD\n  A-->B\n```\n\n"
-                + "<br>\n" * 80
-                + "\n```mermaid\ngraph TD\n  C-->D\n```\n"
-            )
-        ),
-    )
-    page.evaluate(
-        """() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/two-diagrams.md'),
-        encodeURIComponent('Diagrams'),
-        'two-diagrams'
-    )"""
-    )
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-
-    diagrams = page.locator(".mermaid-diagram")
-    if diagrams.count() < 2:
-        # mermaid not loaded in this env; nothing to assert
-        return
-
-    # Scroll to top - first diagram in view, second is far below
-    page.evaluate("() => window.scrollTo(0, 0)")
-
-    second_html_before = page.locator(".mermaid-diagram").last.inner_html()
-
-    first_html_before = page.locator(".mermaid-diagram").first.inner_html()
-    page.evaluate(
-        "() => document.dispatchEvent(new CustomEvent('wiki:themechange', { detail: { theme: 'light' } }))"
-    )
-    page.wait_for_function(
-        f"() => document.querySelector('.mermaid-diagram').innerHTML !== {repr(first_html_before)}",
-        timeout=5_000,
-    )
-
-    second_html_after = page.locator(".mermaid-diagram").last.inner_html()
-
-    assert second_html_before == second_html_after, (
-        "Off-screen diagram should not be re-rendered on theme change"
-    )
-
-
 # ── Toast queue ────────────────────────────────────────────────────
 
 

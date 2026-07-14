@@ -144,12 +144,12 @@ function axisLock(dx, dy) {
       if (axis === "x") {
         if (state._cardSwipeActive) return; // index-card swipe owns this gesture
         if (fromLeftEdge && dx > SWIPE_THRESHOLD) {
-          // Swipe right from left edge → back.
           if (state.currentView === "content" && state.currentWikiId) {
             navigate(state.currentWikiId);
+          } else if (state.currentView === "index" || state.currentView === "changelog") {
+            navigate("");
           }
         } else if (fromRightEdge && dx < -SWIPE_THRESHOLD) {
-          // Swipe left from right edge → open TOC drawer (content view only).
           if (state.currentView === "content") openMobileToc();
         }
       } else if (axis === "y") {
@@ -175,9 +175,7 @@ window.addEventListener(
   "resize",
   () => {
     clearTimeout(_resizeTimer);
-    // Snapshot search-modal state at resize-start, not at debounce-fire — a modal
-    // opened during the debounce window (e.g. ⌘K right after a resize) must not
-    // be closed by a resize that predates it.
+    // Snapshot at resize-start, not debounce-fire — a modal opened mid-debounce (e.g. ⌘K right after a resize) must not be closed by a resize that predates it.
     const searchWasOpenAtResizeStart = !document
       .getElementById("global-search-modal")
       .classList.contains("hidden");
@@ -187,7 +185,7 @@ window.addEventListener(
       _lastViewportWidth = width;
       const widthChangedSignificantly = Math.abs(width - prevWidth) > 50;
 
-      if (isMobileTocOpen()) closeMobileToc();
+      if (widthChangedSignificantly && isMobileTocOpen()) closeMobileToc();
 
       if (widthChangedSignificantly && searchWasOpenAtResizeStart) {
         closeGlobalSearch();
@@ -198,7 +196,6 @@ window.addEventListener(
         .getElementById("hover-preview")
         ?.classList.remove("visible", "hover-preview--sheet-open");
 
-      // Re-fit Mermaid only when the content view's width actually changed.
       if (state.currentView === "content" && widthChangedSignificantly) {
         rerenderMermaidDiagrams();
       }

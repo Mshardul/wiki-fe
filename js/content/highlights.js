@@ -25,7 +25,6 @@ function _textNodes(contentEl) {
   return nodes;
 }
 
-// Locate the text node + local index that a global offset into #markdown-body falls at.
 function _nodeAtOffset(contentEl, offset) {
   let pos = 0;
   for (const node of _textNodes(contentEl)) {
@@ -110,7 +109,6 @@ function _getToolbar() {
   cardBtn.textContent = "🖼";
   cardBtn.addEventListener("click", () => {
     // Independent one-shot export - leaves the selection and toolbar untouched
-    // so the user can still highlight or mark the same passage afterward.
     if (_activeRange) exportSelectionAsCard(_activeRange.toString());
   });
   bar.appendChild(cardBtn);
@@ -262,8 +260,7 @@ function _insertMarkerBadge(node, localOffset, entry) {
 /* ─── Re-apply persisted highlights + markers on article load ─── */
 function applyHighlightsAndMarkers(contentEl, wikiId, articlePath) {
   const highlights = Highlights.getAll(wikiId, articlePath);
-  // Apply longest-first / by start offset so earlier wraps don't shift later offsets mid-loop -
-  // each wrap is computed fresh from the DOM so this only matters for overlapping ranges.
+  // Sort by start offset so earlier wraps don't shift later offsets mid-loop
   highlights
     .slice()
     .sort((a, b) => a.start - b.start)
@@ -282,9 +279,7 @@ function applyHighlightsAndMarkers(contentEl, wikiId, articlePath) {
     });
 }
 
-/* ─── Wiring: selection → toolbar, click → remove popover ───
-   #markdown-body persists across article renders (only its innerHTML is replaced), so
-   binding is delegated to document/window once per page load, not once per article. */
+// #markdown-body persists across renders, so binding is delegated to document/window once per page load, not once per article
 let _wired = false;
 
 function _removeHighlight(mark) {

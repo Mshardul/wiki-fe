@@ -118,9 +118,7 @@ function _positionPopover(pop, anchor) {
   pop.style.top = `${top}px`;
 }
 
-/* Tracks currently-rendered glossary terms so a single shared document click
-   listener can close them, instead of registering one document-level
-   listener per term on every article render (unbounded listener growth). */
+// Shared document click listener closes all open terms - avoids one listener per term per render (unbounded growth)
 const _openGlossaryTerms = new Set();
 let _glossaryDocListenerBound = false;
 

@@ -17,8 +17,7 @@ function _vibrate() {
   navigator.vibrate(VIBRATE_MS);
 }
 
-// Short synthesized tick - no asset file, just an oscillator burst with a
-// quick gain envelope so it clicks rather than pops.
+// Short synthesized tick (oscillator burst + gain envelope) - no asset file.
 function _playTick() {
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (!Ctx) return;
@@ -40,10 +39,7 @@ function _playTick() {
   osc.stop(now + TONE_DURATION_S);
 }
 
-// Fires the haptic + sound pair for a study milestone - finishing an article
-// (which also covers clearing a section's last unread, since that's just a
-// read-completion whose section happens to run out of unread siblings).
-// Single settings flag gates both channels.
+// Fires haptic + sound for a study milestone (article finish, or a section's last unread cleared); one settings flag gates both channels.
 function fireStudyMilestone() {
   if (!getSettings().hapticFeedback) return;
   _vibrate();

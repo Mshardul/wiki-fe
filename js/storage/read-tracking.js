@@ -26,9 +26,7 @@ function isRead(path) {
   return getReadSet().has(path);
 }
 
-// Returns true when this call actually transitioned the article to read
-// (false on a redundant call for an already-read article), so callers can
-// tell a real "just finished" event apart from a no-op.
+// Returns true only when this call actually transitioned the article to read, so callers can distinguish a real finish from a no-op.
 function markRead(path) {
   const read = getReadSet();
   if (read.has(path)) return false;
@@ -93,9 +91,7 @@ function getRevealCount(path) {
 }
 
 const ReadToggle = {
-  // Returns true when the toggle just marked the article read (vs. unread),
-  // so callers can react to the "finished" transition without this module
-  // reaching into UI-feedback concerns it doesn't own.
+  // Returns true only on the read transition, so callers can react to "finished" without this module owning UI-feedback concerns.
   toggle() {
     const path = state.currentFilePath;
     if (!path) return false;
@@ -110,8 +106,7 @@ const ReadToggle = {
   },
 };
 
-/* Last-opened timestamp per article - separate from read-set membership so
-   "changed since you last read" can compare against a specific visit date. */
+// Separate from read-set membership so "changed since you last read" can compare against a specific visit date.
 const OPENED_KEY_PREFIX = "wiki-read-dates";
 
 function _openedKey() {
@@ -137,8 +132,7 @@ function getLastOpened(path) {
   return _getOpenedMap()[path] || null;
 }
 
-/* Clears read-set + last-opened dates + quiz reveals - one wiki, or every wiki.
-   No BE call: api.reads has no bulk-clear endpoint, only per-item add/remove. */
+// No BE call: api.reads has no bulk-clear endpoint, only per-item add/remove.
 function clearReadHistory(wikiId) {
   localStorage.removeItem(`${READ_KEY_PREFIX}-${wikiId}`);
   localStorage.removeItem(`${REVEAL_KEY_PREFIX}-${wikiId}`);

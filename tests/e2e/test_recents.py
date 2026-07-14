@@ -43,7 +43,8 @@ def test_recently_visited_chips_appear(page, base_url):
 
 
 def test_recents_scoped_to_wiki(page, base_url):
-    """recents section shows empty state when wiki-recents cleared."""
+    """Regression for WIKI-448: recents section hides entirely (rather than
+    showing a placeholder sentence) when wiki-recents is cleared."""
     _visit_article(page, base_url)
     _go_to_index(page, base_url)
 
@@ -56,8 +57,7 @@ def test_recents_scoped_to_wiki(page, base_url):
     page.reload()
     page.wait_for_selector("#view-index.active", timeout=3_000)
 
-    assert section.is_visible()
-    assert "nothing visited yet" in section.inner_text()
+    assert "hidden" in (section.get_attribute("class") or "")
 
 
 def test_clear_recents_removes_all_chips(page, base_url):
@@ -164,11 +164,11 @@ def test_anon_recent_makes_no_api_call(page, base_url):
 
 
 def test_recents_empty_state_shown(page, base_url):
+    """Regression for WIKI-448: empty recents hides the section entirely."""
     page.goto(base_url)
     page.evaluate("localStorage.removeItem('wiki-recents')")
     page.reload()
     page.locator(".wiki-card").first.click()
-    page.wait_for_selector("#recents-section")
+    page.wait_for_selector("#recents-section", state="attached")
     section = page.locator("#recents-section")
-    assert section.is_visible()
-    assert "nothing visited yet" in section.inner_text()
+    assert "hidden" in (section.get_attribute("class") or "")

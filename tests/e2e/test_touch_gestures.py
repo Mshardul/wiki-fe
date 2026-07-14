@@ -239,6 +239,28 @@ def test_edge_swipe_right_goes_back(mobile_page, base_url):
     page.wait_for_selector("#view-index.active", timeout=5_000)
 
 
+def test_edge_swipe_right_from_index_goes_home(mobile_page, base_url):
+    """Regression for WIKI-439: swipe right from the left edge in the index
+    view (not just content view) navigates back to home."""
+    page = mobile_page
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+
+    _swipe(page, 5, 400, 200, 405)
+    page.wait_for_selector("#view-home.active", timeout=5_000)
+
+
+def test_edge_swipe_right_from_changelog_goes_home(mobile_page, base_url):
+    """Regression for WIKI-439: swipe right from the left edge in the
+    changelog view navigates back to home."""
+    page = mobile_page
+    page.goto(f"{base_url}/#changelog", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-changelog.active", timeout=10_000)
+
+    _swipe(page, 5, 400, 200, 405)
+    page.wait_for_selector("#view-home.active", timeout=5_000)
+
+
 def test_edge_swipe_left_opens_toc(mobile_page, base_url):
     """swipe left from the right edge in content view opens the mobile TOC."""
     page = mobile_page
@@ -293,6 +315,37 @@ def test_swipe_down_from_mid_sheet_closes_prefs(mobile_page, base_url):
     mid_y = MOBILE_VIEWPORT["height"] // 2
     _swipe(page, 195, mid_y, 195, mid_y + 120)
     page.wait_for_function("() => !Settings.isOpen()", timeout=5_000)
+
+
+def test_mobile_toc_survives_small_resize(mobile_page, base_url):
+    """Regression for WIKI-436: a small viewport-height change (like a mobile
+    browser's address bar showing/hiding during ordinary scrolling) must not
+    close the mobile TOC drawer - only a significant width change should."""
+    page = mobile_page
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.locator("#toc-mobile-btn").click()
+    page.wait_for_function(
+        "() => document.getElementById('toc-sidebar').classList.contains('mobile-open')",
+        timeout=5_000,
+    )
+
+    # Address-bar show/hide changes height, not width - same pattern as the
+    # existing widthChangedSignificantly guard already used for the search
+    # modal and Mermaid re-fit two lines below this one in the app.
+    w = MOBILE_VIEWPORT["width"]
+    page.set_viewport_size({"width": w, "height": MOBILE_VIEWPORT["height"] - 80})
+    page.wait_for_timeout(300)  # debounce (150ms) + margin
+    assert page.evaluate(
+        "() => document.getElementById('toc-sidebar').classList.contains('mobile-open')"
+    ), "TOC drawer closed on a height-only resize (no width change)"
+
+    # A genuine width change (real orientation change / rotation) must still close it.
+    page.set_viewport_size({"width": 800, "height": 390})
+    page.wait_for_function(
+        "() => !document.getElementById('toc-sidebar').classList.contains('mobile-open')",
+        timeout=5_000,
+    )
 
 
 def test_search_modal_closes_on_resize(mobile_page, base_url):

@@ -22,8 +22,7 @@ async function isArticleCached(filePath) {
   return !!(await cache.match(filePath));
 }
 
-// wikiId omitted clears every offline download; passed, scopes to that wiki's
-// content path (cache keys are fetched article URLs, e.g. "./content/{wikiId}/...").
+// wikiId omitted clears every offline download; passed, scopes to that wiki's content path.
 async function clearAllDownloads(wikiId) {
   if (!("caches" in window)) return;
   const cache = await caches.open("wiki-articles-v1");

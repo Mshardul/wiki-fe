@@ -91,15 +91,15 @@ def test_anon_bookmark_makes_no_api_call(page, base_url):
 
 
 def test_bookmarks_empty_state_shown(page, base_url):
+    """Regression for WIKI-448: empty bookmarks hides the section entirely
+    (rather than un-hiding with a placeholder sentence)."""
     page.goto(base_url)
     page.evaluate("localStorage.removeItem('wiki-bookmarks')")
     page.reload()
     page.locator(".wiki-card").first.click()
-    page.wait_for_selector("#bookmarks-section")
+    page.wait_for_selector("#bookmarks-section", state="attached")
     section = page.locator("#bookmarks-section")
-    assert section.is_visible()
-    assert "no bookmarks yet" in section.inner_text()
-    assert section.locator("kbd").count() > 0
+    assert "hidden" in (section.get_attribute("class") or "")
 
 
 @pytest.mark.smoke

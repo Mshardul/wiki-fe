@@ -32,8 +32,9 @@ function renderNotesScratchpad(wikiId, articlePath) {
 
   textarea.oninput = () => {
     clearTimeout(_saveTimer);
+    const text = textarea.value;
     _saveTimer = setTimeout(() => {
-      Notes.set(wikiId, articlePath, textarea.value);
+      Notes.set(wikiId, articlePath, text);
     }, 300);
   };
 
