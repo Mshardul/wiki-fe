@@ -173,7 +173,7 @@ def test_login_success_flips_button_to_logout(page, base_url):
         lambda r: r.fulfill(
             status=200,
             content_type="application/json",
-            body='{"user":{"id":1,"email":"a@example.com"}}',
+            body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
         ),
     )
     for path in ("bookmarks", "reads", "recents"):
@@ -191,6 +191,41 @@ def test_login_success_flips_button_to_logout(page, base_url):
     page.locator("#auth-login-submit").click()
     expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
 
+    # bearer token from the login response body must be persisted, since it's
+    # what every subsequent request authenticates with (no cookie anymore).
+    stored = page.evaluate("localStorage.getItem('wiki-session-token')")
+    assert stored == "test-session-token"
+
+
+def test_logout_clears_stored_session_token(page, base_url):
+    """Logout must clear the bearer token from localStorage - otherwise every
+    request after logout keeps sending a dead token and keeps 401ing."""
+    page.route(
+        "**/api/v1/auth/me",
+        lambda r: r.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"user":{"id":1,"email":"a@example.com"}}',
+        ),
+    )
+    page.route("**/api/v1/auth/logout", lambda r: r.fulfill(status=204))
+    for path in ("bookmarks", "reads", "recents"):
+        page.route(
+            f"**/api/v1/{path}",
+            lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
+        )
+    page.add_init_script(
+        "localStorage.setItem('wiki-session-token', 'pre-existing-token')"
+    )
+    page.goto(base_url)
+    expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
+
+    page.locator("#auth-btn-home").click()
+    expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Login")
+
+    stored = page.evaluate("localStorage.getItem('wiki-session-token')")
+    assert stored is None
+
 
 def test_login_submits_on_enter_key(page, base_url):
     """Pressing Enter in the login password field must submit the form -
@@ -201,7 +236,7 @@ def test_login_submits_on_enter_key(page, base_url):
         lambda r: r.fulfill(
             status=200,
             content_type="application/json",
-            body='{"user":{"id":1,"email":"a@example.com"}}',
+            body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
         ),
     )
     for path in ("bookmarks", "reads", "recents"):
@@ -480,9 +515,11 @@ def test_login_syncs_across_tabs(page, base_url):
     open tab (same browser context) without a manual reload - via the
     wiki-session-sync localStorage key + storage-event listener.
 
-    Both tabs share one real session cookie via the browser context, so
-    /auth/me is mocked as stateful (shared `logged_in` flag) to mirror that -
-    a plain per-tab 401 stub would never observe tab1's login."""
+    Both tabs share one real localStorage (same origin, same browser context),
+    so the bearer token tab1's login writes is genuinely visible to tab2 - but
+    /auth/me is still mocked as stateful (shared `logged_in` flag) since tab2's
+    request happens before tab1 has logged in, and a plain per-tab 401 stub
+    would never observe tab1's later login regardless of the token."""
     session = {"logged_in": False}
 
     def _route_common(pg):
@@ -501,7 +538,7 @@ def test_login_syncs_across_tabs(page, base_url):
                 r.fulfill(
                     status=200,
                     content_type="application/json",
-                    body='{"user":{"id":1,"email":"a@example.com"}}',
+                    body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
                 ),
             )[1],
         )
@@ -590,7 +627,7 @@ def test_login_double_click_fires_single_request(page, base_url):
         route.fulfill(
             status=200,
             content_type="application/json",
-            body='{"user":{"id":1,"email":"a@example.com"}}',
+            body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
         )
 
     page.route("**/api/v1/auth/login", _handle_login)

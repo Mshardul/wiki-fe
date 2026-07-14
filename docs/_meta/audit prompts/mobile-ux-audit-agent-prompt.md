@@ -34,10 +34,11 @@ conflicts between modals/topbar/TOC drawer, missing `touch-action`, scroll-locki
 Note anything suspicious as a **hypothesis** — don't log it as confirmed yet.
 
 **Phase 2 — live browser verification:**
-Serve the site locally (same pattern as `tests/conftest.py`'s `base_url` fixture — a plain
-`python3 -m http.server` from the `wiki-fe` root works fine, or reuse the pytest fixture if
-easier). Use the Playwright MCP tools (`browser_navigate`, `browser_resize`,
-`browser_snapshot`/`browser_take_screenshot`, `browser_click`, `browser_evaluate`, etc.) to:
+Serve the site locally. Run `python3 -m http.server` in the background (check if the port is already in use first, or choose a free port) from the `wiki-fe` root, or reuse an existing active test server.
+
+When invoking Playwright MCP tools, ensure the browser context is configured to emulate a mobile device if possible (specifically set/ensure `isMobile: true` and `hasTouch: true`). This is crucial because standard mouse clicks won't trigger touch-specific event listeners and might keep CSS `:hover` states active, which behaves differently from actual touch screen releases.
+
+Use the Playwright MCP tools (`browser_navigate`, `browser_resize`, `browser_snapshot`/`browser_take_screenshot`, `browser_click`, `browser_evaluate`, etc.) to:
 
 1. Load each page/view.
 2. Resize to each viewport in the matrix below.
@@ -68,8 +69,13 @@ software keyboard).
 
 Also test **orientation change**: for at least the 375px and 393px profiles, resize to the
 landscape dimensions too (e.g. 667×375, 852×393) and re-check modals, TOC drawer, and sticky
-header — landscape phone height is the classic case where fixed-height/sticky elements eat the
+header. Landscape phone height is the classic case where fixed-height/sticky elements eat the
 whole viewport.
+
+Also assess **landscape keyboard vertical space constraints**: simulate/evaluate how input fields,
+search results, and actions behave when vertical height is severely restricted (e.g. simulated height
+of 250px) to mimic the presence of an on-screen keyboard. Ensure modals remain scrollable and
+crucial buttons aren't pushed permanently off-screen or covered by layout wrappers.
 
 ## Pages / components checklist
 
@@ -118,11 +124,15 @@ grep blindly.
 12. **Responsive breakpoints themselves** — read `css/responsive.css` end-to-end as its own pass;
     cross-check every breakpoint against the 4 viewports above for gaps (e.g. a rule that kicks in
     at 400px leaves 360–399px unstyled).
-13. **Safe-area-insets** — grep for `env(safe-area-inset` / `viewport-fit=cover` in CSS and
-    `index.html`. If absent, flag every fixed-position edge-hugging element (topbar, bottom sheet,
-    TOC drawer, toast, sticky footer) as a hypothesis for notch/home-indicator overlap on iPhone;
-    note as a limitation that Playwright can't truly simulate a notched device, so this is a
-    code-read finding, not a live-verified one.
+13. **Safe-area-insets & Viewport Meta** — grep for `env(safe-area-inset` / `viewport-fit=cover` in CSS
+    and `index.html`.
+    - Check if `<meta name="viewport">` has `viewport-fit=cover` and correct sizing declarations. If absent,
+      flag every fixed-position edge-hugging element (topbar, bottom sheet, TOC drawer, toast, sticky footer)
+      as a hypothesis for notch/home-indicator overlap on iPhone; note as a limitation that Playwright can't
+      truly simulate a notched device, so this is a code-read finding, not a live-verified one.
+    - Check for iOS input auto-zoom: Verify that all text input fields, textareas, and select elements
+      have a computed/defined `font-size` of at least `16px` on mobile screens. If any are under `16px`,
+      flag them as causing unwanted page auto-zoom on iOS focus.
 14. **Text zoom / OS font-scaling** — use `browser_evaluate` to set
     `document.documentElement.style.fontSize` (or zoom) to simulate 150%/200% OS text-size boost,
     at 360px and 393px. Check for text/button overlap, truncated labels, modal content pushed

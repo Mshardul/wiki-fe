@@ -106,8 +106,11 @@ Scroll position stays **local-only** (ephemeral, device-specific, capped at 50) 
 ## Session model
 
 - **Server sessions** (opaque random token), **not JWT** - instant revoke/logout, simpler, per-request DB lookup is free on local SQLite. JWT is overkill at this scale.
-- Cookie name `session`: **httpOnly + Secure + SameSite=None** (None required - FE and BE are different domains; forces Secure).
-- Lifetime: **30-day sliding** (renewed on activity). Token stored hashed (sha256) in `sessions`.
+- **Bearer token.** Delivered as `session_token` in the login/reset-password JSON body; FE stores it in `localStorage` and sends it as `Authorization: Bearer <token>` on every request. Superseded the original `httpOnly + Secure + SameSite=None` cookie design (see below).
+- Lifetime: **30-day sliding** (renewed on activity). Token stored hashed (sha256) in `sessions` - unchanged by the cookie→bearer switch, only the delivery channel changed.
+- **CSRF double-submit cookie/header is gone.** It defended against the browser auto-attaching a cookie to a cross-site request; a bearer token in `localStorage` is never auto-attached, so that attack no longer applies.
+
+**Why bearer, not cookie (historical):** the original design used a cross-site cookie (`SameSite=None; Secure`, required because FE on GitHub Pages and BE on Render are different domains). In production this was confirmed blocked/evicted by Safari's "Prevent cross-site tracking" (ITP) - login would succeed server-side but the cookie never rode on subsequent requests, so the user appeared logged out immediately. Fixing this required either putting both apps under one registrable domain (ruled out - no custom domain owned, staying on GitHub Pages + Render) or dropping cookies for session auth. Chose the latter.
 
 ---
 
@@ -139,12 +142,13 @@ Base path `/api/v1`. All JSON.
 
 1. **Register** `POST /auth/register {email, password}` → hash (bcrypt/argon2) → user `email_verified=0` → create verification token → send Resend email. `201`. Dup email → `409`.
 2. **Verify** `GET /auth/verify?token=…` → validate (not expired, not used) → `email_verified=1`, set `used_at` → **redirect to FE home** (vertical cards). Bad token → `400`.
-3. **Login** `POST /auth/login {email, password}` → check hash → reject if unverified (`403`) → create session, set cookie. `200 {user:{id,email}}`. Bad creds → `401`.
-4. **Logout** `POST /auth/logout` → delete session row, clear cookie. `204`.
-5. **Me** `GET /auth/me` → `200 {user:{id,email}}` if valid session, else `401`. FE calls on load to know logged-in state.
+3. **Login** `POST /auth/login {email, password}` → check hash → reject if unverified (`403`) → create session. `200 {user:{id,email}, session_token}`. Bad creds → `401`.
+4. **Logout** `POST /auth/logout` → delete session row for the bearer token (missing/invalid token is a no-op, not an error - stays idempotent). `204`.
+5. **Me** `GET /auth/me` → `200 {user:{id,email}}` if valid bearer token, else `401`. FE calls on load (only if a token is stored) to know logged-in state.
 6. **Resend verification** `POST /auth/resend-verification {email}` → if account exists and unverified, issue fresh token + send email. `200` (generic, regardless). Safety net for failed async sends.
+7. **Reset password** `POST /auth/reset-password {token, password}` → consume reset token, set new password, create session (same as login). `200 {user:{id,email}, session_token}`. Bad/used token → `400`.
 
-**Session middleware:** cookie → sha256 → lookup `sessions` → check expiry → load user → slide expiry → attach to request. Required on all sync routes.
+**Session middleware:** `Authorization: Bearer <token>` header → sha256 → lookup `sessions` → check expiry → load user → slide expiry → attach to request. Required on all sync routes.
 
 **Rate limiting:** skipped v0. Basic in-app limiter (login/register) targeted for **v2**; ongoing hardening track.
 
@@ -206,11 +210,12 @@ POST   /api/v1/sync/import    {bookmarks[], reads[], recents[]}  → 200 {merged
 
 The BE URL is public; real protection = these invariants, gated automatically so they can't regress.
 
-**1. CORS never wildcard-with-credentials**
+**1. CORS credentials always off**
 
-- BE unit test: assert `allow_origins != ["*"]` and not (`"*"` in origins and `allow_credentials=True`).
+- No cookie crosses the FE/BE boundary (bearer-token auth) - `allow_credentials` must always be `False`, which also makes wildcard-with-credentials structurally impossible.
+- BE unit test: assert `allow_credentials is False` and `allow_origins != ["*"]`.
 - BE integration test: send request with a forbidden `Origin` → assert it's NOT reflected in `Access-Control-Allow-Origin`.
-- CORS comes only from our FastAPI app (Fly injects none) → the integration test catches it regardless of source.
+- CORS comes only from our FastAPI app → the integration test catches it regardless of source.
 
 **2. No secrets in either repo**
 
@@ -220,8 +225,8 @@ The BE URL is public; real protection = these invariants, gated automatically so
 
 **3. HTTPS-only (prod)**
 
-- BE: `HTTPSRedirectMiddleware` + cookie `Secure=True`, both **prod-gated** (`ENV=prod`) so local http dev still works. Fly terminates TLS (free HTTPS).
-- Test: assert cookie carries `Secure`; assert redirect middleware enabled in prod config.
+- BE: `HTTPSRedirectMiddleware`, **prod-gated** (`ENV=prod`) so local http dev still works.
+- Test: assert redirect middleware enabled in prod config.
 
 **Test homes:** new `wiki-be/tests/` (mirrors FE `tests/` layout); BE security tests in `wiki-be/tests/test_security.py` (counterpart to FE `tests/e2e/test_security.py`). Both repos run **pre-commit** tool (`.pre-commit-config.yaml`) - not identical (language/framework differ) but mirror each other's intent; add to FE too if absent.
 

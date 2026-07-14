@@ -1,4 +1,4 @@
-import { ApiError, api } from "./api.js";
+import { ApiError, api, getSessionToken, setSessionToken } from "./api.js";
 import { showToast } from "./render/toast.js";
 import { WIKIS, state } from "./state.js";
 import { getBookmarks } from "./storage/bookmarks.js";
@@ -219,14 +219,19 @@ function _broadcastSessionChange() {
 const Auth = {
   _pendingResetToken: null,
 
-  // Called once on app boot (real page load only). One GET /auth/me.
+  // Called once on app boot (real page load only). One GET /auth/me - skipped
+  // entirely if no token is stored, since that's definitely anonymous.
   async init() {
-    try {
-      const data = await api.auth.me();
-      state.session = { user: data.user, status: "in" };
-      await Sync.pullAll();
-      document.dispatchEvent(new CustomEvent("wiki:session-changed"));
-    } catch {
+    if (getSessionToken()) {
+      try {
+        const data = await api.auth.me();
+        state.session = { user: data.user, status: "in" };
+        await Sync.pullAll();
+        document.dispatchEvent(new CustomEvent("wiki:session-changed"));
+      } catch {
+        state.session = { user: null, status: "out" };
+      }
+    } else {
       state.session = { user: null, status: "out" };
     }
     this.refreshButtons();
@@ -255,6 +260,7 @@ const Auth = {
   async login(email, password) {
     try {
       const data = await api.auth.login(email, password);
+      setSessionToken(data.session_token);
       state.session = { user: data.user, status: "in" };
       AuthModal.close();
       this.refreshButtons();
@@ -353,6 +359,7 @@ const Auth = {
     try {
       const data = await api.auth.resetPassword(token, password);
       this._pendingResetToken = null;
+      setSessionToken(data.session_token);
       state.session = { user: data.user, status: "in" };
       AuthModal.close();
       this.refreshButtons();
@@ -397,6 +404,7 @@ const Auth = {
     // B-lite: best-effort flush, then clear + logout regardless of result.
     await Sync.flushBestEffort().catch(() => {});
     await api.auth.logout().catch(() => {});
+    setSessionToken(null);
     state.session = { user: null, status: "out" };
     Sync.clearUserDataCache();
     this.refreshButtons();

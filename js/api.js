@@ -19,6 +19,31 @@ let _sessionExpiredFired = false;
 
 const _DEFAULT_TIMEOUT_MS = 15000;
 
+// Bearer session token. Owned here (not auth.js) since api.js is the only
+// thing that needs to read it to attach the Authorization header; auth.js
+// writes it via setSessionToken() on login/reset/logout.
+const SESSION_TOKEN_KEY = "wiki-session-token";
+
+function getSessionToken() {
+  try {
+    return localStorage.getItem(SESSION_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setSessionToken(token) {
+  try {
+    if (token) {
+      localStorage.setItem(SESSION_TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(SESSION_TOKEN_KEY);
+    }
+  } catch {
+    /* storage unavailable (private mode etc.) - session won't persist */
+  }
+}
+
 async function _request(
   method,
   path,
@@ -27,12 +52,14 @@ async function _request(
 ) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const token = getSessionToken();
+  const headers = body ? { "Content-Type": "application/json" } : {};
+  if (token) headers.Authorization = `Bearer ${token}`;
   let res;
   try {
     res = await fetch(`${API}${path}`, {
       method,
-      credentials: "include",
-      headers: body ? { "Content-Type": "application/json" } : undefined,
+      headers,
       body: body ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     });
@@ -48,9 +75,11 @@ async function _request(
   if (res.status === 401 && !silent401) {
     // silent401 routes (boot probe, login) handle their own 401 below via the
     // normal envelope parse. Everything else: a 401 means the session expired
-    // mid-use → global staleness handler (Option A), fired once.
+    // mid-use → clear the dead token (else every future request 401s again),
+    // global staleness handler (Option A), fired once.
     if (!_sessionExpiredFired) {
       _sessionExpiredFired = true;
+      setSessionToken(null);
       state.session = { user: null, status: "out" };
       document.dispatchEvent(new CustomEvent("wiki:session-expired"));
     }
@@ -117,4 +146,4 @@ const api = {
   importAll: (payload) => api.post("/sync/import", payload),
 };
 
-export { api, ApiError, BACKEND_URL };
+export { api, ApiError, BACKEND_URL, getSessionToken, setSessionToken };
