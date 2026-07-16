@@ -156,6 +156,9 @@ document.addEventListener("click", (e) => {
     case "changelog-open":
       navigate("changelog");
       break;
+    case "offline-shelf-open":
+      navigate("offline");
+      break;
     case "read-toggle": {
       if (ReadToggle.toggle()) fireStudyMilestone();
       break;

@@ -150,6 +150,13 @@
           </button>
           <button
             class="topbar-icon-btn"
+            title="Offline Shelf"
+            data-action="offline-shelf-open"
+          >
+            <svg class="icon"><use href="#icon-download"></use></svg>
+          </button>
+          <button
+            class="topbar-icon-btn"
             title="Search (⌘K)"
             data-action="search-open"
           >
@@ -566,6 +573,42 @@
           />
         </div>
         <div id="changelog-groups" class="changelog-groups"></div>
+      </main>
+    </div>
+
+    <!-- ══════════════════════════════════════
+       VIEW 5 - OFFLINE SHELF
+  ══════════════════════════════════════ -->
+    <div id="view-offline-shelf" class="view">
+      <div class="page-topbar">
+        <div class="topbar-inner">
+          <button class="back-btn" data-action="wiki-home">
+            <svg class="icon"><use href="#icon-chevron-left"></use></svg>
+            Home
+          </button>
+          <nav
+            id="offline-shelf-breadcrumb"
+            class="breadcrumb"
+            aria-label="Breadcrumb"
+          ></nav>
+          <button
+            class="topbar-icon-btn"
+            title="Preferences (,)"
+            data-action="settings-open"
+          >
+            <svg class="icon"><use href="#icon-settings"></use></svg>
+          </button>
+        </div>
+      </div>
+      <div class="page-hero">
+        <div class="page-hero-inner">
+          <h1 class="page-title">Offline Shelf</h1>
+          <p class="page-subtitle">Articles saved for offline reading</p>
+          <span id="offline-shelf-status" class="offline-shelf-status"></span>
+        </div>
+      </div>
+      <main class="offline-shelf-main">
+        <div id="offline-shelf-groups" class="offline-shelf-groups"></div>
       </main>
     </div>
 

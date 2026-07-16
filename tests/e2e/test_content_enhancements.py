@@ -2769,6 +2769,50 @@ def test_removing_marker_via_popover(page, base_url):
     assert remaining == 0, "Marker entry still present in localStorage after removal"
 
 
+def test_highlight_reanchors_after_upstream_edit_shifts_offsets(page, base_url):
+    """An upstream edit shifts a highlight's stored offset; reload re-anchors via snippet match."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reanchor")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-toolbar-btn--highlight").click()
+    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
+
+    edited = ARTICLE_FOR_HIGHLIGHTS.replace(
+        "This is a paragraph",
+        "This is now a much longer edited paragraph",
+    )
+    page.evaluate("() => sessionStorage.clear()")
+    _load_mock_article(page, base_url, edited, slug="hl-reanchor")
+    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
+    assert page.locator("#markdown-body .wiki-highlight").first.inner_text() == "selectable"
+
+
+def test_highlight_dropped_with_toast_when_snippet_no_longer_found(page, base_url):
+    """When highlighted text is removed entirely, the stale entry is dropped (not misplaced) and toasted."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-drop")
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-toolbar-btn--highlight").click()
+    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
+
+    edited = ARTICLE_FOR_HIGHLIGHTS.replace(
+        "some selectable text", "completely different words"
+    )
+    page.evaluate("() => sessionStorage.clear()")
+    _load_mock_article(page, base_url, edited, slug="hl-drop")
+    page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
+    assert page.locator("#markdown-body .wiki-highlight").count() == 0
+
+    remaining = page.evaluate(
+        """() => {
+            const key = Object.keys(localStorage).find(k => k.startsWith('wiki-highlights-'));
+            if (!key) return 0;
+            return JSON.parse(localStorage.getItem(key)).length;
+        }"""
+    )
+    assert remaining == 0, "Stale highlight entry should be dropped from storage, not kept"
+
+
 def test_highlight_toolbar_buttons_are_keyboard_labeled(page, base_url):
     """Every toolbar button (highlight + 6 emoji + save-as-card) has a discernible aria-label."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-toolbar-a11y")

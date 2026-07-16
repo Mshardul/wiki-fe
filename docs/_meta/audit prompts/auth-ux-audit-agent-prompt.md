@@ -48,7 +48,8 @@ Work through these in order, as a first-time user would — narrate the step to 
 
 ## Output file
 
-Log to **`docs/_meta/auth-ux-audit.md`** (create if absent). Two-stage write pattern so nothing is ever lost mid-run, but the final file stays organized:
+Log to **`docs/_meta/audit-reports/auth-ux-audit - YYYYMMDD.md`** (today's date; create the file
+and, if absent, the `audit-reports/` directory). Two-stage write pattern so nothing is ever lost mid-run, but the final file stays organized:
 
 - **As you find each issue**, immediately append it as a flat entry under a top-level `## Raw log` section at the bottom of the file (create on first write). Do this the moment you find it — do not batch findings in memory and write at the end.
 - **Periodically (after finishing each numbered journey-checklist item above)**, move that item's raw-log entries up into a proper section for that step under `## Findings by flow step`, sorted critical → major → minor within the section, and delete them from the raw log. This keeps the raw log as a safety net only, and the top of the file as the organized, fixable output.

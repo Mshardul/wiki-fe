@@ -1,0 +1,79 @@
+/* ═══════════════════════════════════════════════
+   VIEW - OFFLINE SHELF
+   ═══════════════════════════════════════════════ */
+.offline-shelf-status {
+  display: inline-block;
+  margin-top: var(--s2);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.offline-shelf-status--offline {
+  color: var(--accent-light);
+}
+
+.offline-shelf-main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--s8) var(--s6) var(--s20);
+}
+
+.offline-shelf-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s8);
+}
+
+.offline-shelf-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.offline-shelf-wiki-title {
+  font-size: var(--text-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--text-heading);
+}
+
+.offline-shelf-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.offline-shelf-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r);
+  background: var(--surface-2);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--text-body);
+}
+.offline-shelf-entry:hover,
+.offline-shelf-entry:focus-visible {
+  background: var(--surface-hover);
+}
+.offline-shelf-entry .icon {
+  color: var(--accent-light);
+}
+
+.offline-shelf-empty {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Uncached-while-offline dimming on wiki index cards - distinct from
+   .index-card--unavailable (stub/not-written), which this must not collide with. */
+.index-card--offline-uncached {
+  opacity: 0.45;
+}
+.index-card--offline-uncached::after {
+  content: "Not downloaded";
+  display: block;
+  margin-top: var(--s1);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}

@@ -34,6 +34,23 @@ async function clearAllDownloads(wikiId) {
   }
 }
 
+// Returns cached article paths as { [wikiId]: filePath[] }, matching state.currentFilePath's format.
+async function listCachedArticlePaths() {
+  if (!("caches" in window)) return {};
+  const cache = await caches.open("wiki-articles-v1");
+  const requests = await cache.keys();
+  const byWiki = {};
+  for (const req of requests) {
+    const path = new URL(req.url).pathname;
+    const match = path.match(/\/content\/([^/]+)\/(.+\.md)$/);
+    if (!match) continue;
+    const [, wikiId, rest] = match;
+    if (!byWiki[wikiId]) byWiki[wikiId] = [];
+    byWiki[wikiId].push(`content/${wikiId}/${rest}`);
+  }
+  return byWiki;
+}
+
 async function updateOfflineBtn() {
   const btn = document.getElementById("prefs-offline-toggle");
   if (!btn || !state.currentFilePath) return;
@@ -70,4 +87,5 @@ export {
   updateOfflineBtn,
   Offline,
   clearAllDownloads,
+  listCachedArticlePaths,
 };

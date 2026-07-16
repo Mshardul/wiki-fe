@@ -4,6 +4,7 @@ import { renderChangelog } from "./changelog-view.js";
 import { renderContent } from "./content-view.js";
 import { fetchWikiIndex, renderHome, renderIndex } from "./home-index.js";
 import { updatePageTitle } from "./nav-utils.js";
+import { renderOfflineShelf } from "./offline-view.js";
 import { showToast } from "./toast.js";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -11,7 +12,13 @@ import { showToast } from "./toast.js";
    ═══════════════════════════════════════════════════════════════ */
 const progressBar = document.getElementById("reading-progress");
 
-const VIEW_DEPTH = { "view-home": 0, "view-index": 1, "view-content": 2, "view-changelog": 1 };
+const VIEW_DEPTH = {
+  "view-home": 0,
+  "view-index": 1,
+  "view-content": 2,
+  "view-changelog": 1,
+  "view-offline-shelf": 1,
+};
 let _lastViewDepth = null; // null = no prior view this session yet (boot render)
 const _reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -98,6 +105,11 @@ function _execRoute(hash) {
   if (wikiId === "changelog") {
     updatePageTitle("Changelog");
     renderChangelog();
+    return;
+  }
+  if (wikiId === "offline") {
+    updatePageTitle("Offline Shelf");
+    renderOfflineShelf();
     return;
   }
 

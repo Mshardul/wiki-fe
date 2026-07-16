@@ -10,6 +10,7 @@
 @import "./view-home.css";
 @import "./view-index.css";
 @import "./view-changelog.css";
+@import "./view-offline.css";
 @import "./view-content/layout.css";
 @import "./view-content/code.css";
 @import "./view-content/mermaid.css";

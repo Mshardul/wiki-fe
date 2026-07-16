@@ -150,7 +150,8 @@ grep blindly.
 
 ## Output file
 
-Log to **`docs/_meta/mobile-ux-audit.md`** (create if absent). Two-stage write pattern so nothing
+Log to **`docs/_meta/audit-reports/mobile-ux-audit - YYYYMMDD.md`** (today's date; create the file
+and, if absent, the `audit-reports/` directory). Two-stage write pattern so nothing
 is ever lost mid-run, but the final file stays organized:
 
 - **As you find each issue**, immediately append it as a flat entry under a top-level `## Raw log`

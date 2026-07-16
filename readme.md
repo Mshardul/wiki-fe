@@ -109,3 +109,20 @@ DS and algorithms are intertwined, so they live in **one combined vertical**, no
 **What sets DSA apart from System Design:** every article carries an interview spine - explicit complexity, a clean pseudocode + idiomatic Python pair, and a spoken "soundbite". Pattern articles add **recognition signals** (literal trigger phrases → which pattern) that the rest of the vertical cross-links into.
 
 **Backlog (high level):** P0 = 21 foundation articles (8 DS, 7 algorithms, 6 patterns) everything else links back to; P1 builds on P0 (graphs, advanced patterns); the pattern-selection cheat sheet ships **last** since it aggregates every pattern's trigger phrases. Build order: DS → algorithms → patterns, in dependency order.
+
+---
+
+## Periodic maintenance
+
+Files that don't update themselves - review/update these on a recurring basis, not just when a
+ticket touches them:
+
+| File                                                                                 | Update when                                                                                      |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `docs/_meta/audit prompts/auth-ux-audit-agent-prompt.md`                              | Auth flow/UI changes meaningfully - keep journey checklist matching real steps                    |
+| `docs/_meta/audit prompts/mobile-ux-audit-agent-prompt.md`                            | New page/component added, or viewport/breakpoint strategy changes                                 |
+| `docs/_meta/audit prompts/ui-components-audit-agent-prompt.md`                        | New JS component added/removed - update component roster (31 currently); known interaction points list needs manual review as new components are added |
+| `docs/_meta/audit prompts/codebase-quality-audit-agent-prompt.md`                     | Rare - only if module layout or shared-helper conventions change structurally                      |
+
+Run audits periodically (no fixed cadence yet - ad hoc). Each run's output is a **new dated file**
+under `docs/_meta/audit-reports/` (`{name} - YYYYMMDD.md`) - never overwrite a prior run's file.

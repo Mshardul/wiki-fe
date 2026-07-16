@@ -1,4 +1,5 @@
 import { exportSelectionAsCard } from "./freeze-frame.js";
+import { showToast } from "../render/toast.js";
 import { Highlights, MARKER_EMOJIS, Markers } from "../storage/highlights.js";
 import { state } from "../state.js";
 
@@ -257,15 +258,51 @@ function _insertMarkerBadge(node, localOffset, entry) {
   }
 }
 
+/* ─── Stale-offset detection + re-anchoring ───
+   Markdown edits upstream of a stored offset shift every downstream index. Before
+   trusting a stored offset, verify the article's current textContent still has the
+   stored snippet at that position; if not, search a bounded window around it and
+   re-anchor there. If the snippet isn't found nearby either, the entry is dropped
+   rather than silently misplaced. */
+const REANCHOR_SEARCH_WINDOW = 2000;
+
+function _snippetMatchesAt(fullText, offset, snippet) {
+  return snippet && fullText.slice(offset, offset + snippet.length) === snippet;
+}
+
+// Returns the offset where `snippet` was found near `offset`, or -1 if not found nearby.
+function _findNearbyOffset(fullText, offset, snippet) {
+  if (!snippet) return -1;
+  const from = Math.max(0, offset - REANCHOR_SEARCH_WINDOW);
+  const to = Math.min(fullText.length, offset + REANCHOR_SEARCH_WINDOW);
+  const window = fullText.slice(from, to);
+  const localIdx = window.indexOf(snippet);
+  return localIdx === -1 ? -1 : from + localIdx;
+}
+
 /* ─── Re-apply persisted highlights + markers on article load ─── */
 function applyHighlightsAndMarkers(contentEl, wikiId, articlePath) {
+  const fullText = contentEl.textContent;
+  let dropped = 0;
+
   const highlights = Highlights.getAll(wikiId, articlePath);
   // Sort by start offset so earlier wraps don't shift later offsets mid-loop
   highlights
     .slice()
     .sort((a, b) => a.start - b.start)
     .forEach((h) => {
-      const range = _rangeFromOffsets(contentEl, h.start, h.end);
+      let { start, end } = h;
+      if (!_snippetMatchesAt(fullText, start, h.snippet)) {
+        const found = _findNearbyOffset(fullText, start, h.snippet);
+        if (found === -1) {
+          Highlights.remove(wikiId, articlePath, h.id);
+          dropped++;
+          return;
+        }
+        start = found;
+        end = found + h.snippet.length;
+      }
+      const range = _rangeFromOffsets(contentEl, start, end);
       if (range && !range.collapsed) _wrapRangeInMark(range, h.id);
     });
 
@@ -274,9 +311,25 @@ function applyHighlightsAndMarkers(contentEl, wikiId, articlePath) {
     .slice()
     .sort((a, b) => a.offset - b.offset)
     .forEach((m) => {
-      const hit = _nodeAtOffset(contentEl, m.offset);
+      let offset = m.offset;
+      if (!_snippetMatchesAt(fullText, offset, m.snippet)) {
+        const found = _findNearbyOffset(fullText, offset, m.snippet);
+        if (found === -1) {
+          Markers.remove(wikiId, articlePath, m.id);
+          dropped++;
+          return;
+        }
+        offset = found;
+      }
+      const hit = _nodeAtOffset(contentEl, offset);
       if (hit) _insertMarkerBadge(hit.node, hit.localOffset, m);
     });
+
+  if (dropped > 0) {
+    showToast(
+      `${dropped} highlight${dropped > 1 ? "s" : ""}/marker${dropped > 1 ? "s" : ""} couldn't be relocated after edits and were removed`,
+    );
+  }
 }
 
 // #markdown-body persists across renders, so binding is delegated to document/window once per page load, not once per article

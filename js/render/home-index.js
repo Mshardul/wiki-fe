@@ -11,6 +11,7 @@ import {
   updatedDateCache,
 } from "../state.js";
 import { Bookmarks, renderBookmarksSection } from "../storage/bookmarks.js";
+import { listCachedArticlePaths } from "../storage/offline.js";
 import { getLastOpened, isRead, markRead, markUnread } from "../storage/read-tracking.js";
 import { renderRecentsSection } from "../storage/recents.js";
 import { toggleCollapse } from "../storage/scroll-collapse.js";
@@ -144,6 +145,8 @@ async function renderIndex(wiki) {
     attachIndexCardKeyNav();
     attachIndexCardHoverPreview();
     IndexFilter.apply();
+    _wireOfflineDimming();
+    applyOfflineDimming(wiki);
 
     const savedScroll = localStorage.getItem(`wiki-index-scroll-${wiki.id}`);
     const targetY = savedScroll ? Number.parseInt(savedScroll, 10) : null;
@@ -222,6 +225,45 @@ function renderIndexSections(sections, wiki) {
   `;
     })
     .join("");
+}
+
+// Dims index cards whose article isn't cached for offline reading - only meaningful
+// while offline, so it's a no-op (and clears any prior dimming) when online.
+async function applyOfflineDimming(wiki) {
+  const container = document.getElementById("index-sections");
+  if (!container) return;
+
+  if (!navigator.onLine) {
+    const byWiki = await listCachedArticlePaths();
+    const cached = new Set(byWiki[wiki.id] || []);
+    container.querySelectorAll(".index-card[onclick]").forEach((card) => {
+      const path = card.querySelector(".index-card-read-time[data-path]")?.dataset.path;
+      const normalized = path ? normalizePath(path) : null;
+      card.classList.toggle(
+        "index-card--offline-uncached",
+        !!normalized && !cached.has(normalized),
+      );
+    });
+  } else {
+    container
+      .querySelectorAll(".index-card--offline-uncached")
+      .forEach((card) => card.classList.remove("index-card--offline-uncached"));
+  }
+}
+
+// Re-resolves the wiki from state.currentWikiId at fire time (not closed over) so
+// switching between wiki indexes doesn't leave a stale listener dimming the wrong wiki.
+let _offlineDimWired = false;
+function _wireOfflineDimming() {
+  if (_offlineDimWired) return;
+  _offlineDimWired = true;
+  const reapply = () => {
+    if (state.currentView !== "index") return;
+    const wiki = WIKIS.find((w) => w.id === state.currentWikiId);
+    if (wiki) applyOfflineDimming(wiki);
+  };
+  window.addEventListener("online", reapply);
+  window.addEventListener("offline", reapply);
 }
 
 function renderIndexControls(wiki) {
