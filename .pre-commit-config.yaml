@@ -45,6 +45,16 @@ repos:
         types: [markdown]
         pass_filenames: true
 
+  # ── SW cache version (content-hash bump, so a missed manual bump can't ship stale cache) ─
+  - repo: local
+    hooks:
+      - id: bump-cache-version
+        name: bump ARTICLE_CACHE version from content/ hash
+        language: system
+        entry: python3 scripts/bump_cache_version.py
+        files: '^content/.*\.md$'
+        pass_filenames: false
+
   # ── Hygiene ─────────────────────────────────────────────────────────────────
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

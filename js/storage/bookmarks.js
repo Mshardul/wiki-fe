@@ -1,5 +1,5 @@
 import { api } from "../api.js";
-import { WIKIS, escHtml, state } from "../state.js";
+import { WIKIS, escHtml, sequencedMutation, state } from "../state.js";
 
 function _loggedIn() {
   return state.session?.status === "in";
@@ -24,13 +24,15 @@ function saveBookmarks(arr) {
     const prevKeys = new Set(prev.map((b) => `${b.wikiId}|${b.path}`));
     const nextKeys = new Set(arr.map((b) => `${b.wikiId}|${b.path}`));
     for (const b of arr) {
-      if (!prevKeys.has(`${b.wikiId}|${b.path}`)) {
-        api.bookmarks.add(b.wikiId, b.path).catch(() => {});
+      const key = `${b.wikiId}|${b.path}`;
+      if (!prevKeys.has(key)) {
+        sequencedMutation(key, () => api.bookmarks.add(b.wikiId, b.path)).catch(() => {});
       }
     }
     for (const b of prev) {
-      if (!nextKeys.has(`${b.wikiId}|${b.path}`)) {
-        api.bookmarks.remove(b.wikiId, b.path).catch(() => {});
+      const key = `${b.wikiId}|${b.path}`;
+      if (!nextKeys.has(key)) {
+        sequencedMutation(key, () => api.bookmarks.remove(b.wikiId, b.path)).catch(() => {});
       }
     }
   }
@@ -42,10 +44,11 @@ function isBookmarked(path) {
 }
 
 function updateBookmarkBtn() {
-  const btn = document.getElementById("content-bookmark-btn");
+  const btn = document.getElementById("prefs-bookmark-toggle");
   if (!btn) return;
   const bookmarked = isBookmarked(state.currentFilePath);
   btn.classList.toggle("active", bookmarked);
+  btn.setAttribute("aria-pressed", String(bookmarked));
   btn.title = bookmarked ? "Remove bookmark" : "Bookmark";
 }
 

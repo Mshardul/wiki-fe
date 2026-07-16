@@ -33,8 +33,8 @@ test: ## Run the e2e test suite (headless)
 test-smoke: ## Run smoke subset only (fast dev-loop)
 	$(PYTEST) tests/ -q -m smoke
 
-test-parallel: ## Run tests in parallel (N=<number of processes>, default: auto)
-	$(PYTEST) tests/ -q -n $${N:-auto}
+test-parallel: ## Run tests in parallel (N=<number of processes>, default: cores - 2)
+	$(PYTEST) tests/ -q -n $${N:-$$($(PY) -c "import os; print(max(1, (os.cpu_count() or 2) - 2))")}
 
 test-headed: ## Run tests with a visible browser
 	$(PYTEST) tests/ --headed

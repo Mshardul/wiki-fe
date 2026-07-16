@@ -14,6 +14,8 @@
   "content": [
     { "keys": ["B"], "description": "Toggle bookmark" },
     { "keys": ["F"], "description": "Toggle focus mode" },
+    { "keys": ["H"], "description": "Toggle study mode" },
+    { "keys": ["I"], "description": "Toggle interview mode" },
     { "keys": ["D"], "description": "Distraction-free mode" },
     { "keys": ["Q"], "description": "Quiz mode" },
     { "keys": ["T"], "description": "Focus table of contents" },
@@ -22,8 +24,15 @@
     { "keys": ["="], "description": "Increase font size" },
     { "keys": ["-"], "description": "Decrease font size" }
   ],
+  "search": [
+    { "keys": ["↑ / ↓"], "description": "Move between results" },
+    { "keys": ["Enter"], "description": "Open selected result" },
+    { "keys": [">"], "description": "Filter results to one section (type > then a section name)" }
+  ],
   "touch": [
-    { "keys": ["Swipe right"], "description": "Go back (from article)" },
+    { "keys": ["Swipe right from edge"], "description": "Go back (article → wiki index, index/changelog → home)" },
+    { "keys": ["Swipe left from edge"], "description": "Open table of contents (article view)" },
+    { "keys": ["Swipe down"], "description": "Dismiss open panel or preview sheet" },
     { "keys": ["Swipe on card"], "description": "Reveal card actions (home / index)" },
     { "keys": ["Long-press link"], "description": "Peek preview in bottom sheet" },
     { "keys": ["⋯ button"], "description": "More article actions (topbar)" },

@@ -2,6 +2,7 @@ import hashlib
 import json
 import threading
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -161,6 +162,22 @@ def base_url():
 
     class Server(ThreadingHTTPServer):
         daemon_threads = True
+        # Default backlog is 5 - a browser resolving app.js's ~30-module import
+        # graph fires that many requests near-simultaneously, and anything past
+        # the backlog queues (or drops) until a thread frees up. Over a
+        # multi-hundred-test session that's enough contention to occasionally
+        # stall a single request past an 8s test timeout.
+        request_queue_size = 128
+
+        # ThreadingMixIn.process_request spawns a brand-new, unbounded thread
+        # per request. Across a full session (45 JS modules x every test that
+        # navigates) that's tens of thousands of thread creations, and thread-
+        # spawn churn under contention is itself a source of per-request
+        # latency spikes. A bounded pool reuses worker threads instead.
+        _pool = ThreadPoolExecutor(max_workers=32, thread_name_prefix="wiki-test-http")
+
+        def process_request(self, request, client_address):
+            self._pool.submit(self.process_request_thread, request, client_address)
 
         def handle_error(self, request, client_address):
             # Client disconnects are expected during navigation; don't dump them.
@@ -174,6 +191,7 @@ def base_url():
     yield f"http://localhost:{port}"
 
     server.shutdown()
+    server._pool.shutdown(wait=False)
 
 
 @pytest.fixture

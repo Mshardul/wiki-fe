@@ -244,9 +244,13 @@
   top: var(--s4);
   right: var(--s6);
   z-index: var(--z-raised);
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
+  background: transparent;
+  border-bottom: none;
+}
+.home-topbar .topbar-inner {
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* ═══════════════════════════════════════════════
@@ -282,12 +286,6 @@
 .topbar-icon-btn.loading {
   opacity: 0.5;
   pointer-events: none;
-}
-
-/* Bookmark filled state */
-#content-bookmark-btn.active svg path {
-  fill: var(--accent-light);
-  stroke: var(--accent-light);
 }
 
 /* ═══════════════════════════════════════════════

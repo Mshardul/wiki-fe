@@ -242,6 +242,19 @@ function removeLocalStorageByPrefix(prefix) {
   toRemove.forEach((key) => localStorage.removeItem(key));
 }
 
+// Chains async mutations sharing the same key onto one another so a rapid double-fire (double-click,
+// or click + hotkey landing together) can't dispatch two requests for the same key out of order -
+// each call waits for the previous one on that key to settle before it fires.
+const _mutationQueues = new Map();
+function sequencedMutation(key, fn) {
+  const prev = _mutationQueues.get(key) || Promise.resolve();
+  const next = prev.then(fn, fn).finally(() => {
+    if (_mutationQueues.get(key) === next) _mutationQueues.delete(key);
+  });
+  _mutationQueues.set(key, next);
+  return next;
+}
+
 export {
   WIKIS,
   state,
@@ -261,4 +274,5 @@ export {
   fadeFactorForDaysSinceRead,
   FADE_FLOOR,
   removeLocalStorageByPrefix,
+  sequencedMutation,
 };

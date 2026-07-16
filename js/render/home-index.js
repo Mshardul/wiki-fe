@@ -357,7 +357,7 @@ function attachIndexCardHoverPreview() {
    ═══════════════════════════════════════════════════════════════ */
 const IndexFilter = {
   _query: "",
-  _unread: false,
+  _readStatus: "all", // "all" | "read" | "unread"
   _pendingUnread: false,
   _debounce: null,
 
@@ -368,34 +368,32 @@ const IndexFilter = {
 
   reset() {
     this._query = "";
-    this._unread = this._pendingUnread;
+    this._readStatus = this._pendingUnread ? "unread" : "all";
     this._pendingUnread = false;
     const input = document.getElementById("index-filter-input");
     if (input) input.value = "";
-    this._syncUnreadBtn();
+    this._syncReadSelect();
   },
 
   hasActiveFilter() {
-    return !!this._query || this._unread;
+    return !!this._query || this._readStatus !== "all";
   },
 
   // Full clear for the reset-view escape hatch - unlike reset(), this also drops
-  // the unread toggle rather than honouring a pending request.
+  // the read-status filter rather than honouring a pending request.
   clearAll() {
     this._query = "";
-    this._unread = false;
+    this._readStatus = "all";
     this._pendingUnread = false;
     const input = document.getElementById("index-filter-input");
     if (input) input.value = "";
-    this._syncUnreadBtn();
+    this._syncReadSelect();
     this.apply();
   },
 
-  _syncUnreadBtn() {
-    const btn = document.getElementById("index-filter-unread");
-    if (!btn) return;
-    btn.classList.toggle("active", this._unread);
-    btn.setAttribute("aria-pressed", String(this._unread));
+  _syncReadSelect() {
+    const select = document.getElementById("index-filter-read-select");
+    if (select) select.value = this._readStatus;
   },
 
   setQuery(q) {
@@ -403,9 +401,8 @@ const IndexFilter = {
     this.apply();
   },
 
-  toggleUnread() {
-    this._unread = !this._unread;
-    this._syncUnreadBtn();
+  setReadStatus(status) {
+    this._readStatus = status;
     this.apply();
   },
 
@@ -419,8 +416,12 @@ const IndexFilter = {
         const path = card.querySelector(".index-card-read-time[data-path]")?.dataset.path;
         const matchesText =
           !this._query || title.includes(this._query) || desc.includes(this._query);
-        const matchesUnread = !this._unread || (path && !isRead(path));
-        const show = matchesText && matchesUnread;
+        const read = path ? isRead(path) : false;
+        const matchesReadStatus =
+          this._readStatus === "all" ||
+          (this._readStatus === "read" && read) ||
+          (this._readStatus === "unread" && !read);
+        const show = matchesText && matchesReadStatus;
         card.classList.toggle("index-card--filtered", !show);
         if (show) visible++;
       });
@@ -436,9 +437,11 @@ if (_indexFilterInput) {
     IndexFilter._debounce = setTimeout(() => IndexFilter.setQuery(_indexFilterInput.value), 120);
   });
 }
-const _indexFilterUnreadBtn = document.getElementById("index-filter-unread");
-if (_indexFilterUnreadBtn) {
-  _indexFilterUnreadBtn.addEventListener("click", () => IndexFilter.toggleUnread());
+const _indexFilterReadSelect = document.getElementById("index-filter-read-select");
+if (_indexFilterReadSelect) {
+  _indexFilterReadSelect.addEventListener("change", () => {
+    IndexFilter.setReadStatus(_indexFilterReadSelect.value);
+  });
 }
 
 /* ─── Index-card swipe: right = bookmark, left = read toggle ─── */

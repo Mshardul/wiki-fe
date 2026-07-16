@@ -12,10 +12,22 @@ def _go_to_article(page, base_url):
 
 
 def _bookmark_current(page):
-    btn = page.locator("#content-bookmark-btn")
+    page.locator("[title='Preferences (,)']:visible").first.click()
+    page.wait_for_function(
+        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    page.locator("[data-tab='advanced']").click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-panel-advanced').getAttribute('aria-hidden') === 'false'"
+    )
+    btn = page.locator("#prefs-bookmark-toggle")
     btn.wait_for(state="visible")
     if "active" not in (btn.get_attribute("class") or ""):
         btn.click()
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        "() => document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
 
 
 def _go_to_index(page, base_url):

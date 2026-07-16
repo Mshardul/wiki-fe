@@ -142,12 +142,17 @@ def test_long_press_link_opens_peek_sheet(mobile_page, base_url):
     # ResizeObserver-driven layout passes can still shift content after data-render-done.
     page.wait_for_timeout(300)
 
+    # Exclude .prereqs-container chips: that strip is horizontally
+    # scroll-clipped on mobile (overflow-x: auto), so chips past the first
+    # screenful sit outside the viewport and fail elementFromPoint hit-testing.
     link = page.locator(
-        "#markdown-body a[href$='.md'], #markdown-body a[href*='.md#']"
+        "#markdown-body a[href$='.md']:not(.prereqs-container a),"
+        " #markdown-body a[href*='.md#']:not(.prereqs-container a)"
     ).first
     if link.count() == 0:
         pytest.skip("article has no internal .md links to long-press")
 
+    link.scroll_into_view_if_needed()
     box = link.bounding_box()
     cx = box["x"] + box["width"] / 2
     cy = box["y"] + box["height"] / 2

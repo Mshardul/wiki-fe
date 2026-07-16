@@ -7,18 +7,19 @@ let _toastBusy = false;
 function _drainToastQueue() {
   if (_toastBusy || !_toastQueue.length) return;
   _toastBusy = true;
-  const { message, durationMs, onUndo, actionLabel } = _toastQueue.shift();
-  _showToastNow(message, durationMs, onUndo, actionLabel);
+  const { message, durationMs, onUndo, actionLabel, type } = _toastQueue.shift();
+  _showToastNow(message, durationMs, onUndo, actionLabel, type);
 }
 
-function _showToastNow(message, durationMs, onUndo, actionLabel = "Undo") {
+function _showToastNow(message, durationMs, onUndo, actionLabel = "Undo", type = null) {
   let toast = document.getElementById("wiki-toast");
   if (!toast) {
     toast = document.createElement("div");
     toast.id = "wiki-toast";
-    toast.className = "wiki-toast";
     document.body.appendChild(toast);
   }
+  toast.className = "wiki-toast";
+  if (type) toast.classList.add(`wiki-toast--${type}`);
 
   const advance = () => {
     toast.classList.remove("visible");
@@ -28,10 +29,13 @@ function _showToastNow(message, durationMs, onUndo, actionLabel = "Undo") {
     }, 200);
   };
 
+  toast.replaceChildren();
+  const text = document.createElement("span");
+  text.className = "wiki-toast-msg";
+  text.textContent = message;
+  toast.appendChild(text);
+
   if (onUndo) {
-    toast.replaceChildren();
-    const text = document.createElement("span");
-    text.textContent = message;
     const btn = document.createElement("button");
     btn.className = "toast-undo-btn";
     btn.textContent = actionLabel;
@@ -40,18 +44,15 @@ function _showToastNow(message, durationMs, onUndo, actionLabel = "Undo") {
       onUndo();
       advance();
     });
-    toast.appendChild(text);
     toast.appendChild(btn);
-  } else {
-    toast.textContent = message;
   }
 
   toast.classList.add("visible");
   toast._timer = setTimeout(advance, durationMs);
 }
 
-function showToast(message, durationMs = 3000, onUndo = null, actionLabel = "Undo") {
-  _toastQueue.push({ message, durationMs, onUndo, actionLabel });
+function showToast(message, durationMs = 3000, onUndo = null, actionLabel = "Undo", type = null) {
+  _toastQueue.push({ message, durationMs, onUndo, actionLabel, type });
   _drainToastQueue();
 }
 

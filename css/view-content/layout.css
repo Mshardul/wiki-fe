@@ -100,15 +100,13 @@ body.distraction-free .sticky-section-header {
   position: sticky;
   top: calc(var(--topbar-h) + var(--s8));
   max-height: calc(100vh - var(--topbar-h) - var(--s16));
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: var(--s3);
   order: 2; /* right side */
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
 }
 .toc-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -148,6 +146,7 @@ body.distraction-free .sticky-section-header {
 }
 
 .notes-scratchpad {
+  flex-shrink: 0;
   border-top: 1px solid var(--border);
   padding-top: var(--s3);
   display: flex;
@@ -232,6 +231,10 @@ body.distraction-free .sticky-section-header {
 .toc-nav {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 .toc-item {
   display: block;

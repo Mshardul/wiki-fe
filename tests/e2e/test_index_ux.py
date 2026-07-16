@@ -461,14 +461,11 @@ def test_unread_toggle_filters_read_cards(page, base_url):
     )
     page.wait_for_selector(".index-card-read-dot.visible", timeout=8_000)
 
-    btn = page.locator("#index-filter-unread")
-    btn.click()
+    select = page.locator("#index-filter-read-select")
+    select.select_option("unread")
     page.wait_for_function(
-        "() => document.getElementById('index-filter-unread').classList.contains('active')",
+        "() => document.getElementById('index-filter-read-select').value === 'unread'",
         timeout=3_000,
-    )
-    assert "active" in (btn.get_attribute("class") or ""), (
-        "Unread toggle must reflect active state"
     )
     # No visible card may contain a visible read-dot.
     leaked = page.evaluate(
@@ -477,6 +474,50 @@ def test_unread_toggle_filters_read_cards(page, base_url):
               .filter(c => c.querySelector('.index-card-read-dot.visible')).length"""
     )
     assert leaked == 0, "Unread-only filter must hide cards marked read"
+
+
+def test_read_only_filter_hides_unread_cards(page, base_url):
+    """Selecting 'Read only' hides cards that are not marked read."""
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+
+    seeded = page.evaluate(
+        """() => {
+            const badge = document.querySelector(
+                '.index-card:not(.index-card--unavailable) .index-card-read-time[data-path]'
+            );
+            if (!badge) return null;
+            const path = badge.dataset.path;
+            const key = 'wiki-read-system-design';
+            const cur = JSON.parse(localStorage.getItem(key) || '[]');
+            if (!cur.includes(path)) cur.push(path);
+            localStorage.setItem(key, JSON.stringify(cur));
+            return path;
+        }"""
+    )
+    assert seeded, "Expected at least one available card to seed as read"
+
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+    page.wait_for_selector(".index-card-read-dot.visible", timeout=8_000)
+
+    select = page.locator("#index-filter-read-select")
+    select.select_option("read")
+    page.wait_for_function(
+        "() => document.getElementById('index-filter-read-select').value === 'read'",
+        timeout=3_000,
+    )
+    # Every visible card must have a visible read-dot.
+    unread_visible = page.evaluate(
+        """() => [...document.querySelectorAll('#index-sections .index-card')]
+              .filter(c => !c.classList.contains('index-card--filtered'))
+              .filter(c => !c.querySelector('.index-card-read-dot.visible')).length"""
+    )
+    assert unread_visible == 0, "Read-only filter must hide cards not marked read"
 
 
 def test_index_ctrl_and_filter_44px_on_coarse_pointer(browser, base_url, cdn_cache):

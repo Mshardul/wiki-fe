@@ -89,7 +89,9 @@ def test_auth_swap_links_meet_touch_target_on_mobile(page, base_url, cdn_cache):
         height = touch_page.evaluate(
             f"() => document.getElementById('{link_id}').getBoundingClientRect().height"
         )
-        assert height >= 44, f"#{link_id} is only {height}px tall, expected >= 44px"
+        # round() absorbs sub-pixel layout rounding (e.g. 43.99993... for a
+        # min-height: 44px box) - the box is a genuine 44px, not a real shortfall.
+        assert round(height) >= 44, f"#{link_id} is only {height}px tall, expected >= 44px"
     ctx.close()
 
 
@@ -195,6 +197,92 @@ def test_login_success_flips_button_to_logout(page, base_url):
     # what every subsequent request authenticates with (no cookie anymore).
     stored = page.evaluate("localStorage.getItem('wiki-session-token')")
     assert stored == "test-session-token"
+
+
+def test_login_shows_success_toast(page, base_url):
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/login",
+        lambda r: r.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
+        ),
+    )
+    for path in ("bookmarks", "reads", "recents"):
+        page.route(
+            f"**/api/v1/{path}",
+            lambda r: r.fulfill(
+                status=200, content_type="application/json", body="[]"
+            ),
+        )
+
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+    page.locator("#auth-login-submit").click()
+    toast = page.locator("#wiki-toast")
+    expect(toast).to_have_class(re.compile(r"\bwiki-toast--success\b"))
+    expect(toast).to_contain_text("Logged in")
+
+
+def test_logout_shows_success_toast(page, base_url):
+    page.route(
+        "**/api/v1/auth/me",
+        lambda r: r.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"user":{"id":1,"email":"a@example.com"}}',
+        ),
+    )
+    page.route("**/api/v1/auth/logout", lambda r: r.fulfill(status=204))
+    for path in ("bookmarks", "reads", "recents"):
+        page.route(
+            f"**/api/v1/{path}",
+            lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
+        )
+    page.add_init_script(
+        "localStorage.setItem('wiki-session-token', 'pre-existing-token')"
+    )
+    page.goto(base_url)
+    expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
+
+    page.locator("#auth-btn-home").click()
+    toast = page.locator("#wiki-toast")
+    expect(toast).to_have_class(re.compile(r"\bwiki-toast--success\b"))
+    expect(toast).to_contain_text("Logged out")
+
+
+def test_migrate_modal_shown_on_login_with_local_data(page, base_url):
+    """Local data must trigger the dedicated migrate modal, not a toast."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/login",
+        lambda r: r.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
+        ),
+    )
+    page.route(
+        "**/api/v1/import-all",
+        lambda r: r.fulfill(status=200, content_type="application/json", body="{}"),
+    )
+    page.add_init_script(
+        "localStorage.setItem('wiki-bookmarks', JSON.stringify([{wikiId:'dsa',path:'foo.md'}]))"
+    )
+
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+    page.locator("#auth-login-submit").click()
+
+    modal = page.locator("#migrate-modal")
+    expect(modal).not_to_have_class(re.compile(r"\bhidden\b"))
+    page.locator("#migrate-keep").click()
+    expect(modal).to_have_class(re.compile(r"\bhidden\b"))
 
 
 def test_logout_clears_stored_session_token(page, base_url):

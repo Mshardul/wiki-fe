@@ -105,8 +105,8 @@ def test_toc_scroll_position_tracked_in_eviction_manifest(page, base_url):
     assert wiki_id, "Could not read state.currentWikiId from app"
     toc_key = f"wiki-toc-scroll-{wiki_id}-{file_path.replace('/', '-')}"
 
-    sidebar = page.locator(".toc-sidebar")
-    sidebar.evaluate("(el) => el.scrollTo(0, 40)")
+    toc_nav = page.locator("#toc-nav")
+    toc_nav.evaluate("(el) => el.scrollTo(0, 40)")
     page.wait_for_timeout(500)  # debounce (300ms) + margin
 
     manifest = page.evaluate(
@@ -283,6 +283,26 @@ def test_resume_chip_removed_when_navigating_to_index(page, base_url):
 
 
 # ── TOC Sidebar Behavior ────────────────────────────────────────────────────────
+
+
+def test_toc_chevron_toggles_only_its_own_section(page, base_url):
+    """Regression: chevron closure bug toggled the last group, not its own."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_selector("#toc-nav .toc-h2-group", state="attached")
+
+    groups = page.locator("#toc-nav .toc-h2-group")
+    assert groups.count() >= 2
+
+    first_group = groups.nth(0)
+    last_group = groups.nth(groups.count() - 1)
+    assert "section--collapsed" not in (first_group.get_attribute("class") or "")
+    assert "section--collapsed" not in (last_group.get_attribute("class") or "")
+
+    first_group.locator(".toc-group-chevron").click()
+    assert "section--collapsed" in (first_group.get_attribute("class") or "")
+    assert "section--collapsed" not in (last_group.get_attribute("class") or "")
 
 
 def test_toc_visible_on_desktop(page, base_url):

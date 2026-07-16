@@ -91,13 +91,13 @@ window.Auth = Auth;
 window.AuthModal = AuthModal;
 
 document.addEventListener("wiki:toast", (e) => {
-  const { message, durationMs, onUndo, actionLabel } = e.detail;
-  showToast(message, durationMs, onUndo, actionLabel);
+  const { message, durationMs, onUndo, actionLabel, type } = e.detail;
+  showToast(message, durationMs, onUndo, actionLabel, type);
 });
 
 document.addEventListener("wiki:session-expired", () => {
   Auth.refreshButtons();
-  showToast("Session expired, please log in", 5000);
+  showToast("Session expired, please log in", 5000, null, undefined, "warning");
   AuthModal.open("login");
 });
 

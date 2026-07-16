@@ -78,16 +78,16 @@ function addCodeBlockHeader(contentEl, onCopyError = () => {}) {
     btn.className = "copy-btn";
     btn.title = "Copy code";
     btn.setAttribute("aria-label", "Copy code");
-    btn.textContent = "⧉";
+    btn.innerHTML =
+      '<svg class="icon copy-btn-icon-copy"><use href="#icon-copy"></use></svg>' +
+      '<svg class="icon copy-btn-icon-check"><use href="#icon-check"></use></svg>';
     btn.addEventListener("click", () => {
       const raw = code ? code.textContent : pre.textContent;
       const text = buildSourceHeader(langMatch?.[1]) + raw;
       writeToClipboard(text)
         .then(() => {
-          btn.textContent = "✓";
           btn.classList.add("copied");
           setTimeout(() => {
-            btn.textContent = "⧉";
             btn.classList.remove("copied");
           }, 2000);
         })

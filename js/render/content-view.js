@@ -251,10 +251,10 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     state.tocObserver.disconnect();
     state.tocObserver = null;
   }
-  const tocSidebar = document.getElementById("toc-sidebar");
-  if (tocSidebar?._tocScrollHandler) {
-    tocSidebar.removeEventListener("scroll", tocSidebar._tocScrollHandler);
-    tocSidebar._tocScrollHandler = null;
+  const tocNav = document.getElementById("toc-nav");
+  if (tocNav?._tocScrollHandler) {
+    tocNav.removeEventListener("scroll", tocNav._tocScrollHandler);
+    tocNav._tocScrollHandler = null;
   }
   state.tableResizeObservers.forEach((ro) => ro.disconnect());
   state.tableResizeObservers = [];
@@ -642,6 +642,59 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
       }
     });
   });
+
+  // Unlinked prereq chips (no article yet) - same hover-preview card, showing
+  // a static placeholder instead of fetched content.
+  contentEl.querySelectorAll("[data-unlinked-prereq]").forEach((chip) => {
+    chip.addEventListener("mouseenter", () => {
+      if (_lastPointerWasTouch) return;
+      hoverPreviewTimer = setTimeout(() => showHoverPreview(chip, null), 400);
+    });
+
+    chip.addEventListener("mouseleave", () => {
+      clearTimeout(hoverPreviewTimer);
+      _previewGeneration++;
+      if (previewEl) {
+        previewEl.classList.remove("visible");
+        previewEl.classList.add("hidden");
+        previewEl.textContent = "";
+      }
+    });
+
+    let _lpTimer = null;
+    let _lpX = 0;
+    let _lpY = 0;
+    const cancelLongPress = () => {
+      clearTimeout(_lpTimer);
+      _lpTimer = null;
+    };
+    chip.addEventListener(
+      "touchstart",
+      (e) => {
+        if (!_lastPointerWasTouch || e.touches.length !== 1) return;
+        _lpX = e.touches[0].clientX;
+        _lpY = e.touches[0].clientY;
+        _lpTimer = setTimeout(() => showHoverPreview(chip, null, { asSheet: true }), LONGPRESS_MS);
+      },
+      { passive: true },
+    );
+    chip.addEventListener(
+      "touchmove",
+      (e) => {
+        const t = e.touches[0];
+        if (
+          !t ||
+          Math.abs(t.clientX - _lpX) > LONGPRESS_MOVE_CANCEL ||
+          Math.abs(t.clientY - _lpY) > LONGPRESS_MOVE_CANCEL
+        ) {
+          cancelLongPress();
+        }
+      },
+      { passive: true },
+    );
+    chip.addEventListener("touchend", cancelLongPress, { passive: true });
+    chip.addEventListener("touchcancel", cancelLongPress, { passive: true });
+  });
 }
 
 /* ─── Long-press peek state + dismissal ─── */
@@ -706,9 +759,15 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
     previewEl.style.left = `${Math.max(8, leftPos)}px`;
   }
 
-  previewEl.innerHTML = '<div class="loading">Loading preview...</div>';
   previewEl.classList.remove("hidden");
   previewEl.classList.add("visible");
+
+  if (path === null) {
+    previewEl.innerHTML = '<p style="color:var(--text-muted)">Not yet written.</p>';
+    return;
+  }
+
+  previewEl.innerHTML = '<div class="loading">Loading preview...</div>';
 
   const SKIP_PREFIXES = ["prerequisites:", "prerequisites", "prerequisite", "table of contents"];
 

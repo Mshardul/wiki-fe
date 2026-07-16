@@ -34,13 +34,14 @@ function buildTOC(contentEl, wikiId, articlePath) {
     });
 
     if (tag === "H2") {
-      currentGroup = document.createElement("div");
-      currentGroup.className = "toc-h2-group";
-      currentGroup.dataset.h2Id = h.id;
+      const group = document.createElement("div");
+      group.className = "toc-h2-group";
+      group.dataset.h2Id = h.id;
+      currentGroup = group;
 
       const collapseKey = `wiki-toc-h2-${wikiId}-${h.id}`;
       if (getCollapsed(collapseKey)) {
-        currentGroup.classList.add("section--collapsed");
+        group.classList.add("section--collapsed");
       }
 
       const chevron = document.createElement("button");
@@ -50,7 +51,7 @@ function buildTOC(contentEl, wikiId, articlePath) {
       chevron.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const nowCollapsed = toggleCollapse(collapseKey, currentGroup);
+        const nowCollapsed = toggleCollapse(collapseKey, group);
         _syncContentH2(h.id, nowCollapsed);
       });
 
@@ -58,8 +59,8 @@ function buildTOC(contentEl, wikiId, articlePath) {
       h2Row.className = "toc-h2-row";
       h2Row.appendChild(a);
       h2Row.appendChild(chevron);
-      currentGroup.appendChild(h2Row);
-      tocNav.appendChild(currentGroup);
+      group.appendChild(h2Row);
+      tocNav.appendChild(group);
     } else {
       if (currentGroup) {
         currentGroup.appendChild(a);
@@ -84,23 +85,41 @@ function buildTOC(contentEl, wikiId, articlePath) {
         }
       }
 
-      let foundCurrent = false;
+      if (topmostEl) {
+        let foundCurrent = false;
+        for (const h of headings) {
+          const link = tocNav.querySelector(`a[href="#${h.id}"]`);
+          if (!link) continue;
+          if (h === topmostEl) {
+            link.classList.remove("toc-passed");
+            link.classList.add("toc-current");
+            link.setAttribute("aria-current", "true");
+            foundCurrent = true;
+            link.scrollIntoView({ block: "nearest" });
+          } else if (!foundCurrent) {
+            link.classList.add("toc-passed");
+            link.classList.remove("toc-current");
+            link.removeAttribute("aria-current");
+          } else {
+            link.classList.remove("toc-passed", "toc-current");
+            link.removeAttribute("aria-current");
+          }
+        }
+        return;
+      }
+
+      // Nothing intersecting (between headings, or past the last one) - fall back
+      // to position instead of greying out the whole list.
+      const triggerY = window.innerHeight * 0.4;
       for (const h of headings) {
         const link = tocNav.querySelector(`a[href="#${h.id}"]`);
         if (!link) continue;
-        if (h === topmostEl) {
-          link.classList.remove("toc-passed");
-          link.classList.add("toc-current");
-          link.setAttribute("aria-current", "true");
-          foundCurrent = true;
-          link.scrollIntoView({ block: "nearest" });
-        } else if (!foundCurrent) {
+        link.classList.remove("toc-current");
+        link.removeAttribute("aria-current");
+        if (h.getBoundingClientRect().top < triggerY) {
           link.classList.add("toc-passed");
-          link.classList.remove("toc-current");
-          link.removeAttribute("aria-current");
         } else {
-          link.classList.remove("toc-passed", "toc-current");
-          link.removeAttribute("aria-current");
+          link.classList.remove("toc-passed");
         }
       }
     },
@@ -114,14 +133,14 @@ function buildTOC(contentEl, wikiId, articlePath) {
 
   if (wikiId && articlePath) {
     const offset = restoreTOCScroll(wikiId, articlePath);
-    if (offset > 0) sidebar.scrollTop = offset;
+    if (offset > 0) tocNav.scrollTop = offset;
 
     let _scrollTimer = null;
-    sidebar._tocScrollHandler = () => {
+    tocNav._tocScrollHandler = () => {
       clearTimeout(_scrollTimer);
-      _scrollTimer = setTimeout(() => saveTOCScroll(wikiId, articlePath, sidebar.scrollTop), 300);
+      _scrollTimer = setTimeout(() => saveTOCScroll(wikiId, articlePath, tocNav.scrollTop), 300);
     };
-    sidebar.addEventListener("scroll", sidebar._tocScrollHandler);
+    tocNav.addEventListener("scroll", tocNav._tocScrollHandler);
   }
 }
 

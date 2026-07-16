@@ -1,5 +1,5 @@
 import { api } from "../api.js";
-import { state } from "../state.js";
+import { sequencedMutation, state } from "../state.js";
 
 function _loggedIn() {
   return state.session?.status === "in";
@@ -33,7 +33,11 @@ function markRead(path) {
   read.add(path);
   localStorage.setItem(_readKey(), JSON.stringify([...read]));
   // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
-  if (_loggedIn()) api.reads.add(state.currentWikiId, path).catch(() => {});
+  if (_loggedIn()) {
+    sequencedMutation(`${state.currentWikiId}|${path}`, () =>
+      api.reads.add(state.currentWikiId, path),
+    ).catch(() => {});
+  }
   document.querySelectorAll(".index-card-read-dot").forEach((dot) => {
     const card = dot.closest(".index-card");
     const timeBadge = card?.querySelector(".index-card-read-time");
@@ -48,7 +52,11 @@ function markUnread(path) {
   read.delete(path);
   localStorage.setItem(_readKey(), JSON.stringify([...read]));
   // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
-  if (_loggedIn()) api.reads.remove(state.currentWikiId, path).catch(() => {});
+  if (_loggedIn()) {
+    sequencedMutation(`${state.currentWikiId}|${path}`, () =>
+      api.reads.remove(state.currentWikiId, path),
+    ).catch(() => {});
+  }
   document.querySelectorAll(".index-card-read-dot").forEach((dot) => {
     const card = dot.closest(".index-card");
     const timeBadge = card?.querySelector(".index-card-read-time");
@@ -57,10 +65,11 @@ function markUnread(path) {
 }
 
 function updateReadBtn() {
-  const btn = document.getElementById("content-read-btn");
+  const btn = document.getElementById("prefs-read-toggle");
   if (!btn || !state.currentFilePath) return;
   const read = isRead(state.currentFilePath);
   btn.classList.toggle("active", read);
+  btn.setAttribute("aria-pressed", String(read));
   btn.title = read ? "Mark as unread" : "Mark as read";
 }
 

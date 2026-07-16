@@ -14,26 +14,45 @@ def _go_to_article(page, base_url):
     page.wait_for_selector("#markdown-body h1, #markdown-body h2", timeout=8_000)
 
 
+def _open_advanced_prefs(page):
+    page.locator("[title='Preferences (,)']:visible").first.click()
+    page.wait_for_function(
+        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    page.locator("[data-tab='advanced']").click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-panel-advanced').getAttribute('aria-hidden') === 'false'"
+    )
+
+
+def _click_read_toggle(page):
+    _open_advanced_prefs(page)
+    page.locator("#prefs-read-toggle").click()
+
+
 # ── presence ───────────────────────────────────────────────────────────────────
 
 
-def test_read_btn_present_in_content_topbar(page, base_url):
-    """#content-read-btn exists in content topbar."""
+def test_read_btn_present_in_advanced_prefs(page, base_url):
+    """#prefs-read-toggle exists in the Advanced prefs tab."""
     _go_to_article(page, base_url)
-    assert page.locator("#content-read-btn").count() == 1
+    _open_advanced_prefs(page)
+    assert page.locator("#prefs-read-toggle").count() == 1
 
 
 def test_read_btn_initial_title_is_mark_as_read(page, base_url):
     """button title is 'Mark as read' when article not yet read."""
     _go_to_article(page, base_url)
-    title = page.locator("#content-read-btn").get_attribute("title")
+    _open_advanced_prefs(page)
+    title = page.locator("#prefs-read-toggle").get_attribute("title")
     assert title == "Mark as read"
 
 
 def test_read_btn_initially_not_active(page, base_url):
     """button does not have .active class when article is unread."""
     _go_to_article(page, base_url)
-    cls = page.locator("#content-read-btn").get_attribute("class")
+    _open_advanced_prefs(page)
+    cls = page.locator("#prefs-read-toggle").get_attribute("class")
     assert "active" not in cls
 
 
@@ -43,7 +62,7 @@ def test_read_btn_initially_not_active(page, base_url):
 def test_clicking_read_btn_marks_article_read(page, base_url):
     """clicking button adds article path to wiki-read in localStorage."""
     _go_to_article(page, base_url)
-    page.locator("#content-read-btn").click()
+    _click_read_toggle(page)
 
     read_set = page.evaluate(
         "() => JSON.parse(localStorage.getItem('wiki-read-' + state.currentWikiId) || '[]')"
@@ -54,16 +73,16 @@ def test_clicking_read_btn_marks_article_read(page, base_url):
 def test_read_btn_becomes_active_after_click(page, base_url):
     """button gets .active class after clicking to mark as read."""
     _go_to_article(page, base_url)
-    page.locator("#content-read-btn").click()
-    cls = page.locator("#content-read-btn").get_attribute("class")
+    _click_read_toggle(page)
+    cls = page.locator("#prefs-read-toggle").get_attribute("class")
     assert "active" in cls
 
 
 def test_read_btn_title_changes_to_mark_as_unread(page, base_url):
     """button title becomes 'Mark as unread' after marking read."""
     _go_to_article(page, base_url)
-    page.locator("#content-read-btn").click()
-    title = page.locator("#content-read-btn").get_attribute("title")
+    _click_read_toggle(page)
+    title = page.locator("#prefs-read-toggle").get_attribute("title")
     assert title == "Mark as unread"
 
 
@@ -73,8 +92,10 @@ def test_read_btn_title_changes_to_mark_as_unread(page, base_url):
 def test_clicking_again_marks_article_unread(page, base_url):
     """clicking button a second time removes article from wiki-read."""
     _go_to_article(page, base_url)
-    page.locator("#content-read-btn").click()  # mark read
-    page.locator("#content-read-btn").click()  # mark unread
+    _open_advanced_prefs(page)
+    btn = page.locator("#prefs-read-toggle")
+    btn.click()  # mark read
+    btn.click()  # mark unread
 
     read_set = page.evaluate(
         "() => JSON.parse(localStorage.getItem('wiki-read-' + state.currentWikiId) || '[]')"
@@ -85,18 +106,22 @@ def test_clicking_again_marks_article_unread(page, base_url):
 def test_read_btn_loses_active_after_unmark(page, base_url):
     """button loses .active class after clicking to mark as unread."""
     _go_to_article(page, base_url)
-    page.locator("#content-read-btn").click()  # mark read
-    page.locator("#content-read-btn").click()  # mark unread
-    cls = page.locator("#content-read-btn").get_attribute("class")
+    _open_advanced_prefs(page)
+    btn = page.locator("#prefs-read-toggle")
+    btn.click()  # mark read
+    btn.click()  # mark unread
+    cls = btn.get_attribute("class")
     assert "active" not in cls
 
 
 def test_read_btn_title_reverts_after_unmark(page, base_url):
     """button title reverts to 'Mark as read' after unmarking."""
     _go_to_article(page, base_url)
-    page.locator("#content-read-btn").click()  # mark read
-    page.locator("#content-read-btn").click()  # mark unread
-    title = page.locator("#content-read-btn").get_attribute("title")
+    _open_advanced_prefs(page)
+    btn = page.locator("#prefs-read-toggle")
+    btn.click()  # mark read
+    btn.click()  # mark unread
+    title = btn.get_attribute("title")
     assert title == "Mark as read"
 
 
@@ -106,18 +131,19 @@ def test_read_btn_title_reverts_after_unmark(page, base_url):
 def test_read_state_persists_on_revisit(page, base_url):
     """article stays marked read when navigating away and back."""
     _go_to_article(page, base_url)
-    page.locator("#content-read-btn").click()  # mark read
+    _click_read_toggle(page)
 
-    # Go back to wiki index
+    # Close prefs, go back to wiki index
+    page.keyboard.press("Escape")
     page.locator("#content-back-btn").click()
     page.wait_for_selector("#view-index.active", timeout=5_000)
 
     # Navigate back to article via hash change (goto unreliable for same-origin hash nav)
     page.evaluate(f"() => {{ location.hash = '#{ARTICLE_HASH}'; }}")
     page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_selector("#content-read-btn", timeout=5_000)
+    _open_advanced_prefs(page)
 
-    cls = page.locator("#content-read-btn").get_attribute("class")
+    cls = page.locator("#prefs-read-toggle").get_attribute("class")
     assert "active" in cls
 
 
@@ -138,7 +164,8 @@ def test_anon_read_makes_no_api_call(page, base_url):
     )
 
     _go_to_article(page, base_url)
-    btn = page.locator("#content-read-btn")
+    _open_advanced_prefs(page)
+    btn = page.locator("#prefs-read-toggle")
     btn.wait_for(state="visible")
     if "active" not in (btn.get_attribute("class") or ""):
         btn.click()
@@ -170,7 +197,7 @@ def test_read_toggle_calls_vibrate_when_setting_on(page, base_url):
         s.hapticFeedback = true;
         localStorage.setItem('wiki-settings', JSON.stringify(s));
     }""")
-    page.locator("#content-read-btn").click()
+    _click_read_toggle(page)
     calls = page.evaluate("() => window.__vibrateCalls || []")
     assert len(calls) == 1
 
@@ -179,7 +206,7 @@ def test_read_toggle_skips_vibrate_when_setting_off(page, base_url):
     """Marking an article read does not call navigator.vibrate by default (off)."""
     page.add_init_script(_VIBRATE_SPY)
     _go_to_article(page, base_url)
-    page.locator("#content-read-btn").click()
+    _click_read_toggle(page)
     calls = page.evaluate("() => window.__vibrateCalls || []")
     assert len(calls) == 0
 
@@ -194,7 +221,8 @@ def test_unmarking_read_does_not_call_vibrate(page, base_url):
         s.hapticFeedback = true;
         localStorage.setItem('wiki-settings', JSON.stringify(s));
     }""")
-    btn = page.locator("#content-read-btn")
+    _open_advanced_prefs(page)
+    btn = page.locator("#prefs-read-toggle")
     btn.click()  # mark read - fires once
     btn.click()  # mark unread - should not fire again
     calls = page.evaluate("() => window.__vibrateCalls || []")

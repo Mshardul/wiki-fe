@@ -106,6 +106,28 @@
   border-color: var(--accent);
   color: var(--accent-light);
 }
+.prereq-chip--unlinked {
+  cursor: default;
+  opacity: 0.7;
+}
+.prereq-level {
+  display: inline-block;
+  margin-left: var(--s2);
+  padding: 1px 6px;
+  border-radius: var(--r-full);
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.prereq-level--must {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+.prereq-level--should {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
 
 /* ═══════════════════════════════════════════════
    COLLAPSIBLE CALLOUT BLOCKS

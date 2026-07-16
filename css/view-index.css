@@ -90,27 +90,44 @@
   outline: none;
   border-color: var(--accent);
 }
-.index-filter-unread {
+.index-filter-input-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+.index-filter-input-wrap .index-filter-input {
+  width: 100%;
+  padding-left: calc(var(--s4) + 18px + var(--s2));
+}
+.index-filter-icon {
+  position: absolute;
+  left: var(--s3);
+  width: 15px;
+  height: 15px;
+  color: var(--text-subtle);
+  pointer-events: none;
+}
+.index-filter-read-select {
+  appearance: none;
   font: inherit;
   font-size: var(--text-sm);
   color: var(--text-muted);
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  padding: var(--s2) var(--s4);
+  padding: var(--s2) 28px var(--s2) var(--s4);
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--s3) center;
+  transition: background-color var(--t-fast), color var(--t-fast), border-color var(--t-fast);
 }
-.index-filter-unread:hover,
-.index-filter-unread:focus-visible {
-  background: var(--surface-3);
+.index-filter-read-select:hover,
+.index-filter-read-select:focus-visible {
+  background-color: var(--surface-3);
   outline: none;
-}
-.index-filter-unread.active {
-  color: var(--accent-light);
-  background: var(--accent-dim);
-  border-color: var(--accent);
 }
 .index-card.index-card--filtered {
   display: none;

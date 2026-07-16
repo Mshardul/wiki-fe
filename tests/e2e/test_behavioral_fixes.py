@@ -553,20 +553,13 @@ def test_debug_overlay_close_removes_it(page, base_url):
     )
 
 
-def test_focus_toggle_hidden_on_narrow_mobile(page, base_url):
-    """focus-toggle button is hidden at 375px width."""
-    page.set_viewport_size({"width": 375, "height": 812})
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    assert not page.locator("[data-action='focus-toggle']").first.is_visible()
-
-
-def test_offline_toggle_hidden_on_narrow_mobile(page, base_url):
-    """offline-toggle button is hidden at 375px width."""
-    page.set_viewport_size({"width": 375, "height": 812})
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    assert not page.locator("[data-action='offline-toggle']").first.is_visible()
+def _open_prefs(page):
+    page.locator("#view-content [title='Preferences (,)']").click()
+    page.wait_for_function(
+        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    page.locator("[data-action='prefs-tab'][data-tab='advanced']").click()
+    page.wait_for_selector("#prefs-panel-advanced.active")
 
 
 def test_focus_toggle_visible_on_desktop(page, base_url):
@@ -574,4 +567,16 @@ def test_focus_toggle_visible_on_desktop(page, base_url):
     page.set_viewport_size({"width": 1280, "height": 800})
     page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
+    _open_prefs(page)
     assert page.locator("[data-action='focus-toggle']").first.is_visible()
+
+
+def test_offline_toggle_visible_on_desktop(page, base_url):
+    """offline-toggle button (in prefs modal) is visible and only one instance exists."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    _open_prefs(page)
+    toggles = page.locator("[data-action='offline-toggle']")
+    assert toggles.count() == 1
+    assert toggles.first.is_visible()

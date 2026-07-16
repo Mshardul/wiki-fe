@@ -28,8 +28,8 @@ function validatePassword(pw) {
 /* ═══════════════════════════════════════════════════════════════
    ANON → LOGIN MIGRATION
    One prompt on login if local anon data exists. Never blocks login.
-   The "Keep them" action rides the toast's single action button;
-   toast expiry (no action) is treated as "Discard".
+   Dedicated modal, not a toast - the shared toast queue can bury/delay
+   this and silently discard local data before the user sees it.
    ═══════════════════════════════════════════════════════════════ */
 function _collectLocalReads() {
   const out = [];
@@ -49,30 +49,35 @@ function _hasLocalData() {
   return getBookmarks().length > 0 || getRecents().length > 0 || _collectLocalReads().length > 0;
 }
 
+function _showMigrateModal() {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("migrate-modal");
+    const keepBtn = document.getElementById("migrate-keep");
+    const discardBtn = document.getElementById("migrate-discard");
+
+    const done = (v) => {
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+      keepBtn.removeEventListener("click", onKeep);
+      discardBtn.removeEventListener("click", onDiscard);
+      resolve(v);
+    };
+    const onKeep = () => done(true);
+    const onDiscard = () => done(false);
+
+    keepBtn.addEventListener("click", onKeep);
+    discardBtn.addEventListener("click", onDiscard);
+
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    keepBtn.focus();
+  });
+}
+
 async function maybeMigrate() {
   if (!_hasLocalData()) return;
 
-  const keep = await new Promise((resolve) => {
-    let settled = false;
-    const done = (v) => {
-      if (!settled) {
-        settled = true;
-        resolve(v);
-      }
-    };
-    document.dispatchEvent(
-      new CustomEvent("wiki:toast", {
-        detail: {
-          message:
-            "You have unsaved items on this device from browsing signed out. Keep them in your account?",
-          durationMs: 12000,
-          actionLabel: "Keep them",
-          onUndo: () => done(true),
-        },
-      }),
-    );
-    setTimeout(() => done(false), 12500);
-  });
+  const keep = await _showMigrateModal();
 
   if (keep) {
     const payload = {
@@ -261,6 +266,7 @@ const Auth = {
       await Sync.pullAll();
       document.dispatchEvent(new CustomEvent("wiki:session-changed"));
       _broadcastSessionChange();
+      showToast("Logged in", 3000, null, undefined, "success");
     } catch (e) {
       if (e instanceof ApiError && e.status === 403) {
         this._pendingVerifyEmail = email;
@@ -403,6 +409,7 @@ const Auth = {
     this.refreshButtons();
     document.dispatchEvent(new CustomEvent("wiki:session-changed"));
     _broadcastSessionChange();
+    showToast("Logged out", 3000, null, undefined, "success");
   },
 
   _wireModalInputs() {

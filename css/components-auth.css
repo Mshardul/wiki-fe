@@ -189,3 +189,69 @@
     display: block;
   }
 }
+
+/* ─── Data-migrate modal (anon -> login prompt) ─── */
+.migrate-modal.hidden {
+  display: none;
+}
+.migrate-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-max);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.migrate-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay);
+}
+.migrate-dialog {
+  position: relative;
+  width: min(400px, calc(100vw - 2rem));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-lg);
+}
+.migrate-title {
+  margin: 0 0 0.75rem;
+  color: var(--text-heading);
+  font-size: var(--text-lg);
+}
+.migrate-copy {
+  margin: 0 0 1.25rem;
+  color: var(--text-body);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+.migrate-actions {
+  display: flex;
+  gap: var(--s2);
+}
+.migrate-btn {
+  flex: 1;
+  padding: var(--s2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text-body);
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.migrate-btn:hover {
+  border-color: var(--border-2);
+  background: var(--surface-3);
+}
+.migrate-btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.migrate-btn--primary:hover {
+  filter: brightness(1.1);
+}

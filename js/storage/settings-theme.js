@@ -455,14 +455,13 @@ const Settings = {
           .join("")}
       </div>`;
     const ORDER = ["global", "home", "index", "content", "search"];
-    const isTouch = window.matchMedia("(pointer: coarse)").matches;
     const list = document.createElement("div");
     list.className = "prefs-shortcuts-list";
     list.innerHTML =
       ORDER.filter((k) => this._shortcutsCache[k]?.length)
         .map((k) => renderGroup(k.charAt(0).toUpperCase() + k.slice(1), this._shortcutsCache[k]))
         .join("") +
-      (isTouch && this._shortcutsCache.touch?.length
+      (this._shortcutsCache.touch?.length
         ? renderGroup("Touch Gestures", this._shortcutsCache.touch)
         : "");
     container.replaceChildren(list);

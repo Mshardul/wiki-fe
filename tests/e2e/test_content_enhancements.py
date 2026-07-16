@@ -904,7 +904,7 @@ def test_code_block_has_traffic_lights(page, base_url):
 
 
 def test_code_block_copy_button_in_header(page, base_url):
-    """Copy button lives inside <pre> (after .code-header) and shows the ⧉ glyph."""
+    """Copy button lives inside <pre> (after .code-header) and shows the Tabler copy icon."""
     _load_mock_article(page, base_url, ARTICLE_WITH_CODE, slug="code-copybtn")
     page.wait_for_selector("#markdown-body pre", timeout=5_000)
 
@@ -912,12 +912,22 @@ def test_code_block_copy_button_in_header(page, base_url):
         const pre = document.querySelector('#markdown-body pre');
         if (!pre) return { found: false };
         const btn = pre.querySelector('.copy-btn');
-        return { found: true, hasCopyBtn: !!btn, text: btn?.textContent?.trim() };
+        const copyIcon = btn?.querySelector('.copy-btn-icon-copy use');
+        const checkIcon = btn?.querySelector('.copy-btn-icon-check use');
+        return {
+            found: true,
+            hasCopyBtn: !!btn,
+            copyIconHref: copyIcon?.getAttribute('href'),
+            checkIconHref: checkIcon?.getAttribute('href'),
+        };
     }""")
     assert result["found"], "<pre> not found inside #markdown-body"
     assert result["hasCopyBtn"], ".copy-btn not found inside <pre>"
-    assert result["text"] == "⧉", (
-        f"Expected copy button glyph '⧉', got '{result['text']}'"
+    assert result["copyIconHref"] == "#icon-copy", (
+        f"Expected copy icon href '#icon-copy', got '{result['copyIconHref']}'"
+    )
+    assert result["checkIconHref"] == "#icon-check", (
+        f"Expected check icon href '#icon-check', got '{result['checkIconHref']}'"
     )
 
 
@@ -1392,11 +1402,23 @@ def test_content_topbar_fits_narrow_viewports(page, base_url, width):
 # ── Print / PDF study sheet ─────────────────────────────────────────────────────
 
 
-def test_print_button_present_in_content_topbar(page, base_url):
-    """Content topbar exposes a print action button."""
+def _open_advanced_prefs(page):
+    page.locator("[title='Preferences (,)']:visible").first.click()
+    page.wait_for_function(
+        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    page.locator("[data-tab='advanced']").click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-panel-advanced').getAttribute('aria-hidden') === 'false'"
+    )
+
+
+def test_print_button_present_in_advanced_prefs(page, base_url):
+    """Advanced prefs tab exposes a print action button."""
     _load_mock_article(page, base_url, ARTICLE_WITH_CODE, slug="print-btn")
-    btn = page.locator(".content-topbar [data-action='print-article']")
-    assert btn.count() == 1, "Print button missing from content topbar"
+    _open_advanced_prefs(page)
+    btn = page.locator("#prefs-panel-advanced [data-action='print-article']")
+    assert btn.count() == 1, "Print button missing from Advanced prefs tab"
 
 
 def test_print_button_stamps_source_url(page, base_url):
@@ -1404,7 +1426,8 @@ def test_print_button_stamps_source_url(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_WITH_CODE, slug="print-url")
     # Suppress the actual print dialog so the test doesn't block.
     page.evaluate("() => { window.print = () => {}; }")
-    page.click(".content-topbar [data-action='print-article']")
+    _open_advanced_prefs(page)
+    page.click("#prefs-panel-advanced [data-action='print-article']")
     url = page.evaluate(
         "() => document.getElementById('markdown-body').getAttribute('data-print-url')"
     )
@@ -3083,3 +3106,97 @@ def test_interview_mode_resets_on_navigation(page, base_url):
     assert page.locator("#interview-bar").get_attribute("class") and "hidden" in (
         page.locator("#interview-bar").get_attribute("class") or ""
     )
+
+
+# ── Prerequisites chips ───────────────────────────────────────────
+
+ARTICLE_WITH_PREREQUISITES = """\
+# Stack
+
+## Prerequisites
+
+- **Big-O Notation** [Must read] - the cost model that makes O(1) claims meaningful.
+- [Array](./array.md) [Must read] - the default stack is a dynamic array under the hood.
+- [Linked List](./linked-list.md) [Should read] - the alternative backing store.
+
+## Body
+
+Some article content.
+"""
+
+
+def test_prerequisites_render_as_chips(page, base_url):
+    """Prerequisites heading+list becomes a chip row, not a plain paragraph/list."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_PREREQUISITES, slug="prereqs")
+    page.wait_for_selector(".prereqs-container", timeout=5_000)
+
+    result = page.evaluate("""() => ({
+        heading: !!document.querySelector('#markdown-body h2'),
+        chipCount: document.querySelectorAll('.prereq-chip').length,
+    })""")
+    assert result["chipCount"] == 3
+    # Original heading/list are consumed, not left behind alongside the chips.
+    assert not result["heading"] or "Prerequisites" not in page.evaluate(
+        "() => document.querySelector('#markdown-body h2')?.textContent || ''"
+    )
+
+
+def test_prerequisite_chip_link_navigates_and_has_no_title(page, base_url):
+    """A linked prerequisite is an <a> with the resolved href and no native title
+    tooltip - the explanation is shown via hover-preview instead (WIKI-460)."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_PREREQUISITES, slug="prereqs-link")
+
+    chip = page.locator(".prereq-chip", has_text="Array").first
+    assert chip.evaluate("el => el.tagName") == "A"
+    assert chip.get_attribute("href") == "./array.md"
+    assert not chip.get_attribute("title")
+
+
+def test_prerequisite_chip_link_shows_hover_preview_card(page, base_url):
+    """Hovering a linked prereq chip reuses the same hover-preview card as normal
+    in-article links, fetching the target article's own content (WIKI-460)."""
+    page.route(
+        "**/array.md",
+        lambda r: r.fulfill(body="# Array\n\n## TL;DR\n\nContiguous, indexable memory.\n"),
+    )
+    _load_mock_article(page, base_url, ARTICLE_WITH_PREREQUISITES, slug="prereqs-link-hover")
+
+    chip = page.locator(".prereq-chip", has_text="Array").first
+    chip.hover()
+    page.wait_for_selector("#hover-preview.visible", timeout=5_000)
+    preview_text = page.locator("#hover-preview").inner_text()
+    assert "Contiguous, indexable memory" in preview_text
+
+
+def test_prerequisite_chip_unlinked_item_has_no_href(page, base_url):
+    """A bold (not-yet-written) prerequisite renders as a chip with no navigation target."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_PREREQUISITES, slug="prereqs-unlinked")
+
+    chip = page.locator(".prereq-chip", has_text="Big-O Notation").first
+    assert chip.evaluate("el => el.tagName") == "SPAN"
+    assert "prereq-chip--unlinked" in (chip.get_attribute("class") or "")
+    assert not chip.get_attribute("title")
+
+
+def test_prerequisite_chip_unlinked_item_shows_placeholder_on_hover(page, base_url):
+    """Unlinked prereq chips get the same hover-preview card UI, showing a static
+    'not yet written' placeholder instead of fetched content (WIKI-460)."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_PREREQUISITES, slug="prereqs-unlinked-hover")
+
+    chip = page.locator(".prereq-chip", has_text="Big-O Notation").first
+    chip.hover()
+    page.wait_for_selector("#hover-preview.visible", timeout=5_000)
+    preview_text = page.locator("#hover-preview").inner_text()
+    assert "not yet written" in preview_text.lower()
+
+
+def test_prerequisite_chip_level_badges(page, base_url):
+    """Must/Should markers render as color-coded badges inside their chip."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_PREREQUISITES, slug="prereqs-badges")
+
+    must_badge = page.locator(".prereq-chip", has_text="Array").locator(".prereq-level").first
+    should_badge = (
+        page.locator(".prereq-chip", has_text="Linked List").locator(".prereq-level").first
+    )
+    assert "prereq-level--must" in (must_badge.get_attribute("class") or "")
+    assert "prereq-level--should" in (should_badge.get_attribute("class") or "")

@@ -91,19 +91,34 @@ def test_broken_slug_redirects_home(page, base_url):
 # ── Focus mode active indicator ──────────────────────────────────
 
 
-def test_focus_btn_exists_in_topbar(page, base_url):
-    """content-focus-btn is present in the content topbar."""
+def _open_advanced_prefs(page):
+    page.locator("[title='Preferences (,)']:visible").first.click()
+    page.wait_for_function(
+        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    page.locator("[data-tab='advanced']").click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-panel-advanced').getAttribute('aria-hidden') === 'false'"
+    )
+
+
+def test_focus_btn_exists_in_prefs(page, base_url):
+    """prefs-focus-toggle is present in the Advanced prefs tab."""
     _go_to_article(page, base_url)
-    assert page.locator("#content-focus-btn").count() > 0
+    _open_advanced_prefs(page)
+    assert page.locator("#prefs-focus-toggle").count() > 0
 
 
 def test_focus_btn_becomes_active_on_f(page, base_url):
     """Pressing F adds .active to the focus button."""
     _go_to_article(page, base_url)
-    btn = page.locator("#content-focus-btn")
+    _open_advanced_prefs(page)
+    btn = page.locator("#prefs-focus-toggle")
     assert "active" not in (btn.get_attribute("class") or "")
 
+    page.keyboard.press("Escape")
     page.keyboard.press("f")
+    _open_advanced_prefs(page)
     assert "active" in (btn.get_attribute("class") or ""), (
         "Focus button should be active after pressing F"
     )
@@ -114,7 +129,8 @@ def test_focus_btn_deactivates_on_second_f(page, base_url):
     _go_to_article(page, base_url)
     page.keyboard.press("f")
     page.keyboard.press("f")
-    btn = page.locator("#content-focus-btn")
+    _open_advanced_prefs(page)
+    btn = page.locator("#prefs-focus-toggle")
     assert "active" not in (btn.get_attribute("class") or ""), (
         "Focus button should be inactive after toggling off"
     )
@@ -123,7 +139,8 @@ def test_focus_btn_deactivates_on_second_f(page, base_url):
 def test_focus_btn_click_toggles_mode(page, base_url):
     """Clicking the focus button activates focus mode."""
     _go_to_article(page, base_url)
-    btn = page.locator("#content-focus-btn")
+    _open_advanced_prefs(page)
+    btn = page.locator("#prefs-focus-toggle")
     btn.click()
     assert "active" in (btn.get_attribute("class") or ""), (
         "Focus button should be active after clicking"
@@ -150,12 +167,12 @@ def test_overflow_trigger_opens_menu_on_mobile(page, base_url):
 
 
 def test_overflow_menu_action_closes_menu_after_click(page, base_url):
-    """Clicking an action inside the overflow menu (e.g. focus mode) closes the dropdown."""
+    """Clicking an action inside the overflow menu (e.g. quiz mode) closes the dropdown."""
     page.set_viewport_size({"width": 375, "height": 812})
     _go_to_article(page, base_url)
     page.locator("#content-overflow-btn").click()
     page.wait_for_selector("#content-overflow-menu.open")
-    page.locator("#content-focus-btn").click()
+    page.locator("#content-quiz-btn").click()
     assert not page.locator("#content-overflow-menu").is_visible()
 
 

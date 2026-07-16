@@ -16,7 +16,7 @@ def _go_to_article(page, base_url):
 def test_hotkey_b_bookmarks(page, base_url):
     """Pressing 'b' toggles bookmark state."""
     _go_to_article(page, base_url)
-    btn = page.locator("#content-bookmark-btn")
+    btn = page.locator("#prefs-bookmark-toggle")
 
     # Initial state (assuming unbookmarked)
     initial_state = "active" in (btn.get_attribute("class") or "")
@@ -62,7 +62,7 @@ def test_hotkeys_disabled_in_input(page, base_url):
 
     # Try bookmarking via hotkey while input focused
     page.keyboard.press("b")
-    btn = page.locator("#content-bookmark-btn")
+    btn = page.locator("#prefs-bookmark-toggle")
     # Should not toggle
     assert "active" not in (btn.get_attribute("class") or "")
 

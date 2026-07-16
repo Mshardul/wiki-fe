@@ -7,13 +7,16 @@ const BACKEND_URL = _isLocal ? "http://localhost:8001" : "https://wiki-be.onrend
 const API = `${BACKEND_URL}/api/v1`;
 
 class ApiError extends Error {
-  constructor(code, message, status) {
+  constructor(code, message, status, requestId) {
     super(message || code);
     this.name = "ApiError";
     this.code = code;
     this.status = status;
+    this.requestId = requestId;
   }
 }
+
+const _DEBUG = new URLSearchParams(location.search).has("debug");
 
 let _sessionExpiredFired = false;
 
@@ -51,8 +54,10 @@ async function _request(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const token = getSessionToken();
+  const requestId = crypto.randomUUID();
   const headers = body ? { "Content-Type": "application/json" } : {};
   if (token) headers.Authorization = `Bearer ${token}`;
+  headers["X-Request-Id"] = requestId;
   let res;
   try {
     res = await fetch(`${API}${path}`, {
@@ -62,13 +67,17 @@ async function _request(
       signal: controller.signal,
     });
   } catch (networkErr) {
+    if (_DEBUG) console.log(`[${requestId}] ${method} ${path} → network error`, networkErr);
     if (networkErr.name === "AbortError") {
-      throw new ApiError("TIMEOUT", "Request timed out. Please try again.", 0);
+      throw new ApiError("TIMEOUT", "Request timed out. Please try again.", 0, requestId);
     }
-    throw new ApiError("NETWORK", networkErr.message, 0);
+    throw new ApiError("NETWORK", networkErr.message, 0, requestId);
   } finally {
     clearTimeout(timer);
   }
+  // BE echoes back the same id (or its own, if ours was missing/invalid) - trust the response header over our own value.
+  const echoedId = res.headers.get("X-Request-Id") || requestId;
+  if (_DEBUG) console.log(`[${echoedId}] ${method} ${path} → ${res.status}`);
 
   if (res.status === 401 && !silent401) {
     // A 401 here means the session expired mid-use - clear the dead token (else every future request 401s again); fires once.
@@ -78,7 +87,7 @@ async function _request(
       state.session = { user: null, status: "out" };
       document.dispatchEvent(new CustomEvent("wiki:session-expired"));
     }
-    throw new ApiError("UNAUTHORIZED", "Session expired", 401);
+    throw new ApiError("UNAUTHORIZED", "Session expired", 401, echoedId);
   }
 
   if (res.status === 204) {
@@ -95,7 +104,7 @@ async function _request(
 
   if (!res.ok) {
     const env = data?.error || {};
-    throw new ApiError(env.code || "ERROR", env.message || res.statusText, res.status);
+    throw new ApiError(env.code || "ERROR", env.message || res.statusText, res.status, echoedId);
   }
   // A real (non-401) response proves the session is valid again - re-arm the guard.
   _sessionExpiredFired = false;

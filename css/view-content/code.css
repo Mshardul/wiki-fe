@@ -141,6 +141,20 @@ pre.has-line-numbers {
   opacity: 1;
   pointer-events: auto;
 }
+.copy-btn-icon-copy,
+.copy-btn-icon-check {
+  width: 14px;
+  height: 14px;
+}
+.copy-btn-icon-check {
+  display: none;
+}
+.copy-btn.copied .copy-btn-icon-copy {
+  display: none;
+}
+.copy-btn.copied .copy-btn-icon-check {
+  display: block;
+}
 
 /* ═══════════════════════════════════════════════
    TABLE SCROLL CUE
@@ -288,12 +302,22 @@ pre.has-line-numbers {
   cursor: pointer;
   z-index: var(--z-base);
   white-space: nowrap;
-  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+  opacity: 0.5;
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast), opacity
+    var(--t-fast);
 }
 .code-expand-btn:hover {
   color: var(--text-body);
   border-color: var(--border);
   background: var(--surface-2);
+  opacity: 1;
+}
+@media (hover: none) {
+  .code-expand-btn {
+    opacity: 0.85;
+    background: color-mix(in srgb, var(--surface-3) 70%, transparent);
+    backdrop-filter: blur(2px);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════

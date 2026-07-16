@@ -139,37 +139,39 @@
     <div id="view-home" class="view active">
       <div class="home-bg-grid" aria-hidden="true"></div>
       <div class="home-glow" aria-hidden="true"></div>
-      <div class="home-topbar">
-        <button
-          class="topbar-icon-btn"
-          title="Changelog"
-          data-action="changelog-open"
-        >
-          <svg class="icon"><use href="#icon-changelog"></use></svg>
-        </button>
-        <button
-          class="topbar-icon-btn"
-          title="Search (⌘K)"
-          data-action="search-open"
-        >
-          <svg class="icon"><use href="#icon-search"></use></svg>
-        </button>
-        <button
-          class="topbar-icon-btn"
-          title="Preferences (,)"
-          data-action="settings-open"
-        >
-          <svg class="icon"><use href="#icon-settings"></use></svg>
-        </button>
-        <button
-          class="topbar-icon-btn topbar-auth-btn"
-          id="auth-btn-home"
-          data-action="auth-toggle"
-          title="Login"
-        >
-          <svg class="icon"><use href="#icon-user"></use></svg>
-          <span class="auth-btn-label">Login</span>
-        </button>
+      <div class="page-topbar home-topbar">
+        <div class="topbar-inner">
+          <button
+            class="topbar-icon-btn"
+            title="Changelog"
+            data-action="changelog-open"
+          >
+            <svg class="icon"><use href="#icon-changelog"></use></svg>
+          </button>
+          <button
+            class="topbar-icon-btn"
+            title="Search (⌘K)"
+            data-action="search-open"
+          >
+            <svg class="icon"><use href="#icon-search"></use></svg>
+          </button>
+          <button
+            class="topbar-icon-btn"
+            title="Preferences (,)"
+            data-action="settings-open"
+          >
+            <svg class="icon"><use href="#icon-settings"></use></svg>
+          </button>
+          <button
+            class="topbar-icon-btn topbar-auth-btn"
+            id="auth-btn-home"
+            data-action="auth-toggle"
+            title="Login"
+          >
+            <svg class="icon"><use href="#icon-user"></use></svg>
+            <span class="auth-btn-label">Login</span>
+          </button>
+        </div>
       </div>
       <header class="home-header">
         <div class="home-eyebrow">Documentation</div>
@@ -226,23 +228,27 @@
         <div id="recents-section" class="recents-section hidden"></div>
         <div id="bookmarks-section" class="recents-section hidden"></div>
         <div class="index-filter-bar">
-          <input
-            type="text"
-            id="index-filter-input"
-            class="index-filter-input"
-            placeholder="Filter articles…"
-            aria-label="Filter articles in this wiki"
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <button
-            type="button"
-            id="index-filter-unread"
-            class="index-filter-unread"
-            aria-pressed="false"
+          <div class="index-filter-input-wrap">
+            <svg class="icon index-filter-icon"><use href="#icon-search"></use></svg>
+            <input
+              type="text"
+              id="index-filter-input"
+              class="index-filter-input"
+              placeholder="Filter articles…"
+              aria-label="Filter articles in this wiki"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <select
+            id="index-filter-read-select"
+            class="index-filter-read-select"
+            aria-label="Filter by read status"
           >
-            Unread only
-          </button>
+            <option value="all">All</option>
+            <option value="read">Read only</option>
+            <option value="unread">Unread only</option>
+          </select>
         </div>
         <div id="index-sections" class="index-sections"></div>
       </main>
@@ -265,14 +271,6 @@
           ></nav>
           <div id="topbar-title" class="topbar-title"></div>
           <span id="content-read-time" class="read-time-badge"></span>
-          <button
-            id="content-bookmark-btn"
-            class="topbar-icon-btn"
-            title="Bookmark"
-            data-action="bookmark-toggle"
-          >
-            <svg class="icon"><use href="#icon-bookmark"></use></svg>
-          </button>
           <div class="topbar-overflow">
             <button
               class="topbar-icon-btn"
@@ -286,23 +284,6 @@
               <svg class="icon"><use href="#icon-dots-vertical"></use></svg>
             </button>
             <div class="topbar-overflow-menu" id="content-overflow-menu">
-              <button
-                id="content-read-btn"
-                class="topbar-overflow-item"
-                data-action="read-toggle"
-              >
-                <svg class="icon"><use href="#icon-eye"></use></svg>
-                <span>Mark as read</span>
-              </button>
-              <button
-                id="content-focus-btn"
-                class="topbar-overflow-item"
-                aria-label="Focus mode"
-                data-action="focus-toggle"
-              >
-                <svg class="icon"><use href="#icon-maximize"></use></svg>
-                <span>Focus mode (F)</span>
-              </button>
               <button
                 id="content-quiz-btn"
                 class="topbar-overflow-item"
@@ -354,15 +335,6 @@
                 <svg class="icon"><use href="#icon-bookmark"></use></svg>
                 <span>All bookmarks (⌘B)</span>
               </button>
-              <button
-                id="content-offline-btn"
-                class="topbar-overflow-item"
-                data-action="offline-toggle"
-              >
-                <svg class="icon offline-icon-download"><use href="#icon-download"></use></svg>
-                <svg class="icon offline-icon-check"><use href="#icon-check"></use></svg>
-                <span>Save for offline</span>
-              </button>
               <div
                 class="depth-fold-control"
                 role="group"
@@ -399,14 +371,6 @@
                   Reference
                 </button>
               </div>
-              <button
-                class="topbar-overflow-item"
-                data-action="print-article"
-                aria-label="Print article"
-              >
-                <svg class="icon"><use href="#icon-printer"></use></svg>
-                <span>Print / save as PDF</span>
-              </button>
               <button
                 class="topbar-overflow-item"
                 data-action="copy-markdown"
@@ -858,20 +822,50 @@
               <div class="settings-size-row">
                 <button
                   id="prefs-focus-toggle"
-                  class="settings-size-btn"
+                  class="settings-size-btn settings-icon-btn"
                   data-action="focus-toggle"
                   aria-pressed="false"
+                  aria-label="Focus mode"
                   title="Dims all paragraphs except the one in view (F)"
                 >
-                  Focus Mode
+                  <svg class="icon"><use href="#icon-maximize"></use></svg>
                 </button>
                 <button
                   id="prefs-offline-toggle"
-                  class="settings-size-btn"
+                  class="settings-size-btn settings-icon-btn"
                   data-action="offline-toggle"
+                  aria-label="Save for offline"
                   title="Save current article for offline reading"
                 >
-                  Save Offline
+                  <svg class="icon"><use href="#icon-download"></use></svg>
+                </button>
+                <button
+                  id="prefs-read-toggle"
+                  class="settings-size-btn settings-icon-btn"
+                  data-action="read-toggle"
+                  aria-pressed="false"
+                  aria-label="Mark as read"
+                  title="Mark the current article as read/unread"
+                >
+                  <svg class="icon"><use href="#icon-eye"></use></svg>
+                </button>
+                <button
+                  id="prefs-bookmark-toggle"
+                  class="settings-size-btn settings-icon-btn"
+                  data-action="bookmark-toggle"
+                  aria-pressed="false"
+                  aria-label="Bookmark"
+                  title="Bookmark the current article"
+                >
+                  <svg class="icon"><use href="#icon-bookmark"></use></svg>
+                </button>
+                <button
+                  class="settings-size-btn settings-icon-btn"
+                  data-action="print-article"
+                  aria-label="Print"
+                  title="Print / save as PDF"
+                >
+                  <svg class="icon"><use href="#icon-printer"></use></svg>
                 </button>
               </div>
             </div>
@@ -1068,6 +1062,35 @@
               Back to log in
             </button>
           </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+       DATA-MIGRATE MODAL - anon -> login prompt
+  ══════════════════════════════════════ -->
+    <div
+      id="migrate-modal"
+      class="migrate-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Keep your local data?"
+      aria-hidden="true"
+    >
+      <div class="migrate-backdrop"></div>
+      <div class="migrate-dialog">
+        <h2 class="migrate-title">Keep your local data?</h2>
+        <p class="migrate-copy">
+          You have unsaved items on this device from browsing signed out.
+          Keep them in your account, or discard them?
+        </p>
+        <div class="migrate-actions">
+          <button id="migrate-discard" class="migrate-btn" type="button">
+            Discard
+          </button>
+          <button id="migrate-keep" class="migrate-btn migrate-btn--primary" type="button">
+            Keep them
+          </button>
         </div>
       </div>
     </div>

@@ -292,8 +292,8 @@ After finishing any **content task**:
    ## YYYY-MM-DD
    - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
    ```
-4. **Search index** - after adding, renaming, or removing an article, regenerate `content/search-index.json`: run `python3 docs/_meta/ai-instructions/scripts/build_search_index.py` and commit the result alongside the content change. CI's `search-index` job runs the same generator and fails the build (`git diff --exit-code`) if the committed file is stale.
-5. **Backlinks** - after adding, renaming, removing, or changing internal links in an article, regenerate `content/backlinks.json`: run `python3 docs/_meta/ai-instructions/scripts/build_backlinks.py` (reads `search-index.json`, so regenerate that first) and commit the result. CI's `backlinks` job does the same and fails the build if the committed file is stale.
+4. **Search index** - after adding, renaming, or removing an article, regenerate `content/search-index.json`: run `python3 scripts/build_search_index.py` and commit the result alongside the content change. CI's `search-index` job runs the same generator and fails the build (`git diff --exit-code`) if the committed file is stale.
+5. **Backlinks** - after adding, renaming, removing, or changing internal links in an article, regenerate `content/backlinks.json`: run `python3 scripts/build_backlinks.py` (reads `search-index.json`, so regenerate that first) and commit the result. CI's `backlinks` job does the same and fails the build if the committed file is stale.
 
 ---
 

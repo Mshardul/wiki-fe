@@ -88,18 +88,15 @@
 /* Wiki card grid */
 .wiki-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(0, 260px));
+  justify-content: center;
   gap: var(--s5);
 }
 
-@media (min-width: 768px) {
+@media (max-width: 480px) {
   .wiki-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-@media (min-width: 1440px) {
-  .wiki-grid {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+    justify-content: stretch;
   }
 }
 

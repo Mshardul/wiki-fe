@@ -35,22 +35,22 @@ async function clearAllDownloads(wikiId) {
 }
 
 async function updateOfflineBtn() {
-  const btn = document.getElementById("content-offline-btn");
+  const btn = document.getElementById("prefs-offline-toggle");
   if (!btn || !state.currentFilePath) return;
   const cached = await isArticleCached(state.currentFilePath);
-  const dlIcon = btn.querySelector(".offline-icon-download");
-  const chkIcon = btn.querySelector(".offline-icon-check");
+  const icon = btn.querySelector("use");
   btn.classList.toggle("active", cached);
-  if (dlIcon) dlIcon.style.display = cached ? "none" : "";
-  if (chkIcon) chkIcon.style.display = cached ? "" : "none";
-  btn.title = cached ? "Saved offline - click to remove" : "Save for offline";
+  if (icon) icon.setAttribute("href", cached ? "#icon-check" : "#icon-download");
+  btn.title = cached
+    ? "Saved offline - click to remove"
+    : "Save current article for offline reading";
 }
 
 const Offline = {
   async toggle() {
     const path = state.currentFilePath;
     if (!path) return;
-    const btn = document.getElementById("content-offline-btn");
+    const btn = document.getElementById("prefs-offline-toggle");
     const cached = await isArticleCached(path);
     if (cached) {
       await removeArticleDownload(path);

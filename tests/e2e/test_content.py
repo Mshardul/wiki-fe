@@ -71,28 +71,36 @@ def test_copy_button_writes_to_clipboard(page, base_url):
 
 
 def test_prerequisites_chips_rendered(page, base_url):
-    """Prerequisites paragraphs are converted to chips."""
+    """Prerequisites section (H2 heading + list) is converted to chips."""
     _load_mock_article(
-        page, base_url, "# Mock Content\n\nPrerequisites:[A](./a.md) and [B](./b.md)\n"
+        page,
+        base_url,
+        "# Mock Content\n\n## Prerequisites\n\n- [A](./a.md) [Must read] - reason A\n"
+        "- [B](./b.md) [Should read] - reason B\n\n## Body\n\ncontent\n",
     )
     page.wait_for_selector(".prereqs-container", timeout=5_000)
 
     chips = page.locator(".prereq-chip").all()
     assert len(chips) == 2
-    assert chips[0].inner_text() == "A"
-    assert chips[1].inner_text() == "B"
+    assert chips[0].inner_text().startswith("A")
+    assert chips[1].inner_text().startswith("B")
 
 
 def test_prerequisites_original_paragraph_removed(page, base_url):
-    """Original Prerequisites paragraph is removed after chip render."""
-    _load_mock_article(page, base_url, "# Mock Content\n\nPrerequisites:[A](./a.md)\n")
+    """Original Prerequisites heading + list is removed after chip render."""
+    _load_mock_article(
+        page,
+        base_url,
+        "# Mock Content\n\n## Prerequisites\n\n- [A](./a.md) [Must read] - reason A\n\n## Body\n\ncontent\n",
+    )
     page.wait_for_selector(".prereqs-container", timeout=5_000)
 
-    raw_p_count = page.evaluate("""() => {
-        const ps = [...document.querySelectorAll('#markdown-body p')];
-        return ps.filter(p => p.textContent.trim().startsWith('Prerequisites:')).length;
+    remaining = page.evaluate("""() => {
+        const heading = [...document.querySelectorAll('#markdown-body h2')]
+            .find(h => h.textContent.trim() === 'Prerequisites');
+        return !!heading;
     }""")
-    assert raw_p_count == 0, "Original Prerequisites: paragraph was not removed"
+    assert not remaining, "Original Prerequisites heading was not removed"
 
 
 # ── Topbar title ────────────────────────────────────────────────────────────────

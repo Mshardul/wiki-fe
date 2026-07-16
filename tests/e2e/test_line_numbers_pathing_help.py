@@ -332,40 +332,52 @@ def test_prefs_keyboard_tab_shows_index_and_content_groups(page, base_url):
     )
 
 
-def test_prefs_keyboard_tab_shows_touch_gestures_on_coarse_pointer(page, base_url):
-    """Keyboard tab appends a Touch Gestures group when pointer is coarse (touch device)."""
-    page.add_init_script("""
-        window.matchMedia = (query) => ({
-            matches: query.includes('pointer: coarse'),
-            media: query,
-            addListener: () => {},
-            removeListener: () => {},
-            addEventListener: () => {},
-            removeEventListener: () => {},
-        });
-    """)
+def test_prefs_keyboard_tab_lists_study_and_interview_shortcuts(page, base_url):
+    """Content group documents the H (study mode) and I (interview mode) hotkeys -
+    both were bound in app.js but missing from shortcuts.json."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.keyboard.press("?")
+    page.wait_for_selector("#prefs-panel-keyboard kbd", timeout=5_000)
+    body_text = page.locator("#prefs-panel-keyboard").inner_text().upper()
+    assert "STUDY MODE" in body_text, "Content group should document the H (study mode) hotkey"
+    assert "INTERVIEW MODE" in body_text, "Content group should document the I (interview mode) hotkey"
+
+
+def test_prefs_keyboard_tab_shows_search_group(page, base_url):
+    """Search modal's own key bindings (result nav, section-filter prefix) get
+    their own group instead of being entirely undocumented."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.keyboard.press("?")
+    page.wait_for_selector("#prefs-panel-keyboard kbd", timeout=5_000)
+    body_text = page.locator("#prefs-panel-keyboard").inner_text().upper()
+    assert "SEARCH" in body_text, "Keyboard shortcuts panel must include a 'Search' context group"
+    assert "FILTER RESULTS TO ONE SECTION" in body_text, (
+        "Search group should document the > section-filter prefix"
+    )
+
+
+def test_prefs_keyboard_tab_always_shows_touch_gestures(page, base_url):
+    """Keyboard tab always includes a Touch Gestures group, regardless of pointer
+    type - it documents mobile gestures for anyone reading the shortcuts list,
+    not only users currently on a touch device."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
     page.keyboard.press("?")
     page.wait_for_selector("#prefs-panel-keyboard kbd", timeout=5_000)
     body_text = page.locator("#prefs-panel-keyboard").inner_text().upper()
     assert "TOUCH GESTURES" in body_text, (
-        "Keyboard shortcuts panel must include a 'Touch Gestures' group on coarse pointers"
+        "Keyboard shortcuts panel must include a 'Touch Gestures' group"
     )
     assert "LONG-PRESS LINK" in body_text, (
         "Touch Gestures group should mention the long-press link peek gesture"
     )
-
-
-def test_prefs_keyboard_tab_hides_touch_gestures_on_fine_pointer(page, base_url):
-    """Keyboard tab omits Touch Gestures group on a normal mouse/trackpad device."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.keyboard.press("?")
-    page.wait_for_selector("#prefs-panel-keyboard kbd", timeout=5_000)
-    body_text = page.locator("#prefs-panel-keyboard").inner_text().upper()
-    assert "TOUCH GESTURES" not in body_text, (
-        "Touch Gestures group should not render for fine-pointer (mouse) devices"
+    assert "SWIPE LEFT FROM EDGE" in body_text, (
+        "Touch Gestures group should mention the edge-swipe TOC gesture"
+    )
+    assert "SWIPE DOWN" in body_text, (
+        "Touch Gestures group should mention the swipe-down dismiss gesture"
     )
 
 

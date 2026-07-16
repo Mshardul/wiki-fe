@@ -58,23 +58,51 @@ function addCollapsibleCallouts(contentEl) {
 }
 
 /* ─── Prerequisites Chips ─── */
-function renderPrerequisites(contentEl) {
-  const ps = Array.from(contentEl.querySelectorAll("p"));
-  const prereqP = ps.find((p) => p.textContent.trim().startsWith("Prerequisites:"));
-  if (!prereqP) return;
+// Matches the "[Must read]" / "[Should read]" marker Showdown leaves as plain
+// text (square brackets with no following "(" aren't a markdown link).
+const PREREQ_LEVEL_RE = /\[(Must|Should) read\]/;
 
-  const links = Array.from(prereqP.querySelectorAll("a"));
-  if (!links.length) return;
+function renderPrerequisites(contentEl) {
+  const heading = Array.from(contentEl.querySelectorAll("h2")).find(
+    (h) => h.textContent.trim() === "Prerequisites",
+  );
+  if (!heading) return;
+
+  const list = heading.nextElementSibling;
+  if (!list || list.tagName !== "UL") return;
+
+  const items = Array.from(list.children);
+  if (!items.length) return;
 
   const container = document.createElement("div");
   container.className = "prereqs-container";
-  container.innerHTML = `<span class="prereqs-label">Prerequisites:</span>`;
+  const label = document.createElement("span");
+  label.className = "prereqs-label";
+  label.textContent = "Prerequisites:";
+  container.appendChild(label);
 
-  links.forEach((link) => {
-    const chip = document.createElement("a");
+  items.forEach((li) => {
+    const link = li.querySelector("a");
+    const levelMatch = li.textContent.match(PREREQ_LEVEL_RE);
+    const level = levelMatch ? levelMatch[1] : null;
+
+    const chip = document.createElement(link ? "a" : "span");
     chip.className = "prereq-chip";
-    chip.href = link.getAttribute("href");
-    chip.innerHTML = link.innerHTML;
+    if (link) {
+      chip.href = link.getAttribute("href");
+    } else {
+      chip.classList.add("prereq-chip--unlinked");
+      chip.dataset.unlinkedPrereq = "true";
+    }
+    chip.textContent = (link || li.querySelector("strong"))?.textContent.trim() || "";
+
+    if (level) {
+      const badge = document.createElement("span");
+      badge.className = `prereq-level prereq-level--${level.toLowerCase()}`;
+      badge.textContent = level === "Must" ? "Must" : "Should";
+      chip.appendChild(badge);
+    }
+
     container.appendChild(chip);
   });
 
@@ -84,7 +112,8 @@ function renderPrerequisites(contentEl) {
   } else {
     contentEl.prepend(container);
   }
-  prereqP.remove();
+  heading.remove();
+  list.remove();
 }
 
 /* ─── Heading Anchor Links ─── */
@@ -244,11 +273,6 @@ function isFocusMode() {
 }
 
 function _syncFocusBtn() {
-  const btn = document.getElementById("content-focus-btn");
-  if (btn) {
-    btn.classList.toggle("active", _focusMode);
-    btn.title = _focusMode ? "Exit focus mode (F)" : "Focus mode (F)";
-  }
   const prefsBtn = document.getElementById("prefs-focus-toggle");
   if (prefsBtn) {
     prefsBtn.classList.toggle("active", _focusMode);
