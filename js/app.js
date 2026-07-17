@@ -12,6 +12,7 @@ import {
   isDistractionFree,
   toggleDistractionFree,
 } from "./app/distraction-free.js";
+import { closeLinkGraph, isLinkGraphOpen, openLinkGraph } from "./app/link-graph.js";
 import { printArticle } from "./app/print.js";
 import { fireStudyMilestone } from "./app/study-feedback.js";
 import { closeWikiSwitcher, openWikiSwitcher } from "./app/wiki-switcher.js";
@@ -40,10 +41,12 @@ import { loadIconSprite } from "./icon-sprite.js";
 import { renderChangelog } from "./render/changelog-view.js";
 import { getCurrentMarkdown, navigateToContent } from "./render/content-view.js";
 import { IndexFilter, toggleSection } from "./render/home-index.js";
+import { evictOfflineArticle } from "./render/offline-view.js";
 import { navigate, progressBar, route } from "./render/router.js";
 import { showToast } from "./render/toast.js";
 import {
   applyGlobalSearch,
+  armSearchVerb,
   closeGlobalSearch,
   openGlobalSearch,
   removeRecentSearchEntry,
@@ -79,11 +82,13 @@ window.Bookmarks = Bookmarks;
 window.navigate = navigate;
 window.navigateHome = () => navigate("");
 window.navigateToContent = navigateToContent;
+window.evictOfflineArticle = evictOfflineArticle;
 window.toggleSection = toggleSection;
 window.clearRecents = clearRecents;
 window.closeGlobalSearch = closeGlobalSearch;
 window.retryGlobalSearch = retryGlobalSearch;
 window.runSearchCommand = runSearchCommand;
+window.armSearchVerb = armSearchVerb;
 window.saveSearchQuery = saveSearchQuery;
 window.removeRecentSearchEntry = removeRecentSearchEntry;
 window.applyGlobalSearch = applyGlobalSearch;
@@ -192,6 +197,9 @@ document.addEventListener("click", (e) => {
       break;
     case "wiki-switcher-open":
       openWikiSwitcher();
+      break;
+    case "link-graph-open":
+      openLinkGraph();
       break;
     case "bookmarks-modal-open":
       openBookmarksModal();
@@ -435,6 +443,8 @@ document.addEventListener("keydown", (e) => {
       closeTopbarOverflow();
     } else if (!document.getElementById("wiki-switcher-modal").classList.contains("hidden")) {
       closeWikiSwitcher();
+    } else if (isLinkGraphOpen()) {
+      closeLinkGraph();
     } else if (isBookmarksModalOpen()) {
       closeBookmarksModal();
     } else if (ArticleFind.isOpen()) {
@@ -527,6 +537,16 @@ document.addEventListener("keydown", (e) => {
         e.preventDefault();
         openWikiSwitcher();
       }
+    }
+  }
+
+  if (e.key === "g" || e.key === "G") {
+    const tag = document.activeElement.tagName;
+    const isInput =
+      tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable;
+    if (!isInput && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      isLinkGraphOpen() ? closeLinkGraph() : openLinkGraph();
     }
   }
 });

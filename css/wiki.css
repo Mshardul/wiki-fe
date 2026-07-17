@@ -5,6 +5,7 @@
 @import "./components/preferences-modal.css";
 @import "./components/toast.css";
 @import "./components/wiki-switcher.css";
+@import "./components/link-graph.css";
 @import "./components/bookmarks-modal.css";
 @import "./components-auth.css";
 @import "./view-home.css";

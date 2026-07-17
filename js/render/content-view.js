@@ -79,6 +79,7 @@ import {
 import {
   extractRecommendedLinks,
   renderBacklinks,
+  renderBridges,
   renderRelatedArticles,
 } from "./related-articles.js";
 import { showView } from "./router.js";
@@ -420,6 +421,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
 
       renderRelatedArticles(wiki, filePath, recommendedLinks);
       renderBacklinks(filePath);
+      renderBridges(filePath);
 
       updateBookmarkBtn();
       updateReadBtn();

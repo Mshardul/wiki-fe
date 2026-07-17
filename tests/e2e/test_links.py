@@ -4,6 +4,7 @@
 - Cross-wiki `wiki://` link navigation (199)
 - Author-curated "## Recommended" section feeds the related-articles panel (027)
 - Backlink spine: "Mentioned by" reverse links (250)
+- Cross-wiki concept bridges: "Cross-wiki bridge" block (260)
 """
 
 import json
@@ -271,3 +272,90 @@ def test_backlink_spine_empty_when_no_incoming_links(page, base_url):
         ],
     )
     assert page.locator("#backlink-spine .related-card").count() == 0
+
+
+def test_bridge_block_shows_cross_wiki_pair(page, base_url):
+    """WIKI-260: an article with an entry in bridges.json renders a 'Cross-wiki
+    bridge' block linking to the resolved article in the other wiki, with the
+    canonical title/slug pulled from that wiki's search index (not bridges.json,
+    which only stores paths)."""
+    bridges = [
+        {
+            "a": "./content/system-design/bridge-source.md",
+            "b": "./content/dsa/data-structures/hash-table.md",
+        },
+    ]
+    _load_mock_article(
+        page,
+        base_url,
+        "# Bridge Source\n\nBody with no outgoing links.\n",
+        slug="bridge-source",
+        extra_routes=[
+            (
+                "**/content/bridges.json",
+                lambda r: r.fulfill(content_type="application/json", body=json.dumps(bridges)),
+            ),
+        ],
+    )
+    page.wait_for_selector("#bridge-block .related-card", timeout=5_000)
+
+    label = page.locator("#bridge-block .related-label").inner_text()
+    assert label.lower() == "cross-wiki bridge"
+
+    titles = page.locator("#bridge-block .related-card-title").all_inner_texts()
+    assert titles == ["Hash Table"]
+
+    wiki_badge = page.locator("#bridge-block .bridge-card-wiki").inner_text()
+    assert "Data Structures" in wiki_badge or "DSA" in wiki_badge
+
+
+def test_bridge_block_navigates_to_other_wiki(page, base_url):
+    """Clicking a bridge card navigates to the resolved article in the other wiki."""
+    bridges = [
+        {
+            "a": "./content/system-design/bridge-source-2.md",
+            "b": "./content/dsa/data-structures/hash-table.md",
+        },
+    ]
+    _load_mock_article(
+        page,
+        base_url,
+        "# Bridge Source Two\n\nBody.\n",
+        slug="bridge-source-2",
+        extra_routes=[
+            (
+                "**/content/bridges.json",
+                lambda r: r.fulfill(content_type="application/json", body=json.dumps(bridges)),
+            ),
+            (
+                "**/content/dsa/data-structures/hash-table.md",
+                lambda r: r.fulfill(body="# Hash Table\n\nBody.\n"),
+            ),
+        ],
+    )
+    page.wait_for_selector("#bridge-block .related-card", timeout=5_000)
+    page.locator("#bridge-block .related-card").first.click()
+
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    assert "hash-table" in page.url.lower()
+
+
+def test_bridge_block_empty_when_no_bridge_entry(page, base_url):
+    """An article with no entry in bridges.json shows no 'Cross-wiki bridge' block."""
+    _load_mock_article(
+        page,
+        base_url,
+        "# No Bridge Here\n\nBody.\n",
+        slug="no-bridge",
+        extra_routes=[
+            (
+                "**/content/bridges.json",
+                lambda r: r.fulfill(content_type="application/json", body=json.dumps([])),
+            ),
+        ],
+    )
+    assert page.locator("#bridge-block .related-card").count() == 0

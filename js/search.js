@@ -1,3 +1,4 @@
+import { QuizMode } from "./content/tables.js";
 import { navigateToContent } from "./render/content-view.js";
 import { IndexFilter, fetchWikiIndex } from "./render/home-index.js";
 import { normalizePath } from "./render/nav-utils.js";
@@ -123,6 +124,87 @@ function _entriesForWiki(wikiId) {
   return allSearchCache.entries.filter((e) => e.wiki.id === wikiId);
 }
 
+// Fuzzy-matches argText against section headings in the context wiki (same
+// matching rule as the ">" section-filter seam) and returns a preview + run
+// pair for the best-matching section, or null if nothing matches yet.
+function _resolveSectionArg(argText, markAsRead) {
+  const wiki = _contextWiki();
+  if (!wiki || !argText) return null;
+
+  const ql = argText.toLowerCase();
+  const bySection = new Map();
+  for (const entry of _entriesForWiki(wiki.id)) {
+    const sectionLower = entry.section.toLowerCase();
+    if (sectionLower.includes(ql) || fuzzyMatch(ql, sectionLower)) {
+      if (!bySection.has(entry.section)) bySection.set(entry.section, []);
+      bySection.get(entry.section).push(entry);
+    }
+  }
+  if (!bySection.size) return null;
+
+  // Prefer the shortest matching heading (closest to an exact match).
+  const [section, entries] = [...bySection.entries()].sort((a, b) => a[0].length - b[0].length)[0];
+  const changed = entries.filter((e) => isRead(e.path) !== markAsRead);
+
+  return {
+    preview: markAsRead
+      ? `Mark ${entries.length} article${entries.length === 1 ? "" : "s"} in "${section}" as read`
+      : `Mark ${entries.length} article${entries.length === 1 ? "" : "s"} in "${section}" as unread`,
+    run() {
+      const setRead = markAsRead ? markRead : markUnread;
+      const setBack = markAsRead ? markUnread : markRead;
+      changed.forEach((e) => setRead(e.path));
+      showToast(
+        `Marked ${changed.length} ${markAsRead ? "read" : "unread"} in "${section}"`,
+        4000,
+        () => {
+          changed.forEach((e) => setBack(e.path));
+          if (state.currentWikiId === wiki.id) navigate(wiki.id);
+        },
+      );
+      if (state.currentWikiId === wiki.id) navigate(wiki.id);
+    },
+  };
+}
+
+// Resolves argText to the best-matching article in the context wiki, then
+// navigates there and flips on quiz mode once the article has rendered.
+// QuizMode.toggle() no-ops if the article has no complexity table.
+function _resolveQuizArg(argText) {
+  const wiki = _contextWiki();
+  if (!wiki || !argText) return null;
+
+  const entries = _entriesForWiki(wiki.id)
+    .map((e) => ({ entry: e, score: scoreMatch(argText, e) }))
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score);
+  if (!entries.length) return null;
+
+  const best = entries[0].entry;
+  return {
+    preview: `Quiz me on "${best.title}"`,
+    run() {
+      navigateToContent(
+        best.wiki.id,
+        encodeURIComponent(best.path),
+        encodeURIComponent(best.title),
+        best.slug,
+      );
+      const body = document.getElementById("markdown-body");
+      delete body?.dataset.renderDone;
+      const start = Date.now();
+      const poll = setInterval(() => {
+        if (document.getElementById("markdown-body")?.dataset.renderDone === "1") {
+          clearInterval(poll);
+          QuizMode.toggle();
+        } else if (Date.now() - start > 5000) {
+          clearInterval(poll);
+        }
+      }, 100);
+    },
+  };
+}
+
 const SEARCH_COMMANDS = [
   {
     id: "unread",
@@ -176,6 +258,39 @@ const SEARCH_COMMANDS = [
     },
   },
   {
+    id: "mark-read",
+    label: "Mark read…",
+    hint: "Mark all articles in a section as read - type a section name",
+    icon: "●",
+    needsWiki: true,
+    verb: "mark read ",
+    resolveArg(argText) {
+      return _resolveSectionArg(argText, /* markAsRead */ true);
+    },
+  },
+  {
+    id: "mark-unread",
+    label: "Mark unread…",
+    hint: "Mark all articles in a section as unread - type a section name",
+    icon: "○",
+    needsWiki: true,
+    verb: "mark unread ",
+    resolveArg(argText) {
+      return _resolveSectionArg(argText, /* markAsRead */ false);
+    },
+  },
+  {
+    id: "quiz",
+    label: "Quiz me on…",
+    hint: "Jump to an article and start quiz mode - type a topic",
+    icon: "?",
+    needsWiki: true,
+    verb: "quiz ",
+    resolveArg(argText) {
+      return _resolveQuizArg(argText);
+    },
+  },
+  {
     id: "export-bookmarks",
     label: "Export bookmarks",
     hint: "Download all app data as a JSON backup",
@@ -222,8 +337,39 @@ function availableCommands() {
   return SEARCH_COMMANDS.filter((c) => !c.needsWiki || hasWiki);
 }
 
+// Holds the resolved { run } for the argument-taking command currently
+// previewed, so runSearchCommand("__arg__") can execute exactly what's shown.
+let _resolvedArgRun = null;
+
 function applyCommandFilter(commandQuery) {
   const q = commandQuery.toLowerCase();
+
+  // Verb mode: query starts with a known argument-command's verb + a space -
+  // resolve the remainder against that command's argument space and show a
+  // single live preview row instead of the command list.
+  const verbCmd = availableCommands().find((c) => c.verb && q.startsWith(c.verb));
+  if (verbCmd) {
+    const argText = commandQuery.slice(verbCmd.verb.length).trim();
+    const resolved = verbCmd.resolveArg(argText);
+    gSearchCount.textContent = resolved ? "1 match" : "";
+    if (!resolved) {
+      _resolvedArgRun = null;
+      gSearchResults.innerHTML = `<div class="gsearch-empty">${escHtml(verbCmd.hint)}</div>`;
+      return;
+    }
+    _resolvedArgRun = resolved.run;
+    gSearchResults.innerHTML = `
+      <div class="gsearch-result gsearch-command" data-command="__arg__"
+           role="button" tabindex="0"
+           onclick="runSearchCommand('__arg__')"
+           onkeydown="if(event.key==='Enter')this.click()">
+        <span class="gsearch-command-icon" aria-hidden="true">${verbCmd.icon}</span>
+        <span class="gsearch-result-title">${escHtml(resolved.preview)}</span>
+        <span class="gsearch-result-meta">Press Enter to run</span>
+      </div>`;
+    return;
+  }
+
   const cmds = availableCommands().filter(
     (c) => !q || c.label.toLowerCase().includes(q) || fuzzyMatch(q, c.label.toLowerCase()),
   );
@@ -240,21 +386,39 @@ function applyCommandFilter(commandQuery) {
   }
 
   gSearchResults.innerHTML = cmds
-    .map(
-      (c) => `
+    .map((c) => {
+      const clickAction = c.verb
+        ? `armSearchVerb(${escHtml(JSON.stringify(c.verb))})`
+        : `runSearchCommand('${c.id}')`;
+      return `
     <div class="gsearch-result gsearch-command" data-command="${c.id}"
          role="button" tabindex="0"
-         onclick="runSearchCommand('${c.id}')"
+         onclick="${clickAction}"
          onkeydown="if(event.key==='Enter')this.click()">
       <span class="gsearch-command-icon" aria-hidden="true">${c.icon}</span>
       <span class="gsearch-result-title">${escHtml(c.label)}</span>
       <span class="gsearch-result-meta">${escHtml(c.hint)}</span>
-    </div>`,
-    )
+    </div>`;
+    })
     .join("");
 }
 
+// Populates the search input with "/<verb>" and re-filters, so the user can
+// type the argument for a verb command selected from the base command list.
+function armSearchVerb(verb) {
+  gSearchInput.value = `/${verb}`;
+  gSearchInput.focus();
+  applyGlobalSearch(gSearchInput.value);
+}
+
 function runSearchCommand(id) {
+  if (id === "__arg__") {
+    if (!_resolvedArgRun) return;
+    closeGlobalSearch();
+    _resolvedArgRun();
+    _resolvedArgRun = null;
+    return;
+  }
   const cmd = SEARCH_COMMANDS.find((c) => c.id === id);
   if (!cmd) return;
   closeGlobalSearch();
@@ -529,7 +693,9 @@ function _syncModeBadge(raw) {
   gSearchDialog?.classList.toggle("scope-mode", !!_searchScope);
 
   if (commandMode) {
-    gSearchModeBadge.textContent = "Commands";
+    const q = raw.slice(1).toLowerCase();
+    const verbCmd = availableCommands().find((c) => c.verb && q.startsWith(c.verb));
+    gSearchModeBadge.textContent = verbCmd ? verbCmd.label.replace("…", "") : "Commands";
   } else if (sectionMode) {
     gSearchModeBadge.textContent = "Filtering sections";
   } else if (_searchScope) {
@@ -667,6 +833,7 @@ export {
   closeGlobalSearch,
   retryGlobalSearch,
   runSearchCommand,
+  armSearchVerb,
   saveSearchQuery,
   removeRecentSearchEntry,
   applyGlobalSearch,

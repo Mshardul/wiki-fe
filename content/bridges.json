@@ -1,0 +1,34 @@
+[
+  {
+    "a": "./content/system-design/algorithms/consistent-hashing.md",
+    "b": "./content/dsa/data-structures/hash-table.md"
+  },
+  {
+    "a": "./content/dsa/data-structures/lru-cache.md",
+    "b": "./content/system-design/components/caching.md"
+  },
+  {
+    "a": "./content/dsa/data-structures/lfu-cache.md",
+    "b": "./content/system-design/components/caching.md"
+  },
+  {
+    "a": "./content/dsa/data-structures/bloom-filter.md",
+    "b": "./content/system-design/algorithms/bloom-filter.md"
+  },
+  {
+    "a": "./content/dsa/data-structures/trie.md",
+    "b": "./content/system-design/hld/search-autocomplete.md"
+  },
+  {
+    "a": "./content/dsa/data-structures/skip-list.md",
+    "b": "./content/system-design/hld/distributed-cache.md"
+  },
+  {
+    "a": "./content/dsa/data-structures/b-tree.md",
+    "b": "./content/system-design/components/databases.md"
+  },
+  {
+    "a": "./content/dsa/algorithms/bfs.md",
+    "b": "./content/system-design/hld/web-crawler.md"
+  }
+]

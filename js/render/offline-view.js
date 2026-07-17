@@ -1,5 +1,5 @@
 import { WIKIS, escHtml } from "../state.js";
-import { listCachedArticlePaths } from "../storage/offline.js";
+import { getCachedAt, listCachedArticlePaths, removeArticleDownload } from "../storage/offline.js";
 import { fetchPrebuiltSearchIndex, normalizePath, setBreadcrumb } from "./nav-utils.js";
 import { showView } from "./router.js";
 
@@ -16,6 +16,15 @@ function _renderStatusBanner() {
   const online = navigator.onLine;
   el.textContent = online ? "Online" : "Offline - showing what's available";
   el.classList.toggle("offline-shelf-status--offline", !online);
+}
+
+function _formatCachedAt(timestamp) {
+  if (!timestamp) return "";
+  const days = Math.floor((Date.now() - timestamp) / 86_400_000);
+  if (days <= 0) return "Cached today";
+  if (days === 1) return "Cached yesterday";
+  if (days < 30) return `Cached ${days}d ago`;
+  return `Cached ${new Date(timestamp).toLocaleDateString()}`;
 }
 
 function _renderGroups(byWiki, prebuiltIndex) {
@@ -46,6 +55,7 @@ function _renderGroups(byWiki, prebuiltIndex) {
         ${paths
           .map((path) => {
             const cardTitle = titleByPath.get(path) || path.split("/").pop();
+            const cachedAtLabel = _formatCachedAt(getCachedAt(path));
             return `
           <li class="offline-shelf-entry"
               role="button" tabindex="0"
@@ -54,7 +64,16 @@ function _renderGroups(byWiki, prebuiltIndex) {
               )}','${encodeURIComponent(cardTitle)}')"
               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
             <svg class="icon"><use href="#icon-check"></use></svg>
-            <span class="offline-shelf-entry-title">${escHtml(cardTitle)}</span>
+            <span class="offline-shelf-entry-body">
+              <span class="offline-shelf-entry-title">${escHtml(cardTitle)}</span>
+              ${cachedAtLabel ? `<span class="offline-shelf-entry-date">${escHtml(cachedAtLabel)}</span>` : ""}
+            </span>
+            <button type="button" class="offline-shelf-evict-btn"
+                    title="Remove from offline storage"
+                    aria-label="Remove ${escHtml(cardTitle)} from offline storage"
+                    onclick="event.stopPropagation();evictOfflineArticle('${encodeURIComponent(path)}')">
+              <svg class="icon"><use href="#icon-x"></use></svg>
+            </button>
           </li>`;
           })
           .join("")}
@@ -96,4 +115,10 @@ async function renderOfflineShelf() {
   }
 }
 
-export { renderOfflineShelf };
+async function evictOfflineArticle(encodedPath) {
+  const path = decodeURIComponent(encodedPath);
+  await removeArticleDownload(path);
+  renderOfflineShelf();
+}
+
+export { renderOfflineShelf, evictOfflineArticle };

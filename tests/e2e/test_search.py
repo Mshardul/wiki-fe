@@ -598,6 +598,111 @@ def test_mark_all_read_command_marks_articles(page, base_url):
     assert visible_dots > 0, "Mark-all-read must mark at least one article read"
 
 
+# ── ⌘K argument-taking verb commands (WIKI-249) ──────────────────────
+
+
+def test_verb_command_shown_in_base_list(page, base_url):
+    """'Mark read…' / 'Quiz me on…' verb commands appear in the base command list."""
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/")
+    page.wait_for_selector(".gsearch-command", timeout=8_000)
+
+    ids = [c.get_attribute("data-command") for c in page.locator(".gsearch-command").all()]
+    assert "mark-read" in ids
+    assert "mark-unread" in ids
+    assert "quiz" in ids
+
+
+def test_clicking_verb_command_arms_input_for_argument(page, base_url):
+    """Clicking a verb command row populates the input with '/<verb>' instead of running it."""
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/mark read")
+    page.wait_for_selector(".gsearch-command[data-command='mark-read']", timeout=8_000)
+    page.locator(".gsearch-command[data-command='mark-read']").first.click()
+
+    assert page.locator("#gsearch-input").input_value() == "/mark read "
+    # Modal stays open - clicking a verb command must not run or navigate away.
+    assert page.locator("#global-search-modal").is_visible()
+
+
+def test_mark_read_section_argument_shows_live_preview(page, base_url):
+    """Typing a section name after 'mark read' shows a resolved preview row."""
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/mark read components")
+    page.wait_for_selector(".gsearch-command[data-command='__arg__']", timeout=8_000)
+
+    preview = page.locator(".gsearch-command[data-command='__arg__'] .gsearch-result-title")
+    assert "Components" in preview.inner_text()
+    assert "read" in preview.inner_text().lower()
+
+
+def test_mark_read_section_argument_marks_only_that_section(page, base_url):
+    """Running 'mark read <section>' marks that section's articles read without touching others."""
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/mark read components")
+    page.wait_for_selector(".gsearch-command[data-command='__arg__']", timeout=8_000)
+    page.locator(".gsearch-command[data-command='__arg__']").first.click()
+
+    page.wait_for_selector("#view-index.active", timeout=8_000)
+    page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
+    page.wait_for_selector(".index-card-read-dot.visible", timeout=8_000)
+    assert page.locator(".index-card-read-dot.visible").count() > 0
+
+
+def test_quiz_argument_shows_live_preview(page, base_url):
+    """Typing a topic after 'quiz' shows a resolved article-title preview row."""
+    page.goto(f"{base_url}/#dsa", wait_until="domcontentloaded")
+    page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/quiz heaps")
+    page.wait_for_selector(".gsearch-command[data-command='__arg__']", timeout=8_000)
+
+    preview = page.locator(".gsearch-command[data-command='__arg__'] .gsearch-result-title")
+    assert "Heap" in preview.inner_text()
+
+
+def test_quiz_argument_navigates_to_article(page, base_url):
+    """Running 'quiz <topic>' navigates to the best-matching article."""
+    page.goto(f"{base_url}/#dsa", wait_until="domcontentloaded")
+    page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/quiz heaps")
+    page.wait_for_selector(".gsearch-command[data-command='__arg__']", timeout=8_000)
+    page.locator(".gsearch-command[data-command='__arg__']").first.click()
+
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    assert "heap" in page.url.lower()
+
+
+def test_verb_command_no_match_shows_hint(page, base_url):
+    """An argument with no matching section/article shows the command's hint, not a crash."""
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/mark read zzzznonexistentzzzz")
+    page.wait_for_selector(".gsearch-empty", timeout=8_000)
+    assert page.locator(".gsearch-command[data-command='__arg__']").count() == 0
+
+
 # ── In-article find bar ──────────────────────────────────────────────
 
 

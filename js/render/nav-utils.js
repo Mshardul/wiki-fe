@@ -121,6 +121,20 @@ async function fetchPrebuiltBacklinks() {
   return _prebuiltBacklinks;
 }
 
+// Hand-authored cross-wiki concept pairs (WIKI-260): [{a, b}]. One direction
+// per pair - callers expand it symmetrically.
+let _prebuiltBridges;
+async function fetchPrebuiltBridges() {
+  if (_prebuiltBridges !== undefined) return _prebuiltBridges;
+  try {
+    const res = await fetch(new URL("./content/bridges.json", location.href).href);
+    _prebuiltBridges = res.ok ? await res.json() : null;
+  } catch {
+    _prebuiltBridges = null;
+  }
+  return _prebuiltBridges;
+}
+
 export {
   normalizePath,
   dirOf,
@@ -132,4 +146,5 @@ export {
   fetchText,
   fetchPrebuiltSearchIndex,
   fetchPrebuiltBacklinks,
+  fetchPrebuiltBridges,
 };

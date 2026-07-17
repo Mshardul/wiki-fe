@@ -16,6 +16,7 @@ import { getLastOpened, isRead, markRead, markUnread } from "../storage/read-tra
 import { renderRecentsSection } from "../storage/recents.js";
 import { toggleCollapse } from "../storage/scroll-collapse.js";
 import { showHoverPreview } from "./content-view.js";
+import { destroyIndexGraph, renderIndexGraph } from "./index-graph.js";
 import {
   dirOf,
   fetchPrebuiltSearchIndex,
@@ -266,6 +267,8 @@ function _wireOfflineDimming() {
   window.addEventListener("offline", reapply);
 }
 
+const INDEX_VIEW_MODE_KEY = "wiki-index-view-mode";
+
 function renderIndexControls(wiki) {
   document.getElementById("index-controls")?.remove();
 
@@ -276,12 +279,21 @@ function renderIndexControls(wiki) {
   controls.id = "index-controls";
   controls.className = "index-controls";
 
+  const isGraphMode = localStorage.getItem(INDEX_VIEW_MODE_KEY) === "graph";
+
   controls.innerHTML = `
     <button id="index-collapse-all" class="index-ctrl-btn" title="Collapse all sections" aria-label="Collapse all sections">
       <svg class="icon"><use href="#icon-collapse-all"></use></svg>
     </button>
     <button id="index-expand-all" class="index-ctrl-btn" title="Expand all sections" aria-label="Expand all sections">
       <svg class="icon"><use href="#icon-expand-all"></use></svg>
+    </button>
+    <button id="index-view-toggle" class="index-ctrl-btn" title="${
+      isGraphMode ? "Switch to list view" : "Switch to graph view"
+    }" aria-label="${
+      isGraphMode ? "Switch to list view" : "Switch to graph view"
+    }" aria-pressed="${isGraphMode}">
+      <svg class="icon"><use href="#icon-grid"></use></svg>
     </button>
   `;
 
@@ -304,6 +316,37 @@ function renderIndexControls(wiki) {
       animateGridHeight(section, false);
     });
   });
+
+  controls.querySelector("#index-view-toggle").addEventListener("click", () => {
+    const next = localStorage.getItem(INDEX_VIEW_MODE_KEY) === "graph" ? "list" : "graph";
+    localStorage.setItem(INDEX_VIEW_MODE_KEY, next);
+    applyIndexViewMode(wiki);
+  });
+
+  applyIndexViewMode(wiki);
+}
+
+function applyIndexViewMode(wiki) {
+  const sectionsEl = document.getElementById("index-sections");
+  const graphWrap = document.getElementById("index-graph-wrap");
+  const toggleBtn = document.getElementById("index-view-toggle");
+  if (!sectionsEl || !graphWrap) return;
+
+  const isGraphMode = localStorage.getItem(INDEX_VIEW_MODE_KEY) === "graph";
+  sectionsEl.classList.toggle("hidden", isGraphMode);
+  graphWrap.classList.toggle("hidden", !isGraphMode);
+  if (toggleBtn) {
+    toggleBtn.setAttribute("aria-pressed", String(isGraphMode));
+    const label = isGraphMode ? "Switch to list view" : "Switch to graph view";
+    toggleBtn.title = label;
+    toggleBtn.setAttribute("aria-label", label);
+  }
+
+  if (isGraphMode) {
+    renderIndexGraph(state.indexSections, wiki);
+  } else {
+    destroyIndexGraph();
+  }
 }
 
 function attachIndexCardKeyNav() {

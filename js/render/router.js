@@ -3,6 +3,7 @@ import { WIKIS, fuzzyMatch, state } from "../state.js";
 import { renderChangelog } from "./changelog-view.js";
 import { renderContent } from "./content-view.js";
 import { fetchWikiIndex, renderHome, renderIndex } from "./home-index.js";
+import { destroyIndexGraph } from "./index-graph.js";
 import { updatePageTitle } from "./nav-utils.js";
 import { renderOfflineShelf } from "./offline-view.js";
 import { showToast } from "./toast.js";
@@ -36,6 +37,8 @@ function _applyView(id) {
   // article's headings. navigateToContent() only tears this down for
   // content->content transitions; content->home/index leaked it forever.
   if (id !== "view-content") cleanupStickySection();
+
+  if (id !== "view-index") destroyIndexGraph();
 
   if (id !== "view-index") window.scrollTo(0, 0);
 

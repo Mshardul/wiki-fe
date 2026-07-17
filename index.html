@@ -258,6 +258,9 @@
           </select>
         </div>
         <div id="index-sections" class="index-sections"></div>
+        <div id="index-graph-wrap" class="index-graph-wrap hidden">
+          <canvas id="index-graph-canvas"></canvas>
+        </div>
       </main>
     </div>
 
@@ -333,6 +336,14 @@
               >
                 <svg class="icon"><use href="#icon-grid"></use></svg>
                 <span>Switch wiki (W)</span>
+              </button>
+              <button
+                class="topbar-overflow-item"
+                aria-label="Link graph"
+                data-action="link-graph-open"
+              >
+                <svg class="icon"><use href="#icon-grid"></use></svg>
+                <span>Link graph (G)</span>
               </button>
               <button
                 class="topbar-overflow-item"
@@ -493,6 +504,7 @@
           <article id="markdown-body" class="markdown-body"></article>
           <div id="related-articles" class="related-articles"></div>
           <div id="backlink-spine" class="backlink-spine"></div>
+          <div id="bridge-block" class="bridge-block"></div>
         </div>
         <aside id="toc-sidebar" class="toc-sidebar">
           <div class="toc-header">
@@ -1203,6 +1215,37 @@
           <kbd class="wiki-switcher-hint">W</kbd>
         </div>
         <div class="wiki-switcher-list" id="wiki-switcher-list"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+       LINK GRAPH MODAL
+  ══════════════════════════════════════ -->
+    <div
+      id="link-graph-modal"
+      class="link-graph-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Article link graph"
+      aria-hidden="true"
+    >
+      <div id="link-graph-overlay" class="link-graph-overlay"></div>
+      <div class="link-graph-dialog">
+        <div class="link-graph-header">
+          <span class="link-graph-title">Link Graph</span>
+          <span class="link-graph-status" id="link-graph-status"></span>
+          <button
+            id="link-graph-close"
+            class="link-graph-close-btn"
+            type="button"
+            aria-label="Close link graph"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="link-graph-canvas-wrap">
+          <canvas id="link-graph-canvas"></canvas>
+        </div>
       </div>
     </div>
 

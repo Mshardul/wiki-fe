@@ -1,6 +1,12 @@
 import { WIKIS, escHtml } from "../state.js";
 import { fetchWikiIndex } from "./home-index.js";
-import { dirOf, fetchPrebuiltBacklinks, normalizePath, resolvePath } from "./nav-utils.js";
+import {
+  dirOf,
+  fetchPrebuiltBacklinks,
+  fetchPrebuiltBridges,
+  normalizePath,
+  resolvePath,
+} from "./nav-utils.js";
 
 /* ═══════════════════════════════════════════════════════════════
    RELATED ARTICLES
@@ -206,4 +212,71 @@ async function renderBacklinks(currentPath) {
     </div>`;
 }
 
-export { extractRecommendedLinks, renderRelatedArticles, renderBacklinks };
+/* ─── Cross-wiki concept bridges (WIKI-260) ───
+   bridges.json is a small hand-authored list of one-directional { a, b } pairs
+   between the DSA and system-design wikis. Expanded symmetrically here so
+   either side of a pair renders the block, then resolved against each wiki's
+   search index for a canonical title/slug (bridges.json itself only stores
+   paths, so article titles can't drift out of sync). */
+function _cardForPath(sections, path) {
+  for (const section of sections) {
+    const card = section.cards.find((c) => normalizePath(c.path) === normalizePath(path));
+    if (card) return card;
+  }
+  return null;
+}
+
+async function renderBridges(currentPath) {
+  const container = document.getElementById("bridge-block");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const bridges = await fetchPrebuiltBridges();
+  if (!bridges?.length) return;
+
+  const otherPaths = [];
+  for (const pair of bridges) {
+    if (normalizePath(pair.a) === currentPath) otherPaths.push(pair.b);
+    else if (normalizePath(pair.b) === currentPath) otherPaths.push(pair.a);
+  }
+  if (!otherPaths.length) return;
+
+  const prebuiltIndex = await Promise.all(WIKIS.map((w) => fetchWikiIndex(w)));
+  const resolved = otherPaths
+    .map((path) => {
+      const wikiIdx = WIKIS.findIndex((w) => path.startsWith(`./content/${w.id}/`));
+      if (wikiIdx === -1) return null;
+      const wiki = WIKIS[wikiIdx];
+      const card = _cardForPath(prebuiltIndex[wikiIdx], path);
+      if (!card) return null;
+      return { wikiId: wiki.id, wikiTitle: wiki.title, card };
+    })
+    .filter(Boolean);
+  if (!resolved.length) return;
+
+  container.innerHTML = `
+    <div class="related-header">
+      <span class="related-label">Cross-wiki bridge</span>
+    </div>
+    <div class="related-grid">
+      ${resolved
+        .map(
+          ({ wikiId, wikiTitle, card }) => `
+        <div class="related-card bridge-card"
+             onclick="navigateToContent('${wikiId}','${encodeURIComponent(
+               card.path,
+             )}','${encodeURIComponent(card.title)}','${card.slug}')"
+             role="button" tabindex="0"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+          <span class="related-card-body">
+            <span class="bridge-card-wiki">${escHtml(wikiTitle)}</span>
+            <span class="related-card-title">${escHtml(card.title)}</span>
+          </span>
+          <span class="related-card-arrow">→</span>
+        </div>`,
+        )
+        .join("")}
+    </div>`;
+}
+
+export { extractRecommendedLinks, renderRelatedArticles, renderBacklinks, renderBridges };

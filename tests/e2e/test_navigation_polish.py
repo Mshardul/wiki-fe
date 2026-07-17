@@ -3,6 +3,8 @@ Navigation polish tests:
 - Index collapse-all / expand-all controls
 - Arrow key navigation on index cards
 - Wiki switcher hotkey (W)
+- Link graph hotkey (G)
+- Index view List/Graph toggle
 """
 
 
@@ -196,6 +198,124 @@ def test_overlay_click_closes_switcher(page, base_url):
     page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
     page.locator("#wiki-switcher-overlay").click(position={"x": 5, "y": 5})
     page.wait_for_selector("#wiki-switcher-modal.hidden", state="attached", timeout=2_000)
+
+
+# ── Link graph hotkey (G) ────────────────────────────────────────────────────
+
+def test_g_hotkey_opens_link_graph_from_content(page, base_url):
+    """G hotkey opens the link graph modal from content view."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("g")
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
+
+
+def test_g_hotkey_opens_link_graph_from_index(page, base_url):
+    """G hotkey opens the link graph modal from index view."""
+    _go_to_index(page, base_url)
+    page.keyboard.press("g")
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
+
+
+def test_g_hotkey_opens_link_graph_from_home(page, base_url):
+    """G hotkey opens the link graph modal from home view."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=5_000)
+    page.keyboard.press("g")
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
+
+
+def test_g_hotkey_toggles_link_graph_closed(page, base_url):
+    """Pressing G again while the link graph is open closes it."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("g")
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
+    page.keyboard.press("g")
+    page.wait_for_selector("#link-graph-modal.hidden", state="attached", timeout=2_000)
+
+
+def test_escape_closes_link_graph(page, base_url):
+    """Escape closes the link graph modal."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("g")
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#link-graph-modal.hidden", state="attached", timeout=2_000)
+
+
+def test_link_graph_renders_canvas_with_status(page, base_url):
+    """Link graph modal draws a canvas and shows an article/link count status."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("g")
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
+    page.wait_for_function(
+        "() => document.querySelector('#link-graph-status').textContent.includes('articles')",
+        timeout=5_000,
+    )
+    assert page.locator("#link-graph-canvas").is_visible()
+
+
+def test_overlay_click_closes_link_graph(page, base_url):
+    """Clicking the backdrop closes the link graph modal."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("g")
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
+    page.locator("#link-graph-overlay").click(position={"x": 5, "y": 5})
+    page.wait_for_selector("#link-graph-modal.hidden", state="attached", timeout=2_000)
+
+
+def test_close_button_closes_link_graph(page, base_url):
+    """Clicking the close button closes the link graph modal."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("g")
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
+    page.locator("#link-graph-close").click()
+    page.wait_for_selector("#link-graph-modal.hidden", state="attached", timeout=2_000)
+
+
+# ── Index graph view toggle ──────────────────────────────────────────────────
+
+def test_index_view_toggle_rendered(page, base_url):
+    """List/Graph toggle button appears alongside collapse/expand controls."""
+    _go_to_index(page, base_url)
+    assert page.locator("#index-view-toggle").count() == 1
+
+
+def test_index_view_toggle_switches_to_graph_mode(page, base_url):
+    """Clicking the view toggle hides the section list and shows the graph canvas."""
+    _go_to_index(page, base_url)
+    page.locator("#index-view-toggle").click()
+    page.wait_for_selector("#index-graph-wrap:not(.hidden)", timeout=3_000)
+    page.wait_for_selector("#index-sections.hidden", state="attached", timeout=3_000)
+    assert page.locator("#index-graph-canvas").is_visible()
+
+
+def test_index_view_toggle_switches_back_to_list_mode(page, base_url):
+    """Clicking the view toggle twice returns to the section list."""
+    _go_to_index(page, base_url)
+    page.locator("#index-view-toggle").click()
+    page.wait_for_selector("#index-graph-wrap:not(.hidden)", timeout=3_000)
+    page.locator("#index-view-toggle").click()
+    page.wait_for_selector("#index-sections:not(.hidden)", timeout=3_000)
+    page.wait_for_selector("#index-graph-wrap.hidden", state="attached", timeout=3_000)
+
+
+def test_index_graph_mode_persists_across_reload(page, base_url):
+    """Graph view mode is remembered via localStorage across a reload."""
+    _go_to_index(page, base_url)
+    page.locator("#index-view-toggle").click()
+    page.wait_for_selector("#index-graph-wrap:not(.hidden)", timeout=3_000)
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+    page.wait_for_selector("#index-graph-wrap:not(.hidden)", timeout=5_000)
+
+
+def test_leaving_index_tears_down_graph(page, base_url):
+    """Navigating away from the index view while in graph mode doesn't leave the sim running."""
+    _go_to_index(page, base_url)
+    page.locator("#index-view-toggle").click()
+    page.wait_for_selector("#index-graph-wrap:not(.hidden)", timeout=3_000)
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=5_000)
 
 
 def test_wiki_switcher_is_bottom_sheet_on_mobile(page, base_url):

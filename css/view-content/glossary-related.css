@@ -2,13 +2,15 @@
    RELATED ARTICLES
    ═══════════════════════════════════════════════ */
 .related-articles,
-.backlink-spine {
+.backlink-spine,
+.bridge-block {
   margin-top: var(--s12);
   padding-top: var(--s8);
   border-top: 1px solid var(--border);
 }
 .related-articles:empty,
-.backlink-spine:empty {
+.backlink-spine:empty,
+.bridge-block:empty {
   display: none;
 }
 .related-header {
@@ -57,6 +59,17 @@
 .related-card:hover .related-card-arrow {
   color: var(--accent-light);
   transform: translateX(3px);
+}
+.related-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.bridge-card-wiki {
+  font-size: var(--text-xs);
+  color: var(--accent-light);
+  font-weight: var(--fw-medium);
 }
 
 /* ═══════════════════════════════════════════════
