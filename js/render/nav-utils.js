@@ -121,6 +121,19 @@ async function fetchPrebuiltBacklinks() {
   return _prebuiltBacklinks;
 }
 
+// Pre-built at deploy time (build_broken_links.py): { [articlePath]: {title, target}[] }
+let _prebuiltBrokenLinks;
+async function fetchPrebuiltBrokenLinks() {
+  if (_prebuiltBrokenLinks !== undefined) return _prebuiltBrokenLinks;
+  try {
+    const res = await fetch(new URL("./content/broken-links.json", location.href).href);
+    _prebuiltBrokenLinks = res.ok ? await res.json() : null;
+  } catch {
+    _prebuiltBrokenLinks = null;
+  }
+  return _prebuiltBrokenLinks;
+}
+
 // Hand-authored cross-wiki concept pairs (WIKI-260): [{a, b}]. One direction
 // per pair - callers expand it symmetrically.
 let _prebuiltBridges;
@@ -146,5 +159,6 @@ export {
   fetchText,
   fetchPrebuiltSearchIndex,
   fetchPrebuiltBacklinks,
+  fetchPrebuiltBrokenLinks,
   fetchPrebuiltBridges,
 };

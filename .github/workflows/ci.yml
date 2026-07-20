@@ -76,6 +76,19 @@ jobs:
           python3 scripts/build_backlinks.py
           git diff --exit-code content/backlinks.json
 
+  broken-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Regenerate broken-links.json and check it's committed
+        run: |
+          python3 scripts/build_search_index.py
+          python3 scripts/build_broken_links.py
+          git diff --exit-code content/broken-links.json
+
   cache-version:
     runs-on: ubuntu-latest
     steps:

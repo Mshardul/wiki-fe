@@ -245,6 +245,8 @@ const Auth = {
     document.querySelectorAll(".topbar-auth-btn").forEach((b) => {
       b.title = loggedIn ? "Logout" : "Login";
     });
+    const adminBtn = document.getElementById("admin-nav-btn");
+    if (adminBtn) adminBtn.hidden = state.session.user?.role !== "admin";
   },
 
   toggle() {

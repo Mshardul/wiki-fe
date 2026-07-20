@@ -134,6 +134,16 @@ def disable_animations(page):
 @pytest.fixture(scope="session")
 def base_url():
     class Handler(SimpleHTTPRequestHandler):
+        # Default is HTTP/1.0, which closes the TCP connection after every
+        # response - app.js alone has 40+ static ES module imports, so a
+        # single page load was opening 40+ fresh connections (handshake +
+        # thread-pool dispatch each) instead of reusing the browser's ~6
+        # keep-alive connections per origin. Harmless most of the time, but
+        # under full-parallel-suite CPU contention (6 xdist workers x
+        # chromium) the extra connection churn was enough to occasionally
+        # push a single page's module-load past the fixture's wait timeout.
+        protocol_version = "HTTP/1.1"
+
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=str(REPO_ROOT), **kwargs)
 
@@ -174,7 +184,18 @@ def base_url():
         # navigates) that's tens of thousands of thread creations, and thread-
         # spawn churn under contention is itself a source of per-request
         # latency spikes. A bounded pool reuses worker threads instead.
-        _pool = ThreadPoolExecutor(max_workers=32, thread_name_prefix="wiki-test-http")
+        #
+        # Sized at 12, not higher: with keep-alive (protocol_version =
+        # "HTTP/1.1" above) a single browser holds at most ~6 concurrent
+        # connections to this server, so one worker's pool never needs to
+        # cover more than that plus headroom. Each xdist worker runs its own
+        # Server instance, so under `-n 6` this pool count multiplies by 6 -
+        # oversizing it here (the old value was 32, sized for the pre-
+        # keep-alive per-request connection churn) means 6 servers together
+        # contend for far more OS thread-scheduling slots than the 8 physical
+        # cores can serve, which was itself contributing to the occasional
+        # single-test timeout under full-suite parallel runs.
+        _pool = ThreadPoolExecutor(max_workers=12, thread_name_prefix="wiki-test-http")
 
         def process_request(self, request, client_address):
             self._pool.submit(self.process_request_thread, request, client_address)

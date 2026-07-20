@@ -6,7 +6,7 @@ import { recordReveal } from "../storage/read-tracking.js";
 const COMPLEXITY_HEADER_RE = /\b(time|space|complexity|best|worst|average)\b/i;
 const BIG_O_RE = /[OΘΩ]\s*\(/;
 
-function _isQuizzableTable(table) {
+function isComplexityTable(table) {
   const headText = table.querySelector("thead, tr")?.textContent || "";
   if (COMPLEXITY_HEADER_RE.test(headText)) return true;
   return [...table.querySelectorAll("td")].some((td) => BIG_O_RE.test(td.textContent));
@@ -14,7 +14,7 @@ function _isQuizzableTable(table) {
 
 function addQuizTables(contentEl) {
   contentEl.querySelectorAll("table").forEach((table) => {
-    if (!_isQuizzableTable(table)) return;
+    if (!isComplexityTable(table)) return;
     table.classList.add("quiz-table");
     table.querySelectorAll("tbody tr, tr").forEach((row) => {
       const cells = [...row.querySelectorAll("td")];
@@ -61,6 +61,31 @@ const QuizMode = {
     _syncQuizBtn(false);
   },
 };
+
+/* ─── Complexity Table Extraction (WIKI-090) ─── */
+
+function extractComplexityTable(contentEl) {
+  const table = [...contentEl.querySelectorAll("table")].find(isComplexityTable);
+  if (!table) return null;
+
+  const headerCells = [...(table.querySelector("thead")?.querySelectorAll("th") || [])];
+  const columns = headerCells.slice(1).map((th) => th.textContent.trim());
+  if (!columns.length) return null;
+
+  const rows = [...table.querySelectorAll("tbody tr, tr")]
+    .filter((row) => row.querySelectorAll("td").length)
+    .map((row) => {
+      const cells = [...row.querySelectorAll("td")];
+      const operation = cells[0]?.textContent.trim() || "";
+      const values = {};
+      columns.forEach((col, i) => {
+        values[col] = cells[i + 1]?.textContent.trim() || "";
+      });
+      return { operation, values };
+    });
+
+  return rows.length ? { columns, rows } : null;
+}
 
 /* ─── Table Column Sort ─── */
 function addTableSort(contentEl) {
@@ -140,4 +165,11 @@ function addTableScrollCues(contentEl) {
   });
 }
 
-export { addQuizTables, QuizMode, addTableSort, addTableScrollCues };
+export {
+  addQuizTables,
+  QuizMode,
+  addTableSort,
+  addTableScrollCues,
+  isComplexityTable,
+  extractComplexityTable,
+};

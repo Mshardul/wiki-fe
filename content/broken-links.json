@@ -1,0 +1,178 @@
+{
+  "./content/dsa/algorithms/bellman-ford.md": [
+    {
+      "target": "./content/dsa/algorithms/path.md",
+      "title": "Bellman-Ford"
+    }
+  ],
+  "./content/dsa/algorithms/bucket-sort.md": [
+    {
+      "target": "./content/dsa/algorithms/path.md",
+      "title": "Bucket Sort"
+    }
+  ],
+  "./content/dsa/algorithms/dijkstra.md": [
+    {
+      "target": "./content/dsa/algorithms/path.md",
+      "title": "Dijkstra's Algorithm"
+    }
+  ],
+  "./content/dsa/algorithms/floyd-warshall.md": [
+    {
+      "target": "./content/dsa/algorithms/path.md",
+      "title": "Floyd-Warshall"
+    }
+  ],
+  "./content/dsa/algorithms/minimum-spanning-tree.md": [
+    {
+      "target": "./content/dsa/algorithms/path.md",
+      "title": "Minimum Spanning Tree (Kruskal / Prim)"
+    }
+  ],
+  "./content/dsa/algorithms/quickselect.md": [
+    {
+      "target": "./content/dsa/algorithms/path.md",
+      "title": "Quickselect"
+    }
+  ],
+  "./content/dsa/algorithms/recursion.md": [
+    {
+      "target": "./content/dsa/algorithms/path.md",
+      "title": "Recursion"
+    }
+  ],
+  "./content/dsa/algorithms/selection-sort.md": [
+    {
+      "target": "./content/dsa/algorithms/path.md",
+      "title": "Selection Sort"
+    }
+  ],
+  "./content/dsa/algorithms/topological-sort.md": [
+    {
+      "target": "./content/dsa/algorithms/path.md",
+      "title": "Topological Sort"
+    }
+  ],
+  "./content/dsa/data-structures/hash-set.md": [
+    {
+      "target": "./content/dsa/data-structures/path.md",
+      "title": "Hash Set"
+    }
+  ],
+  "./content/dsa/data-structures/segment-tree.md": [
+    {
+      "target": "./content/dsa/data-structures/path.md",
+      "title": "Segment Tree"
+    }
+  ],
+  "./content/dsa/data-structures/union-find.md": [
+    {
+      "target": "./content/algorithms/minimum-spanning-tree.md",
+      "title": "Union-Find (DSU)"
+    }
+  ],
+  "./content/dsa/patterns/binary-search-on-answer.md": [
+    {
+      "target": "./content/dsa/patterns/path.md",
+      "title": "Binary Search on Answer"
+    }
+  ],
+  "./content/dsa/patterns/cyclic-sort.md": [
+    {
+      "target": "./content/dsa/patterns/path.md",
+      "title": "Cyclic Sort"
+    }
+  ],
+  "./content/dsa/patterns/dp-patterns.md": [
+    {
+      "target": "./content/dsa/patterns/path.md",
+      "title": "DP Patterns"
+    }
+  ],
+  "./content/dsa/patterns/fast-slow-pointers.md": [
+    {
+      "target": "./content/dsa/patterns/path.md",
+      "title": "Fast & Slow Pointers"
+    }
+  ],
+  "./content/dsa/patterns/merge-intervals.md": [
+    {
+      "target": "./content/dsa/patterns/path.md",
+      "title": "Merge Intervals"
+    }
+  ],
+  "./content/dsa/patterns/monotonic-stack.md": [
+    {
+      "target": "./content/dsa/patterns/path.md",
+      "title": "Monotonic Stack"
+    }
+  ],
+  "./content/dsa/patterns/pattern-selection-cheatsheet.md": [
+    {
+      "target": "./content/dsa/patterns/path.md",
+      "title": "Pattern Selection Cheat Sheet"
+    }
+  ],
+  "./content/dsa/patterns/prefix-sum.md": [
+    {
+      "target": "./content/dsa/patterns/path.md",
+      "title": "Prefix Sum"
+    }
+  ],
+  "./content/dsa/patterns/subsets-permutations.md": [
+    {
+      "target": "./content/dsa/patterns/path.md",
+      "title": "Subsets & Permutations"
+    }
+  ],
+  "./content/dsa/patterns/top-k-elements.md": [
+    {
+      "target": "./content/dsa/patterns/path.md",
+      "title": "Top-K Elements"
+    }
+  ],
+  "./content/dsa/patterns/tree-graph-traversal.md": [
+    {
+      "target": "./content/dsa/patterns/path.md",
+      "title": "Tree & Graph Traversal"
+    }
+  ],
+  "./content/system-design/algorithms/cap-theorem.md": [
+    {
+      "target": "./content/system-design/algorithms/consistency-models.md",
+      "title": "CAP Theorem"
+    }
+  ],
+  "./content/system-design/components/authentication.md": [
+    {
+      "target": "./content/system-design/components/jwt.md",
+      "title": "Authentication"
+    },
+    {
+      "target": "./content/system-design/components/mtls.md",
+      "title": "Authentication"
+    }
+  ],
+  "./content/system-design/components/load-balancer.md": [
+    {
+      "target": "./content/system-design/components/load-balancer-consistent-hashing.md",
+      "title": "Load Balancer"
+    },
+    {
+      "target": "./content/system-design/components/load-balancer-interview-scenarios.md",
+      "title": "Load Balancer"
+    }
+  ],
+  "./content/system-design/components/message-queues.md": [
+    {
+      "target": "./content/system-design/components/message-queues-interview-scenarios.md",
+      "title": "Message Queues"
+    }
+  ],
+  "./content/system-design/components/rate-limiter.md": [
+    {
+      "target": "./content/system-design/distributed-systems/distributed-rate-limiting.md",
+      "title": "Rate Limiter"
+    }
+  ]
+}

@@ -120,7 +120,8 @@ body.distraction-free .sticky-section-header {
   text-transform: uppercase;
   color: var(--text-muted);
 }
-.toc-collapse {
+.toc-collapse,
+.toc-sidecar-btn {
   width: 22px;
   height: 22px;
   display: flex;
@@ -130,13 +131,21 @@ body.distraction-free .sticky-section-header {
   border-radius: var(--r-sm);
   transition: color var(--t-fast), background var(--t-fast);
 }
-.toc-collapse svg {
+.toc-collapse svg,
+.toc-sidecar-btn svg {
   width: 12px;
   height: 12px;
 }
-.toc-collapse:hover {
+.toc-collapse:hover,
+.toc-sidecar-btn:hover {
   color: var(--text-body);
   background: var(--surface-hover);
+}
+/* Sidecar companion window only makes sense with room for a second window */
+@media (max-width: 900px) {
+  .toc-sidecar-btn {
+    display: none;
+  }
 }
 .toc-sidebar.collapsed:not(.mobile-open) .toc-nav {
   display: none;

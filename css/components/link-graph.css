@@ -77,3 +77,114 @@
   width: 100%;
   height: 100%;
 }
+
+/* ═══════════════════════════════════════════════
+   SECTION MAP OVERLAY (WIKI-256)
+   ═══════════════════════════════════════════════ */
+.section-map-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-section-map);
+  background: var(--bg);
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.96);
+  transition: opacity var(--t-slow), transform var(--t-slow), visibility 0s var(--t-slow);
+}
+.section-map-overlay.open {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  transition: opacity var(--t-slow), transform var(--t-slow), visibility 0s;
+}
+.section-map-status {
+  position: absolute;
+  top: var(--s5);
+  left: var(--s5);
+  font-size: var(--text-sm);
+  color: var(--text-subtle);
+  z-index: var(--z-raised);
+}
+#section-map-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ═══════════════════════════════════════════════
+   COMPLEXITY COMPARATOR MODAL
+   ═══════════════════════════════════════════════ */
+.compare-dialog {
+  height: min(680px, 90vh);
+}
+.compare-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4) var(--s5);
+  overflow-y: auto;
+}
+.compare-search-input {
+  width: 100%;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-body);
+  font-size: var(--text-sm);
+}
+.compare-picker-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  max-height: 160px;
+  overflow-y: auto;
+}
+.compare-picker-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+.compare-picker-item:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.compare-run-btn {
+  align-self: flex-start;
+  padding: var(--s2) var(--s4);
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+}
+.compare-run-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.compare-matrix-wrap {
+  overflow-x: auto;
+}
+.complexity-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-xs);
+}
+.complexity-compare-table th,
+.complexity-compare-table td {
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+.complexity-compare-table thead th {
+  background: var(--surface-2);
+  color: var(--text-heading);
+}

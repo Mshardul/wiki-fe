@@ -221,6 +221,9 @@ Do this before any file reads or skill invocations - every session:
 | `e2e/test_line_numbers_pathing_help.py` | Line numbers, pathing, help modal                                  |
 | `e2e/test_security.py`                  | XSS, sanitisation, security invariants                             |
 | `e2e/test_behavioral_fixes.py`          | Regression / behavioural fixes                                     |
+| `e2e/test_complexity_comparator.py`     | Complexity comparator modal, picker, merged Big-O matrix           |
+| `e2e/test_section_map.py`               | Section map overlay (Shift+G / pinch), node click nav              |
+| `e2e/test_sidecar_toc.py`               | Sidecar TOC companion window, BroadcastChannel sync, click-to-scroll |
 
 ### Docs
 

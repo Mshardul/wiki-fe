@@ -170,6 +170,15 @@
             <svg class="icon"><use href="#icon-settings"></use></svg>
           </button>
           <button
+            class="topbar-icon-btn"
+            id="admin-nav-btn"
+            title="Admin"
+            data-action="admin-open"
+            hidden
+          >
+            <svg class="icon"><use href="#icon-shield"></use></svg>
+          </button>
+          <button
             class="topbar-icon-btn topbar-auth-btn"
             id="auth-btn-home"
             data-action="auth-toggle"
@@ -347,6 +356,22 @@
               </button>
               <button
                 class="topbar-overflow-item"
+                aria-label="Compare complexity"
+                data-action="complexity-compare-open"
+              >
+                <svg class="icon"><use href="#icon-grid"></use></svg>
+                <span>Compare complexity</span>
+              </button>
+              <button
+                class="topbar-overflow-item"
+                aria-label="Section map"
+                data-action="section-map-toggle"
+              >
+                <svg class="icon"><use href="#icon-grid"></use></svg>
+                <span>Section map (Shift+G)</span>
+              </button>
+              <button
+                class="topbar-overflow-item"
                 aria-label="All bookmarks"
                 data-action="bookmarks-modal-open"
               >
@@ -509,6 +534,14 @@
         <aside id="toc-sidebar" class="toc-sidebar">
           <div class="toc-header">
             <span class="toc-label">On this page</span>
+            <button
+              id="toc-sidecar-open"
+              class="toc-sidecar-btn"
+              title="Pop out TOC into companion window"
+              data-action="sidecar-toc-open"
+            >
+              <svg class="icon"><use href="#icon-maximize"></use></svg>
+            </button>
             <button id="toc-collapse" class="toc-collapse" title="Collapse">
               <svg class="icon"><use href="#icon-chevron-up"></use></svg>
             </button>
@@ -621,6 +654,37 @@
       </div>
       <main class="offline-shelf-main">
         <div id="offline-shelf-groups" class="offline-shelf-groups"></div>
+      </main>
+    </div>
+
+    <!-- ══════════════════════════════════════
+       VIEW 6 - ADMIN
+  ══════════════════════════════════════ -->
+    <div id="view-admin" class="view">
+      <div class="page-topbar">
+        <div class="topbar-inner">
+          <button class="back-btn" data-action="wiki-home">
+            <svg class="icon"><use href="#icon-chevron-left"></use></svg>
+            Home
+          </button>
+          <nav id="admin-breadcrumb" class="breadcrumb" aria-label="Breadcrumb"></nav>
+          <button
+            class="topbar-icon-btn"
+            title="Preferences (,)"
+            data-action="settings-open"
+          >
+            <svg class="icon"><use href="#icon-settings"></use></svg>
+          </button>
+        </div>
+      </div>
+      <div class="page-hero">
+        <div class="page-hero-inner">
+          <h1 class="page-title">Admin</h1>
+          <p class="page-subtitle">User management and site health</p>
+        </div>
+      </div>
+      <main class="admin-main">
+        <div id="admin-content"></div>
       </main>
     </div>
 
@@ -1245,6 +1309,63 @@
         </div>
         <div class="link-graph-canvas-wrap">
           <canvas id="link-graph-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+       SECTION MAP OVERLAY (Shift+G / pinch)
+  ══════════════════════════════════════ -->
+    <div
+      id="section-map-overlay"
+      class="section-map-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Section map"
+      aria-hidden="true"
+    >
+      <span class="section-map-status" id="section-map-status"></span>
+      <canvas id="section-map-canvas"></canvas>
+    </div>
+
+    <!-- ══════════════════════════════════════
+       COMPLEXITY COMPARATOR MODAL
+  ══════════════════════════════════════ -->
+    <div
+      id="compare-modal"
+      class="link-graph-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Complexity comparator"
+      aria-hidden="true"
+    >
+      <div id="compare-overlay" class="link-graph-overlay"></div>
+      <div class="link-graph-dialog compare-dialog">
+        <div class="link-graph-header">
+          <span class="link-graph-title">Compare complexity</span>
+          <span class="link-graph-status" id="compare-status"></span>
+          <button
+            id="compare-close"
+            class="link-graph-close-btn"
+            type="button"
+            aria-label="Close comparator"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="compare-body">
+          <input
+            id="compare-search-input"
+            class="compare-search-input"
+            type="text"
+            placeholder="Filter data structures…"
+            aria-label="Filter data structures"
+          />
+          <div id="compare-picker-list" class="compare-picker-list"></div>
+          <button id="compare-run-btn" class="compare-run-btn" type="button" disabled>
+            Compare (0)
+          </button>
+          <div id="compare-matrix-wrap" class="compare-matrix-wrap"></div>
         </div>
       </div>
     </div>

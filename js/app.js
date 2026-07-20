@@ -6,6 +6,11 @@ import {
   isBookmarksModalOpen,
   openBookmarksModal,
 } from "./app/bookmarks-modal.js";
+import {
+  closeComparePicker,
+  isComparePickerOpen,
+  openComparePicker,
+} from "./app/complexity-compare.js";
 import { mountDebugOverlay } from "./app/debug-overlay.js";
 import {
   exitDistractionFree,
@@ -14,6 +19,8 @@ import {
 } from "./app/distraction-free.js";
 import { closeLinkGraph, isLinkGraphOpen, openLinkGraph } from "./app/link-graph.js";
 import { printArticle } from "./app/print.js";
+import { closeSectionMap, isSectionMapOpen, toggleSectionMap } from "./app/section-map.js";
+import { openSidecarToc } from "./app/sidecar-toc.js";
 import { fireStudyMilestone } from "./app/study-feedback.js";
 import { closeWikiSwitcher, openWikiSwitcher } from "./app/wiki-switcher.js";
 import { syncHljsTheme, writeToClipboard } from "./content/code-blocks.js";
@@ -164,6 +171,9 @@ document.addEventListener("click", (e) => {
     case "offline-shelf-open":
       navigate("offline");
       break;
+    case "admin-open":
+      navigate("admin");
+      break;
     case "read-toggle": {
       if (ReadToggle.toggle()) fireStudyMilestone();
       break;
@@ -200,6 +210,16 @@ document.addEventListener("click", (e) => {
       break;
     case "link-graph-open":
       openLinkGraph();
+      break;
+    case "complexity-compare-open":
+      openComparePicker();
+      break;
+    case "section-map-toggle":
+      toggleSectionMap();
+      break;
+    case "sidecar-toc-open":
+      if (!openSidecarToc())
+        showToast("Couldn't open companion window - check popup blocker", 4000);
       break;
     case "bookmarks-modal-open":
       openBookmarksModal();
@@ -445,6 +465,10 @@ document.addEventListener("keydown", (e) => {
       closeWikiSwitcher();
     } else if (isLinkGraphOpen()) {
       closeLinkGraph();
+    } else if (isSectionMapOpen()) {
+      closeSectionMap();
+    } else if (isComparePickerOpen()) {
+      closeComparePicker();
     } else if (isBookmarksModalOpen()) {
       closeBookmarksModal();
     } else if (ArticleFind.isOpen()) {
@@ -546,10 +570,55 @@ document.addEventListener("keydown", (e) => {
       tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable;
     if (!isInput && !e.metaKey && !e.ctrlKey) {
       e.preventDefault();
-      isLinkGraphOpen() ? closeLinkGraph() : openLinkGraph();
+      if (e.shiftKey) {
+        toggleSectionMap();
+      } else {
+        isLinkGraphOpen() ? closeLinkGraph() : openLinkGraph();
+      }
     }
   }
 });
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION MAP: pinch-in gesture (WIKI-256)
+   ═══════════════════════════════════════════════════════════════ */
+(() => {
+  const PINCH_IN_THRESHOLD = 0.6; // end/start distance ratio to count as a pinch-in
+  let startDist = 0;
+
+  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
+  document.getElementById("view-content").addEventListener(
+    "touchstart",
+    (e) => {
+      if (e.touches.length === 2) startDist = dist(e.touches);
+    },
+    { passive: true },
+  );
+
+  document.getElementById("view-content").addEventListener(
+    "touchend",
+    (e) => {
+      if (startDist > 0 && e.touches.length === 0 && e.changedTouches.length >= 1) {
+        startDist = 0;
+      }
+    },
+    { passive: true },
+  );
+
+  document.getElementById("view-content").addEventListener(
+    "touchmove",
+    (e) => {
+      if (e.touches.length !== 2 || startDist <= 0 || isSectionMapOpen()) return;
+      const ratio = dist(e.touches) / startDist;
+      if (ratio < PINCH_IN_THRESHOLD) {
+        startDist = 0;
+        toggleSectionMap();
+      }
+    },
+    { passive: true },
+  );
+})();
 
 /* ═══════════════════════════════════════════════════════════════
    DIAGRAM THEME SYNC

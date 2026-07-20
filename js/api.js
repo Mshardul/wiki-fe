@@ -146,6 +146,12 @@ const api = {
     clear: (wiki_id) => api.del("/recents/all", wiki_id ? { wiki_id } : {}),
   },
   importAll: (payload) => api.post("/sync/import", payload),
+  admin: {
+    listUsers: () => api.get("/admin/users"),
+    updateUserRole: (userId, role) => _request("PATCH", `/admin/users/${userId}/role`, { role }),
+    updateUserStatus: (userId, is_active) =>
+      _request("PATCH", `/admin/users/${userId}/status`, { is_active }),
+  },
 };
 
 export { api, ApiError, BACKEND_URL, getSessionToken, setSessionToken };

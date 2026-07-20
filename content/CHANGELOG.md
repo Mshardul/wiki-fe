@@ -9,6 +9,13 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-07-18
+- `recursion.md` - new article: base case + recursive case as induction, call-stack space honesty, memo-vs-tabulation state/recurrence
+- `binary-search-on-answer.md` - new article: minimize-max/maximize-min feasibility search, Koko/ship-capacity/max-min-gap worked problems
+- `fast-slow-pointers.md` - new article: Floyd's cycle detection, μ/λ cycle-start argument, Happy Number and Find-the-Duplicate as implicit-sequence variants
+- `monotonic-stack.md` - new article: next-greater/smaller via amortized O(n) stack discipline, histogram span trick, sum-of-subarray-minimums contribution technique
+- `prefix-sum.md` - new article: O(1) range-sum queries, 2D inclusion-exclusion, subarray-sum-equals-K hash-map generalization
+
 ## 2026-07-10
 - `longest-increasing-subsequence.md` - new article
 - `aho-corasick.md` - new article

@@ -22,6 +22,10 @@
     <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
   <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
   </symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24">
+    <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" />
+  <path d="M9 12l2 2l4 -4" />
+  </symbol>
   <symbol id="icon-chevron-left" viewBox="0 0 24 24">
     <path d="M15 6l-6 6l6 6" />
   </symbol>

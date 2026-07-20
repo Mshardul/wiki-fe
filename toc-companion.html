@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TOC - Knowledge Base</title>
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <script>
+      (function () {
+        try {
+          var s = JSON.parse(localStorage.getItem("wiki-settings") || "null");
+          var bg = (s && s.backgroundId) || "";
+          var dark = bg
+            ? bg.indexOf("dark") === 0
+            : window.matchMedia("(prefers-color-scheme: dark)").matches;
+          document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="./css/wiki.css" />
+    <style>
+      body {
+        margin: 0;
+        background: var(--bg);
+      }
+      .sidecar-toc-wrap {
+        padding: var(--s3);
+      }
+      .sidecar-toc-title {
+        font-size: var(--text-sm);
+        font-weight: var(--fw-semibold);
+        color: var(--text-heading);
+        padding: var(--s2) var(--s3);
+      }
+      .sidecar-toc-empty {
+        padding: var(--s3);
+        color: var(--text-subtle);
+        font-size: var(--text-sm);
+      }
+      #toc-nav {
+        position: static;
+        max-height: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidecar-toc-wrap">
+      <div class="sidecar-toc-title" id="sidecar-title">On this page</div>
+      <nav id="toc-nav" class="toc-nav"></nav>
+      <div class="sidecar-toc-empty" id="sidecar-empty" hidden>
+        Open an article in the main window to see its outline here.
+      </div>
+    </div>
+    <script type="module" src="./js/toc-companion.js"></script>
+  </body>
+</html>

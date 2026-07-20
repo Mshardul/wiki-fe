@@ -142,6 +142,8 @@ function buildTOC(contentEl, wikiId, articlePath) {
     };
     tocNav.addEventListener("scroll", tocNav._tocScrollHandler);
   }
+
+  document.dispatchEvent(new CustomEvent("wiki:toc-updated"));
 }
 
 /* ═══════════════════════════════════════════════════════════════

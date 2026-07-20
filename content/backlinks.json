@@ -103,6 +103,10 @@
       "title": "Modular Arithmetic"
     },
     {
+      "path": "./content/dsa/patterns/binary-search-on-answer.md",
+      "title": "Binary Search on Answer"
+    },
+    {
       "path": "./content/dsa/patterns/modified-binary-search.md",
       "title": "Modified Binary Search"
     },
@@ -237,6 +241,10 @@
   ],
   "./content/dsa/algorithms/divide-and-conquer.md": [
     {
+      "path": "./content/dsa/algorithms/recursion.md",
+      "title": "Recursion"
+    },
+    {
       "path": "./content/dsa/algorithms/bit-manipulation.md",
       "title": "Bit Manipulation"
     },
@@ -249,6 +257,10 @@
     {
       "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
       "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/algorithms/recursion.md",
+      "title": "Recursion"
     },
     {
       "path": "./content/dsa/algorithms/backtracking.md",
@@ -337,6 +349,10 @@
     {
       "path": "./content/dsa/algorithms/dynamic-programming.md",
       "title": "Dynamic Programming"
+    },
+    {
+      "path": "./content/dsa/patterns/binary-search-on-answer.md",
+      "title": "Binary Search on Answer"
     }
   ],
   "./content/dsa/algorithms/heapsort.md": [
@@ -753,6 +769,10 @@
       "title": "Heapsort"
     },
     {
+      "path": "./content/dsa/algorithms/recursion.md",
+      "title": "Recursion"
+    },
+    {
       "path": "./content/dsa/algorithms/divide-and-conquer.md",
       "title": "Divide and Conquer"
     },
@@ -797,8 +817,16 @@
       "title": "Sliding Window"
     },
     {
+      "path": "./content/dsa/patterns/prefix-sum.md",
+      "title": "Prefix Sum"
+    },
+    {
       "path": "./content/dsa/patterns/difference-array.md",
       "title": "Difference Array"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-stack.md",
+      "title": "Monotonic Stack"
     },
     {
       "path": "./content/dsa/patterns/modified-binary-search.md",
@@ -1165,6 +1193,10 @@
       "title": "Sliding Window"
     },
     {
+      "path": "./content/dsa/patterns/prefix-sum.md",
+      "title": "Prefix Sum"
+    },
+    {
       "path": "./content/dsa/patterns/state-machine-dp.md",
       "title": "State Machine DP"
     },
@@ -1263,6 +1295,10 @@
     {
       "path": "./content/dsa/patterns/two-pointers.md",
       "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/fast-slow-pointers.md",
+      "title": "Fast & Slow Pointers"
     },
     {
       "path": "./content/dsa/patterns/in-place-reversal.md",
@@ -1367,6 +1403,14 @@
     {
       "path": "./content/dsa/algorithms/dfs.md",
       "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/recursion.md",
+      "title": "Recursion"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-stack.md",
+      "title": "Monotonic Stack"
     },
     {
       "path": "./content/dsa/patterns/monotonic-queue.md",
@@ -1493,6 +1537,10 @@
     {
       "path": "./content/dsa/data-structures/fenwick-tree.md",
       "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/patterns/prefix-sum.md",
+      "title": "Prefix Sum"
     }
   ],
   "./content/dsa/patterns/dp-patterns.md": [
@@ -1553,6 +1601,12 @@
       "title": "Bipartite Matching"
     }
   ],
+  "./content/dsa/patterns/in-place-reversal.md": [
+    {
+      "path": "./content/dsa/patterns/fast-slow-pointers.md",
+      "title": "Fast & Slow Pointers"
+    }
+  ],
   "./content/dsa/patterns/interval-dp.md": [
     {
       "path": "./content/dsa/algorithms/manacher-algorithm.md",
@@ -1573,6 +1627,18 @@
     {
       "path": "./content/dsa/patterns/two-pointers.md",
       "title": "Two Pointers"
+    }
+  ],
+  "./content/dsa/patterns/modified-binary-search.md": [
+    {
+      "path": "./content/dsa/patterns/binary-search-on-answer.md",
+      "title": "Binary Search on Answer"
+    }
+  ],
+  "./content/dsa/patterns/monotonic-queue.md": [
+    {
+      "path": "./content/dsa/patterns/monotonic-stack.md",
+      "title": "Monotonic Stack"
     }
   ],
   "./content/dsa/patterns/monotonic-stack.md": [
@@ -1655,6 +1721,10 @@
     {
       "path": "./content/dsa/patterns/two-pointers.md",
       "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/prefix-sum.md",
+      "title": "Prefix Sum"
     },
     {
       "path": "./content/dsa/patterns/monotonic-queue.md",
@@ -1765,6 +1835,22 @@
     {
       "path": "./content/dsa/patterns/sliding-window.md",
       "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/prefix-sum.md",
+      "title": "Prefix Sum"
+    },
+    {
+      "path": "./content/dsa/patterns/fast-slow-pointers.md",
+      "title": "Fast & Slow Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-stack.md",
+      "title": "Monotonic Stack"
+    },
+    {
+      "path": "./content/dsa/patterns/binary-search-on-answer.md",
+      "title": "Binary Search on Answer"
     },
     {
       "path": "./content/dsa/patterns/modified-binary-search.md",

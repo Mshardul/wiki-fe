@@ -1,5 +1,6 @@
 import { cleanupStickySection } from "../content/toc.js";
 import { WIKIS, fuzzyMatch, state } from "../state.js";
+import { renderAdminPage } from "./admin-view.js";
 import { renderChangelog } from "./changelog-view.js";
 import { renderContent } from "./content-view.js";
 import { fetchWikiIndex, renderHome, renderIndex } from "./home-index.js";
@@ -19,6 +20,7 @@ const VIEW_DEPTH = {
   "view-content": 2,
   "view-changelog": 1,
   "view-offline-shelf": 1,
+  "view-admin": 1,
 };
 let _lastViewDepth = null; // null = no prior view this session yet (boot render)
 const _reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -113,6 +115,12 @@ function _execRoute(hash) {
   if (wikiId === "offline") {
     updatePageTitle("Offline Shelf");
     renderOfflineShelf();
+    return;
+  }
+  if (wikiId === "admin") {
+    updatePageTitle("Admin");
+    showView("view-admin");
+    renderAdminPage(state.session.user);
     return;
   }
 

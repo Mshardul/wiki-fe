@@ -1,4 +1,4 @@
-const SHELL_CACHE = "wiki-shell-v13";
+const SHELL_CACHE = "wiki-shell-v14";
 const ARTICLE_CACHE = "wiki-articles-v1";
 
 // Served for an uncached article request while offline, in place of a failed fetch.
