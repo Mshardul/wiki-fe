@@ -99,6 +99,9 @@ Do this before any file reads or skill invocations - every session:
 | `auth.js`          | Auth domain: password-rule validation, auth modal controller (login/register/verify panels), login/register/logout/resend flows, anon→login migration |
 | `api.js`           | Single wrapper for all backend (`wiki-be`) calls: base-URL detect, credentials, `ApiError`, global 401 handler, typed endpoint helpers |
 | `storage/`         | All localStorage operations - see subtable below                                                                                                                         |
+| `search-features.js` | Search snippet extraction, recent-searches list, synonym cache use                                                                    |
+| `icon-sprite.js`   | Loads and inlines `sprite.svg` for the Tabler icon system                                                                              |
+| `toc-companion.js` | Standalone script for the sidecar TOC popup window (`toc-companion.html`) - receives BroadcastChannel payloads, renders nav, click-to-scroll |
 
 **Never read every file in a domain folder** (`content/`, `render/`, `storage/`, `app/`) - the subtables below say exactly which file owns which behavior.
 
@@ -114,6 +117,11 @@ Do this before any file reads or skill invocations - every session:
 | `distraction-free.js` | Distraction-free mode toggle                                              |
 | `study-feedback.js`   | Haptic + tone feedback on study milestones, gated by settings flag         |
 | `bookmarks-modal.js`  | Bookmarks modal open/close/render, focus trap, entry click → navigate     |
+| `graph-engine.js`     | Shared force-directed sim primitives (node/edge builder, tick/damping) used by link-graph, section-map, index-graph |
+| `link-graph.js`       | `g` link-graph overlay: cross-wiki node graph from backlinks, click-to-navigate |
+| `section-map.js`      | `Shift+G` / pinch section-map overlay: zoomed-out node map of current wiki section, read-state colored |
+| `complexity-compare.js` | Complexity comparator modal: picker, merged Big-O matrix from Data Structures tables |
+| `sidecar-toc.js`      | Sidecar TOC companion window opener: BroadcastChannel publisher, window handle tracking |
 
 #### `js/content/`
 
@@ -126,6 +134,12 @@ Do this before any file reads or skill invocations - every session:
 | `toc.js`              | TOC build, sticky section header, per-heading collapse, progress ring               |
 | `formatting.js`       | Callouts, prerequisites chips, anchor links, LaTeX toggle/copy, focus mode, tabbed code blocks, footnotes, in-article find |
 | `glossary-caveats.js` | Inline caveat reveals, glossary popovers/expand, rendered-HTML session cache          |
+| `depth-fold.js`       | Depth-N content folding: global dial (`data-depth`) shows/hides fold-region containers by heading depth |
+| `interview-mode.js`   | Interview mode: collapses fold-regions after the first, elapsed-time logging via `storage/interview-mode.js` |
+| `highlights.js`       | Per-article text highlights + inline emoji markers, freeze-frame export hookup       |
+| `freeze-frame.js`     | Exports a text selection as a shareable image card                                   |
+| `structure-viz.js`    | Inline ` ```viz ` fenced-block renderer for data-structure diagrams (bst, array, etc.) |
+| `video-embed.js`      | Converts bare YouTube/Vimeo URLs on their own line into a responsive iframe embed     |
 
 #### `js/render/`
 
@@ -138,6 +152,9 @@ Do this before any file reads or skill invocations - every session:
 | `changelog-view.js`   | `#changelog` view: parses `content/CHANGELOG.md`, date-grouped entries, filename filter, filename→article resolution via search index |
 | `nav-utils.js`         | Path resolution, breadcrumb, page title, `fetchText`, `readingTime`                   |
 | `toast.js`             | Toast queue + display                                                                |
+| `admin-view.js`        | Admin panel view: broken-links/backlinks/search-index reports for admin-role users    |
+| `index-graph.js`       | Home/index-view node graph overlay (per-wiki), built on `app/graph-engine.js`         |
+| `offline-view.js`      | `#offline` view: lists cached articles, last-cached date, per-article evict button    |
 
 #### `js/storage/`
 
@@ -149,6 +166,10 @@ Do this before any file reads or skill invocations - every session:
 | `offline.js`         | Offline cache download/remove/check, offline button state                     |
 | `settings-theme.js`  | Settings object + swatches, `Settings`/`Theme`/`Sync`, multi-tab sync listener |
 | `scroll-collapse.js` | Scroll-position cache, section collapse, TOC scroll, recent searches          |
+| `highlights.js`      | Per-article highlight/marker CRUD, keyed by wiki+article path                 |
+| `interview-mode.js`  | Interview-mode elapsed-time log CRUD, keyed by wiki+article path              |
+| `notes.js`           | Per-article notes scratchpad CRUD                                             |
+| `data-clear.js`      | "Clear my data" settings action - wipes bookmarks/highlights/interview-log/notes/pinned-wikis |
 
 ### CSS (`css/`)
 

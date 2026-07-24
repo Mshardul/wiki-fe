@@ -179,9 +179,12 @@ const VAR_MAP = {
 };
 
 function _substituteLatex(latex) {
-  return latex.replace(/(?<!\\)([a-zA-Zα-ωΑ-Ω])(?=[^a-zA-Zα-ωΑ-Ω_{]|$)/gu, (match) => {
-    return VAR_MAP[match] ? `\\text{${VAR_MAP[match]}}` : match;
-  });
+  return latex.replace(
+    /(?<!\\)(?<![a-zA-Zα-ωΑ-Ω])([a-zA-Zα-ωΑ-Ω])(?=[^a-zA-Zα-ωΑ-Ω_{]|$)/gu,
+    (match) => {
+      return VAR_MAP[match] ? `\\text{${VAR_MAP[match]}}` : match;
+    },
+  );
 }
 
 function addFormulaToggle(contentEl) {

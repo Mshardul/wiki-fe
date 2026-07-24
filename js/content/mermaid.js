@@ -17,8 +17,7 @@ async function renderMermaidDiagrams(contentEl) {
       wrapper.innerHTML = svg;
       _appendMermaidCopyBtn(wrapper);
       pre.replaceWith(wrapper);
-    } catch (err) {
-      console.warn("Mermaid render failed:", err);
+    } catch {
       const errEl = document.createElement("div");
       errEl.className = "mermaid-error";
       errEl.textContent = "Diagram syntax error - could not render";
@@ -337,8 +336,7 @@ async function rerenderMermaidDiagrams() {
       else _appendMermaidCopyBtn(wrapper);
       if (existingPlayBtn) wrapper.appendChild(existingPlayBtn);
       if (existingRail) wrapper.appendChild(existingRail);
-    } catch (err) {
-      console.warn("Mermaid re-render failed:", err);
+    } catch {
       const errEl = document.createElement("div");
       errEl.className = "mermaid-error";
       errEl.textContent = "Diagram syntax error - could not render";

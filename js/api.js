@@ -16,8 +16,6 @@ class ApiError extends Error {
   }
 }
 
-const _DEBUG = new URLSearchParams(location.search).has("debug");
-
 let _sessionExpiredFired = false;
 
 const _DEFAULT_TIMEOUT_MS = 15000;
@@ -67,7 +65,6 @@ async function _request(
       signal: controller.signal,
     });
   } catch (networkErr) {
-    if (_DEBUG) console.log(`[${requestId}] ${method} ${path} → network error`, networkErr);
     if (networkErr.name === "AbortError") {
       throw new ApiError("TIMEOUT", "Request timed out. Please try again.", 0, requestId);
     }
@@ -77,7 +74,6 @@ async function _request(
   }
   // BE echoes back the same id (or its own, if ours was missing/invalid) - trust the response header over our own value.
   const echoedId = res.headers.get("X-Request-Id") || requestId;
-  if (_DEBUG) console.log(`[${echoedId}] ${method} ${path} → ${res.status}`);
 
   if (res.status === 401 && !silent401) {
     // A 401 here means the session expired mid-use - clear the dead token (else every future request 401s again); fires once.

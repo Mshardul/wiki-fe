@@ -28,7 +28,7 @@ const WIKIS = [
   const seen = new Set();
   const dupes = WIKIS.map((w) => w.id).filter((id) => seen.size === seen.add(id).size);
   if (dupes.length) {
-    console.warn(
+    throw new Error(
       `WIKIS registry has duplicate id(s): ${[...new Set(dupes)].join(", ")}. Storage keys will collide. Ids must be unique.`,
     );
   }

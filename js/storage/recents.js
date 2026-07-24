@@ -1,5 +1,5 @@
 import { api } from "../api.js";
-import { escHtml, state } from "../state.js";
+import { escHtml, sequencedMutation, state } from "../state.js";
 
 function _loggedIn() {
   return state.session?.status === "in";
@@ -24,7 +24,11 @@ function addToRecents(entry) {
   recents.unshift({ ...entry, visitedAt: Date.now() });
   if (recents.length > RECENTS_MAX) recents = recents.slice(0, RECENTS_MAX);
   localStorage.setItem(RECENTS_KEY, JSON.stringify(recents));
-  if (_loggedIn()) api.recents.add(entry.wikiId, entry.path).catch(() => {});
+  if (_loggedIn()) {
+    sequencedMutation(`${entry.wikiId}|${entry.path}`, () =>
+      api.recents.add(entry.wikiId, entry.path),
+    ).catch(() => {});
+  }
 }
 
 function saveRecents(arr) {
@@ -32,7 +36,9 @@ function saveRecents(arr) {
 }
 
 function clearRecents(wikiId) {
-  if (_loggedIn()) api.recents.clear(wikiId).catch(() => {});
+  if (_loggedIn()) {
+    sequencedMutation(`clear|${wikiId}`, () => api.recents.clear(wikiId)).catch(() => {});
+  }
   const remaining = getRecents().filter((r) => r.wikiId !== wikiId);
   saveRecents(remaining);
   document.getElementById("recents-section")?.classList.add("hidden");

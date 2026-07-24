@@ -900,8 +900,6 @@ function parseIndexMd(markdown, basePath) {
         const slug = relPath.split("/").pop().replace(/\.md$/, "");
 
         cards.push({ title, path: fullPath, slug, description });
-      } else if (line.includes("](")) {
-        console.warn("parseIndexMd: malformed row skipped:", line.slice(0, 80));
       }
     }
 

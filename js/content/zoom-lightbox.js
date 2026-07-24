@@ -41,6 +41,7 @@ function bindZoomGestures(overlay) {
   let startTy = 0;
   let panning = false;
   let lastTap = 0;
+  let singleTouchStart = false;
 
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -73,12 +74,14 @@ function bindZoomGestures(overlay) {
       if (e.touches.length === 2) {
         startDist = dist(e.touches);
         startScale = scale;
+        singleTouchStart = false;
       } else if (e.touches.length === 1) {
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
         startTx = tx;
         startTy = ty;
         panning = scale > 1;
+        singleTouchStart = true;
       }
     },
     { passive: true },
@@ -132,12 +135,13 @@ function bindZoomGestures(overlay) {
         lastTap = now;
       }
 
-      if (scale <= 1 && e.changedTouches.length === 1) {
+      if (scale <= 1 && e.changedTouches.length === 1 && singleTouchStart) {
         const dy = e.changedTouches[0].clientY - startY;
         const dx = e.changedTouches[0].clientX - startX;
         if (dy > 80 && Math.abs(dx) < dy) closeZoomOverlay();
       }
       panning = false;
+      singleTouchStart = false;
     },
     { passive: true },
   );
