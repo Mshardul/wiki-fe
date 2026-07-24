@@ -1,8 +1,6 @@
 # Wiki App - Claude Instructions
 
-**Coding standards live in [CONVENTIONS.md](./CONVENTIONS.md) - read it before writing or changing
-code.** This file is operational: how to classify a task, which skill to invoke, where code lives.
-CONVENTIONS.md is prescriptive: how the code must be written.
+**Coding standards live in [CONVENTIONS.md](./CONVENTIONS.md) - read it before writing or changing code.** This file is operational: how to classify a task, which skill to invoke, where code lives. CONVENTIONS.md is prescriptive: how the code must be written.
 
 ## Tech Stack
 
@@ -19,11 +17,7 @@ CONVENTIONS.md is prescriptive: how the code must be written.
 
 ## Playwright MCP browser
 
-Browsers are pre-installed under `~/Library/Caches/ms-playwright` (chromium, not system Chrome
-channel). If the `playwright` MCP tool errors with `Chromium distribution 'chrome' is not found at
-/Applications/Google Chrome.app/...`, that's the MCP server defaulting to the system-Chrome
-channel instead of the installed bundle - don't run `npx playwright install chrome`; the browser
-already exists, it's an MCP server config issue.
+Browsers are pre-installed under `~/Library/Caches/ms-playwright` (chromium, not system Chrome channel). If the `playwright` MCP tool errors with `Chromium distribution 'chrome' is not found at /Applications/Google Chrome.app/...`, that's the MCP server defaulting to the system-Chrome channel instead of the installed bundle - don't run `npx playwright install chrome`; the browser already exists, it's an MCP server config issue.
 
 ---
 
@@ -267,8 +261,7 @@ Do this before any file reads or skill invocations - every session:
 
 ## APP ARCHITECTURE
 
-See **[CONVENTIONS.md](./CONVENTIONS.md) → Architecture** for the boot sequence, view model,
-content-loading flow, persistence model, and the module-map-as-contract.
+See **[CONVENTIONS.md](./CONVENTIONS.md) → Architecture** for the boot sequence, view model, content-loading flow, persistence model, and the module-map-as-contract.
 
 ---
 
@@ -302,9 +295,7 @@ After finishing any **content task**:
 
 ## TEST PATTERNS
 
-Prescriptive test rules live in **[CONVENTIONS.md](./CONVENTIONS.md) → Testing** (e2e-only,
-`conftest.py` first, no new fixtures, happy + error path). Use the **test file map**
-above to pick which file a test belongs in.
+Prescriptive test rules live in **[CONVENTIONS.md](./CONVENTIONS.md) → Testing** (e2e-only, `conftest.py` first, no new fixtures, happy + error path). Use the **test file map** above to pick which file a test belongs in.
 
 ---
 
@@ -326,6 +317,7 @@ above to pick which file a test belongs in.
 - Never `git add` / `git commit` / `git push` unless explicitly asked
 - Never add `Co-Authored-By` to commit messages
 - Never put WIKI-xxx ticket IDs in code comments or CSS section headers
+- Never hard-wrap prose in Markdown files (manually inserting a newline mid-paragraph at some column width). Write each paragraph/list-item as one single line, no matter how long - let the editor soft-wrap for display. Applies to every `.md` file: audit reports, CLAUDE.md/CONVENTIONS.md, decisions, changelogs, tickets. Manual line breaks are fine only inside code fences, tables, and where Markdown requires them (e.g. two-space hard break).
 
 ---
 

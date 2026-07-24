@@ -114,8 +114,7 @@ DS and algorithms are intertwined, so they live in **one combined vertical**, no
 
 ## Periodic maintenance
 
-Files that don't update themselves - review/update these on a recurring basis, not just when a
-ticket touches them:
+Files that don't update themselves - review/update these on a recurring basis, not just when a ticket touches them:
 
 | File                                                                                 | Update when                                                                                      |
 | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -124,5 +123,4 @@ ticket touches them:
 | `docs/_meta/audit prompts/ui-components-audit-agent-prompt.md`                        | New JS component added/removed - update component roster (31 currently); known interaction points list needs manual review as new components are added |
 | `docs/_meta/audit prompts/codebase-quality-audit-agent-prompt.md`                     | Rare - only if module layout or shared-helper conventions change structurally                      |
 
-Run audits periodically (no fixed cadence yet - ad hoc). Each run's output is a **new dated file**
-under `docs/_meta/audit-reports/` (`{name} - YYYYMMDD.md`) - never overwrite a prior run's file.
+Run audits periodically (no fixed cadence yet - ad hoc). Each run's output is a **new dated file** under `docs/_meta/audit-reports/` (`{name} - YYYYMMDD.md`) - never overwrite a prior run's file.

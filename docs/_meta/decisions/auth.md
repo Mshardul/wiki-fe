@@ -1,11 +1,8 @@
 # Auth & Personal Layer - Decisions
 
-The **what & why** of adding login + per-user personal features to the wiki: product model,
-roadmap, tech choices, data model, and the contracts (password policy, session/cookie shape,
-error codes, security guards) that the implementation must match.
+The **what & why** of adding login + per-user personal features to the wiki: product model, roadmap, tech choices, data model, and the contracts (password policy, session/cookie shape, error codes, security guards) that the implementation must match.
 
-For **how** auth wires into the existing frontend SPA, see
-[auth-integration.md](./auth-integration.md). Status of the overall effort lives there too.
+For **how** auth wires into the existing frontend SPA, see [auth-integration.md](./auth-integration.md). Status of the overall effort lives there too.
 
 Status: **design locked.** Source of truth for these decisions until superseded.
 
@@ -96,8 +93,7 @@ users               (id, email[unique, lowercased], password_hash, email_verifie
 - `recents` - BE trims to **6 newest** per user on write (`RECENTS_MAX = 6`, hardcoded constant, not configurable).
 - Unique constraint on `bookmarks`/`recents`/`reads`: `(user_id, wiki_id, path)`.
 
-v2+: `sticky_notes`, then `notes`, `collections`, `collection_items`, `tags`, `flashcards`.
-**Hard column deferred to v1:** `highlights.anchor` - the text-anchoring problem.
+v2+: `sticky_notes`, then `notes`, `collections`, `collection_items`, `tags`, `flashcards`. **Hard column deferred to v1:** `highlights.anchor` - the text-anchoring problem.
 
 Scroll position stays **local-only** (ephemeral, device-specific, capped at 50) - never synced.
 

@@ -111,15 +111,15 @@ git commit -m "feat: add in-memory session state field"
 **Interfaces:**
 - Consumes: `state` from `state.js`.
 - Produces:
-  - `BACKEND_URL` (string)
-  - `class ApiError extends Error { code; status; }`
-  - `api.get(path)`, `api.post(path, body)`, `api.del(path, body)` → parsed JSON or throws `ApiError`
-  - `api.auth = { me(), register(email,pw), login(email,pw), logout(), resend(email) }`
-  - `api.bookmarks = { list(), add(wiki_id,path), remove(wiki_id,path), clear(wiki_id?) }`
-  - `api.reads = { list(), add(wiki_id,path), remove(wiki_id,path) }`
-  - `api.recents = { list(), add(wiki_id,path), clear(wiki_id?) }`
-  - `api.importAll({bookmarks,reads,recents})`
-  - Fires `document` CustomEvent `wiki:session-expired` on any 401.
+    - `BACKEND_URL` (string)
+    - `class ApiError extends Error { code; status; }`
+    - `api.get(path)`, `api.post(path, body)`, `api.del(path, body)` → parsed JSON or throws `ApiError`
+    - `api.auth = { me(), register(email,pw), login(email,pw), logout(), resend(email) }`
+    - `api.bookmarks = { list(), add(wiki_id,path), remove(wiki_id,path), clear(wiki_id?) }`
+    - `api.reads = { list(), add(wiki_id,path), remove(wiki_id,path) }`
+    - `api.recents = { list(), add(wiki_id,path), clear(wiki_id?) }`
+    - `api.importAll({bookmarks,reads,recents})`
+    - Fires `document` CustomEvent `wiki:session-expired` on any 401.
 
 - [ ] **Step 1: Write `js/api.js`**
 
@@ -248,11 +248,11 @@ Inject fire-and-forget BE writes inside existing save functions, plus a `Sync` o
 **Interfaces:**
 - Consumes: `api` from `js/api.js`; `state.session`, `WIKIS`.
 - Produces:
-  - `Sync.pullAll()` → fetch all 3 lists, overwrite localStorage with server truth, return nothing (caller re-renders).
-  - `Sync.clearUserDataCache()` → remove `wiki-bookmarks`, `wiki-recents`, all `wiki-read-{id}` keys.
-  - `Sync.flushBestEffort()` → no-op placeholder returning `Promise.resolve()` (fire-and-forget means little is unsynced; logout calls it with a short timeout).
-  - Private `_loggedIn()` helper → `state.session.status === "in"`.
-  - Private `_deriveBookmark(wiki_id, path)` / `_deriveRecent(...)` → rebuild FE-shaped objects from BE rows.
+    - `Sync.pullAll()` → fetch all 3 lists, overwrite localStorage with server truth, return nothing (caller re-renders).
+    - `Sync.clearUserDataCache()` → remove `wiki-bookmarks`, `wiki-recents`, all `wiki-read-{id}` keys.
+    - `Sync.flushBestEffort()` → no-op placeholder returning `Promise.resolve()` (fire-and-forget means little is unsynced; logout calls it with a short timeout).
+    - Private `_loggedIn()` helper → `state.session.status === "in"`.
+    - Private `_deriveBookmark(wiki_id, path)` / `_deriveRecent(...)` → rebuild FE-shaped objects from BE rows.
 
 - [ ] **Step 1: Add import + helpers at top of storage.js**
 
@@ -794,9 +794,9 @@ git commit -m "feat: auth modal markup and styles, topbar auth buttons"
 **Interfaces:**
 - Consumes: `validatePassword` (Task 4), `api`/`ApiError` (Task 2), `state` (Task 1), `Sync` (Task 3).
 - Produces:
-  - `Auth = { init(), login(email,pw), register(email,pw), logout(), resend(email), refreshButtons() }`
-  - `AuthModal = { open(panel="login"), close(), _swap(panel), _renderChecklist() }`
-  - On successful login, runs migration prompt (Task 7's `maybeMigrate`) then `Sync.pullAll()` then re-render.
+    - `Auth = { init(), login(email,pw), register(email,pw), logout(), resend(email), refreshButtons() }`
+    - `AuthModal = { open(panel="login"), close(), _swap(panel), _renderChecklist() }`
+    - On successful login, runs migration prompt (Task 7's `maybeMigrate`) then `Sync.pullAll()` then re-render.
 
 - [ ] **Step 1: Append AuthModal + Auth to `js/auth.js`**
 

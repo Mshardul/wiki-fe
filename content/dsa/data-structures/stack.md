@@ -20,16 +20,16 @@
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
 - [CP-primitives](#cp-primitives)
-  - [Monotonic stack - next greater/smaller element](#monotonic-stack--next-greatersmaller-element)
-  - [Paren/bracket matching & expression parsing](#parenbracket-matching--expression-parsing)
+  - [Monotonic stack - next greater/smaller element](#monotonic-stack---next-greatersmaller-element)
+  - [Paren/bracket matching \& expression parsing](#parenbracket-matching--expression-parsing)
   - [Explicit stack to flatten recursion](#explicit-stack-to-flatten-recursion)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [Practice problems](#practice-problems)
-  - [Valid Parentheses](#1-valid-parentheses--matching-with-a-stack)
-  - [Daily Temperatures](#2-daily-temperatures--monotonic-stack)
-  - [Min Stack](#3-min-stack--auxiliary-stack)
-  - [Evaluate Reverse Polish Notation](#4-evaluate-reverse-polish-notation--operand-stack)
-  - [Largest Rectangle in Histogram](#5-largest-rectangle-in-histogram--monotonic-stack-with-widths)
+  - [1. Valid Parentheses - _matching with a stack_](#1-valid-parentheses---matching-with-a-stack)
+  - [2. Daily Temperatures - _monotonic stack_](#2-daily-temperatures---monotonic-stack)
+  - [3. Min Stack - _auxiliary stack_](#3-min-stack---auxiliary-stack)
+  - [4. Evaluate Reverse Polish Notation - _operand stack_](#4-evaluate-reverse-polish-notation---operand-stack)
+  - [5. Largest Rectangle in Histogram - _monotonic stack with widths_](#5-largest-rectangle-in-histogram---monotonic-stack-with-widths)
 
 ## What it is
 
@@ -44,14 +44,14 @@ Mental model: **a stack of plates.** You add a plate to the top and take one off
 A stack exposes exactly three core operations, all at the **top**: **push** (add), **pop** (remove and return), **peek** (read without removing). There is no indexing, no search, no insert-in-the-middle - the LIFO restriction is the whole point, and it's what buys the O(1) guarantee.
 
 ```
-push(3)   push(7)   push(2)        pop() → 2      peek() → 7
-                                                    (7 stays)
- top→ │ │  top→│3│  top→│2│         top→│7│         top→│7│
-      │ │      │ │     │7│              │3│             │3│
-      │3│      │7│     │3│              │ │             │ │
-      └─┘      │3│     │7│              └─┘             └─┘
-               └─┘     │3│
-                       └─┘
+|  push(3)  |  push(7)  |  push(2)  | pop() → 2   | peek() → 7 |
+|-----------+-----------+-----------+-------------+------------|
+| top→ │ │  | top→│3│   | top→│2│   |   top→│7│   |   top→│7│  |
+|      │ │  |     │ │   |     │7│   |       │3│   |       │3│  |
+|      │3│  |     │7│   |     │3│   |       │ │   |       │ │  |
+|      └─┘  |     │3│   |     │7│   |       └─┘   |       └─┘  |
+|           |     └─┘   |     │3│   |             |            |
+|           |           |     └─┘   |             |            |
 ```
 
 Two backings give the same O(1) interface (see [Memory layout](#memory-layout)):
@@ -135,7 +135,7 @@ The stack's behavior is the behavior of whichever structure backs it - and the c
 ```
 array-backed stack (top at the right end):
 
-index:  0    1    2    3        capacity 6, size 4
+index:  0   1   2   3   4   5     capacity 6, size 4
       [ 3 | 7 | 2 | 9 |   |   ]
                     ▲ top = data[size-1];  push writes data[size], size++
 ```
@@ -166,18 +166,18 @@ A stack over a dynamic array - the idiomatic default. Pseudocode states the cont
 
 ```
 STACK-PUSH(S, x)
-1   S.top = S.top + 1
-2   S.data[S.top] = x            ▷ grow the backing array if full
+    S.top = S.top + 1
+    S.data[S.top] = x            ▷ grow the backing array if full
 
 STACK-POP(S)
-1   if STACK-EMPTY(S)
-2       error "underflow"
-3   x = S.data[S.top]
-4   S.top = S.top − 1            ▷ logically remove; element left for GC/overwrite
-5   return x
+    if STACK-EMPTY(S)
+        error "underflow"
+    x = S.data[S.top]
+    S.top = S.top − 1            ▷ logically remove; element left for GC/overwrite
+    return x
 
 STACK-EMPTY(S)
-1   return S.top == −1
+    return S.top == −1
 ```
 
 **Python (reference - idiomatic):**
@@ -306,7 +306,7 @@ def dfs_iterative(root) -> list[int]:
 
 ## Practice problems
 
-Five staples, each a **distinct** stack technique - no two solved the same way.
+Five staples, each a **distinct** stack technique
 
 ### 1. Valid Parentheses - _matching with a stack_
 

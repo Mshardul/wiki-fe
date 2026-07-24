@@ -14,13 +14,13 @@ Input: one article path (or a glob to batch-rate several, one report each).
 
 1. **Read the article.**
 2. **Detect the article kind** (see [dsa-writer.md › Article kinds](./dsa-writer.md#article-kinds--specific-vs-consolidated)). Three possible kinds:
-   - `> **Hub article.**` marker present → **consolidated hub** - score with the hub rubric below, skip per-section scoring.
-   - `> **Cheatsheet.**` marker present → **cheatsheet/meta** - score U7/U8/U9/U10/U11/U12 only; mark all other params n/a with reason "cheatsheet article"; gate = SHIP if those six pass and every table row has ≥1 working cross-link.
-   - Neither marker → **specific article** - proceed with steps 3–6 as normal. An article without either marker is always treated as specific.
+    - `> **Hub article.**` marker present → **consolidated hub** - score with the hub rubric below, skip per-section scoring.
+    - `> **Cheatsheet.**` marker present → **cheatsheet/meta** - score U7/U8/U9/U10/U11/U12 only; mark all other params n/a with reason "cheatsheet article"; gate = SHIP if those six pass and every table row has ≥1 working cross-link.
+    - Neither marker → **specific article** - proceed with steps 3–6 as normal. An article without either marker is always treated as specific.
 3. **Detect the section** from the folder:
-   - `content/dsa/data-structures/…` → **DS**
-   - `content/dsa/algorithms/…` → **Algorithm**
-   - `content/dsa/patterns/…` → **Pattern**
+    - `content/dsa/data-structures/…` → **DS**
+    - `content/dsa/algorithms/…` → **Algorithm**
+    - `content/dsa/patterns/…` → **Pattern**
 4. **Detect the family** (DS and Algorithm only - Pattern has none) using the family tables in the writer. **Tie-breaker:** family = the article's _primary subject_, not techniques touched in passing (Backtracking = Recursive/build even though it recurses). When genuinely split, pick the family whose must-cover block the article covers at most depth, and name the runner-up in the report. _(Hubs have no family - skip this step.)_
 5. **Apply params in four tiers:** universal (every article) + the matching section block + the matching family block + the [content verification checks](#content-verification-pass-v-checks) (V1–V14) - all scored in the same pass, same table. Params that don't apply (e.g. recognition-signals on an algorithm) are marked **n/a** and dropped from the total.
 6. **Resolve filesystem checks via the pre-check script - facts supplied, not guessed.** U8, U11, U12 are deterministic and must not vary run-to-run. Run `./scripts/dsa-check.sh <article.md>` (Bash wrapper over `dsa_check.py`) and paste its PASS/FAIL lines into the U8/U11/U12 rows. Do **not** judge these three from reading alone. If the script can't run, say so in the report and fall back to a manual tree check - never silently guess.
@@ -56,12 +56,12 @@ Scoring scale, weights (U1/H-params weight 1; U8–U13 weight 0.5), the ≥9 gat
 
 - Each applicable param scored **0–10** against its definition in the writer:
 
-  - **9–10** - fully present, correct, **at senior depth** (per the writer's "Depth bar"): goes past the obvious, names the trade not just the choice, and the senior-only insight is there. Present-and-correct-but-shallow does **not** reach this band.
-  - **6–8** - present and correct but **shallow** (the strong-junior answer), thin, partially correct, or missing a sub-part. Most "looks complete" articles land here until depth is added.
-  - **3–5** - gestured at but weak / vague / mostly absent.
-  - **0–2** - missing or wrong.
+    - **9–10** - fully present, correct, **at senior depth** (per the writer's "Depth bar"): goes past the obvious, names the trade not just the choice, and the senior-only insight is there. Present-and-correct-but-shallow does **not** reach this band.
+    - **6–8** - present and correct but **shallow** (the strong-junior answer), thin, partially correct, or missing a sub-part. Most "looks complete" articles land here until depth is added.
+    - **3–5** - gestured at but weak / vague / mostly absent.
+    - **0–2** - missing or wrong.
 
-  **Depth is the gate between 8 and 9.** If you can't point to the specific senior-level insight (amortized-vs-worst-case, the constant that bites, the trap a junior misses), it's an 8, not a 9.
+    **Depth is the gate between 8 and 9.** If you can't point to the specific senior-level insight (amortized-vs-worst-case, the constant that bites, the trap a junior misses), it's an 8, not a 9.
 
 - Each param has a **weight** (below). Overall = weighted average, scaled to **/100**:
   `overall = round( 100 * Σ(score_i × weight_i) / Σ(10 × weight_i) )` over applicable params only.

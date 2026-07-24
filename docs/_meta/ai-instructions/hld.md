@@ -66,10 +66,7 @@ Then the main content follows.
 
 Rules are in `_base.md`. Type-specific examples:
 
-✅ `- Short code generation - collision avoidance at scale`
-✅ ` - Hot shard - key salting, adaptive routing`
-❌ `- Overview of how the system generates short URLs`
-❌ ` - Discussion of failure modes in the sharding layer`
+✅ `- Short code generation - collision avoidance at scale` ✅ ` - Hot shard - key salting, adaptive routing` ❌ `- Overview of how the system generates short URLs` ❌ ` - Discussion of failure modes in the sharding layer`
 
 ---
 

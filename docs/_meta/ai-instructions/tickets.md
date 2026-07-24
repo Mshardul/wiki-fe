@@ -109,9 +109,9 @@ Use the output to confirm the ticket exists in Backlog before proceeding. Do not
 3. Read only the mapped files - do not explore broadly.
 4. Check if ticket references another ticket (e.g., "Extends WIKI-078", "Superseded by") - if so, read that ticket's Remarks first.
 5. Follow `CLAUDE.md` skill routing for the ticket Type:
-   - `bug` → `systematic-debugging` if root cause unknown; direct edit if cause is stated in Description
-   - `feature` → no skill if spec is clear (it usually is in the ticket); `brainstorming` only if description is vague
-   - `perf` / `a11y` / `ux` / `refactor` / `cleanup` / `dx` / `security` → direct edit, no skill
+    - `bug` → `systematic-debugging` if root cause unknown; direct edit if cause is stated in Description
+    - `feature` → no skill if spec is clear (it usually is in the ticket); `brainstorming` only if description is vague
+    - `perf` / `a11y` / `ux` / `refactor` / `cleanup` / `dx` / `security` → direct edit, no skill
 
 ---
 

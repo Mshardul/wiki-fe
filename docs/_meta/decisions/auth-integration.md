@@ -1,10 +1,8 @@
 # [Archive] Auth Integration - Frontend ↔ Backend
 
-**How** the auth + sync feature wires into the existing vanilla-JS SPA: the API client, session
-state, caching model, storage hooks, auth UI, migration, logout. Plus the current build status.
+**How** the auth + sync feature wires into the existing vanilla-JS SPA: the API client, session state, caching model, storage hooks, auth UI, migration, logout. Plus the current build status.
 
-For **what & why** (product model, tech choices, DB schema, contracts - password policy,
-session/cookie shape, error codes, security guards), see [auth.md](./auth.md).
+For **what & why** (product model, tech choices, DB schema, contracts - password policy, session/cookie shape, error codes, security guards), see [auth.md](./auth.md).
 
 Status: **design locked. BE v0 built; FE integration pending.**
 
@@ -19,24 +17,22 @@ Status: **design locked. BE v0 built; FE integration pending.**
 | FE integration (this doc: `api.js`, `state.session`, storage sync hooks, auth modal, topbar button, migration, logout) | **Pending** - no wiring in `wiki-fe/js` yet. |
 | Infra/deploy (Fly, custom domain, Resend domain) | Deferred, non-blocking. See [infra-deploy.md](./infra-deploy.md). |
 
-**Next:** the FE integration work below. Step-by-step plan:
-`docs/_meta/plans/fe-be-integration.md`.
+**Next:** the FE integration work below. Step-by-step plan: `docs/_meta/plans/fe-be-integration.md`.
 
 ---
 
 ## Frontend ↔ backend + caching
 
-App stays vanilla-JS SPA, hash router, no build, no framework. All FE auth UI = **modals**
-(matches existing ⌘K / settings patterns; no new view plumbing).
+App stays vanilla-JS SPA, hash router, no build, no framework. All FE auth UI = **modals** (matches existing ⌘K / settings patterns; no new view plumbing).
 
 ### Caching model - cache-through (Model B)
 
 - **API = source of truth.** **localStorage = cache** (+ existing service-worker article cache, kept).
 - Persistence stays centralized in `storage.js`. Sync hooks inject **inside** the existing save functions - callers (`Bookmarks.toggle`, `markRead`, …) unchanged, minimal blast radius.
-  - `get*()` → read localStorage (instant, unchanged).
-  - `save*()` → write localStorage **+** if logged in, fire API call.
-  - **On login / boot (logged in):** pull from API → merge into localStorage → re-render.
-  - **Anon:** exactly today's behavior, zero API.
+    - `get*()` → read localStorage (instant, unchanged).
+    - `save*()` → write localStorage **+** if logged in, fire API call.
+    - **On login / boot (logged in):** pull from API → merge into localStorage → re-render.
+    - **Anon:** exactly today's behavior, zero API.
 - **Writes = fire-and-forget:** write localStorage, async POST/DELETE, don't await, ignore transient failures - next load-time pull reconciles drift. UI stays instant.
 
 ### Session state (FE)
@@ -86,8 +82,8 @@ Auth adds exactly one visible control + one modal. Broader topbar declutter is a
 
 - **Login/logout icon button** in the topbar - the _only_ new auth UI in the topbar. Logged out → "Login"; logged in → "Logout". Account/email shown inside the **preferences panel** (panel renamed "Settings" → "Preferences" under another ticket).
 - **Auth modal - one modal, swapped content** (reuses existing modal pattern): login ↔ register ↔ verify-pending ↔ session-expired. Minimal.
-  - **Register** panel: email, password + **live 5-rule checklist** (see Password policy in [auth.md](./auth.md)), submit disabled until all green, toggle to login.
-  - **Verify-pending** panel: "Check your email to verify" + **Resend** button (`/auth/resend-verification`). Stays in-modal (flow contained).
+    - **Register** panel: email, password + **live 5-rule checklist** (see Password policy in [auth.md](./auth.md)), submit disabled until all green, toggle to login.
+    - **Verify-pending** panel: "Check your email to verify" + **Resend** button (`/auth/resend-verification`). Stays in-modal (flow contained).
 - **401 / session-expired:** global handler → toast ("Session expired, please log in") + **reopen the login modal**.
 
 ### Offline

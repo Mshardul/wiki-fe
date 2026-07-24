@@ -193,9 +193,7 @@ Pick, merge, and reorder based on the tool. Omit inapplicable sections - never i
 
 Base sections (Acronyms, Anti-patterns, Selection Matrix) are in `_base.md`. Additional section for this type:
 
-**Key Config Reference** _(optional - only if a config file is central to the tool)_
-Table of the most important config keys/flags: `Key / Flag | Default | What it controls | When to change`
-Keep to ≤10 rows. Full reference belongs in the cheatsheet.
+**Key Config Reference** _(optional - only if a config file is central to the tool)_ Table of the most important config keys/flags: `Key / Flag | Default | What it controls | When to change` Keep to ≤10 rows. Full reference belongs in the cheatsheet.
 
 ---
 

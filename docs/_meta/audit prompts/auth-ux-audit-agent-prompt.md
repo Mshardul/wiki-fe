@@ -35,7 +35,7 @@ Work through these in order, as a first-time user would — narrate the step to 
 2. **Register form** — empty submit, invalid email format, weak password (watch the checklist turning green/red per `test_register_checklist_turns_green`), mismatched confirm password (if one exists), already-registered email, submit-button state while request is in flight, rapid double-click/double-submit.
 3. **Post-register state** — what does the user see immediately after? Is it clear whether they're logged in or still need to verify? Any dead-end states?
 4. **Email verification** — you likely can't click a real email link; instead read `js/auth.js` for how the verify flow is wired (URL param / route?) and drive it directly via URL if possible.
-   Check: expired token, malformed token, already-used token behavior/messaging.
+    Check: expired token, malformed token, already-used token behavior/messaging.
 5. **Resend verification** — is there a clear affordance? What feedback on click? Any rate-limit messaging, and if so is it user-friendly?
 6. **Login** — correct creds, wrong password, unknown email, empty fields, Enter-key submit vs button click, autocomplete/autofill attributes on the fields, unverified-account login attempt. Test actual browser autofill (not just attribute presence): save creds via browser password manager, reload, let it autofill login/register fields — does the password-checklist JS re-validate on autofill (`input` event fires?) or does it stay stuck showing all-red/unvalidated while the submit button thinks the field is empty?
 7. **Session reflection** — after login, does the UI (topbar, auth button, any gated content) update immediately without a manual refresh? Reload the page — does the session survive? Open a second tab — same session state?
@@ -48,8 +48,7 @@ Work through these in order, as a first-time user would — narrate the step to 
 
 ## Output file
 
-Log to **`docs/_meta/audit-reports/auth-ux-audit - YYYYMMDD.md`** (today's date; create the file
-and, if absent, the `audit-reports/` directory). Two-stage write pattern so nothing is ever lost mid-run, but the final file stays organized:
+Log to **`docs/_meta/audit-reports/auth-ux-audit - YYYYMMDD.md`** (today's date; create the file and, if absent, the `audit-reports/` directory). Two-stage write pattern so nothing is ever lost mid-run, but the final file stays organized:
 
 - **As you find each issue**, immediately append it as a flat entry under a top-level `## Raw log` section at the bottom of the file (create on first write). Do this the moment you find it — do not batch findings in memory and write at the end.
 - **Periodically (after finishing each numbered journey-checklist item above)**, move that item's raw-log entries up into a proper section for that step under `## Findings by flow step`, sorted critical → major → minor within the section, and delete them from the raw log. This keeps the raw log as a safety net only, and the top of the file as the organized, fixable output.
