@@ -70,7 +70,7 @@ Be exhaustive — quantity and precision both matter more than brevity here.
 
 **Misc**
 30. `app/debug-overlay.js`
-31. `api.js`
+31. `api.js` — parameters translate differently here since it's not a UI component: **isolation correctness** = base-URL detection across environments, `ApiError` parsing correctness, the global 401 handler firing exactly once per real 401 (not per request, not zero times); **resource/listener lifecycle** likely doesn't apply (no DOM listeners) — note and skip rather than force a finding.
 
 ## Known interaction points (fixed list — update this list as the app evolves; agent should treat
 this as a required-minimum checklist and may append genuinely new findings in a separate bucket, not silently expand this list)
@@ -81,11 +81,13 @@ this as a required-minimum checklist and may append genuinely new findings in a 
 - **Focus mode / distraction-free vs TOC/topbar** — do they fight over which chrome is hidden?
 - **Content re-render on navigation**: navigating between articles — do `content/*` modules (mermaid, code-blocks, toc, glossary-caveats) properly tear down and reinit, or does stale state (event listeners, caches) leak from the previous article into the new one?
 - **Settings change mid-interaction**: theme/font-size change while a modal is open, or mid-zoom — does re-render break the active component's state?
-- **Toast queue vs open modal** — does a toast fire while a modal is open; is it visible, or hidden behind the modal (see `manual-ui-audit - 20260714.md` misc section — a real prior report of a toast rendering cut-off/behind-boundary at login)?
+- **Toast queue vs open modal** — does a toast fire while a modal is open; is it visible, or hidden behind the modal. Confirmed still current as of this prompt's last edit via `tokens.css` z-index scale: `.wiki-toast` (`css/components/toast.css:19`) uses `--z-modal-backdrop` (1100), while search modal uses `--z-search-modal` (2000) and preferences modal uses `--z-prefs-modal` (3000) — a toast firing while either is open renders behind it. Auth modal's main panel (`--z-auth-modal`, 1000) is also below the toast, so a toast there would render on top correctly, but auth's migrate-modal sub-dialog (`--z-max`, 9999) would bury the toast too. Verify this live and log the confirmed cases (originally reported in `manual-ui-audit - 20260714.md`, misc section, toast cut-off/behind-boundary at login).
 
 ## Method: code read first, then live verification
 
-**Phase 1 — static read-through, component by component:** Read each component's JS + CSS pair. Trace: what state does it own, what triggers a render/re-render, what listeners does it attach and when/whether they're removed, what does it read/write in localStorage, what does it assume about its upstream data. Note anything suspicious as a **hypothesis** — don't log it as confirmed until Phase 2 verifies it against real behavior.
+**Phase 1 — static read-through, component by component:** Use `ctx_batch_execute`/`ctx_execute_file` (not `Read`) to go through each component's JS + CSS pair. Trace: what state does it own, what triggers a render/re-render, what listeners does it attach and when/whether they're removed, what does it read/write in localStorage, what does it assume about its upstream data. Note anything suspicious as a **hypothesis** — don't log it as confirmed until Phase 2 verifies it against real behavior.
+
+Do not run any tests — full suite or individual files. Assume the existing `tests/e2e/test_*.py` suite is correct and passing; this audit is a fresh manual pass, not a test run.
 
 **Phase 2 — live browser verification:** Serve the site locally (same pattern as `tests/conftest.py`'s `base_url` fixture) through the virtual environment (`.venv` in repo root). Use Playwright MCP tools to drive each component and the interaction-point list above. Techniques specific to this audit's parameters:
 
@@ -185,7 +187,7 @@ companion prompts for those.
 
 - **Do not fix anything.** This is audit-only — report, don't patch. If a fix is obvious, note it in "Fix direction" but leave the code untouched.
 - **Do not read `content/**/*.md`** — irrelevant to this audit.
-- **Do not run the full pytest suite.** You may run individual existing `tests/e2e/test_*.py` cases read-only for reference/comparison against your own findings.
+- **Do not run any tests** — full suite or individual files. Assume `tests/e2e/test_*.py` is correct and passing.
 - Follow `CLAUDE.md`'s file-map guidance for anything not already listed in the roster above.
 - No `git add`/`commit`/`push`.
 

@@ -15,7 +15,9 @@ Walk through **every step of the auth journey**, not just login/register in isol
 ## Method: code read first, then browser verification
 
 **Phase 1 — static read-through:**
-Read `js/auth.js`, `js/api.js`, `css/components-auth.css`, and the auth-related pieces of `js/state.js` and `js/render/toast.js`. Trace each flow end-to-end: what triggers each request, what does success/error do to the DOM, what does the user see and where. Note anything suspicious as a **hypothesis** — don't log it as confirmed yet. Also diff client-side password validation rules in `auth.js` against what you'd expect the backend to enforce (flag it as a hypothesis to verify — do not read `wiki-be` code to confirm, just note the mismatch as observed from FE).
+Use `ctx_batch_execute`/`ctx_execute_file` (not `Read`) to go through `js/auth.js`, `js/api.js`, `css/components-auth.css`, `state.session` in `js/state.js`, `js/render/toast.js`, `js/storage/settings-theme.js` (`Sync`/multi-tab listener), and `js/storage/bookmarks.js` + `js/storage/recents.js` (anon-data carryover). Trace each flow end-to-end: what triggers each request, what does success/error do to the DOM, what does the user see and where. Specifically check that a `wiki:session-expired` listener exists and updates the UI (this is the documented mechanism for session reflection — see `CONVENTIONS.md` → Errors & API). Note anything suspicious as a **hypothesis** — don't log it as confirmed yet; append each to a scratch `## Phase 1 hypotheses` section at the bottom of the output file, and clear each entry once Phase 2 confirms or discards it. Also diff client-side password validation rules in `auth.js` against the documented policy in `docs/_meta/decisions/auth.md` (Password policy section) — do not read `wiki-be` code to confirm, just note the mismatch as observed from FE against the documented contract.
+
+Do not run any tests — full suite or individual files. Assume `tests/e2e/test_auth.py` is correct and passing; this audit is a fresh manual pass, not a test run.
 
 **Phase 2 — live browser verification:**
 Serve the site locally (same pattern as `tests/conftest.py`'s `base_url` fixture — a plain `python3 -m http.server` from the `wiki-fe` root works fine, or reuse the pytest fixture if easier) through the virtual environment (`.venv` in the root FE directory). Use the Playwright MCP tools (`browser_navigate`, `browser_resize`, `browser_snapshot`/`browser_take_screenshot`, `browser_click`, `browser_type`, `browser_evaluate`, `browser_network_requests`, etc.) to:
@@ -27,6 +29,8 @@ Serve the site locally (same pattern as `tests/conftest.py`'s `base_url` fixture
 
 No network throttling — Playwright MCP here has no reliable built-in throttle control. Skip it; instead simulate failure by routing a request to fail/hang (`page.route` equivalent) or just note network/loading-state gaps you see in the code (no disabled-state on submit, no timeout handling) as findings.
 
+A companion agent audits `wiki-be` in parallel against the same local backend/DB — use a unique email pattern per test registration (e.g. `fe-audit-{timestamp}@example.com`) to avoid colliding with the backend agent's test accounts or with your own repeated runs. Don't bother cleaning up test accounts as you go; if the backend exposes an easy bulk-cleanup path, note it as a followup at the end rather than doing it mid-audit.
+
 ## Journey checklist
 
 Work through these in order, as a first-time user would — narrate the step to yourself before judging it. Known selectors from `tests/e2e/test_auth.py` to help you get started fast: `#auth-btn-home` (opens modal), `#auth-modal`, `#auth-panel-login.active`, `#auth-to-register`, `#auth-reg-password`, `#auth-reg-submit`.
@@ -35,7 +39,7 @@ Work through these in order, as a first-time user would — narrate the step to 
 2. **Register form** — empty submit, invalid email format, weak password (watch the checklist turning green/red per `test_register_checklist_turns_green`), mismatched confirm password (if one exists), already-registered email, submit-button state while request is in flight, rapid double-click/double-submit.
 3. **Post-register state** — what does the user see immediately after? Is it clear whether they're logged in or still need to verify? Any dead-end states?
 4. **Email verification** — you likely can't click a real email link; instead read `js/auth.js` for how the verify flow is wired (URL param / route?) and drive it directly via URL if possible.
-    Check: expired token, malformed token, already-used token behavior/messaging.
+    Check: expired token, malformed token, already-used token behavior/messaging. If a case can't be triggered without a real backend-signed token, don't skip it silently — log it as `[UNTESTABLE]` with the reason.
 5. **Resend verification** — is there a clear affordance? What feedback on click? Any rate-limit messaging, and if so is it user-friendly?
 6. **Login** — correct creds, wrong password, unknown email, empty fields, Enter-key submit vs button click, autocomplete/autofill attributes on the fields, unverified-account login attempt. Test actual browser autofill (not just attribute presence): save creds via browser password manager, reload, let it autofill login/register fields — does the password-checklist JS re-validate on autofill (`input` event fires?) or does it stay stuck showing all-red/unvalidated while the submit button thinks the field is empty?
 7. **Session reflection** — after login, does the UI (topbar, auth button, any gated content) update immediately without a manual refresh? Reload the page — does the session survive? Open a second tab — same session state?
@@ -44,7 +48,7 @@ Work through these in order, as a first-time user would — narrate the step to 
 10. **Anon → account migration** — `auth.js` is noted to own "anon→login migration"; if the user had bookmarks/recents/settings as anonymous before registering or logging in, do they carry over correctly, get merged, or get silently dropped?
 11. **Keyboard & screen-reader pass** — tab order through the whole modal, can every action be completed without a mouse, are error messages associated with their fields (`aria-describedby` or similar), is focus managed sensibly when the modal opens/closes or switches panels.
 12. **Mobile pass** — repeat steps 2, 6, 9 at 390px width specifically, watching for the bottom-sheet behavior interacting badly with the on-screen keyboard, cramped touch targets, or content cut off below the fold.
-13. **Copy & tone audit** — pull every user-facing string across the whole auth surface (button labels, field labels/placeholders, helper text, every error message, empty states, success toasts) into one list and read them together, not just in context. Check: consistent tone (formal vs casual doesn't flip mid flow), consistent terminology (same word for the same concept — don't say "sign in" in one place and "log in" in another), error messages that say what happened AND what to do next (not just "Something went wrong"), no raw technical/API-error text leaking to the user, sentence casing/punctuation consistent across all strings.
+13. **Copy & tone audit** — pull every user-facing string across the whole auth surface (button labels, field labels/placeholders, helper text, every error message, empty states, success toasts) into one list and read them together, not just in context. Check: consistent tone (formal vs casual doesn't flip mid flow), consistent terminology (same word for the same concept — don't say "sign in" in one place and "log in" in another), error messages that say what happened AND what to do next (not just "Something went wrong"), no raw technical/API-error text leaking to the user, sentence casing/punctuation consistent across all strings. Also verify each error message maps to the correct backend `code` (canonical list in `docs/_meta/decisions/auth.md`) — not just that the tone reads well, but that the right message fires for the right `code` (FE-observable via `js/api.js`'s `switch`, no BE code reading needed).
 
 ## Output file
 
@@ -65,7 +69,7 @@ Log to **`docs/_meta/audit-reports/auth-ux-audit - YYYYMMDD.md`** (today's date;
 - **Fix direction:** disable submit button synchronously on click, before awaiting the request
 ```
 
-Severity = `CRITICAL` (flow is broken/unusable, or a security/data issue), `MAJOR` (real bug or bad UX, works but wrong), `MINOR` (rough edge, inconsistency, minor confusion), `POLISH` (nitpick, copy/spacing/style). Tag security-relevant findings with a leading `[SECURITY]` in the title regardless of severity bucket (e.g. account-enumeration via forgot-password messaging).
+Severity = `CRITICAL` (flow is broken/unusable), `MAJOR` (real bug or bad UX, works but wrong), `MINOR` (rough edge, inconsistency, minor confusion), `POLISH` (nitpick, copy/spacing/style). Severity is purely about functional/UX impact — security relevance is a separate, orthogonal axis. Tag security-relevant findings with a leading `[SECURITY]` in the title regardless of severity bucket (e.g. account-enumeration via forgot-password messaging); a security finding can land in any severity tier depending on its functional impact.
 
 Final file structure:
 
@@ -99,7 +103,7 @@ Generated by auth UX audit agent. FE-only — see wiki-be's companion audit for 
 - **Do not fix anything.** This is audit-only — report, don't patch. If a fix is obvious, note it in "Fix direction" but leave the code untouched.
 - **Do not read or judge `wiki-be` code.** Treat the backend as a black box reached through `js/api.js`; note contract mismatches observed from the FE side only.
 - **Do not read `content/**/*.md`** — irrelevant to this audit.
-- **Do not run the full pytest suite.** You may run `tests/e2e/test_auth.py` read-only for reference if useful, but this audit is a fresh manual pass, not a test run.
+- **Do not run any tests** — full suite or individual files. Assume `tests/e2e/test_auth.py` is correct and passing.
 - Follow `CLAUDE.md`'s file-map guidance — don't read unrelated domain files (`content/`, other `storage/` files, etc.) blindly.
 - No `git add`/`commit`/`push`.
 
