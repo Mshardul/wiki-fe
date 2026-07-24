@@ -1,13 +1,6 @@
-# Pre-commit hooks - local guardrails for the FE (vanilla JS static site, no node).
-# CI (.github/workflows/ci.yml) is the authoritative gate.
-# Install once:  make install   (or: .venv/bin/pre-commit install)
-# Run on all files:  make precommit
-#
-# Tests are NOT run on commit (playwright suite is slow); CI runs the full suite.
-# No JS/CSS linting here by design - repo is build-free with no node toolchain.
-
-# content/ is 1.5M of authored markdown - excluded from prose/whitespace/spell hooks.
-exclude: '^(content/|\.venv/|docs/superpowers/|\.pytest_cache/)'
+# Pre-commit hooks - local guardrails. CI (.github/workflows/ci.yml) is the authoritative gate.
+# Install once: make install (or .venv/bin/pre-commit install). Run on all files: make precommit
+# No top-level exclude - pre-commit ANDs it with every hook, so it's per-hook below instead.
 
 repos:
   # ── Secrets ─────────────────────────────────────────────────────────────────
@@ -15,15 +8,17 @@ repos:
     rev: v8.30.0
     hooks:
       - id: gitleaks
+        exclude: '^(\.venv/|\.pytest_cache/)'
 
   # ── Spelling (code, comments, project docs) ─────────────────────────────────
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.2
     hooks:
       - id: codespell
-        # Authored wiki content is excluded globally; also skip generated/data.
+        # Authored wiki content is excluded here; also skip generated/data.
         # pres = plural of <pre> elements; couldn = "couldn't" w/ escaped apostrophe.
         # ths = table-headers variable (Array.from querySelectorAll th)
+        exclude: '^(content/|\.venv/|\.pytest_cache/)'
         args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths"]
 
   # ── JS/CSS lint + format (Biome - standalone binary, no node_modules) ───────
@@ -32,6 +27,7 @@ repos:
     hooks:
       - id: biome-check
         # Lints + formats JS/CSS, applies safe fixes in place (review unstaged).
+        # content/ already excluded via biome.json's files.ignore.
         additional_dependencies: ["@biomejs/biome@1.9.4"]
 
   # ── Dead links (lychee - requires: brew install lychee) ─────────────────────
@@ -51,20 +47,58 @@ repos:
       - id: bump-cache-version
         name: bump ARTICLE_CACHE version from content/ hash
         language: system
-        entry: python3 scripts/bump_cache_version.py
+        entry: .venv/bin/python3 scripts/bump_cache_version.py
         files: '^content/.*\.md$'
         pass_filenames: false
 
+  # ── Generated content indexes (search-index runs first, others consume its output) ──
+  - repo: local
+    hooks:
+      - id: build-search-index
+        name: regenerate content/search-index.json
+        language: system
+        entry: .venv/bin/python3 scripts/build_search_index.py
+        files: '^content/.*\.md$'
+        pass_filenames: false
+      - id: build-backlinks
+        name: regenerate content/backlinks.json
+        language: system
+        entry: .venv/bin/python3 scripts/build_backlinks.py
+        files: '^content/.*\.md$'
+        pass_filenames: false
+      - id: build-broken-links
+        name: regenerate content/broken-links.json
+        language: system
+        entry: .venv/bin/python3 scripts/build_broken_links.py
+        files: '^content/.*\.md$'
+        pass_filenames: false
+
+  # ── bridges.json (hand-authored, unlike the generated files above) ──────────
+  - repo: local
+    hooks:
+      - id: validate-bridges
+        name: validate content/bridges.json
+        language: system
+        entry: .venv/bin/python3 scripts/validate_bridges.py
+        files: '^content/bridges\.json$'
+        pass_filenames: false
+
   # ── Hygiene ─────────────────────────────────────────────────────────────────
+  # content/ (1.5M of authored markdown) only excluded on the two whitespace fixers below -
+  # everything else (JSON validity, secrets, symlinks, etc.) should still cover content/.
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: detect-private-key
       - id: end-of-file-fixer
+        exclude: '^(content/|\.venv/|\.pytest_cache/)'
       - id: trailing-whitespace
+        exclude: '^(content/|\.venv/|\.pytest_cache/)'
       - id: check-yaml
       - id: check-json
       - id: check-added-large-files
         args: ["--maxkb=500"]
       - id: check-merge-conflict
       - id: check-case-conflict
+      - id: check-symlinks
+      - id: check-executables-have-shebangs

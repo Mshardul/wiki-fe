@@ -1,29 +1,23 @@
-# CI pre-commit config - check-only, never auto-fix (authoritative gate).
-# Used by .github/workflows/ci.yml. Local devs use .pre-commit-config.yaml,
-# which auto-fixes; CI must only report and fail, never rewrite files.
-#
-# The fixer hooks (end-of-file-fixer, trailing-whitespace) exit non-zero when
-# they would change a file, which fails the CI job without committing changes -
-# that is the intended check-only behaviour. codespell runs without -w (report
-# only). No JS/CSS linting by design - repo is build-free with no node toolchain.
-
-exclude: '^(content/|\.venv/|docs/superpowers/|\.pytest_cache/)'
+# CI pre-commit config - check-only, never auto-fix (authoritative gate, used by ci.yml).
+# Local devs use .pre-commit-config.yaml instead, which auto-fixes.
+# No top-level exclude - see .pre-commit-config.yaml for why; it's per-hook below instead.
 
 repos:
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.0
     hooks:
       - id: gitleaks
+        exclude: '^(\.venv/|\.pytest_cache/)'
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.2
     hooks:
       - id: codespell
+        exclude: '^(content/|\.venv/|\.pytest_cache/)'
         # pres = plural of <pre> elements; couldn = "couldn't" w/ escaped apostrophe.
         # ths = table-headers variable (Array.from querySelectorAll th)
         args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths"]
 
-  # JS/CSS lint + format - check-only (CI mode, never writes).
   - repo: https://github.com/biomejs/pre-commit
     rev: v0.6.1
     hooks:
@@ -35,10 +29,14 @@ repos:
     hooks:
       - id: detect-private-key
       - id: end-of-file-fixer
+        exclude: '^(content/|\.venv/|\.pytest_cache/)'
       - id: trailing-whitespace
+        exclude: '^(content/|\.venv/|\.pytest_cache/)'
       - id: check-yaml
       - id: check-json
       - id: check-added-large-files
         args: ["--maxkb=500"]
       - id: check-merge-conflict
       - id: check-case-conflict
+      - id: check-symlinks
+      - id: check-executables-have-shebangs

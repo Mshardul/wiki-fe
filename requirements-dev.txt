@@ -3,3 +3,4 @@ pytest-playwright>=0.5
 pytest-xdist>=3.0
 pytest-timeout>=2.3
 pre-commit>=3.8
+jsonschema>=4.23

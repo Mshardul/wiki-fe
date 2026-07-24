@@ -1,14 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "files": {
-    "ignore": [
-      "content/**",
-      ".venv/**",
-      "docs/superpowers/**",
-      ".pytest_cache/**",
-      "data/**",
-      "**/*.min.js"
-    ]
+    "ignore": ["content/**", ".venv/**", ".pytest_cache/**", "data/**", "**/*.min.js"]
   },
   "formatter": {
     "enabled": true,
@@ -22,6 +15,9 @@
       "recommended": true,
       "complexity": {
         "noForEach": "off"
+      },
+      "suspicious": {
+        "noConsole": "error"
       }
     }
   },
