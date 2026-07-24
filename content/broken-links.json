@@ -35,12 +35,6 @@
       "title": "Quickselect"
     }
   ],
-  "./content/dsa/algorithms/recursion.md": [
-    {
-      "target": "./content/dsa/algorithms/path.md",
-      "title": "Recursion"
-    }
-  ],
   "./content/dsa/algorithms/selection-sort.md": [
     {
       "target": "./content/dsa/algorithms/path.md",
@@ -71,12 +65,6 @@
       "title": "Union-Find (DSU)"
     }
   ],
-  "./content/dsa/patterns/binary-search-on-answer.md": [
-    {
-      "target": "./content/dsa/patterns/path.md",
-      "title": "Binary Search on Answer"
-    }
-  ],
   "./content/dsa/patterns/cyclic-sort.md": [
     {
       "target": "./content/dsa/patterns/path.md",
@@ -89,34 +77,16 @@
       "title": "DP Patterns"
     }
   ],
-  "./content/dsa/patterns/fast-slow-pointers.md": [
-    {
-      "target": "./content/dsa/patterns/path.md",
-      "title": "Fast & Slow Pointers"
-    }
-  ],
   "./content/dsa/patterns/merge-intervals.md": [
     {
       "target": "./content/dsa/patterns/path.md",
       "title": "Merge Intervals"
     }
   ],
-  "./content/dsa/patterns/monotonic-stack.md": [
-    {
-      "target": "./content/dsa/patterns/path.md",
-      "title": "Monotonic Stack"
-    }
-  ],
   "./content/dsa/patterns/pattern-selection-cheatsheet.md": [
     {
       "target": "./content/dsa/patterns/path.md",
       "title": "Pattern Selection Cheat Sheet"
-    }
-  ],
-  "./content/dsa/patterns/prefix-sum.md": [
-    {
-      "target": "./content/dsa/patterns/path.md",
-      "title": "Prefix Sum"
     }
   ],
   "./content/dsa/patterns/subsets-permutations.md": [
