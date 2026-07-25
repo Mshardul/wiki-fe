@@ -524,7 +524,7 @@
           "description": "Deepest shared ancestor of two tree nodes. Binary lifting: O(n log n) preprocess, O(log n) per query - the many-queries-on-a-static-tree workhorse."
         },
         {
-          "title": "Dijkstra's Algorithm",
+          "title": "Dijkstra",
           "path": "./content/dsa/algorithms/dijkstra.md",
           "slug": "dijkstra",
           "description": "Shortest paths from a source with non-negative weights via a priority queue. O((V + E) log V)."
@@ -808,7 +808,7 @@
           "title": "Pattern Selection Cheat Sheet",
           "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
           "slug": "pattern-selection-cheatsheet",
-          "description": "The aggregator: trigger phrase → which pattern. The fast lookup that ships last, once every pattern exists."
+          "description": "The aggregator: trigger phrase → which pattern. Covers the 16 filled patterns; the 4 remaining (Cyclic Sort, Subsets & Permutations, Top-K Elements, DP Patterns) are commented in pending their own articles."
         },
         {
           "title": "Two Heaps",
@@ -869,6 +869,89 @@
           "path": "./content/dsa/patterns/meet-in-the-middle.md",
           "slug": "meet-in-the-middle",
           "description": "Split an exponential search space in half, enumerate each independently (2^(n/2) each), sort one, binary-search from the other. Turns O(2ⁿ) into O(2^(n/2) · n) - the go-to for n ≤ 40 subset-sum problems."
+        }
+      ]
+    },
+    {
+      "heading": "Cheatsheets",
+      "cards": [
+        {
+          "title": "Complexity Master",
+          "path": "./content/dsa/cheatsheets/complexity-master.md",
+          "slug": "complexity-master",
+          "description": "Every DS + algorithm's Big-O, one page."
+        },
+        {
+          "title": "Sorting Comparison",
+          "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+          "slug": "sorting-comparison",
+          "description": "All sort algorithms: stable/in-place/time-best-avg-worst/when-to-pick."
+        },
+        {
+          "title": "Graph Algorithms Decision",
+          "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+          "slug": "graph-algorithms-decision",
+          "description": "Which traversal/max-flow algo for which graph shape. Shortest-path/MST/topo-sort rows pending their articles."
+        },
+        {
+          "title": "DP Recognition",
+          "path": "./content/dsa/cheatsheets/dp-recognition.md",
+          "slug": "dp-recognition",
+          "description": "Problem shape → DP state signature → transition shape."
+        },
+        {
+          "title": "Data Structure Selection",
+          "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+          "slug": "data-structure-selection",
+          "description": "\"Need fast X+Y\" → which structure, merged comparison across all 27 filled structures."
+        },
+        {
+          "title": "Input Size → Complexity Lookup",
+          "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
+          "slug": "input-size-complexity-lookup",
+          "description": "n → feasible Big-O → which algorithms qualify."
+        },
+        {
+          "title": "String Algorithm Decision",
+          "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+          "slug": "string-algorithm-decision",
+          "description": "KMP vs Z vs Rabin-Karp vs Manacher vs Aho-Corasick vs String Hashing, which for which task."
+        },
+        {
+          "title": "Two Pointers vs Sliding Window vs Prefix Sum",
+          "path": "./content/dsa/cheatsheets/two-pointers-vs-window-vs-prefix-sum.md",
+          "slug": "two-pointers-vs-window-vs-prefix-sum",
+          "description": "Disambiguator between the three commonly-confused patterns."
+        },
+        {
+          "title": "Complexity Growth Reference",
+          "path": "./content/dsa/cheatsheets/complexity-growth-reference.md",
+          "slug": "complexity-growth-reference",
+          "description": "O(1)/O(log n)/O(n)/O(n log n)/O(n²)/O(2ⁿ) side by side at real n values, with a growth-curve diagram."
+        },
+        {
+          "title": "Greedy vs DP Disambiguator",
+          "path": "./content/dsa/cheatsheets/greedy-vs-dp-disambiguator.md",
+          "slug": "greedy-vs-dp-disambiguator",
+          "description": "Exchange argument vs overlapping subproblems - the coin-change counterexample."
+        },
+        {
+          "title": "Backtracking Shapes",
+          "path": "./content/dsa/cheatsheets/backtracking-shapes.md",
+          "slug": "backtracking-shapes",
+          "description": "Subset vs permutation vs combination vs partition loop shapes."
+        },
+        {
+          "title": "Bit Manipulation Tricks",
+          "path": "./content/dsa/cheatsheets/bit-manipulation-tricks.md",
+          "slug": "bit-manipulation-tricks",
+          "description": "Isolate lowest set bit, XOR swap, popcount, subset enumeration - one lookup."
+        },
+        {
+          "title": "Number Theory Reference",
+          "path": "./content/dsa/cheatsheets/number-theory-reference.md",
+          "slug": "number-theory-reference",
+          "description": "GCD/LCM, modular arithmetic, modular inverse, sieve - formulas in one glance."
         }
       ]
     }

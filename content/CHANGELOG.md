@@ -9,6 +9,26 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-07-25
+- `dsa/algorithms/dijkstra.md` - new article: shortest paths with a priority queue, finalized-node correctness proof, negative-weight failure mode
+- `dsa/patterns/tree-graph-traversal.md` - new article: BFS/DFS recognition + transfer layer over the existing bfs.md/dfs.md algorithm pages
+- `dsa/patterns/merge-intervals.md` - new article: sort-and-sweep, meeting-rooms heap variant, insert-interval, sweep-line CP primitives
+- `dsa/cheatsheets/complexity-master.md` - new article: DS+algorithm Big-O aggregator across all filled topics
+- `dsa/cheatsheets/sorting-comparison.md` - new article: all 6 filled sorts, stable/in-place/time/space/when-to-pick
+- `dsa/cheatsheets/graph-algorithms-decision.md` - new article: BFS/DFS/SCC/max-flow family decision table; shortest-path/MST/topo-sort rows commented pending their articles
+- `dsa/cheatsheets/dp-recognition.md` - new article: problem shape → DP state signature → transition shape
+- `dsa/cheatsheets/data-structure-selection.md` - new article: "need fast X+Y" → structure, merged comparison across 27 structures
+- `dsa/cheatsheets/input-size-complexity-lookup.md` - new article: n → feasible Big-O → algorithm class
+- `dsa/cheatsheets/string-algorithm-decision.md` - new article: KMP/Z/Rabin-Karp/Manacher/Aho-Corasick/String Hashing decision table
+- `dsa/cheatsheets/two-pointers-vs-window-vs-prefix-sum.md` - new article: disambiguator between the three patterns
+- `dsa/cheatsheets/complexity-growth-reference.md` - new article: growth-curve diagram + real-n operation counts
+- `dsa/cheatsheets/greedy-vs-dp-disambiguator.md` - new article: exchange argument vs overlapping subproblems, coin-change counterexample
+- `dsa/cheatsheets/backtracking-shapes.md` - new article: subset/permutation/combination/partition loop shapes
+- `dsa/cheatsheets/bit-manipulation-tricks.md` - new article: bit trick lookup table
+- `dsa/cheatsheets/number-theory-reference.md` - new article: GCD/LCM/modular arithmetic/sieve formula reference
+- `dsa/patterns/pattern-selection-cheatsheet.md` - filled (was empty template): trigger phrase → pattern, covers 14 filled patterns
+- `dsa/index.md` - new section: "Cheatsheets", links all 13 new cheatsheet pages; removed stale "Complexity Cheat Sheet" deferred entry
+
 ## 2026-07-18
 - `recursion.md` - new article: base case + recursive case as induction, call-stack space honesty, memo-vs-tabulation state/recurrence
 - `binary-search-on-answer.md` - new article: minimize-max/maximize-min feasibility search, Koko/ship-capacity/max-min-gap worked problems

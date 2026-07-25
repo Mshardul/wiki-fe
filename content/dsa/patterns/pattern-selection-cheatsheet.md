@@ -1,72 +1,38 @@
-<!--
-  Patterns skeleton. Copy to content/dsa/patterns/<slug>.md and fill.
-  Rules: docs/_meta/ai-instructions/dsa-writer.md  (param IDs in the comments below).
-  Delete every HTML comment before publishing. The app never indexes _templates.
-  Patterns have NO family block.
--->
+# Pattern Selection Cheatsheet
 
-# Pattern Selection Cheat Sheet
+Trigger phrase → which pattern.
 
-## Prerequisites
+> 📖 Full articles:
+> [Two Pointers](./two-pointers.md) · [Sliding Window](./sliding-window.md) · [Prefix Sum](./prefix-sum.md) · [Difference Array](./difference-array.md) · [Fast & Slow Pointers](./fast-slow-pointers.md) · [Monotonic Stack](./monotonic-stack.md) · [Monotonic Queue](./monotonic-queue.md) · [Binary Search on Answer](./binary-search-on-answer.md) · [Modified Binary Search](./modified-binary-search.md) · [Backtracking](./backtracking.md) · [Two Heaps](./two-heaps.md) · [K-Way Merge](./k-way-merge.md) · [Interval DP](./interval-dp.md) · [In-place Reversal](./in-place-reversal.md) · [Matrix Traversal](./matrix-traversal.md) · [State Machine DP](./state-machine-dp.md) · [Bitmask DP](./bitmask-dp.md) · [Frequency Array](./frequency-array.md) · [Graph Coloring](./graph-coloring.md) · [Meet in the Middle](./meet-in-the-middle.md)
+> <!-- Uncomment once written: [Cyclic Sort](./cyclic-sort.md) · [Merge Intervals](./merge-intervals.md) · [Subsets & Permutations](./subsets-permutations.md) · [Top-K Elements](./top-k-elements.md) · [Tree & Graph Traversal](./tree-graph-traversal.md) · [DP Patterns](./dp-patterns.md) -->
 
-<!-- U9: the DS/algo this pattern leans on. [Title](./path.md) [Must read] - reason. -->
+## Recognition table
 
-## Table of Contents
+| Trigger phrase / signal | Maps to |
+| --- | --- |
+| "find a pair that sums to target", "3Sum", "container with most water" | Two Pointers |
+| "longest/shortest contiguous subarray...", "minimum window substring" | Sliding Window |
+| "subarray sum equals K", "range sum query" (immutable, many queries) | Prefix Sum |
+| "add val to each element in range [l,r]", "each booking reserves seats..." | Difference Array |
+| "detect a cycle in a linked list", "find the starting node of the cycle" | Fast & Slow Pointers |
+| "next greater element", "daily temperatures" | Monotonic Stack |
+| "maximum/minimum of every sliding window of size k" | Monotonic Queue |
+| "minimize the maximum", "maximize the minimum" | Binary Search on Answer |
+| "array was sorted then rotated at an unknown pivot", "find the peak element" | Modified Binary Search |
+| "find all valid...", "generate all combinations/arrangements that satisfy..." | Backtracking |
+| "find the median of a data stream", "sliding window median" | Two Heaps |
+| "merge k sorted lists", "smallest range including one element from each of k lists" | K-Way Merge |
+| "burst all balloons", "optimal parenthesization of a matrix chain" | Interval DP |
+| "reverse a linked list", "reverse nodes k at a time" | In-place Reversal |
+| "count islands in a grid", "shortest path top-left to bottom-right" | Matrix Traversal |
+| "at most k transactions", "with cooldown", "hold at most one share" | State Machine DP |
+| "visit every city exactly once", n ≤ 20, subset over small set | Bitmask DP |
+| "is this an anagram", "characters appearing more than k times" | Frequency Array |
+| "determine if the graph is bipartite", "odd-length cycle check" | Graph Coloring |
+| "n ≤ 40, subset sums to target T", "count pairs from two halves" | Meet in the Middle |
 
-<!-- U10. -->
+## Gotchas
 
-## What it is
-
-<!-- U1: the pattern in one line + mental model. U13: spoken soundbite, marked as the takeaway. -->
-
-## Recognition signals
-
-<!-- PA1 (weight 3, the heart). THREE labeled parts, all concrete - any missing/vague caps the score at 5:
-     (a) Trigger phrases - ≥2 literal quoted problem-statement snippets.
-     (b) Structural cues - input shape + output property, regardless of wording.
-     (c) Not to be confused with - name ≥1 neighbor pattern + the distinction in one sentence. -->
-
-## How it works
-
-<!-- PA2: the mechanic + a REAL diagram. -->
-
-## Skeleton
-
-<!-- PA3: reusable CLRS pseudocode + a Python template with a real signature, no syntax errors, and a `# your logic here` marker. -->
-
-## Complexity
-
-<!-- PA4: typical time/space of the pattern. -->
-
-## Constraints & approach
-
-<!-- PA10 (gated): input size → reach for this pattern (or not). n ≤ 1e5 and "contiguous subarray" → sliding window, not O(n²). State when the constraint pushes you OFF this pattern. Distinct from PA11: PA10 = when the constraint selects this pattern; PA11 = the contest tricks once you're in it. -->
-
-## Variations
-
-<!-- PA5 (advisory): common twists (general). -->
-
-## CP-primitives
-
-<!-- PA11 (gated): the contest-flavored tricks/variants of THIS mechanic - the ones that show up in contests, not basic interviews (sliding window → monotonic-deque window-max; two pointers → meet-in-the-middle; binary-search-on-answer). ≥2, each with a one-line "why for CP". Distinct from PA5 (general twists). -->
-
-## Worked problems
-
-<!-- PA6: 3–5 problems reusing the pattern, each with a 2–3 sentence approach sketch (not a full solution). Favor staples; note constraint ranges where they change the approach. -->
-
-## Pitfalls
-
-<!-- PA7: ≥2 common misapplications. -->
-
-## First 30 seconds
-
-<!-- PA9 (advisory): the 2–3 sentences said out loud on spotting the pattern - structure, why, approach in one breath. -->
-
-## Related
-
-<!-- PA8: cross-links to the DS/algo it leans on + sibling patterns. -->
-
-## Practice problems
-
-<!-- U6: ≥3 problems, each a WORKED entry (### subheading per problem): (1) full problem statement in 2–3 sentences + constraints where they matter; (2) approach/insight in prose; (3) short runnable Python solution; (4) time/space complexity. EVERY PROBLEM MUST EXERCISE A DISTINCT TECHNIQUE - no duplicates padding the count.
-     Note: keep this distinct from PA6 (Worked problems = brief approach sketches reusing the pattern). U6 here = fully worked, with code. -->
+- ⚠️ Sliding window IS two-pointers with a maintained aggregate over the gap - if you don't need to know what's between the pointers, it's plain two-pointers.
+- ⚠️ Bitmask DP vs meet-in-the-middle: both handle small n, but bitmask needs a DP recurrence over subsets (n ≤ 20); meet-in-the-middle splits into two independent halves with no recurrence (n ≤ 40).
+- ⚠️ "Find all X" doesn't always mean backtracking - if the same state recurs via different paths, that's overlapping subproblems, meaning DP, not backtracking.

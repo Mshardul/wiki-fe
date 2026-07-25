@@ -124,14 +124,14 @@ Total auxiliary space: **O(V)**.
 | n, m ≤ 10⁵         | O(V + E)               | Yes      | Classic BFS; adjacency list representation mandatory                        |
 | Grid m×n ≤ 10⁶     | O(m·n)                 | Yes      | Treat each cell as a node; 4-directional neighbors; visited = 2D boolean   |
 | n ≤ 500, dense     | O(V²) via matrix       | Yes      | Adjacency matrix fine at this scale; BFS unchanged                          |
-| Weighted edges      | O((V+E) log V)         | No       | BFS gives wrong shortest path; use Dijkstra (non-neg) or Bellman-Ford      |
+| Weighted edges      | O((V+E) log V)         | No       | BFS gives wrong shortest path; use [Dijkstra](./dijkstra.md) (non-neg) or Bellman-Ford      |
 | Negative weights    | O(V·E)                 | No       | Use Bellman-Ford; Dijkstra also fails                                       |
 | n > 10⁸ (implicit) | Problem-specific       | Careful  | Queue holds O(V) nodes; at 10⁸ nodes that's gigabytes of memory - bidirectional BFS or A* needed |
 | Word/state ladders  | O(V + E) implicit graph | Yes     | BFS on implicit graphs: generate neighbors on-the-fly; visited = hash set  |
 | Layered/level questions | O(V + E)           | Yes      | "Minimum steps", "minimum turns", "shortest transformation" → BFS signal   |
 
 **What rules BFS out:**
-- Weighted edges (use Dijkstra/Bellman-Ford)
+- Weighted edges (use [Dijkstra](./dijkstra.md)/Bellman-Ford)
 - Memory constraints on very large sparse graphs (bidirectional BFS halves the frontier, cutting memory O(V) → O(√V) in the best case)
 - Cycle detection only, no shortest path needed (DFS is simpler and uses O(log V) stack space vs O(V) queue)
 
@@ -146,7 +146,7 @@ Total auxiliary space: **O(V)**.
 
 **Do not use BFS when:**
 
-- Edges have **different weights** → Dijkstra (non-negative weights) or Bellman-Ford (negative weights allowed).
+- Edges have **different weights** → [Dijkstra](./dijkstra.md) (non-negative weights) or Bellman-Ford (negative weights allowed).
 - You need **topological order** → topological sort (DFS-based or Kahn's BFS-based; if using BFS, it's Kahn's specifically).
 - You need to detect **back edges** or determine **articulation points** - DFS provides discovery/finish times that BFS does not.
 - Memory is the bottleneck on a huge graph - DFS uses O(depth) stack space, which is O(log V) on balanced graphs; BFS uses O(V) queue space. When the source and destination are both known, **bidirectional BFS** cuts the frontier: run BFS from both ends simultaneously, stopping when the frontiers meet. The search radius halves from d to d/2, shrinking the explored set from O(b^d) to O(2·b^(d/2)) where b is the branching factor - a square-root reduction. Implementation: maintain two visited sets and two queues; at each step expand whichever frontier is smaller; stop when a node appears in both visited sets.

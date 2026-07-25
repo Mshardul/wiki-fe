@@ -65,7 +65,7 @@ Procedures with correctness intuition. Each page covers the worked example, the 
 | [Depth-First Search (DFS)](./algorithms/dfs.md)                                 | Explore as deep as possible, backtrack. O(V + E) - cycle detection, components, topological order.                                                          |
 | [Topological Sort](./algorithms/topological-sort.md)                            | Linear order of a DAG respecting edges. Kahn's BFS or DFS post-order - dependency resolution, build order.                                                  |
 | [Lowest Common Ancestor (LCA)](./algorithms/lowest-common-ancestor.md)          | Deepest shared ancestor of two tree nodes. Binary lifting: O(n log n) preprocess, O(log n) per query - the many-queries-on-a-static-tree workhorse.         |
-| [Dijkstra's Algorithm](./algorithms/dijkstra.md)                                | Shortest paths from a source with non-negative weights via a priority queue. O((V + E) log V).                                                              |
+| [Dijkstra](./algorithms/dijkstra.md)                                            | Shortest paths from a source with non-negative weights via a priority queue. O((V + E) log V).                                                              |
 | [Bellman-Ford](./algorithms/bellman-ford.md)                                    | Shortest paths that tolerate negative edges and detect negative cycles. O(V·E) - slower than Dijkstra, more general.                                        |
 | [Floyd-Warshall](./algorithms/floyd-warshall.md)                                | All-pairs shortest paths by DP over intermediates. O(V³) - dense graphs, small V, transitive closure.                                                       |
 | [Minimum Spanning Tree (Kruskal / Prim)](./algorithms/minimum-spanning-tree.md) | Cheapest tree connecting all nodes. Kruskal (sort + DSU) or Prim (PQ) - network design.                                                                     |
@@ -121,7 +121,7 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 | [Backtracking](./patterns/backtracking.md)                                  | Choose / explore / un-choose over a decision tree, pruning dead branches - the recognition + transfer layer for constraint-satisfaction search. |
 | [Tree & Graph Traversal](./patterns/tree-graph-traversal.md)                | The BFS/DFS skeletons applied as a problem pattern: level-order, path-sum, connected components, flood fill.                   |
 | [DP Patterns](./patterns/dp-patterns.md)                                    | The recurring DP shapes: 0/1 knapsack, unbounded, LIS, LCS, grid paths, interval DP - recognition and the state to pick.       |
-| [Pattern Selection Cheat Sheet](./patterns/pattern-selection-cheatsheet.md) | The aggregator: trigger phrase → which pattern. The fast lookup that ships last, once every pattern exists.                    |
+| [Pattern Selection Cheat Sheet](./patterns/pattern-selection-cheatsheet.md) | The aggregator: trigger phrase → which pattern. Covers the 16 filled patterns; the 4 remaining (Cyclic Sort, Subsets & Permutations, Top-K Elements, DP Patterns) are commented in pending their own articles.                    |
 | [Two Heaps](./patterns/two-heaps.md)                                        | A max-heap of the lower half + min-heap of the upper half. Median of a stream and sliding-window median in O(log n) per element.                       |
 | [K-Way Merge](./patterns/k-way-merge.md)                                    | Min-heap of k sorted sequence heads - pop the global minimum, push its successor. O(N log k) to merge N total elements across k sorted lists.          |
 | [Interval DP](./patterns/interval-dp.md)                                    | State is `dp[i][j]` for subrange `[i,j]`; fill by interval length, try every split point k. O(n³) - matrix chain, burst balloons, palindrome cost.     |
@@ -132,6 +132,30 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 | [Frequency Array](./patterns/frequency-array.md)                            | Array indexed by value: O(1) increment/lookup for bounded integer or character keys. Replaces a hash map when the key range fits - anagram detection, counting sort, sliding-window distribution matching. |
 | [Graph Coloring](./patterns/graph-coloring.md)                              | Assign colors to nodes so no two adjacent nodes match. 2-coloring (bipartite check) in O(V + E); k-coloring for k ≥ 3 is NP-complete - backtracking for small n, bitmask DP for n ≤ 20. |
 | [Meet in the Middle](./patterns/meet-in-the-middle.md)                      | Split an exponential search space in half, enumerate each independently (2^(n/2) each), sort one, binary-search from the other. Turns O(2ⁿ) into O(2^(n/2) · n) - the go-to for n ≤ 40 subset-sum problems. |
+
+---
+
+## Cheatsheets
+
+Cross-cutting decision/comparison sheets - table-only, no code. Each answers one decision spanning as many topics as it genuinely needs (not forced per-topic). Format rules: `docs/_meta/ai-instructions/dsa-cheatsheets.md`.
+
+| Cheatsheet                                                                                | Description                                                                                                    |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| [Complexity Master](./cheatsheets/complexity-master.md)                                    | Every DS + algorithm's Big-O, one page.                                                                          |
+| [Sorting Comparison](./cheatsheets/sorting-comparison.md)                                   | All sort algorithms: stable/in-place/time-best-avg-worst/when-to-pick.                                            |
+| [Graph Algorithms Decision](./cheatsheets/graph-algorithms-decision.md)                     | Which traversal/max-flow algo for which graph shape. Shortest-path/MST/topo-sort rows pending their articles.     |
+| [DP Recognition](./cheatsheets/dp-recognition.md)                                           | Problem shape → DP state signature → transition shape.                                                            |
+| [Data Structure Selection](./cheatsheets/data-structure-selection.md)                       | "Need fast X+Y" → which structure, merged comparison across all 27 filled structures.                            |
+| [Input Size → Complexity Lookup](./cheatsheets/input-size-complexity-lookup.md)             | n → feasible Big-O → which algorithms qualify.                                                                   |
+| [String Algorithm Decision](./cheatsheets/string-algorithm-decision.md)                     | KMP vs Z vs Rabin-Karp vs Manacher vs Aho-Corasick vs String Hashing, which for which task.                       |
+| [Two Pointers vs Sliding Window vs Prefix Sum](./cheatsheets/two-pointers-vs-window-vs-prefix-sum.md) | Disambiguator between the three commonly-confused patterns.                                             |
+| [Complexity Growth Reference](./cheatsheets/complexity-growth-reference.md)                 | O(1)/O(log n)/O(n)/O(n log n)/O(n²)/O(2ⁿ) side by side at real n values, with a growth-curve diagram.             |
+| [Greedy vs DP Disambiguator](./cheatsheets/greedy-vs-dp-disambiguator.md)                   | Exchange argument vs overlapping subproblems - the coin-change counterexample.                                    |
+| [Backtracking Shapes](./cheatsheets/backtracking-shapes.md)                                 | Subset vs permutation vs combination vs partition loop shapes.                                                    |
+| [Bit Manipulation Tricks](./cheatsheets/bit-manipulation-tricks.md)                         | Isolate lowest set bit, XOR swap, popcount, subset enumeration - one lookup.                                      |
+| [Number Theory Reference](./cheatsheets/number-theory-reference.md)                         | GCD/LCM, modular arithmetic, modular inverse, sieve - formulas in one glance.                                      |
+
+Rollout tracking + known gaps: `docs/_meta/plans/dsa-cheatsheets-rollout.md`.
 
 ---
 
@@ -147,7 +171,6 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 - Fibonacci Heap - one sentence in dijkstra.md suffices
 - Memoization Table - technique inside dynamic-programming.md, not a standalone DS
 - Adjacency List / Matrix - covered in graph.md (Representations section)
-- Complexity Cheat Sheet - meta article, non-standard format; pending
 - Problem-Solving Framework - meta article, non-standard format; pending
 
 ---

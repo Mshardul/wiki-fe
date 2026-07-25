@@ -11,12 +11,6 @@
       "title": "Bucket Sort"
     }
   ],
-  "./content/dsa/algorithms/dijkstra.md": [
-    {
-      "target": "./content/dsa/algorithms/path.md",
-      "title": "Dijkstra's Algorithm"
-    }
-  ],
   "./content/dsa/algorithms/floyd-warshall.md": [
     {
       "target": "./content/dsa/algorithms/path.md",
@@ -77,18 +71,6 @@
       "title": "DP Patterns"
     }
   ],
-  "./content/dsa/patterns/merge-intervals.md": [
-    {
-      "target": "./content/dsa/patterns/path.md",
-      "title": "Merge Intervals"
-    }
-  ],
-  "./content/dsa/patterns/pattern-selection-cheatsheet.md": [
-    {
-      "target": "./content/dsa/patterns/path.md",
-      "title": "Pattern Selection Cheat Sheet"
-    }
-  ],
   "./content/dsa/patterns/subsets-permutations.md": [
     {
       "target": "./content/dsa/patterns/path.md",
@@ -99,12 +81,6 @@
     {
       "target": "./content/dsa/patterns/path.md",
       "title": "Top-K Elements"
-    }
-  ],
-  "./content/dsa/patterns/tree-graph-traversal.md": [
-    {
-      "target": "./content/dsa/patterns/path.md",
-      "title": "Tree & Graph Traversal"
     }
   ],
   "./content/system-design/algorithms/cap-theorem.md": [

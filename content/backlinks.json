@@ -11,6 +11,10 @@
     {
       "path": "./content/dsa/algorithms/rabin-karp.md",
       "title": "Rabin-Karp"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+      "title": "String Algorithm Decision"
     }
   ],
   "./content/dsa/algorithms/backtracking.md": [
@@ -31,10 +35,24 @@
       "title": "Meet in the Middle"
     }
   ],
+  "./content/dsa/algorithms/bellman-ford.md": [
+    {
+      "path": "./content/dsa/algorithms/dijkstra.md",
+      "title": "Dijkstra"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
   "./content/dsa/algorithms/bfs.md": [
     {
       "path": "./content/dsa/algorithms/dfs.md",
       "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/dijkstra.md",
+      "title": "Dijkstra"
     },
     {
       "path": "./content/dsa/algorithms/aho-corasick.md",
@@ -57,12 +75,20 @@
       "title": "Bipartite Matching"
     },
     {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
       "path": "./content/dsa/patterns/matrix-traversal.md",
       "title": "Matrix Traversal"
     },
     {
       "path": "./content/dsa/patterns/graph-coloring.md",
       "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
     }
   ],
   "./content/dsa/algorithms/binary-search.md": [
@@ -123,6 +149,10 @@
     {
       "path": "./content/dsa/algorithms/dinic.md",
       "title": "Dinic"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
     }
   ],
   "./content/dsa/algorithms/bit-manipulation.md": [
@@ -153,6 +183,16 @@
     {
       "path": "./content/dsa/patterns/bitmask-dp.md",
       "title": "Bitmask DP"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/bit-manipulation-tricks.md",
+      "title": "Bit Manipulation Tricks"
+    }
+  ],
+  "./content/dsa/algorithms/bucket-sort.md": [
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
     }
   ],
   "./content/dsa/algorithms/counting-sort.md": [
@@ -167,6 +207,10 @@
     {
       "path": "./content/dsa/patterns/frequency-array.md",
       "title": "Frequency Array"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
     }
   ],
   "./content/dsa/algorithms/dfs.md": [
@@ -207,12 +251,20 @@
       "title": "Backtracking"
     },
     {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
       "path": "./content/dsa/patterns/matrix-traversal.md",
       "title": "Matrix Traversal"
     },
     {
       "path": "./content/dsa/patterns/graph-coloring.md",
       "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
     }
   ],
   "./content/dsa/algorithms/dijkstra.md": [
@@ -231,12 +283,20 @@
     {
       "path": "./content/dsa/patterns/matrix-traversal.md",
       "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
     }
   ],
   "./content/dsa/algorithms/dinic.md": [
     {
       "path": "./content/dsa/algorithms/maximum-flow.md",
       "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
     }
   ],
   "./content/dsa/algorithms/divide-and-conquer.md": [
@@ -305,6 +365,22 @@
     {
       "path": "./content/dsa/patterns/meet-in-the-middle.md",
       "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
+      "title": "Input Size → Complexity Lookup"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/complexity-growth-reference.md",
+      "title": "Complexity Growth Reference"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/greedy-vs-dp-disambiguator.md",
+      "title": "Greedy vs DP Disambiguator"
     }
   ],
   "./content/dsa/algorithms/edmonds-karp.md": [
@@ -319,6 +395,10 @@
     {
       "path": "./content/dsa/algorithms/dinic.md",
       "title": "Dinic"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
     }
   ],
   "./content/dsa/algorithms/euclidean-gcd.md": [
@@ -329,6 +409,16 @@
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/number-theory-reference.md",
+      "title": "Number Theory Reference"
+    }
+  ],
+  "./content/dsa/algorithms/floyd-warshall.md": [
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
     }
   ],
   "./content/dsa/algorithms/ford-fulkerson.md": [
@@ -343,6 +433,10 @@
     {
       "path": "./content/dsa/algorithms/dinic.md",
       "title": "Dinic"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
     }
   ],
   "./content/dsa/algorithms/greedy.md": [
@@ -353,6 +447,10 @@
     {
       "path": "./content/dsa/patterns/binary-search-on-answer.md",
       "title": "Binary Search on Answer"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/greedy-vs-dp-disambiguator.md",
+      "title": "Greedy vs DP Disambiguator"
     }
   ],
   "./content/dsa/algorithms/heapsort.md": [
@@ -363,24 +461,52 @@
     {
       "path": "./content/dsa/algorithms/sorting.md",
       "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
     }
   ],
   "./content/dsa/algorithms/insertion-sort.md": [
     {
       "path": "./content/dsa/algorithms/sorting.md",
       "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
     }
   ],
   "./content/dsa/algorithms/kadane.md": [
     {
       "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
       "title": "Longest Increasing Subsequence"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    }
+  ],
+  "./content/dsa/algorithms/longest-common-subsequence.md": [
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
     }
   ],
   "./content/dsa/algorithms/longest-increasing-subsequence.md": [
     {
       "path": "./content/dsa/algorithms/longest-common-subsequence.md",
       "title": "Longest Common Subsequence"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    }
+  ],
+  "./content/dsa/algorithms/manacher-algorithm.md": [
+    {
+      "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+      "title": "String Algorithm Decision"
     }
   ],
   "./content/dsa/algorithms/maximum-flow.md": [
@@ -395,6 +521,10 @@
     {
       "path": "./content/dsa/algorithms/bipartite-matching.md",
       "title": "Bipartite Matching"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
     }
   ],
   "./content/dsa/algorithms/merge-sort.md": [
@@ -429,12 +559,20 @@
     {
       "path": "./content/dsa/patterns/k-way-merge.md",
       "title": "K-Way Merge"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
     }
   ],
   "./content/dsa/algorithms/minimum-spanning-tree.md": [
     {
       "path": "./content/dsa/algorithms/greedy.md",
       "title": "Greedy"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
     }
   ],
   "./content/dsa/algorithms/modular-arithmetic.md": [
@@ -445,6 +583,10 @@
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/number-theory-reference.md",
+      "title": "Number Theory Reference"
     }
   ],
   "./content/dsa/algorithms/modular-exponentiation.md": [
@@ -463,6 +605,10 @@
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/number-theory-reference.md",
+      "title": "Number Theory Reference"
     }
   ],
   "./content/dsa/algorithms/number-theory.md": [
@@ -481,6 +627,10 @@
     {
       "path": "./content/dsa/algorithms/sieve-of-eratosthenes.md",
       "title": "Sieve of Eratosthenes"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/number-theory-reference.md",
+      "title": "Number Theory Reference"
     }
   ],
   "./content/dsa/algorithms/quicksort.md": [
@@ -507,6 +657,10 @@
     {
       "path": "./content/dsa/algorithms/heapsort.md",
       "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
     }
   ],
   "./content/dsa/algorithms/rabin-karp.md": [
@@ -521,6 +675,10 @@
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+      "title": "String Algorithm Decision"
     }
   ],
   "./content/dsa/algorithms/radix-sort.md": [
@@ -531,6 +689,10 @@
     {
       "path": "./content/dsa/algorithms/counting-sort.md",
       "title": "Counting Sort"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
     }
   ],
   "./content/dsa/algorithms/recursion.md": [
@@ -571,10 +733,20 @@
       "title": "Interval DP"
     }
   ],
+  "./content/dsa/algorithms/selection-sort.md": [
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
+    }
+  ],
   "./content/dsa/algorithms/sieve-of-eratosthenes.md": [
     {
       "path": "./content/dsa/algorithms/number-theory.md",
       "title": "Number Theory"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/number-theory-reference.md",
+      "title": "Number Theory Reference"
     }
   ],
   "./content/dsa/algorithms/sorting.md": [
@@ -613,6 +785,28 @@
     {
       "path": "./content/dsa/patterns/two-pointers.md",
       "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/merge-intervals.md",
+      "title": "Merge Intervals"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
+      "title": "Input Size → Complexity Lookup"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/complexity-growth-reference.md",
+      "title": "Complexity Growth Reference"
+    }
+  ],
+  "./content/dsa/algorithms/string-hashing.md": [
+    {
+      "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+      "title": "String Algorithm Decision"
     }
   ],
   "./content/dsa/algorithms/string-matching.md": [
@@ -635,12 +829,20 @@
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+      "title": "String Algorithm Decision"
     }
   ],
   "./content/dsa/algorithms/strongly-connected-components.md": [
     {
       "path": "./content/dsa/algorithms/dfs.md",
       "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
     }
   ],
   "./content/dsa/algorithms/topological-sort.md": [
@@ -651,6 +853,14 @@
     {
       "path": "./content/dsa/algorithms/strongly-connected-components.md",
       "title": "Strongly Connected Components"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
     }
   ],
   "./content/dsa/algorithms/z-algorithm.md": [
@@ -665,6 +875,28 @@
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+      "title": "String Algorithm Decision"
+    }
+  ],
+  "./content/dsa/cheatsheets/data-structure-selection.md": [
+    {
+      "path": "./content/dsa/cheatsheets/complexity-master.md",
+      "title": "Complexity Master"
+    }
+  ],
+  "./content/dsa/cheatsheets/sorting-comparison.md": [
+    {
+      "path": "./content/dsa/cheatsheets/complexity-master.md",
+      "title": "Complexity Master"
+    }
+  ],
+  "./content/dsa/cheatsheets/string-algorithm-decision.md": [
+    {
+      "path": "./content/dsa/cheatsheets/complexity-master.md",
+      "title": "Complexity Master"
     }
   ],
   "./content/dsa/data-structures/array.md": [
@@ -825,6 +1057,10 @@
       "title": "Difference Array"
     },
     {
+      "path": "./content/dsa/patterns/merge-intervals.md",
+      "title": "Merge Intervals"
+    },
+    {
       "path": "./content/dsa/patterns/monotonic-stack.md",
       "title": "Monotonic Stack"
     },
@@ -843,6 +1079,10 @@
     {
       "path": "./content/dsa/patterns/meet-in-the-middle.md",
       "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/avl-tree.md": [
@@ -861,6 +1101,16 @@
     {
       "path": "./content/dsa/data-structures/b-tree.md",
       "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/b-plus-tree.md": [
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/b-tree.md": [
@@ -879,6 +1129,10 @@
     {
       "path": "./content/dsa/data-structures/b-plus-tree.md",
       "title": "B-Plus Tree"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/balanced-bst.md": [
@@ -921,6 +1175,10 @@
     {
       "path": "./content/dsa/data-structures/interval-tree.md",
       "title": "Interval Tree"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/binary-search-tree.md": [
@@ -951,6 +1209,10 @@
     {
       "path": "./content/dsa/data-structures/interval-tree.md",
       "title": "Interval Tree"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/binary-tree.md": [
@@ -985,6 +1247,16 @@
     {
       "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
       "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/bloom-filter.md": [
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/circular-buffer.md": [
@@ -1007,6 +1279,10 @@
     {
       "path": "./content/dsa/data-structures/deque.md",
       "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/deque.md": [
@@ -1021,6 +1297,10 @@
     {
       "path": "./content/dsa/patterns/monotonic-queue.md",
       "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/dynamic-array.md": [
@@ -1075,12 +1355,20 @@
     {
       "path": "./content/dsa/algorithms/z-algorithm.md",
       "title": "Z-Algorithm"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/fenwick-tree.md": [
     {
       "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
       "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/graph.md": [
@@ -1113,12 +1401,20 @@
       "title": "Ford-Fulkerson"
     },
     {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
       "path": "./content/dsa/patterns/matrix-traversal.md",
       "title": "Matrix Traversal"
     },
     {
       "path": "./content/dsa/patterns/graph-coloring.md",
       "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/hash-set.md": [
@@ -1203,6 +1499,10 @@
     {
       "path": "./content/dsa/patterns/frequency-array.md",
       "title": "Frequency Array"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/heap.md": [
@@ -1239,8 +1539,16 @@
       "title": "Heapsort"
     },
     {
+      "path": "./content/dsa/algorithms/dijkstra.md",
+      "title": "Dijkstra"
+    },
+    {
       "path": "./content/dsa/algorithms/greedy.md",
       "title": "Greedy"
+    },
+    {
+      "path": "./content/dsa/patterns/merge-intervals.md",
+      "title": "Merge Intervals"
     },
     {
       "path": "./content/dsa/patterns/two-heaps.md",
@@ -1249,6 +1557,26 @@
     {
       "path": "./content/dsa/patterns/k-way-merge.md",
       "title": "K-Way Merge"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/interval-tree.md": [
+    {
+      "path": "./content/dsa/patterns/merge-intervals.md",
+      "title": "Merge Intervals"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/lfu-cache.md": [
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/linked-list.md": [
@@ -1303,12 +1631,20 @@
     {
       "path": "./content/dsa/patterns/in-place-reversal.md",
       "title": "In-place Reversal of a Linked List"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/lru-cache.md": [
     {
       "path": "./content/dsa/data-structures/lfu-cache.md",
       "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/queue.md": [
@@ -1339,6 +1675,14 @@
     {
       "path": "./content/dsa/algorithms/aho-corasick.md",
       "title": "Aho-Corasick"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/red-black-tree.md": [
@@ -1357,6 +1701,10 @@
     {
       "path": "./content/dsa/data-structures/b-tree.md",
       "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/segment-tree.md": [
@@ -1385,6 +1733,10 @@
     {
       "path": "./content/dsa/data-structures/b-plus-tree.md",
       "title": "B-Plus Tree"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/stack.md": [
@@ -1415,6 +1767,14 @@
     {
       "path": "./content/dsa/patterns/monotonic-queue.md",
       "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/string.md": [
@@ -1445,12 +1805,20 @@
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/suffix-array.md": [
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/trie.md": [
@@ -1473,12 +1841,30 @@
     {
       "path": "./content/dsa/algorithms/aho-corasick.md",
       "title": "Aho-Corasick"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/union-find.md": [
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/patterns/backtracking.md": [
     {
       "path": "./content/dsa/algorithms/dfs.md",
       "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     },
     {
       "path": "./content/dsa/patterns/state-machine-dp.md",
@@ -1491,6 +1877,10 @@
     {
       "path": "./content/dsa/patterns/graph-coloring.md",
       "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/backtracking-shapes.md",
+      "title": "Backtracking Shapes"
     }
   ],
   "./content/dsa/patterns/binary-search-on-answer.md": [
@@ -1501,6 +1891,10 @@
     {
       "path": "./content/dsa/patterns/modified-binary-search.md",
       "title": "Modified Binary Search"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     },
     {
       "path": "./content/dsa/patterns/two-heaps.md",
@@ -1517,6 +1911,10 @@
   ],
   "./content/dsa/patterns/bitmask-dp.md": [
     {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
       "path": "./content/dsa/patterns/interval-dp.md",
       "title": "Interval DP"
     },
@@ -1531,6 +1929,20 @@
     {
       "path": "./content/dsa/patterns/meet-in-the-middle.md",
       "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
+      "title": "Input Size → Complexity Lookup"
+    }
+  ],
+  "./content/dsa/patterns/cyclic-sort.md": [
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     }
   ],
   "./content/dsa/patterns/difference-array.md": [
@@ -1541,6 +1953,10 @@
     {
       "path": "./content/dsa/patterns/prefix-sum.md",
       "title": "Prefix Sum"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     }
   ],
   "./content/dsa/patterns/dp-patterns.md": [
@@ -1565,6 +1981,10 @@
       "title": "Backtracking"
     },
     {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
       "path": "./content/dsa/patterns/interval-dp.md",
       "title": "Interval DP"
     },
@@ -1575,6 +1995,10 @@
     {
       "path": "./content/dsa/patterns/bitmask-dp.md",
       "title": "Bitmask DP"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
     }
   ],
   "./content/dsa/patterns/fast-slow-pointers.md": [
@@ -1591,32 +2015,82 @@
       "title": "Sliding Window"
     },
     {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
       "path": "./content/dsa/patterns/in-place-reversal.md",
       "title": "In-place Reversal of a Linked List"
+    }
+  ],
+  "./content/dsa/patterns/frequency-array.md": [
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     }
   ],
   "./content/dsa/patterns/graph-coloring.md": [
     {
       "path": "./content/dsa/algorithms/bipartite-matching.md",
       "title": "Bipartite Matching"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     }
   ],
   "./content/dsa/patterns/in-place-reversal.md": [
     {
       "path": "./content/dsa/patterns/fast-slow-pointers.md",
       "title": "Fast & Slow Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     }
   ],
   "./content/dsa/patterns/interval-dp.md": [
     {
       "path": "./content/dsa/algorithms/manacher-algorithm.md",
       "title": "Manacher Algorithm"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    }
+  ],
+  "./content/dsa/patterns/k-way-merge.md": [
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     }
   ],
   "./content/dsa/patterns/matrix-traversal.md": [
     {
       "path": "./content/dsa/algorithms/bfs.md",
       "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    }
+  ],
+  "./content/dsa/patterns/meet-in-the-middle.md": [
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
+      "title": "Input Size → Complexity Lookup"
     }
   ],
   "./content/dsa/patterns/merge-intervals.md": [
@@ -1627,18 +2101,30 @@
     {
       "path": "./content/dsa/patterns/two-pointers.md",
       "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     }
   ],
   "./content/dsa/patterns/modified-binary-search.md": [
     {
       "path": "./content/dsa/patterns/binary-search-on-answer.md",
       "title": "Binary Search on Answer"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     }
   ],
   "./content/dsa/patterns/monotonic-queue.md": [
     {
       "path": "./content/dsa/patterns/monotonic-stack.md",
       "title": "Monotonic Stack"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     }
   ],
   "./content/dsa/patterns/monotonic-stack.md": [
@@ -1657,6 +2143,10 @@
     {
       "path": "./content/dsa/patterns/sliding-window.md",
       "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     }
   ],
   "./content/dsa/patterns/prefix-sum.md": [
@@ -1697,12 +2187,20 @@
       "title": "Monotonic Queue"
     },
     {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
       "path": "./content/dsa/patterns/interval-dp.md",
       "title": "Interval DP"
     },
     {
       "path": "./content/dsa/patterns/frequency-array.md",
       "title": "Frequency Array"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/two-pointers-vs-window-vs-prefix-sum.md",
+      "title": "Two Pointers vs Sliding Window vs Prefix Sum"
     }
   ],
   "./content/dsa/patterns/sliding-window.md": [
@@ -1731,6 +2229,10 @@
       "title": "Monotonic Queue"
     },
     {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
       "path": "./content/dsa/patterns/two-heaps.md",
       "title": "Two Heaps"
     },
@@ -1741,6 +2243,24 @@
     {
       "path": "./content/dsa/patterns/frequency-array.md",
       "title": "Frequency Array"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
+      "title": "Input Size → Complexity Lookup"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/two-pointers-vs-window-vs-prefix-sum.md",
+      "title": "Two Pointers vs Sliding Window vs Prefix Sum"
+    }
+  ],
+  "./content/dsa/patterns/state-machine-dp.md": [
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
     }
   ],
   "./content/dsa/patterns/subsets-permutations.md": [
@@ -1757,18 +2277,30 @@
       "title": "Backtracking"
     },
     {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
       "path": "./content/dsa/patterns/bitmask-dp.md",
       "title": "Bitmask DP"
     },
     {
       "path": "./content/dsa/patterns/meet-in-the-middle.md",
       "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/backtracking-shapes.md",
+      "title": "Backtracking Shapes"
     }
   ],
   "./content/dsa/patterns/top-k-elements.md": [
     {
       "path": "./content/dsa/data-structures/deque.md",
       "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     },
     {
       "path": "./content/dsa/patterns/two-heaps.md",
@@ -1805,6 +2337,10 @@
       "title": "Backtracking"
     },
     {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
       "path": "./content/dsa/patterns/matrix-traversal.md",
       "title": "Matrix Traversal"
     },
@@ -1817,6 +2353,10 @@
     {
       "path": "./content/dsa/patterns/monotonic-queue.md",
       "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
     },
     {
       "path": "./content/dsa/patterns/in-place-reversal.md",
@@ -1845,6 +2385,10 @@
       "title": "Fast & Slow Pointers"
     },
     {
+      "path": "./content/dsa/patterns/merge-intervals.md",
+      "title": "Merge Intervals"
+    },
+    {
       "path": "./content/dsa/patterns/monotonic-stack.md",
       "title": "Monotonic Stack"
     },
@@ -1857,6 +2401,10 @@
       "title": "Modified Binary Search"
     },
     {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
       "path": "./content/dsa/patterns/k-way-merge.md",
       "title": "K-Way Merge"
     },
@@ -1867,6 +2415,10 @@
     {
       "path": "./content/dsa/patterns/meet-in-the-middle.md",
       "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/two-pointers-vs-window-vs-prefix-sum.md",
+      "title": "Two Pointers vs Sliding Window vs Prefix Sum"
     }
   ],
   "./content/system-design/algorithms/acid-vs-base.md": [
