@@ -27,7 +27,7 @@ Do this before any file reads or skill invocations - every session:
 
 1. Classify the task using the table below.
 2. MEMORY.md is already in context - no need to fetch it.
-3. If task type is **Ticket**: run `python3 docs/_meta/ai-instructions/scripts/fetch-backlog-tickets.py` first to get the backlog list. Do not read `docs/tickets.md` raw for the list.
+3. If task type is **Ticket**: read `docs/tickets-backlog.md` for the backlog list (active tickets only - Done/Dropped history lives separately in `docs/tickets-archive.md`).
 4. If task type is anything else: go directly to the FILE MAP section and route.
 
 ---
@@ -244,8 +244,9 @@ Do this before any file reads or skill invocations - every session:
 
 | File                                               | Read when                                                                               |
 | -------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `docs/tickets.md`                                  | WIKI-xxx mentioned OR any ticket intent detected                                        |
-| `docs/_meta/ai-instructions/tickets.md`            | Ticket intent - read alongside tickets.md                                               |
+| `docs/tickets-backlog.md`                          | WIKI-xxx mentioned OR any ticket intent detected - active tickets                        |
+| `docs/tickets-archive.md`                          | Need Done/Dropped ticket history (e.g. checking for duplicates, superseded-by refs)      |
+| `docs/_meta/ai-instructions/tickets.md`            | Ticket intent - read alongside tickets-backlog.md                                        |
 | `docs/_meta/ai-instructions/_base.md`              | **Every content task** (components / algorithms / HLD / devops-tools) - read this first |
 | `docs/_meta/ai-instructions/components.md`         | Writing system design component article (after \_base.md)                               |
 | `docs/_meta/ai-instructions/algorithms.md`         | Writing algorithm / concept article (after \_base.md)                                   |
@@ -300,7 +301,7 @@ See **[CONVENTIONS.md](./CONVENTIONS.md) → Architecture** for the boot sequenc
 After finishing any coding task:
 
 1. **Tests** - decide if new behaviour needs coverage. Add tests if: a new user-visible interaction was added, a bug was fixed (regression test), or a new code path exists that existing tests don't reach. Use the test file map below to pick the right file. May run the specific new/changed test to confirm it passes; never run the full suite unprompted.
-2. **Ticket closure** - if the task came from a ticket (`WIKI-xxx`), update its row in `docs/tickets.md`: set Status = `Done` and Impl. Date = today's date (YYYY-MM-DD).
+2. **Ticket closure** - if the task came from a ticket (`WIKI-xxx`), move its row from `docs/tickets-backlog.md` to `docs/tickets-archive.md`: set Status = `Done` and Impl. Date = today's date (YYYY-MM-DD).
 
 After finishing any **content task**:
 

@@ -1,27 +1,29 @@
 # AI Instructions - Tickets
 
 > Reference this file whenever ticket intent is detected: WIKI-xxx ID mentioned, or phrases like "work on tickets", "which ticket", "decide ticket", "let's pick a ticket".
-> Read `docs/tickets.md` for the actual ticket data.
+> Read `docs/tickets-backlog.md` for active tickets; `docs/tickets-archive.md` for Done/Dropped history.
 
 ---
 
 ## BACKLOG SCHEMA
 
-Columns in `tickets.md`:
+Same columns in both `tickets-backlog.md` and `tickets-archive.md`:
 
 | Column       | Values / Notes                                                                                                      |
 | ------------ | ------------------------------------------------------------------------------------------------------------------- |
-| ID           | `WIKI-xxx` - sequential, never reuse                                                                                |
+| ID           | `WIKI-xxx` - sequential, never reuse. IDs are unique across both files - check both when assigning a new one.       |
 | Entry Date   | ISO date added to backlog                                                                                           |
 | Summary      | ≤7 words                                                                                                            |
 | Type         | `feature` / `bug` / `ux` / `perf` / `a11y` / `refactor` / `dx` / `cleanup` / `security` - see canonical rules below |
 | Component    | Which module(s) - pipe-separated (e.g., `search \| content`) - see canonical values below                           |
 | Description  | ≤30 words - what to build/fix                                                                                       |
-| Status       | `Backlog` / `Done` / `Dropped`                                                                                      |
+| Status       | `Backlog` / `In Progress` (in `tickets-backlog.md`); `Done` / `Dropped` (in `tickets-archive.md`)                    |
 | Impl. Date   | ISO date implemented; `-` if not done                                                                               |
 | Remarks      | ≤30 words - implementation notes, supersession info                                                                 |
 | Priority     | `p0` (critical) → `p1` (high) → `p2` (medium) → `p3` (low) → `p4` (very low)                                        |
 | Story Points | Sizing estimate - see `docs/_meta/decisions/story-points-estimation.md`                                             |
+
+A few legacy rows in `tickets-archive.md` use `Skipped` or `Closed` instead of `Dropped`/`Done` - left as-is, treat both as archived/terminal.
 
 **Canonical Type values** (from `docs/_meta/decisions/tickets.md`):
 
@@ -62,11 +64,11 @@ Note: older tickets may use `security` or `cleanup` as types - these are accepta
 
 When user asks which ticket to work on, do this:
 
-1. Run `python3 docs/_meta/ai-instructions/scripts/fetch-backlog-tickets.py` - this prints all backlog tickets sorted by priority then story points.
+1. Read `docs/tickets-backlog.md` and sort by priority then story points.
 2. Present top 3–5 candidates with: ID, Summary, Type, Priority, Story Points, Description.
 3. Ask user to confirm before starting implementation.
 
-Never recommend `Done` or `Dropped` tickets. Never start implementation without user confirmation.
+Never recommend a ticket from `tickets-archive.md` (Done/Dropped). Never start implementation without user confirmation.
 
 ---
 
@@ -74,12 +76,7 @@ Never recommend `Done` or `Dropped` tickets. Never start implementation without 
 
 Whenever the user asks to work on a ticket (any phrasing: "let's do WIKI-xxx", "work on tickets", "pick a ticket", "implement WIKI-xxx"):
 
-**Always run the backlog script first:**
-```
-python3 docs/_meta/ai-instructions/scripts/fetch-backlog-tickets.py
-```
-
-Use the output to confirm the ticket exists in Backlog before proceeding. Do not read `docs/tickets.md` raw to get the list - use the script.
+Read `docs/tickets-backlog.md` to confirm the ticket exists with Status `Backlog` or `In Progress` before proceeding.
 
 ---
 
@@ -119,19 +116,18 @@ Use the output to confirm the ticket exists in Backlog before proceeding. Do not
 
 When user asks to add a ticket:
 
-1. Use next sequential WIKI-xxx ID (check highest existing ID in backlog).
+1. Use next sequential WIKI-xxx ID - check the highest existing ID in **both** `tickets-backlog.md` and `tickets-archive.md` (IDs are unique across both files).
 2. Entry Date: today's date (ISO format).
 3. Summary: ≤7 words, imperative phrasing ("Add X", "Fix Y", "Improve Z").
 4. Description: ≤30 words - be specific enough to implement without asking.
 5. Status: `Backlog`. Impl. Date: `-`. Remarks: empty unless there's a known constraint.
 6. Story points: refer to `docs/_meta/decisions/story-points-estimation.md` for sizing.
-7. Add as a new row in the table - maintain column alignment.
+7. Add as a new row in `tickets-backlog.md` - maintain column alignment.
 
 ---
 
 ## TICKET LIFECYCLE
 
-- `Backlog` → `Done`: when implementation is complete, add Impl. Date and brief Remarks.
-- `Backlog` → `Dropped`: when superseded or invalidated - always explain in Remarks (e.g., "Superseded by WIKI-xxx").
-- Never delete rows - keep Done and Dropped for history.
+- `Backlog` → `Done` or `Dropped`: when implementation is complete or the ticket is invalidated, **move the row** from `tickets-backlog.md` to `tickets-archive.md`, setting Impl. Date and brief Remarks (Dropped rows should explain why in Remarks, e.g. "Superseded by WIKI-xxx").
+- Never delete rows - moving to the archive file preserves history.
 - Never change an ID after creation.
