@@ -114,15 +114,18 @@ Read `docs/tickets-backlog.md` to confirm the ticket exists with Status `Backlog
 
 ## ADDING NEW TICKETS
 
-When user asks to add a ticket:
+When user asks to add a ticket (or generating tickets in bulk, e.g. from an audit report):
 
-1. Use next sequential WIKI-xxx ID - check the highest existing ID in **both** `tickets-backlog.md` and `tickets-archive.md` (IDs are unique across both files).
-2. Entry Date: today's date (ISO format).
-3. Summary: ≤7 words, imperative phrasing ("Add X", "Fix Y", "Improve Z").
-4. Description: ≤30 words - be specific enough to implement without asking.
-5. Status: `Backlog`. Impl. Date: `-`. Remarks: empty unless there's a known constraint.
-6. Story points: refer to `docs/_meta/decisions/story-points-estimation.md` for sizing.
-7. Add as a new row in `tickets-backlog.md` - maintain column alignment.
+1. **Duplicate check first** - before drafting a new ticket, search `tickets-backlog.md` AND `tickets-archive.md` for existing tickets covering the same bug/file/behavior. Search by file path mentioned, by the specific broken function/selector, and by summary keywords - not just by ticket title. A near-identical bug already ticketed (even worded differently, even from a different audit/source) means: extend the existing ticket's Description/Remarks if it adds detail, don't create a new row. This applies per-sub-finding when bundling multiple findings into one ticket, too - check each sub-finding individually, not just the bundle as a whole.
+2. Use next sequential WIKI-xxx ID - check the highest existing ID in **both** `tickets-backlog.md` and `tickets-archive.md` (IDs are unique across both files).
+3. Entry Date: today's date (ISO format).
+4. Summary: ≤7 words, imperative phrasing ("Add X", "Fix Y", "Improve Z").
+5. Description: ≤30 words - be specific enough to implement without asking.
+6. Status: `Backlog`. Impl. Date: `-`. Remarks: empty unless there's a known constraint.
+7. Story points: refer to `docs/_meta/decisions/story-points-estimation.md` for sizing.
+8. Add as a new row in `tickets-backlog.md` - maintain column alignment.
+
+If a duplicate slips through anyway and is caught later: never delete either row (see TICKET LIFECYCLE below) - drop the newer/redundant one to `tickets-archive.md` with Status `Dropped`, Remarks `Duplicate of WIKI-xxx`, and add a `Supersedes WIKI-xxx` note in the surviving ticket's Remarks.
 
 ---
 
