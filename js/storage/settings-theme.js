@@ -1,5 +1,5 @@
 import { api } from "../api.js";
-import { WIKIS, escHtml, state } from "../state.js";
+import { WIKIS, escHtml, lockBodyScroll, state, unlockBodyScroll } from "../state.js";
 import {
   BOOKMARKS_KEY,
   Bookmarks,
@@ -354,6 +354,7 @@ const Settings = {
   open(tab = "general") {
     loadAllFonts(); // user may pick any font here - make all previews available
     this._lastFocus = document.activeElement;
+    lockBodyScroll();
     const modal = document.getElementById("prefs-modal");
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
@@ -392,6 +393,7 @@ const Settings = {
 
   close() {
     if (!this.isOpen()) return;
+    unlockBodyScroll();
     const modal = document.getElementById("prefs-modal");
     if (this._focusTrapHandler) {
       modal.removeEventListener("keydown", this._focusTrapHandler);

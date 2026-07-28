@@ -302,6 +302,67 @@ def test_d_key_toggle_restores_chrome(page, base_url):
     )
 
 
+# ── Modal-stacking hotkey gating ─────────────────────────────────
+
+
+def test_w_key_does_not_open_wiki_switcher_while_bookmarks_modal_open(page, base_url):
+    """'w' while bookmarks modal is open must not stack the wiki switcher on top of it."""
+    _go_to_article(page, base_url)
+    is_mac = "Mac" in page.evaluate("navigator.platform")
+    page.keyboard.press("Meta+b" if is_mac else "Control+b")
+    page.wait_for_selector("#bookmarks-modal:not(.hidden)", timeout=5_000)
+
+    page.locator("#bookmarks-modal-list").click()
+    page.keyboard.press("w")
+    page.wait_for_timeout(100)
+
+    switcher_hidden = page.evaluate(
+        "() => document.getElementById('wiki-switcher-modal').classList.contains('hidden')"
+    )
+    assert switcher_hidden, "wiki switcher should not open while bookmarks modal is open"
+
+
+def test_g_key_does_not_open_link_graph_while_auth_modal_open(page, base_url):
+    """Single-letter content shortcuts must not fire through an open modal."""
+    _go_to_article(page, base_url)
+    page.evaluate("window.AuthModal.open('login')")
+    page.wait_for_selector("#auth-modal:not(.hidden)", timeout=5_000)
+
+    page.locator("#auth-modal .auth-dialog").click()
+    page.keyboard.press("g")
+    page.wait_for_timeout(100)
+
+    link_graph_open = page.evaluate(
+        "() => !document.getElementById('link-graph-modal').classList.contains('hidden')"
+    )
+    assert not link_graph_open, "link graph should not open while auth modal is open"
+
+
+def test_body_scroll_locked_while_search_modal_open(page, base_url):
+    """Opening a modal must lock body scroll; closing it must unlock."""
+    _go_to_article(page, base_url)
+    is_mac = "Mac" in page.evaluate("navigator.platform")
+    page.keyboard.press("Meta+k" if is_mac else "Control+k")
+    page.wait_for_selector("#global-search-modal:not(.hidden)", timeout=5_000)
+
+    assert page.evaluate("document.body.classList.contains('modal-open')")
+
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#global-search-modal.hidden", state="hidden", timeout=5_000)
+    assert not page.evaluate("document.body.classList.contains('modal-open')")
+
+
+def test_toast_renders_above_open_modal(page, base_url):
+    """Toast must render above an open modal, not underneath it."""
+    # Broken-slug navigation is the simplest existing trigger for #wiki-toast (built lazily).
+    page.goto(f"{base_url}/#system-design/this-slug-does-not-exist-xyz", wait_until="domcontentloaded")
+    page.wait_for_selector("#wiki-toast", timeout=10_000)
+
+    toast_z = page.evaluate("() => getComputedStyle(document.getElementById('wiki-toast')).zIndex")
+    prefs_z = page.evaluate("() => getComputedStyle(document.getElementById('prefs-modal')).zIndex")
+    assert int(toast_z) > int(prefs_z)
+
+
 def test_distraction_free_clears_on_navigation(page, base_url):
     """Navigating away from an article exits distraction-free mode."""
     _go_to_article(page, base_url)

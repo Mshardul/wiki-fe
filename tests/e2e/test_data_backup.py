@@ -4,6 +4,8 @@
 
 import json
 
+from conftest import _make_cdn_fulfill_handler
+
 
 def _open_settings(page):
     page.locator("[title='Preferences (,)']").first.click()
@@ -315,3 +317,31 @@ def test_import_version_mismatch_shows_warning_toast(page, base_url):
         assert page.locator(".toast-undo-btn").is_visible()
     finally:
         os.unlink(tmp_path)
+
+
+def test_data_clear_checkbox_44px_on_coarse_pointer(browser, base_url, cdn_cache):
+    """.data-clear-checkbox must reach 44px on coarse-pointer (touch) devices."""
+    ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 390, "height": 844},
+        service_workers="block",
+    )
+    page = ctx.new_page()
+    try:
+        for url, (body, content_type) in cdn_cache.items():
+            page.route(url, _make_cdn_fulfill_handler(body, content_type))
+
+        page.goto(f"{base_url}/", wait_until="domcontentloaded")
+        page.wait_for_selector("#view-home.active", timeout=8_000)
+        _open_settings(page)
+        page.wait_for_selector(".data-clear-checkbox", timeout=5_000)
+
+        size = page.evaluate("""() => {
+            const r = document.querySelector('.data-clear-checkbox').getBoundingClientRect();
+            return { width: r.width, height: r.height };
+        }""")
+        assert size["width"] >= 44, f"data-clear-checkbox width too small: {size['width']}px"
+        assert size["height"] >= 44, f"data-clear-checkbox height too small: {size['height']}px"
+    finally:
+        ctx.close()

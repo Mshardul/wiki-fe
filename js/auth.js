@@ -1,6 +1,6 @@
 import { ApiError, api, getSessionToken, setSessionToken } from "./api.js";
 import { showToast } from "./render/toast.js";
-import { WIKIS, state } from "./state.js";
+import { WIKIS, lockBodyScroll, state, unlockBodyScroll } from "./state.js";
 import { getBookmarks } from "./storage/bookmarks.js";
 import { getRecents } from "./storage/recents.js";
 import { Sync } from "./storage/settings-theme.js";
@@ -98,15 +98,21 @@ const AuthModal = {
   _lastFocus: null,
 
   open(panel = "login") {
-    this._lastFocus = document.activeElement;
+    const wasOpen = this.isOpen();
+    if (!wasOpen) {
+      this._lastFocus = document.activeElement;
+      lockBodyScroll();
+    }
     const m = document.getElementById("auth-modal");
     m.classList.remove("hidden");
     m.setAttribute("aria-hidden", "false");
     this._swap(panel);
-    document.addEventListener("keydown", this._trapFocus);
+    if (!wasOpen) document.addEventListener("keydown", this._trapFocus);
   },
 
   close() {
+    if (!this.isOpen()) return;
+    unlockBodyScroll();
     const m = document.getElementById("auth-modal");
     m.classList.add("hidden");
     m.setAttribute("aria-hidden", "true");

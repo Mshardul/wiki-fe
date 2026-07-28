@@ -5,6 +5,7 @@
 - Sticky section header updates on scroll
 """
 
+from conftest import _make_cdn_fulfill_handler
 
 # ── Scroll Position in LocalStorage ─────────────────────────────────────────────
 
@@ -349,6 +350,61 @@ def test_mobile_toc_closes_on_link_tap(page, base_url):
         .get_attribute("class")
         .__contains__("open")
     )
+
+
+def test_toc_items_44px_on_coarse_pointer(browser, base_url, cdn_cache):
+    """.toc-item must reach 44px on coarse-pointer (touch) devices."""
+    ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 390, "height": 844},
+        service_workers="block",
+    )
+    page = ctx.new_page()
+    try:
+        for url, (body, content_type) in cdn_cache.items():
+            page.route(url, _make_cdn_fulfill_handler(body, content_type))
+        page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+        page.wait_for_selector("#view-content.active", timeout=10_000)
+        page.wait_for_selector("#toc-nav .toc-item", state="attached", timeout=10_000)
+        page.locator("#toc-mobile-btn").click()
+        page.wait_for_function(
+            "() => document.getElementById('toc-sidebar').classList.contains('mobile-open')"
+        )
+
+        heights = page.evaluate("""() => {
+            const item = document.querySelector('#toc-nav .toc-item');
+            return { item: item.getBoundingClientRect().height };
+        }""")
+        assert heights["item"] >= 44, f".toc-item too short: {heights['item']}px"
+    finally:
+        ctx.close()
+
+
+def test_topbar_icon_btn_44px_on_coarse_pointer_at_360px(browser, base_url, cdn_cache):
+    """.topbar-icon-btn must reach 44px on coarse-pointer devices even at 360-375px width."""
+    ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 360, "height": 780},
+        service_workers="block",
+    )
+    page = ctx.new_page()
+    try:
+        for url, (body, content_type) in cdn_cache.items():
+            page.route(url, _make_cdn_fulfill_handler(body, content_type))
+        page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+        page.wait_for_selector("#view-content.active", timeout=10_000)
+        page.wait_for_selector(".content-topbar .topbar-icon-btn", timeout=10_000)
+
+        size = page.evaluate("""() => {
+            const r = document.querySelector('.content-topbar .topbar-icon-btn').getBoundingClientRect();
+            return { width: r.width, height: r.height };
+        }""")
+        assert size["width"] >= 44, f"topbar-icon-btn width too small at 360px: {size['width']}px"
+        assert size["height"] >= 44, f"topbar-icon-btn height too small at 360px: {size['height']}px"
+    finally:
+        ctx.close()
 
 
 def test_mobile_fabs_do_not_share_a_corner(page, base_url):

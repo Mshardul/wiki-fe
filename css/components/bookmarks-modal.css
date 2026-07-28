@@ -4,7 +4,7 @@
 .bookmarks-modal {
   position: fixed;
   inset: 0;
-  z-index: var(--z-wiki-switcher);
+  z-index: var(--z-bookmarks-modal);
   display: flex;
   align-items: center;
   justify-content: center;

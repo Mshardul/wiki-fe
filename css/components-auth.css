@@ -68,6 +68,7 @@
   border-radius: var(--r);
   color: var(--text-heading);
   font: inherit;
+  font-size: max(16px, var(--text-base));
 }
 .auth-field input:focus {
   outline: none;
@@ -187,6 +188,19 @@
   }
   .auth-drag-handle {
     display: block;
+  }
+  .migrate-modal {
+    align-items: flex-end;
+  }
+  .migrate-dialog {
+    width: 100%;
+    max-width: none;
+    max-height: 85vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: max(env(safe-area-inset-bottom), var(--s6));
   }
 }
 

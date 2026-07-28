@@ -222,7 +222,7 @@ body.distraction-free .sticky-section-header {
   border: 1px solid var(--border-2);
   border-radius: var(--r-sm);
   padding: var(--s2) var(--s3) var(--s2) calc(var(--s3) + 14px);
-  font-size: var(--text-xs);
+  font-size: max(16px, var(--text-xs));
   font-family: var(--font-mono);
   line-height: 1.6em;
   color: var(--accent-light);

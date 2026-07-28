@@ -255,6 +255,18 @@ function sequencedMutation(key, fn) {
   return next;
 }
 
+// Ref-counted body scroll lock so overlapping modals (e.g. prefs opened from within search)
+// don't have the first modal's close re-enable background scroll while a second is still open.
+let _scrollLockCount = 0;
+function lockBodyScroll() {
+  _scrollLockCount++;
+  document.body.classList.add("modal-open");
+}
+function unlockBodyScroll() {
+  _scrollLockCount = Math.max(0, _scrollLockCount - 1);
+  if (_scrollLockCount === 0) document.body.classList.remove("modal-open");
+}
+
 export {
   WIKIS,
   state,
@@ -275,4 +287,6 @@ export {
   FADE_FLOOR,
   removeLocalStorageByPrefix,
   sequencedMutation,
+  lockBodyScroll,
+  unlockBodyScroll,
 };

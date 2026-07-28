@@ -5,7 +5,9 @@ import { navigate } from "../render/router.js";
 import { closeGlobalSearch } from "../search.js";
 import { state } from "../state.js";
 import { Settings } from "../storage/settings-theme.js";
+import { closeBookmarksModal, isBookmarksModalOpen } from "./bookmarks-modal.js";
 import { toggleDistractionFree } from "./distraction-free.js";
+import { closeWikiSwitcher, isWikiSwitcherOpen } from "./wiki-switcher.js";
 
 const tocMobileBtn = document.getElementById("toc-mobile-btn");
 const tocMobileOverlay = document.getElementById("toc-mobile-overlay");
@@ -66,6 +68,14 @@ function closeTopPanel() {
   }
   if (AuthModal.isOpen()) {
     AuthModal.close();
+    return true;
+  }
+  if (isWikiSwitcherOpen()) {
+    closeWikiSwitcher();
+    return true;
+  }
+  if (isBookmarksModalOpen()) {
+    closeBookmarksModal();
     return true;
   }
   return false;
@@ -156,6 +166,8 @@ function axisLock(dx, dy) {
         const panelOpen =
           Settings.isOpen() ||
           AuthModal.isOpen() ||
+          isWikiSwitcherOpen() ||
+          isBookmarksModalOpen() ||
           document.getElementById("hover-preview")?.classList.contains("hover-preview--sheet-open");
         if (dy > SWIPE_THRESHOLD && (panelOpen || sy < window.innerHeight / 3)) {
           closeTopPanel();

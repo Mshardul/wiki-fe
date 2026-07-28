@@ -341,7 +341,7 @@
   }
 }
 
-@media (max-width: 375px) {
+@media (max-width: 375px) and (pointer: fine) {
   .content-topbar .topbar-icon-btn {
     min-width: 34px;
     min-height: 34px;
@@ -433,6 +433,25 @@
   }
 
   .toc-mobile-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .toc-item,
+  .toc-group-chevron,
+  .toc-collapse {
+    min-height: 44px;
+  }
+
+  .data-clear-checkbox {
+    width: 44px;
+    height: 44px;
+  }
+
+  .gsearch-recent-chip {
+    min-height: 44px;
+  }
+  .gsearch-recent-remove {
     min-width: 44px;
     min-height: 44px;
   }

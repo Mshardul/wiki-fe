@@ -765,6 +765,34 @@ def test_size_setting_uses_percentage_units(wiki_page):
         assert val == expected, f"size idx {idx}: expected {expected}, got {val}"
 
 
+def test_auth_and_search_inputs_stay_16px_at_smallest_font_size(page, base_url):
+    """.auth-field input and .gsearch-input must stay >=16px even at the 'S' font-size setting."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    _open_settings(page)
+    page.locator("#settings-sizes .settings-size-btn").nth(0).click()  # "S"
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        "() => document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+
+    is_mac = "Mac" in page.evaluate("navigator.platform")
+    page.keyboard.press("Meta+k" if is_mac else "Control+k")
+    page.wait_for_selector("#global-search-modal:not(.hidden)", timeout=5_000)
+    search_size = page.evaluate(
+        "() => parseFloat(getComputedStyle(document.querySelector('.gsearch-input')).fontSize)"
+    )
+    assert search_size >= 16, f".gsearch-input font-size under 16px: {search_size}"
+    page.keyboard.press("Escape")
+
+    page.evaluate("() => window.AuthModal.open('login')")
+    page.wait_for_selector("#auth-modal:not(.hidden)", timeout=5_000)
+    auth_size = page.evaluate(
+        "() => parseFloat(getComputedStyle(document.querySelector('.auth-field input')).fontSize)"
+    )
+    assert auth_size >= 16, f".auth-field input font-size under 16px: {auth_size}"
+
+
 # ── Reading Modes in Advanced tab ────────────────────────────────
 
 

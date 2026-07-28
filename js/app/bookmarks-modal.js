@@ -44,6 +44,7 @@ function _renderList() {
 }
 
 function openBookmarksModal() {
+  if (isBookmarksModalOpen()) return;
   _opener = document.activeElement;
   _renderList();
   const modal = _modal();

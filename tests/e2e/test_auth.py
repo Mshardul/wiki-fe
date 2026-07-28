@@ -285,6 +285,57 @@ def test_migrate_modal_shown_on_login_with_local_data(page, base_url):
     expect(modal).to_have_class(re.compile(r"\bhidden\b"))
 
 
+def test_migrate_modal_uses_bottom_sheet_layout_on_mobile(browser, base_url, cdn_cache):
+    """.migrate-dialog should anchor to the bottom and span full width on mobile."""
+    ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 390, "height": 844},
+        service_workers="block",
+    )
+    page = ctx.new_page()
+    try:
+        for url, (body, content_type) in cdn_cache.items():
+            page.route(url, _make_cdn_fulfill_handler(body, content_type))
+
+        _stub_logged_out(page)
+        page.route(
+            "**/api/v1/auth/login",
+            lambda r: r.fulfill(
+                status=200,
+                content_type="application/json",
+                body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
+            ),
+        )
+        page.route(
+            "**/api/v1/import-all",
+            lambda r: r.fulfill(status=200, content_type="application/json", body="{}"),
+        )
+        page.add_init_script(
+            "localStorage.setItem('wiki-bookmarks', JSON.stringify([{wikiId:'dsa',path:'foo.md'}]))"
+        )
+
+        page.goto(base_url)
+        page.locator("#auth-btn-home").click()
+        page.locator("#auth-login-email").fill("a@example.com")
+        page.locator("#auth-login-password").fill("LongEnough1!xx")
+        page.locator("#auth-login-submit").click()
+
+        page.wait_for_selector("#migrate-modal:not(.hidden)", timeout=5_000)
+        box = page.evaluate("""() => {
+            const d = document.querySelector('.migrate-dialog');
+            const r = d.getBoundingClientRect();
+            return { width: r.width, bottom: r.bottom, viewportHeight: window.innerHeight };
+        }""")
+        assert box["width"] >= 350, f".migrate-dialog not full-width on mobile: {box['width']}px"
+        assert box["bottom"] >= box["viewportHeight"] - 5, (
+            f".migrate-dialog not anchored to viewport bottom: bottom={box['bottom']}, "
+            f"viewport={box['viewportHeight']}"
+        )
+    finally:
+        ctx.close()
+
+
 def test_logout_clears_stored_session_token(page, base_url):
     """Logout must clear the bearer token from localStorage - otherwise every
     request after logout keeps sending a dead token and keeps 401ing."""

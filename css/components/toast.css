@@ -16,7 +16,7 @@
   pointer-events: none;
   opacity: 0;
   transition: opacity var(--t), transform var(--t);
-  z-index: var(--z-modal-backdrop);
+  z-index: var(--z-toast);
   display: flex;
   align-items: center;
   gap: var(--s3);

@@ -221,7 +221,7 @@ body.sticky-header-visible .article-find {
 }
 .article-find-input {
   font: inherit;
-  font-size: var(--text-sm);
+  font-size: max(16px, var(--text-sm));
   color: var(--text);
   background: var(--surface-2);
   border: 1px solid var(--border);

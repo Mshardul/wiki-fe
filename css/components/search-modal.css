@@ -54,7 +54,7 @@
   border: none;
   outline: none;
   font-family: var(--font);
-  font-size: var(--text-base);
+  font-size: max(16px, var(--text-base));
   color: var(--text-heading);
 }
 .gsearch-input::placeholder {
@@ -96,6 +96,7 @@
 .gsearch-results {
   max-height: 420px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--s2) 0;
 }
 .gsearch-empty,

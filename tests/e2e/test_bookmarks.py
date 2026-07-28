@@ -196,3 +196,24 @@ def test_escape_closes_bookmarks_modal(page, base_url):
 
     page.keyboard.press("Escape")
     page.wait_for_selector("#bookmarks-modal.hidden", state="hidden", timeout=5_000)
+
+
+def test_reopening_bookmarks_modal_is_a_noop(page, base_url):
+    """Firing the ⌘B open hotkey while the bookmarks modal is already open must no-op."""
+    _go_to_article(page, base_url)
+    _bookmark_current(page)
+    _go_to_index(page, base_url)
+
+    _open_bookmarks_modal(page)
+    first_entry = page.locator("#bookmarks-modal-list .bookmarks-modal-entry").first
+    first_entry.focus()
+
+    # Re-fire the open hotkey while already open - a no-op must leave focus exactly
+    # where it was instead of the open sequence stealing it back to the first item.
+    is_mac = "Mac" in page.evaluate("navigator.platform")
+    page.keyboard.press("Meta+b" if is_mac else "Control+b")
+    page.wait_for_timeout(50)
+
+    assert first_entry.evaluate("(el) => el === document.activeElement")
+    modal = page.locator("#bookmarks-modal")
+    assert modal.is_visible()

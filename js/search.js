@@ -16,9 +16,11 @@ import {
   escHtml,
   fuzzyMatch,
   loadSynonyms,
+  lockBodyScroll,
   readTimeCache,
   state,
   synonymCache,
+  unlockBodyScroll,
 } from "./state.js";
 import { isRead, markRead, markUnread } from "./storage/read-tracking.js";
 import { RecentSearches } from "./storage/scroll-collapse.js";
@@ -536,6 +538,7 @@ function _syncSearchViewportHeight() {
 function openGlobalSearch(opts = {}) {
   _searchOpener = document.activeElement;
   _searchScope = opts.scope || null;
+  lockBodyScroll();
   gSearchModal.classList.remove("hidden");
   gSearchModal.setAttribute("aria-hidden", "false");
   gSearchInput.value = "";
@@ -583,7 +586,9 @@ function openGlobalSearch(opts = {}) {
 }
 
 function closeGlobalSearch() {
+  if (gSearchModal.classList.contains("hidden")) return;
   _closeScopeListbox();
+  unlockBodyScroll();
   gSearchModal.classList.add("hidden");
   gSearchModal.setAttribute("aria-hidden", "true");
   _searchScope = null;

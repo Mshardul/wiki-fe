@@ -67,6 +67,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 .vignette-layer {
   display: block;
   position: fixed;

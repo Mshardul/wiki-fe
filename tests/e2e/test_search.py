@@ -10,6 +10,8 @@
 
 import pytest
 
+from conftest import _make_cdn_fulfill_handler
+
 
 def _open_search(page):
     page.keyboard.press("Meta+k")
@@ -1145,8 +1147,6 @@ def test_scope_custom_dropdown(wiki_page):
 def test_scope_btn_44px_on_coarse_pointer(browser, base_url, cdn_cache):
     """Regression for WIKI-406: .gsearch-scope-btn is ~20px tall with no
     pointer:coarse fallback, well under the 44px touch-target minimum."""
-    from conftest import _make_cdn_fulfill_handler
-
     ctx = browser.new_context(
         has_touch=True,
         is_mobile=True,
@@ -1174,5 +1174,45 @@ def test_scope_btn_44px_on_coarse_pointer(browser, base_url, cdn_cache):
             "() => document.querySelector('.gsearch-scope-btn').getBoundingClientRect().height"
         )
         assert height >= 44, f"gsearch-scope-btn height too small: {height}px"
+    finally:
+        ctx.close()
+
+
+def test_gsearch_results_has_overscroll_contain(wiki_page):
+    """.gsearch-results must contain overscroll, matching the other full-screen mobile modals."""
+    wiki_page.keyboard.press("Meta+k")
+    wiki_page.wait_for_selector("#global-search-modal:not(.hidden)")
+    value = wiki_page.evaluate(
+        "() => getComputedStyle(document.querySelector('.gsearch-results')).overscrollBehaviorY"
+    )
+    assert value == "contain", f".gsearch-results overscroll-behavior: {value}"
+
+
+def test_recent_chip_44px_on_coarse_pointer_tablet_width(browser, base_url, cdn_cache):
+    """.gsearch-recent-chip must reach 44px on coarse-pointer tablet-width viewports too."""
+    ctx = browser.new_context(
+        has_touch=True,
+        is_mobile=True,
+        viewport={"width": 800, "height": 1024},
+        service_workers="block",
+    )
+    page = ctx.new_page()
+    try:
+        for url, (body, content_type) in cdn_cache.items():
+            page.route(url, _make_cdn_fulfill_handler(body, content_type))
+
+        page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+        page.wait_for_selector("#view-content.active", timeout=10_000)
+        page.evaluate(
+            "() => localStorage.setItem('wiki-recent-searches', JSON.stringify(['caching']))"
+        )
+        page.keyboard.press("Meta+k")
+        page.wait_for_selector("#global-search-modal:not(.hidden)")
+        page.wait_for_selector(".gsearch-recent-chip", timeout=5_000)
+
+        height = page.evaluate(
+            "() => document.querySelector('.gsearch-recent-chip').getBoundingClientRect().height"
+        )
+        assert height >= 44, f"gsearch-recent-chip height too small at 800px: {height}px"
     finally:
         ctx.close()

@@ -36,4 +36,8 @@ function closeWikiSwitcher() {
   modal.setAttribute("aria-hidden", "true");
 }
 
-export { openWikiSwitcher, closeWikiSwitcher };
+function isWikiSwitcherOpen() {
+  return !document.getElementById("wiki-switcher-modal").classList.contains("hidden");
+}
+
+export { openWikiSwitcher, closeWikiSwitcher, isWikiSwitcherOpen };

@@ -22,7 +22,7 @@ import { printArticle } from "./app/print.js";
 import { closeSectionMap, isSectionMapOpen, toggleSectionMap } from "./app/section-map.js";
 import { openSidecarToc } from "./app/sidecar-toc.js";
 import { fireStudyMilestone } from "./app/study-feedback.js";
-import { closeWikiSwitcher, openWikiSwitcher } from "./app/wiki-switcher.js";
+import { closeWikiSwitcher, isWikiSwitcherOpen, openWikiSwitcher } from "./app/wiki-switcher.js";
 import { syncHljsTheme, writeToClipboard } from "./content/code-blocks.js";
 import { setFoldDepth } from "./content/depth-fold.js";
 import {
@@ -420,6 +420,21 @@ document.getElementById("prefs-backdrop").addEventListener("click", () => Settin
 
 document.getElementById("auth-backdrop").addEventListener("click", () => AuthModal.close());
 
+// Single-letter content shortcuts must not fire through an open modal, even when focus
+// happens to sit on a non-input element inside it (e.g. a bookmarks-modal entry button).
+function isAnyModalOpen() {
+  return (
+    isBookmarksModalOpen() ||
+    AuthModal.isOpen() ||
+    Settings.isOpen() ||
+    isWikiSwitcherOpen() ||
+    isLinkGraphOpen() ||
+    isSectionMapOpen() ||
+    isComparePickerOpen() ||
+    !document.getElementById("global-search-modal").classList.contains("hidden")
+  );
+}
+
 document.addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === "k") {
     e.preventDefault();
@@ -490,12 +505,12 @@ document.addEventListener("keydown", (e) => {
     }
   }
 
-  // Keyboard shortcuts for content view (when not focused on input/textarea)
+  // Keyboard shortcuts for content view (when not focused on input/textarea, and no modal open)
   if (state.currentView === "content") {
     const tag = document.activeElement.tagName;
     const isInput =
       tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable;
-    if (!isInput) {
+    if (!isInput && !isAnyModalOpen()) {
       if ((e.key === "b" || e.key === "B") && !e.metaKey && !e.ctrlKey) {
         Bookmarks.toggle();
         e.preventDefault();
@@ -557,7 +572,7 @@ document.addEventListener("keydown", (e) => {
       const tag = document.activeElement.tagName;
       const isInput =
         tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable;
-      if (!isInput) {
+      if (!isInput && !isAnyModalOpen()) {
         e.preventDefault();
         openWikiSwitcher();
       }
@@ -568,7 +583,7 @@ document.addEventListener("keydown", (e) => {
     const tag = document.activeElement.tagName;
     const isInput =
       tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable;
-    if (!isInput && !e.metaKey && !e.ctrlKey) {
+    if (!isInput && !e.metaKey && !e.ctrlKey && !isAnyModalOpen()) {
       e.preventDefault();
       if (e.shiftKey) {
         toggleSectionMap();
