@@ -1,4 +1,5 @@
 import { extractComplexityTable } from "../content/tables.js";
+import { createFocusTrap, getFocusableIn, registerModal } from "../modal-registry.js";
 import { fetchPrebuiltSearchIndex, fetchText } from "../render/nav-utils.js";
 import { escHtml, getMdConverter } from "../state.js";
 
@@ -8,6 +9,7 @@ const MAX_PICKS = 4;
 let _structures = null; // [{title, path, slug}] once loaded
 const _picked = new Set();
 const _tableCache = new Map(); // path -> parsed complexity table (or null)
+let _focusTrapHandler = null;
 
 async function loadStructures() {
   if (_structures) return _structures;
@@ -124,10 +126,18 @@ async function openComparePicker() {
   renderPickerList();
   updateCompareBtn();
   document.getElementById("compare-search-input").focus();
+
+  _focusTrapHandler = createFocusTrap(modal, () => getFocusableIn(modal));
+  modal.addEventListener("keydown", _focusTrapHandler);
 }
 
 function closeComparePicker() {
   const modal = document.getElementById("compare-modal");
+  if (modal.classList.contains("hidden")) return;
+  if (_focusTrapHandler) {
+    modal.removeEventListener("keydown", _focusTrapHandler);
+    _focusTrapHandler = null;
+  }
   modal.classList.add("hidden");
   modal.setAttribute("aria-hidden", "true");
 }
@@ -135,6 +145,8 @@ function closeComparePicker() {
 function isComparePickerOpen() {
   return !document.getElementById("compare-modal").classList.contains("hidden");
 }
+
+registerModal({ isOpen: isComparePickerOpen, close: closeComparePicker });
 
 document.getElementById("compare-overlay").addEventListener("click", closeComparePicker);
 document.getElementById("compare-close").addEventListener("click", closeComparePicker);

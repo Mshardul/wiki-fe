@@ -1,3 +1,5 @@
+import { state } from "../state.js";
+
 /* ═══════════════════════════════════════════════════════════════
    INLINE CAVEAT REVEALS  [?caveat text]
    ═══════════════════════════════════════════════════════════════ */
@@ -221,6 +223,7 @@ function addGlossaryTerms(contentEl) {
       hideTimer = setTimeout(() => pop.classList.remove("glossary-popover--visible"), 120);
     };
 
+    state.glossaryObserver?.disconnect();
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -240,6 +243,7 @@ function addGlossaryTerms(contentEl) {
       },
       { rootMargin: "0px 0px -10% 0px" },
     );
+    state.glossaryObserver = observer;
 
     matched.forEach((el) => {
       el.classList.add("glossary-term");

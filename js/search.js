@@ -1,4 +1,5 @@
 import { QuizMode } from "./content/tables.js";
+import { createFocusTrap, registerModal } from "./modal-registry.js";
 import { navigateToContent } from "./render/content-view.js";
 import { IndexFilter, fetchWikiIndex } from "./render/home-index.js";
 import { normalizePath } from "./render/nav-utils.js";
@@ -556,24 +557,7 @@ function openGlobalSearch(opts = {}) {
     window.visualViewport.addEventListener("resize", _syncSearchViewportHeight);
   }
 
-  _searchFocusTrapHandler = (e) => {
-    if (e.key !== "Tab") return;
-    const items = [gSearchInput, ...gSearchItems()];
-    if (!items.length) return;
-    const first = items[0];
-    const last = items[items.length - 1];
-    if (e.shiftKey) {
-      if (document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      }
-    } else {
-      if (document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-  };
+  _searchFocusTrapHandler = createFocusTrap(gSearchModal, () => [gSearchInput, ...gSearchItems()]);
   if (_searchFocusTrapHandler) gSearchModal.removeEventListener("keydown", _searchFocusTrapHandler);
   gSearchModal.addEventListener("keydown", _searchFocusTrapHandler);
 
@@ -833,9 +817,16 @@ function removeRecentSearchEntry(query) {
   applyGlobalSearch(gSearchInput.value);
 }
 
+function isGlobalSearchOpen() {
+  return !gSearchModal.classList.contains("hidden");
+}
+
+registerModal({ isOpen: isGlobalSearchOpen, close: closeGlobalSearch });
+
 export {
   openGlobalSearch,
   closeGlobalSearch,
+  isGlobalSearchOpen,
   retryGlobalSearch,
   runSearchCommand,
   armSearchVerb,

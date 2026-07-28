@@ -1,4 +1,5 @@
 import { ApiError, api, getSessionToken, setSessionToken } from "./api.js";
+import { createFocusTrap, getFocusableIn, registerModal } from "./modal-registry.js";
 import { showToast } from "./render/toast.js";
 import { WIKIS, lockBodyScroll, state, unlockBodyScroll } from "./state.js";
 import { getBookmarks } from "./storage/bookmarks.js";
@@ -122,25 +123,11 @@ const AuthModal = {
   },
 
   // Bound as a property (not a method) so add/removeEventListener see the same reference.
-  _trapFocus: (e) => {
-    if (e.key !== "Tab") return;
+  // The dialog swaps content (`_swap`), so re-query it on every Tab press rather than caching.
+  _trapFocus: createFocusTrap(document, () => {
     const dialog = document.querySelector(".auth-dialog");
-    if (!dialog) return;
-    const focusable = dialog.querySelectorAll(
-      "button:not([disabled]):not([hidden]), input:not([disabled]):not([hidden]), a[href]",
-    );
-    const visible = Array.from(focusable).filter((el) => el.offsetParent !== null);
-    if (!visible.length) return;
-    const first = visible[0];
-    const last = visible[visible.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  },
+    return dialog ? getFocusableIn(dialog) : [];
+  }),
 
   isOpen() {
     return !document.getElementById("auth-modal").classList.contains("hidden");
@@ -195,6 +182,8 @@ const AuthModal = {
     }
   },
 };
+
+registerModal({ isOpen: () => AuthModal.isOpen(), close: () => AuthModal.close() });
 
 // Disables btnId during fn() to block double-fire from rapid clicks/Enter, always re-enables after.
 async function _withSubmitGuard(btnId, fn) {

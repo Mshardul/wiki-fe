@@ -33,13 +33,15 @@ function getCachedAt(filePath) {
 }
 
 async function downloadArticle(filePath) {
-  if (!("caches" in window)) return;
+  if (!("caches" in window)) return false;
   const cache = await caches.open("wiki-articles-v1");
   const res = await fetch(filePath);
   if (res.ok) {
     await cache.put(filePath, res);
     _setCachedAt(filePath);
+    return true;
   }
+  return false;
 }
 
 async function removeArticleDownload(filePath) {
@@ -115,8 +117,21 @@ const Offline = {
       await removeArticleDownload(path);
     } else {
       btn?.classList.add("loading");
-      await downloadArticle(path);
-      btn?.classList.remove("loading");
+      let ok = false;
+      try {
+        ok = await downloadArticle(path);
+      } catch {
+        ok = false;
+      } finally {
+        btn?.classList.remove("loading");
+      }
+      if (!ok) {
+        document.dispatchEvent(
+          new CustomEvent("wiki:toast", {
+            detail: { message: "Couldn't save article for offline reading" },
+          }),
+        );
+      }
     }
     updateOfflineBtn();
   },

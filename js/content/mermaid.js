@@ -335,7 +335,15 @@ async function rerenderMermaidDiagrams() {
       if (existingBtn) wrapper.appendChild(existingBtn);
       else _appendMermaidCopyBtn(wrapper);
       if (existingPlayBtn) wrapper.appendChild(existingPlayBtn);
-      if (existingRail) wrapper.appendChild(existingRail);
+      if (existingRail) {
+        wrapper.appendChild(existingRail);
+        if (!existingRail.hidden) {
+          const steps = _parseMermaidSteps(code);
+          const stepIndex = Number.parseInt(existingRail.dataset.stepIndex, 10) || 0;
+          const newSvg = wrapper.querySelector("svg");
+          if (steps.length && newSvg) _applyMermaidStep(wrapper, newSvg, steps, stepIndex);
+        }
+      }
     } catch {
       const errEl = document.createElement("div");
       errEl.className = "mermaid-error";

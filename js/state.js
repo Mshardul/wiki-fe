@@ -124,6 +124,7 @@ const state = {
   indexSections: [],
   tocObserver: null,
   titleObserver: null,
+  glossaryObserver: null,
   tableResizeObservers: [],
   preResizeObservers: [],
   // Auth identity - in-memory only, NEVER persisted to localStorage.

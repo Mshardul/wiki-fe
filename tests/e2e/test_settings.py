@@ -811,6 +811,33 @@ def test_advanced_tab_has_reading_modes_buttons(wiki_page):
     assert wiki_page.locator("#prefs-offline-toggle").count() == 1
 
 
+def test_offline_toggle_clears_loading_state_on_fetch_failure(page, base_url):
+    """A failed download clears the button's loading class and shows an error toast, instead of getting stuck."""
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    # Cache Storage isn't reset between tests (only localStorage is) - clear any
+    # stale cache entry so toggle() takes the download branch, not remove.
+    page.evaluate("""async () => {
+        const cache = await caches.open('wiki-articles-v1');
+        await cache.delete('content/system-design/components/caching.md');
+    }""")
+    page.route("**/content/system-design/components/caching.md", lambda route: route.abort())
+
+    page.locator("[title='Preferences (,)']:visible").first.click()
+    page.wait_for_function(
+        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    page.locator("[data-tab='advanced']").click()
+    page.locator("#prefs-offline-toggle").click()
+
+    page.wait_for_selector(".wiki-toast", timeout=5_000)
+    assert "loading" not in (page.locator("#prefs-offline-toggle").get_attribute("class") or "")
+
+
 def test_focus_mode_prefs_btn_toggles_active_state(page, base_url):
     """Focus Mode button in Advanced prefs sets aria-pressed and .active when toggled from content view."""
     page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")

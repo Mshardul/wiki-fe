@@ -1,3 +1,4 @@
+import { createFocusTrap, registerModal } from "../modal-registry.js";
 import { navigateToContent } from "../render/content-view.js";
 import { escHtml } from "../state.js";
 import { Bookmarks, getBookmarks } from "../storage/bookmarks.js";
@@ -54,24 +55,7 @@ function openBookmarksModal() {
   const focusable = _getFocusable();
   if (focusable.length) focusable[0].focus();
 
-  _focusTrapHandler = (e) => {
-    if (e.key !== "Tab") return;
-    const els = _getFocusable();
-    if (!els.length) return;
-    const first = els[0];
-    const last = els[els.length - 1];
-    if (e.shiftKey) {
-      if (document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      }
-    } else {
-      if (document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-  };
+  _focusTrapHandler = createFocusTrap(modal, _getFocusable);
   modal.addEventListener("keydown", _focusTrapHandler);
 }
 
@@ -114,5 +98,7 @@ _list().addEventListener("click", (e) => {
 });
 
 document.getElementById("bookmarks-modal-backdrop").addEventListener("click", closeBookmarksModal);
+
+registerModal({ isOpen: isBookmarksModalOpen, close: closeBookmarksModal });
 
 export { openBookmarksModal, closeBookmarksModal, isBookmarksModalOpen };

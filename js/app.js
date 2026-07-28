@@ -45,6 +45,7 @@ import { QuizMode } from "./content/tables.js";
 import { expandAllSections, initProgressRingScrollTop, updateProgressRing } from "./content/toc.js";
 import { closeZoomOverlay } from "./content/zoom-lightbox.js";
 import { loadIconSprite } from "./icon-sprite.js";
+import { isAnyModalOpen as isAnyRegisteredModalOpen } from "./modal-registry.js";
 import { renderChangelog } from "./render/changelog-view.js";
 import { getCurrentMarkdown, navigateToContent } from "./render/content-view.js";
 import { IndexFilter, toggleSection } from "./render/home-index.js";
@@ -422,17 +423,11 @@ document.getElementById("auth-backdrop").addEventListener("click", () => AuthMod
 
 // Single-letter content shortcuts must not fire through an open modal, even when focus
 // happens to sit on a non-input element inside it (e.g. a bookmarks-modal entry button).
+// isAnyModalOpen covers registered modals (auth/settings/search/bookmarks/wiki-switcher/
+// compare-picker); link-graph and section-map are canvas overlays, not registry modals,
+// so they're checked separately here.
 function isAnyModalOpen() {
-  return (
-    isBookmarksModalOpen() ||
-    AuthModal.isOpen() ||
-    Settings.isOpen() ||
-    isWikiSwitcherOpen() ||
-    isLinkGraphOpen() ||
-    isSectionMapOpen() ||
-    isComparePickerOpen() ||
-    !document.getElementById("global-search-modal").classList.contains("hidden")
-  );
+  return isAnyRegisteredModalOpen() || isLinkGraphOpen() || isSectionMapOpen();
 }
 
 document.addEventListener("keydown", (e) => {
@@ -643,6 +638,11 @@ document.addEventListener("wiki:themechange", () => {
   clearTimeout(_mermaidRerenderTimer);
   _mermaidRerenderTimer = setTimeout(rerenderMermaidDiagrams, 150);
   syncHljsTheme();
+  // The zoom overlay holds a cloned, detached SVG - a theme change never
+  // touches it, so an already-open diagram zoom would show stale colors.
+  if (document.getElementById("zoom-overlay")?.classList.contains("open")) {
+    closeZoomOverlay();
+  }
 });
 
 /* ═══════════════════════════════════════════════════════════════

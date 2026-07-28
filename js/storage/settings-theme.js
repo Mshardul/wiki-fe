@@ -1,4 +1,5 @@
 import { api } from "../api.js";
+import { createFocusTrap, registerModal } from "../modal-registry.js";
 import { WIKIS, escHtml, lockBodyScroll, state, unlockBodyScroll } from "../state.js";
 import {
   BOOKMARKS_KEY,
@@ -364,22 +365,7 @@ const Settings = {
     const focusable = this._getFocusable();
     if (focusable.length) focusable[0].focus();
 
-    this._focusTrapHandler = (e) => {
-      if (e.key !== "Tab") return;
-      const els = this._getFocusable();
-      if (!els.length) return;
-      if (e.shiftKey) {
-        if (document.activeElement === els[0]) {
-          e.preventDefault();
-          els[els.length - 1].focus();
-        }
-      } else {
-        if (document.activeElement === els[els.length - 1]) {
-          e.preventDefault();
-          els[0].focus();
-        }
-      }
-    };
+    this._focusTrapHandler = createFocusTrap(modal, () => this._getFocusable());
     modal.addEventListener("keydown", this._focusTrapHandler);
   },
 
@@ -876,5 +862,7 @@ const Sync = {
     return Promise.resolve();
   },
 };
+
+registerModal({ isOpen: () => Settings.isOpen(), close: () => Settings.close() });
 
 export { getSettings, saveSettings, applySettingsToDOM, initOsThemeListener, Settings, Sync };

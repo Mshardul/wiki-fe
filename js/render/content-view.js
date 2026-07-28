@@ -252,6 +252,10 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     state.tocObserver.disconnect();
     state.tocObserver = null;
   }
+  if (state.glossaryObserver) {
+    state.glossaryObserver.disconnect();
+    state.glossaryObserver = null;
+  }
   const tocNav = document.getElementById("toc-nav");
   if (tocNav?._tocScrollHandler) {
     tocNav.removeEventListener("scroll", tocNav._tocScrollHandler);

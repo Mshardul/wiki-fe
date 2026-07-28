@@ -1,5 +1,8 @@
+import { createFocusTrap, getFocusableIn, registerModal } from "../modal-registry.js";
 import { navigate } from "../render/router.js";
 import { WIKIS, escHtml, state } from "../state.js";
+
+let _focusTrapHandler = null;
 
 document.getElementById("wiki-switcher-overlay").addEventListener("click", closeWikiSwitcher);
 
@@ -28,10 +31,18 @@ function openWikiSwitcher() {
   const active =
     list.querySelector(".wiki-switcher-card--active") || list.querySelector(".wiki-switcher-card");
   active?.focus();
+
+  _focusTrapHandler = createFocusTrap(modal, () => getFocusableIn(modal));
+  modal.addEventListener("keydown", _focusTrapHandler);
 }
 
 function closeWikiSwitcher() {
   const modal = document.getElementById("wiki-switcher-modal");
+  if (modal.classList.contains("hidden")) return;
+  if (_focusTrapHandler) {
+    modal.removeEventListener("keydown", _focusTrapHandler);
+    _focusTrapHandler = null;
+  }
   modal.classList.add("hidden");
   modal.setAttribute("aria-hidden", "true");
 }
@@ -39,5 +50,7 @@ function closeWikiSwitcher() {
 function isWikiSwitcherOpen() {
   return !document.getElementById("wiki-switcher-modal").classList.contains("hidden");
 }
+
+registerModal({ isOpen: isWikiSwitcherOpen, close: closeWikiSwitcher });
 
 export { openWikiSwitcher, closeWikiSwitcher, isWikiSwitcherOpen };

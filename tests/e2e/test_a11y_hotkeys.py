@@ -46,6 +46,25 @@ def test_focus_trap_survives_rapid_reopen(wiki_page):
     assert not focused_outside, "Focus escaped modal after rapid ⌘K re-open"
 
 
+def test_wiki_switcher_traps_focus(page, base_url):
+    """Wiki switcher modal now traps Tab focus like other modals."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("w")
+    page.wait_for_selector("#wiki-switcher-modal:not(.hidden)")
+
+    page.evaluate("""() => {
+        const modal = document.getElementById('wiki-switcher-modal');
+        const focusable = [...modal.querySelectorAll('button:not([disabled])')];
+        focusable[focusable.length - 1].focus();
+    }""")
+    page.keyboard.press("Tab")
+    focused_outside = page.evaluate("""() => {
+        const modal = document.getElementById('wiki-switcher-modal');
+        return !modal.contains(document.activeElement);
+    }""")
+    assert not focused_outside, "Focus trap missing on wiki switcher modal"
+
+
 # ── aria-label on copy/anchor buttons ────────────────────────────
 
 

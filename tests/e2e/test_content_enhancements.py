@@ -534,6 +534,22 @@ def test_diagram_click_opens_zoom_overlay(page, base_url):
     assert is_open, "Zoom overlay did not open after clicking mermaid diagram"
 
 
+def test_diagram_zoom_overlay_closes_on_theme_change(page, base_url):
+    """An open diagram zoom overlay closes on theme change, instead of showing stale colors."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-zoom-theme")
+    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
+
+    page.locator(".mermaid-diagram").first.click()
+    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+
+    page.evaluate("() => Settings._setBackground('light-white')")
+
+    page.wait_for_function(
+        "() => !document.getElementById('zoom-overlay')?.classList.contains('open')",
+        timeout=3_000,
+    )
+
+
 def test_diagram_zoom_overlay_contains_svg(page, base_url):
     """Zoom overlay content contains an <svg> element after a diagram is clicked."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-svg")
@@ -732,6 +748,37 @@ def test_mermaid_step_through_next_advances_step(page, base_url):
     assert "Traverse edge A to B" in label_text, (
         f"Expected step 2 caption in rail label, got: {label_text}"
     )
+
+
+def test_mermaid_step_highlight_survives_theme_change(page, base_url):
+    """An active step-through highlight is reapplied after a theme-triggered re-render, not lost."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_STEPS, slug="steps-theme")
+    page.wait_for_selector(".mermaid-step-play-btn", timeout=8_000)
+
+    page.locator(".mermaid-step-play-btn").click()
+    page.wait_for_selector(".mermaid-step-rail", state="visible", timeout=3_000)
+    page.locator(".mermaid-step-next").click()
+    page.wait_for_function(
+        "() => document.querySelector('.mermaid-step-label')?.textContent.includes('Step 2/3')",
+        timeout=3_000,
+    )
+
+    svg_before = page.evaluate("() => document.querySelector('.mermaid-diagram svg')?.outerHTML")
+    page.evaluate("() => Settings._setBackground('light-white')")
+    page.wait_for_function(
+        f"""() => {{
+            const svg = document.querySelector('.mermaid-diagram svg');
+            return svg && svg.outerHTML !== {repr(svg_before)};
+        }}""",
+        timeout=5_000,
+    )
+
+    label_text = page.locator(".mermaid-step-label").inner_text()
+    assert "Step 2/3" in label_text, (
+        f"Step label should still read Step 2/3 after theme change, got: {label_text}"
+    )
+    active_count = page.locator(".mermaid-diagram .step-active").count()
+    assert active_count >= 1, "Step highlight should be reapplied after theme-change re-render"
 
 
 def test_mermaid_step_prev_next_44px_on_coarse_pointer(browser, base_url, cdn_cache):
