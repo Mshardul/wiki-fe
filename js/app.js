@@ -578,7 +578,7 @@ document.addEventListener("keydown", (e) => {
     const tag = document.activeElement.tagName;
     const isInput =
       tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable;
-    if (!isInput && !e.metaKey && !e.ctrlKey && !isAnyModalOpen()) {
+    if (!isInput && !e.metaKey && !e.ctrlKey && !isAnyRegisteredModalOpen()) {
       e.preventDefault();
       if (e.shiftKey) {
         toggleSectionMap();
