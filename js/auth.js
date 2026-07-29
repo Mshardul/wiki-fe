@@ -159,19 +159,33 @@ const AuthModal = {
     const { rules } = validatePassword(pw);
     const ul = document.getElementById(listId);
     if (!ul) return;
-    ul.innerHTML = rules.map((r) => `<li class="${r.ok ? "ok" : ""}">${r.label}</li>`).join("");
+    ul.innerHTML = rules
+      .map(
+        (r) =>
+          `<li class="${r.ok ? "ok" : ""}">${r.label}<span class="visually-hidden">${r.ok ? " — met" : " — not met"}</span></li>`,
+      )
+      .join("");
+  },
+
+  // Inputs whose aria-describedby points at each error id - kept in sync with index.html.
+  _ERROR_INPUT_IDS: {
+    "auth-login-error": ["auth-login-email", "auth-login-password"],
+    "auth-reg-error": ["auth-reg-email", "auth-reg-password"],
+    "auth-forgot-error": ["auth-forgot-email"],
+    "auth-reset-error": ["auth-reset-password"],
   },
 
   _clearErrors() {
-    ["auth-login-error", "auth-reg-error", "auth-forgot-error", "auth-reset-error"].forEach(
-      (id) => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.hidden = true;
-          el.textContent = "";
-        }
-      },
-    );
+    Object.entries(this._ERROR_INPUT_IDS).forEach(([id, inputIds]) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.hidden = true;
+        el.textContent = "";
+      }
+      inputIds.forEach((inputId) =>
+        document.getElementById(inputId)?.removeAttribute("aria-invalid"),
+      );
+    });
   },
 
   _showError(id, msg) {
@@ -180,6 +194,9 @@ const AuthModal = {
       el.textContent = msg;
       el.hidden = false;
     }
+    (this._ERROR_INPUT_IDS[id] || []).forEach((inputId) =>
+      document.getElementById(inputId)?.setAttribute("aria-invalid", "true"),
+    );
   },
 };
 
@@ -195,6 +212,65 @@ async function _withSubmitGuard(btnId, fn) {
   } finally {
     if (btn) btn.disabled = false;
   }
+}
+
+async function _withLoadingState(formId, btnId, loadingLabel, fn) {
+  const form = document.getElementById(formId);
+  const btn = document.getElementById(btnId);
+  const labelEl = btn?.querySelector(".auth-submit-label");
+  const originalLabel = labelEl?.textContent;
+  const inputs = form ? Array.from(form.querySelectorAll("input")) : [];
+  inputs.forEach((el) => {
+    el.disabled = true;
+  });
+  if (labelEl) labelEl.textContent = loadingLabel;
+  try {
+    await fn();
+  } finally {
+    inputs.forEach((el) => {
+      el.disabled = false;
+    });
+    if (labelEl && originalLabel !== undefined) labelEl.textContent = originalLabel;
+  }
+}
+
+const RESEND_COOLDOWN_SECONDS = 30;
+
+// Client-side only - independent of any backend-side rate limiting.
+function _startResendCooldown(btnId) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  const labelEl = btn.querySelector(".auth-submit-label");
+  const originalLabel = labelEl ? labelEl.textContent : btn.textContent;
+  let remaining = RESEND_COOLDOWN_SECONDS;
+  btn.disabled = true;
+  const setLabel = (text) => {
+    if (labelEl) labelEl.textContent = text;
+    else btn.textContent = text;
+  };
+  setLabel(`Resend in ${remaining}s`);
+  const tick = setInterval(() => {
+    remaining -= 1;
+    if (remaining <= 0) {
+      clearInterval(tick);
+      btn.disabled = false;
+      setLabel(originalLabel);
+    } else {
+      setLabel(`Resend in ${remaining}s`);
+    }
+  }, 1000);
+}
+
+function _wirePasswordToggle(toggleId, inputId) {
+  const toggle = document.getElementById(toggleId);
+  const input = document.getElementById(inputId);
+  if (!toggle || !input) return;
+  toggle.addEventListener("click", () => {
+    const showing = input.type === "text";
+    input.type = showing ? "password" : "text";
+    toggle.setAttribute("aria-pressed", String(!showing));
+    toggle.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+  });
 }
 
 // Cross-tab session sync key - bumping it fires a `storage` event in every other tab, triggering an /auth/me re-probe there.
@@ -278,7 +354,7 @@ const Auth = {
       } else {
         AuthModal._showError(
           "auth-login-error",
-          e instanceof ApiError ? e.message : "Login failed",
+          e instanceof ApiError ? e.message : "Couldn't log you in. Please try again.",
         );
       }
     }
@@ -304,12 +380,12 @@ const Auth = {
     } catch (e) {
       AuthModal._showError(
         "auth-reg-error",
-        e instanceof ApiError ? e.message : "Registration failed",
+        e instanceof ApiError ? e.message : "Couldn't create your account. Please try again.",
       );
     }
   },
 
-  async resend(email) {
+  async resend(email, btnId) {
     try {
       await api.auth.resend(email);
       showToast("Verification email sent");
@@ -317,20 +393,27 @@ const Auth = {
       /* generic 200 either way; still confirm so the click isn't silent */
       showToast("Verification email sent");
     }
+    if (btnId) _startResendCooldown(btnId);
   },
 
   async verifyFromLink(token) {
     AuthModal.open("verify-result");
     const copy = document.getElementById("auth-verify-result-copy");
     const backBtn = document.getElementById("auth-verify-result-to-login");
+    const resendForm = document.getElementById("auth-form-verify-result-resend");
     try {
       await api.auth.verify(token);
       if (copy) copy.textContent = "Email verified! You can log in now.";
     } catch (e) {
       if (copy) {
         copy.textContent =
-          e instanceof ApiError ? e.message : "This link is invalid or has expired.";
+          e instanceof ApiError
+            ? e.code === "INVALID_TOKEN"
+              ? "This verification link is invalid or has expired."
+              : e.message
+            : "This link is invalid or has expired.";
       }
+      if (resendForm) resendForm.hidden = false;
     }
     if (backBtn) backBtn.hidden = false;
   },
@@ -342,7 +425,7 @@ const Auth = {
     } catch (e) {
       AuthModal._showError(
         "auth-forgot-error",
-        e instanceof ApiError ? e.message : "Could not send reset link.",
+        e instanceof ApiError ? e.message : "Couldn't send the reset link. Please try again.",
       );
     }
   },
@@ -428,16 +511,21 @@ const Auth = {
     document.getElementById("auth-form-register")?.addEventListener("submit", (e) => {
       e.preventDefault();
       _withSubmitGuard("auth-reg-submit", () =>
-        this.register(
-          document.getElementById("auth-reg-email").value.trim(),
-          document.getElementById("auth-reg-password").value,
+        _withLoadingState("auth-form-register", "auth-reg-submit", "Creating…", () =>
+          this.register(
+            document.getElementById("auth-reg-email").value.trim(),
+            document.getElementById("auth-reg-password").value,
+          ),
         ),
       );
     });
+    _wirePasswordToggle("auth-reg-pw-toggle", "auth-reg-password");
     document
       .getElementById("auth-resend-btn")
       ?.addEventListener("click", () =>
-        _withSubmitGuard("auth-resend-btn", () => this.resend(this._pendingVerifyEmail)),
+        _withSubmitGuard("auth-resend-btn", () =>
+          this.resend(this._pendingVerifyEmail, "auth-resend-btn"),
+        ),
       );
     document
       .getElementById("auth-to-forgot")
@@ -454,6 +542,15 @@ const Auth = {
     document
       .getElementById("auth-verify-result-to-login")
       ?.addEventListener("click", () => AuthModal._swap("login"));
+    document.getElementById("auth-form-verify-result-resend")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      _withSubmitGuard("auth-verify-result-resend-btn", () =>
+        this.resend(
+          document.getElementById("auth-verify-result-resend-email").value.trim(),
+          "auth-verify-result-resend-btn",
+        ),
+      );
+    });
 
     const resetPw = document.getElementById("auth-reset-password");
     const resetSubmit = document.getElementById("auth-reset-submit");
@@ -464,9 +561,12 @@ const Auth = {
     document.getElementById("auth-form-reset")?.addEventListener("submit", (e) => {
       e.preventDefault();
       _withSubmitGuard("auth-reset-submit", () =>
-        this.resetPassword(this._pendingResetToken, resetPw.value),
+        _withLoadingState("auth-form-reset", "auth-reset-submit", "Updating…", () =>
+          this.resetPassword(this._pendingResetToken, resetPw.value),
+        ),
       );
     });
+    _wirePasswordToggle("auth-reset-pw-toggle", "auth-reset-password");
     document
       .getElementById("auth-to-register")
       ?.addEventListener("click", () => AuthModal._swap("register"));

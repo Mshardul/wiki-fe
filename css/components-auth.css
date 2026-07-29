@@ -74,6 +74,30 @@
   outline: none;
   border-color: var(--accent);
 }
+.auth-pw-field {
+  position: relative;
+  display: block;
+}
+.auth-pw-field input {
+  padding-right: 2.75rem;
+}
+.auth-pw-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-body);
+  cursor: pointer;
+}
+.auth-pw-toggle[aria-pressed="true"] {
+  color: var(--accent);
+}
 .auth-pw-checklist {
   list-style: none;
   margin: 0 0 1rem;

@@ -1,4 +1,5 @@
 import re
+import threading
 
 import pytest
 from playwright.sync_api import expect
@@ -960,3 +961,189 @@ def test_verify_link_boot_param_calls_verify_and_strips_url(page, base_url):
     assert verify_called["hit"], "expected verify endpoint to be called from boot params"
     assert "mode=" not in page.url
     assert "token=" not in page.url
+
+
+def test_register_password_reveal_toggle(page, base_url):
+    """The show/hide toggle on the register password field flips
+    the input's type and its own accessible label."""
+    _stub_logged_out(page)
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-to-register").click()
+
+    pw = page.locator("#auth-reg-password")
+    toggle = page.locator("#auth-reg-pw-toggle")
+    expect(pw).to_have_attribute("type", "password")
+    assert toggle.get_attribute("aria-label") == "Show password"
+
+    toggle.click()
+    expect(pw).to_have_attribute("type", "text")
+    assert toggle.get_attribute("aria-label") == "Hide password"
+
+    toggle.click()
+    expect(pw).to_have_attribute("type", "password")
+
+
+def test_register_submit_shows_loading_label_and_locks_inputs(page, base_url):
+    """Submitting register swaps the button label to a loading
+    state and disables the form's inputs until the request resolves."""
+    _stub_logged_out(page)
+    release_event = threading.Event()
+
+    def _handle_register(route):
+        # Hold the response so the test can observe the in-flight loading state.
+        release_event.wait(timeout=5)
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/v1/auth/register", _handle_register)
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-to-register").click()
+    page.locator("#auth-reg-email").fill("new-user@example.com")
+    page.locator("#auth-reg-password").fill("LongEnough1!xx")
+
+    in_flight = page.evaluate("""() => {
+        document.getElementById('auth-reg-submit').click();
+        return {
+            emailDisabled: document.getElementById('auth-reg-email').disabled,
+            pwDisabled: document.getElementById('auth-reg-password').disabled,
+            label: document.querySelector('#auth-reg-submit .auth-submit-label').textContent,
+        };
+    }""")
+    assert in_flight["emailDisabled"] is True
+    assert in_flight["pwDisabled"] is True
+    assert in_flight["label"] == "Creating…"
+
+    release_event.set()
+    expect(page.locator("#auth-reg-submit .auth-submit-label")).to_have_text("Create account")
+    expect(page.locator("#auth-reg-email")).to_be_enabled()
+
+
+def test_verify_result_failure_shows_resend_form(page, base_url):
+    """A failed verify-from-link shows a resend sub-form so the
+    user can request a fresh link without a login-fail detour."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/verify*",
+        lambda r: r.fulfill(
+            status=400,
+            content_type="application/json",
+            body='{"error":{"code":"INVALID_TOKEN","message":"invalid"}}',
+        ),
+    )
+    page.goto(f"{base_url}?mode=verify&token=badtoken")
+    expect(page.locator("#auth-panel-verify-result.active")).to_be_visible()
+    expect(page.locator("#auth-form-verify-result-resend")).to_be_visible()
+    expect(page.locator("#auth-verify-result-copy")).to_contain_text("invalid or has expired")
+
+
+def test_verify_result_success_hides_resend_form(page, base_url):
+    """A successful verify-from-link never reveals the resend form."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/verify*",
+        lambda r: r.fulfill(status=200, content_type="application/json", body='{"ok":true}'),
+    )
+    page.goto(f"{base_url}?mode=verify&token=goodtoken")
+    expect(page.locator("#auth-panel-verify-result.active")).to_be_visible()
+    expect(page.locator("#auth-form-verify-result-resend")).to_be_hidden()
+
+
+def test_verify_result_resend_submits_typed_email(page, base_url):
+    """The verify-result panel's resend form sends whatever email
+    the user types there, since verifyFromLink never learns one from the token."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/verify*",
+        lambda r: r.fulfill(
+            status=400,
+            content_type="application/json",
+            body='{"error":{"code":"INVALID_TOKEN","message":"invalid"}}',
+        ),
+    )
+    sent = {}
+    page.route(
+        "**/api/v1/auth/resend-verification",
+        lambda r: (
+            sent.__setitem__("email", r.request.post_data_json.get("email")),
+            r.fulfill(status=200, content_type="application/json", body="{}"),
+        )[1],
+    )
+    page.goto(f"{base_url}?mode=verify&token=badtoken")
+    page.locator("#auth-verify-result-resend-email").fill("retry-user@example.com")
+    page.locator("#auth-verify-result-resend-btn").click()
+    expect(page.locator(".wiki-toast")).to_be_visible()
+    assert sent.get("email") == "retry-user@example.com"
+
+
+def test_resend_button_shows_cooldown_after_send(page, base_url):
+    """After a successful resend, the button disables and shows a
+    countdown, independent of the existing double-click submit guard."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/login",
+        lambda r: r.fulfill(
+            status=403,
+            content_type="application/json",
+            body='{"error":{"code":"UNVERIFIED","message":"verify first"}}',
+        ),
+    )
+    page.route(
+        "**/api/v1/auth/resend-verification",
+        lambda r: r.fulfill(status=200, content_type="application/json", body="{}"),
+    )
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+    page.evaluate("() => document.getElementById('auth-login-submit').click()")
+    expect(page.locator("#auth-panel-verify.active")).to_be_visible()
+
+    page.evaluate("() => document.getElementById('auth-resend-btn').click()")
+    resend_btn = page.locator("#auth-resend-btn")
+    expect(resend_btn).to_be_disabled()
+    expect(resend_btn.locator(".auth-submit-label")).to_have_text(re.compile(r"Resend in \d+s"))
+
+
+def test_login_error_sets_aria_invalid_on_inputs(page, base_url):
+    """A login failure marks the email/password inputs aria-invalid
+    so assistive tech announces the errored fields, clearing on next attempt."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/login",
+        lambda r: r.fulfill(
+            status=401,
+            content_type="application/json",
+            body='{"error":{"code":"BAD_CREDENTIALS","message":"Invalid email or password"}}',
+        ),
+    )
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("WrongPass123!")
+    page.locator("#auth-login-submit").click()
+
+    expect(page.locator("#auth-login-email")).to_have_attribute("aria-invalid", "true")
+    expect(page.locator("#auth-login-password")).to_have_attribute("aria-invalid", "true")
+
+    page.locator("#auth-to-register").click()
+    page.locator("#auth-to-login").click()
+    expect(page.locator("#auth-login-email")).not_to_have_attribute("aria-invalid", "true")
+
+
+def test_password_checklist_has_screen_reader_met_state(page, base_url):
+    """Each checklist item exposes its pass/fail state as text, not
+    just a CSS ::before glyph screen readers don't reliably announce."""
+    _stub_logged_out(page)
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-to-register").click()
+
+    pw = page.locator("#auth-reg-password")
+    pw.fill("short")
+    first_item = page.locator("#auth-pw-checklist li").first
+    expect(first_item).to_contain_text("not met")
+
+    pw.fill("LongEnough1!xx")
+    expect(first_item).to_contain_text("met")
+    expect(first_item).not_to_contain_text("not met")

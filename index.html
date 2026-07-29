@@ -1069,13 +1069,24 @@
               /> </label
             ><label class="auth-field"
               ><span>Password</span>
-              <input
-                id="auth-reg-password"
-                type="password"
-                autocomplete="new-password"
-                required
-                aria-describedby="auth-reg-error"
-            /></label>
+              <span class="auth-pw-field">
+                <input
+                  id="auth-reg-password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  aria-describedby="auth-reg-error"
+                />
+                <button
+                  id="auth-reg-pw-toggle"
+                  class="auth-pw-toggle"
+                  type="button"
+                  aria-pressed="false"
+                  aria-label="Show password"
+                >
+                  <svg class="icon"><use href="#icon-eye"></use></svg>
+                </button>
+              </span></label>
             <ul
               id="auth-pw-checklist"
               class="auth-pw-checklist"
@@ -1083,7 +1094,7 @@
             ></ul>
             <p id="auth-reg-error" class="auth-error" role="alert" aria-live="assertive" hidden></p>
             <button id="auth-reg-submit" class="auth-submit" type="submit" disabled>
-              Create account
+              <span class="auth-submit-label">Create account</span>
             </button>
           </form>
           <p class="auth-swap">
@@ -1101,7 +1112,9 @@
             We sent a verification link to your inbox. Click it to finish signing
             up.
           </p>
-          <button id="auth-resend-btn" class="auth-submit">Resend email</button>
+          <button id="auth-resend-btn" class="auth-submit">
+            <span class="auth-submit-label">Resend email</span>
+          </button>
           <p class="auth-swap">
             <button id="auth-verify-to-login" class="auth-link" type="button">
               Back to log in
@@ -1115,6 +1128,20 @@
           <p id="auth-verify-result-copy" class="auth-verify-copy">
             One moment&hellip;
           </p>
+          <form id="auth-form-verify-result-resend" hidden>
+            <label class="auth-field"
+              ><span>Email</span>
+              <input
+                id="auth-verify-result-resend-email"
+                type="email"
+                autocomplete="email"
+                required
+              />
+            </label>
+            <button id="auth-verify-result-resend-btn" class="auth-submit" type="submit">
+              <span class="auth-submit-label">Resend verification email</span>
+            </button>
+          </form>
           <p class="auth-swap">
             <button id="auth-verify-result-to-login" class="auth-link" type="button" hidden>
               Back to log in
@@ -1154,13 +1181,24 @@
           <form id="auth-form-reset">
             <label class="auth-field"
               ><span>New password</span>
-              <input
-                id="auth-reset-password"
-                type="password"
-                autocomplete="new-password"
-                required
-                aria-describedby="auth-reset-error"
-            /></label>
+              <span class="auth-pw-field">
+                <input
+                  id="auth-reset-password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  aria-describedby="auth-reset-error"
+                />
+                <button
+                  id="auth-reset-pw-toggle"
+                  class="auth-pw-toggle"
+                  type="button"
+                  aria-pressed="false"
+                  aria-label="Show password"
+                >
+                  <svg class="icon"><use href="#icon-eye"></use></svg>
+                </button>
+              </span></label>
             <ul
               id="auth-reset-pw-checklist"
               class="auth-pw-checklist"
@@ -1168,7 +1206,7 @@
             ></ul>
             <p id="auth-reset-error" class="auth-error" role="alert" aria-live="assertive" hidden></p>
             <button id="auth-reset-submit" class="auth-submit" type="submit" disabled>
-              Update password
+              <span class="auth-submit-label">Update password</span>
             </button>
           </form>
           <p class="auth-swap">
