@@ -319,6 +319,22 @@ def test_search_recovers_on_reopen_after_failure(page, base_url):
     assert page.locator(".gsearch-result").count() > 0
 
 
+def test_retry_does_not_duplicate_search_entries(wiki_page):
+    """Calling retryGlobalSearch after a successful load must not double-count entries."""
+    _open_search(wiki_page)
+    wiki_page.fill("#gsearch-input", "caching")
+    wiki_page.wait_for_selector(".gsearch-result", timeout=8_000)
+    before = wiki_page.locator(".gsearch-result").count()
+
+    wiki_page.evaluate("window.retryGlobalSearch()")
+    wiki_page.fill("#gsearch-input", "")
+    wiki_page.fill("#gsearch-input", "caching")
+    wiki_page.wait_for_selector(".gsearch-result", timeout=8_000)
+    after = wiki_page.locator(".gsearch-result").count()
+
+    assert after == before, "retry must not duplicate search-index entries"
+
+
 # ── Pre-built search-index.json ──────────────────────────────────────
 
 

@@ -123,10 +123,16 @@ function addTableSort(contentEl) {
           const bText = b.cells[colIdx]?.textContent.trim() ?? "";
           const aNum = Number.parseFloat(aText);
           const bNum = Number.parseFloat(bText);
-          const cmp =
-            !Number.isNaN(aNum) && !Number.isNaN(bNum)
-              ? aNum - bNum
-              : aText.localeCompare(bText, undefined, { numeric: true });
+          const aIsNum = !Number.isNaN(aNum);
+          const bIsNum = !Number.isNaN(bNum);
+          // Non-numeric cells (e.g. "N/A", footnote markers) always sort after every
+          // numeric cell, in both directions - keeps the order transitive across 3+
+          // rows instead of falling back to localeCompare only for mixed pairs.
+          let cmp;
+          if (aIsNum && bIsNum) cmp = aNum - bNum;
+          else if (aIsNum) cmp = -1;
+          else if (bIsNum) cmp = 1;
+          else cmp = aText.localeCompare(bText, undefined, { numeric: true });
           return sortAsc ? cmp : -cmp;
         });
         rows.forEach((r) => tbody.appendChild(r));

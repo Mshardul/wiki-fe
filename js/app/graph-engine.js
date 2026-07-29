@@ -208,6 +208,41 @@ function destroyGraphSim(sim) {
   window.removeEventListener("resize", sim._onResize);
 }
 
+/**
+ * Builds a path->node Map from index-card entries, shared by link-graph,
+ * section-map, and index-graph. `decorate(node, card)` optionally sets
+ * overlay-specific fields (e.g. `isCurrent`, `read`) on each node.
+ */
+function buildNodesFromCards(cards, wikiId, decorate) {
+  const nodesByPath = new Map();
+  for (const card of cards || []) {
+    const path = card.path.startsWith("./") ? card.path : `./${card.path}`;
+    const node = {
+      path,
+      title: card.title,
+      slug: card.slug,
+      wikiId,
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      degree: 0,
+    };
+    decorate?.(node, card);
+    nodesByPath.set(path, node);
+  }
+  return nodesByPath;
+}
+
+/** Same as `buildNodesFromCards`, flattening index `sections` into their cards first. */
+function buildNodesFromSections(sections, wikiId, decorate) {
+  return buildNodesFromCards(
+    sections.flatMap((s) => s.cards || []),
+    wikiId,
+    decorate,
+  );
+}
+
 function buildEdgesForNodes(nodesByPath, backlinks) {
   const edgeSet = new Set();
   const edges = [];
@@ -232,4 +267,10 @@ function buildEdgesForNodes(nodesByPath, backlinks) {
   return edges;
 }
 
-export { createGraphSim, destroyGraphSim, buildEdgesForNodes };
+export {
+  createGraphSim,
+  destroyGraphSim,
+  buildEdgesForNodes,
+  buildNodesFromCards,
+  buildNodesFromSections,
+};

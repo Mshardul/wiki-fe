@@ -1,7 +1,12 @@
 import { navigateToContent } from "../render/content-view.js";
 import { fetchPrebuiltBacklinks, fetchPrebuiltSearchIndex } from "../render/nav-utils.js";
 import { WIKIS } from "../state.js";
-import { buildEdgesForNodes, createGraphSim, destroyGraphSim } from "./graph-engine.js";
+import {
+  buildEdgesForNodes,
+  buildNodesFromSections,
+  createGraphSim,
+  destroyGraphSim,
+} from "./graph-engine.js";
 
 let _graph = null; // { nodes, edges } once built, across all wikis
 let _sim = null;
@@ -17,21 +22,8 @@ async function buildGraph() {
   const nodesByPath = new Map();
   for (const wiki of WIKIS) {
     const sections = allIndexes?.[wiki.id] || [];
-    for (const section of sections) {
-      for (const card of section.cards || []) {
-        const path = card.path.startsWith("./") ? card.path : `./${card.path}`;
-        nodesByPath.set(path, {
-          path,
-          title: card.title,
-          slug: card.slug,
-          wikiId: wiki.id,
-          x: 0,
-          y: 0,
-          vx: 0,
-          vy: 0,
-          degree: 0,
-        });
-      }
+    for (const [path, node] of buildNodesFromSections(sections, wiki.id)) {
+      nodesByPath.set(path, node);
     }
   }
 

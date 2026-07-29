@@ -1,8 +1,7 @@
 import { QuizMode } from "./content/tables.js";
 import { createFocusTrap, registerModal } from "./modal-registry.js";
 import { navigateToContent } from "./render/content-view.js";
-import { IndexFilter, fetchWikiIndex } from "./render/home-index.js";
-import { normalizePath } from "./render/nav-utils.js";
+import { IndexFilter, buildSearchEntriesForWiki } from "./render/home-index.js";
 import { navigate } from "./render/router.js";
 import { showToast } from "./render/toast.js";
 import {
@@ -18,7 +17,6 @@ import {
   fuzzyMatch,
   loadSynonyms,
   lockBodyScroll,
-  readTimeCache,
   state,
   synonymCache,
   unlockBodyScroll,
@@ -438,18 +436,7 @@ async function loadAllSearchEntries() {
     let anySucceeded = false;
     for (const wiki of WIKIS) {
       try {
-        const sections = await fetchWikiIndex(wiki);
-        const entries = [];
-        for (const section of sections) {
-          for (const card of section.cards) {
-            entries.push({ wiki, section: section.heading, ...card });
-          }
-        }
-        for (const entry of entries) {
-          if (readTimeCache[normalizePath(entry.path)] !== null) {
-            allSearchCache.entries.push(entry);
-          }
-        }
+        allSearchCache.entries.push(...(await buildSearchEntriesForWiki(wiki)));
         anySucceeded = true;
       } catch {}
     }
@@ -471,6 +458,7 @@ async function loadAllSearchEntries() {
 function retryGlobalSearch() {
   allSearchCache.loaded = false;
   allSearchCache.loading = false;
+  allSearchCache.entries = [];
   loadAllSearchEntries();
 }
 

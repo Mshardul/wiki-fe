@@ -1584,6 +1584,37 @@ def test_table_sort_indicator_classes(page, base_url):
     assert not result["secondDesc"], "Non-clicked column must not have .sort-desc"
 
 
+ARTICLE_WITH_MIXED_NUMERIC_TABLE = """\
+# Mixed Sort Test
+
+## Section
+
+| Name    | Complexity |
+| ------- | ---------- |
+| Alice   | 30         |
+| Bob     | N/A        |
+| Charlie | 10         |
+| Dan     | N/A        |
+| Erin    | 20         |
+"""
+
+
+def test_table_sort_mixed_numeric_is_transitive(page, base_url):
+    """Regression for WIKI-504: non-numeric cells (e.g. 'N/A') must sort
+    consistently after every numeric cell, not fall back to string comparison
+    only for mixed pairs (which broke transitivity across 3+ rows)."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MIXED_NUMERIC_TABLE, slug="sort-mixed")
+    page.wait_for_selector("#markdown-body th.sortable-th", timeout=5_000)
+    page.locator("#markdown-body th.sortable-th").nth(1).click()
+    names = page.evaluate(
+        "() => [...document.querySelectorAll('#markdown-body tbody tr')]"
+        ".map(r => r.cells[0].textContent.trim())"
+    )
+    assert names == ["Charlie", "Erin", "Alice", "Bob", "Dan"], (
+        f"Expected numeric rows sorted ascending before N/A rows, got {names!r}"
+    )
+
+
 # ── Mermaid copy as SVG ─────────────────────────────────────────────────────────
 
 ARTICLE_WITH_MERMAID_FOR_COPY = """\

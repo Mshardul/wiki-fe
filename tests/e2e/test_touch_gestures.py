@@ -234,6 +234,48 @@ def test_pull_to_refresh_clears_index_cache_and_reloads(mobile_page, base_url):
     )
 
 
+def test_pull_to_refresh_invalidates_global_search_cache(mobile_page, base_url):
+    """Regression for WIKI-502: repeated pull-to-refresh on the index view must not
+    accumulate duplicate rows in the shared ⌘K search cache for that wiki."""
+    page = mobile_page
+    _go_to_index(page, base_url)
+
+    # Populate the shared search cache (⌘K) before refreshing.
+    page.keyboard.press("Meta+k")
+    page.fill("#gsearch-input", "caching")
+    page.wait_for_selector(".gsearch-result", timeout=8_000)
+    before = page.locator(".gsearch-result").count()
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#global-search-modal.hidden", state="attached")
+    page.wait_for_timeout(300)
+
+    def pull_refresh():
+        page.evaluate("document.getElementById('index-sections').scrollTop = 0")
+        page.wait_for_timeout(300)
+        container = page.locator("#index-sections")
+        box = container.bounding_box()
+        cx = box["x"] + box["width"] / 2
+        top = box["y"] + 5
+        _swipe(page, cx, top, cx, top + 100, steps=8)
+        # refreshIndex() clears then immediately repopulates sessionStorage as part
+        # of re-fetching, so waiting on that key isn't a reliable "refresh done"
+        # signal - wait for the re-rendered index cards instead (observable end state).
+        page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=8_000)
+        page.wait_for_selector(".index-card:not(.index-card--unavailable)", timeout=8_000)
+
+    # Two refreshes: if the shared search cache isn't cleared before each
+    # repopulation, entries for this wiki double, then triple.
+    pull_refresh()
+    pull_refresh()
+
+    page.keyboard.press("Meta+k")
+    page.fill("#gsearch-input", "caching")
+    page.wait_for_selector(".gsearch-result", timeout=8_000)
+    after = page.locator(".gsearch-result").count()
+
+    assert after == before, "repeated pull-to-refresh must not duplicate search-index entries"
+
+
 def test_edge_swipe_right_goes_back(mobile_page, base_url):
     """swipe right from the left edge in content view returns to the index."""
     page = mobile_page

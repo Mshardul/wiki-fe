@@ -2,6 +2,7 @@ import { fireStudyMilestone } from "../app/study-feedback.js";
 import {
   STUB_THRESHOLD,
   WIKIS,
+  allSearchCache,
   escHtml,
   fadeFactorForDaysSinceRead,
   indexCache,
@@ -710,7 +711,34 @@ async function refreshIndex(wiki) {
   try {
     sessionStorage.removeItem(`wiki-index-${wiki.id}`);
   } catch {}
+  await _refreshSearchCacheForWiki(wiki);
   await renderIndex(wiki);
+}
+
+// Shared by search.js's loadAllSearchEntries and this file's refresh path -
+// the ⌘K search-cache row shape for one wiki, filtered to non-stub articles.
+async function buildSearchEntriesForWiki(wiki) {
+  const sections = await fetchWikiIndex(wiki);
+  const entries = [];
+  for (const section of sections) {
+    for (const card of section.cards) {
+      if (readTimeCache[normalizePath(card.path)] !== null) {
+        entries.push({ wiki, section: section.heading, ...card });
+      }
+    }
+  }
+  return entries;
+}
+
+// Stale wiki-scoped rows in the shared ⌘K search cache must go too - refreshIndex()
+// only busts this view's own indexCache, but search.js populates its own cache once
+// and never revisits it, so a refresh here silently left old entries there.
+async function _refreshSearchCacheForWiki(wiki) {
+  if (!allSearchCache.loaded) return; // never populated yet - nothing stale to fix
+  allSearchCache.entries = allSearchCache.entries.filter((e) => e.wiki.id !== wiki.id);
+  try {
+    allSearchCache.entries.push(...(await buildSearchEntriesForWiki(wiki)));
+  } catch {}
 }
 
 function animateGridHeight(section, collapsed) {
@@ -923,6 +951,7 @@ export {
   toggleSection,
   populateIndexReadTimes,
   fetchWikiIndex,
+  buildSearchEntriesForWiki,
   updateArticleCounts,
   parseIndexMd,
 };

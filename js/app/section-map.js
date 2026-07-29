@@ -2,7 +2,12 @@ import { navigateToContent } from "../render/content-view.js";
 import { fetchPrebuiltBacklinks, fetchPrebuiltSearchIndex } from "../render/nav-utils.js";
 import { state } from "../state.js";
 import { isRead } from "../storage/read-tracking.js";
-import { buildEdgesForNodes, createGraphSim, destroyGraphSim } from "./graph-engine.js";
+import {
+  buildEdgesForNodes,
+  buildNodesFromCards,
+  createGraphSim,
+  destroyGraphSim,
+} from "./graph-engine.js";
 
 let _sim = null;
 
@@ -57,23 +62,10 @@ async function openSectionMap() {
   status.textContent = section.heading;
 
   const currentPath = `./${state.currentFilePath}`;
-  const nodesByPath = new Map();
-  for (const card of section.cards) {
-    const path = normalizeCardPath(card.path);
-    nodesByPath.set(path, {
-      path,
-      title: card.title,
-      slug: card.slug,
-      wikiId: section.wikiId,
-      isCurrent: path === currentPath,
-      read: isRead(path.replace(/^\.\//, "")),
-      x: 0,
-      y: 0,
-      vx: 0,
-      vy: 0,
-      degree: 0,
-    });
-  }
+  const nodesByPath = buildNodesFromCards(section.cards, section.wikiId, (node) => {
+    node.isCurrent = node.path === currentPath;
+    node.read = isRead(node.path.replace(/^\.\//, ""));
+  });
 
   const backlinks = await fetchPrebuiltBacklinks();
   const edges = buildEdgesForNodes(nodesByPath, backlinks);
