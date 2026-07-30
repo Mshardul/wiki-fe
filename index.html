@@ -322,15 +322,6 @@
                 <span>Study mode (H)</span>
               </button>
               <button
-                id="content-interview-btn"
-                class="topbar-overflow-item"
-                aria-label="Interview mode"
-                data-action="interview-toggle"
-              >
-                <svg class="icon"><use href="#icon-clock"></use></svg>
-                <span>Interview mode (I)</span>
-              </button>
-              <button
                 class="topbar-overflow-item"
                 aria-label="Distraction-free mode"
                 data-action="distraction-free-toggle"
@@ -378,42 +369,6 @@
                 <svg class="icon"><use href="#icon-bookmark"></use></svg>
                 <span>All bookmarks (⌘B)</span>
               </button>
-              <div
-                class="depth-fold-control"
-                role="group"
-                aria-label="Content fold depth"
-              >
-                <button
-                  type="button"
-                  class="depth-fold-btn"
-                  data-action="depth-fold-set"
-                  data-depth-fold="1"
-                  aria-pressed="false"
-                  title="Skim - H2 summaries only"
-                >
-                  Skim
-                </button>
-                <button
-                  type="button"
-                  class="depth-fold-btn"
-                  data-action="depth-fold-set"
-                  data-depth-fold="2"
-                  aria-pressed="false"
-                  title="Study - H2 + H3"
-                >
-                  Study
-                </button>
-                <button
-                  type="button"
-                  class="depth-fold-btn"
-                  data-action="depth-fold-set"
-                  data-depth-fold="3"
-                  aria-pressed="false"
-                  title="Reference - everything"
-                >
-                  Reference
-                </button>
-              </div>
               <button
                 class="topbar-overflow-item"
                 data-action="copy-markdown"
@@ -509,18 +464,6 @@
           aria-label="Close find"
         >
           <svg class="icon"><use href="#icon-x"></use></svg>
-        </button>
-      </div>
-
-      <div id="interview-bar" class="interview-bar hidden" role="status">
-        <span class="interview-bar-label">Interview mode</span>
-        <span id="interview-timer" class="interview-timer" aria-live="off">00:00</span>
-        <button
-          type="button"
-          class="interview-reveal-btn"
-          data-action="interview-reveal"
-        >
-          Reveal
         </button>
       </div>
 
@@ -877,6 +820,20 @@
                   title="Vibrate + soft tick when finishing an article or clearing a section"
                 >
                   Off
+                </button>
+              </div>
+            </div>
+            <div class="prefs-section">
+              <div class="prefs-section-label">Practice problem answers</div>
+              <div class="settings-size-row">
+                <button
+                  id="settings-practice-answers"
+                  class="settings-size-btn"
+                  data-action="practice-answers-toggle"
+                  aria-pressed="true"
+                  title="Default visibility of Approach/Solution/Complexity in Practice problems sections"
+                >
+                  Hidden
                 </button>
               </div>
             </div>

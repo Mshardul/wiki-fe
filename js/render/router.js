@@ -85,18 +85,24 @@ function showView(id) {
    url scheme: wiki.html  →  wiki.html#system-design  →  wiki.html#system-design/message-queues
    ═══════════════════════════════════════════════════════════════ */
 function navigate(hash, pushHistory = true) {
-  if (pushHistory) {
-    // Reconstruct URL with pathname only to strip away location.search query params
-    const url = location.pathname + (hash ? `#${hash}` : "");
-    history.pushState({ hash }, "", url);
-  }
-  route(hash || "");
+  route(hash || "", pushHistory);
 }
 
 let _routeTimer = null;
-function route(hash) {
+function route(hash, pushHistory = false) {
   clearTimeout(_routeTimer);
-  _routeTimer = setTimeout(() => _execRoute(hash), 0);
+  // pushState is deferred alongside the route itself - a rapid sequence of
+  // navigate() calls (e.g. fast repeated clicks) would otherwise push one
+  // history entry per call while only the last one's route ever executes,
+  // leaving Back-button entries whose content was never rendered.
+  _routeTimer = setTimeout(() => {
+    if (pushHistory) {
+      // Reconstruct URL with pathname only to strip away location.search query params
+      const url = location.pathname + (hash ? `#${hash}` : "");
+      history.pushState({ hash }, "", url);
+    }
+    _execRoute(hash);
+  }, 0);
 }
 function _execRoute(hash) {
   const parts = hash.split("/").filter(Boolean);

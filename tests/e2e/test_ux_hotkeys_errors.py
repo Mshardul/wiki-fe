@@ -302,6 +302,34 @@ def test_d_key_toggle_restores_chrome(page, base_url):
     )
 
 
+def test_distraction_free_flag_resets_on_navigation(page, base_url):
+    """Regression: navigating away used to strip the distraction-free DOM
+    class directly instead of calling exitDistractionFree(), leaving the
+    internal flag stuck true. On the next article, the D-key toggle's first
+    press would then turn distraction-free OFF instead of ON."""
+    _go_to_article(page, base_url, "system-design/caching")
+    page.keyboard.press("d")
+    assert page.evaluate("() => document.body.classList.contains('distraction-free')")
+
+    page.evaluate("() => window.navigate('system-design/load-balancer')")
+    page.wait_for_function(
+        "() => window.state.currentFilePath?.includes('load-balancer')",
+        timeout=10_000,
+    )
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    assert not page.evaluate(
+        "() => document.body.classList.contains('distraction-free')"
+    ), "distraction-free DOM class must be cleared after navigating to a new article"
+
+    page.keyboard.press("d")
+    assert page.evaluate(
+        "() => document.body.classList.contains('distraction-free')"
+    ), "First D press on the new article must turn distraction-free ON, not OFF"
+
+
 # ── Modal-stacking hotkey gating ─────────────────────────────────
 
 

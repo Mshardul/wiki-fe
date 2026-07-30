@@ -1,7 +1,9 @@
 import { writeToClipboard } from "./code-blocks.js";
 
 /* ─── Mermaid Diagrams ─── */
-async function renderMermaidDiagrams(contentEl) {
+// isStale (optional): called before each diagram paint; skips the paint if the
+// navigation that started this render has since been superseded.
+async function renderMermaidDiagrams(contentEl, isStale) {
   if (typeof mermaid === "undefined") return;
   const blocks = contentEl.querySelectorAll("pre code.language-mermaid");
   let i = 0;
@@ -11,6 +13,7 @@ async function renderMermaidDiagrams(contentEl) {
     try {
       const id = `mermaid-${Date.now()}-${i++}`;
       const { svg } = await mermaid.render(id, code);
+      if (isStale?.()) return;
       const wrapper = document.createElement("div");
       wrapper.className = "mermaid-diagram";
       wrapper.dataset.mermaidSrc = code;
@@ -18,6 +21,7 @@ async function renderMermaidDiagrams(contentEl) {
       _appendMermaidCopyBtn(wrapper);
       pre.replaceWith(wrapper);
     } catch {
+      if (isStale?.()) return;
       const errEl = document.createElement("div");
       errEl.className = "mermaid-error";
       errEl.textContent = "Diagram syntax error - could not render";

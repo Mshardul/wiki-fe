@@ -2,7 +2,6 @@ import { setPinnedWikis } from "../render/home-index.js";
 import { WIKIS } from "../state.js";
 import { Bookmarks } from "./bookmarks.js";
 import { Highlights, Markers } from "./highlights.js";
-import { InterviewLog } from "./interview-mode.js";
 import { Notes } from "./notes.js";
 import { clearAllDownloads } from "./offline.js";
 import { clearReadHistory } from "./read-tracking.js";
@@ -53,11 +52,6 @@ const DATA_CATEGORIES = {
       Highlights.clear(wikiId);
       Markers.clear(wikiId);
     },
-  },
-  interviewLogs: {
-    label: "Interview mode logs",
-    wikiScoped: true,
-    clear: (wikiId) => InterviewLog.clear(wikiId),
   },
   recentSearches: {
     label: "Recent searches",

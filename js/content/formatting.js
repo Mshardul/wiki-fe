@@ -68,7 +68,8 @@ function renderPrerequisites(contentEl) {
   );
   if (!heading) return;
 
-  const list = heading.nextElementSibling;
+  const sectionBody = heading.closest(".section")?.querySelector(":scope > .section-body");
+  const list = sectionBody?.firstElementChild;
   if (!list || list.tagName !== "UL") return;
 
   const items = Array.from(list.children);
@@ -112,8 +113,12 @@ function renderPrerequisites(contentEl) {
   } else {
     contentEl.prepend(container);
   }
-  heading.remove();
-  list.remove();
+  const section = heading.closest(".section");
+  if (section) section.remove();
+  else {
+    heading.remove();
+    list.remove();
+  }
 }
 
 /* ─── Heading Anchor Links ─── */
@@ -327,23 +332,11 @@ let _studyMode = false;
 
 function _setH3Revealed(h3, revealed) {
   h3.classList.toggle("study-revealed", revealed);
-  const sectionId = h3.dataset.h3SectionId;
-  if (!sectionId) return;
-  h3.parentElement?.querySelectorAll(`[data-h3-body="${sectionId}"]`).forEach((el) => {
-    el.hidden = !revealed;
-  });
+  const subsectionBody = h3.closest(".subsection")?.querySelector(":scope > .subsection-body");
+  if (subsectionBody) subsectionBody.hidden = !revealed;
 }
 
 function _wireStudySection(h3) {
-  const sectionId = h3.dataset.h3SectionId || `h3-${Math.random().toString(36).slice(2)}`;
-  h3.dataset.h3SectionId = sectionId;
-
-  let next = h3.nextElementSibling;
-  while (next && !/^H[234]$/.test(next.tagName)) {
-    next.dataset.h3Body = sectionId;
-    next = next.nextElementSibling;
-  }
-
   if (!h3._studyClickHandler) {
     const handler = () => _setH3Revealed(h3, !h3.classList.contains("study-revealed"));
     h3._studyClickHandler = handler;

@@ -128,6 +128,12 @@ async function renderIndex(wiki) {
   document.getElementById("index-subtitle").textContent = wiki.description;
 
   showView("view-index");
+  // view-index is exempt from _applyView's scroll reset (it restores a saved
+  // position below), so a fresh visit with nothing saved must reset here -
+  // otherwise the previous view's scroll position leaks in until content loads.
+  if (!localStorage.getItem(`wiki-index-scroll-${wiki.id}`)) {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
   bindIndexCardSwipe(wiki);
   bindIndexPullToRefresh(wiki);
   renderRecentsSection(wiki);

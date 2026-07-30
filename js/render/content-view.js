@@ -1,5 +1,6 @@
 /* Content rendering pipeline: fetch -> parse -> post-process -> wire links/preview.
    Kept as a single file - splitting further would only fragment one linear flow. */
+import { exitDistractionFree } from "../app/distraction-free.js";
 import {
   addCodeBlockHeader,
   addCodeLangLabels,
@@ -8,7 +9,6 @@ import {
   addLineNumbers,
   addPreOverflowDetection,
 } from "../content/code-blocks.js";
-import { applyContentFold, getFoldDepth, setFoldDepth } from "../content/depth-fold.js";
 import {
   ArticleFind,
   addAnchorLinks,
@@ -32,12 +32,13 @@ import {
   resetGlossaryExpandTracking,
 } from "../content/glossary-caveats.js";
 import { applyHighlightsAndMarkers, wireHighlights } from "../content/highlights.js";
-import { cleanupInterviewMode } from "../content/interview-mode.js";
 import {
   addMermaidNodeCaptions,
   addMermaidStepThrough,
   renderMermaidDiagrams,
 } from "../content/mermaid.js";
+import { addPracticeAnswerToggles } from "../content/practice-toggle.js";
+import { wrapSectionsAndSubsections } from "../content/section-wrap.js";
 import { renderStructureViz } from "../content/structure-viz.js";
 import { QuizMode, addQuizTables, addTableScrollCues, addTableSort } from "../content/tables.js";
 import {
@@ -151,11 +152,22 @@ async function inlineSvgImages(contentEl) {
   );
 }
 
+// Strips the hand-authored "## Table of Contents" section (heading + its list)
+// before conversion - the app builds its own live TOC sidebar, so this section
+// is redundant chrome here even though raw-file readers (GitHub, editors) still need it.
+function stripInContentToc(markdown) {
+  return markdown.replace(/^## Table of Contents\n(?:(?!^#{1,2} ).*\n?)*/m, "");
+}
+
 let _renderGen = 0;
 let _currentMarkdown = "";
 
 function getCurrentMarkdown() {
   return _currentMarkdown;
+}
+
+function getCurrentRenderGen() {
+  return _renderGen;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -267,10 +279,9 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
   state.preResizeObservers = [];
   cleanupFocusMode();
   cleanupStudyMode();
-  cleanupInterviewMode();
   cleanupStickySection();
   ArticleFind.close();
-  document.body.classList.remove("distraction-free");
+  exitDistractionFree();
   document.getElementById("toc-nav").innerHTML = "";
   _removeResumeChip();
 
@@ -304,13 +315,16 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       if (readTimeBadge) readTimeBadge.textContent = "";
       markStubPath(filePath);
       buildTOC(body, wiki.id, filePath);
+      updateBookmarkBtn();
+      updateReadBtn();
+      updateOfflineBtn();
       body.dataset.renderDone = "1";
       return;
     }
 
     let rawHtml = getCachedHtml(filePath);
     if (!rawHtml) {
-      rawHtml = getMdConverter().makeHtml(markdown);
+      rawHtml = getMdConverter().makeHtml(stripInContentToc(markdown));
       cacheRenderedHtml(filePath, rawHtml);
     }
     body.innerHTML =
@@ -334,7 +348,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     }
 
     // Mermaid must run before hljs so it claims those blocks first
-    await renderMermaidDiagrams(body);
+    await renderMermaidDiagrams(body, () => gen !== _renderGen);
     renderStructureViz(body);
 
     if (typeof hljs !== "undefined") {
@@ -344,32 +358,54 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       });
     }
 
-    // Post-processing - enhancements only.
+    // Post-processing - enhancements only. Each call is isolated so one
+    // enhancer throwing doesn't stop the ones after it.
+    let _enhancerFailed = false;
+    const run = (fn) => {
+      try {
+        fn();
+      } catch {
+        _enhancerFailed = true;
+      }
+    };
+
+    let recommendedLinks = [];
+    run(() => {
+      recommendedLinks = extractRecommendedLinks(body, filePath);
+    });
+    run(() => wrapSectionsAndSubsections(body));
+
+    run(() => addVideoEmbeds(body));
+    run(() => addTabbedCodeBlocks(body));
+    run(() => addLineNumbers(body));
+    run(() => addCodeBlockHeader(body, () => showToast("Copy failed - clipboard access denied")));
+    run(() => styleCallouts(body));
     try {
-      const recommendedLinks = extractRecommendedLinks(body, filePath);
-
-      addVideoEmbeds(body);
-      addTabbedCodeBlocks(body);
-      addLineNumbers(body);
-      addCodeBlockHeader(body, () => showToast("Copy failed - clipboard access denied"));
-      styleCallouts(body);
       await viewReady; // scrollHeight below needs settled layout
-      if (gen !== _renderGen) return;
-      addCollapsibleCallouts(body);
+    } catch {
+      _enhancerFailed = true;
+    }
+    if (gen !== _renderGen) return;
+    run(() => addCollapsibleCallouts(body));
 
+    run(() => {
       addQuizTables(body);
       QuizMode.reset();
       QuizMode.bind(body);
+    });
 
-      renderPrerequisites(body);
+    run(() => renderPrerequisites(body));
 
-      interceptMdLinks(body, wiki, filePath);
+    run(() => interceptMdLinks(body, wiki, filePath));
+    run(() =>
       addAnchorLinks(
         body,
         () => showToast("Copy failed - clipboard access denied"),
         () => showToast("Link copied"),
-      );
+      ),
+    );
 
+    run(() => {
       const h1El = body.querySelector("h1");
       if (h1El && h1El.childNodes.length > 0) {
         const firstNode = h1El.childNodes[0];
@@ -384,55 +420,59 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
           }
         }
       }
+    });
 
-      injectHeadingCollapseToggles(body, wiki.id, filePath);
-      applyContentFold(body);
-      buildTOC(body, wiki.id, filePath);
-      renderNotesScratchpad(wiki.id, filePath);
-      addStickySection(body);
+    run(() => injectHeadingCollapseToggles(body, wiki.id, filePath));
+    run(() => addPracticeAnswerToggles(body));
+    run(() => buildTOC(body, wiki.id, filePath));
+    run(() => renderNotesScratchpad(wiki.id, filePath));
+    run(() => addStickySection(body));
 
-      addCodeLangLabels(body);
-      addCollapsibleCodeBlocks(body);
+    run(() => addCodeLangLabels(body));
+    run(() => addCollapsibleCodeBlocks(body));
 
+    try {
       await inlineSvgImages(body);
+    } catch {
+      _enhancerFailed = true;
+    }
 
+    run(() => {
       body
         .querySelectorAll("img:not([loading])")
         .forEach((img) => img.setAttribute("loading", "lazy"));
+    });
 
-      addImageLightbox(body);
-      addGlossaryTerms(body);
-      resetGlossaryExpandTracking();
-      addInlineGlossaryExpand(body);
-      addInlineCaveats(body);
-      addMermaidNodeCaptions(body);
-      addDiagramZoom(body); // MUST run after addMermaidNodeCaptions to keep the copy button
-      addMermaidStepThrough(body); // MUST run after addDiagramZoom - same reason, keeps Play button
-      addTableScrollCues(body);
-      addPreOverflowDetection(body);
-      // Applied after the measurements above - folded (display:none) regions would
-      // report zero scrollWidth/scrollHeight and break the overflow/scroll-cue checks.
-      setFoldDepth(getFoldDepth(), body);
-      addTableSort(body);
-      addLatexCopyButtons(body, () => showToast("Copy failed - clipboard access denied"));
-      addFormulaToggle(body);
-      addFootnotes(body);
-      // Must run after every other text-node-mutating enhancer above - offsets are
-      // computed against body's final text-node structure.
-      applyHighlightsAndMarkers(body, wiki.id, filePath);
-      wireHighlights();
-      addArticleEndMarker(body);
+    run(() => addImageLightbox(body));
+    run(() => addGlossaryTerms(body));
+    run(() => resetGlossaryExpandTracking());
+    run(() => addInlineGlossaryExpand(body));
+    run(() => addInlineCaveats(body));
+    run(() => addMermaidNodeCaptions(body));
+    run(() => addDiagramZoom(body)); // MUST run after addMermaidNodeCaptions to keep the copy button
+    run(() => addMermaidStepThrough(body)); // MUST run after addDiagramZoom - same reason, keeps Play button
+    run(() => addTableScrollCues(body));
+    run(() => addPreOverflowDetection(body));
+    run(() => addTableSort(body));
+    run(() => addLatexCopyButtons(body, () => showToast("Copy failed - clipboard access denied")));
+    run(() => addFormulaToggle(body));
+    run(() => addFootnotes(body));
+    // Must run after every other text-node-mutating enhancer above - offsets are
+    // computed against body's final text-node structure.
+    run(() => applyHighlightsAndMarkers(body, wiki.id, filePath));
+    run(() => wireHighlights());
+    run(() => addArticleEndMarker(body));
 
-      renderRelatedArticles(wiki, filePath, recommendedLinks);
-      renderBacklinks(filePath);
-      renderBridges(filePath);
+    const isStale = () => gen !== _renderGen;
+    run(() => renderRelatedArticles(wiki, filePath, recommendedLinks, isStale));
+    run(() => renderBacklinks(filePath, isStale));
+    run(() => renderBridges(filePath, isStale));
 
-      updateBookmarkBtn();
-      updateReadBtn();
-      updateOfflineBtn();
-    } catch {
-      showToast("Some content enhancements failed to load");
-    }
+    updateBookmarkBtn();
+    updateReadBtn();
+    updateOfflineBtn();
+
+    if (_enhancerFailed) showToast("Some content enhancements failed to load");
 
     saveShapeFingerprint(filePath, {
       headings: body.querySelectorAll("h2, h3").length,
@@ -829,4 +869,5 @@ export {
   closePeekSheet,
   showHoverPreview,
   getCurrentMarkdown,
+  getCurrentRenderGen,
 };

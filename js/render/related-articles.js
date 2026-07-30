@@ -96,13 +96,14 @@ function extractRecommendedLinks(body, currentFilePath) {
   return links;
 }
 
-async function renderRelatedArticles(wiki, currentPath, recommendedLinks) {
+async function renderRelatedArticles(wiki, currentPath, recommendedLinks, isStale) {
   const container = document.getElementById("related-articles");
   if (!container) return;
   container.innerHTML = "";
 
   try {
     if (recommendedLinks?.length) {
+      if (isStale?.()) return;
       container.innerHTML = `
         <div class="related-header">
           <span class="related-label">Recommended</span>
@@ -143,6 +144,7 @@ async function renderRelatedArticles(wiki, currentPath, recommendedLinks) {
     }
 
     if (!related.length) return;
+    if (isStale?.()) return;
 
     container.innerHTML = `
       <div class="related-header">
@@ -174,13 +176,14 @@ function _wikiIdForPath(path) {
   return wiki?.id;
 }
 
-async function renderBacklinks(currentPath) {
+async function renderBacklinks(currentPath, isStale) {
   const container = document.getElementById("backlink-spine");
   if (!container) return;
   container.innerHTML = "";
 
   const backlinks = await fetchPrebuiltBacklinks();
   if (!backlinks) return;
+  if (isStale?.()) return;
   // Keys/paths in backlinks.json carry the "./content/..." prefix used by
   // search-index.json; currentPath and interceptMdLinks hrefs are normalized
   // (no leading "./"), so both sides must go through normalizePath to compare.
@@ -226,7 +229,7 @@ function _cardForPath(sections, path) {
   return null;
 }
 
-async function renderBridges(currentPath) {
+async function renderBridges(currentPath, isStale) {
   const container = document.getElementById("bridge-block");
   if (!container) return;
   container.innerHTML = "";
@@ -242,6 +245,7 @@ async function renderBridges(currentPath) {
   if (!otherPaths.length) return;
 
   const prebuiltIndex = await Promise.all(WIKIS.map((w) => fetchWikiIndex(w)));
+  if (isStale?.()) return;
   const resolved = otherPaths
     .map((path) => {
       const wikiIdx = WIKIS.findIndex((w) => path.startsWith(`./content/${w.id}/`));

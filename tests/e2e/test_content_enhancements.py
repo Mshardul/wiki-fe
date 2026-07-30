@@ -11,8 +11,6 @@ Content view enhancements:
 - Diff block addition/deletion highlighting
 - Collapsible tall callouts
 - Broken image error placeholder
-- Depth-N content folding slider (skim/study/reference)
-- Interview mode (collapse below problem statement, timer, scratchpad, reveal)
 """
 
 import pytest
@@ -117,7 +115,7 @@ def _load_mock_article(page, base_url, content, slug="mock"):
 
 
 def test_bare_youtube_url_converts_to_iframe_embed(page, base_url):
-    """WIKI-205: a bare YouTube URL on its own line becomes a responsive iframe."""
+    """A bare YouTube URL on its own line becomes a responsive iframe."""
     _load_mock_article(page, base_url, ARTICLE_WITH_VIDEO, slug="video-embed")
     page.wait_for_selector(".video-embed iframe", timeout=5_000)
 
@@ -223,7 +221,7 @@ ARTICLE_WITH_LONG_CODE_BLOCK = (
 
 
 def test_collapsible_code_block_gets_right_fade_on_mobile(page, base_url):
-    """Regression for WIKI-379: collapsible code blocks (>20 lines) skip the
+    """Regression: collapsible code blocks (>20 lines) skip the
     right-edge scroll fade in code.css because their ::after is already used
     for the bottom collapse fade. responsive.css adds a ::before fade for
     them on mobile so the cue is consistent across all overflowing blocks."""
@@ -251,7 +249,7 @@ def test_collapsible_code_block_gets_right_fade_on_mobile(page, base_url):
 
 
 def test_anchor_button_32px_on_coarse_pointer(browser, base_url, cdn_cache):
-    """Regression for WIKI-387: .anchor-btn was 16x16px on mobile viewports,
+    """Regression: .anchor-btn was 16x16px on mobile viewports,
     too small to reliably tap. On pointer:coarse devices it should be at
     least 32x32px."""
     ctx = browser.new_context(
@@ -285,7 +283,7 @@ def test_anchor_button_32px_on_coarse_pointer(browser, base_url, cdn_cache):
 
 
 def test_copy_btn_and_sortable_th_44px_on_coarse_pointer(browser, base_url, cdn_cache):
-    """Regression for WIKI-406: .copy-btn and .sortable-th are under 44px on
+    """Regression: .copy-btn and .sortable-th are under 44px on
     touch devices with no pointer:coarse fallback. Both should be at least
     44px on their constrained dimension."""
     ctx = browser.new_context(
@@ -648,7 +646,7 @@ def test_diagram_src_preserved_after_theme_change(page, base_url):
 
 
 def test_offscreen_diagram_rerenders_on_theme_change(page, base_url):
-    """Regression for WIKI-438: a Mermaid diagram scrolled out of the
+    """Regression: a Mermaid diagram scrolled out of the
     viewport must still re-render on theme change, not keep the stale
     theme's colors until it happens to scroll back into view."""
     _load_mock_article(
@@ -782,7 +780,7 @@ def test_mermaid_step_highlight_survives_theme_change(page, base_url):
 
 
 def test_mermaid_step_prev_next_44px_on_coarse_pointer(browser, base_url, cdn_cache):
-    """Regression for WIKI-406: .mermaid-step-prev/.mermaid-step-next use
+    """Regression: .mermaid-step-prev/.mermaid-step-next use
     small padding with no pointer:coarse fallback, under the 44px minimum."""
     from conftest import _make_cdn_fulfill_handler
 
@@ -858,7 +856,7 @@ def test_anchor_link_toast_does_not_show_on_page_load(page, base_url):
 
 
 def test_toast_has_opaque_background(page, base_url):
-    """Regression for WIKI-415: .wiki-toast referenced the undefined token
+    """Regression: .wiki-toast referenced the undefined token
     --surface-raised, resolving to a transparent background that let it
     fully overlap article text unreadably mid-scroll."""
     _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="toast-bg")
@@ -1415,7 +1413,7 @@ def test_wiki_switcher_topbar_button_opens_modal(page, base_url):
 @pytest.mark.parametrize("width", [320, 360, 375])
 def test_content_topbar_fits_narrow_viewports(page, base_url, width):
     """The content-topbar row (back, breadcrumb, action buttons) must not
-    overflow at common narrow phone widths - regression for WIKI-341, where
+    overflow at common narrow phone widths - regression for a bug where
     low-priority buttons and a non-shrinking breadcrumb pushed the auth
     button off-screen."""
     page.set_viewport_size({"width": width, "height": 700})
@@ -1600,7 +1598,7 @@ ARTICLE_WITH_MIXED_NUMERIC_TABLE = """\
 
 
 def test_table_sort_mixed_numeric_is_transitive(page, base_url):
-    """Regression for WIKI-504: non-numeric cells (e.g. 'N/A') must sort
+    """Regression: non-numeric cells (e.g. 'N/A') must sort
     consistently after every numeric cell, not fall back to string comparison
     only for mixed pairs (which broke transitivity across 3+ rows)."""
     _load_mock_article(page, base_url, ARTICLE_WITH_MIXED_NUMERIC_TABLE, slug="sort-mixed")
@@ -1700,7 +1698,7 @@ def test_hljs_stylesheet_swaps_on_theme_change(page, base_url):
 
 
 def test_hljs_link_has_no_stale_integrity_hash(page, base_url):
-    """Regression for WIKI-441: the hljs theme <link> must not carry a
+    """Regression: the hljs theme <link> must not carry a
     hardcoded SRI integrity hash, since syncHljsTheme() swaps href at
     runtime and a stale hash for the wrong variant blocks the browser
     from loading the (correct) swapped-in stylesheet."""
@@ -2145,7 +2143,7 @@ def test_glossary_popover_appears_on_hover(page, base_url):
 
 def test_glossary_popover_survives_scroll_out_and_back(page, base_url):
     """A glossary term keeps working after scrolling out of and back into
-    the IntersectionObserver's viewport margin (regression: WIKI-399 -
+    the IntersectionObserver's viewport margin (regression: the
     popover used to die permanently because the term's node was replaced
     with an unobserved clone on exit)."""
     _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-scroll-cycle")
@@ -2498,6 +2496,91 @@ def test_toc_expand_syncs_content_section_visible(page, base_url):
     assert content_expanded, "Re-expanding TOC group must remove section--collapsed from content h2"
 
 
+# ── Section/subsection DOM wrap-pass ──────────────────────────────
+
+ARTICLE_WITH_SECTIONS_AND_SUBSECTIONS = """\
+# Wrap Pass Test
+
+Lede paragraph before any section.
+
+## First Section
+
+First section intro.
+
+### First Subsection
+
+Subsection body text.
+
+### Second Subsection
+
+More subsection body text.
+
+## Second Section
+
+Second section body, no subsections here.
+"""
+
+
+def test_wrap_pass_produces_section_and_subsection_containers(page, base_url):
+    """wrapSectionsAndSubsections nests every ## section into
+    .section > .section-title + .section-body, and every ### subsection
+    within it into .subsection > .subsection-title + .subsection-body."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS_AND_SUBSECTIONS, slug="wrap-shape")
+    page.wait_for_selector(".section", timeout=5_000)
+
+    shape = page.evaluate("""() => {
+        const sections = document.querySelectorAll('#markdown-body > .section');
+        const first = sections[0];
+        return {
+            sectionCount: sections.length,
+            firstHasTitleAndBody: !!first?.querySelector(':scope > .section-title > h2')
+                && !!first?.querySelector(':scope > .section-body'),
+            subsectionCount: first?.querySelectorAll(':scope > .section-body > .subsection').length,
+            subsectionHasTitleAndBody: !!first
+                ?.querySelector(':scope > .section-body > .subsection > .subsection-title > h3')
+                && !!first?.querySelector(':scope > .section-body > .subsection > .subsection-body'),
+        };
+    }""")
+    assert shape["sectionCount"] == 2, "Expected two top-level .section wrappers"
+    assert shape["firstHasTitleAndBody"], "First .section must have .section-title(h2) + .section-body"
+    assert shape["subsectionCount"] == 2, "First section must have two .subsection wrappers"
+    assert shape["subsectionHasTitleAndBody"], (
+        "Subsection must have .subsection-title(h3) + .subsection-body"
+    )
+
+
+def test_wrap_pass_leaves_lede_paragraph_unwrapped(page, base_url):
+    """Content before the first ## heading stays a direct child of
+    #markdown-body, not swept into any .section wrapper."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS_AND_SUBSECTIONS, slug="wrap-lede")
+    page.wait_for_selector(".section", timeout=5_000)
+
+    lede_is_direct_child = page.evaluate("""() => {
+        const body = document.getElementById('markdown-body');
+        const lede = Array.from(body.children).find(
+            el => el.tagName === 'P' && el.textContent.includes('Lede paragraph')
+        );
+        return !!lede;
+    }""")
+    assert lede_is_direct_child, "Lede paragraph before first ## must stay a direct child of #markdown-body"
+
+
+def test_wrap_pass_preserves_heading_id_for_anchors(page, base_url):
+    """Headings keep their id (used for TOC/anchor links) after being moved
+    inside .section-title/.subsection-title - the wrap-pass must move the
+    existing heading element, not clone or replace it."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS_AND_SUBSECTIONS, slug="wrap-ids")
+    page.wait_for_selector(".section", timeout=5_000)
+
+    ids_present = page.evaluate("""() => {
+        const h2 = document.querySelector('#markdown-body .section-title h2');
+        const h3 = document.querySelector('#markdown-body .subsection-title h3');
+        return { h2HasId: !!h2?.id, h3HasId: !!h3?.id };
+    }""")
+    assert ids_present["h2HasId"], "h2 inside .section-title must keep its id"
+    assert ids_present["h3HasId"], "h3 inside .subsection-title must keep its id"
+
+
 # ── Glossary inline expand (listener leak regression) ────────────
 
 ARTICLE_WITH_GLOSSARY_TERM = """\
@@ -2575,12 +2658,12 @@ def test_h_hotkey_enters_study_mode_and_hides_h3_bodies(page, base_url):
         timeout=3_000,
     )
     hidden_count = page.evaluate(
-        "() => document.querySelectorAll('#markdown-body [data-h3-body]').length"
+        "() => document.querySelectorAll('#markdown-body .subsection-body').length"
     )
     all_hidden = page.evaluate(
-        "() => Array.from(document.querySelectorAll('#markdown-body [data-h3-body]')).every(el => el.hidden)"
+        "() => Array.from(document.querySelectorAll('#markdown-body .subsection-body')).every(el => el.hidden)"
     )
-    assert hidden_count > 0, "No h3 section bodies were tagged for hide-and-reveal"
+    assert hidden_count > 0, "No h3 section bodies were wrapped for hide-and-reveal"
     assert all_hidden, "Not all h3 section bodies were hidden after entering study mode"
 
     h3_visible = page.evaluate(
@@ -2604,7 +2687,7 @@ def test_h_hotkey_toggles_off(page, base_url):
         timeout=3_000,
     )
     all_visible = page.evaluate(
-        "() => Array.from(document.querySelectorAll('#markdown-body [data-h3-body]')).every(el => !el.hidden)"
+        "() => Array.from(document.querySelectorAll('#markdown-body .subsection-body')).every(el => !el.hidden)"
     )
     assert all_visible, "Section bodies must be revealed again after exiting study mode"
 
@@ -2630,15 +2713,15 @@ def test_click_heading_reveals_its_section_in_study_mode(page, base_url):
     first_hidden = page.evaluate(
         """() => {
             const h3 = document.querySelectorAll('#markdown-body h3')[0];
-            const id = h3.dataset.h3SectionId;
-            return Array.from(document.querySelectorAll(`[data-h3-body="${id}"]`)).some(el => el.hidden);
+            const body = h3.closest('.subsection')?.querySelector(':scope > .subsection-body');
+            return body?.hidden ?? false;
         }"""
     )
     second_hidden = page.evaluate(
         """() => {
             const h3 = document.querySelectorAll('#markdown-body h3')[1];
-            const id = h3.dataset.h3SectionId;
-            return Array.from(document.querySelectorAll(`[data-h3-body="${id}"]`)).every(el => el.hidden);
+            const body = h3.closest('.subsection')?.querySelector(':scope > .subsection-body');
+            return body?.hidden ?? false;
         }"""
     )
     assert not first_hidden, "Clicked heading's section body should be revealed"
@@ -2646,7 +2729,7 @@ def test_click_heading_reveals_its_section_in_study_mode(page, base_url):
 
 
 def test_anchor_btn_click_does_not_bubble_into_study_mode_toggle(page, base_url):
-    """Regression for WIKI-415: clicking the anchor-copy button on an h3 must
+    """Regression: clicking the anchor-copy button on an h3 must
     not also trigger study-mode's reveal toggle for that heading (bubbling)."""
     page.context.grant_permissions(["clipboard-read", "clipboard-write"])
     _load_mock_article(page, base_url, ARTICLE_WITH_H3_SECTIONS, slug="study-mode-anchor-btn")
@@ -2678,6 +2761,163 @@ def test_study_mode_resets_on_navigation(page, base_url):
         "() => document.getElementById('markdown-body').classList.contains('study-mode')"
     )
     assert not is_study_mode, "Study mode leaked into the next article render"
+
+
+# ── Practice problem answer-reveal toggle ─────────────────────────────
+
+ARTICLE_WITH_PRACTICE_PROBLEMS = """\
+# Practice Toggle Test
+
+## Practice problems
+
+Two staples for testing the answer toggle.
+
+### 1. First Problem - _testing_
+
+**Problem.** Given some input, do something.
+
+**Approach.** Do the obvious thing.
+
+```python
+def solve():
+    return True
+```
+
+**Complexity.** O(1) time, O(1) space.
+
+### 2. Second Problem - _also testing_
+
+**Problem.** Given other input, do another thing.
+
+**Approach.** Do the other obvious thing.
+
+```python
+def solve_other():
+    return False
+```
+
+**Complexity.** O(n) time, O(1) space.
+
+## Next Section
+
+Closing paragraph.
+"""
+
+
+def test_practice_problems_answers_hidden_by_default(page, base_url):
+    """Approach/code/Complexity are wrapped in .problem-answer and hidden by
+    default (practiceAnswersHidden defaults to true); Problem statement stays
+    visible."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-default")
+    page.wait_for_selector(".problem-answer", timeout=5_000)
+
+    answer_count = page.locator(".problem-answer").count()
+    assert answer_count == 2, "Expected one .problem-answer per problem"
+
+    all_hidden = page.evaluate(
+        "() => Array.from(document.querySelectorAll('.problem-answer')).every(el => el.hidden)"
+    )
+    assert all_hidden, "Answers must be hidden by default"
+
+    problem_visible = page.evaluate(
+        """() => Array.from(document.querySelectorAll('#markdown-body .subsection-body > p'))
+            .some(p => p.textContent.includes('Given some input') && !p.hidden)"""
+    )
+    assert problem_visible, "Problem statement paragraph must stay visible"
+
+
+def test_practice_eye_toggle_reveals_only_its_own_problem(page, base_url):
+    """Clicking one problem's eye icon reveals only that problem's answer,
+    leaving the other problem's answer hidden."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-toggle-one")
+    page.wait_for_selector(".practice-eye-btn", timeout=5_000)
+
+    first_btn = page.locator(".practice-eye-btn").first
+    first_btn.click()
+
+    first_hidden = page.evaluate(
+        "() => document.querySelectorAll('.problem-answer')[0].hidden"
+    )
+    second_hidden = page.evaluate(
+        "() => document.querySelectorAll('.problem-answer')[1].hidden"
+    )
+    assert not first_hidden, "Clicked problem's answer should be revealed"
+    assert second_hidden, "Other problem's answer should remain hidden"
+
+
+def test_practice_eye_toggle_click_again_hides_again(page, base_url):
+    """Clicking an already-revealed problem's eye icon hides it again."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-toggle-back")
+    page.wait_for_selector(".practice-eye-btn", timeout=5_000)
+
+    btn = page.locator(".practice-eye-btn").first
+    btn.click()
+    page.wait_for_function(
+        "() => document.querySelectorAll('.problem-answer')[0].hidden === false",
+        timeout=3_000,
+    )
+    btn.click()
+    page.wait_for_function(
+        "() => document.querySelectorAll('.problem-answer')[0].hidden === true",
+        timeout=3_000,
+    )
+
+
+def test_practice_answers_visible_when_preference_set_to_shown(page, base_url):
+    """When the Preferences 'practiceAnswersHidden' setting is false, answers
+    start visible on page load."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.evaluate(
+        "() => localStorage.setItem('wiki-settings', JSON.stringify({backgroundId: 'dark-void', practiceAnswersHidden: false}))"
+    )
+    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-pref-shown")
+    page.wait_for_selector(".problem-answer", timeout=5_000)
+
+    all_visible = page.evaluate(
+        "() => Array.from(document.querySelectorAll('.problem-answer')).every(el => !el.hidden)"
+    )
+    assert all_visible, "Answers must start visible when practiceAnswersHidden preference is false"
+
+
+def test_practice_answer_hidden_survives_toc_section_collapse_and_expand(page, base_url):
+    """Regression for the toc.js/practice-toggle.js .hidden collision: collapsing
+    and re-expanding the whole Practice problems section via its own chevron
+    must not silently reveal an answer the user had explicitly hidden, nor hide
+    one they had explicitly revealed."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-toc-collapse")
+    page.wait_for_selector(".practice-eye-btn", timeout=5_000)
+
+    # Reveal the first problem's answer, leave the second hidden.
+    page.locator(".practice-eye-btn").first.click()
+    page.wait_for_function(
+        "() => document.querySelectorAll('.problem-answer')[0].hidden === false",
+        timeout=3_000,
+    )
+
+    # Collapse then re-expand the Practice problems section via its own chevron.
+    collapse_btn = page.locator(
+        "#markdown-body h2:has-text('Practice problems') .heading-collapse-btn"
+    )
+    collapse_btn.click()
+    page.wait_for_function(
+        """() => Array.from(document.querySelectorAll('#markdown-body h2'))
+            .find(h => h.textContent.includes('Practice problems'))
+            ?.classList.contains('section--collapsed')""",
+        timeout=3_000,
+    )
+    collapse_btn.click()
+    page.wait_for_function(
+        """() => !Array.from(document.querySelectorAll('#markdown-body h2'))
+            .find(h => h.textContent.includes('Practice problems'))
+            ?.classList.contains('section--collapsed')""",
+        timeout=3_000,
+    )
+
+    first_hidden = page.evaluate("() => document.querySelectorAll('.problem-answer')[0].hidden")
+    second_hidden = page.evaluate("() => document.querySelectorAll('.problem-answer')[1].hidden")
+    assert not first_hidden, "Section collapse/expand must not re-hide an answer the user revealed"
+    assert second_hidden, "Section collapse/expand must not reveal an answer the user never opened"
 
 
 # ── Text highlights + inline emoji markers ───────────────────────────────────────
@@ -3000,236 +3240,6 @@ def test_save_as_card_does_not_create_highlight_or_marker(page, base_url):
     assert stored is False, "Save-as-card must not persist a highlight or marker entry"
 
 
-# ── Depth-N content folding slider ────────────────────────────────
-
-ARTICLE_FOR_DEPTH_FOLD = """\
-# Depth Fold Test
-
-## First Section
-
-First section intro text.
-
-### First Sub
-
-First sub content.
-
-### Second Sub
-
-Second sub content.
-
-## Second Section
-
-Second section intro text.
-
-### Third Sub
-
-Third sub content.
-"""
-
-
-def test_depth_fold_control_renders_in_content_view(page, base_url):
-    """The three-position skim/study/reference control is present in the content topbar."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_DEPTH_FOLD, slug="depth-fold-render")
-    assert page.locator('[data-action="depth-fold-set"][data-depth-fold="1"]').is_visible()
-    assert page.locator('[data-action="depth-fold-set"][data-depth-fold="2"]').is_visible()
-    assert page.locator('[data-action="depth-fold-set"][data-depth-fold="3"]').is_visible()
-
-
-def test_depth_1_shows_only_h2_summaries(page, base_url):
-    """Clicking Skim (depth 1) hides H3 headings/bodies, leaving only H2-level content."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_DEPTH_FOLD, slug="depth-fold-skim")
-    page.wait_for_selector("#markdown-body h3", timeout=5_000)
-
-    page.click('[data-action="depth-fold-set"][data-depth-fold="1"]')
-    page.wait_for_function(
-        "() => document.getElementById('markdown-body').dataset.depth === '1'",
-        timeout=2_000,
-    )
-
-    assert page.locator("#markdown-body").get_attribute("data-depth") == "1"
-    for h3 in page.locator("#markdown-body h3").all():
-        assert not h3.is_visible()
-    assert page.locator("#markdown-body h2").first.is_visible()
-
-
-def test_depth_3_reveals_everything(page, base_url):
-    """Clicking Reference (depth 3) shows all heading levels again."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_DEPTH_FOLD, slug="depth-fold-reference")
-    page.wait_for_selector("#markdown-body h3", timeout=5_000)
-
-    page.click('[data-action="depth-fold-set"][data-depth-fold="1"]')
-    page.wait_for_function(
-        "() => document.getElementById('markdown-body').dataset.depth === '1'",
-        timeout=2_000,
-    )
-
-    page.click('[data-action="depth-fold-set"][data-depth-fold="3"]')
-    page.wait_for_function(
-        "() => document.getElementById('markdown-body').dataset.depth === '3'",
-        timeout=2_000,
-    )
-
-    for h3 in page.locator("#markdown-body h3").all():
-        assert h3.is_visible()
-
-
-def test_depth_fold_persists_across_navigation_within_session(page, base_url):
-    """Setting depth 1 on article A carries over as the default depth when opening article B."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_DEPTH_FOLD, slug="depth-fold-a")
-    page.wait_for_selector("#markdown-body h3", timeout=5_000)
-
-    page.click('[data-action="depth-fold-set"][data-depth-fold="1"]')
-    page.wait_for_function(
-        "() => document.getElementById('markdown-body').dataset.depth === '1'",
-        timeout=2_000,
-    )
-
-    _load_mock_article(page, base_url, ARTICLE_FOR_DEPTH_FOLD, slug="depth-fold-b")
-    page.wait_for_function(
-        "() => document.getElementById('markdown-body').dataset.depth === '1'",
-        timeout=5_000,
-    )
-    assert page.locator("#markdown-body").get_attribute("data-depth") == "1"
-
-
-def test_depth_fold_defaults_to_fully_expanded_on_first_visit(page, base_url):
-    """With no prior session preference, an article opens at depth 3 (fully expanded)."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_DEPTH_FOLD, slug="depth-fold-default")
-    page.wait_for_function(
-        "() => !!document.getElementById('markdown-body').dataset.depth",
-        timeout=5_000,
-    )
-    assert page.locator("#markdown-body").get_attribute("data-depth") == "3"
-    for h3 in page.locator("#markdown-body h3").all():
-        assert h3.is_visible()
-
-
-# ── Interview mode (toggle, timer, scratchpad, reveal, elapsed-time log) ────────
-
-ARTICLE_FOR_INTERVIEW_MODE = """\
-# Two Sum
-
-## Problem Statement
-
-Given an array of integers, return indices of the two numbers that add up to a target.
-
-## Approach
-
-Use a hash map to track complements while scanning.
-
-## Complexity
-
-O(n) time, O(n) space.
-"""
-
-
-def test_interview_toggle_hides_content_below_first_section(page, base_url):
-    """Activating interview mode hides every heading/region after the first."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-toggle")
-    page.wait_for_selector("#markdown-body h2", timeout=5_000)
-
-    page.click('[data-action="interview-toggle"]')
-    page.wait_for_selector("#interview-bar:not(.hidden)", timeout=3_000)
-
-    headings = page.locator("#markdown-body h2").all()
-    assert headings[0].is_visible()
-    for h in headings[1:]:
-        assert not h.is_visible()
-
-
-def test_interview_toggle_opens_scratchpad_and_starts_timer(page, base_url):
-    """Entering interview mode force-opens the notes panel and shows a running timer."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-scratchpad")
-
-    # Collapse the scratchpad first so activation has to force it back open.
-    page.click("#notes-scratchpad-toggle")
-    page.wait_for_selector("#notes-scratchpad.notes-scratchpad--collapsed", timeout=3_000)
-
-    page.click('[data-action="interview-toggle"]')
-    page.wait_for_selector("#interview-bar:not(.hidden)", timeout=3_000)
-
-    assert "notes-scratchpad--collapsed" not in (
-        page.locator("#notes-scratchpad").get_attribute("class") or ""
-    )
-    assert page.locator("#interview-timer").is_visible()
-    page.wait_for_function(
-        "() => document.getElementById('interview-timer').textContent !== '00:00'",
-        timeout=3_000,
-    )
-
-
-def test_interview_reveal_restores_content_and_hides_timer(page, base_url):
-    """Reveal un-hides every heading/region and hides the interview bar."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-reveal")
-    page.wait_for_selector("#markdown-body h2", timeout=5_000)
-
-    page.click('[data-action="interview-toggle"]')
-    page.wait_for_selector("#interview-bar:not(.hidden)", timeout=3_000)
-
-    page.click('[data-action="interview-reveal"]')
-    # state="hidden" - default state is "visible", which a .hidden element
-    # (display:none) can never satisfy.
-    page.wait_for_selector("#interview-bar.hidden", state="hidden", timeout=3_000)
-
-    for h in page.locator("#markdown-body h2").all():
-        assert h.is_visible()
-
-
-def test_interview_reveal_persists_elapsed_time(page, base_url):
-    """Reveal logs an {completedAt, elapsedMs} entry under the interview storage key."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-log")
-    page.wait_for_selector("#markdown-body h2", timeout=5_000)
-
-    page.click('[data-action="interview-toggle"]')
-    page.wait_for_selector("#interview-bar:not(.hidden)", timeout=3_000)
-    page.click('[data-action="interview-reveal"]')
-    page.wait_for_selector("#interview-bar.hidden", state="hidden", timeout=3_000)
-
-    stored = page.evaluate(
-        """() => {
-            const key = Object.keys(localStorage).find(k => k.startsWith('wiki-interview-'));
-            if (!key) return null;
-            return JSON.parse(localStorage.getItem(key));
-        }"""
-    )
-    assert stored is not None and len(stored) == 1, f"Expected one logged attempt, got: {stored}"
-    assert "completedAt" in stored[0]
-    assert isinstance(stored[0]["elapsedMs"], int)
-
-
-def test_interview_mode_navigating_away_does_not_log_elapsed_time(page, base_url):
-    """Leaving mid-interview (teardown) must not persist an abandoned attempt."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-abandon-1")
-    page.wait_for_selector("#markdown-body h2", timeout=5_000)
-
-    page.click('[data-action="interview-toggle"]')
-    page.wait_for_selector("#interview-bar:not(.hidden)", timeout=3_000)
-
-    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-abandon-2")
-    page.wait_for_selector("#markdown-body h2", timeout=5_000)
-
-    stored = page.evaluate(
-        """() => {
-            const key = Object.keys(localStorage).find(k => k.startsWith('wiki-interview-'));
-            if (!key) return null;
-            return JSON.parse(localStorage.getItem(key));
-        }"""
-    )
-    assert stored is None, f"Expected no logged attempt after abandoning mid-interview, got: {stored}"
-
-
-def test_interview_mode_resets_on_navigation(page, base_url):
-    """Interview mode must not leak into the next article render (cleanupInterviewMode)."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-nav-1")
-    page.click('[data-action="interview-toggle"]')
-    page.wait_for_selector("#interview-bar:not(.hidden)", timeout=3_000)
-
-    _load_mock_article(page, base_url, ARTICLE_FOR_INTERVIEW_MODE, slug="interview-nav-2")
-    assert page.locator("#interview-bar").get_attribute("class") and "hidden" in (
-        page.locator("#interview-bar").get_attribute("class") or ""
-    )
-
-
 # ── Prerequisites chips ───────────────────────────────────────────
 
 ARTICLE_WITH_PREREQUISITES = """\
@@ -3265,7 +3275,7 @@ def test_prerequisites_render_as_chips(page, base_url):
 
 def test_prerequisite_chip_link_navigates_and_has_no_title(page, base_url):
     """A linked prerequisite is an <a> with the resolved href and no native title
-    tooltip - the explanation is shown via hover-preview instead (WIKI-460)."""
+    tooltip - the explanation is shown via hover-preview instead."""
     _load_mock_article(page, base_url, ARTICLE_WITH_PREREQUISITES, slug="prereqs-link")
 
     chip = page.locator(".prereq-chip", has_text="Array").first
@@ -3276,7 +3286,7 @@ def test_prerequisite_chip_link_navigates_and_has_no_title(page, base_url):
 
 def test_prerequisite_chip_link_shows_hover_preview_card(page, base_url):
     """Hovering a linked prereq chip reuses the same hover-preview card as normal
-    in-article links, fetching the target article's own content (WIKI-460)."""
+    in-article links, fetching the target article's own content."""
     page.route(
         "**/array.md",
         lambda r: r.fulfill(body="# Array\n\n## TL;DR\n\nContiguous, indexable memory.\n"),
@@ -3302,7 +3312,7 @@ def test_prerequisite_chip_unlinked_item_has_no_href(page, base_url):
 
 def test_prerequisite_chip_unlinked_item_shows_placeholder_on_hover(page, base_url):
     """Unlinked prereq chips get the same hover-preview card UI, showing a static
-    'not yet written' placeholder instead of fetched content (WIKI-460)."""
+    'not yet written' placeholder instead of fetched content."""
     _load_mock_article(page, base_url, ARTICLE_WITH_PREREQUISITES, slug="prereqs-unlinked-hover")
 
     chip = page.locator(".prereq-chip", has_text="Big-O Notation").first

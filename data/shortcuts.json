@@ -15,7 +15,6 @@
     { "keys": ["B"], "description": "Toggle bookmark" },
     { "keys": ["F"], "description": "Toggle focus mode" },
     { "keys": ["H"], "description": "Toggle study mode" },
-    { "keys": ["I"], "description": "Toggle interview mode" },
     { "keys": ["D"], "description": "Distraction-free mode" },
     { "keys": ["Q"], "description": "Quiz mode" },
     { "keys": ["T"], "description": "Focus table of contents" },

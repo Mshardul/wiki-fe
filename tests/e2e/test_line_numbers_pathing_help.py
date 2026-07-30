@@ -332,16 +332,15 @@ def test_prefs_keyboard_tab_shows_index_and_content_groups(page, base_url):
     )
 
 
-def test_prefs_keyboard_tab_lists_study_and_interview_shortcuts(page, base_url):
-    """Content group documents the H (study mode) and I (interview mode) hotkeys -
-    both were bound in app.js but missing from shortcuts.json."""
+def test_prefs_keyboard_tab_lists_study_mode_shortcut(page, base_url):
+    """Content group documents the H (study mode) hotkey - was bound in
+    app.js but missing from shortcuts.json."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
     page.keyboard.press("?")
     page.wait_for_selector("#prefs-panel-keyboard kbd", timeout=5_000)
     body_text = page.locator("#prefs-panel-keyboard").inner_text().upper()
     assert "STUDY MODE" in body_text, "Content group should document the H (study mode) hotkey"
-    assert "INTERVIEW MODE" in body_text, "Content group should document the I (interview mode) hotkey"
 
 
 def test_prefs_keyboard_tab_shows_search_group(page, base_url):

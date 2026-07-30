@@ -155,11 +155,8 @@ function _setSectionCollapsed(h2, collapsed) {
   } else {
     h2.classList.remove("section--collapsed");
   }
-  const sectionId = h2.dataset.sectionId;
-  if (!sectionId) return;
-  h2.parentElement?.querySelectorAll(`[data-h2-body="${sectionId}"]`).forEach((el) => {
-    el.hidden = collapsed;
-  });
+  const sectionBody = h2.closest(".section")?.querySelector(":scope > .section-body");
+  if (sectionBody) sectionBody.hidden = collapsed;
 }
 
 function injectHeadingCollapseToggles(contentEl, wikiId, articlePath) {
@@ -178,12 +175,6 @@ function injectHeadingCollapseToggles(contentEl, wikiId, articlePath) {
     btn.innerHTML =
       '<svg class="icon" aria-hidden="true"><use href="#icon-chevron-down"></use></svg>';
     h2.appendChild(btn);
-
-    let next = h2.nextElementSibling;
-    while (next && !/^H[12]$/.test(next.tagName)) {
-      next.dataset.h2Body = sectionId;
-      next = next.nextElementSibling;
-    }
 
     const isCollapsed = getCollapsed(key);
     _setSectionCollapsed(h2, isCollapsed);

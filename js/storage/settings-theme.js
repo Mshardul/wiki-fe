@@ -10,7 +10,6 @@ import {
 } from "./bookmarks.js";
 import { DATA_CATEGORIES, clearSelectedData } from "./data-clear.js";
 import { Highlights, Markers } from "./highlights.js";
-import { InterviewLog } from "./interview-mode.js";
 import { Notes } from "./notes.js";
 import { _readKey, isRead, updateReadBtn } from "./read-tracking.js";
 import { RECENTS_KEY, RECENTS_MAX, renderRecentsSection } from "./recents.js";
@@ -229,6 +228,7 @@ const DEFAULT_SETTINGS = {
   paraSpacing: "Normal",
   copySourceHeader: false,
   hapticFeedback: false,
+  practiceAnswersHidden: true,
 };
 
 function _isDark(backgroundId) {
@@ -484,6 +484,13 @@ const Settings = {
       hapticBtn.setAttribute("aria-pressed", String(on));
       hapticBtn.textContent = on ? "On" : "Off";
     }
+    const practiceBtn = document.getElementById("settings-practice-answers");
+    if (practiceBtn) {
+      const on = Boolean(s.practiceAnswersHidden);
+      practiceBtn.classList.toggle("active", on);
+      practiceBtn.setAttribute("aria-pressed", String(on));
+      practiceBtn.textContent = on ? "Hidden" : "Shown";
+    }
   },
 
   _renderDataClear() {
@@ -714,6 +721,12 @@ const Settings = {
     this._render();
   },
 
+  _togglePracticeAnswersHidden() {
+    const s = getSettings();
+    saveSettings({ ...s, practiceAnswersHidden: !s.practiceAnswersHidden });
+    this._render();
+  },
+
   exportData() {
     const data = {
       version: 1,
@@ -854,7 +867,6 @@ const Sync = {
     Highlights.clear();
     Markers.clear();
     Notes.clear();
-    InterviewLog.clear();
   },
 
   // Logout flush is a no-op safety net: fire-and-forget writes already synced per-action.

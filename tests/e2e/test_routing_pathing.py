@@ -222,6 +222,39 @@ def test_fetch_produces_absolute_url(page, base_url):
 # ── Route deduplication ─────────────────────────────────────────────
 
 
+def test_rapid_navigate_pushes_single_history_entry(page, base_url):
+    """Regression: navigate() used to push a history entry synchronously on
+    every call while the debounced route() only ever executed the last one,
+    so rapid repeated navigation left Back-button entries whose content was
+    never rendered. Only the final destination in a rapid burst should push."""
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-index.active", timeout=8_000)
+
+    start_length = page.evaluate("() => history.length")
+
+    page.evaluate(
+        """() => {
+        window.navigate('system-design/caching');
+        window.navigate('system-design/load-balancing');
+        window.navigate('system-design/message-queues');
+    }"""
+    )
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+
+    end_length = page.evaluate("() => history.length")
+    assert end_length - start_length == 1, (
+        f"Expected exactly 1 new history entry from a rapid navigate() burst, got {end_length - start_length}"
+    )
+
+    # The one entry that was pushed must be the one that actually rendered.
+    page.go_back()
+    page.wait_for_selector("#view-index.active", timeout=5_000)
+
+
 def test_back_forward_does_not_double_render(page, base_url):
     """Back+forward navigation fires route handler once; popstate+hashchange both call route() but dedup fires _execRoute once."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")

@@ -1,6 +1,6 @@
 import { QuizMode } from "./content/tables.js";
 import { createFocusTrap, registerModal } from "./modal-registry.js";
-import { navigateToContent } from "./render/content-view.js";
+import { getCurrentRenderGen, navigateToContent } from "./render/content-view.js";
 import { IndexFilter, buildSearchEntriesForWiki } from "./render/home-index.js";
 import { navigate } from "./render/router.js";
 import { showToast } from "./render/toast.js";
@@ -191,11 +191,15 @@ function _resolveQuizArg(argText) {
         encodeURIComponent(best.title),
         best.slug,
       );
+      const gen = getCurrentRenderGen();
       const body = document.getElementById("markdown-body");
       delete body?.dataset.renderDone;
       const start = Date.now();
       const poll = setInterval(() => {
-        if (document.getElementById("markdown-body")?.dataset.renderDone === "1") {
+        if (gen !== getCurrentRenderGen()) {
+          // A newer navigation started before this render finished - abandon the poll.
+          clearInterval(poll);
+        } else if (document.getElementById("markdown-body")?.dataset.renderDone === "1") {
           clearInterval(poll);
           QuizMode.toggle();
         } else if (Date.now() - start > 5000) {

@@ -108,6 +108,71 @@ def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
     )
 
 
+# ── In-content Table of Contents suppression ─────────────────────
+
+
+def test_in_content_toc_section_does_not_render(page, base_url):
+    """The hand-authored '## Table of Contents' section (for raw-file
+    readers) must not render in the app - the app builds its own live TOC
+    sidebar, so showing both is a duplicate nav."""
+    content = (
+        "# Mock Article\n\n"
+        "## Prerequisites\n\n- [Array](./array.md)\n\n"
+        "## Table of Contents\n\n"
+        "- [Prerequisites](#prerequisites)\n"
+        "- [Table of Contents](#table-of-contents)\n"
+        "- [What it is](#what-it-is)\n\n"
+        "## What it is\n\nSome real content here.\n"
+    )
+    _load_mock_article(page, base_url, content)
+
+    heading_count = page.locator("#markdown-body h2:has-text('Table of Contents')").count()
+    assert heading_count == 0, "In-content Table of Contents heading must not render"
+
+    body_text = page.locator("#markdown-body").inner_text()
+    assert "What it is" in body_text, "Content after the TOC section must still render"
+
+    # The app's own live sidebar TOC must still build normally.
+    sidebar_links = page.locator("#toc-nav a").count()
+    assert sidebar_links > 0, "App's own sidebar TOC must still be built"
+
+
+# ── Stub-article toolbar button sync ─────────────────────────────
+
+
+def test_stub_article_syncs_bookmark_read_offline_buttons(page, base_url):
+    """A stub (empty-body) article must still sync the bookmark/read/offline
+    toolbar buttons - the stub branch returns early and used to skip them."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
+    page.evaluate(
+        """() => localStorage.setItem('wiki-bookmarks', JSON.stringify([
+        { wikiId: 'system-design', path: 'content/system-design/mock.md', title: 'Mock' }
+    ]))"""
+    )
+    page.route("**/mock.md", lambda r: r.fulfill(body="# Mock\n"))
+    page.evaluate(
+        """() => navigateToContent(
+        'system-design',
+        encodeURIComponent('../content/system-design/mock.md'),
+        encodeURIComponent('Mock'),
+        'mock'
+    )"""
+    )
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    page.wait_for_selector(".content-stub", timeout=5_000)
+
+    is_active = page.evaluate(
+        "() => document.getElementById('prefs-bookmark-toggle')?.classList.contains('active')"
+    )
+    assert is_active, "Bookmark toggle must reflect state even on a stub article"
+
+
 # ── Clipboard failure toast ──────────────────────────────────────
 
 

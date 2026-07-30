@@ -11,6 +11,34 @@ def _go_to_index(page, base_url):
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
 
+# ── Scroll position on fresh index visit ─────────────────────────────
+
+
+def test_index_view_resets_scroll_when_no_saved_position(page, base_url):
+    """Regression: view-index is exempt from the router's generic scroll
+    reset (it restores a saved position after content loads), but a fresh
+    visit with nothing saved for that wiki used to leave the previous view's
+    scroll position on screen until content finished loading."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    page.evaluate("() => window.scrollTo({ top: 1000, behavior: 'instant' })")
+    page.wait_for_function("() => window.scrollY > 500")
+
+    page.evaluate("() => localStorage.removeItem('wiki-index-scroll-dsa')")
+    page.evaluate("() => window.navigate('dsa')")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+
+    scroll_y = page.evaluate("() => window.scrollY")
+    assert scroll_y < 50, (
+        f"Index view must reset scroll immediately when no position is saved, got scrollY={scroll_y}"
+    )
+
+
 # ── Stub card click guard ───────────────────────────────────────────
 
 

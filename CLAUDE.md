@@ -134,8 +134,6 @@ Do this before any file reads or skill invocations - every session:
 | `toc.js`              | TOC build, sticky section header, per-heading collapse, progress ring               |
 | `formatting.js`       | Callouts, prerequisites chips, anchor links, LaTeX toggle/copy, focus mode, tabbed code blocks, footnotes, in-article find |
 | `glossary-caveats.js` | Inline caveat reveals, glossary popovers/expand, rendered-HTML session cache          |
-| `depth-fold.js`       | Depth-N content folding: global dial (`data-depth`) shows/hides fold-region containers by heading depth |
-| `interview-mode.js`   | Interview mode: collapses fold-regions after the first, elapsed-time logging via `storage/interview-mode.js` |
 | `highlights.js`       | Per-article text highlights + inline emoji markers, freeze-frame export hookup       |
 | `freeze-frame.js`     | Exports a text selection as a shareable image card                                   |
 | `structure-viz.js`    | Inline ` ```viz ` fenced-block renderer for data-structure diagrams (bst, array, etc.) |
@@ -167,9 +165,8 @@ Do this before any file reads or skill invocations - every session:
 | `settings-theme.js`  | Settings object + swatches, `Settings`/`Theme`/`Sync`, multi-tab sync listener |
 | `scroll-collapse.js` | Scroll-position cache, section collapse, TOC scroll, recent searches          |
 | `highlights.js`      | Per-article highlight/marker CRUD, keyed by wiki+article path                 |
-| `interview-mode.js`  | Interview-mode elapsed-time log CRUD, keyed by wiki+article path              |
 | `notes.js`           | Per-article notes scratchpad CRUD                                             |
-| `data-clear.js`      | "Clear my data" settings action - wipes bookmarks/highlights/interview-log/notes/pinned-wikis |
+| `data-clear.js`      | "Clear my data" settings action - wipes bookmarks/highlights/notes/pinned-wikis |
 
 ### CSS (`css/`)
 
@@ -293,6 +290,7 @@ See **[CONVENTIONS.md](./CONVENTIONS.md) → Architecture** for the boot sequenc
 - **`ctx_batch_execute`** - multi-file exploration, any output >20 lines
 - Never raw `Bash` for reading files
 - **Running tests** - may run individual tests when debugging (e.g. `pytest tests/e2e/test_x.py::test_y -v`). Never run the full suite unprompted; user runs that manually.
+- **Icon needed but missing from `sprite.svg`** - don't stop at "not in the local sprite." `sprite.svg` is a hand-picked ~27-icon subset of Tabler's full 5,900+ icon set (no build/generator script - see `js/icon-sprite.js`, it just fetches and inlines the static file), so a missing icon is almost always available upstream and just hasn't been pulled in yet. Use `WebSearch`/`WebFetch` against `tabler.io/icons` to find and confirm the right icon name before concluding it doesn't exist. To add it: get the outline SVG, strip to `<path>` elements only, add as a new `<symbol id="icon-name" viewBox="0 0 24 24">` block in `sprite.svg`, matching the existing entries' format exactly.
 
 ---
 

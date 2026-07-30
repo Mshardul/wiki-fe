@@ -367,10 +367,10 @@ def test_logout_clears_stored_session_token(page, base_url):
     assert stored is None
 
 
-def test_logout_clears_highlights_markers_notes_interview_log(page, base_url):
-    """Regression for WIKI-435: logout must wipe highlights, markers, notes,
-    and interview-mode logs, not just bookmarks/recents/read-tracking -
-    otherwise private data survives on a shared/public computer."""
+def test_logout_clears_highlights_markers_notes(page, base_url):
+    """Regression for WIKI-435: logout must wipe highlights, markers, and
+    notes, not just bookmarks/recents/read-tracking - otherwise private data
+    survives on a shared/public computer."""
     page.route(
         "**/api/v1/auth/me",
         lambda r: r.fulfill(
@@ -391,7 +391,6 @@ def test_logout_clears_highlights_markers_notes_interview_log(page, base_url):
         localStorage.setItem('wiki-highlights-dsa-arrays', '["h1"]');
         localStorage.setItem('wiki-markers-dsa-arrays', '["m1"]');
         localStorage.setItem('wiki-notes-dsa-arrays', 'secret note');
-        localStorage.setItem('wiki-interview-dsa-arrays', '["log1"]');
         """
     )
     page.goto(base_url)
@@ -404,8 +403,7 @@ def test_logout_clears_highlights_markers_notes_interview_log(page, base_url):
         """() => Object.keys(localStorage).filter(k =>
             k.startsWith('wiki-highlights-') ||
             k.startsWith('wiki-markers-') ||
-            k.startsWith('wiki-notes-') ||
-            k.startsWith('wiki-interview-')
+            k.startsWith('wiki-notes-')
         )"""
     )
     assert remaining == [], f"expected all cleared, still present: {remaining}"
@@ -572,6 +570,30 @@ def test_concurrent_401s_fire_session_expired_once(page, base_url):
     assert fire_count == 1, (
         f"expected exactly one wiki:session-expired dispatch, got {fire_count}"
     )
+
+
+def test_session_changed_same_article_does_not_tear_down_reading_state(page, base_url):
+    """Regression for WIKI-498: wiki:session-changed used to unconditionally
+    re-route, tearing down focus mode and rebuilding the article even when
+    the session event fired for the same article already on screen. It must
+    now only refresh session-dependent chrome when the path is unchanged."""
+    _stub_logged_out(page)
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+
+    page.keyboard.press("f")
+    page.wait_for_selector("#markdown-body.focus-mode", timeout=3_000)
+
+    page.evaluate("() => document.dispatchEvent(new CustomEvent('wiki:session-changed'))")
+    page.wait_for_timeout(200)
+
+    assert page.evaluate(
+        "() => document.getElementById('markdown-body').classList.contains('focus-mode')"
+    ), "Focus mode must survive a same-path session-changed event"
 
 
 def test_reset_panel_has_recovery_links(page, base_url):

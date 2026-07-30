@@ -305,54 +305,54 @@ body.sticky-header-visible .article-find {
 .markdown-body h2.section--collapsed .heading-collapse-btn svg {
   transform: rotate(-90deg);
 }
-[data-h2-body] {
+.section-body,
+.subsection-body {
   transition: opacity var(--t);
 }
-[data-h2-body][hidden] {
+.section-body[hidden],
+.subsection-body[hidden] {
   display: none !important;
 }
 
 /* ═══════════════════════════════════════════════
-   DEPTH-N CONTENT FOLDING
+   PRACTICE PROBLEM ANSWER-REVEAL TOGGLE
    ═══════════════════════════════════════════════ */
-.markdown-body[data-depth="1"] .fold-region[data-fold-level="2"],
-.markdown-body[data-depth="1"] .fold-region[data-fold-level="3"],
-.markdown-body[data-depth="2"] .fold-region[data-fold-level="3"] {
-  display: none;
-}
-.markdown-body[data-depth="1"] h3,
-.markdown-body[data-depth="1"] h4,
-.markdown-body[data-depth="2"] h4 {
-  display: none;
-}
-
-.depth-fold-control {
+.markdown-body h3:has(.practice-eye-btn) {
   display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  margin: var(--s1) 0;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-full);
+  align-items: baseline;
+  gap: var(--s2);
 }
-.depth-fold-btn {
-  font: inherit;
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  background: transparent;
-  border: none;
-  border-radius: var(--r-full);
-  padding: var(--s1) var(--s3);
+.practice-eye-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-xs);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  color: var(--text-subtle);
   cursor: pointer;
   transition: background var(--t-fast), color var(--t-fast);
+  vertical-align: middle;
 }
-.depth-fold-btn:hover {
-  color: var(--text-body);
+.practice-eye-btn:hover {
+  background: var(--glass-bg-2);
+  color: var(--accent);
 }
-.depth-fold-btn.active {
-  background: var(--accent-dim);
-  color: var(--accent-light);
+.practice-eye-btn svg {
+  width: 10px;
+  height: 10px;
+}
+.problem-answer {
+  transition: opacity var(--t);
+}
+.problem-answer[hidden] {
+  display: none !important;
 }
 
 /* ═══════════════════════════════════════════════

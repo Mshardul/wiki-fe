@@ -24,7 +24,6 @@ import { openSidecarToc } from "./app/sidecar-toc.js";
 import { fireStudyMilestone } from "./app/study-feedback.js";
 import { closeWikiSwitcher, isWikiSwitcherOpen, openWikiSwitcher } from "./app/wiki-switcher.js";
 import { syncHljsTheme, writeToClipboard } from "./content/code-blocks.js";
-import { setFoldDepth } from "./content/depth-fold.js";
 import {
   ArticleFind,
   cleanupFocusMode,
@@ -34,12 +33,6 @@ import {
   toggleFocusMode,
   toggleStudyMode,
 } from "./content/formatting.js";
-import {
-  cleanupInterviewMode,
-  isInterviewMode,
-  revealInterviewMode,
-  toggleInterviewMode,
-} from "./content/interview-mode.js";
 import { rerenderMermaidDiagrams } from "./content/mermaid.js";
 import { QuizMode } from "./content/tables.js";
 import { expandAllSections, initProgressRingScrollTop, updateProgressRing } from "./content/toc.js";
@@ -68,8 +61,9 @@ import {
   getBookmarks,
   renderBookmarksSection,
   saveBookmarks,
+  updateBookmarkBtn,
 } from "./storage/bookmarks.js";
-import { Offline } from "./storage/offline.js";
+import { Offline, updateOfflineBtn } from "./storage/offline.js";
 import { ReadToggle, markRead, updateReadBtn } from "./storage/read-tracking.js";
 import { clearRecents, getRecents, renderRecentsSection, saveRecents } from "./storage/recents.js";
 import { saveScrollPos } from "./storage/scroll-collapse.js";
@@ -115,6 +109,20 @@ document.addEventListener("wiki:session-expired", () => {
 });
 
 document.addEventListener("wiki:session-changed", () => {
+  Auth.refreshButtons();
+  const currentSlug = state.currentFilePath?.split("/").pop().replace(/\.md$/, "");
+  const hashSlug = location.hash.slice(1).split("/")[1];
+  const samePath =
+    state.currentView === "content" &&
+    currentSlug &&
+    currentSlug === hashSlug &&
+    location.hash.slice(1).split("/")[0] === state.currentWikiId;
+  if (samePath) {
+    updateBookmarkBtn();
+    updateReadBtn();
+    updateOfflineBtn();
+    return;
+  }
   route(location.hash.slice(1));
 });
 
@@ -194,15 +202,6 @@ document.addEventListener("click", (e) => {
     case "study-toggle":
       toggleStudyMode();
       break;
-    case "interview-toggle":
-      toggleInterviewMode();
-      break;
-    case "interview-reveal":
-      revealInterviewMode();
-      break;
-    case "depth-fold-set":
-      setFoldDepth(Number.parseInt(btn.dataset.depthFold, 10));
-      break;
     case "distraction-free-toggle":
       toggleDistractionFree();
       break;
@@ -250,6 +249,9 @@ document.addEventListener("click", (e) => {
       break;
     case "haptic-feedback-toggle":
       Settings._toggleHapticFeedback();
+      break;
+    case "practice-answers-toggle":
+      Settings._togglePracticeAnswersHidden();
       break;
     case "settings-export":
       Settings.exportData();
@@ -301,7 +303,7 @@ function closeTopbarOverflow() {
    ═══════════════════════════════════════════════════════════════ */
 // Escape resets an active reading mode/filter in place instead of navigating away; falls through to the normal Escape chain otherwise.
 function hasResettableViewState() {
-  if (isFocusMode() || isStudyMode() || isDistractionFree() || isInterviewMode()) return true;
+  if (isFocusMode() || isStudyMode() || isDistractionFree()) return true;
   if (state.currentView === "content") {
     return !!document.querySelector("#markdown-body h2.section--collapsed");
   }
@@ -320,7 +322,6 @@ function resetView() {
 
   cleanupFocusMode();
   cleanupStudyMode();
-  cleanupInterviewMode();
   exitDistractionFree();
   ArticleFind.close();
   document.getElementById("resume-chip")?.remove();
@@ -520,10 +521,6 @@ document.addEventListener("keydown", (e) => {
       }
       if (e.key === "h" || e.key === "H") {
         toggleStudyMode();
-        e.preventDefault();
-      }
-      if (e.key === "i" || e.key === "I") {
-        toggleInterviewMode();
         e.preventDefault();
       }
       if (e.key === "t" || e.key === "T") {
