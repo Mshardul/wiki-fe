@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Array](../data-structures/array.md) [Must read] - the sieve is a boolean array indexed by value; marking multiples is index arithmetic over it.
-- [Number Theory](./number-theory.md) [Should read] - the hub explaining where the sieve sits in the contest math toolkit and what it precomputes for factorization and primality.
+- [Array](../data-structures/array.md) [Must read]
+- [Number Theory](./number-theory.md) [Should read]
 
 ## Table of Contents
 

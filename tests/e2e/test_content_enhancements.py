@@ -2809,7 +2809,7 @@ def test_practice_problems_answers_hidden_by_default(page, base_url):
     default (practiceAnswersHidden defaults to true); Problem statement stays
     visible."""
     _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-default")
-    page.wait_for_selector(".problem-answer", timeout=5_000)
+    page.wait_for_selector(".problem-answer", state="attached", timeout=5_000)
 
     answer_count = page.locator(".problem-answer").count()
     assert answer_count == 2, "Expected one .problem-answer per problem"

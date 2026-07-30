@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - a heap's value is that push/pop are O(log n) and peek is O(1); those bounds are the reason to use it, and you can't read them without complexity. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
-- [Array](./array.md) [Must read] - a binary heap is stored _in an array_, with parent/child found by index arithmetic; the whole compact representation rests on contiguous indexing.
-- [Dynamic Array](./dynamic-array.md) [Should read] - push/pop grow and shrink the heap, so the backing store is a dynamic array; amortized O(1) append underlies amortized push.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- [Array](./array.md) [Must read]
+- [Dynamic Array](./dynamic-array.md) [Should read]
 
 ## Table of Contents
 

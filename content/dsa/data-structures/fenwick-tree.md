@@ -2,11 +2,11 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - the whole point of a Fenwick tree is trading O(n) prefix-sum recomputation for O(log n) update + query; you need the cost model to see why that matters. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
-- [Array](./array.md) [Must read] - a Fenwick tree **is** an array; every "tree" operation is index arithmetic over a flat array, no pointers.
-- [Prefix Sum](../patterns/prefix-sum.md) [Must read] - a Fenwick tree solves exactly the problem prefix sums solve, but with fast point updates; you need to feel the O(n) rebuild cost prefix sums pay to see what this fixes.
-- [Segment Tree](./segment-tree.md) [Should read] - the more general range-query structure Fenwick specializes; seeing both clarifies what Fenwick trades away for its smaller constant.
-- [Bit Manipulation](../algorithms/bit-manipulation.md) [Should read] - every Fenwick operation is a bitwise trick (`i & -i`) that isolates the lowest set bit; the structure is unreadable without it.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Array](./array.md) [Must read]
+- [Prefix Sum](../patterns/prefix-sum.md) [Must read]
+- [Segment Tree](./segment-tree.md) [Should read]
+- [Bit Manipulation](../algorithms/bit-manipulation.md) [Should read]
 
 ## Table of Contents
 

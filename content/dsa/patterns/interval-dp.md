@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Dynamic Programming](../algorithms/dynamic-programming.md) [Must read] - interval DP is a DP shape; you need the recurrence/memoization/tabulation distinction and the idea of optimal substructure before the interval formulation makes sense.
-- [DP Patterns](./dp-patterns.md) [Should read] - surveys the major DP shapes; interval DP is one of them, and seeing it alongside 1D and 2D DP helps you place it correctly.
-- [Recursion](../algorithms/recursion.md) [Should read] - the top-down memo form of interval DP is direct recursion; comfortable recursion makes the base-case / overlap reasoning cleaner.
+- [Dynamic Programming](../algorithms/dynamic-programming.md) [Must read]
+- [DP Patterns](./dp-patterns.md) [Should read]
+- [Recursion](../algorithms/recursion.md) [Should read]
 
 ## Table of Contents
 

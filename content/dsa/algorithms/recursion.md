@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Stack](../data-structures/stack.md) [Must read] - every recursive call is a frame pushed onto the call stack; recursion depth *is* stack depth
-- [Array](../data-structures/array.md) [Must read] - most recursive walkthroughs trace over arrays/strings, and the worked example here does too
+- [Stack](../data-structures/stack.md) [Must read]
+- [Array](../data-structures/array.md) [Must read]
 
 ## Table of Contents
 

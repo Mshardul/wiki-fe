@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-[Ford-Fulkerson](./ford-fulkerson.md) [Must read] - Edmonds-Karp is Ford-Fulkerson with one specific rule (BFS augmenting paths); read the base method and residual-graph mechanics first
-[Breadth-First Search (BFS)](./bfs.md) [Must read] - the augmenting-path search is a plain BFS over the residual graph
+[Ford-Fulkerson](./ford-fulkerson.md) [Must read]
+[Breadth-First Search (BFS)](./bfs.md) [Must read]
 
 ## Table of Contents
 

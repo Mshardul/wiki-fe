@@ -2,11 +2,11 @@
 
 ## Prerequisites
 
-- [Binary Search](../algorithms/binary-search.md) [Must read] - the combine step sorts one half and binary-searches it; you need to know `bisect_left` and its boundary semantics
-- [Subsets & Permutations](./subsets-permutations.md) [Must read] - generating all subsets of a half is the core enumeration step
-- [Bitmask DP](./bitmask-dp.md) [Must read] - often the alternative when n ≤ 20; understand why bitmask DP breaks at n ≈ 35–40
-- [Dynamic Programming](../algorithms/dynamic-programming.md) [Must read] - know when DP applies (overlapping subproblems) and why MITM is different (independent halves, no recurrence)
-- [Backtracking](../algorithms/backtracking.md) [Must read] - used to enumerate the power set of each half recursively
+- [Binary Search](../algorithms/binary-search.md) [Must read]
+- [Subsets & Permutations](./subsets-permutations.md) [Must read]
+- [Bitmask DP](./bitmask-dp.md) [Must read]
+- [Dynamic Programming](../algorithms/dynamic-programming.md) [Must read]
+- [Backtracking](../algorithms/backtracking.md) [Must read]
 
 ## Table of Contents
 

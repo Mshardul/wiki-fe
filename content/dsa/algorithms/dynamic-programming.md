@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- [Recursion](./recursion.md) [Must read] - DP is recursion whose repeated subproblems are cached; you must be fluent in base case / recursive case and the call tree before memoization makes sense.
-- [Backtracking](./backtracking.md) [Must read] - the bridge: when a backtracking search revisits the same state via different paths, memoizing that state _is_ top-down DP. DP is "backtracking with a memo".
-- [Arrays](../data-structures/array.md) [Must read] - the table (1D/2D array) is DP's working memory; indexing and iteration order on it are the whole game in tabulation.
-- [DP Patterns](../patterns/dp-patterns.md) - the catalog of recurring DP shapes (knapsack, LCS, interval, digit) once the mechanic here clicks.
+- [Recursion](./recursion.md) [Must read]
+- [Backtracking](./backtracking.md) [Must read]
+- [Arrays](../data-structures/array.md) [Must read]
+- [DP Patterns](../patterns/dp-patterns.md)
 
 ## Table of Contents
 

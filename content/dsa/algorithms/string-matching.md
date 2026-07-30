@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [String](../data-structures/string.md) [Must read] - the input is a text and a pattern; you need indexing, slicing, and the prefix/suffix vocabulary the string page establishes.
-- [Array](../data-structures/array.md) [Must read] - the failure function is just an integer array indexed by pattern position; the whole algorithm is array bookkeeping over the pattern.
-- **Big-O Notation** [Must read] - the entire payoff is replacing the naive O(n·m) scan with O(n + m); the win is meaningless without complexity. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [String](../data-structures/string.md) [Must read]
+- [Array](../data-structures/array.md) [Must read]
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
 
 ## Table of Contents
 

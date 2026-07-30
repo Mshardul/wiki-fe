@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Recursion](./recursion.md) [Must read] - GCD is the cleanest recurrence in the toolkit; extended Euclid threads Bézout coefficients back up the call stack.
-- [Number Theory](./number-theory.md) [Should read] - the hub explaining where GCD sits in the contest math toolkit and how it composes with the modular inverse.
-- [Modular Exponentiation](./modular-exponentiation.md) [Should read] - the other half of "modular inverse": Fermat's method works only for prime moduli, extended GCD works for any modulus.
+- [Recursion](./recursion.md) [Must read]
+- [Number Theory](./number-theory.md) [Should read]
+- [Modular Exponentiation](./modular-exponentiation.md) [Should read]
 
 ## Table of Contents
 

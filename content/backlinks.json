@@ -633,6 +633,12 @@
       "title": "Number Theory Reference"
     }
   ],
+  "./content/dsa/algorithms/quickselect.md": [
+    {
+      "path": "./content/dsa/patterns/top-k-elements.md",
+      "title": "Top-K Elements"
+    }
+  ],
   "./content/dsa/algorithms/quicksort.md": [
     {
       "path": "./content/dsa/algorithms/sorting.md",
@@ -667,6 +673,10 @@
     {
       "path": "./content/dsa/data-structures/suffix-array.md",
       "title": "Suffix Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
     },
     {
       "path": "./content/dsa/algorithms/aho-corasick.md",
@@ -813,6 +823,10 @@
     {
       "path": "./content/dsa/data-structures/suffix-array.md",
       "title": "Suffix Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
     },
     {
       "path": "./content/dsa/algorithms/z-algorithm.md",
@@ -1087,6 +1101,10 @@
   ],
   "./content/dsa/data-structures/avl-tree.md": [
     {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
+    },
+    {
       "path": "./content/dsa/data-structures/balanced-bst.md",
       "title": "Balanced BST"
     },
@@ -1153,6 +1171,10 @@
       "title": "Binary Search Tree (BST)"
     },
     {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
+    },
+    {
       "path": "./content/dsa/data-structures/skip-list.md",
       "title": "Skip List"
     },
@@ -1189,6 +1211,10 @@
     {
       "path": "./content/dsa/data-structures/trie.md",
       "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
     },
     {
       "path": "./content/dsa/data-structures/balanced-bst.md",
@@ -1531,6 +1557,10 @@
       "title": "Binary Search Tree (BST)"
     },
     {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
+    },
+    {
       "path": "./content/dsa/algorithms/sorting.md",
       "title": "Sorting"
     },
@@ -1549,6 +1579,10 @@
     {
       "path": "./content/dsa/patterns/merge-intervals.md",
       "title": "Merge Intervals"
+    },
+    {
+      "path": "./content/dsa/patterns/top-k-elements.md",
+      "title": "Top-K Elements"
     },
     {
       "path": "./content/dsa/patterns/two-heaps.md",
@@ -1687,6 +1721,10 @@
   ],
   "./content/dsa/data-structures/red-black-tree.md": [
     {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
+    },
+    {
       "path": "./content/dsa/data-structures/balanced-bst.md",
       "title": "Balanced BST"
     },
@@ -1729,6 +1767,10 @@
     {
       "path": "./content/dsa/data-structures/linked-list.md",
       "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
     },
     {
       "path": "./content/dsa/data-structures/b-plus-tree.md",
@@ -1787,6 +1829,10 @@
       "title": "Suffix Array"
     },
     {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
+    },
+    {
       "path": "./content/dsa/algorithms/string-matching.md",
       "title": "String Matching (KMP)"
     },
@@ -1813,12 +1859,22 @@
   ],
   "./content/dsa/data-structures/suffix-array.md": [
     {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
+    },
+    {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
     },
     {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/suffix-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/suffix-array.md",
+      "title": "Suffix Array"
     }
   ],
   "./content/dsa/data-structures/trie.md": [
@@ -1837,6 +1893,10 @@
     {
       "path": "./content/dsa/data-structures/suffix-array.md",
       "title": "Suffix Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
     },
     {
       "path": "./content/dsa/algorithms/aho-corasick.md",
@@ -2025,6 +2085,10 @@
   ],
   "./content/dsa/patterns/frequency-array.md": [
     {
+      "path": "./content/dsa/patterns/top-k-elements.md",
+      "title": "Top-K Elements"
+    },
+    {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
       "title": "Pattern Selection Cheat Sheet"
     }
@@ -2064,6 +2128,10 @@
     }
   ],
   "./content/dsa/patterns/k-way-merge.md": [
+    {
+      "path": "./content/dsa/patterns/top-k-elements.md",
+      "title": "Top-K Elements"
+    },
     {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
       "title": "Pattern Selection Cheat Sheet"
@@ -2353,6 +2421,10 @@
     {
       "path": "./content/dsa/patterns/monotonic-queue.md",
       "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/patterns/top-k-elements.md",
+      "title": "Top-K Elements"
     },
     {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",

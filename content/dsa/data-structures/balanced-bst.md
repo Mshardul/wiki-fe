@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Binary Search Tree](./binary-search-tree.md) [Must read] - a balanced BST is a plain BST plus a self-balancing rule; you must understand the BST invariant and its skew failure before the fix makes sense.
-- [Binary Tree](./binary-tree.md) [Should read] - rotations are local pointer-rewires on tree nodes; the tree mechanics transfer directly.
-- **Big-O Notation** [Should read] - the entire point is converting a BST's worst-case O(n) into a guaranteed O(log n). <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Binary Search Tree](./binary-search-tree.md) [Must read]
+- [Binary Tree](./binary-tree.md) [Should read]
+- **Big-O Notation** [Should read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
 
 ## Table of Contents
 

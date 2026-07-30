@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - a trie's operations are O(L) in the key _length_, not O(n) in the key _count_; you need the cost model to see why that's the win. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
-- [String](./string.md) [Must read] - a trie keys on the characters of a string, one per level; the character-indexing intuition transfers directly.
-- [Hash Table](./hash-table.md) [Should read] - the trie's main rival for string keys; you compare against it constantly, and each trie node often _is_ a small hash map of children.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [String](./string.md) [Must read]
+- [Hash Table](./hash-table.md) [Should read]
 
 ## Table of Contents
 

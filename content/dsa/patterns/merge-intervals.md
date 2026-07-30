@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Array](../data-structures/array.md) [Must read] - intervals are stored and iterated as an array of pairs; the pattern is a disciplined sort-then-scan over that array
-- [Sorting](../algorithms/sorting.md) [Must read] - the entire pattern rests on sorting by start (or end) first; without that ordering the sweep is not correct
-- [Heap](../data-structures/heap.md) [Must read] - the meeting-rooms/min-heap-of-end-times variant replaces the merge step with a heap keyed on end time
+- [Array](../data-structures/array.md) [Must read]
+- [Sorting](../algorithms/sorting.md) [Must read]
+- [Heap](../data-structures/heap.md) [Must read]
 
 ## Table of Contents
 

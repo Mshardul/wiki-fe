@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Balanced BST](./balanced-bst.md) [Must read] - the hub: why balancing exists and how red-black sits against AVL and B-trees. Read it first.
-- [Binary Search Tree](./binary-search-tree.md) [Must read] - a red-black tree is a BST plus color rules; you need the BST invariant and the skew failure first.
-- [AVL Tree](./avl-tree.md) [Should read] - the strict-balance counterpart; red-black is best understood as "AVL's looser, fewer-rotations sibling".
+- [Balanced BST](./balanced-bst.md) [Must read]
+- [Binary Search Tree](./binary-search-tree.md) [Must read]
+- [AVL Tree](./avl-tree.md) [Should read]
 
 ## Table of Contents
 

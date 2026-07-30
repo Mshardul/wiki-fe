@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Dynamic Programming](./dynamic-programming.md) [Must read] - bitmask DP encodes subset state as a single integer; you need DP fundamentals to understand why iterating all 2ⁿ subsets solves the problem.
-- [Divide and Conquer](./divide-and-conquer.md) [Should read] - binary exponentiation (fast pow) and the subset enumeration recurrence both halve the problem each step; understanding the paradigm clarifies why O(log exp) and O(3ⁿ) arise.
+- [Dynamic Programming](./dynamic-programming.md) [Must read]
+- [Divide and Conquer](./divide-and-conquer.md) [Should read]
 
 ## Table of Contents
 

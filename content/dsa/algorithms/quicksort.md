@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - quicksort's story is "O(n log n) _average_, O(n²) worst"; the gap between average and worst is the whole point, and you can't read it without complexity. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
-- [Array](../data-structures/array.md) [Must read] - partitioning swaps elements in place by index; the O(1) extra space and the swap-based loop assume a random-access array.
-- [Sorting](./sorting.md) [Should read] - the hub: where quicksort sits among the six sorts and why it's the in-memory default despite the O(n²) tail.
-- [Merge Sort](./merge-sort.md) [Should read] - the divide-and-conquer sibling; quicksort does its work in the _split_ (partition), merge sort in the _combine_ (merge) - same recurrence, opposite ends.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- [Array](../data-structures/array.md) [Must read]
+- [Sorting](./sorting.md) [Should read]
+- [Merge Sort](./merge-sort.md) [Should read]
 
 ## Table of Contents
 

@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-[Maximum Flow](./maximum-flow.md) [Must read] - the max-flow reduction is the fastest correct way to compute bipartite matching; read the family survey first
-[Breadth-First Search (BFS)](./bfs.md) [Must read] - both the flow reduction and Hopcroft-Karp find augmenting paths via BFS
-[Depth-First Search (DFS)](./dfs.md) [Must read] - the classic augmenting-path algorithm (Kuhn's) finds one augmenting path per DFS
+[Maximum Flow](./maximum-flow.md) [Must read]
+[Breadth-First Search (BFS)](./bfs.md) [Must read]
+[Depth-First Search (DFS)](./dfs.md) [Must read]
 
 ## Table of Contents
 

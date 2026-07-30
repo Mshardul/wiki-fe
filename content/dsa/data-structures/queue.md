@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - every core operation here is O(1); you need the cost model to see why the naive list-based version fails. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
-- [Array](./array.md) [Must read] - a queue over a plain array has an O(n) dequeue trap; the [circular buffer](./circular-buffer.md) fixes it. You need the array's shift cost to see the trap.
-- [Stack](./stack.md) [Should read] - the queue is the FIFO mirror of the stack's LIFO; learning them as a pair locks in when to use which.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Array](./array.md) [Must read]
+- [Stack](./stack.md) [Should read]
 
 ## Table of Contents
 

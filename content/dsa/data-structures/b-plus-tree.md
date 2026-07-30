@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [B-Tree](./b-tree.md) [Must read] - B+ tree is a B-tree variant; understand B-tree structure, splits, and merges first.
-- [Balanced BST](./balanced-bst.md) [Must read] - context for why disk-aware trees differ from in-memory balanced BSTs.
-- [Linked List](./linked-list.md) [Should read] - the leaf layer is a doubly linked list; the range-scan superpower depends on it.
+- [B-Tree](./b-tree.md) [Must read]
+- [Balanced BST](./balanced-bst.md) [Must read]
+- [Linked List](./linked-list.md) [Should read]
 
 ## Table of Contents
 

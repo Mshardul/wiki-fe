@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - sorting is where the O(n²) vs O(n log n) divide is most consequential; you can't compare algorithms without it. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
-- [Array](../data-structures/array.md) [Must read] - sorts operate on indexable sequences; in-place swaps and partitioning assume O(1) random access.
-- [Binary Search](./binary-search.md) [Should read] - sorting's payoff is often "sort once, then binary-search many times"; the divide-and-conquer sorts share its recurrence machinery.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- [Array](../data-structures/array.md) [Must read]
+- [Binary Search](./binary-search.md) [Should read]
 
 ## Table of Contents
 

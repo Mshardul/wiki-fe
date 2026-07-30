@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- [Array](../data-structures/array.md) [Must read] - window operates on a contiguous indexed sequence
-- [Hash Table](../data-structures/hash-table.md) [Must read] - frequency maps track window contents in variable windows
-- [Deque](../data-structures/deque.md) [Must read] - monotonic deque enables O(1) window max/min (CP-primitive)
-- [Two Pointers](./two-pointers.md) [Must read] - sliding window is a specialization of the two-pointers pattern
+- [Array](../data-structures/array.md) [Must read]
+- [Hash Table](../data-structures/hash-table.md) [Must read]
+- [Deque](../data-structures/deque.md) [Must read]
+- [Two Pointers](./two-pointers.md) [Must read]
 
 ## Table of Contents
 

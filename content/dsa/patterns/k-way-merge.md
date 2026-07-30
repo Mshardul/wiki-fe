@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Heap](../data-structures/heap.md) [Must read] - the pattern is a min-heap of the k list heads; you need push/pop/peek and the heap property to understand why it works and why it's O(N log k).
-- [Merge Sort](../algorithms/merge-sort.md) [Should read] - the 2-way merge is the base case; k-way merge generalizes it by replacing the "take the smaller of two heads" step with a heap that does the same for k heads in O(log k).
-- [Top-K Elements](./top-k-elements.md) [Should read] - sibling pattern; both use a size-bounded heap, but top-K extracts from one stream while k-way merge tracks one frontier pointer per sorted sequence.
+- [Heap](../data-structures/heap.md) [Must read]
+- [Merge Sort](../algorithms/merge-sort.md) [Should read]
+- [Top-K Elements](./top-k-elements.md) [Should read]
 
 ## Table of Contents
 

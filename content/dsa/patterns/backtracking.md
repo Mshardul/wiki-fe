@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- [Backtracking (algorithm)](../algorithms/backtracking.md) [Must read] - this page is the _recognition + transfer_ layer; the algorithm page owns the procedure, its correctness proof, and the complexity derivation. Read it for the mechanics; read this for how to spot and shape a backtracking problem.
-- [Recursion](../algorithms/recursion.md) [Must read] - backtracking is a recursion that mutates shared state on the way down and undoes it on the way up; you need the call-stack model cold.
-- [Depth-First Search](../algorithms/dfs.md) [Should read] - backtracking _is_ DFS over an implicit decision tree; seeing them as the same traversal locks in the structure.
-- [Subsets & Permutations](./subsets-permutations.md) [Should read] - the most common _enumeration_ instance of this pattern; this page generalizes it to constraint-satisfaction and routes back to it.
+- [Backtracking (algorithm)](../algorithms/backtracking.md) [Must read]
+- [Recursion](../algorithms/recursion.md) [Must read]
+- [Depth-First Search](../algorithms/dfs.md) [Should read]
+- [Subsets & Permutations](./subsets-permutations.md) [Should read]
 
 ## Table of Contents
 

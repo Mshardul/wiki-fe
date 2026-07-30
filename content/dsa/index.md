@@ -28,6 +28,7 @@ Structural references. Each page covers how it works, operations with their comp
 | [Binary Tree](./data-structures/binary-tree.md)                     | Each node has up to two children. The traversal orderings and the base for BST, heap, and trie.                                                       |
 | [Binary Search Tree (BST)](./data-structures/binary-search-tree.md) | Ordered tree: left < node < right. O(log n) search/insert/delete when balanced, O(n) when skewed.                                                     |
 | [Trie](./data-structures/trie.md)                                   | Prefix tree keyed by character path. O(L) lookup by length, not by count - autocomplete and prefix queries.                                           |
+| [Treap](./data-structures/treap.md)                                 | BST + randomized heap-ordered priority. Expected O(log n) ops with no rotation logic - and native O(log n) split/merge that rotation-balanced trees can't match. |
 | [Balanced BST](./data-structures/balanced-bst.md)                   | **Hub** - survey + decision layer for self-balancing BSTs: what balancing buys, rotations, and which scheme when. Routes to AVL / Red-Black / B-tree. |
 | [Skip List](./data-structures/skip-list.md)                         | Sorted linked list with randomized express-lane towers - expected O(log n) search/insert/delete, no rotations. Redis sorted sets' backbone.          |
 | [AVL Tree](./data-structures/avl-tree.md)                           | Strictly height-balanced BST (subtree heights differ ≤ 1). Tighter balance → faster lookups, more rotations on writes. Read-heavy workloads.          |
@@ -41,6 +42,7 @@ Structural references. Each page covers how it works, operations with their comp
 | [B-Plus Tree](./data-structures/b-plus-tree.md)                     | B-tree variant with all values at leaves, internal nodes as pure routing keys, leaves linked for range scans - the structure behind MySQL InnoDB and PostgreSQL indexes. |
 | [Interval Tree](./data-structures/interval-tree.md)                 | Augmented BST storing intervals; O(log n + k) stabbing and overlap queries - the structure for sweep-line and scheduling problems.                     |
 | [Suffix Array](./data-structures/suffix-array.md)                   | Sorted array of suffix indices. O(n log² n) prefix-doubling build, O(m log n) pattern search - lighter than a suffix tree; the CP string and genomics workhorse.         |
+| [Suffix Tree](./data-structures/suffix-tree.md)                     | Compressed trie of every suffix. O(n) Ukkonen build, O(m) pattern search regardless of text size - at 5-10× a suffix array's memory footprint and much harder to implement. |
 
 ---
 
@@ -132,6 +134,7 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 | [Frequency Array](./patterns/frequency-array.md)                            | Array indexed by value: O(1) increment/lookup for bounded integer or character keys. Replaces a hash map when the key range fits - anagram detection, counting sort, sliding-window distribution matching. |
 | [Graph Coloring](./patterns/graph-coloring.md)                              | Assign colors to nodes so no two adjacent nodes match. 2-coloring (bipartite check) in O(V + E); k-coloring for k ≥ 3 is NP-complete - backtracking for small n, bitmask DP for n ≤ 20. |
 | [Meet in the Middle](./patterns/meet-in-the-middle.md)                      | Split an exponential search space in half, enumerate each independently (2^(n/2) each), sort one, binary-search from the other. Turns O(2ⁿ) into O(2^(n/2) · n) - the go-to for n ≤ 40 subset-sum problems. |
+| [Top-K Elements](./patterns/top-k-elements.md)                              | A size-k heap over a stream. K largest/smallest/most-frequent in O(n log k) without sorting everything.                        |
 
 ---
 
@@ -162,9 +165,6 @@ Rollout tracking + known gaps: `docs/_meta/plans/dsa-cheatsheets-rollout.md`.
 ## Deferred / Not yet filed
 
 - Count-Min Sketch - probabilistic frequency sketch; better fits system-design vertical
-- Skip List - randomized ordered map; deferred, low priority vs balanced BST family
-- Treap - randomized BST+heap; deferred, low priority vs balanced BST family
-- Suffix Tree - suffix array covers 90% of interview need; suffix tree deferred
 - Bidirectional BFS - will live as a section inside bfs.md
 - Tree BFS vs Tree DFS - will live as a section inside tree-graph-traversal.md
 - 0/1 Knapsack / Unbounded Knapsack - covered in dp-patterns.md

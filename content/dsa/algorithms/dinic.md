@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-[Ford-Fulkerson](./ford-fulkerson.md) [Must read] - Dinic is a disciplined Ford-Fulkerson: same residual graph and augmenting-path mechanics, a completely different strategy for finding paths
-[Edmonds-Karp](./edmonds-karp.md) [Must read] - Dinic generalizes Edmonds-Karp's "always BFS, shortest path" idea from one path per phase to *all* shortest paths per phase at once
-[Breadth-First Search (BFS)](./bfs.md) [Must read] - builds the level graph each phase
-[Depth-First Search (DFS)](./dfs.md) [Must read] - finds the blocking flow within a level graph
+[Ford-Fulkerson](./ford-fulkerson.md) [Must read]
+[Edmonds-Karp](./edmonds-karp.md) [Must read]
+[Breadth-First Search (BFS)](./bfs.md) [Must read]
+[Depth-First Search (DFS)](./dfs.md) [Must read]
 
 ## Table of Contents
 

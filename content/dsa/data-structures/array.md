@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - every operation below is stated in Big-O; you must read complexity to use this page. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
-- **Computer memory model** [Should read] - an array is contiguous addresses, so you need to picture RAM as a sequence of numbered cells (a giant numbered locker bank). No dedicated page; the mental model is enough.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- **Computer memory model** [Should read]
 
 ## Table of Contents
 

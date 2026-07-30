@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Binary Search](../algorithms/binary-search.md) [Must read] - this pattern is binary search applied to a space of candidate *answers* rather than an array's indices; the halving logic and off-by-one traps are identical
-- [Greedy](../algorithms/greedy.md) [Must read] - the feasibility check at each candidate answer is almost always a greedy simulation
+- [Binary Search](../algorithms/binary-search.md) [Must read]
+- [Greedy](../algorithms/greedy.md) [Must read]
 
 ## Table of Contents
 

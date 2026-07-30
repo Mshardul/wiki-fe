@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- [Dynamic Programming](./dynamic-programming.md) [Must read] - LCS is the canonical 2D-DP teaching example; you need memo-vs-tabulation, state definition, and the recurrence-as-optimal-substructure argument before this page adds anything new.
-- [Recursion](./recursion.md) [Must read] - the brute-force recursive form (branch on match/no-match) is what the DP recurrence collapses; you should be able to write it before caching it.
-- [Arrays](../data-structures/array.md) [Must read] - the 2D DP table is a 2D array; row-major fill order and indexing are the whole mechanic.
-- [DP Patterns](../patterns/dp-patterns.md) - LCS is one of the recurring 2D-grid DP shapes catalogued there, alongside edit distance and interval DP.
+- [Dynamic Programming](./dynamic-programming.md) [Must read]
+- [Recursion](./recursion.md) [Must read]
+- [Arrays](../data-structures/array.md) [Must read]
+- [DP Patterns](../patterns/dp-patterns.md)
 
 ## Table of Contents
 

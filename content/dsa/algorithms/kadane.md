@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Array](../data-structures/array.md) [Must read] - Kadane's operates on a 1-D array with O(1) index access; understanding contiguous subarray indexing is required.
-- [Dynamic Programming](./dynamic-programming.md) [Must read] - Kadane's is a one-variable DP with optimal substructure and overlapping subproblems; framing it as DP (not just a greedy scan) is how the interviewer will probe it.
-- [Prefix Sum](../patterns/prefix-sum.md) [Must read] - the prefix-sum maximum-subarray approach is Kadane's main rival; knowing both lets you pick correctly and explain the trade-off.
+- [Array](../data-structures/array.md) [Must read]
+- [Dynamic Programming](./dynamic-programming.md) [Must read]
+- [Prefix Sum](../patterns/prefix-sum.md) [Must read]
 
 ## Table of Contents
 

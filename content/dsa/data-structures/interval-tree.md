@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Binary Search Tree (BST)](./binary-search-tree.md) [Must read] - an interval tree is an augmented BST; all BST search, insert, and delete logic carries over directly.
-- [Binary Tree](./binary-tree.md) [Must read] - the traversal mechanics and recursive structure are identical.
-- <!-- [Balanced BST](./balanced-bst.md) [Should read] - in practice interval trees are balanced (AVL/Red-Black); understanding balancing explains the O(log n) guarantees. -->
+- [Binary Search Tree (BST)](./binary-search-tree.md) [Must read]
+- [Binary Tree](./binary-tree.md) [Must read]
+- <!-- [Balanced BST](./balanced-bst.md) [Should read] -->
 
 ## Table of Contents
 

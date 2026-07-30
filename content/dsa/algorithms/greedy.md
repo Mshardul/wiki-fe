@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- [Sorting](./sorting.md) [Must read] - almost every greedy algorithm begins by sorting on the "greedy key" (end time, ratio, weight); the `O(n log n)` sort dominates the runtime.
-- [Dynamic Programming](./dynamic-programming.md) [Must read] - greedy is DP's faster, riskier cousin; you must know what DP buys (exploring all choices) to see what greedy gambles (committing to one). The greedy-vs-DP boundary is the whole interview.
-- [Heap](../data-structures/heap.md) - many greedy algorithms (Dijkstra, Huffman, task scheduling) pick the local best via a priority queue rather than a one-time sort.
-- [Merge Intervals](../patterns/merge-intervals.md) - interval-scheduling greedy is the algorithmic core under that pattern.
+- [Sorting](./sorting.md) [Must read]
+- [Dynamic Programming](./dynamic-programming.md) [Must read]
+- [Heap](../data-structures/heap.md)
+- [Merge Intervals](../patterns/merge-intervals.md)
 
 ## Table of Contents
 

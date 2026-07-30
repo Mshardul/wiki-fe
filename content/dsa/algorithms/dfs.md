@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-[Stack](../data-structures/stack.md) [Must read] - iterative DFS uses an explicit stack; recursive DFS uses the call stack implicitly
-[Graph](../data-structures/graph.md) [Must read] - adjacency list vs matrix representation shapes DFS performance
-<!-- [Recursion](./recursion.md) [Must read] - recursive DFS is a direct application of recursive thinking -->
+[Stack](../data-structures/stack.md) [Must read]
+[Graph](../data-structures/graph.md) [Must read]
+<!-- [Recursion](./recursion.md) [Must read] -->
 
 ## Table of Contents
 

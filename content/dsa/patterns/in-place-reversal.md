@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Linked List](../data-structures/linked-list.md) [Must read] - the pattern rewires `next` pointers; you must understand node structure and traversal first
-- [Two Pointers](./two-pointers.md) [Must read] - prev/curr/next is a specialised two-pointer walk; the mental model transfers directly
+- [Linked List](../data-structures/linked-list.md) [Must read]
+- [Two Pointers](./two-pointers.md) [Must read]
 
 ## Table of Contents
 

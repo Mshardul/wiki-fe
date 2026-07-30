@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-[Bit Manipulation](../algorithms/bit-manipulation.md) [Must read] - bitmask DP uses bitwise ops to encode/test/update subset state; you need AND, OR, shift, and popcount fluently.
-[Dynamic Programming](../algorithms/dynamic-programming.md) [Must read] - bitmask DP is standard DP where the state dimension is a subset; memoisation and tabulation apply directly.
+[Bit Manipulation](../algorithms/bit-manipulation.md) [Must read]
+[Dynamic Programming](../algorithms/dynamic-programming.md) [Must read]
 
 ## Table of Contents
 

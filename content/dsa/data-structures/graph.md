@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-[Binary Tree](./binary-tree.md) [Must read] - trees are graphs with no cycles; understanding tree traversal primes you for graph traversal
-[Hash Table](./hash-table.md) [Must read] - adjacency lists use hash maps for O(1) neighbor lookup
-[Array](./array.md) [Must read] - adjacency matrix is a 2D array; index arithmetic is the core op
+[Binary Tree](./binary-tree.md) [Must read]
+[Hash Table](./hash-table.md) [Must read]
+[Array](./array.md) [Must read]
 
 ## Table of Contents
 

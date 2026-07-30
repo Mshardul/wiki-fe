@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Linked List](../data-structures/linked-list.md) [Must read] - this pattern's canonical use case is cycle detection and middle-finding on a singly linked list, where there's no O(1) random access to fall back on
-- [Two Pointers](./two-pointers.md) [Must read] - fast & slow is a same-direction, different-speed specialization of the two-pointer idea
+- [Linked List](../data-structures/linked-list.md) [Must read]
+- [Two Pointers](./two-pointers.md) [Must read]
 
 ## Table of Contents
 

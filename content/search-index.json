@@ -351,6 +351,12 @@
           "description": "Prefix tree keyed by character path. O(L) lookup by length, not by count - autocomplete and prefix queries."
         },
         {
+          "title": "Treap",
+          "path": "./content/dsa/data-structures/treap.md",
+          "slug": "treap",
+          "description": "BST + randomized heap-ordered priority. Expected O(log n) ops with no rotation logic - and native O(log n) split/merge that rotation-balanced trees can't match."
+        },
+        {
           "title": "Balanced BST",
           "path": "./content/dsa/data-structures/balanced-bst.md",
           "slug": "balanced-bst",
@@ -427,6 +433,12 @@
           "path": "./content/dsa/data-structures/suffix-array.md",
           "slug": "suffix-array",
           "description": "Sorted array of suffix indices. O(n log² n) prefix-doubling build, O(m log n) pattern search - lighter than a suffix tree; the CP string and genomics workhorse."
+        },
+        {
+          "title": "Suffix Tree",
+          "path": "./content/dsa/data-structures/suffix-tree.md",
+          "slug": "suffix-tree",
+          "description": "Compressed trie of every suffix. O(n) Ukkonen build, O(m) pattern search regardless of text size - at 5-10× a suffix array's memory footprint and much harder to implement."
         }
       ]
     },
@@ -869,6 +881,12 @@
           "path": "./content/dsa/patterns/meet-in-the-middle.md",
           "slug": "meet-in-the-middle",
           "description": "Split an exponential search space in half, enumerate each independently (2^(n/2) each), sort one, binary-search from the other. Turns O(2ⁿ) into O(2^(n/2) · n) - the go-to for n ≤ 40 subset-sum problems."
+        },
+        {
+          "title": "Top-K Elements",
+          "path": "./content/dsa/patterns/top-k-elements.md",
+          "slug": "top-k-elements",
+          "description": "A size-k heap over a stream. K largest/smallest/most-frequent in O(n log k) without sorting everything."
         }
       ]
     },

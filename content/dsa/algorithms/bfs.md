@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-[Queue](../data-structures/queue.md) [Must read] - BFS uses a queue as its frontier; understanding FIFO ordering is essential
-[Graph](../data-structures/graph.md) [Must read] - adjacency list vs matrix representation shapes BFS performance
+[Queue](../data-structures/queue.md) [Must read]
+[Graph](../data-structures/graph.md) [Must read]
 
 ## Table of Contents
 

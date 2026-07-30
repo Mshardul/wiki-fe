@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Deque](../data-structures/deque.md) [Must read] - a monotonic queue *is* a deque under a monotonicity discipline; the O(1)-both-ends mechanic and the `collections.deque` API live there, not repeated here.
-- [Monotonic Stack](../data-structures/stack.md#cp-primitives) [Should read] - the single-ended sibling; seeing both makes the "which end(s) do I need" decision automatic.
-- [Sliding Window](./sliding-window.md) [Should read] - the parent recognition pattern; a monotonic queue is usually the engine *inside* a sliding-window solution once the window needs an extremum, not just a running sum/count.
+- [Deque](../data-structures/deque.md) [Must read]
+- [Monotonic Stack](../data-structures/stack.md#cp-primitives) [Should read]
+- [Sliding Window](./sliding-window.md) [Should read]
 
 ## Table of Contents
 

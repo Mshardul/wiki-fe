@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Hash Table](./hash-table.md) [Must read] - a bloom filter is built on the same hash-function principle: map a key to an index, set or test that slot. Understanding chaining and the hash-function contract is required.
-- [Array](./array.md) [Must read] - the bit array underlying a bloom filter is a fixed-size contiguous array; O(1) indexed access is what makes insert and lookup O(k).
-- [Hash Set](./hash-set.md) [Should read] - the bloom filter is a probabilistic, space-compressed replacement for a hash set; comparing the two concretely shows what you give up (exact membership) and what you gain (constant space).
+- [Hash Table](./hash-table.md) [Must read]
+- [Array](./array.md) [Must read]
+- [Hash Set](./hash-set.md) [Should read]
 
 ## Table of Contents
 

@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- [Binary Tree](../data-structures/binary-tree.md) [Must read] - LCA is defined over a rooted tree; you need depth, ancestor, and the recursive tree-DP shape before the algorithm makes sense.
-- [Depth-First Search (DFS)](./dfs.md) [Must read] - both the naive recursive LCA and the binary-lifting preprocessing walk the tree via DFS to compute depth and parent pointers.
-- [Dynamic Programming](./dynamic-programming.md) [Must read] - binary lifting **is** a DP over `(node, power-of-two-jump)` states; the doubling trick is the same "build big answers from precomputed small ones" idea as any DP-on-exponents.
-- [Bit Manipulation](./bit-manipulation.md) [Should read] - decomposing a jump distance into powers of two (the same `i & -i` / bit-decomposition idea as a [Fenwick tree](../data-structures/fenwick-tree.md)) is how binary lifting answers "jump k steps" in O(log n).
+- [Binary Tree](../data-structures/binary-tree.md) [Must read]
+- [Depth-First Search (DFS)](./dfs.md) [Must read]
+- [Dynamic Programming](./dynamic-programming.md) [Must read]
+- [Bit Manipulation](./bit-manipulation.md) [Should read]
 
 ## Table of Contents
 

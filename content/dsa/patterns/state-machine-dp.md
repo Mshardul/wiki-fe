@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Dynamic Programming](../algorithms/dynamic-programming.md) [Must read] - state machine DP is DP where states have explicit transition constraints, not just an index
-- [DP Patterns](./dp-patterns.md) [Must read] - covers general DP pattern recognition before specializing here
-- [Hash Table](../data-structures/hash-table.md) [Must read] - memoization maps (index, state) pairs to values; understanding the structure helps
+- [Dynamic Programming](../algorithms/dynamic-programming.md) [Must read]
+- [DP Patterns](./dp-patterns.md) [Must read]
+- [Hash Table](../data-structures/hash-table.md) [Must read]
 
 ## Table of Contents
 

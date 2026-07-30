@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - the BST's whole promise is O(log n) - and its whole failure mode is O(n) when skewed; you need the cost model to see the difference. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
-- [Binary Tree](./binary-tree.md) [Must read] - a BST is a binary tree plus one ordering rule; all the traversal and recursion machinery transfers directly.
-- [Binary Search](../algorithms/binary-search.md) [Should read] - a BST is binary search made into a structure: each node is a comparison that halves the remaining search space.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Binary Tree](./binary-tree.md) [Must read]
+- [Binary Search](../algorithms/binary-search.md) [Should read]
 
 ## Table of Contents
 

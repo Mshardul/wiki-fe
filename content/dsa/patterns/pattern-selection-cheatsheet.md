@@ -3,8 +3,8 @@
 Trigger phrase → which pattern.
 
 > 📖 Full articles:
-> [Two Pointers](./two-pointers.md) · [Sliding Window](./sliding-window.md) · [Prefix Sum](./prefix-sum.md) · [Difference Array](./difference-array.md) · [Fast & Slow Pointers](./fast-slow-pointers.md) · [Monotonic Stack](./monotonic-stack.md) · [Monotonic Queue](./monotonic-queue.md) · [Binary Search on Answer](./binary-search-on-answer.md) · [Modified Binary Search](./modified-binary-search.md) · [Backtracking](./backtracking.md) · [Two Heaps](./two-heaps.md) · [K-Way Merge](./k-way-merge.md) · [Interval DP](./interval-dp.md) · [In-place Reversal](./in-place-reversal.md) · [Matrix Traversal](./matrix-traversal.md) · [State Machine DP](./state-machine-dp.md) · [Bitmask DP](./bitmask-dp.md) · [Frequency Array](./frequency-array.md) · [Graph Coloring](./graph-coloring.md) · [Meet in the Middle](./meet-in-the-middle.md)
-> <!-- Uncomment once written: [Cyclic Sort](./cyclic-sort.md) · [Merge Intervals](./merge-intervals.md) · [Subsets & Permutations](./subsets-permutations.md) · [Top-K Elements](./top-k-elements.md) · [Tree & Graph Traversal](./tree-graph-traversal.md) · [DP Patterns](./dp-patterns.md) -->
+> [Two Pointers](./two-pointers.md) · [Sliding Window](./sliding-window.md) · [Prefix Sum](./prefix-sum.md) · [Difference Array](./difference-array.md) · [Fast & Slow Pointers](./fast-slow-pointers.md) · [Monotonic Stack](./monotonic-stack.md) · [Monotonic Queue](./monotonic-queue.md) · [Binary Search on Answer](./binary-search-on-answer.md) · [Modified Binary Search](./modified-binary-search.md) · [Backtracking](./backtracking.md) · [Two Heaps](./two-heaps.md) · [K-Way Merge](./k-way-merge.md) · [Interval DP](./interval-dp.md) · [In-place Reversal](./in-place-reversal.md) · [Matrix Traversal](./matrix-traversal.md) · [State Machine DP](./state-machine-dp.md) · [Bitmask DP](./bitmask-dp.md) · [Frequency Array](./frequency-array.md) · [Graph Coloring](./graph-coloring.md) · [Meet in the Middle](./meet-in-the-middle.md) · [Top-K Elements](./top-k-elements.md)
+> <!-- Uncomment once written: [Cyclic Sort](./cyclic-sort.md) · [Merge Intervals](./merge-intervals.md) · [Subsets & Permutations](./subsets-permutations.md) · [Tree & Graph Traversal](./tree-graph-traversal.md) · [DP Patterns](./dp-patterns.md) -->
 
 ## Recognition table
 
@@ -22,6 +22,7 @@ Trigger phrase → which pattern.
 | "find all valid...", "generate all combinations/arrangements that satisfy..." | Backtracking |
 | "find the median of a data stream", "sliding window median" | Two Heaps |
 | "merge k sorted lists", "smallest range including one element from each of k lists" | K-Way Merge |
+| "find the k largest/smallest elements", "kth largest element", "top k frequent" | Top-K Elements |
 | "burst all balloons", "optimal parenthesization of a matrix chain" | Interval DP |
 | "reverse a linked list", "reverse nodes k at a time" | In-place Reversal |
 | "count islands in a grid", "shortest path top-left to bottom-right" | Matrix Traversal |

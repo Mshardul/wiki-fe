@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Binary Search](../algorithms/binary-search.md) [Must read] - modified binary search is vanilla binary search applied to a broken or transformed search space; understanding the invariant `lo` ≤ answer ≤ `hi` and the `lo = mid+1` / `hi = mid` mechanics is required before layering a twist on top.
-- [Array](../data-structures/array.md) [Must read] - all variants operate on arrays or array-backed structures; understanding indexing and in-place layout matters for the rotated-array and peak-finding cases.
+- [Binary Search](../algorithms/binary-search.md) [Must read]
+- [Array](../data-structures/array.md) [Must read]
 
 ## Table of Contents
 

@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [String](../data-structures/string.md) [Must read] - the structure being scanned; indexing and the odd/even-length palindrome distinction drive the whole algorithm.
-- [Array](../data-structures/array.md) [Must read] - the auxiliary `P[]` radius array is a plain array walked left to right, reused across the expansion steps.
-- [Two Pointers](../patterns/two-pointers.md) [Should read] - the center-expansion step is a two-pointer expand-outward move; Manacher's adds the trick that avoids repeating it from scratch at every center.
+- [String](../data-structures/string.md) [Must read]
+- [Array](../data-structures/array.md) [Must read]
+- [Two Pointers](../patterns/two-pointers.md) [Should read]
 
 ## Table of Contents
 

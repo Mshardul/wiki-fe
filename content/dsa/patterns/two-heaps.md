@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Heap](../data-structures/heap.md) [Must read] - the entire pattern is two heaps working in concert; you need push, pop, peek, and the heap property cold.
-- [Top-K Elements](./top-k-elements.md) [Should read] - sibling pattern that uses one heap; two-heaps extends the idea to maintain a partition rather than a fixed-size window.
+- [Heap](../data-structures/heap.md) [Must read]
+- [Top-K Elements](./top-k-elements.md) [Should read]
 
 ## Table of Contents
 

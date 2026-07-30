@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - insertion sort is the textbook case where best (O(n)) and worst (O(n²)) diverge wildly; reading that gap is the whole point. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
-- [Array](../data-structures/array.md) [Must read] - the algorithm shifts elements right to open a slot; the O(1) shift-by-index and in-place swaps assume a random-access array.
-- [Sorting](./sorting.md) [Should read] - the hub: where insertion sort sits among the six sorts and why an O(n²) sort still earns its place.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- [Array](../data-structures/array.md) [Must read]
+- [Sorting](./sorting.md) [Should read]
 
 ## Table of Contents
 

@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - heapsort's pitch is "worst-case O(n log n) _and_ O(1) space"; both halves of that claim are complexity statements you must be able to read. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
-- [Heap](../data-structures/heap.md) [Must read] - heapsort _is_ the heap's build + repeated extract-max applied in place; you must understand the heap invariant, sift-down, and O(n) build-heap before this page.
-- [Array](../data-structures/array.md) [Must read] - the heap lives in the array being sorted; the in-place O(1)-space trick is index arithmetic on that array.
-- [Sorting](./sorting.md) [Should read] - the hub: where heapsort sits among the six sorts and why "O(n log n) worst case + O(1) space" is its unique niche.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- [Heap](../data-structures/heap.md) [Must read]
+- [Array](../data-structures/array.md) [Must read]
+- [Sorting](./sorting.md) [Should read]
 
 ## Table of Contents
 

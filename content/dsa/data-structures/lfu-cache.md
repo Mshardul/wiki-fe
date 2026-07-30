@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - the entire claim is **O(1) get _and_ put**, eviction included; without the cost model you can't see why the naive "scan for the min frequency" version is wrong and the bucket design is right. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
-- [LRU Cache](./lru-cache.md) [Must read] - LFU is LRU with one extra dimension. The map→node + doubly-linked-list machinery is identical; read it first so this page can focus on the _frequency_ layer instead of re-teaching the cache skeleton.
-- [Hash Table](./hash-table.md) [Must read] - LFU uses **three** maps (value, freq, and freq→bucket). The O(1) story rests entirely on average-O(1) hashing.
-- [Doubly Linked List](./linked-list.md) [Should read] - each frequency bucket is an LRU-ordered doubly linked list; the O(1) splice and move are the same primitives.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [LRU Cache](./lru-cache.md) [Must read]
+- [Hash Table](./hash-table.md) [Must read]
+- [Doubly Linked List](./linked-list.md) [Should read]
 
 ## Table of Contents
 

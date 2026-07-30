@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Array](../data-structures/array.md) [Must read] - prefix sum is a precomputation layered directly on top of an array; the technique's correctness depends on contiguous, indexed storage
-- [Hash Table](../data-structures/hash-table.md) [Must read] - the "subarray sum equals K" family combines prefix sums with a hash map of seen-prefix-sum frequencies to hit O(n)
+- [Array](../data-structures/array.md) [Must read]
+- [Hash Table](../data-structures/hash-table.md) [Must read]
 
 ## Table of Contents
 

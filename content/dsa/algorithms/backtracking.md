@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Recursion](./recursion.md) [Must read] - backtracking _is_ recursion with an undo step; you must be fluent in base case / recursive case and the call stack before this makes sense.
-- [DFS](./dfs.md) [Must read] - backtracking is DFS over an implicit state-space tree; the traversal mechanics are identical, only the tree is built on the fly.
-- [Subsets & Permutations](../patterns/subsets-permutations.md) - the canonical paste-and-adapt templates for the most common backtracking shapes.
+- [Recursion](./recursion.md) [Must read]
+- [DFS](./dfs.md) [Must read]
+- [Subsets & Permutations](../patterns/subsets-permutations.md)
 
 ## Table of Contents
 

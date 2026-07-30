@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- [Trie](../data-structures/trie.md) [Must read] - Aho-Corasick *is* a trie augmented with failure links and output links; you must know trie node structure, `is_end`, and the child-walk before the failure-link machinery makes sense.
-- [String Matching](./string-matching.md) [Must read] - the failure link here is KMP's failure function generalized from a single pattern (a line) to many patterns (a trie); read KMP first to see the one-pattern case this generalizes.
-- [BFS](./bfs.md) [Must read] - failure links are built in strict BFS (level) order over the trie; you need to know why BFS visits nodes in non-decreasing depth order to see why that order is mandatory here.
-- [Queue](../data-structures/queue.md) [Should read] - the BFS construction is queue-driven; the mechanics are the same FIFO frontier expansion as plain BFS.
+- [Trie](../data-structures/trie.md) [Must read]
+- [String Matching](./string-matching.md) [Must read]
+- [BFS](./bfs.md) [Must read]
+- [Queue](../data-structures/queue.md) [Should read]
 
 ## Table of Contents
 

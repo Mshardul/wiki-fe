@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Graph](../data-structures/graph.md) [Must read] - every max-flow algorithm operates on a directed, capacity-weighted graph; adjacency representation shapes the residual-graph construction.
-- [Breadth-First Search (BFS)](./bfs.md) [Must read] - Edmonds-Karp and Dinic both use BFS to explore the residual graph; understand the traversal before the flow-specific rules layered on top.
-- [Depth-First Search (DFS)](./dfs.md) [Should read] - the classic Ford-Fulkerson finds augmenting paths via DFS; Dinic uses DFS to find blocking flow within a level graph.
+- [Graph](../data-structures/graph.md) [Must read]
+- [Breadth-First Search (BFS)](./bfs.md) [Must read]
+- [Depth-First Search (DFS)](./dfs.md) [Should read]
 
 ## Table of Contents
 

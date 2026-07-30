@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Array](./array.md) [Must read] - a dynamic array is a fixed array underneath; you need the contiguous-memory + O(1) indexing model first.
-- **Big-O Notation** [Must read] - the whole point of this page is _amortized_ O(1), which you can't read without Big-O - especially the amortized-vs-worst-case distinction. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- [Array](./array.md) [Must read]
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
 
 ## Table of Contents
 

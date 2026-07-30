@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-[Graph](../data-structures/graph.md) [Must read] - Ford-Fulkerson operates on a directed weighted (capacity) graph; adjacency representation shapes the residual-graph construction
-[Depth-First Search (DFS)](./dfs.md) [Must read] - the classic Ford-Fulkerson finds augmenting paths via DFS on the residual graph
-<!-- [Edmonds-Karp](./edmonds-karp.md) [Recommended] - the BFS-augmenting-path variant that fixes Ford-Fulkerson's pathological worst case -->
+[Graph](../data-structures/graph.md) [Must read]
+[Depth-First Search (DFS)](./dfs.md) [Must read]
+<!-- [Edmonds-Karp](./edmonds-karp.md) [Should read] -->
 
 ## Table of Contents
 

@@ -77,12 +77,6 @@
       "title": "Subsets & Permutations"
     }
   ],
-  "./content/dsa/patterns/top-k-elements.md": [
-    {
-      "target": "./content/dsa/patterns/path.md",
-      "title": "Top-K Elements"
-    }
-  ],
   "./content/system-design/algorithms/cap-theorem.md": [
     {
       "target": "./content/system-design/algorithms/consistency-models.md",

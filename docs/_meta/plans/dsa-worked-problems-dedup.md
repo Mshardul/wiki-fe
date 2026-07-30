@@ -2,7 +2,7 @@
 
 Tracking doc. Two steps: (1) rewrite the spec, (2) apply it per-article.
 
-**Prerequisite tickets - finish before starting Phase 2:** WIKI-512, WIKI-513.
+**Prerequisite tickets - finish before starting Phase 2:** WIKI-512, WIKI-513. Both Done 2026-07-30 (see `tickets-archive.md`).
 
 Status: `[ ]` not started, `[x]` done.
 
@@ -94,9 +94,13 @@ Confirmed dead weight: `renderPrerequisites` (`js/content/formatting.js:65-117`)
 
 Per-file: strip every Prerequisites bullet from `[Title](./path.md) [Must read] - reason` down to `[Title](./path.md) [Must read]` (keep the tier marker - it renders as the badge; only the trailing prose after ` - ` goes). Applies to **every DSA article across all three types**, not just Patterns - this is a separate sweep from the Patterns-only Skeleton/Practice-problems work below. Pull the file list fresh at execution time (`grep -rl "^## Prerequisites" content/dsa/patterns/*.md content/dsa/algorithms/*.md content/dsa/data-structures/*.md`) rather than enumerating here, since it's effectively "every filled article."
 
-- [ ] Sweep and strip reason text from all Patterns articles' Prerequisites blocks.
-- [ ] Sweep and strip reason text from all Algorithms articles' Prerequisites blocks.
-- [ ] Sweep and strip reason text from all Data Structures articles' Prerequisites blocks.
+- [x] Sweep and strip reason text from all Patterns articles' Prerequisites blocks.
+- [x] Sweep and strip reason text from all Algorithms articles' Prerequisites blocks.
+- [x] Sweep and strip reason text from all Data Structures articles' Prerequisites blocks.
+
+**Done 2026-07-31.** 89 files edited across all three types (agent-driven, format-aware - 3+ bullet format variants in the wild, handled per-file rather than blind regex). Preserved links/bold titles, tier markers, leading bullet markers, and all HTML comments (both U9 not-yet-written-target notes and pending-link-wrapped comments). 11 files left untouched on purpose - they only contained the spec's own placeholder template comment, not a real prerequisite entry (stripping would have corrupted the authoring instruction itself): `bellman-ford.md`, `bucket-sort.md`, `floyd-warshall.md`, `minimum-spanning-tree.md`, `quickselect.md`, `selection-sort.md`, `topological-sort.md`, `hash-set.md`, `segment-tree.md`, `cyclic-sort.md`, `dp-patterns.md`, `subsets-permutations.md`. `binary-tree.md` had two prerequisites packed onto one line - split into two proper bullets by hand.
+
+**Follow-on found during this sweep - Prerequisites tier standardization.** Auditing tier markers project-wide turned up a stray `[Recommended]` (one occurrence, `ford-fulkerson.md`, an HTML-comment-wrapped pending link to `edmonds-karp.md`) alongside the standard `[Must read]` (216 occurrences) / `[Should read]` (63 occurrences) - and neither `dsa-writer.md` nor `dsa-rater.md` had ever actually defined what distinguishes the two tiers or forbidden a third. Fixed: `ford-fulkerson.md`'s stray tier changed to `[Should read]`; `dsa-writer.md` U9 (and the Format-conventions line) now explicitly define Must-read ("reader genuinely cannot follow this article without it") vs Should-read ("materially helps, article still followable without it") and forbid inventing further tiers; `dsa-rater.md` U9 now flags a third tier as a format violation and checks tier *correctness* (not just presence) in its NOTE. Confirmed via `dsa_check.py`/`dsa-check.sh` read-through that this script only covers U8/U11/U12 (filename/title/link-resolution) - no overlap with any of this session's changes, no update needed there.
 
 ### Patterns (25 filled articles - Skeleton removal + Worked/Practice merge applies to all)
 

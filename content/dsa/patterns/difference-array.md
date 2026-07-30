@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Array](../data-structures/array.md) [Must read] - the difference array is just an array; you need O(1) indexed read/write
-- [Prefix Sum](../patterns/prefix-sum.md) [Must read] - prefix sum is the inverse operation of the difference array; understanding it makes this pattern immediate
+- [Array](../data-structures/array.md) [Must read]
+- [Prefix Sum](../patterns/prefix-sum.md) [Must read]
 
 ## Table of Contents
 

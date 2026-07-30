@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Graph](./graph.md) [Must read] - Union-Find partitions the vertices of an implicit graph into disjoint connected components; without a mental model of nodes and edges, the "merge two sets" operation has no concrete meaning.
-- [Binary Tree](./binary-tree.md) [Should read] - each component is represented as a rooted tree in the forest; understanding parent pointers, roots, and tree height is the foundation for understanding why union by rank and path compression work.
-- <!-- [Minimum Spanning Tree (Kruskal)](../../algorithms/minimum-spanning-tree.md) [Should read] - Kruskal's algorithm is Union-Find's canonical consumer: sort edges by weight, use DSU to detect cycles and skip edges that would merge already-connected components. -->
+- [Graph](./graph.md) [Must read]
+- [Binary Tree](./binary-tree.md) [Should read]
+- <!-- [Minimum Spanning Tree (Kruskal)](../../algorithms/minimum-spanning-tree.md) [Should read] -->
 
 ## Table of Contents
 

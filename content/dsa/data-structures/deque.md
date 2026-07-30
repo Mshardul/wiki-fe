@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - the deque's entire claim is O(1) at _both_ ends; you need the cost model to see why that's non-trivial over an array. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
-- [Queue](./queue.md) [Must read] - a deque is the queue generalized to both ends; the queue's naive-array dequeue trap and circular-buffer fix are the foundation this page builds on.
-- [Stack](./stack.md) [Should read] - a deque is also a stack (push/pop one end); seeing it subsume both LIFO and FIFO is the mental unlock.
-- [Circular Buffer](./circular-buffer.md) [Should read] - the wrapping-index layout that gives a deque O(1) both ends without shifting.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Queue](./queue.md) [Must read]
+- [Stack](./stack.md) [Should read]
+- [Circular Buffer](./circular-buffer.md) [Should read]
 
 ## Table of Contents
 

@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Dynamic Programming](./dynamic-programming.md) [Must read] - LIS's O(n²) formulation is a textbook 1D DP: state, recurrence, base case, and the memo-vs-tabulation tradeoff are all inherited from there, not re-taught here.
-- [Binary Search](./binary-search.md) [Must read] - the O(n log n) formulation's entire speedup is a binary search for the leftmost insertion point in a maintained array; you need the boundary-search mechanics (`bisect_left`-style) before the patience-sorting trick makes sense.
-- [Array](../data-structures/array.md) [Must read] - both formulations run over an indexable array; the tails array itself is the state in the fast version.
+- [Dynamic Programming](./dynamic-programming.md) [Must read]
+- [Binary Search](./binary-search.md) [Must read]
+- [Array](../data-structures/array.md) [Must read]
 
 ## Table of Contents
 

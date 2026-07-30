@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- [Array](../data-structures/array.md) [Must read] - a matrix is a 2D array; you need O(1) indexed access and familiarity with row-major layout.
-- [BFS](../algorithms/bfs.md) [Must read] - matrix BFS is BFS on an implicit graph; understand the queue-based level-order traversal first.
-- [DFS](../algorithms/dfs.md) [Must read] - matrix DFS is recursive or stack-based DFS; understand backtracking and the visited-set before applying it to grids.
-- [Graph](../data-structures/graph.md) [Must read] - a grid is an implicit graph where each cell is a node and each valid move is an edge; the graph mental model makes traversal strategy obvious.
+- [Array](../data-structures/array.md) [Must read]
+- [BFS](../algorithms/bfs.md) [Must read]
+- [DFS](../algorithms/dfs.md) [Must read]
+- [Graph](../data-structures/graph.md) [Must read]
 
 ## Table of Contents
 

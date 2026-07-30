@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - every operation here is sold as **O(1)**; you can't judge an LRU cache without the cost model that makes "O(1) get _and_ O(1) eviction" the whole point. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
-- [Hash Table](./hash-table.md) [Must read] - the map half of the design. The cache leans entirely on average-O(1) lookup to find a key's node without scanning; if you don't trust hashing's cost model, the LRU O(1) claim looks like magic.
-- [Doubly Linked List](./linked-list.md) [Must read] - the recency half. O(1) splice-out and move-to-front at a **known node** is exactly what a doubly linked list gives and a singly list does not. Read its pointer-rewiring and dummy-node sections first.
-- [Hash Set](./hash-set.md) [Should read] - the membership intuition (key present or not) that the map's `key → node` lookup generalizes.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Hash Table](./hash-table.md) [Must read]
+- [Doubly Linked List](./linked-list.md) [Must read]
+- [Hash Set](./hash-set.md) [Should read]
 
 ## Table of Contents
 

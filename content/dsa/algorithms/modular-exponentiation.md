@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Bit Manipulation](./bit-manipulation.md) [Must read] - the algorithm is a bit-scan loop: at each step it tests the lowest bit of the exponent with `exp & 1` and shifts right with `exp >>= 1`; understanding bit operations is essential
-- [Modular Arithmetic](./modular-arithmetic.md) [Must read] - modular exponentiation is only correct because `(a × b) mod m = ((a mod m) × (b mod m)) mod m`; this identity is the license to reduce at every step
-- [Number Theory](./number-theory.md) [Should read] - situates fast power in the contest math toolkit and explains Fermat's little theorem, which turns modular exponentiation into a modular inverse
+- [Bit Manipulation](./bit-manipulation.md) [Must read]
+- [Modular Arithmetic](./modular-arithmetic.md) [Must read]
+- [Number Theory](./number-theory.md) [Should read]
 
 ## Table of Contents
 

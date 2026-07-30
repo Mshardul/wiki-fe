@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - every operation below is stated in Big-O; you must read complexity to use this page. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
-- [Array](./array.md) [Must read] - a linked list is the pointer-based answer to everything an array does with contiguity. You can't see what the list buys you without the array's cost model to contrast against.
-- **Computer memory model** [Should read] - a node lives at an arbitrary heap address and holds a pointer to the next; you need to picture memory as scattered cells reached by following references, not by index arithmetic.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Array](./array.md) [Must read]
+- **Computer memory model** [Should read]
 
 ## Table of Contents
 

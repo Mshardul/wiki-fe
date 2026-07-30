@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Modular Arithmetic](./modular-arithmetic.md) [Must read] - every hash value lives mod a prime; overflow, modular subtraction, and modular inverse (for rolling-hash removal) are used throughout.
-- [String](../data-structures/string.md) [Must read] - the structure being hashed; immutability is why prefix hashes can be precomputed once and reused.
-- [Rabin-Karp](./rabin-karp.md) [Should read] - the canonical single-hash sliding-window application; this article generalizes the hash function itself (multi-query prefix hashing, collision-safety) rather than the sliding-window search that page owns.
+- [Modular Arithmetic](./modular-arithmetic.md) [Must read]
+- [String](../data-structures/string.md) [Must read]
+- [Rabin-Karp](./rabin-karp.md) [Should read]
 
 ## Table of Contents
 

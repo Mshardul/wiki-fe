@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Number Theory](./number-theory.md) [Must read] - the hub that surveys the contest math toolkit and positions modular arithmetic within it
-- [Bit Manipulation](./bit-manipulation.md) [Must read] - binary exponentiation reads individual bits of the exponent with the same shift-and-test loop
-- [Binary Search](./binary-search.md) [Must read] - halving-per-step complexity argument appears in both; O(log n) intuition transfers directly
+- [Number Theory](./number-theory.md) [Must read]
+- [Bit Manipulation](./bit-manipulation.md) [Must read]
+- [Binary Search](./binary-search.md) [Must read]
 
 ## Table of Contents
 

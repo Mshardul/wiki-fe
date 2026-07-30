@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Depth-First Search (DFS)](./dfs.md) [Must read] - both Kosaraju and Tarjan are DFS algorithms; understanding DFS post-order and the call stack is required.
-- [Graph](../data-structures/graph.md) [Must read] - directed graphs, adjacency list representation, and the concept of reachability.
-- [Topological Sort](./topological-sort.md) [Must read] - Kosaraju's second pass is topological order on the transpose; understanding finish-time ordering is essential.
+- [Depth-First Search (DFS)](./dfs.md) [Must read]
+- [Graph](../data-structures/graph.md) [Must read]
+- [Topological Sort](./topological-sort.md) [Must read]
 
 ## Table of Contents
 

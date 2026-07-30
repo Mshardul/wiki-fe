@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - the whole point of a hash table is turning O(n) lookup into O(1) average; you need the cost model to see why that matters. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
-- [Array](./array.md) [Must read] - a hash table is a contiguous array (the bucket array) plus a function that turns a key into an index. Without the array's O(1) indexed access, none of this works.
-- [Linked List](./linked-list.md) [Should read] - the standard collision-resolution strategy (chaining) stores colliding keys in a linked list per bucket.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Array](./array.md) [Must read]
+- [Linked List](./linked-list.md) [Should read]
 
 ## Table of Contents
 

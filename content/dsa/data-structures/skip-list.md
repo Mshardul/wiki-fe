@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Linked List](./linked-list.md) [Must read] - a skip list is a linked list with extra "express lane" layers on top; you need the pointer-chasing mental model first.
-- [Balanced BST](./balanced-bst.md) [Should read] - skip lists solve the same problem (ordered O(log n) search/insert/delete) with a randomized structure instead of rotations; the comparison is the point.
-- **Big-O Notation** [Should read] - the whole pitch is expected O(log n) via probability, not a worst-case guarantee. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Linked List](./linked-list.md) [Must read]
+- [Balanced BST](./balanced-bst.md) [Should read]
+- **Big-O Notation** [Should read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
 
 ## Table of Contents
 

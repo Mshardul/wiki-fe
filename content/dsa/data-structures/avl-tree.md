@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Balanced BST](./balanced-bst.md) [Must read] - the hub: why balancing exists and how AVL sits against red-black and B-trees. Read it first for context.
-- [Binary Search Tree](./binary-search-tree.md) [Must read] - an AVL tree is a BST plus a height-balance rule; you need the BST invariant, search, and the skew failure first.
-- [Binary Tree](./binary-tree.md) [Should read] - rotations are local pointer-rewires; height/recursion mechanics transfer directly.
+- [Balanced BST](./balanced-bst.md) [Must read]
+- [Binary Search Tree](./binary-search-tree.md) [Must read]
+- [Binary Tree](./binary-tree.md) [Should read]
 
 ## Table of Contents
 

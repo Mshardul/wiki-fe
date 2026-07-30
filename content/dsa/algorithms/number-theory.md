@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Modular arithmetic** [Must read] - the load-bearing prerequisite: every member is used "mod a big prime", and the toolkit only coheres once you have congruences, the modular inverse (division mod p), and Fermat's little theorem. Without these the "thread that ties them together" section is unreadable. <!-- U9: not-yet-written target - wire to a future `algorithms/modular-arithmetic.md` once it exists. -->
-- [Bit Manipulation](./bit-manipulation.md) [Should read] - modular exponentiation *is* the binary expansion of the exponent: square at every bit, multiply only where the bit is 1. The shift/mask reading of an integer transfers one-to-one to square-and-multiply.
-- [Recursion](./recursion.md) [Should read] - Euclid's GCD is the cleanest recurrence in the toolkit (`gcd(a,b) = gcd(b, a mod b)`), and extended Euclid threads Bézout coefficients back up the call stack - both demand fluency with base-case/recursive-case reasoning.
+- **Modular arithmetic** [Must read] <!-- U9: not-yet-written target - wire to a future `algorithms/modular-arithmetic.md` once it exists. -->
+- [Bit Manipulation](./bit-manipulation.md) [Should read]
+- [Recursion](./recursion.md) [Should read]
 
 ## Table of Contents
 

@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - every operation here is O(1); you need the cost model to appreciate why that guarantee matters. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
-- [Array](./array.md) [Must read] - the default stack is just a dynamic array with push/pop at the end; the array's amortized-O(1) append is the stack's push.
-- [Linked List](./linked-list.md) [Should read] - the alternative backing: push/pop at the head, true O(1) with no resize spike.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Array](./array.md) [Must read]
+- [Linked List](./linked-list.md) [Should read]
 
 ## Table of Contents
 

@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- [Array](./array.md) [Must read] - a suffix array is literally an array of sorted integer indices; you need array indexing, slicing, and sorting concepts before the build algorithm makes sense.
-- [String](./string.md) [Must read] - a suffix array is built on top of a string's suffixes; the character-comparison model and substring intuition transfer directly.
-- [Binary Search](../algorithms/binary-search.md) [Must read] - pattern matching on a built suffix array is binary search; the O(m log n) query cost only makes sense once binary search is second nature.
-- [Trie](./trie.md) [Should read] - the suffix trie / suffix tree is the conceptual ancestor; contrasting the two sharpens why the suffix array exists and what it trades away.
+- [Array](./array.md) [Must read]
+- [String](./string.md) [Must read]
+- [Binary Search](../algorithms/binary-search.md) [Must read]
+- [Trie](./trie.md) [Should read]
 
 ## Table of Contents
 
@@ -116,7 +116,7 @@ There is **no amortized behavior** in a suffix array: build is one-shot, queries
 - You need to answer **multiple pattern-matching queries** on a fixed text - build the SA once in O(n log n) or O(n), then answer each O(m log n); better than re-running KMP/Z per query.
 - You need **all occurrences** of a pattern rather than just one - the SA's contiguous hit-range gives them all in one binary search.
 - You need **longest common extension**, **longest repeated substring**, or **number of distinct substrings** - these collapse to LCP-array scans after a single O(n) build.
-- Memory is constrained - suffix arrays use 4–8 bytes per character vs suffix trees' 20–40 bytes per node.
+- Memory is constrained - suffix arrays use 4–8 bytes per character vs suffix trees' 30–40 bytes per node.
 
 **Reach for something else when:**
 
@@ -132,7 +132,7 @@ There is **no amortized behavior** in a suffix array: build is one-shot, queries
 | Structure                      | Build time    | Space          | Pattern query    | Prefix enum | Implementation | Pick it when…                                    |
 | ------------------------------ | ------------- | -------------- | ---------------- | ----------- | -------------- | ------------------------------------------------ |
 | **Suffix Array**               | O(n log² n)   | **O(n)**       | O(m log n)       | via bisect  | medium         | multi-query text search, genome tools, CP        |
-| Suffix Tree                    | O(n) (Ukkonen)| O(n) (30–40B/node) | **O(m)**   | O(p)        | **hard**       | single-query O(m) is required; willing to code Ukkonen |
+| [Suffix Tree](./suffix-tree.md) | O(n) (Ukkonen)| O(n) (30–40B/node) | **O(m)**   | O(p)        | **hard**       | single-query O(m) is required; willing to code Ukkonen |
 | [Trie](./trie.md)              | O(total chars)| O(n·alphabet) | O(m)             | **O(p)**    | easy           | prefix queries, autocomplete, sparse dictionaries |
 | [Rabin-Karp](../algorithms/rabin-karp.md) | O(n) | O(1)      | O(n) per pattern | no          | easy           | one-shot sliding-window search, plagiarism check |
 | [Z-algorithm](../algorithms/z-algorithm.md) | O(n) | O(n)  | O(n+m) per query | no          | easy           | single pattern, many texts, online match         |

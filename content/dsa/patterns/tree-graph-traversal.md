@@ -2,11 +2,11 @@
 
 ## Prerequisites
 
-- [BFS](../algorithms/bfs.md) [Must read] - this pattern is the reusable skeleton wrapped around BFS; you need the queue-based level mechanics first.
-- [DFS](../algorithms/dfs.md) [Must read] - this pattern is the reusable skeleton wrapped around DFS; you need discovery/backtracking mechanics first.
-- [Graph](../data-structures/graph.md) [Must read] - recognizing "this is secretly a graph" (grid, tree, adjacency list) is the first step of the pattern.
-- [Queue](../data-structures/queue.md) [Must read] - the BFS half of the skeleton is built directly on a FIFO queue.
-- [Stack](../data-structures/stack.md) [Must read] - the iterative-DFS half of the skeleton is built directly on an explicit stack.
+- [BFS](../algorithms/bfs.md) [Must read]
+- [DFS](../algorithms/dfs.md) [Must read]
+- [Graph](../data-structures/graph.md) [Must read]
+- [Queue](../data-structures/queue.md) [Must read]
+- [Stack](../data-structures/stack.md) [Must read]
 
 ## Table of Contents
 

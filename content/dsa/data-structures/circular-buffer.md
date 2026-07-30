@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Array](./array.md) [Must read] - a circular buffer is a fixed array with wraparound index math; you need contiguous memory + O(1) indexing first.
-- **Modular arithmetic** [Must read] - the wraparound is `index % capacity`. If `%` on indices is unfamiliar, read that first. (No page yet - picture a clock face: after 11 comes 0.)
+- [Array](./array.md) [Must read]
+- **Modular arithmetic** [Must read]
 
 ## Table of Contents
 

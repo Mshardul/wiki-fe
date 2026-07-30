@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Array](../data-structures/array.md) [Must read] - a frequency array is just an array indexed by value; you need O(1) random access to make it work.
-- [Hash Table](../data-structures/hash-table.md) [Must read] - understand hash maps first so you know exactly when a frequency array replaces one and why it's faster.
+- [Array](../data-structures/array.md) [Must read]
+- [Hash Table](../data-structures/hash-table.md) [Must read]
 
 ## Table of Contents
 

@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Array](../data-structures/array.md) [Must read] - two pointers operate on indexed sequences
-- [Sorting](../algorithms/sorting.md) [Must read] - many two-pointer problems require sorted input; the monotonic property that makes convergence correct depends on order
-- [Linked List](../data-structures/linked-list.md) [Must read] - same-direction variant applies directly to linked-list pointer manipulation
+- [Array](../data-structures/array.md) [Must read]
+- [Sorting](../algorithms/sorting.md) [Must read]
+- [Linked List](../data-structures/linked-list.md) [Must read]
 
 ## Table of Contents
 

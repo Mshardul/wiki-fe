@@ -2,9 +2,10 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - tree operations are O(height), which is O(log n) balanced and O(n) skewed; you need the cost model to see why balance is the whole game. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
-- [Linked List](./linked-list.md) [Must read] - a tree node is a linked-list node with two `next` pointers (left, right); the pointer-rewiring intuition transfers directly.
-- [Queue](./queue.md) [Should read] - level-order traversal (BFS) is a queue walk; [Stack](./stack.md) [Should read] - depth-first traversal is a stack (explicit or the call stack).
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Linked List](./linked-list.md) [Must read]
+- [Queue](./queue.md) [Should read]
+- [Stack](./stack.md) [Should read]
 
 ## Table of Contents
 

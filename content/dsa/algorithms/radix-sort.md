@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - radix sort's "O(d·(n + b)) beats O(n log n)" claim only makes sense once you can read what `d`, `b`, and the comparison bound mean. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
-- [Array](../data-structures/array.md) [Must read] - each digit pass is a counting sort over array indices; the bucketing is direct-address array access.
-- [Counting Sort](./counting-sort.md) [Must read] - radix sort _is_ counting sort run once per digit; you must understand the stable counting-sort pass before this page makes sense.
-- [Sorting](./sorting.md) [Should read] - the hub: where radix sort sits, and the comparison lower bound it sidesteps by sorting on digits, not comparisons.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- [Array](../data-structures/array.md) [Must read]
+- [Counting Sort](./counting-sort.md) [Must read]
+- [Sorting](./sorting.md) [Should read]
 
 ## Table of Contents
 

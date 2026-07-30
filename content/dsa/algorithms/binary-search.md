@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - the whole appeal of binary search is the jump from O(n) to O(log n); you can't appreciate the gain without reading complexity. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
-- [Array](../data-structures/array.md) [Must read] - binary search needs O(1) random access by index; it only works on a contiguous, indexable structure (or anything that behaves like one).
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- [Array](../data-structures/array.md) [Must read]
 
 ## Table of Contents
 

@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Balanced BST](./balanced-bst.md) [Must read] - the hub: B-tree is the disk-oriented member, contrasted with the in-memory AVL/red-black. Read it for context.
-- [Binary Search Tree](./binary-search-tree.md) [Must read] - a B-tree generalizes the BST to many keys per node; you need the ordered-search idea first.
-- **Memory hierarchy / disk vs RAM** [Should read] - the B-tree exists because a disk/SSD seek is ~10⁵–10⁶× slower than a RAM access; without that cost gap, its design makes no sense.
+- [Balanced BST](./balanced-bst.md) [Must read]
+- [Binary Search Tree](./binary-search-tree.md) [Must read]
+- **Memory hierarchy / disk vs RAM** [Should read]
 
 ## Table of Contents
 

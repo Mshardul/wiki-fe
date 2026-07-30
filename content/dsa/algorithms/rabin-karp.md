@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [String](../data-structures/string.md) [Must read] - the input is text and pattern; you need slicing, indexing, and the modular arithmetic vocabulary for rolling hashes.
-- [Hash Table](../data-structures/hash-table.md) [Must read] - rolling hash is a numeric fingerprint; collision semantics, load and prime selection all come from hashing fundamentals.
-- [String Matching](./string-matching.md) [Must read] - KMP is the primary single-pattern alternative; understanding it clarifies exactly when Rabin-Karp is the better choice and when it isn't.
+- [String](../data-structures/string.md) [Must read]
+- [Hash Table](../data-structures/hash-table.md) [Must read]
+- [String Matching](./string-matching.md) [Must read]
 
 ## Table of Contents
 

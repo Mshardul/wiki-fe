@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- [String](../data-structures/string.md) [Must read] - the algorithm computes a per-position array over a string; you need indexing, slicing, and the prefix/suffix vocabulary.
-- [String Matching](./string-matching.md) [Must read] - the Z-algorithm is KMP's twin and solves the same pattern-search problem; reading KMP first frames what the Z-array buys you and when to prefer each.
-- [Array](../data-structures/array.md) [Must read] - the Z-array is an integer array indexed by string position; the whole algorithm is array bookkeeping with a sliding `[l, r]` window.
-- **Big-O Notation** [Must read] - the payoff is computing all Z-values in O(n) instead of the naive O(n²); the win is meaningless without complexity. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [String](../data-structures/string.md) [Must read]
+- [String Matching](./string-matching.md) [Must read]
+- [Array](../data-structures/array.md) [Must read]
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
 
 ## Table of Contents
 

@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - counting sort's headline is "O(n + k), beating the O(n log n) comparison bound"; that claim is meaningless without complexity and the meaning of `k`. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
-- [Array](../data-structures/array.md) [Must read] - the whole trick is using the _key as an index_ into a count array; that's direct-address array access, O(1) per key.
-- [Sorting](./sorting.md) [Should read] - the hub: where counting sort sits, and the O(n log n) comparison lower bound it sidesteps by _not comparing_.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- [Array](../data-structures/array.md) [Must read]
+- [Sorting](./sorting.md) [Should read]
 
 ## Table of Contents
 

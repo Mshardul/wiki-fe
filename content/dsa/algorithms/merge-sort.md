@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - merge sort's whole selling point is a _guaranteed_ O(n log n); you can't weigh that against quicksort's average-case bound without complexity. <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
-- [Array](../data-structures/array.md) [Must read] - merging copies runs into and out of contiguous buffers; the O(n) auxiliary space and the two-pointer walk assume indexable arrays.
-- [Sorting](./sorting.md) [Should read] - the hub: where merge sort sits among the six sorts, and the O(n log n) comparison lower bound it achieves.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- [Array](../data-structures/array.md) [Must read]
+- [Sorting](./sorting.md) [Should read]
 
 ## Table of Contents
 

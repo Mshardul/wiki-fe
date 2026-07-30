@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- [Graph](../data-structures/graph.md) [Must read] - graph coloring operates on adjacency-list/matrix representations; you need to understand nodes, edges, and adjacency before anything here makes sense
-- [BFS](../algorithms/bfs.md) [Must read] - bipartite check (2-coloring) is BFS in disguise; level assignment = color assignment
-- [DFS](../algorithms/dfs.md) [Must read] - the backtracking k-coloring approach is DFS + color assignment; cycle detection via DFS underpins odd-cycle proof
+- [Graph](../data-structures/graph.md) [Must read]
+- [BFS](../algorithms/bfs.md) [Must read]
+- [DFS](../algorithms/dfs.md) [Must read]
 
 ## Table of Contents
 

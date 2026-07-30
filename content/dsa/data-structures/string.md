@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - string operations hide costs (concatenation, slicing); you need the cost model to see why a loop of `+=` is O(n²). <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
-- [Array](./array.md) [Must read] - a string is an array of characters; everything about contiguity, indexing, and the O(n) middle-insert applies directly.
-- [Dynamic Array](./dynamic-array.md) [Should read] - building a string incrementally is the dynamic-array append problem; the amortization argument explains why you join a list instead of `+=`.
+- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Array](./array.md) [Must read]
+- [Dynamic Array](./dynamic-array.md) [Should read]
 
 ## Table of Contents
 

@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-[BFS](./bfs.md) [Must read] - Dijkstra is BFS generalized to weighted edges; the frontier-expansion mental model carries over directly, but the queue becomes a priority queue and "finalize on dequeue" replaces "finalize on enqueue".
-[Heap](../data-structures/heap.md) [Must read] - the priority queue that picks "closest unfinalized node next" is a min-heap; you need the heap's decrease-key/lazy-deletion behavior to understand Dijkstra's actual implementation, not just its idea.
+[BFS](./bfs.md) [Must read]
+[Heap](../data-structures/heap.md) [Must read]
 
 ## Table of Contents
 

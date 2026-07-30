@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Stack](../data-structures/stack.md) [Must read] - this pattern is a disciplined usage convention on top of a plain stack: elements are pushed/popped so the stack's contents stay sorted at all times
-- [Array](../data-structures/array.md) [Must read] - the pattern's canonical inputs are arrays; "next greater/smaller element" is defined over array positions
+- [Stack](../data-structures/stack.md) [Must read]
+- [Array](../data-structures/array.md) [Must read]
 
 ## Table of Contents
 

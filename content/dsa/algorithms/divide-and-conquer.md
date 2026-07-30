@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] - D&C complexity derives from recurrences; you can't read a Master-theorem result without it. <!-- not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists -->
-- [Recursion](./recursion.md) [Must read] - every D&C algorithm is recursive; base cases, call stacks, and the mental model of "trust the recursion" are assumed.
-- [Array](../data-structures/array.md) [Should read] - most worked examples operate on arrays; indexing and slicing conventions are assumed.
+- **Big-O Notation** [Must read] <!-- not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists -->
+- [Recursion](./recursion.md) [Must read]
+- [Array](../data-structures/array.md) [Should read]
 
 ## Table of Contents
 
