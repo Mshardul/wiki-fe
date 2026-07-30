@@ -12,12 +12,10 @@
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
   - [Step-by-step trace](#step-by-step-trace--prices--1-2-3-0-2)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -73,7 +71,7 @@ Look for these literal phrasings in the problem statement:
 
 The core mechanic is a 2D DP table `dp[i][s]` = best total value when processing element `i` while in state `s`. For each `(i, s)` cell, you ask: which states `s'` could I have been in at step `i-1` that would legally let me transition into state `s`? The answer is the state machine's transition arrows read backwards.
 
-### State-transition diagram - stock buy/sell with cooldown (LC 309)
+### State-transition diagram - buy/hold/sell with a mandatory cooldown after selling
 
 Three states: **HELD** (own a share), **SOLD** (just sold - entering cooldown), **REST** (do not own, not in cooldown).
 
@@ -129,82 +127,6 @@ Start: `HELD = -∞, SOLD = -∞, REST = 0` (haven't bought anything; REST is th
 Answer: `max(SOLD=3, REST=2) = 3`. The invariant holds at every step: HELD is only reachable from REST (never SOLD), so the cooldown constraint is enforced structurally.
 
 **Why state machine DP and not plain DP?** The recurrence for `dp[i][HELD]` depends on whether you came from REST or SOLD - you cannot buy from SOLD. A plain `dp[i] = f(dp[i-1])` has no way to express this constraint. The state dimension carries the "memory" that makes the transition legal.
-
----
-
-## Skeleton
-
-### Pseudocode (CLRS style)
-
-```
-STATE-MACHINE-DP(values, n, states, transitions, base)
-  ▷ states: list of state names, e.g. [HELD, SOLD, REST]
-  ▷ transitions[s]: list of (prev_state, delta(i)) pairs that can lead into s at step i
-  ▷ base: initial dp values at i = -1 or i = 0 for each state
-
-  for each state s in states
-    dp[-1][s] = base[s]              ▷ sentinel row before any element
-
-  for i = 0 to n - 1
-    for each state s in states
-      dp[i][s] = -∞                  ▷ impossible until proven reachable
-      for each (prev_s, delta) in transitions[s]
-        if dp[i-1][prev_s] ≠ -∞
-          dp[i][s] = max(dp[i][s], dp[i-1][prev_s] + delta(i))
-
-  return max(dp[n-1][s] for each valid terminal state s)
-```
-
-### Python template
-
-```python
-def state_machine_dp(values: list[int]) -> int:
-    n = len(values)
-    if n == 0:
-        return 0
-
-    NEG_INF = float('-inf')
-
-    # --- define states as indices or use a dict ---
-    # Example shape: 3 states (adapt state names and count to the problem)
-    HELD, SOLD, REST = 0, 1, 2
-    NUM_STATES = 3
-
-    # dp[state] = best value in that state after processing current element
-    # Use rolling arrays: only previous row needed
-    prev = [NEG_INF] * NUM_STATES
-
-    # --- base case: before index 0 ---
-    prev[REST] = 0       # start with no stock, not in cooldown: value 0
-    # prev[HELD] = NEG_INF (impossible - haven't bought anything)
-    # prev[SOLD] = NEG_INF (impossible - haven't sold anything)
-
-    for i, val in enumerate(values):
-        curr = [NEG_INF] * NUM_STATES
-
-        # --- transitions: fill in curr from prev ---
-        # your logic here: for each state, which prev states can reach it?
-        curr[HELD] = max(
-            prev[HELD],
-            prev[REST] - val,       # buy (only legal from REST)
-        )
-        curr[SOLD] = prev[HELD] + val  # sell (only from HELD)
-        curr[REST] = max(
-            prev[REST],
-            prev[SOLD],
-        )
-
-        prev = curr
-
-    # answer: best value in any valid terminal state
-    return max(prev[SOLD], prev[REST])
-```
-
-**Key rules for adapting the template:**
-1. Define one constant per state; `float('-inf')` for impossible, `0` for the neutral start.
-2. For each state `curr[s]`, enumerate every `prev[s']` that can transition into `s` and the delta value.
-3. Use rolling arrays (`prev` / `curr`) unless you need to reconstruct the path.
-4. The answer is the max over all *legal* terminal states (never a state that means "mid-action").
 
 ---
 
@@ -362,76 +284,6 @@ def domino_tiling(n: int, m: int) -> int:
 `dp[mask]` holds the count of ways to complete all columns so far, given that `mask` describes which rows of the next column are pre-filled by a horizontal domino. `place` recurses row-by-row within a column, choosing horizontal (fills this cell + marks next column) or vertical (fills two rows here) for each free row. After processing all m columns, only `mask=0` is valid - no domino extends beyond the grid.
 
 
-## Worked problems
-
-### 1. Best Time to Buy and Sell Stock with Cooldown (LC 309)
-
-Given daily stock prices, find the maximum profit with unlimited transactions, but after selling you must wait one day (cooldown) before buying again. Constraints: `1 ≤ n ≤ 5000`.
-
-**Approach:** Three-state machine: HELD (own stock), SOLD (just sold - in cooldown), REST (free to buy). `dp[i][HELD] = max(hold, buy from REST)`. `dp[i][SOLD] = sell from HELD`. `dp[i][REST] = max(rest, cooldown from SOLD)`. The crucial trap: you can only buy from REST, not from SOLD. Apply rolling arrays for O(1) space.
-
-**Complexity:** O(n) time, O(1) space.
-
-**Duplicate problems:**
-- Best Time to Buy and Sell Stock (LC 121) - degenerate one-transaction two-state machine.
-- Best Time to Buy and Sell Stock II (LC 122) - unlimited transactions, no cooldown; two-state (HELD, CASH), simpler recurrence.
-
----
-
-### 2. Best Time to Buy and Sell Stock with Transaction Fee (LC 714)
-
-Given daily prices and a transaction fee paid on each sell, find the maximum profit with unlimited transactions. Constraints: `1 ≤ n ≤ 5×10⁴`, `0 ≤ fee ≤ 5×10⁴`.
-
-**Approach:** Two-state machine: HELD, CASH. No cooldown, so no REST state needed. `dp[i][HELD] = max(hold, buy from CASH)`. `dp[i][CASH] = max(rest, sell from HELD - fee)`. The fee is deducted at sell time, making it equivalent to reducing the sell price. Because there are only two states, this reduces to two scalar variables and O(1) space naturally.
-
-**Complexity:** O(n) time, O(1) space.
-
-**Duplicate problems:**
-- Best Time to Buy and Sell Stock II (LC 122) - same two-state machine with fee = 0.
-
----
-
-### 3. Best Time to Buy and Sell Stock IV - At Most k Transactions (LC 188)
-
-Given daily prices and integer k, find the maximum profit with at most k complete transactions (buy then sell = one transaction). Constraints: `1 ≤ k ≤ 100`, `1 ≤ n ≤ 1000`.
-
-**Approach:** State machine over `(transaction_count, {HELD, CASH})`. Table is `k × 2`. `held[j]` = best profit using at most `j+1` buys, currently holding. `cash[j]` = best profit after at most `j+1` complete transactions, not holding. Critical: when `k ≥ n/2`, every price uptick is capturable - solve as unlimited transactions in O(n), bypassing the k-loop entirely. Iterate j in reverse order within each price step to avoid using updated-in-same-pass values.
-
-**Complexity:** O(n · k) time, O(k) space (rolling).
-
-**Duplicate problems:**
-- Best Time to Buy and Sell Stock III (LC 123) - k=2 special case; can hard-code `buy1, sell1, buy2, sell2` scalars.
-
----
-
-### 4. House Robber II (LC 213)
-
-Houses are arranged in a **circle** - first and last are adjacent. You cannot rob adjacent houses. Find maximum money. Constraints: `1 ≤ n ≤ 100`, values `0 ≤ val ≤ 1000`.
-
-**Approach:** The circular constraint means "can't rob both house 0 and house n-1." Decompose into two independent linear state machines: run House Robber I on `houses[0..n-2]` (exclude last) and on `houses[1..n-1]` (exclude first). Answer is the max of the two. Each linear run is a two-state machine: ROB, SKIP. `dp[i][ROB] = dp[i-1][SKIP] + val[i]`. `dp[i][SKIP] = max(dp[i-1][ROB], dp[i-1][SKIP])`.
-
-**Complexity:** O(n) time, O(1) space (two scalar rolls per linear run).
-
-**Duplicate problems:**
-- House Robber (LC 198) - linear version; no circular split needed.
-- House Robber III (LC 337) - tree structure; same ROB/SKIP states, DP on tree nodes via DFS.
-
----
-
-### 5. Paint House (LC 256)
-
-Given `n` houses and `costs[i][j]` (cost to paint house `i` with color `j`, three colors), paint all houses so no two adjacent houses have the same color. Minimize total cost. Constraints: `n ≤ 100`.
-
-**Approach:** Three-state machine: COLOR_0, COLOR_1, COLOR_2. `dp[i][c] = costs[i][c] + min(dp[i-1][c'] for c' ≠ c)`. At each step, the cheapest previous color is one of the other two - no scanning needed. Roll to O(1) space with three scalars. The pattern generalizes: for k colors, track top-2 minimums (see CP-primitives).
-
-**Complexity:** O(n · colors) = O(n) time (colors = 3, constant), O(1) space.
-
-**Duplicate problems:**
-- Paint House II (LC 265) - k colors; use top-2 minimum tracking for O(n · k) instead of O(n · k²).
-- Non-Adjacent Color Assignment (various) - same 3-state structure with different cost matrix shapes.
-
----
-
 ## Pitfalls
 
 1. **Buying from SOLD in cooldown problems.** The cooldown rule means SOLD → REST is *mandatory* and REST is the *only* state from which you can buy. Writing `dp[i][HELD] = max(prev[HELD], prev[SOLD] - price)` is wrong - you can't buy immediately after selling. The correct recurrence is `dp[i][HELD] = max(prev[HELD], prev[REST] - price)`. This is the single most common bug in LC 309.
@@ -465,43 +317,166 @@ Then: enumerate every (prev_state → curr_state) edge, name the cost/gain on ea
 
 ## Practice problems
 
-### 1. Delete and Earn (LC 740)
+### 1. Best Time to Buy and Sell Stock with Cooldown (LC 309)
 
-You are given an integer array `nums`. Each time you pick a number `nums[i]`, you delete every element equal to `nums[i] - 1` and `nums[i] + 1` from the array, and earn `nums[i]` points. Return the maximum points you can earn. Constraints: `1 ≤ nums.length ≤ 2×10⁴`, `1 ≤ nums[i] ≤ 10⁴`.
+Given daily stock prices, find the maximum profit with unlimited transactions, but after selling you must wait one day (cooldown) before buying again. Constraints: `1 ≤ n ≤ 5000`.
 
-**Approach:** The non-obvious move is the reframe: picking all copies of value `v` earns `v × count(v)` points and blocks values `v-1` and `v+1` - identical to house robber on an array indexed by value. Build a `points[v] = v × count(v)` array over the value range, then run a two-state machine (TAKE, SKIP) over it. `take = skip_prev + points[v]`; `skip = max(take_prev, skip_prev)`. The state machine encodes the adjacency constraint implicitly via the value-indexed array.
+**Worked examples:**
+- **Example 1**
+  - **Input:** prices = [1,2,3,0,2] | **Output:** 3
+  - **Explanation:** buy at 1, sell at 2 (profit 1), cooldown, buy at 0, sell at 2 (profit 2); total 3.
+- **Example 2**
+  - **Input:** prices = [1] | **Output:** 0
+
+**Constraints:** `1 ≤ prices.length ≤ 5000`, `0 ≤ prices[i] ≤ 1000`.
+
+**Approach.** Three-state machine: HELD (own stock), SOLD (just sold - in cooldown), REST (free to buy). `dp[i][HELD] = max(hold, buy from REST)`. `dp[i][SOLD] = sell from HELD`. `dp[i][REST] = max(rest, cooldown from SOLD)`. The crucial trap: you can only buy from REST, not from SOLD. Apply rolling arrays for O(1) space.
 
 ```python
-from collections import Counter
-
-def delete_and_earn(nums: list[int]) -> int:
-    if not nums:
-        return 0
-    count = Counter(nums)
-    max_val = max(count)
-    points = [v * count[v] for v in range(max_val + 1)]
-    take = skip = 0
-    for p in points:
-        take, skip = skip + p, max(take, skip)
-    return max(take, skip)
+def max_profit_cooldown(prices: list[int]) -> int:
+    held, sold, rest = float("-inf"), 0, 0
+    for price in prices:
+        held, sold, rest = max(held, rest - price), held + price, max(rest, sold)
+    return max(sold, rest)
 ```
 
-**Complexity:** O(n + k) time where k = max value, O(k) space for the points array.
+**Complexity.** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- House Robber (LC 198) - the linear two-state machine this reduces to; same TAKE/SKIP recurrence, direct application.
-- House Robber II (LC 213) - circular adjacency constraint; split into two linear runs of the same machine.
+- Best Time to Buy and Sell Stock (LC 121) - degenerate one-transaction two-state machine.
+- Best Time to Buy and Sell Stock II (LC 122) - unlimited transactions, no cooldown; two-state (HELD, CASH), simpler recurrence.
+- Best Time to Buy and Sell Stock with Transaction Fee (LC 714) - two-state (HELD, CASH) with a fee subtracted at sell instead of a REST state; no cooldown needed.
 
 ---
 
-### 2. Paint Fence (LC 276)
+### 2. Best Time to Buy and Sell Stock IV - At Most k Transactions (LC 188)
+
+Given daily prices and integer k, find the maximum profit with at most k complete transactions (buy then sell = one transaction). Constraints: `1 ≤ k ≤ 100`, `1 ≤ n ≤ 1000`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** k = 2, prices = [2,4,1] | **Output:** 2
+  - **Explanation:** buy at 2, sell at 4, profit 2; only one profitable transaction exists.
+- **Example 2**
+  - **Input:** k = 2, prices = [3,2,6,5,0,3] | **Output:** 7
+  - **Explanation:** buy at 2 sell at 6 (profit 4), buy at 0 sell at 3 (profit 3); total 7.
+
+**Constraints:** `1 ≤ k ≤ 100`, `1 ≤ prices.length ≤ 1000`, `0 ≤ prices[i] ≤ 1000`.
+
+**Approach.** State machine over `(transaction_count, {HELD, CASH})`. Table is `k × 2`. `held[j]` = best profit using at most `j+1` buys, currently holding. `cash[j]` = best profit after at most `j+1` complete transactions, not holding. Critical: when `k ≥ n/2`, every price uptick is capturable - solve as unlimited transactions in O(n), bypassing the k-loop entirely. Iterate j in reverse order within each price step to avoid using updated-in-same-pass values.
+
+```python
+def max_profit_k_transactions(k: int, prices: list[int]) -> int:
+    n = len(prices)
+    if n == 0 or k == 0:
+        return 0
+    if k >= n // 2:
+        return sum(max(0, prices[i + 1] - prices[i]) for i in range(n - 1))
+    held = [float("-inf")] * k
+    cash = [0] * k
+    for price in prices:
+        for j in range(k - 1, -1, -1):
+            cash[j] = max(cash[j], held[j] + price)
+            held[j] = max(held[j], (cash[j - 1] if j > 0 else 0) - price)
+    return cash[-1]
+```
+
+**Complexity.** O(n · k) time, O(k) space (rolling).
+
+**Duplicate problems:**
+- Best Time to Buy and Sell Stock III (LC 123) - k=2 special case; can hard-code `buy1, sell1, buy2, sell2` scalars.
+
+---
+
+### 3. House Robber II (LC 213)
+
+Houses are arranged in a **circle** - first and last are adjacent. You cannot rob adjacent houses. Find maximum money. Constraints: `1 ≤ n ≤ 100`, values `0 ≤ val ≤ 1000`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [2,3,2] | **Output:** 3
+  - **Explanation:** robbing house 0 and house 2 is illegal (circular adjacency), so the best is house 1 alone.
+- **Example 2**
+  - **Input:** nums = [1,2,3,1] | **Output:** 4
+  - **Explanation:** rob houses 0 and 2 for 1+3=4.
+
+**Constraints:** `1 ≤ nums.length ≤ 100`, `0 ≤ nums[i] ≤ 1000`.
+
+**Approach.** The circular constraint means "can't rob both house 0 and house n-1." Decompose into two independent linear state machines: run House Robber I on `houses[0..n-2]` (exclude last) and on `houses[1..n-1]` (exclude first). Answer is the max of the two. Each linear run is a two-state machine: ROB, SKIP. `dp[i][ROB] = dp[i-1][SKIP] + val[i]`. `dp[i][SKIP] = max(dp[i-1][ROB], dp[i-1][SKIP])`.
+
+```python
+def rob_circular(nums: list[int]) -> int:
+    if len(nums) == 1:
+        return nums[0]
+
+    def rob_linear(houses: list[int]) -> int:
+        rob = skip = 0
+        for val in houses:
+            rob, skip = skip + val, max(rob, skip)
+        return max(rob, skip)
+
+    return max(rob_linear(nums[:-1]), rob_linear(nums[1:]))
+```
+
+**Complexity.** O(n) time, O(1) space (two scalar rolls per linear run).
+
+**Duplicate problems:**
+- House Robber (LC 198) - linear version; no circular split needed.
+- House Robber III (LC 337) - tree structure; same ROB/SKIP states, DP on tree nodes via DFS.
+- Delete and Earn (LC 740) - reframes to linear House Robber on a value-indexed points array (picking value `v` blocks `v-1` and `v+1`); same TAKE/SKIP recurrence.
+
+---
+
+### 4. Paint House (LC 256)
+
+Given `n` houses and `costs[i][j]` (cost to paint house `i` with color `j`, three colors), paint all houses so no two adjacent houses have the same color. Minimize total cost. Constraints: `n ≤ 100`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** costs = [[17,2,17],[16,16,5],[14,3,19]] | **Output:** 10
+  - **Explanation:** paint house 0 blue (2), house 1 green (5), house 2 blue (3); total 10.
+- **Example 2**
+  - **Input:** costs = [[7,6,2]] | **Output:** 2
+
+**Constraints:** `1 ≤ n ≤ 100`, `costs.length == n`, `costs[i].length == 3`, `1 ≤ costs[i][j] ≤ 20`.
+
+**Approach.** Three-state machine: COLOR_0, COLOR_1, COLOR_2 - the state is *which specific color* the current house is painted, an absolute label. `dp[i][c] = costs[i][c] + min(dp[i-1][c'] for c' ≠ c)`. At each step, the cheapest previous color is one of the other two - no scanning needed. Roll to O(1) space with three scalars. The pattern generalizes: for k colors, track top-2 minimums (see CP-primitives).
+
+```python
+def min_cost_paint_house(costs: list[list[int]]) -> int:
+    c0, c1, c2 = costs[0]
+    for i in range(1, len(costs)):
+        c0, c1, c2 = (
+            costs[i][0] + min(c1, c2),
+            costs[i][1] + min(c0, c2),
+            costs[i][2] + min(c0, c1),
+        )
+    return min(c0, c1, c2)
+```
+
+**Complexity.** O(n · colors) = O(n) time (colors = 3, constant), O(1) space.
+
+**Duplicate problems:**
+- Paint House II (LC 265) - k colors; use top-2 minimum tracking for O(n · k) instead of O(n · k²).
+
+---
+
+### 5. Paint Fence (LC 276)
 
 There are `n` fence posts and `k` colors. Paint every post so that no more than two adjacent posts have the same color. Return the number of ways to paint. Constraints: `1 ≤ n ≤ 50`, `1 ≤ k ≤ 10⁵`.
 
-**Approach:** Two-state machine over posts: SAME (current post same color as previous) and DIFF (different). `same[i]` = ways where post i matches post i-1 = `diff[i-1]` (you can only continue a same-run from a diff transition - running three same in a row is illegal). `diff[i]` = ways where post i differs = `(same[i-1] + diff[i-1]) × (k-1)` (any prior state, any of k-1 other colors). The state machine enforces the "no three consecutive same" constraint without explicit look-back.
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 3, k = 2 | **Output:** 6
+- **Example 2**
+  - **Input:** n = 1, k = 1 | **Output:** 1
+
+**Constraints:** `1 ≤ n ≤ 50`, `1 ≤ k ≤ 10⁵`.
+
+**Approach.** Two-state machine over posts: SAME (current post same color as previous) and DIFF (different) - a **relative** state, unlike Paint House's absolute per-color state. This is the key distinction: Paint Fence's state count stays fixed at 2 regardless of k, because it tracks the *relationship* to the previous post, not which specific color was used. `same[i]` = ways where post i matches post i-1 = `diff[i-1]` (you can only continue a same-run from a diff transition - running three same in a row is illegal). `diff[i]` = ways where post i differs = `(same[i-1] + diff[i-1]) × (k-1)` (any prior state, any of k-1 other colors). The state machine enforces the "no three consecutive same" constraint without explicit look-back.
 
 ```python
-def num_ways(n: int, k: int) -> int:
+def num_ways_fence(n: int, k: int) -> int:
     if n == 0:
         return 0
     if n == 1:
@@ -512,33 +487,6 @@ def num_ways(n: int, k: int) -> int:
     return same + diff
 ```
 
-**Complexity:** O(n) time, O(1) space.
+**Complexity.** O(n) time, O(1) space.
 
-**Duplicate problems:**
-- Paint House (LC 256) - 3-color state machine with costs; same structure, adds min-cost objective.
-- Paint House II (LC 265) - k-color variant; same pattern, top-2 minimum tracking for O(n·k).
-
----
-
-### 3. Best Time to Buy and Sell Stock with Transaction Fee (LC 714)
-
-Given daily stock `prices` and a `fee` paid per transaction (on sell), find the maximum profit with unlimited transactions. You may not hold more than one share at a time. Constraints: `1 ≤ n ≤ 5×10⁴`, `0 ≤ fee ≤ 5×10⁴`.
-
-**Approach:** Two-state machine: HELD (own a share) and CASH (free). No cooldown means no third state needed. `held = max(held, cash - price)` (hold or buy); `cash = max(cash, held + price - fee)` (rest or sell minus fee). Fee deducted at sell time is equivalent to reducing the effective sell price - the two-state machine handles it naturally without restructuring. Both states update from the *previous* iteration's values; the tuple-assignment trick ensures no intra-step contamination.
-
-```python
-def max_profit_with_fee(prices: list[int], fee: int) -> int:
-    held, cash = float('-inf'), 0
-    for price in prices:
-        held, cash = (
-            max(held, cash - price),
-            max(cash, held + price - fee),
-        )
-    return cash
-```
-
-**Complexity:** O(n) time, O(1) space.
-
-**Duplicate problems:**
-- Best Time to Buy and Sell Stock II (LC 122) - same two-state machine with fee=0; pure greedy on positive deltas also works.
-- Best Time to Buy and Sell Stock with Cooldown (LC 309) - adds a REST state for the cooldown constraint; three-state version of this machine.
+**Duplicate problems:** none - the relative-state (same/different) design is distinct from every other entry in this file, which all track absolute state.

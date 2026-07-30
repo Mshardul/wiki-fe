@@ -13,12 +13,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -61,11 +59,11 @@ Mental model: **a table of sub-problems where you fill the diagonal first.** The
 Fill a 2-D table `dp[0..n-1][0..n-1]` by interval length, from length 1 up to length n.
 
 ```
-Example: Burst Balloons (LC 312)
+Example: maximize score from merging adjacent values, choosing the last one combined in each interval
 nums = [3, 1, 4]  (padded: [1, 3, 1, 4, 1])
 
-dp[i][j] = max coins from bursting all balloons in (i, j) exclusive
-Base: dp[i][i+1] = 0 (no balloons between adjacent indices)
+dp[i][j] = max score from merging all values in (i, j) exclusive
+Base: dp[i][i+1] = 0 (no values between adjacent indices)
 
 Fill by gap (j - i):
 gap = 2 (intervals of length 1 balloon):
@@ -88,71 +86,9 @@ gap = 4 (the whole array):
             dp[0][4] = 28  ← answer
 ```
 
-**Why "last balloon burst" rather than "first":** the standard Burst Balloons formulation chooses `k` as the *last* balloon burst in `(i, j)`, which means `dp[i][k]` and `dp[k][j]` are already fully resolved - no dependency on what's outside `(i, j)`. Choosing the *first* balloon instead creates a dependency on the outer context, which breaks the sub-problem isolation that DP requires.
+**Why "last element combined" rather than "first":** choosing `k` as the *last* element combined in `(i, j)` means `dp[i][k]` and `dp[k][j]` are already fully resolved - no dependency on what's outside `(i, j)`. Choosing the *first* element instead creates a dependency on the outer context, which breaks the sub-problem isolation that DP requires.
 
 **Fill order matters:** you must fill smaller intervals before larger ones, because `dp[i][j]` references `dp[i][k]` and `dp[k+1][j]` for `k` strictly inside `[i, j]`. The loop `for length in range(2, n+1): for i in range(n-length+1): j = i+length-1` achieves this.
-
-## Skeleton
-
-**Pseudocode (CLRS style):**
-
-```
-IntervalDP(n, cost) → dp[0][n-1]:
-    ▷ cost(i, k, j) = contribution of split point k to interval [i,j]
-    dp[0..n-1][0..n-1] ← 0 (or −∞ for max problems)
-    ▷ base cases: single elements
-    for i = 0 to n-1
-        dp[i][i] ← base_value(i)
-    ▷ fill by interval length
-    for length = 2 to n
-        for i = 0 to n - length
-            j ← i + length - 1
-            dp[i][j] ← ∞ (or −∞)
-            for k = i to j - 1
-                dp[i][j] ← min(dp[i][j], dp[i][k] + dp[k+1][j] + cost(i, k, j))
-    return dp[0][n-1]
-```
-
-**Python template (bottom-up):**
-
-```python
-def interval_dp(n: int) -> int:
-    dp: list[list[int]] = [[0] * n for _ in range(n)]
-
-    for i in range(n):
-        dp[i][i] = 0  # or problem-specific base value
-
-    for length in range(2, n + 1):
-        for i in range(n - length + 1):
-            j = i + length - 1
-            dp[i][j] = float("inf")  # or -inf for max
-            for k in range(i, j):
-                cost = 0  # your logic here: cost of this split
-                dp[i][j] = min(dp[i][j], dp[i][k] + dp[k + 1][j] + cost)
-
-    return dp[0][n - 1]
-```
-
-**Python template (top-down memo):**
-
-```python
-from functools import lru_cache
-
-def interval_dp_memo(n: int) -> int:
-    @lru_cache(maxsize=None)
-    def dp(i: int, j: int) -> int:
-        if i == j:
-            return 0
-        result = float("inf")
-        for k in range(i, j):
-            cost = 0  # your logic here
-            result = min(result, dp(i, k) + dp(k + 1, j) + cost)
-        return result
-
-    return dp(0, n - 1)
-```
-
-**Which form to use:** bottom-up avoids recursion overhead and is preferred in contests (no stack depth risk). Top-down with `@lru_cache` is easier to write correctly for irregular base cases (palindrome DP, where `dp[i][i]=0` and `dp[i][i-1]=0`).
 
 ## Complexity
 
@@ -228,32 +164,6 @@ Many interval DP problems (Burst Balloons, minimum cost cut) pad the input with 
 
 **Why for CP:** clean up the recurrence by 5–10 lines and eliminate a common source of off-by-one errors. In Burst Balloons, padding with `[1] + nums + [1]` means the last balloon in any interval always has a left and right neighbor - no boundary check needed.
 
-## Worked problems
-
-### 1. Burst Balloons (LC 312)
-
-Given n balloons with values `nums[i]`, burst all of them. Bursting balloon `i` earns `nums[i-1] * nums[i] * nums[i+1]` coins. Return max coins. n ≤ 500.
-
-**Approach (n ≤ 500):** pad with sentinels: `vals = [1] + nums + [1]`. `dp[i][j]` = max coins from bursting all balloons strictly between indices `i` and `j` in `vals`. Choose `k` as the *last* balloon burst in `(i, j)`: `dp[i][j] = max over k of (dp[i][k] + dp[k][j] + vals[i]*vals[k]*vals[j])`. Fill by gap length. O(n³), O(n²) space.
-
-### 2. Minimum Cost to Merge Stones (LC 1000)
-
-n piles of stones, each merge combines k adjacent piles into one, costing their sum. Find minimum total cost to reduce to one pile. If impossible return -1. n ≤ 30, k ≤ 30.
-
-**Approach (n ≤ 30):** first check feasibility: `(n - 1) % (k - 1) == 0`. `dp[i][j]` = min cost to merge piles `i..j` into as few piles as possible. Use prefix sums for range sum in O(1). The recurrence merges `[i, m]` and `[m+1, j]` for `m` stepping by `k-1`. O(n³/k) - the step constraint prunes split points. When `(j - i) % (k - 1) == 0`, add `prefix[j+1] - prefix[i]` (cost of the final merge that reduces to one pile).
-
-### 3. Strange Printer (LC 664)
-
-A printer can print a sequence of the same character in one turn, but each new print replaces characters already printed in that range. Find the minimum turns to print string `s`. n ≤ 100.
-
-**Approach (n ≤ 100):** `dp[i][j]` = min turns to print `s[i..j]`. Base: `dp[i][i] = 1`. For `j > i`: `dp[i][j] = dp[i][j-1] + 1` (print `s[j]` alone). Then optimize: for each `k` in `[i, j-1]` where `s[k] == s[j]`, we can extend the turn that printed `s[k]` to also cover `s[j]` for free: `dp[i][j] = min(dp[i][j], dp[i][k] + dp[k+1][j-1])` (with `dp[k+1][j-1] = 0` when `k+1 > j-1`). O(n³).
-
-### 4. Palindrome Partitioning II (LC 132)
-
-Given string `s`, partition it into the fewest substrings that are all palindromes. n ≤ 1000.
-
-**Approach:** not pure interval DP - a 1-D DP `cuts[i]` = min cuts for `s[0..i]` with a precomputed `is_pal[i][j]` table. The `is_pal` table is filled by interval DP: `is_pal[i][j] = (s[i]==s[j]) and is_pal[i+1][j-1]`. Then `cuts[i] = min(cuts[j-1] + 1)` for all `j ≤ i` where `is_pal[j][i]`. O(n²) time with the precomputed table. Included here because it's commonly misclassified as pure interval DP - the outer DP is 1-D.
-
 ## Pitfalls
 
 - **Wrong fill order.** Filling by `(i, j)` in row-major order (i=0..n, j=0..n) is wrong - `dp[i][j]` references `dp[i][k]` and `dp[k+1][j]` for `k < j` and `k ≥ i`, so smaller intervals must be ready first. Always fill by **interval length** (outer loop = length from 2 to n).
@@ -291,6 +201,14 @@ Verify the quadrangle inequality: `cost(a, c) + cost(b, d) ≤ cost(a, d) + cost
 
 Given n balloons with integer values `nums`, burst them one at a time. Bursting balloon `i` (when its neighbors are `l` and `r`) earns `nums[l] * nums[i] * nums[r]`. Maximize total coins. n ≤ 500, values ≤ 100.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [3,1,5,8] | **Output:** 167
+- **Example 2**
+  - **Input:** nums = [1,5] | **Output:** 10
+
+**Constraints:** `1 ≤ n ≤ 500`, `0 ≤ nums[i] ≤ 100`.
+
 **Approach:** pad `nums` with 1 on both ends. `dp[i][j]` = max coins from balloons strictly between positions `i` and `j`. For each sub-interval, try every `k` in `(i, j)` as the *last* balloon burst: `dp[i][j] = max(dp[i][k] + dp[k][j] + vals[i]*vals[k]*vals[j])`. Fill by gap length. O(n³) time, O(n²) space.
 
 ```python
@@ -313,47 +231,67 @@ def maxCoins(nums: List[int]) -> int:
 **Complexity:** O(n³) time, O(n²) space.
 
 **Duplicate problems:**
+- Minimum Cost Tree from Leaf Values (LC 1130) - same split-point-combine template; cost is `max(arr[i..k]) * max(arr[k+1..j])` instead of a product of boundary values.
+- Matrix Chain Multiplication (classic) - same shape; cost is `dims[i] * dims[k+1] * dims[j+1]`; the textbook interval DP problem.
 - Zuma Game (LC 488) - burst groups of same-colored balls; interval DP on the sequence of groups, cost depends on group size. Same shape, more complex cost function.
-- Remove Boxes (LC 546) - burst boxes where adjacent same-colored boxes earn k² points; the state is `dp[i][j][k]` (k boxes of same color appended to the right), extending interval DP to 3-D.
 
-### 2. Minimum Cost Tree from Leaf Values (LC 1130)
+---
 
-Given an array `arr` of leaf values, construct a non-leaf binary tree where each non-leaf node's value is the product of the max leaf values in its left and right subtrees. Minimize the sum of non-leaf node values. n ≤ 40, values ≤ 15.
+### 2. Minimum Cost to Merge Stones (LC 1000)
 
-**Approach:** `dp[i][j]` = minimum sum of non-leaf values for a tree built from leaves `arr[i..j]`. Split at `k`: the left subtree covers `arr[i..k]`, the right covers `arr[k+1..j]`, and the non-leaf node at this split contributes `max(arr[i..k]) * max(arr[k+1..j])`. Precompute `range_max[i][j]` in O(n²). Fill dp by length. O(n³) time, O(n²) space.
+n piles of stones, each merge combines exactly `k` adjacent piles into one, costing their sum. Find the minimum total cost to reduce to one pile, or -1 if impossible. `1 ≤ n ≤ 30`, `2 ≤ k ≤ 30`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** stones = [3,2,4,1], k = 2 | **Output:** 20
+- **Example 2**
+  - **Input:** stones = [3,2,4,1], k = 3 | **Output:** -1
+  - **Explanation:** after one merge of 3 piles, 2 piles remain and can't be merged down to 1 with k=3.
+
+**Constraints:** `1 ≤ stones.length ≤ 30`, `1 ≤ stones[i] ≤ 100`, `2 ≤ k ≤ 30`.
+
+**Approach.** Distinct from Burst Balloons: the split is **constrained to a stride**, not free. First check feasibility: `(n - 1) % (k - 1) == 0` - each merge reduces the pile count by `k-1`, so the total reduction must be a multiple of that. `dp[i][j]` = min cost to merge piles `i..j` down as far as possible. The recurrence only tries split points `m` where the left part `[i, m]` can itself be fully reduced (`(m - i) % (k - 1) == 0`), stepping by `k-1` rather than trying every `k` in `[i, j-1]`. Use prefix sums for O(1) range-sum. When `(j - i) % (k - 1) == 0`, the interval can collapse to one pile - add the full range sum as the final merge's cost.
 
 ```python
-from typing import List
+def merge_stones(stones: list[int], k: int) -> int:
+    n = len(stones)
+    if (n - 1) % (k - 1) != 0:
+        return -1
 
-def mctFromLeafValues(arr: List[int]) -> int:
-    n = len(arr)
-    INF = float("inf")
-    rmax = [[0] * n for _ in range(n)]
-    for i in range(n):
-        rmax[i][i] = arr[i]
-        for j in range(i + 1, n):
-            rmax[i][j] = max(rmax[i][j - 1], arr[j])
+    prefix = [0] * (n + 1)
+    for i, s in enumerate(stones):
+        prefix[i + 1] = prefix[i] + s
 
     dp = [[0] * n for _ in range(n)]
-    for length in range(2, n + 1):
+    for length in range(k, n + 1):
         for i in range(n - length + 1):
             j = i + length - 1
-            dp[i][j] = INF
-            for k in range(i, j):
-                cost = rmax[i][k] * rmax[k + 1][j]
-                dp[i][j] = min(dp[i][j], dp[i][k] + dp[k + 1][j] + cost)
+            dp[i][j] = float("inf")
+            for m in range(i, j, k - 1):
+                dp[i][j] = min(dp[i][j], dp[i][m] + dp[m + 1][j])
+            if (j - i) % (k - 1) == 0:
+                dp[i][j] += prefix[j + 1] - prefix[i]
     return dp[0][n - 1]
 ```
 
-**Complexity:** O(n³) time, O(n²) space.
+**Complexity.** O(n³/k) time (the stride prunes most split points), O(n²) space.
 
-**Duplicate problems:**
-- Matrix Chain Multiplication (classic) - same shape; cost is `dims[i] * dims[k+1] * dims[j+1]`; the textbook interval DP problem.
-- Minimum Cost to Merge Stones (LC 1000) - merge k adjacent piles; cost = sum of merged pile; same fill, different stride (step by k-1 for split points).
+**Duplicate problems:** none - the stride-constrained split is distinct from every other entry in this file.
+
+---
 
 ### 3. Strange Printer (LC 664)
 
 A printer prints sequences of the same character in one turn; a new print can overwrite part of an existing print. Given string `s`, find the minimum number of turns to print it. n ≤ 100.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "aaabbb" | **Output:** 2
+- **Example 2**
+  - **Input:** s = "aba" | **Output:** 2
+  - **Explanation:** print "aaa" then print "b" in the middle.
+
+**Constraints:** `1 ≤ s.length ≤ 100`, `s` consists of lowercase English letters.
 
 **Approach:** `dp[i][j]` = min turns for `s[i..j]`. Base: `dp[i][i] = 1`. For larger intervals: start with `dp[i][j-1] + 1` (print `s[j]` alone). For each `k` in `[i, j-1]` where `s[k] == s[j]`, the turn that prints `s[k]` can be extended to also print `s[j]` at no extra cost: `dp[i][j] = min(dp[i][j], dp[i][k] + dp[k+1][j-1])` (empty interval `dp[k+1][j-1] = 0` when `k+1 > j-1`). O(n³) time.
 
@@ -376,5 +314,87 @@ def strangePrinter(s: str) -> int:
 **Complexity:** O(n³) time, O(n²) space.
 
 **Duplicate problems:**
-- Palindrome Partitioning II (LC 132) - precompute `is_pal[i][j]` by interval DP, then 1-D DP for min cuts; the interval part is the same recurrence.
-- Minimum Insertion Steps to Make a String Palindrome (LC 1312) - `dp[i][j]` = min insertions; `s[i]==s[j]` → `dp[i+1][j-1]`, else `1 + min(dp[i+1][j], dp[i][j-1])`; classic palindrome interval DP.
+- Minimum Insertion Steps to Make a String Palindrome (LC 1312) - `dp[i][j]` = min insertions; `s[i]==s[j]` → `dp[i+1][j-1]`, else `1 + min(dp[i+1][j], dp[i][j-1])`; shrink-inward recurrence, same family as Palindrome Partitioning II's precompute below.
+
+---
+
+### 4. Palindrome Partitioning II (LC 132)
+
+Given string `s`, partition it into the fewest cuts such that every substring is a palindrome; return the minimum number of cuts. `1 ≤ s.length ≤ 2000`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "aab" | **Output:** 1
+  - **Explanation:** one cut gives "aa" and "b", both palindromes.
+- **Example 2**
+  - **Input:** s = "a" | **Output:** 0
+
+**Constraints:** `1 ≤ s.length ≤ 2000`, `s` consists of lowercase English letters.
+
+**Approach.** Two-stage composition, distinct from every split-point or extend-turn recurrence above: stage 1 precomputes `is_pal[i][j]` with a **shrink-inward** interval DP (`is_pal[i][j] = s[i]==s[j] and is_pal[i+1][j-1]`, filled from short intervals to long) - no split point at all, just checking whether the outer characters match and the inside is already known-palindromic. Stage 2 is a plain 1-D DP over cut positions: `cuts[i] = min(cuts[j-1] + 1)` over all `j ≤ i` where `is_pal[j][i]` is true. The interval-DP table is a precompute step feeding a 1-D DP, not the top-level recurrence itself.
+
+```python
+def min_cut(s: str) -> int:
+    n = len(s)
+    is_pal = [[False] * n for _ in range(n)]
+    for i in range(n - 1, -1, -1):
+        for j in range(i, n):
+            if s[i] == s[j] and (j - i < 2 or is_pal[i + 1][j - 1]):
+                is_pal[i][j] = True
+
+    cuts = [0] * n
+    for i in range(n):
+        if is_pal[0][i]:
+            cuts[i] = 0
+            continue
+        cuts[i] = min(cuts[j - 1] + 1 for j in range(1, i + 1) if is_pal[j][i])
+    return cuts[n - 1]
+```
+
+**Complexity.** O(n²) time (both the precompute and the cut DP are O(n²)), O(n²) space for the `is_pal` table.
+
+**Duplicate problems:**
+- Palindrome Partitioning (LC 131) - same `is_pal[i][j]` precompute, but backtracking to enumerate every partition instead of DP for a minimum count - see [Backtracking](./backtracking.md).
+
+---
+
+### 5. Remove Boxes (LC 546)
+
+Given an array of colored boxes, repeatedly remove a contiguous group of `k` boxes of the same color for `k²` points. Maximize total points. `1 ≤ n ≤ 100`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** boxes = [1,3,2,2,2,3,4,3,1] | **Output:** 23
+- **Example 2**
+  - **Input:** boxes = [1,1,1] | **Output:** 9
+  - **Explanation:** remove all 3 at once for 3² = 9, better than removing one at a time for 1+1+1=3.
+
+**Constraints:** `1 ≤ boxes.length ≤ 100`, `1 ≤ boxes[i] ≤ 100`.
+
+**Approach.** Extends Burst Balloons' split-point idea to a **3-D state**: `dp[i][j][k]` = max points from boxes `i..j`, given `k` extra boxes of the same color as `boxes[j]` are attached to the right and will be removed together with it. The extra dimension exists because the optimal move inside `[i, j]` depends on external context (how many matching boxes are queued outside the interval) - something the 2-D entries above never need. Base case removes `boxes[j]` plus its `k` attached duplicates immediately for `(k+1)²` points. The key transition: for any `m` in `[i, j-1]` where `boxes[m] == boxes[j]`, consider *not* removing `boxes[j]` immediately - instead merge it with the group at `m`, recursing on `dp[i][m][k+1]` plus the points from clearing `[m+1, j-1]` first.
+
+```python
+from functools import lru_cache
+
+def remove_boxes(boxes: list[int]) -> int:
+    n = len(boxes)
+
+    @lru_cache(maxsize=None)
+    def dp(i: int, j: int, k: int) -> int:
+        if i > j:
+            return 0
+        while i < j and boxes[j] == boxes[j - 1]:
+            j -= 1
+            k += 1
+        best = (k + 1) * (k + 1) + dp(i, j - 1, 0)
+        for m in range(i, j):
+            if boxes[m] == boxes[j]:
+                best = max(best, dp(i, m, k + 1) + dp(m + 1, j - 1, 0))
+        return best
+
+    return dp(0, n - 1, 0)
+```
+
+**Complexity.** O(n⁴) time (n³ states, O(n) transition each), O(n³) space.
+
+**Duplicate problems:** none - the 3-D state extension is distinct from every other entry in this file.

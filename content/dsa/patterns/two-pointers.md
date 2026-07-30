@@ -11,12 +11,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -69,14 +67,14 @@
 
 Place `L = 0`, `R = n-1`. Move whichever pointer is "worse" inward. Terminates when `L ≥ R`.
 
-**Example - Two Sum on sorted array `[1, 3, 5, 7, 9]`, target = 10`:**
+**Example - pair summing to a target, sorted array `[1, 3, 5, 7, 9]`, target = 10:**
 
 ```
 [1,  3,  5,  7,  9]
  L               R    sum = 1+9 = 10  ✓  found
 ```
 
-**Example - Container With Most Water `[1, 8, 6, 2, 5, 4, 8, 3, 7]`:**
+**Example - maximize `min(a,b) * width` over a height array `[1, 8, 6, 2, 5, 4, 8, 3, 7]`:**
 
 ```
 [1,  8,  6,  2,  5,  4,  8,  3,  7]
@@ -94,7 +92,7 @@ Place `L = 0`, `R = n-1`. Move whichever pointer is "worse" inward. Terminates w
 
 `L` = write head (next position to fill), `R` = read head (current element to evaluate). `R` scans every element; `L` advances only when it writes.
 
-**Example - Remove duplicates from `[0, 0, 1, 1, 1, 2, 2, 3, 3, 4]`:**
+**Example - compact array keeping only unique adjacent runs, `[0, 0, 1, 1, 1, 2, 2, 3, 3, 4]`:**
 
 ```
 [0, 0, 1, 1, 1, 2, 2, 3, 3, 4]
@@ -104,128 +102,6 @@ Place `L = 0`, `R = n-1`. Move whichever pointer is "worse" inward. Terminates w
     L        R                   nums[R]=1 == nums[L-1]=1? yes → skip
     ...
 Result: [0, 1, 2, 3, 4, ...]  first L elements are the answer
-```
-
----
-
-## Skeleton
-
-### Opposite-ends convergence (pseudocode)
-
-```
-TWO-POINTERS-CONVERGE(arr, n, target)
-  L = 0
-  R = n - 1
-  while L < R
-    val = f(arr[L], arr[R])    ▷ e.g. arr[L] + arr[R]
-    if val == target
-      RECORD(L, R)
-      L = L + 1
-      R = R - 1                ▷ skip duplicates if needed
-    else if val < target
-      L = L + 1                ▷ need larger value: move left pointer right
-    else
-      R = R - 1                ▷ need smaller value: move right pointer left
-```
-
-### Same-direction write-head (pseudocode)
-
-```
-TWO-POINTERS-WRITE(arr, n)
-  L = 0                        ▷ write head: next position to fill
-  for R = 0 to n - 1
-    if KEEP(arr[R])             ▷ predicate: should this element be kept?
-      arr[L] = arr[R]
-      L = L + 1
-  return L                     ▷ L is the new length
-```
-
-### Partition / three-way (Dutch National Flag) (pseudocode)
-
-```
-THREE-WAY-PARTITION(arr, n, pivot)
-  lo = 0                       ▷ [0..lo-1] = less than pivot
-  mid = 0                      ▷ [lo..mid-1] = equal to pivot
-  hi = n - 1                   ▷ [hi+1..n-1] = greater than pivot
-  while mid <= hi
-    if arr[mid] < pivot
-      swap arr[lo] arr[mid]
-      lo = lo + 1
-      mid = mid + 1
-    else if arr[mid] == pivot
-      mid = mid + 1
-    else                       ▷ arr[mid] > pivot
-      swap arr[mid] arr[hi]
-      hi = hi - 1              ▷ do NOT advance mid: arr[hi] unexamined
-```
-
-### Python templates
-
-```python
-# ── Opposite-ends: pair sum ────────────────────────────────────────────────
-def two_sum_sorted(numbers: list[int], target: int) -> tuple[int, int]:
-    L, R = 0, len(numbers) - 1
-    while L < R:
-        s = numbers[L] + numbers[R]
-        if s == target:
-            return L + 1, R + 1   # 1-indexed per LC 167
-        elif s < target:
-            L += 1
-        else:
-            R -= 1
-    return -1, -1                 # no solution (guaranteed by problem)
-
-
-# ── Same-direction: remove duplicates ─────────────────────────────────────
-def remove_duplicates(nums: list[int]) -> int:
-    if not nums:
-        return 0
-    L = 1                         # write head; position 0 always kept
-    for R in range(1, len(nums)):
-        if nums[R] != nums[L - 1]:
-            nums[L] = nums[R]
-            L += 1
-    return L
-
-
-# ── Partition: Dutch National Flag (Sort Colors) ───────────────────────────
-def sort_colors(nums: list[int]) -> None:
-    lo, mid, hi = 0, 0, len(nums) - 1
-    while mid <= hi:
-        if nums[mid] == 0:
-            nums[lo], nums[mid] = nums[mid], nums[lo]
-            lo += 1
-            mid += 1
-        elif nums[mid] == 1:
-            mid += 1
-        else:
-            nums[mid], nums[hi] = nums[hi], nums[mid]
-            hi -= 1             # do not advance mid - swapped element unseen
-
-
-# ── kSum scaffold (fix one pointer, recurse / two-pointer the rest) ────────
-def three_sum(nums: list[int]) -> list[list[int]]:
-    nums.sort()
-    result: list[list[int]] = []
-    for i, val in enumerate(nums):
-        if i > 0 and val == nums[i - 1]:
-            continue            # skip duplicate fixed element
-        L, R = i + 1, len(nums) - 1
-        while L < R:
-            s = val + nums[L] + nums[R]
-            if s == 0:
-                result.append([val, nums[L], nums[R]])
-                while L < R and nums[L] == nums[L + 1]:
-                    L += 1      # skip duplicate L
-                while L < R and nums[R] == nums[R - 1]:
-                    R -= 1      # skip duplicate R
-                L += 1
-                R -= 1
-            elif s < 0:
-                L += 1
-            else:
-                R -= 1
-    return result
 ```
 
 ---
@@ -336,162 +212,6 @@ def four_sum(nums: list[int], target: int) -> list[list[int]]:
 
 ---
 
-## Worked problems
-
-### 1. Two Sum II - Input Array Is Sorted (LC 167)
-
-Given a 1-indexed sorted array `numbers`, find two numbers that add up to `target`. Return their indices. Constraints: `2 ≤ n ≤ 3×10⁴`, `−10³ ≤ numbers[i] ≤ 10³`, exactly one solution.
-
-**Approach:** Classic opposite-ends. If `numbers[L] + numbers[R] < target`, the sum is too small - only way to increase is move `L` right (array is sorted). If too large, move `R` left. Correctness rests entirely on the sorted order: no pointer movement discards a valid pair.
-
-```python
-def two_sum_sorted(numbers: list[int], target: int) -> list[int]:
-    L, R = 0, len(numbers) - 1
-    while L < R:
-        s = numbers[L] + numbers[R]
-        if s == target:
-            return [L + 1, R + 1]
-        elif s < target:
-            L += 1
-        else:
-            R -= 1
-    return []
-```
-
-**Complexity:** O(n) time, O(1) space.
-
-**Duplicate problems:**
-- Two Sum IV - Input is a BST (LC 653) - same logic; in-order traversal gives sorted array, then two-pointer.
-- Sum of Square Numbers (LC 633) - two-pointer over `[0, sqrt(c)]`; `a² + b² = c`.
-
----
-
-### 2. Container With Most Water (LC 11)
-
-Given array `height` of length n, find two lines that together with the x-axis form a container holding the most water. Constraints: `2 ≤ n ≤ 10⁵`, `0 ≤ height[i] ≤ 10⁴`.
-
-**Approach:** Opposite-ends with a greedy argument. Area = `min(height[L], height[R]) * (R - L)`. When we move a pointer inward, width decreases. To have any chance of improving area, we must increase the height - so always move the shorter wall. Proving this is the key interview question: *"why is it safe to discard the shorter wall?"* Because any pair that includes the shorter wall but with a different partner will have `min(height) ≤ height[shorter wall]` and smaller width.
-
-```python
-def max_area(height: list[int]) -> int:
-    L, R = 0, len(height) - 1
-    best = 0
-    while L < R:
-        area = min(height[L], height[R]) * (R - L)
-        best = max(best, area)
-        if height[L] < height[R]:
-            L += 1
-        else:
-            R -= 1
-    return best
-```
-
-**Complexity:** O(n) time, O(1) space.
-
-**Duplicate problems:**
-- Trapping Rain Water (LC 42) - harder variant; need max from both sides, can still solve with two-pointer tracking running max.
-
----
-
-### 3. Remove Duplicates from Sorted Array (LC 26)
-
-Given sorted array `nums` in-place, remove duplicates so each unique element appears once. Return the count of unique elements. Constraints: `1 ≤ n ≤ 3×10⁴`.
-
-**Approach:** Same-direction write-head. `L` is the write position (next slot for a unique element). `R` scans. When `nums[R] != nums[L-1]` (new unique), write it at `L` and advance `L`. Elements at `[L:]` don't need to be cleared - the return value `L` tells the caller how many are valid.
-
-```python
-def remove_duplicates(nums: list[int]) -> int:
-    if not nums:
-        return 0
-    L = 1
-    for R in range(1, len(nums)):
-        if nums[R] != nums[L - 1]:
-            nums[L] = nums[R]
-            L += 1
-    return L
-```
-
-**Complexity:** O(n) time, O(1) space.
-
-**Duplicate problems:**
-- Remove Duplicates from Sorted Array II (LC 80) - allow at most 2 copies; change condition to `nums[R] != nums[L-2]`.
-- Move Zeroes (LC 283) - write-head keeps non-zeros, then fill tail with zeros.
-
----
-
-### 4. 3Sum (LC 15)
-
-Given integer array `nums`, find all unique triplets `[nums[i], nums[j], nums[k]]` such that `i ≠ j ≠ k` and `nums[i] + nums[j] + nums[k] = 0`. Constraints: `3 ≤ n ≤ 3×10³`.
-
-**Approach:** Sort. Iterate `i` over the array (the fixed pointer). For each `i`, two-pointer `L = i+1` and `R = n-1` looking for a pair summing to `-nums[i]`. Skip duplicate values of `i` (outer loop), and skip duplicate values of `L` and `R` after recording a result (inner loop). The duplicate-skip logic is the trap most candidates miss.
-
-```python
-def three_sum(nums: list[int]) -> list[list[int]]:
-    nums.sort()
-    result: list[list[int]] = []
-    for i, val in enumerate(nums):
-        if i > 0 and val == nums[i - 1]:
-            continue
-        L, R = i + 1, len(nums) - 1
-        while L < R:
-            s = val + nums[L] + nums[R]
-            if s == 0:
-                result.append([val, nums[L], nums[R]])
-                while L < R and nums[L] == nums[L + 1]:
-                    L += 1
-                while L < R and nums[R] == nums[R - 1]:
-                    R -= 1
-                L += 1
-                R -= 1
-            elif s < 0:
-                L += 1
-            else:
-                R -= 1
-    return result
-```
-
-**Complexity:** O(n²) time, O(1) extra space (sort is in-place).
-
-**Duplicate problems:**
-- 4Sum (LC 18) - add one more outer fixed pointer; O(n³).
-- 3Sum Closest (LC 16) - track closest sum instead of exact zero.
-
----
-
-### 5. Trapping Rain Water (LC 42)
-
-Given array `height` representing an elevation map, compute how much water it can trap after raining. Constraints: `1 ≤ n ≤ 2×10⁴`, `0 ≤ height[i] ≤ 10⁵`.
-
-**Approach:** Two-pointer tracking running max from each side. Water at position `i` = `min(max_left[i], max_right[i]) − height[i]`. Instead of precomputing both arrays, use L/R pointers: if `max_left < max_right`, the water at L is determined by `max_left` (the left side is the bottleneck) - accumulate and advance L. Otherwise accumulate from R and advance R. No extra O(n) arrays needed.
-
-```python
-def trap(height: list[int]) -> int:
-    L, R = 0, len(height) - 1
-    max_left = max_right = 0
-    water = 0
-    while L < R:
-        if height[L] <= height[R]:
-            if height[L] >= max_left:
-                max_left = height[L]
-            else:
-                water += max_left - height[L]
-            L += 1
-        else:
-            if height[R] >= max_right:
-                max_right = height[R]
-            else:
-                water += max_right - height[R]
-            R -= 1
-    return water
-```
-
-**Complexity:** O(n) time, O(1) space (vs O(n) for the two-array prefix-max approach).
-
-**Duplicate problems:**
-- Largest Rectangle in Histogram (LC 84) - different formulation but monotonic stack is simpler; trapping rain water is the two-pointer showcase.
-
----
-
 ## Pitfalls
 
 1. **Applying to unsorted input.** The opposite-ends pointer movement is only correct when the array is sorted - the monotonic property ("moving L right increases the sum") only holds in sorted order. On unsorted input, the result is wrong with no error. Sort first if needed.
@@ -529,12 +249,22 @@ Then clarify: is the array sorted? Is it pair-finding (opposite-ends) or in-plac
 
 ### 1. Two Sum II - Input Array Is Sorted (LC 167)
 
-1-indexed sorted array `numbers`. Find two numbers summing to `target` and return their indices. Constraints: `2 ≤ n ≤ 3×10⁴`, exactly one solution.
+1-indexed sorted array `numbers`. Find two numbers summing to `target` and return their indices. Constraints: `2 ≤ n ≤ 3×10⁴`, `−10³ ≤ numbers[i] ≤ 10³`, exactly one solution.
 
-**Approach:** Opposite-ends. `sum < target` → advance L (need bigger); `sum > target` → retreat R (need smaller). Correctness depends entirely on sorted order.
+**Worked examples:**
+- **Example 1**
+  - **Input:** numbers = [2, 7, 11, 15], target = 9 | **Output:** [1, 2]
+  - **Explanation:** numbers[0] + numbers[1] = 2 + 7 = 9, returned as 1-indexed.
+- **Example 2**
+  - **Input:** numbers = [2, 3, 4], target = 6 | **Output:** [1, 3]
+  - **Explanation:** numbers[0] + numbers[2] = 2 + 4 = 6.
+
+**Constraints:** `2 ≤ n ≤ 3×10⁴`, `−10³ ≤ numbers[i] ≤ 10³`, `numbers` sorted ascending, exactly one solution guaranteed.
+
+**Approach:** Classic opposite-ends. If `numbers[L] + numbers[R] < target`, the sum is too small - only way to increase is move `L` right (array is sorted). If too large, move `R` left. Correctness rests entirely on the sorted order: no pointer movement discards a valid pair.
 
 ```python
-def two_sum(numbers: list[int], target: int) -> list[int]:
+def two_sum_sorted(numbers: list[int], target: int) -> list[int]:
     L, R = 0, len(numbers) - 1
     while L < R:
         s = numbers[L] + numbers[R]
@@ -550,40 +280,151 @@ def two_sum(numbers: list[int], target: int) -> list[int]:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Two Sum IV (LC 653) - same on BST in-order traversal.
-- Sum of Square Numbers (LC 633) - two-pointer over `[0, isqrt(c)]`.
+- Two Sum IV - Input is a BST (LC 653) - same logic; in-order traversal gives a sorted array, then two-pointer.
+- Sum of Square Numbers (LC 633) - two-pointer over `[0, isqrt(c)]`; `a² + b² = c`.
 
 ---
 
-### 2. Move Zeroes (LC 283)
+### 2. Trapping Rain Water (LC 42)
 
-Given array `nums`, move all zeros to the end while maintaining relative order of non-zero elements, in-place. Constraints: `1 ≤ n ≤ 10⁴`.
+Given array `height` representing an elevation map, compute how much water it can trap after raining. Constraints: `1 ≤ n ≤ 2×10⁴`, `0 ≤ height[i] ≤ 10⁵`.
 
-**Approach:** Same-direction write-head. L = write position for non-zeros. Scan R: when non-zero, write `nums[R]` to `nums[L]`, advance L. After loop, fill `nums[L:]` with zeros.
+**Worked examples:**
+- **Example 1**
+  - **Input:** height = [0,1,0,2,1,0,1,3,2,1,2,1] | **Output:** 6
+  - **Explanation:** water pools above the lower bars wherever both sides have a taller wall; total trapped volume is 6 units.
+- **Example 2**
+  - **Input:** height = [4,2,0,3,2,5] | **Output:** 9
+
+**Constraints:** `1 ≤ n ≤ 2×10⁴`, `0 ≤ height[i] ≤ 10⁵`.
+
+**Approach:** Two-pointer tracking running max from each side. Water at position `i` = `min(max_left[i], max_right[i]) − height[i]`. Instead of precomputing both arrays, use L/R pointers: if `max_left < max_right`, the water at L is determined by `max_left` (the left side is the bottleneck) - accumulate and advance L. Otherwise accumulate from R and advance R. No extra O(n) arrays needed.
 
 ```python
-def move_zeroes(nums: list[int]) -> None:
-    L = 0
-    for R in range(len(nums)):
-        if nums[R] != 0:
+def trap(height: list[int]) -> int:
+    L, R = 0, len(height) - 1
+    max_left = max_right = 0
+    water = 0
+    while L < R:
+        if height[L] <= height[R]:
+            if height[L] >= max_left:
+                max_left = height[L]
+            else:
+                water += max_left - height[L]
+            L += 1
+        else:
+            if height[R] >= max_right:
+                max_right = height[R]
+            else:
+                water += max_right - height[R]
+            R -= 1
+    return water
+```
+
+**Complexity:** O(n) time, O(1) space (vs O(n) for the two-array prefix-max approach).
+
+**Duplicate problems:**
+- Container With Most Water (LC 11) - same opposite-ends greedy shape, simpler objective (`min(a,b) * width`, no accumulation).
+
+---
+
+### 3. Remove Duplicates from Sorted Array (LC 26)
+
+Given sorted array `nums` in-place, remove duplicates so each unique element appears once. Return the count of unique elements. Constraints: `1 ≤ n ≤ 3×10⁴`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,1,2] | **Output:** 2, nums = [1,2,...]
+  - **Explanation:** first two unique values written to the front; return count 2.
+- **Example 2**
+  - **Input:** nums = [0,0,1,1,1,2,2,3,3,4] | **Output:** 5, nums = [0,1,2,3,4,...]
+
+**Constraints:** `1 ≤ n ≤ 3×10⁴`, `−10⁴ ≤ nums[i] ≤ 10⁴`, `nums` sorted ascending.
+
+**Approach:** Same-direction write-head. `L` is the write position (next slot for a unique element). `R` scans. When `nums[R] != nums[L-1]` (new unique), write it at `L` and advance `L`. Elements at `[L:]` don't need to be cleared - the return value `L` tells the caller how many are valid.
+
+```python
+def remove_duplicates(nums: list[int]) -> int:
+    if not nums:
+        return 0
+    L = 1
+    for R in range(1, len(nums)):
+        if nums[R] != nums[L - 1]:
             nums[L] = nums[R]
             L += 1
-    while L < len(nums):
-        nums[L] = 0
-        L += 1
+    return L
 ```
 
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- Remove Duplicates from Sorted Array (LC 26) - same write-head with a different keep predicate.
-- Remove Element (LC 27) - keep predicate = `nums[R] != val`.
+- Remove Duplicates from Sorted Array II (LC 80) - allow at most 2 copies; change condition to `nums[R] != nums[L-2]`.
+- Move Zeroes (LC 283) - same write-head, keep predicate = non-zero, then fill tail with zeros.
+- Remove Element (LC 27) - same write-head, keep predicate = `nums[R] != val`.
 
 ---
 
-### 3. Valid Palindrome (LC 125)
+### 4. 3Sum (LC 15)
+
+Given integer array `nums`, find all unique triplets `[nums[i], nums[j], nums[k]]` such that `i ≠ j ≠ k` and `nums[i] + nums[j] + nums[k] = 0`. Constraints: `3 ≤ n ≤ 3×10³`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [-1,0,1,2,-1,-4] | **Output:** [[-1,-1,2],[-1,0,1]]
+  - **Explanation:** after sorting, fixing each `i` and two-pointering the rest finds both triplets summing to 0, duplicates skipped.
+- **Example 2**
+  - **Input:** nums = [0,1,1] | **Output:** []
+  - **Explanation:** no triplet sums to 0.
+
+**Constraints:** `3 ≤ n ≤ 3×10³`, `−10⁵ ≤ nums[i] ≤ 10⁵`.
+
+**Approach:** Sort. Iterate `i` over the array (the fixed pointer). For each `i`, two-pointer `L = i+1` and `R = n-1` looking for a pair summing to `-nums[i]`. Skip duplicate values of `i` (outer loop), and skip duplicate values of `L` and `R` after recording a result (inner loop). The duplicate-skip logic is the trap most candidates miss.
+
+```python
+def three_sum(nums: list[int]) -> list[list[int]]:
+    nums.sort()
+    result: list[list[int]] = []
+    for i, val in enumerate(nums):
+        if i > 0 and val == nums[i - 1]:
+            continue
+        L, R = i + 1, len(nums) - 1
+        while L < R:
+            s = val + nums[L] + nums[R]
+            if s == 0:
+                result.append([val, nums[L], nums[R]])
+                while L < R and nums[L] == nums[L + 1]:
+                    L += 1
+                while L < R and nums[R] == nums[R - 1]:
+                    R -= 1
+                L += 1
+                R -= 1
+            elif s < 0:
+                L += 1
+            else:
+                R -= 1
+    return result
+```
+
+**Complexity:** O(n²) time, O(1) extra space (sort is in-place).
+
+**Duplicate problems:**
+- 4Sum (LC 18) - add one more outer fixed pointer; O(n³).
+- 3Sum Closest (LC 16) - track closest sum instead of exact zero.
+
+---
+
+### 5. Valid Palindrome (LC 125)
 
 Given string `s` with alphanumeric characters and spaces/punctuation, determine if it reads the same forwards and backwards ignoring case and non-alphanumeric characters. Constraints: `1 ≤ n ≤ 2×10⁵`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "A man, a plan, a canal: Panama" | **Output:** true
+  - **Explanation:** ignoring case/punctuation, "amanaplanacanalpanama" reads the same both ways.
+- **Example 2**
+  - **Input:** s = "race a car" | **Output:** false
+
+**Constraints:** `1 ≤ n ≤ 2×10⁵`, `s` consists of printable ASCII characters.
 
 **Approach:** Opposite-ends. Advance L past non-alphanumeric, retreat R past non-alphanumeric, compare lowercased characters. If mismatch → not palindrome. If L ≥ R → palindrome.
 

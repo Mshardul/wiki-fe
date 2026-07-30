@@ -1927,6 +1927,10 @@
       "title": "Pattern Selection Cheat Sheet"
     },
     {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    },
+    {
       "path": "./content/dsa/patterns/state-machine-dp.md",
       "title": "State Machine DP"
     },

@@ -11,12 +11,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -115,106 +113,6 @@ Assign color[1]=1
 ```
 
 **Chromatic number:** the minimum k for which a valid coloring exists. Finding it exactly is NP-hard; greedy upper-bounds it at Δ+1 (Δ = max degree).
-
----
-
-## Skeleton
-
-### 2-coloring (bipartite check)
-
-**Pseudocode:**
-
-```
-IS-BIPARTITE(G = (V, E))
-  color[v] ← -1 for all v ∈ V
-  for each unvisited source s ∈ V:
-    color[s] ← 0
-    Q ← queue containing s
-    while Q not empty:
-      u ← DEQUEUE(Q)
-      for each neighbor v of u:
-        if color[v] = -1:
-          color[v] ← 1 − color[u]
-          ENQUEUE(Q, v)
-        else if color[v] = color[u]:
-          return FALSE          ▷ odd cycle found
-  return TRUE
-```
-
-**Python template:**
-
-```python
-from collections import deque
-from typing import List
-
-def is_bipartite(graph: List[List[int]]) -> bool:
-    n = len(graph)
-    color = [-1] * n
-
-    for start in range(n):
-        if color[start] != -1:
-            continue
-        color[start] = 0
-        queue = deque([start])
-        while queue:
-            node = queue.popleft()
-            for neighbor in graph[node]:
-                if color[neighbor] == -1:
-                    color[neighbor] = 1 - color[node]
-                    queue.append(neighbor)
-                elif color[neighbor] == color[node]:
-                    return False
-    return True
-```
-
-### k-coloring via backtracking
-
-**Pseudocode:**
-
-```
-K-COLOR(G, k, node, color[])
-  if node = |V|:
-    return TRUE                 ▷ all nodes colored
-  for c = 1 to k:
-    if IS-SAFE(G, node, c, color):
-      color[node] ← c
-      if K-COLOR(G, k, node + 1, color):
-        return TRUE
-      color[node] ← 0           ▷ un-choose
-  return FALSE
-
-IS-SAFE(G, node, c, color[])
-  for each neighbor v of node:
-    if color[v] = c:
-      return FALSE
-  return TRUE
-```
-
-**Python template:**
-
-```python
-from typing import List, Optional
-
-def k_color(graph: List[List[int]], k: int) -> Optional[List[int]]:
-    n = len(graph)
-    color = [0] * n
-
-    def is_safe(node: int, c: int) -> bool:
-        return all(color[nb] != c for nb in graph[node])
-
-    def backtrack(node: int) -> bool:
-        if node == n:
-            return True
-        for c in range(1, k + 1):
-            if is_safe(node, c):
-                color[node] = c
-                if backtrack(node + 1):
-                    return True
-                color[node] = 0
-        return False
-
-    return color if backtrack(0) else None
-```
 
 ---
 
@@ -329,139 +227,6 @@ BFS 2-coloring is strictly faster than DFS for odd-cycle detection because it te
 
 ---
 
-## Worked problems
-
-### 1. Is Graph Bipartite? (LC 785)
-
-Given an undirected graph as an adjacency list, determine if it is bipartite. The graph may be disconnected. Constraints: n ≤ 100, edges ≤ 400.
-
-**Approach:** This is IS-BIPARTITE verbatim. BFS from each unvisited node; alternate colors 0/1 across every edge. If any edge connects two same-color nodes an odd cycle exists → not bipartite. Disconnection handled by the outer loop over all unvisited sources - without it, isolated components are silently ignored.
-
-**Solution:**
-
-```python
-from collections import deque
-from typing import List
-
-def is_bipartite(graph: List[List[int]]) -> bool:
-    color = [-1] * len(graph)
-    for start in range(len(graph)):
-        if color[start] != -1:
-            continue
-        color[start] = 0
-        queue = deque([start])
-        while queue:
-            node = queue.popleft()
-            for nb in graph[node]:
-                if color[nb] == -1:
-                    color[nb] = 1 - color[node]
-                    queue.append(nb)
-                elif color[nb] == color[node]:
-                    return False
-    return True
-```
-
-**Complexity:** O(V + E) time, O(V) space.
-
-**Duplicate problems:**
-- Possible Bipartition (LC 886) - same BFS 2-coloring; "dislikes" edges form the conflict graph, partition = bipartite sides.
-- Divide Nodes into the Maximum Number of Groups (LC 2493) - extends bipartite check per connected component then combines; coloring is still the prerequisite step.
-
----
-
-### 2. Course Schedule with Conflict Groups (scheduling variant)
-
-You have n exams and a list of pairs `[a, b]` meaning exam a and b cannot be scheduled in the same slot. Determine the minimum number of slots needed if you know the conflict graph is bipartite. Constraints: n ≤ 10⁵.
-
-**Approach:** IS-BIPARTITE with a reframing: "slot" = color, "conflict" = edge. The skeleton runs unchanged - BFS alternating slot 0/1 across conflict edges. A bipartite graph guarantees 2 slots suffice; a failed coloring (odd cycle) means ≥ 3 slots are needed, which lies outside this pattern. The scheduling framing is the only novelty; the algorithm is identical to the 2-color skeleton.
-
-**Solution:**
-
-```python
-from collections import deque
-from typing import List, Optional
-
-def two_slot_schedule(n: int, conflicts: List[List[int]]) -> Optional[List[int]]:
-    graph = [[] for _ in range(n)]
-    for a, b in conflicts:
-        graph[a].append(b)
-        graph[b].append(a)
-
-    slot = [-1] * n
-    for start in range(n):
-        if slot[start] != -1:
-            continue
-        slot[start] = 0
-        queue = deque([start])
-        while queue:
-            node = queue.popleft()
-            for nb in graph[node]:
-                if slot[nb] == -1:
-                    slot[nb] = 1 - slot[node]
-                    queue.append(nb)
-                elif slot[nb] == slot[node]:
-                    return None
-    return slot
-```
-
-**Complexity:** O(V + E) time, O(V) space.
-
-**Duplicate problems:**
-- Flower Planting With No Adjacent (LC 1042) - 3-coloring of a degree-≤-3 graph; greedy assign-first-available color works because degree ≤ 3 guarantees 3 colors always suffice.
-
----
-
-### 3. Find if Path Exists with Color Constraint (bipartite + query)
-
-Given a graph and a list of "forbidden same-color pairs", determine for each query whether two nodes are in different color groups (LC-style: "is there a valid 2-coloring AND are nodes u and v in different groups?"). Constraints: n ≤ 10⁴.
-
-**Approach:** IS-BIPARTITE first, then use the `color[]` array as the answer store. The skeleton runs unchanged to populate colors; queries are O(1) lookups into that array. Key nuance that goes beyond the skeleton: adjacent nodes are *forced* to different groups by the coloring invariant, but non-adjacent nodes can share a group - so `color[u] != color[v]` answers "are they in different groups under this BFS assignment", not "must they always differ". If the graph is not bipartite, no valid 2-coloring exists → all queries return false.
-
-**Solution:**
-
-```python
-from collections import deque
-from typing import List, Tuple
-
-def color_queries(
-    n: int,
-    edges: List[List[int]],
-    queries: List[Tuple[int, int]]
-) -> List[bool]:
-    graph = [[] for _ in range(n)]
-    for a, b in edges:
-        graph[a].append(b)
-        graph[b].append(a)
-
-    color = [-1] * n
-    bipartite = True
-
-    for start in range(n):
-        if color[start] != -1:
-            continue
-        color[start] = 0
-        queue = deque([start])
-        while queue and bipartite:
-            node = queue.popleft()
-            for nb in graph[node]:
-                if color[nb] == -1:
-                    color[nb] = 1 - color[node]
-                    queue.append(nb)
-                elif color[nb] == color[node]:
-                    bipartite = False
-
-    if not bipartite:
-        return [False] * len(queries)
-    return [color[u] != color[v] for u, v in queries]
-```
-
-**Complexity:** O(V + E + Q) time, O(V) space.
-
-**Duplicate problems:**
-- Check if a Graph is Bipartite (LC 785) - degenerate case of this with zero queries.
-
----
-
 ## Pitfalls
 
 1. **Forgetting disconnected components.** A common mistake is starting BFS from node 0 only. If the graph has multiple connected components, each must be independently 2-colored - missing any component may silently return the wrong answer. Always loop over all unvisited nodes as potential sources.
@@ -493,9 +258,19 @@ def color_queries(
 
 ## Practice problems
 
-### Possible Bipartition (LC 886)
+### 1. Possible Bipartition (LC 886)
 
 Given n people and a list of "dislike" pairs, determine if you can split everyone into two groups such that no two people who dislike each other are in the same group. Constraints: n ≤ 2000, dislikes ≤ 10⁴.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 4, dislikes = [[1,2],[1,3],[2,4]] | **Output:** true
+  - **Explanation:** group1 = [1,4], group2 = [2,3].
+- **Example 2**
+  - **Input:** n = 3, dislikes = [[1,2],[1,3],[2,3]] | **Output:** false
+  - **Explanation:** the 3 people form a triangle (odd cycle) - no valid 2-way split.
+
+**Constraints:** `1 ≤ n ≤ 2000`, `0 ≤ dislikes.length ≤ 10⁴`, each pair distinct.
 
 **Approach:** Build an undirected conflict graph from dislikes. Run BFS 2-coloring: try to assign each person to group 0 or 1. A dislike edge crossing two same-group people signals an odd cycle - return false. Disconnect handled by looping over all unvisited nodes as BFS sources.
 
@@ -531,14 +306,22 @@ def possible_bipartition(n: int, dislikes: List[List[int]]) -> bool:
 **Complexity:** O(V + E) time, O(V + E) space.
 
 **Duplicate problems:**
-- Is Graph Bipartite? (LC 785) - identical algorithm; "dislike" edges vs explicit adjacency list, same 2-coloring logic.
+- Is Graph Bipartite? (LC 785) - identical algorithm; explicit adjacency list vs "dislike" edges, same 2-coloring logic.
 - Divide Nodes into the Maximum Number of Groups (LC 2493) - requires bipartite check per component then BFS-layer assignment; coloring is the prerequisite.
 
 ---
 
-### Flower Planting With No Adjacent (LC 1042)
+### 2. Flower Planting With No Adjacent (LC 1042)
 
 You have n gardens (1-indexed) and a list of paths between them. Each garden must be planted with one of 4 flower types such that no two adjacent gardens have the same type. Each garden has at most 3 paths. Return any valid assignment. Constraints: n ≤ 10⁴, paths ≤ 2 × 10⁴.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 3, paths = [[1,2],[2,3],[3,1]] | **Output:** [1,2,3]
+- **Example 2**
+  - **Input:** n = 4, paths = [[1,2],[3,4]] | **Output:** [1,2,1,2]
+
+**Constraints:** `1 ≤ n ≤ 10⁴`, `0 ≤ paths.length ≤ 2×10⁴`, each garden has at most 3 paths.
 
 **Approach:** With max degree 3, there are always ≤ 3 forbidden colors per node, leaving ≥ 1 of the 4 colors available. Greedy: for each garden, collect the colors of its planted neighbors and assign the smallest color not in that set. Order doesn't matter since 4 > max-degree guarantees a color always exists.
 
@@ -570,39 +353,48 @@ def garden_no_adj(n: int, paths: List[List[int]]) -> List[int]:
 
 ---
 
-### Check Whether the Graph is Bipartite (custom - DFS variant)
+### 3. Chromatic Number (bitmask DP)
 
-Given an undirected graph as an edge list, check bipartiteness using DFS instead of BFS. This variant appears when the problem additionally asks for the exact odd cycle that violates bipartiteness. Constraints: n ≤ 10⁵.
+Given a small undirected graph (`n ≤ 20`) as an adjacency list, find its chromatic number - the minimum number of colors needed so no two adjacent nodes share a color. Unlike Possible Bipartition (fixed k=2) or Flower Planting (fixed k=4, degree-bounded), this finds the exact minimum k for an arbitrary graph, which is NP-hard in general - bitmask DP makes it tractable at n ≤ 20.
 
-**Approach:** DFS-based 2-coloring tracks color along the DFS tree. When a back edge connects two same-color nodes, the cycle from v up to u through the DFS path is an odd cycle. DFS variant is useful when you need to reconstruct the cycle, not just detect it.
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 3, edges = [[0,1],[1,2],[0,2]] (triangle) | **Output:** 3
+  - **Explanation:** every pair is adjacent, so all 3 nodes need distinct colors.
+- **Example 2**
+  - **Input:** n = 4, edges = [[0,1],[1,2],[2,3],[3,0]] (4-cycle) | **Output:** 2
+  - **Explanation:** an even cycle is bipartite - 2 colors suffice.
 
-**Solution:**
+**Constraints:** `1 ≤ n ≤ 20`, edges given as an adjacency list or edge list.
+
+**Approach.** Precompute which subsets of nodes ("masks") form an independent set (no two adjacent nodes both in the mask) - `indep[mask]` is `True` iff `mask` has no internal edge. Then DP over all masks: `dp[mask]` = minimum colors needed to color exactly the nodes in `mask`, computed as `min(1 + dp[mask ^ sub])` over every independent-set submask `sub` of `mask` (color `sub` with one color, recurse on the rest). This is mechanically distinct from both 2-coloring (BFS/DFS parity) and greedy k-coloring (single pass, first-available) - it's an exact exponential search over the subset lattice, trading n≤20 tractability for a provably optimal answer no greedy or polynomial check can guarantee.
 
 ```python
-from typing import List
+def chromatic_number(adj: list[int], n: int) -> int:
+    # adj[v] = bitmask of v's neighbors
+    full = (1 << n) - 1
+    indep = [False] * (full + 1)
+    for mask in range(full + 1):
+        ok = True
+        for v in range(n):
+            if mask >> v & 1:
+                if mask & adj[v] & ((1 << v) - 1):  # earlier neighbor in mask
+                    ok = False
+                    break
+        indep[mask] = ok
 
-def is_bipartite_dfs(n: int, edges: List[List[int]]) -> bool:
-    graph = [[] for _ in range(n)]
-    for a, b in edges:
-        graph[a].append(b)
-        graph[b].append(a)
-
-    color = [-1] * n
-
-    def dfs(node: int, c: int) -> bool:
-        color[node] = c
-        for nb in graph[node]:
-            if color[nb] == -1:
-                if not dfs(nb, 1 - c):
-                    return False
-            elif color[nb] == c:
-                return False
-        return True
-
-    return all(color[v] != -1 or dfs(v, 0) for v in range(n))
+    dp = [float('inf')] * (full + 1)
+    dp[0] = 0
+    for mask in range(1, full + 1):
+        sub = mask
+        while sub:
+            if indep[sub]:
+                dp[mask] = min(dp[mask], 1 + dp[mask ^ sub])
+            sub = (sub - 1) & mask
+    return dp[full]
 ```
 
-**Complexity:** O(V + E) time, O(V) space (recursion stack depth V in worst case; use iterative DFS for n > 10⁴ to avoid stack overflow in Python).
+**Complexity.** O(2ⁿ · n) time (building `indep`) + O(3ⁿ) time (submask enumeration in the DP), O(2ⁿ) space.
 
 **Duplicate problems:**
-- Is Graph Bipartite? (LC 785) - BFS vs DFS; same problem, same result, different traversal order.
+- Minimum number of teams / groups such that no two conflicting members share a team (classic/CP framing) - same bitmask-DP-over-independent-sets shape, different cover story.

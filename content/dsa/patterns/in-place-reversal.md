@@ -10,12 +10,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -104,93 +102,6 @@ k=3, list: [1]→[2]→[3]→[4]→[5]→[6]→None
 Group 1: reverse [1],[2],[3] → [3]→[2]→[1]
 Group 2: reverse [4],[5],[6] → [6]→[5]→[4]
 Result:  [3]→[2]→[1]→[6]→[5]→[4]→None
-```
-
-## Skeleton
-
-**CLRS pseudocode - reverse entire list:**
-
-```
-REVERSE-LIST(head)
-  prev ← None
-  curr ← head
-  while curr ≠ None
-    next_node ← curr.next    ▷ save the forward link
-    curr.next  ← prev        ▷ flip the arrow
-    prev       ← curr        ▷ advance prev
-    curr       ← next_node   ▷ advance curr
-  return prev                ▷ new head
-```
-
-**CLRS pseudocode - reverse sublist [m, n] (1-indexed):**
-
-```
-REVERSE-SUBLIST(head, m, n)
-  dummy ← new node; dummy.next ← head
-  tail_of_first ← dummy
-  for i = 1 to m-1
-    tail_of_first ← tail_of_first.next
-  tail_of_sub ← tail_of_first.next
-  prev ← None; curr ← tail_of_sub
-  for i = 1 to n-m+1
-    next_node ← curr.next
-    curr.next  ← prev
-    prev       ← curr
-    curr       ← next_node
-  tail_of_first.next ← prev      ▷ attach reversed sublist
-  tail_of_sub.next   ← curr      ▷ attach remainder
-  return dummy.next
-```
-
-**Python template - reverse entire list:**
-
-```python
-from __future__ import annotations
-from typing import Optional
-
-class ListNode:
-    def __init__(self, val: int = 0, nxt: Optional["ListNode"] = None):
-        self.val = val
-        self.next = nxt
-
-def reverse_list(head: Optional[ListNode]) -> Optional[ListNode]:
-    prev: Optional[ListNode] = None
-    curr = head
-    while curr:
-        next_node = curr.next
-        curr.next = prev
-        prev = curr
-        curr = next_node
-    return prev
-
-# your logic here - adapt boundary (sublist start/end, k-group size)
-```
-
-**Python template - reverse sublist:**
-
-```python
-def reverse_sublist(
-    head: Optional[ListNode], m: int, n: int
-) -> Optional[ListNode]:
-    dummy = ListNode(0, head)
-    tail_of_first: ListNode = dummy
-    for _ in range(m - 1):
-        tail_of_first = tail_of_first.next  # guaranteed non-None by valid m
-
-    tail_of_sub = tail_of_first.next
-    assert tail_of_sub is not None
-    prev: Optional[ListNode] = None
-    curr: Optional[ListNode] = tail_of_sub
-    for _ in range(n - m + 1):
-        assert curr is not None
-        next_node = curr.next
-        curr.next = prev
-        prev = curr
-        curr = next_node
-
-    tail_of_first.next = prev
-    tail_of_sub.next = curr
-    return dummy.next
 ```
 
 ## Complexity
@@ -318,48 +229,6 @@ def rotate_right(head: Optional[ListNode], k: int) -> Optional[ListNode]:
 
 Why for CP: O(n) single pass to find length + O(n) walk to cut - cleaner than three-reversal approach and harder to get wrong under contest time pressure.
 
-## Worked problems
-
-### Reverse Linked List (LC 206)
-
-Reverse a singly linked list and return the new head. No space constraint stated, but O(1) is expected.
-
-Apply the three-pointer core directly - `prev=None`, `curr=head`, flip and advance until `curr` is `None`, return `prev`. The simplest case; no stitching needed.
-
-**Constraint:** n ≤ 5000; O(n)/O(1).
-
-### Reverse Linked List II (LC 92)
-
-Given a linked list and integers `left` and `right` (1-indexed), reverse the nodes from position `left` to `right` in one pass.
-
-Walk `left - 1` steps to find `tail_of_first`. The node at `left` becomes `tail_of_sub`. Run the core reversal loop `right - left + 1` times, then stitch: `tail_of_first.next = prev`, `tail_of_sub.next = curr`. A dummy head avoids a special case when `left = 1`.
-
-**Constraint:** n ≤ 500, 1 ≤ left ≤ right ≤ n; O(n)/O(1).
-
-### Reverse Nodes in k-Group (LC 25)
-
-Reverse every consecutive group of k nodes. If the final group has fewer than k nodes, leave it as-is.
-
-Use `get_kth` to probe whether k nodes remain before committing to a reversal. Reverse the group using `group_next = kth.next` as the stopping sentinel, then advance `group_prev`. The dummy head keeps the stitching uniform for the first group.
-
-**Constraint:** n ≤ 5000, 1 ≤ k ≤ n; O(n)/O(1) iterative. The recursive O(n/k) stack solution is also accepted but risks stack overflow at large n on some judges.
-
-### Palindrome Linked List (LC 234)
-
-Return true if the linked list is a palindrome. O(n) time, O(1) space.
-
-Fast/slow pointers find the midpoint; `slow` lands at the start of the second half. Reverse the second half in place. Walk both halves from their heads, comparing values - a mismatch means not a palindrome. Optionally reverse the second half back.
-
-**Constraint:** n ≤ 10⁵; O(n)/O(1) required.
-
-### Reorder List (LC 143)
-
-Reorder L₀ → Lₙ → L₁ → Lₙ₋₁ → L₂ → Lₙ₋₂ → … in place.
-
-Three sequential applications of the pattern: (1) fast/slow finds the midpoint and cuts the list; (2) three-pointer reversal turns the second half into a reversed list; (3) the interleave merge alternates nodes from front and reversed-back. The invariant for step 3: at each iteration `first` points to the current front node and `second` to the current back node - after wiring `first.next = second` and `second.next = old_first.next`, both pointers advance to their successors. No new nodes created.
-
-**Constraint:** n ≤ 5 × 10⁴; O(n)/O(1).
-
 ## Pitfalls
 
 **1. Losing the forward link before flipping.**
@@ -396,9 +265,17 @@ Some problems (and some interviewers) expect the original list to be intact afte
 
 ## Practice problems
 
-### Reverse Linked List (LC 206)
+### 1. Reverse Linked List (LC 206)
 
 Given the head of a singly linked list, reverse it and return the new head. n ≤ 5000.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = [1,2,3,4,5] | **Output:** [5,4,3,2,1]
+- **Example 2**
+  - **Input:** head = [] | **Output:** []
+
+**Constraints:** `0 ≤ n ≤ 5000`, `−5000 ≤ Node.val ≤ 5000`.
 
 **Approach:** Three-pointer core - `prev=None`, `curr=head`. Each iteration: save `curr.next`, set `curr.next = prev`, advance `prev = curr`, `curr = saved`. Return `prev` when `curr` is `None`.
 
@@ -429,9 +306,65 @@ def reverseList(head: Optional[ListNode]) -> Optional[ListNode]:
 
 ---
 
-### Reverse Nodes in k-Group (LC 25)
+### 2. Reverse Linked List II (LC 92)
+
+Given a linked list and integers `left` and `right` (1-indexed), reverse the nodes from position `left` to `right` and return the head. n ≤ 500.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = [1,2,3,4,5], left = 2, right = 4 | **Output:** [1,4,3,2,5]
+- **Example 2**
+  - **Input:** head = [5], left = 1, right = 1 | **Output:** [5]
+
+**Constraints:** `1 ≤ n ≤ 500`, `1 ≤ left ≤ right ≤ n`.
+
+**Approach:** Walk `left - 1` steps to find `tail_of_first` (dummy head handles `left = 1` uniformly). The node at `left` becomes `tail_of_sub`. Run the core reversal loop `right - left + 1` times, then stitch: `tail_of_first.next = prev`, `tail_of_sub.next = curr`.
+
+```python
+from typing import Optional
+
+def reverseBetween(head: Optional[ListNode], left: int, right: int) -> Optional[ListNode]:
+    dummy = ListNode(0, head)
+    tail_of_first = dummy
+    for _ in range(left - 1):
+        assert tail_of_first.next is not None
+        tail_of_first = tail_of_first.next
+
+    tail_of_sub = tail_of_first.next
+    prev: Optional[ListNode] = None
+    curr = tail_of_sub
+    for _ in range(right - left + 1):
+        assert curr is not None
+        nxt = curr.next
+        curr.next = prev
+        prev = curr
+        curr = nxt
+
+    tail_of_first.next = prev
+    assert tail_of_sub is not None
+    tail_of_sub.next = curr
+    return dummy.next
+```
+
+**Complexity:** O(n) time, O(1) space.
+
+**Duplicate problems:**
+- Rotate List (LC 61) - different mechanic (ring-cut, not reversal) but often confused with this due to the "reorder a range" framing; see Pitfalls/Not-to-be-confused-with.
+
+---
+
+### 3. Reverse Nodes in k-Group (LC 25)
 
 Given the head of a linked list and integer k, reverse every k consecutive nodes. If the tail group has fewer than k nodes, leave it as-is. n ≤ 5000.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = [1,2,3,4,5], k = 2 | **Output:** [2,1,4,3,5]
+  - **Explanation:** groups of 2 are reversed; the trailing single node 5 is left as-is.
+- **Example 2**
+  - **Input:** head = [1,2,3,4,5], k = 3 | **Output:** [3,2,1,4,5]
+
+**Constraints:** `1 ≤ n ≤ 5000`, `0 ≤ Node.val ≤ 1000`, `1 ≤ k ≤ n`.
 
 **Approach:** Iterative with dummy head. Before each group, call `get_kth` to verify k nodes remain. If not, stop. Reverse k nodes using `group_next` (the node after the group) as the sentinel for the inner loop. Stitch `group_prev.next = kth` and advance `group_prev` to the old group head (now tail).
 
@@ -476,57 +409,17 @@ def reverseKGroup(head: Optional[ListNode], k: int) -> Optional[ListNode]:
 
 ---
 
-### Palindrome Linked List (LC 234)
-
-Given the head of a singly linked list, return true if it is a palindrome. n ≤ 10⁵; O(n) time, O(1) space required.
-
-**Approach:** Fast/slow pointers find the midpoint (`slow` lands at start of second half). Reverse the second half in place. Walk both halves simultaneously comparing values - any mismatch → false. Reverse the second half back before returning (restores the original list).
-
-```python
-from typing import Optional
-
-def isPalindrome(head: Optional[ListNode]) -> bool:
-    def reverse(node: Optional[ListNode]) -> Optional[ListNode]:
-        prev = None
-        while node:
-            nxt = node.next
-            node.next = prev
-            prev = node
-            node = nxt
-        return prev
-
-    slow: Optional[ListNode] = head
-    fast = head
-    while fast and fast.next:
-        slow = slow.next if slow else None
-        fast = fast.next.next
-
-    second = reverse(slow)
-    copy = second
-    p, q = head, second
-    result = True
-    while q:
-        assert p is not None
-        if p.val != q.val:
-            result = False
-            break
-        p = p.next
-        q = q.next
-    reverse(copy)
-    return result
-```
-
-**Complexity:** O(n) time, O(1) space.
-
-**Duplicate problems:**
-- Valid Palindrome II (LC 680) - on a string, skip at most one character; same two-pointer compare logic without pointer rewiring.
-- Linked List Palindrome check on circular list - same algorithm; find mid, reverse, compare; break the cycle first.
-
----
-
-### Reorder List (LC 143)
+### 4. Reorder List (LC 143)
 
 Given a linked list L₀ → L₁ → … → Lₙ, reorder it to L₀ → Lₙ → L₁ → Lₙ₋₁ → L₂ → Lₙ₋₂ → … in place. n ≤ 5 × 10⁴.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = [1,2,3,4] | **Output:** [1,4,2,3]
+- **Example 2**
+  - **Input:** head = [1,2,3,4,5] | **Output:** [1,5,2,4,3]
+
+**Constraints:** `1 ≤ n ≤ 5×10⁴`, `1 ≤ Node.val ≤ 1000`.
 
 **Approach:** Three steps - (1) find the midpoint with fast/slow; (2) reverse the second half; (3) interleave: alternate `p1.next = p2`, then advance `p1 = old_p1_next`, repeat until one half is exhausted. No extra space - all pointer rewiring.
 

@@ -10,12 +10,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -62,7 +60,7 @@
 
 ## How it works
 
-**Worked example: Koko Eating Bananas (LC 875).** Koko has piles `[3, 6, 7, 11]` bananas and `h = 8` hours to eat all of them. She picks a constant eating speed `k` (bananas/hour); each hour she eats from one pile, up to `k` bananas (if a pile has fewer than `k`, she finishes it early that hour and doesn't touch another pile that hour). Find the minimum `k` such that she finishes within `h` hours.
+**Worked example: minimum feasible rate to clear piles within a deadline.** Given piles `[3, 6, 7, 11]` and `h = 8` time units to consume all of them. Pick a constant rate `k` (units/hour); each hour, consume from one pile, up to `k` units (if a pile has fewer than `k` left, it finishes early that hour and no other pile is touched that hour). Find the minimum `k` such that everything is consumed within `h` hours.
 
 **Feasibility check** for a candidate speed `k`: hours needed = `sum(ceil(pile / k) for pile in piles)`. Feasible if `hours needed ≤ h`.
 
@@ -91,58 +89,6 @@ feasible:  N  N  N  Y  Y  Y  Y  Y  Y  Y  Y
 ```
 
 The pattern is: infeasible values form a contiguous prefix, feasible values form a contiguous suffix (or vice versa depending on min/max framing) - binary search finds the exact boundary in O(log(range)) feasibility checks instead of testing every value linearly.
-
----
-
-## Skeleton
-
-**Pseudocode (CLRS style) - "find the minimum feasible value":**
-
-```
-BINARY-SEARCH-ON-ANSWER(lo, hi, FEASIBLE)
-  while lo < hi
-    mid = lo + (hi - lo) / 2        ▷ floor division; avoids overflow vs (lo+hi)/2
-    if FEASIBLE(mid)
-      hi = mid                      ▷ mid works - try to do better (smaller)
-    else
-      lo = mid + 1                  ▷ mid fails - need a larger value
-  return lo                         ▷ lo == hi == the minimum feasible value
-```
-
-**Python template:**
-
-```python
-def binary_search_on_answer(lo: int, hi: int, feasible) -> int:
-    """Find the minimum value in [lo, hi] for which feasible(x) is True.
-    Requires: feasible is monotonic - False...False, True...True over [lo, hi]."""
-    while lo < hi:
-        mid = lo + (hi - lo) // 2
-        if feasible(mid):
-            hi = mid            # your logic here: mid works, search left half
-        else:
-            lo = mid + 1        # your logic here: mid fails, search right half
-    return lo
-
-
-def feasible(candidate: int) -> bool:
-    # your logic here: problem-specific check, e.g.
-    # "can we finish within h hours at eating speed = candidate?"
-    raise NotImplementedError
-```
-
-For "**maximize** the minimum" framing (the mirror image - e.g. "maximize the minimum distance between placed items"), flip the comparison and search direction:
-
-```python
-def binary_search_max_feasible(lo: int, hi: int, feasible) -> int:
-    """Find the maximum value in [lo, hi] for which feasible(x) is True."""
-    while lo < hi:
-        mid = lo + (hi - lo + 1) // 2   # round UP to avoid infinite loop
-        if feasible(mid):
-            lo = mid            # mid works - try to do better (larger)
-        else:
-            hi = mid - 1        # mid fails - need a smaller value
-    return lo
-```
 
 ---
 
@@ -225,40 +171,6 @@ def max_average_at_least_r_feasible(nums: list[int], k: int, r: float) -> bool:
 
 ---
 
-## Worked problems
-
-### 1. Koko Eating Bananas (LC 875)
-
-Koko has piles of bananas and `h` hours; she picks a constant eating speed `k`. Find the minimum `k` so she finishes all piles within `h` hours.
-
-**Approach sketch:** the "answer" being searched is the speed `k`, ranging from 1 to `max(piles)`. The feasibility check maps directly onto the skeleton's `feasible(mid)`: compute `sum(ceil(pile/mid) for pile in piles)` and compare to `h`. Larger `k` monotonically reduces hours needed, so the skeleton's "minimize feasible value" form applies unmodified.
-
-### 2. Split Array Largest Sum (LC 410)
-
-Split an array into `m` contiguous subarrays minimizing the largest subarray sum.
-
-**Approach sketch:** the candidate answer is the "largest sum allowed," searched from `max(nums)` to `sum(nums)`. Feasibility plugs a greedy bin-packing simulation into `feasible(mid)`: walk the array accumulating a running sum, start a new subarray whenever adding the next element would exceed `mid`, and check whether the resulting subarray count is `≤ m`.
-
-### 3. Magnetic Force Between Two Balls (LC 1552)
-
-Place `m` balls into baskets at given positions to maximize the minimum distance between any two balls.
-
-**Approach sketch:** this is the "maximize the minimum" mirror of the skeleton - use the `binary_search_max_feasible` variant instead of the minimize form. The candidate answer is the minimum allowed gap `d`; feasibility greedily places balls left-to-right, keeping a ball only if it's at least `d` from the last placed one, and checks whether `m` balls fit.
-
-### 4. Minimum Number of Days to Make m Bouquets (LC 1482)
-
-Given bloom days for each flower and bouquet size `k`, find the minimum day on which `m` bouquets can be made from `k` adjacent bloomed flowers each.
-
-**Approach sketch:** the candidate answer is "day number," ranging from `min(bloomDay)` to `max(bloomDay)`. Feasibility scans the array once, treating a flower as "available" if its bloom day is `≤ mid`, and greedily counts contiguous runs of available flowers to see if `m` bouquets of size `k` can be formed - a direct swap-in for `feasible(mid)`.
-
-### 5. Minimum Speed to Arrive on Time (LC 1870)
-
-Given a sequence of train distances and a total time limit, find the minimum integer speed so all trains (with the last one allowed a fractional wait skipped) arrive on time.
-
-**Approach sketch:** the candidate answer is speed, from 1 up to a bound like `10⁷`. Feasibility computes total travel time at that speed - `ceil` for all but the last leg, exact division for the last - and compares to the limit. This is a variant of the Koko feasibility shape with one leg's rounding rule changed, showing how the same skeleton adapts to a slightly different cost function.
-
----
-
 ## Pitfalls
 
 1. **Applying the pattern without verifying monotonicity first.** Binary search on answer silently produces a wrong result if feasibility isn't actually monotonic in the candidate value - unlike a crash, this fails quietly. Always state the monotonicity argument explicitly (as in the Koko walkthrough) before coding, not after.
@@ -298,6 +210,15 @@ Then state the feasibility check in one sentence before coding - this is where i
 
 Koko has piles of bananas and `h` hours to eat them all at a constant speed `k` (bananas/hour, per-pile per-hour cap). Find the minimum `k` so she finishes within `h` hours. Constraints: `1 ≤ piles.length ≤ 10⁴`, `piles[i], h ≤ 10⁹`.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** piles = [3,6,7,11], h = 8 | **Output:** 4
+- **Example 2**
+  - **Input:** piles = [30,11,23,4,20], h = 5 | **Output:** 30
+  - **Explanation:** only 5 hours for 5 piles - one hour per pile, so speed must clear the largest pile in one hour.
+
+**Constraints:** `1 ≤ piles.length ≤ 10⁴`, `piles.length ≤ h ≤ 10⁹`, `1 ≤ piles[i] ≤ 10⁹`.
+
 **Approach.** Binary search `k` from 1 to `max(piles)`. Feasible if `sum(ceil(p/k) for p in piles) ≤ h`. Monotonic since larger `k` reduces hours needed per pile.
 
 ```python
@@ -317,73 +238,101 @@ def min_eating_speed(piles: list[int], h: int) -> int:
 **Complexity.** O(n log(max(piles))) time, O(1) space.
 
 **Duplicate problems:**
-- Capacity To Ship Packages Within D Days (LC 1011) - same shape, different feasibility simulation.
-- Minimum Number of Days to Make m Bouquets (LC 1482) - binary search on days, feasibility = greedy bouquet-counting.
+- Capacity To Ship Packages Within D Days (LC 1011) - same shape, feasibility is a greedy bin-packing simulation instead of a ceiling-sum.
+- Split Array Largest Sum (LC 410) - identical greedy bin-packing feasibility to LC 1011, framed as splitting into m subarrays instead of days.
+- Find the Smallest Divisor Given a Threshold (LC 1283) - structurally identical ceiling-sum feasibility check to Koko itself.
+- Minimum Speed to Arrive on Time (LC 1870) - same ceiling-sum feasibility with one leg's rounding rule changed (fractional last leg).
 
 ---
 
-### 2. Capacity To Ship Packages Within D Days (LC 1011)
+### 2. Minimum Number of Days to Make m Bouquets (LC 1482)
 
-Given package weights (in order) and `D` days, find the minimum ship capacity such that loading greedily (as much as fits each day) ships everything within `D` days. Constraints: `1 ≤ n ≤ 5×10⁴`, `weights[i] ≤ 500`, `1 ≤ D ≤ n`.
+Given bloom days for each flower and bouquet size `k`, find the minimum day on which `m` bouquets can be made from `k` adjacent bloomed flowers each. Return `-1` if impossible. Constraints: `1 ≤ bloomDay.length ≤ 10⁵`, `1 ≤ m ≤ 10⁶`, `1 ≤ k ≤ bloomDay.length`, `1 ≤ bloomDay[i] ≤ 10⁹`.
 
-**Approach.** Binary search capacity from `max(weights)` (can't go lower - must fit the heaviest single package) to `sum(weights)` (one day for everything). Feasibility: greedily accumulate a running load; whenever adding the next package would exceed capacity, start a new day; feasible if days used ≤ D.
+**Worked examples:**
+- **Example 1**
+  - **Input:** bloomDay = [1,10,3,10,2], m = 3, k = 1 | **Output:** 3
+  - **Explanation:** by day 3, flowers 0,2,4 have bloomed - enough for 3 bouquets of size 1.
+- **Example 2**
+  - **Input:** bloomDay = [1,10,3,10,2], m = 3, k = 2 | **Output:** -1
+  - **Explanation:** only 5 flowers total, need 6 for 3 bouquets of size 2.
+
+**Constraints:** `1 ≤ bloomDay.length ≤ 10⁵`, `1 ≤ m ≤ 10⁶`, `1 ≤ k ≤ bloomDay.length`, `1 ≤ bloomDay[i] ≤ 10⁹`.
+
+**Approach.** Binary search the day, from `min(bloomDay)` to `max(bloomDay)`. Feasibility for a candidate day `mid`: scan the array, treating a flower as "available" if `bloomDay[i] ≤ mid`; greedily count contiguous runs of available flowers, adding `run_length // k` bouquets per run (resetting the run on any unavailable flower). Feasible if total bouquets `≥ m`. This is a distinct feasibility shape from Koko's ceiling-sum - it's a greedy grouping/counting scan, not a per-item division.
 
 ```python
-def ship_within_days(weights: list[int], days: int) -> int:
-    def days_needed(capacity: int) -> int:
-        d, load = 1, 0
-        for w in weights:
-            if load + w > capacity:
-                d += 1
-                load = w
+def min_days(bloom_day: list[int], m: int, k: int) -> int:
+    if m * k > len(bloom_day):
+        return -1
+
+    def bouquets_by(day: int) -> int:
+        count = run = 0
+        for b in bloom_day:
+            if b <= day:
+                run += 1
+                if run == k:
+                    count += 1
+                    run = 0
             else:
-                load += w
-        return d
+                run = 0
+        return count
 
-    lo, hi = max(weights), sum(weights)
+    lo, hi = min(bloom_day), max(bloom_day)
     while lo < hi:
         mid = lo + (hi - lo) // 2
-        if days_needed(mid) <= days:
+        if bouquets_by(mid) >= m:
             hi = mid
         else:
             lo = mid + 1
     return lo
 ```
 
-**Complexity.** O(n log(sum(weights))) time, O(1) space.
+**Complexity.** O(n log(max(bloomDay))) time, O(1) space.
 
-**Duplicate problems:**
-- Split Array Largest Sum (LC 410) - identical greedy-feasibility skeleton.
-- Divide Chocolate (LC 1231) - "maximize the minimum" mirror of the same idea.
+**Duplicate problems:** none - the greedy grouping/counting feasibility shape here is distinct from every other entry in this file.
 
 ---
 
-### 3. Find the Smallest Divisor Given a Threshold (LC 1283)
+### 3. Magnetic Force Between Two Balls (LC 1552)
 
-Find the smallest positive integer divisor such that `sum(ceil(nums[i] / divisor))` is `≤ threshold`. Constraints: `1 ≤ n ≤ 5×10⁴`, `nums[i] ≤ 10⁶`, `n ≤ threshold ≤ 10⁶`.
+Given basket positions and integer `m`, place `m` balls into baskets to maximize the minimum distance between any two balls. Constraints: `2 ≤ position.length ≤ 10⁵`, `2 ≤ m ≤ position.length`, `1 ≤ position[i] ≤ 10⁹`.
 
-**Approach.** Binary search the divisor from 1 to `max(nums)`. Feasibility: sum of `ceil(x / divisor)` compared to threshold; monotonic since a larger divisor only shrinks each term.
+**Worked examples:**
+- **Example 1**
+  - **Input:** position = [1,2,3,4,7], m = 3 | **Output:** 3
+  - **Explanation:** placing balls at 1, 4, 7 gives a minimum gap of 3, the largest achievable.
+- **Example 2**
+  - **Input:** position = [5,4,3,2,1,1000000000], m = 2 | **Output:** 999999999
+
+**Constraints:** `2 ≤ position.length ≤ 10⁵`, `2 ≤ m ≤ position.length`, `1 ≤ position[i] ≤ 10⁹`.
+
+**Approach.** This is the "maximize the minimum" mirror of Koko's "minimize the maximum" - the search direction flips. Sort `position`. Binary search the candidate minimum gap `d`, from `1` to `position[-1] - position[0]`. Feasibility: greedily place the first ball at the first (sorted) position, then place each subsequent ball at the next position at least `d` away from the last placed ball; feasible if `m` balls fit. Because this is a "maximize feasible" search, `mid` must round up (`(lo + hi + 1) // 2`) and the update is `lo = mid` on success, `hi = mid - 1` on failure - the mirror image of Koko's rounding and update directions.
 
 ```python
-import math
+def max_distance(position: list[int], m: int) -> int:
+    position.sort()
 
-def smallest_divisor(nums: list[int], threshold: int) -> int:
-    def total(divisor: int) -> int:
-        return sum(math.ceil(x / divisor) for x in nums)
+    def can_place(d: int) -> bool:
+        count, last = 1, position[0]
+        for p in position[1:]:
+            if p - last >= d:
+                count += 1
+                last = p
+        return count >= m
 
-    lo, hi = 1, max(nums)
+    lo, hi = 1, position[-1] - position[0]
     while lo < hi:
-        mid = lo + (hi - lo) // 2
-        if total(mid) <= threshold:
-            hi = mid
+        mid = lo + (hi - lo + 1) // 2
+        if can_place(mid):
+            lo = mid
         else:
-            lo = mid + 1
+            hi = mid - 1
     return lo
 ```
 
-**Complexity.** O(n log(max(nums))) time, O(1) space.
+**Complexity.** O(n log n) time (sort dominates; log(range) feasibility passes are each O(n)), O(1) extra space.
 
 **Duplicate problems:**
-- Koko Eating Bananas (LC 875) - structurally identical, same `ceil`-sum feasibility check.
-- Minimum Speed to Arrive on Time (LC 1870) - similar ceiling-sum feasibility but with a fractional final leg.
+- Divide Chocolate (LC 1231) - identical "maximize the minimum" greedy-spacing shape, applied to splitting a chocolate bar into sweetness-maximized pieces instead of ball positions.
 

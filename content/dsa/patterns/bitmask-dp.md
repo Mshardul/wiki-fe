@@ -10,12 +10,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -55,7 +53,7 @@ Bitmask DP encodes a **subset of n items as an n-bit integer** and uses it as a 
 
 ## How it works
 
-The classic vehicle is the **Travelling Salesman Problem (TSP)**: given n cities and pairwise distances, find the minimum-cost tour visiting all cities exactly once.
+Consider the shape of "visit every node exactly once at minimum cost, then return to the start": given n nodes and pairwise distances, find the minimum-cost tour visiting all of them exactly once.
 
 **State:** `dp[mask][i]` = minimum cost to have visited exactly the cities in `mask`, ending at city `i`.
 
@@ -96,57 +94,6 @@ Answer = `min(dp[111][1] + d[1][0], dp[111][2] + d[2][0])` - return to city 0 fr
 **Why O(2ⁿ · n²)?** 2ⁿ masks × n possible last cities × n possible next cities = 2ⁿ · n² transitions.
 
 Cache behaviour: `dp` is a 2ⁿ × n table accessed sequentially per mask - **cache-friendly row-by-row fill**, much better than the recursion tree it replaces.
-
-## Skeleton
-
-**Pseudocode (CLRS style):**
-
-```
-BITMASK-DP(n, cost)
-  ▷ cost[i][j] = cost of going from i to j
-  dp[0..2ⁿ-1][0..n-1] ← ∞
-  dp[1][0] ← 0                          ▷ start at node 0, mask = {0}
-  for mask = 1 to 2ⁿ - 1
-    for i = 0 to n - 1
-      if bit i not set in mask then continue
-      if dp[mask][i] = ∞ then continue
-      for j = 0 to n - 1
-        if bit j set in mask then continue
-        new_mask ← mask | (1 << j)
-        dp[new_mask][j] ← min(dp[new_mask][j], dp[mask][i] + cost[i][j])
-  return min over all i of dp[2ⁿ - 1][i] + cost[i][0]
-```
-
-**Python template:**
-
-```python
-from typing import List
-import math
-
-def bitmask_dp(n: int, cost: List[List[int]]) -> int:
-    FULL = (1 << n) - 1
-    INF = math.inf
-
-    # dp[mask][i] = min cost to have visited exactly the nodes in mask, ending at i
-    dp: List[List[float]] = [[INF] * n for _ in range(1 << n)]
-    dp[1][0] = 0
-
-    for mask in range(1, 1 << n):
-        for i in range(n):
-            if not (mask >> i & 1):
-                continue
-            if dp[mask][i] == INF:
-                continue
-            for j in range(n):
-                if mask >> j & 1:
-                    continue
-                # your logic here: compute transition cost and update
-                new_mask = mask | (1 << j)
-                dp[new_mask][j] = min(dp[new_mask][j], dp[mask][i] + cost[i][j])
-
-    best = min(dp[FULL][i] + cost[i][0] for i in range(n))
-    return -1 if best == INF else int(best)  # -1 if no Hamiltonian cycle exists
-```
 
 ## Complexity
 
@@ -228,57 +175,6 @@ while sub > 0:
 
 **When to reach for it:** "n ≤ 40, find subset with sum closest to target" / "count pairs of subsets with XOR = k".
 
-## Worked problems
-
-### TSP (Travelling Salesman Problem)
-
-Given n cities (n ≤ 15) and an n×n distance matrix, find the minimum-cost Hamiltonian cycle (visit all cities exactly once, return to start). Constraints: n ≤ 15, distances are non-negative integers.
-
-**Approach:** `dp[mask][i]` = min cost to have visited exactly the cities in `mask`, currently at city `i`. Transition: extend to any unvisited city `j`. This memoises the O(n!) brute force into O(2ⁿ · n²) by recognising that two paths reaching the same (mask, endpoint) are interchangeable.
-
-**Duplicate problems:**
-- Shortest Hamiltonian Path (no return) - same DP, skip the `+ dist[i][0]` return leg.
-- Minimum cost to visit all nodes (directed, any start) - same table, initialise all `dp[1<<i][i] = 0` and take `min dp[FULL][i]` without return.
-
-### Minimum Number of Work Sessions (LC 1986)
-
-Given n tasks (n ≤ 14) each with a duration, and a session length, find the minimum number of sessions needed to finish all tasks. Each session can hold any subset of tasks as long as their total duration ≤ sessionTime.
-
-**Approach:** `dp[mask]` = min sessions to complete exactly the tasks in `mask`. For each mask, try adding any contiguous subsequence of unfinished tasks that fits in one session. Equivalently: find the minimum number of subsets that partition the full mask, each with sum ≤ sessionTime. O(3ⁿ) via submask enumeration - precompute `fits[sub]` (does subset `sub` fit in one session), then `dp[mask] = min(dp[mask ^ sub] + 1)` over all fitting submasks `sub ⊆ mask`.
-
-**Duplicate problems:**
-- Partition to K Equal Sum Subsets (LC 698) - partition n ≤ 16 numbers into k equal-sum groups; same submask enumeration.
-- Fair Distribution of Cookies (LC 2305) - distribute cookies to k children minimising the max; same bitmask DP shape.
-
-### Shortest Path Visiting All Nodes (LC 847)
-
-Given an undirected graph of n ≤ 12 nodes, find the length of the shortest path that visits every node (revisits allowed, no fixed start). Constraints: n ≤ 12.
-
-**Approach:** BFS over states `(node, visited_mask)`. Initial queue contains all `(i, 1<<i)` for every node (any start). BFS guarantees shortest path. State space: n × 2ⁿ ≈ 12 × 4096 = 49K - tiny. This blends BFS with bitmask DP: the "DP" part is the visited mask encoding which nodes are done; BFS handles the shortest-path layer.
-
-**Duplicate problems:**
-- Minimum Cost to Connect All Points as a tour - switch BFS to DP with cost matrix.
-
-### Optimal Assignment (LC 1947 / Assignment Problem)
-
-Given n workers and n jobs, with a compatibility matrix `compatible[i][j]` (worker i can do job j or not), find the maximum number of assignments, or the minimum cost assignment. n ≤ 20.
-
-**Approach:** `dp[mask]` = max assignments when `mask` encodes which jobs are done. The worker index is implicit: `popcount(mask)` = number of jobs assigned = index of the next worker. Transition: for the next worker `w = popcount(mask)`, try assigning any unassigned job `j` - `dp[mask | (1<<j)] = max(dp[mask | (1<<j)], dp[mask] + compatible[w][j])`. O(2ⁿ · n), space O(2ⁿ).
-
-**Duplicate problems:**
-- Minimum Cost to Assign Tasks (classic) - same DP, min instead of max.
-- Maximum Students Taking Exam (LC 1349) - seats on rows, broken-profile DP variant; same bitmask shape but per-row state.
-
-### Counting Hamiltonian Paths (Count of All Permutations with Constraints)
-
-Given a directed graph of n ≤ 15 nodes and a set of allowed edges, count the number of Hamiltonian paths (visiting every node exactly once). Constraints: n ≤ 15.
-
-**Approach:** `dp[mask][i]` = number of paths visiting exactly the nodes in `mask`, ending at `i`. Transition: `dp[mask | (1<<j)][j] += dp[mask][i]` for every allowed edge `(i, j)` where `j ∉ mask`. Sum `dp[FULL][i]` over all `i` for the answer. Same table as TSP, addition instead of min.
-
-**Duplicate problems:**
-- Count Hamiltonian Cycles - same + return edge check.
-- Number of Ways to Assign n Distinct Jobs to n Distinct Workers with Restrictions - identical structure.
-
 ## Pitfalls
 
 1. **Wrong base case mask.** `dp[0][0] = 0` vs `dp[1<<start][start] = 0` - these are different problems. If the start node is fixed, initialise only `dp[1<<start][start]`. If any node can be the start (e.g. LC 847), push all `(i, 1<<i)` into the initial queue. A wrong base case silently gives a wrong answer with no runtime error.
@@ -307,9 +203,18 @@ Given a directed graph of n ≤ 15 nodes and a set of allowed edges, count the n
 
 ## Practice problems
 
-### Travelling Salesman Problem (classic / LC 847 variant)
+### 1. Travelling Salesman Problem (classic)
 
 n cities (n ≤ 15), n×n cost matrix. Find the minimum cost to visit every city exactly once and return to the start. Constraints shape the approach: n ≤ 12 is comfortable O(2ⁿ · n²); n = 20 is the ceiling - prune the inner loop by skipping `dist[i][j] == INF`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 4, dist = [[0,10,15,20],[10,0,35,25],[15,35,0,30],[20,25,30,0]] | **Output:** 80
+  - **Explanation:** tour 0→1→3→2→0 costs 10+25+30+15=80, the minimum over all tours.
+- **Example 2**
+  - **Input:** n = 2, dist = [[0,5],[5,0]] | **Output:** 10
+
+**Constraints:** `1 ≤ n ≤ 15`, `dist[i][j] ≥ 0`, `dist[i][i] = 0`.
 
 **Approach/insight:** `dp[mask][i]` = min cost reaching city `i` having visited exactly `mask`. The key insight is that the *set* of visited cities plus the *last* city is sufficient state - the order within the visited set doesn't matter for future cost. This collapses O(n!) paths into O(2ⁿ · n) states.
 
@@ -339,14 +244,25 @@ def tsp(n: int, dist: List[List[int]]) -> int:
 **Time:** O(2ⁿ · n²) - **Space:** O(2ⁿ · n)
 
 **Duplicate problems:**
+- Shortest Hamiltonian Path (no return) - same DP, skip the `+ dist[i][0]` return leg.
 - Find the Shortest Superstring (LC 943) - string TSP; `dist[i][j]` = overlap reduction between strings i and j; same DP, track parent for path reconstruction.
 - Minimum Cost to Visit All Nodes (directed, any start) - same table, all nodes as valid start, no return leg.
+- Counting Hamiltonian Paths (classic) - same `dp[mask][i]` table, addition instead of min: `dp[mask | (1<<j)][j] += dp[mask][i]` for every allowed edge, sum `dp[FULL][i]` for the count.
 
 ---
 
-### Partition to K Equal Sum Subsets (LC 698)
+### 2. Partition to K Equal Sum Subsets (LC 698)
 
 Given an array of n ≤ 16 integers and k, determine if the array can be partitioned into k non-empty subsets with equal sum. Constraints: n ≤ 16 (the signal for bitmask DP over subsets).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [4,3,2,3,5,2,1], k = 4 | **Output:** true
+  - **Explanation:** four subsets each summing to 5: (5), (1,4), (2,3), (2,3).
+- **Example 2**
+  - **Input:** nums = [1,2,3,4], k = 3 | **Output:** false
+
+**Constraints:** `1 ≤ k ≤ nums.length ≤ 16`, `1 ≤ nums[i] ≤ 10⁴`.
 
 **Approach/insight:** precompute `target = total / k`. `dp[mask]` = True if the elements in `mask` can be perfectly partitioned into some number of groups each summing to `target`. Transition: for each mask, find the largest fitting subset `sub ⊆ mask` with `sum(sub) == target`; if `dp[mask ^ sub]` is True, so is `dp[mask]`. The key: precompute which subsets sum to `target`, then do subset-DP. O(3ⁿ) via submask enumeration (but n ≤ 16, so 3¹⁶ ≈ 43M - fine).
 
@@ -385,13 +301,21 @@ def can_partition_k_subsets(nums: List[int], k: int) -> bool:
 
 **Duplicate problems:**
 - Fair Distribution of Cookies (LC 2305) - distribute n ≤ 8 cookie bags to k children minimising max; same state, min instead of feasibility.
-- Number of Ways to Wear Different Hats to Each Other (LC 1434) - assignment DP; same bitmask structure.
+- Minimum Number of Work Sessions (LC 1986) - same submask-enumeration shape; find the minimum number of subsets partitioning the full mask, each fitting a session-time budget instead of an equal-sum target.
 
 ---
 
-### Maximum Students Taking Exam (LC 1349)
+### 3. Maximum Students Taking Exam (LC 1349)
 
 An m×n exam room grid has broken seats (`#`) and working seats (`.`). Students cannot sit adjacent (same row: left/right) or diagonally adjacent across rows. Find the maximum number of students that can be seated. Constraints: m ≤ 5, n ≤ 8.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** seats = [[".","#",".",".",".","#"],[".","#",".",".",".","."],[".",".",".",".","#","."]] | **Output:** 4
+- **Example 2**
+  - **Input:** seats = [[".",".","."],[".","#","."],[".",".","."]] | **Output:** 4
+
+**Constraints:** `1 ≤ m ≤ 8`, `1 ≤ n ≤ 8`, `seats[i][j]` is `.` or `#`.
 
 **Approach/insight:** broken-profile DP - `dp[row][mask]` = max students seated in rows 0..row where `mask` encodes which seats in `row` are occupied. Transition: for each row, enumerate valid seat masks (no two adjacent bits set, no broken seats used), then check diagonal conflicts with the previous row's mask. This is bitmask DP over rows, with n ≤ 8 bits per row = 256 masks. The constraint `n ≤ 8` is the n ≤ 20 signal applied to a 2D grid.
 
@@ -436,4 +360,90 @@ def max_students(seats: List[List[str]]) -> int:
 
 **Duplicate problems:**
 - Domino Tiling (classic CP) - broken-profile DP over columns; same per-column mask transitions.
-- Maximum AND Sum of Array (LC 2172) - assign n ≤ 9 nums to 3·k slots; `dp[mask]` = max AND sum; same assignment DP.
+
+---
+
+### 4. Shortest Path Visiting All Nodes (LC 847)
+
+Given an undirected graph of n ≤ 12 nodes, find the length of the shortest path that visits every node (revisits allowed, no fixed start). Constraints: n ≤ 12.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** graph = [[1,2,3],[0],[0],[0]] | **Output:** 4
+  - **Explanation:** path 1→0→2→0→3 visits all 4 nodes in 4 edges.
+- **Example 2**
+  - **Input:** graph = [[1],[0,2,4],[1,3,4],[2],[1,2]] | **Output:** 4
+
+**Constraints:** `1 ≤ n ≤ 12`, graph given as adjacency list, connected.
+
+**Approach.** BFS over states `(node, visited_mask)` rather than a table filled by mask order - distinct from every dp[mask]-style entry above because the state-space search itself is BFS, not a DP recurrence filled bottom-up. Initial queue contains all `(i, 1<<i)` for every node (any node can start, since there's no fixed source). BFS guarantees the shortest path since all edges have equal weight. State space: n × 2ⁿ ≈ 12 × 4096 = 49K - tiny. The mask still encodes "which nodes are done" (the bitmask-DP part), but shortest-path-ness comes from BFS level order, not from a min/max transition.
+
+```python
+from collections import deque
+
+def shortest_path_length(graph: list[list[int]]) -> int:
+    n = len(graph)
+    if n == 1:
+        return 0
+    full = (1 << n) - 1
+    visited = set()
+    queue = deque()
+    for i in range(n):
+        state = (i, 1 << i)
+        visited.add(state)
+        queue.append((i, 1 << i, 0))
+
+    while queue:
+        node, mask, steps = queue.popleft()
+        if mask == full:
+            return steps
+        for nb in graph[node]:
+            new_mask = mask | (1 << nb)
+            if (nb, new_mask) not in visited:
+                visited.add((nb, new_mask))
+                queue.append((nb, new_mask, steps + 1))
+    return -1
+```
+
+**Complexity.** O(n² · 2ⁿ) time (each of n·2ⁿ states expands to ≤ n neighbors), O(n · 2ⁿ) space.
+
+**Duplicate problems:**
+- Minimum Cost to Connect All Points as a tour - switch BFS to DP with a cost matrix once edges are weighted (becomes a TSP-shaped problem, not BFS).
+
+---
+
+### 5. Optimal Assignment (LC 1947-style)
+
+Given n workers and n jobs, with a compatibility matrix `compatible[i][j]` (worker i can do job j or not), find the maximum number of assignments. Constraints: n ≤ 20.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 3, compatible = [[1,1,0],[0,1,1],[1,0,1]] | **Output:** 3
+  - **Explanation:** worker 0→job 0, worker 1→job 1, worker 2→job 2 - all compatible.
+- **Example 2**
+  - **Input:** n = 2, compatible = [[1,1],[1,1]] | **Output:** 2
+
+**Constraints:** `1 ≤ n ≤ 20`, `compatible[i][j]` is 0 or 1.
+
+**Approach.** Distinct from TSP's `dp[mask][i]`: here `dp[mask]` alone suffices, no explicit endpoint dimension, because the worker index is *derived* from the mask itself via `popcount(mask)` (number of jobs assigned so far = index of the next worker to assign). Transition: for the next worker `w = popcount(mask)`, try assigning any unassigned job `j` - `dp[mask | (1<<j)] = max(dp[mask | (1<<j)], dp[mask] + compatible[w][j])`. This popcount-as-implicit-index trick is the reusable insight: whenever items are processed in a fixed, mask-independent order (worker 0, then 1, then 2, ...), the mask's popcount alone tells you which item is next, saving a whole state dimension compared to TSP where the "next" choice is free-form.
+
+```python
+def max_assignment(n: int, compatible: list[list[int]]) -> int:
+    full = (1 << n) - 1
+    dp = [0] * (1 << n)
+    for mask in range(full):
+        w = bin(mask).count("1")
+        if w >= n:
+            continue
+        for j in range(n):
+            if not (mask >> j & 1) and compatible[w][j]:
+                dp[mask | (1 << j)] = max(dp[mask | (1 << j)], dp[mask] + 1)
+    return dp[full]
+```
+
+**Complexity.** O(2ⁿ · n) time, O(2ⁿ) space.
+
+**Duplicate problems:**
+- Minimum Cost to Assign Tasks (classic) - same DP, min-cost instead of max-count.
+- Number of Ways to Wear Different Hats to Each Other (LC 1434) - same popcount-as-index assignment shape, counts valid assignments instead of maximizing/minimizing one.
+- Maximum AND Sum of Array (LC 2172) - assign n ≤ 9 nums to 3·k slots; `dp[mask]` = max AND sum; same assignment-DP shape with a different per-slot scoring function.

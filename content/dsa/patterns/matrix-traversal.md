@@ -14,12 +14,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -148,154 +146,6 @@ Total islands = 2.
 
 The invariant: every cell is visited at most once (marked before enqueue/recurse), so total work is O(mn) regardless of grid structure.
 
-## Skeleton
-
-**Pseudocode (CLRS style):**
-
-```
-MATRIX-BFS(grid, start_r, start_c)
-1  m = rows(grid), n = cols(grid)
-2  dist[0..m-1][0..n-1] = all ∞
-3  dist[start_r][start_c] = 0
-4  queue = empty
-5  ENQUEUE(queue, (start_r, start_c))
-6  dirs = [(0,1), (0,-1), (1,0), (-1,0)]
-7  while queue ≠ empty
-8      (r, c) = DEQUEUE(queue)
-9      for each (dr, dc) in dirs
-10         nr = r + dr, nc = c + dc
-11         if 0 ≤ nr < m and 0 ≤ nc < n and dist[nr][nc] == ∞ and grid[nr][nc] is passable
-12             dist[nr][nc] = dist[r][c] + 1
-13             ENQUEUE(queue, (nr, nc))
-14 return dist
-
-MATRIX-DFS(grid, r, c, visited)
-1  visited[r][c] = TRUE
-2  dirs = [(0,1), (0,-1), (1,0), (-1,0)]
-3  for each (dr, dc) in dirs
-4      nr = r + dr, nc = c + dc
-5      if 0 ≤ nr < rows(grid) and 0 ≤ nc < cols(grid)
-6          and not visited[nr][nc] and grid[nr][nc] is passable
-7              MATRIX-DFS(grid, nr, nc, visited)
-
-ZERO-ONE-BFS(grid, start_r, start_c)
-▷ Edge weight: 0 if same cell value as current, 1 if different
-1  m = rows(grid), n = cols(grid)
-2  dist[0..m-1][0..n-1] = all ∞
-3  dist[start_r][start_c] = 0
-4  dq = empty deque
-5  PUSH-FRONT(dq, (start_r, start_c))
-6  dirs = [(0,1), (0,-1), (1,0), (-1,0)]
-7  while dq ≠ empty
-8      (r, c) = POP-FRONT(dq)
-9      for each (dr, dc) in dirs
-10         nr = r + dr, nc = c + dc
-11         if 0 ≤ nr < m and 0 ≤ nc < n
-12             w = 0 if grid[nr][nc] == grid[r][c] else 1
-13             if dist[r][c] + w < dist[nr][nc]
-14                 dist[nr][nc] = dist[r][c] + w
-15                 if w == 0 then PUSH-FRONT(dq, (nr, nc))
-16                 else PUSH-BACK(dq, (nr, nc))
-17 return dist
-
-MULTI-SOURCE-BFS(grid, is_source)
-▷ is_source(r,c) returns TRUE for seed cells (distance 0)
-1  m = rows(grid), n = cols(grid)
-2  dist[0..m-1][0..n-1] = all ∞
-3  queue = empty
-4  for r = 0 to m-1
-5      for c = 0 to n-1
-6          if is_source(r, c)
-7              dist[r][c] = 0
-8              ENQUEUE(queue, (r, c))
-9  dirs = [(0,1), (0,-1), (1,0), (-1,0)]
-10 while queue ≠ empty
-11     (r, c) = DEQUEUE(queue)
-12     for each (dr, dc) in dirs
-13         nr = r + dr, nc = c + dc
-14         if 0 ≤ nr < m and 0 ≤ nc < n and dist[nr][nc] == ∞ and grid[nr][nc] is passable
-15             dist[nr][nc] = dist[r][c] + 1
-16             ENQUEUE(queue, (nr, nc))
-17 return dist
-▷ Correctness: all sources start at distance 0 simultaneously - equivalent to a
-▷ virtual super-source with 0-weight edges to each seed. BFS monotonicity
-▷ guarantees dist[r][c] = min distance from ANY source to (r,c).
-```
-
-**Python template - BFS (shortest path / multi-source):**
-
-```python
-from collections import deque
-
-def matrix_bfs(grid: list[list[int]], sr: int, sc: int) -> list[list[int]]:
-    m, n = len(grid), len(grid[0])
-    dist = [[-1] * n for _ in range(m)]
-    dist[sr][sc] = 0
-    queue: deque[tuple[int, int]] = deque([(sr, sc)])
-    dirs = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-
-    while queue:
-        r, c = queue.popleft()
-        for dr, dc in dirs:
-            nr, nc = r + dr, c + dc
-            if 0 <= nr < m and 0 <= nc < n and dist[nr][nc] == -1 and grid[nr][nc] == 0:  # your logic here: passability check
-                dist[nr][nc] = dist[r][c] + 1
-                queue.append((nr, nc))
-
-    return dist
-```
-
-**Python template - multi-source BFS (min distance from any of a set of sources):**
-
-```python
-from collections import deque
-
-def multi_source_bfs_template(grid: list[list[int]]) -> list[list[int]]:
-    m, n = len(grid), len(grid[0])
-    dist = [[float('inf')] * n for _ in range(m)]
-    queue: deque[tuple[int, int]] = deque()
-    dirs = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-
-    for r in range(m):
-        for c in range(n):
-            if grid[r][c] == 0:  # your logic here: seed condition
-                dist[r][c] = 0
-                queue.append((r, c))
-
-    while queue:
-        r, c = queue.popleft()
-        for dr, dc in dirs:
-            nr, nc = r + dr, c + dc
-            if 0 <= nr < m and 0 <= nc < n and dist[nr][nc] == float('inf'):
-                dist[nr][nc] = dist[r][c] + 1
-                queue.append((nr, nc))
-
-    return dist
-```
-
-**Python template - DFS (connected components / flood fill):**
-
-```python
-def matrix_dfs(grid: list[list[int]]) -> int:
-    m, n = len(grid), len(grid[0])
-    dirs = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-
-    def dfs(r: int, c: int) -> None:
-        grid[r][c] = 0  # mark visited in-place (your logic here: sentinel value)
-        for dr, dc in dirs:
-            nr, nc = r + dr, c + dc
-            if 0 <= nr < m and 0 <= nc < n and grid[nr][nc] == 1:  # your logic here
-                dfs(nr, nc)
-
-    count = 0
-    for r in range(m):
-        for c in range(n):
-            if grid[r][c] == 1:  # your logic here: start condition
-                dfs(r, c)
-                count += 1
-    return count
-```
-
 ## Complexity
 
 | Variant | Time | Space |
@@ -400,88 +250,6 @@ Some grid problems require tracking extra state beyond position: "minimum steps 
 
 Contest signal: grid + side constraint that changes as you move (keys, fuel, k-flips allowed). State space size is the bottleneck - `mn × S` must fit in memory and time.
 
-## Worked problems
-
-### 1. Number of Islands (LC 200) - DFS component counting
-
-Given an m×n grid of `'1'` (land) and `'0'` (water), return the number of islands (connected groups of `'1'`s via 4-directional adjacency). `m, n ≤ 300`.
-
-**Approach:** iterate every cell; when a `'1'` is found, launch DFS to flood-fill the entire island, marking all visited land as `'0'` (in-place sentinel). Each DFS launch = one island. Total work O(mn) - every cell visited at most once.
-
-Both BFS and DFS work in O(mn). DFS is shorter code for component counting because there's no distance to track - just flood and count. Choosing BFS adds queue overhead with no correctness benefit when distance doesn't matter.
-
-**Duplicate problems:**
-- Max Area of Island (LC 695) - same DFS flood fill; return island size (1 + sum of recursive returns) instead of void.
-- Count Sub Islands (LC 1905) - DFS on grid2 islands, check every cell is also land in grid1; same component enumeration with a cross-grid condition.
-- Number of Closed Islands (LC 1254) - DFS from every `0` cell; discard any component touching the border. Same flood-fill, extra boundary check.
-
-### 2. Shortest Path in Binary Matrix (LC 1091) - BFS shortest path
-
-Given an n×n binary matrix, return the length of the shortest clear path from `(0,0)` to `(n-1,n-1)` through `0`-cells with 8-directional movement. Return `-1` if none. `n ≤ 100`.
-
-**Approach:** BFS from `(0,0)`. All edges weight-1 (one step per cell) so BFS distance = shortest path length. Use 8-directional offsets. Mark `grid[r][c] = 1` on enqueue to prevent re-visits. Return distance when goal dequeued.
-
-DFS would require exploring all paths and taking the minimum - exponential. BFS level-order property is exactly the guarantee that makes the first time a cell is reached the shortest path to it.
-
-**Duplicate problems:**
-- Minimum Knight Moves (LC 1197) - BFS with knight-move offsets instead of 8-directional; identical distance-via-BFS structure.
-- Minimum Moves to Reach Target with Rotations (LC 1210) - BFS with augmented state `(r, c, orientation)`; same grid BFS, extra state dimension (CP-primitive 3).
-
-### 3. Pacific Atlantic Water Flow (LC 417) - multi-source BFS
-
-Given an m×n height grid, return all cells from which water can flow to both the Pacific (top/left border) and Atlantic (bottom/right border) oceans. Water flows to adjacent cells with equal or lower height. `m, n ≤ 200`.
-
-**Approach:** reverse the flow direction and run two multi-source BFS passes - one seeded from all Pacific-border cells, one from all Atlantic-border cells. In the reversed direction, expand to neighbors with height ≥ current (water can flow *from* that neighbor *to* here in forward direction). Answer = intersection of the two reachable sets.
-
-Multi-source BFS handles the "reachable from *any* border cell" semantics in a single O(mn) pass - every source cell is already in the queue at distance 0, so the BFS naturally expands outward from all of them simultaneously. Running separate BFS/DFS from each border cell then union-ing the results would be correct but O(k · mn) for k border cells; multi-source collapses it to O(mn) via the shared visited set.
-
-**Duplicate problems:**
-- Walls and Gates (LC 286) - multi-source BFS from gate cells; fill room distances. No intersection step.
-- Rotting Oranges (LC 994) - multi-source BFS from all rotten oranges; answer is the max distance reached (time to rot all fresh). Same pattern, different termination.
-
-### 4. Shortest Path in a Grid with Obstacles Elimination (LC 1293) - state-augmented BFS
-
-Given an m×n grid of `0`s (empty) and `1`s (obstacles), find the minimum number of steps to walk from `(0,0)` to `(m-1,n-1)`. You can eliminate at most `k` obstacles. `m, n ≤ 40`, `k ≤ mn`.
-
-**Approach:** plain BFS on `(r, c)` is wrong - the optimal path depends on how many obstacles remain eliminable, so two visits to the same cell with different remaining `k` are distinct states. Augment state to `(r, c, remaining_k)`. BFS still finds the shortest path because all edges cost 1 step; the state space is `m × n × (k+1)` and each state is visited at most once. Mark `visited[r][c][rem]` on enqueue.
-
-The key insight separating this from plain BFS: the visited set must key on the full state `(r, c, rem)`, not just `(r, c)`. A cell reached with `rem=3` and again later with `rem=5` should not suppress the second visit - more remaining eliminations means the second path may reach the goal faster via a different obstacle sequence.
-
-```python
-from collections import deque
-
-def shortest_path(grid: list[list[int]], k: int) -> int:
-    m, n = len(grid), len(grid[0])
-    if m == 1 and n == 1:
-        return 0
-    visited = [[[False] * (k + 1) for _ in range(n)] for _ in range(m)]
-    visited[0][0][k] = True
-    queue: deque[tuple[int, int, int, int]] = deque([(0, 0, k, 0)])  # r, c, rem, steps
-    dirs = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-
-    while queue:
-        r, c, rem, steps = queue.popleft()
-        for dr, dc in dirs:
-            nr, nc = r + dr, c + dc
-            if not (0 <= nr < m and 0 <= nc < n):
-                continue
-            new_rem = rem - grid[nr][nc]  # subtract 1 if obstacle, 0 if empty
-            if new_rem < 0:
-                continue
-            if nr == m - 1 and nc == n - 1:
-                return steps + 1
-            if not visited[nr][nc][new_rem]:
-                visited[nr][nc][new_rem] = True
-                queue.append((nr, nc, new_rem, steps + 1))
-    return -1
-```
-
-**Time:** O(mn·k). **Space:** O(mn·k) - visited array dominates.
-
-**Duplicate problems:**
-- Minimum Obstacle Removal to Reach Corner (LC 2290) - same grid, `k` is unlimited; use 0-1 BFS (move to empty cell costs 0, obstacle costs 1) instead of state-augmented BFS. Same augmentation insight, cleaner with deque.
-- Cut Off Trees for Golf Event (LC 675) - BFS repeated between targets with augmented ordering state; same state-extension idea applied to multi-leg pathfinding.
-
 ## Pitfalls
 
 **1. Forgetting the bounds check - the most common silent bug.**
@@ -543,6 +311,15 @@ In-place marking (`grid[r][c] = 0` to mark land as visited) is fine when the gri
 
 Given an m×n grid of `'1'` (land) and `'0'` (water), return the number of islands. Two land cells form part of the same island if they are 4-directionally adjacent. `m, n ≤ 300`.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [["1","1","0","0"],["1","1","0","0"],["0","0","1","0"],["0","0","0","1"]] | **Output:** 3
+- **Example 2**
+  - **Input:** grid = [["1","1","1"],["0","1","0"],["1","1","1"]] | **Output:** 1
+  - **Explanation:** all land cells connect through the middle column.
+
+**Constraints:** `1 ≤ m, n ≤ 300`, `grid[i][j]` is `'0'` or `'1'`.
+
 **Approach:** scan for unvisited `'1'` cells; launch DFS to flood-fill each island (mark land `'0'` in-place). Count each launch.
 
 ```python
@@ -576,6 +353,14 @@ def num_islands(grid: list[list[str]]) -> int:
 ### 2. Shortest Path in Binary Matrix (LC 1091) - BFS shortest path
 
 n×n binary grid; find length of shortest 8-directional path from `(0,0)` to `(n-1,n-1)` through `0`-cells. Return `-1` if none. `n ≤ 100`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [[0,1],[1,0]] | **Output:** 2
+- **Example 2**
+  - **Input:** grid = [[0,0,0],[1,1,0],[1,1,0]] | **Output:** 4
+
+**Constraints:** `1 ≤ n ≤ 100`, `grid[i][j]` is `0` or `1`.
 
 **Approach:** BFS from `(0,0)`, 8-directional neighbors, mark visited on enqueue. Return distance when goal dequeued.
 
@@ -611,6 +396,15 @@ def shortest_path_binary_matrix(grid: list[list[int]]) -> int:
 
 m×n height grid; return cells where water can flow to both Pacific (top/left border) and Atlantic (bottom/right border) oceans. Water flows to equal or lower height. `m, n ≤ 200`.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** heights = [[1,2,2,3,5],[3,2,3,4,4],[2,4,5,3,1],[6,7,1,4,5],[5,1,1,2,4]] | **Output:** [[0,4],[1,3],[1,4],[2,2],[3,0],[3,1],[4,0]]
+- **Example 2**
+  - **Input:** heights = [[1]] | **Output:** [[0,0]]
+  - **Explanation:** the single cell touches both oceans' borders at once.
+
+**Constraints:** `1 ≤ m, n ≤ 200`, `0 ≤ heights[r][c] ≤ 10⁵`.
+
 **Approach:** reverse the flow. Run two multi-source BFS - one from Pacific border, one from Atlantic border - expanding to neighbors with height ≥ current (reverse flow direction). Answer = intersection of both reachable sets.
 
 ```python
@@ -642,3 +436,57 @@ def pacific_atlantic(heights: list[list[int]]) -> list[list[int]]:
 **Duplicate problems:**
 - Walls and Gates (LC 286) - multi-source BFS from gates; fill room distances. No intersection step.
 - Rotting Oranges (LC 994) - multi-source BFS from rotten oranges; answer is max distance reached (time to rot all fresh oranges).
+
+---
+
+### 4. Shortest Path in a Grid with Obstacles Elimination (LC 1293) - state-augmented BFS
+
+Given an m×n grid of `0`s (empty) and `1`s (obstacles), find the minimum number of steps to walk from `(0,0)` to `(m-1,n-1)`. You can eliminate at most `k` obstacles. `m, n ≤ 40`, `k ≤ mn`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [[0,0,0],[1,1,0],[0,0,0],[0,1,1],[0,0,0]], k = 1 | **Output:** 6
+- **Example 2**
+  - **Input:** grid = [[0,1,1],[1,1,1],[1,0,0]], k = 1 | **Output:** -1
+  - **Explanation:** not enough eliminations to clear a path.
+
+**Constraints:** `1 ≤ m, n ≤ 40`, `1 ≤ k ≤ m*n`.
+
+**Approach:** plain BFS on `(r, c)` is wrong - the optimal path depends on how many obstacles remain eliminable, so two visits to the same cell with different remaining `k` are distinct states. Augment state to `(r, c, remaining_k)`. BFS still finds the shortest path because all edges cost 1 step; the state space is `m × n × (k+1)` and each state is visited at most once. Mark `visited[r][c][rem]` on enqueue.
+
+The key insight separating this from plain BFS: the visited set must key on the full state `(r, c, rem)`, not just `(r, c)`. A cell reached with `rem=3` and again later with `rem=5` should not suppress the second visit - more remaining eliminations means the second path may reach the goal faster via a different obstacle sequence.
+
+```python
+from collections import deque
+
+def shortest_path(grid: list[list[int]], k: int) -> int:
+    m, n = len(grid), len(grid[0])
+    if m == 1 and n == 1:
+        return 0
+    visited = [[[False] * (k + 1) for _ in range(n)] for _ in range(m)]
+    visited[0][0][k] = True
+    queue: deque[tuple[int, int, int, int]] = deque([(0, 0, k, 0)])  # r, c, rem, steps
+    dirs = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+
+    while queue:
+        r, c, rem, steps = queue.popleft()
+        for dr, dc in dirs:
+            nr, nc = r + dr, c + dc
+            if not (0 <= nr < m and 0 <= nc < n):
+                continue
+            new_rem = rem - grid[nr][nc]  # subtract 1 if obstacle, 0 if empty
+            if new_rem < 0:
+                continue
+            if nr == m - 1 and nc == n - 1:
+                return steps + 1
+            if not visited[nr][nc][new_rem]:
+                visited[nr][nc][new_rem] = True
+                queue.append((nr, nc, new_rem, steps + 1))
+    return -1
+```
+
+**Complexity:** O(mn·k) time, O(mn·k) space - visited array dominates.
+
+**Duplicate problems:**
+- Minimum Obstacle Removal to Reach Corner (LC 2290) - same grid, `k` is unlimited; use 0-1 BFS (move to empty cell costs 0, obstacle costs 1) instead of state-augmented BFS. Same augmentation insight, cleaner with deque.
+- Cut Off Trees for Golf Event (LC 675) - BFS repeated between targets with augmented ordering state; same state-extension idea applied to multi-leg pathfinding.

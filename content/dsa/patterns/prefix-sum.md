@@ -10,12 +10,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -93,48 +91,6 @@ Query: sum of arr[1..3] (i.e. 4 + -1 + 5 = 8)
 ```
 
 **Why the off-by-one convention matters:** `P[i]` is defined as the sum of the first `i` elements (`arr[0]` through `arr[i-1]`), **not** "sum through index `i` inclusive." This means `P` has length `n+1`, with `P[0] = 0` (sum of zero elements) as a sentinel. The payoff: `sum(arr[L..R])` (inclusive, 0-indexed) is `P[R+1] - P[L]` with **no special case for `L = 0`**, because `P[0] = 0` already handles it - if you instead define `P[i]` as "sum through index `i` inclusive" (length `n`, no sentinel), every query needs an `if L == 0` branch to avoid indexing `P[-1]`. The `n+1`-length-with-sentinel convention is what makes the formula uniform.
-
----
-
-## Skeleton
-
-**Pseudocode (CLRS style):**
-
-```
-BUILD-PREFIX-SUM(A, n)
-  let P[0..n] = new array           ▷ length n+1; P[0] = 0 sentinel
-  P[0] = 0
-  for i = 1 to n
-    P[i] = P[i-1] + A[i-1]          ▷ P[i] = sum of A[0..i-1]
-  return P
-
-RANGE-SUM(P, L, R)                  ▷ inclusive 0-indexed range [L, R]
-  return P[R + 1] - P[L]
-```
-
-**Python template:**
-
-```python
-from itertools import accumulate
-
-def build_prefix_sum(arr: list[int]) -> list[int]:
-    n = len(arr)
-    prefix = [0] * (n + 1)          # length n+1; prefix[0] = 0 sentinel
-    for i in range(n):
-        prefix[i + 1] = prefix[i] + arr[i]
-    return prefix
-
-
-def range_sum(prefix: list[int], left: int, right: int) -> int:
-    """Inclusive 0-indexed sum of arr[left..right]."""
-    return prefix[right + 1] - prefix[left]
-
-
-# Contest-velocity one-liner via itertools.accumulate (same n+1 sentinel convention)
-def build_prefix_sum_stdlib(arr: list[int]) -> list[int]:
-    return [0] + list(accumulate(arr))
-    # your logic here: swap accumulate's default (+) for any associative op, e.g. max/min/xor
-```
 
 ---
 
@@ -220,40 +176,6 @@ def subarray_sum_equals_k(arr: list[int], k: int) -> int:
 
 ---
 
-## Worked problems
-
-### 1. Range Sum Query - Immutable (LC 303)
-
-Given an integer array, answer multiple queries for the sum of elements between indices `[left, right]` inclusive.
-
-**Approach sketch:** direct application of the skeleton - build the prefix array once in the constructor (O(n)), answer each query with `prefix[right+1] - prefix[left]` (O(1)). The canonical "why does this pattern exist" problem; every other worked entry here is a variation on this core idea.
-
-### 2. Subarray Sum Equals K (LC 560)
-
-Given an array and target `k`, count the total number of contiguous subarrays whose sum equals `k` (values may be negative).
-
-**Approach sketch:** maps directly onto CP-primitive #2 - maintain a running prefix sum and a hash map of how many times each prefix-sum value has been seen; at each step, add `count[prefix_sum - k]` to the running total, since any earlier prefix sum equal to `current - k` marks the start of a valid subarray ending here.
-
-### 3. Range Sum Query 2D - Immutable (LC 304)
-
-Given a 2D matrix, answer multiple queries for the sum of elements inside a rectangle defined by its upper-left and lower-right corners.
-
-**Approach sketch:** build a 2D prefix-sum table once using inclusion-exclusion (CP-primitive #1), then answer each rectangle query in O(1) via the four-corner subtraction formula - the direct 2D generalization of the 1D subtraction trick.
-
-### 4. Product of Array Except Self (LC 238)
-
-Given an array, return an array where each element is the product of all other elements, without using division and in O(n) time.
-
-**Approach sketch:** this is the multiplicative sibling of prefix sum - build a prefix-product array (product of everything to the left of `i`) and a suffix-product array (product of everything to the right of `i`), then the answer at `i` is `prefix[i] * suffix[i]`. Same "precompute a running aggregate, combine two readings" shape, with multiplication substituted for addition and no division needed (the naive "divide the total product by `arr[i]`" approach breaks on zeros).
-
-### 5. Continuous Subarray Sum (LC 523)
-
-Given an array and integer `k`, determine if the array has a contiguous subarray of size **at least 2** whose sum is a multiple of `k`.
-
-**Approach sketch:** group prefix sums by their remainder modulo `k` instead of by raw value (since `prefix[R+1] % k == prefix[L] % k` implies the subarray sum between them is divisible by `k`) - the same hash-map-of-prefix-sums idea as Subarray Sum Equals K, but keyed by remainder, plus tracking the *first index* each remainder was seen (not just a count) to enforce the "length at least 2" constraint.
-
----
-
 ## Pitfalls
 
 1. **Off-by-one between the `n`-length and `n+1`-length prefix array conventions.** Using an `n`-length array (`P[i]` = sum through index `i` inclusive) requires a special case for `L = 0` in every query (`P[R] - (P[L-1] if L > 0 else 0)`); the `n+1`-length-with-sentinel convention (`P[0] = 0`) avoids this branch entirely. Mixing the two conventions mid-problem is the most common source of off-by-one bugs in this pattern.
@@ -291,6 +213,15 @@ Then state up front whether the array is mutated between queries - if so, redire
 
 Design a class that, given an integer array, answers multiple `sumRange(left, right)` queries efficiently. Constraints: `1 ≤ n ≤ 10⁴`, up to `10⁴` queries.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [-2,0,3,-5,2,-1], sumRange(0,2) | **Output:** 1
+  - **Explanation:** -2 + 0 + 3 = 1.
+- **Example 2**
+  - **Input:** nums = [-2,0,3,-5,2,-1], sumRange(2,5) | **Output:** -1
+
+**Constraints:** `1 ≤ n ≤ 10⁴`, `-10⁵ ≤ nums[i] ≤ 10⁵`, up to `10⁴` calls to `sumRange`.
+
 **Approach.** Build the prefix-sum array once in the constructor. Each query is `prefix[right+1] - prefix[left]`.
 
 ```python
@@ -315,6 +246,16 @@ class NumArray:
 ### 2. Subarray Sum Equals K (LC 560)
 
 Given an array of integers (possibly negative) and target `k`, return the total number of contiguous subarrays summing to `k`. Constraints: `1 ≤ n ≤ 2×10⁴`, `-1000 ≤ nums[i], k ≤ 1000`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,1,1], k = 2 | **Output:** 2
+  - **Explanation:** [1,1] at indices [0,1] and [1,2] both sum to 2.
+- **Example 2**
+  - **Input:** nums = [1,2,3], k = 3 | **Output:** 2
+  - **Explanation:** [1,2] and [3] both sum to 3.
+
+**Constraints:** `1 ≤ n ≤ 2×10⁴`, `-1000 ≤ nums[i] ≤ 1000`, `-10⁷ ≤ k ≤ 10⁷`.
 
 **Approach.** Maintain a running prefix sum and a hash map of prefix-sum frequencies. At each step, the number of valid subarrays ending here equals how many earlier prefix sums equal `current_prefix - k`.
 
@@ -344,6 +285,15 @@ def subarray_sum(nums: list[int], k: int) -> int:
 ### 3. Product of Array Except Self (LC 238)
 
 Given an array, return an array where `answer[i]` is the product of all elements except `nums[i]`, in O(n) time without using division. Constraints: `2 ≤ n ≤ 10⁵`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,2,3,4] | **Output:** [24,12,8,6]
+- **Example 2**
+  - **Input:** nums = [-1,1,0,-3,3] | **Output:** [0,0,9,0,0]
+  - **Explanation:** a single zero makes every product except the zero's own index equal to 0.
+
+**Constraints:** `2 ≤ n ≤ 10⁵`, `-30 ≤ nums[i] ≤ 30`, product of any prefix/suffix fits in a 32-bit integer.
 
 **Approach.** Build a prefix-product pass (product of everything strictly to the left of `i`) and a suffix-product pass (product of everything strictly to the right), then multiply the two at each index - the multiplicative analogue of prefix sum, avoiding division entirely (which would break on zero elements).
 

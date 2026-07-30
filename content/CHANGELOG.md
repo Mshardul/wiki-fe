@@ -9,6 +9,12 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-07-31
+- `dsa/patterns/two-pointers.md`, `sliding-window.md`, `fast-slow-pointers.md`, `in-place-reversal.md`, `merge-intervals.md`, `matrix-traversal.md`, `tree-graph-traversal.md`, `prefix-sum.md`, `difference-array.md`, `monotonic-stack.md`, `monotonic-queue.md`, `k-way-merge.md`, `top-k-elements.md`, `two-heaps.md`, `binary-search-on-answer.md`, `modified-binary-search.md`, `frequency-array.md`, `backtracking.md`, `graph-coloring.md`, `interval-dp.md`, `bitmask-dp.md`, `meet-in-the-middle.md`, `state-machine-dp.md` - expanded: "Practice problems" - merged the legacy `## Worked problems` + `## Practice problems` sections into one, per-file distinct-technique problem selection (worked examples, constraints, full solution, complexity, duplicate-problems line per entry)
+- `dsa/patterns/top-k-elements.md` - new article: size-k heap over a stream, min-heap-for-k-largest inversion, quickselect/two-heaps/k-way-merge disambiguation
+- `dsa/data-structures/treap.md` - new article: BST + randomized heap-priority balancing, split/merge primitives, implicit-treap CP variant
+- `dsa/data-structures/suffix-tree.md` - new article: compressed suffix trie, Ukkonen's O(n) construction via suffix links, generalized suffix tree for multi-string LCS
+
 ## 2026-07-25
 - `dsa/algorithms/dijkstra.md` - new article: shortest paths with a priority queue, finalized-node correctness proof, negative-weight failure mode
 - `dsa/patterns/tree-graph-traversal.md` - new article: BFS/DFS recognition + transfer layer over the existing bfs.md/dfs.md algorithm pages

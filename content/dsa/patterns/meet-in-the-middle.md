@@ -13,12 +13,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -135,80 +133,6 @@ The combine step converts the naive O(2^(n/2) × 2^(n/2)) Cartesian scan into O(
 
 **Cache behavior:** the enumeration phase iterates over small arrays of size 2^(n/2) ≈ 10⁶ - these fit comfortably in L2/L3 cache. The sort is comparison-based and cache-friendly (sequential merges). The binary search has O(log(2^(n/2))) = O(n/2) cache misses per probe but only 2^(n/2) probes, so the total miss count is the same order as the sort. In practice MITM on n = 40 runs in under a second on modern hardware.
 
-## Skeleton
-
-**Pseudocode (CLRS style)**
-
-```
-GENERATE-SUMS(A, start, end)
-  sums ← empty list
-  n ← end - start
-  for mask = 0 to 2ⁿ - 1 do          ▷ iterate over all 2ⁿ subsets of A[start..end]
-    s ← 0
-    for bit = 0 to n - 1 do
-      if bit-th bit of mask is 1 then
-        s ← s + A[start + bit]
-    APPEND(sums, s)
-  return sums
-
-MEET-IN-MIDDLE(A, target)
-  mid ← ⌊|A| / 2⌋
-  left_sums  ← GENERATE-SUMS(A, 0, mid)
-  right_sums ← GENERATE-SUMS(A, mid, |A|)
-  SORT(right_sums)                      ▷ sort once, binary-search many
-  for each s in left_sums do
-    need ← target - s
-    if BINARY-SEARCH(right_sums, need) = FOUND then
-      return True
-  return False
-```
-
-**Python template**
-
-```python
-from bisect import bisect_left
-from itertools import combinations
-
-
-def generate_sums(items: list[int]) -> list[int]:
-    """Return all 2^len(items) subset sums of items."""
-    sums: list[int] = []
-    n = len(items)
-    for mask in range(1 << n):
-        s = 0
-        for bit in range(n):
-            if mask >> bit & 1:
-                s += items[bit]
-        sums.append(s)
-    return sums
-
-
-def meet_in_middle(A: list[int], target: int) -> bool:
-    """Return True if any subset of A sums to target."""
-    mid = len(A) // 2
-    left_sums = generate_sums(A[:mid])
-    right_sums = sorted(generate_sums(A[mid:]))
-
-    for s in left_sums:
-        need = target - s
-        pos = bisect_left(right_sums, need)
-        if pos < len(right_sums) and right_sums[pos] == need:
-            return True
-    return False
-
-
-# --- Variant: count subsets summing to target ---
-def count_subsets(A: list[int], target: int) -> int:
-    from collections import Counter
-    mid = len(A) // 2
-    left_counts = Counter(generate_sums(A[:mid]))
-    right_sums = generate_sums(A[mid:])
-    result = 0
-    for s in right_sums:
-        result += left_counts[target - s]   # your logic here: adapt for closest / count / min-diff
-    return result
-```
-
 ## Complexity
 
 | Measure   | Bound                        | Why                                                                              |
@@ -301,136 +225,6 @@ For problems where each element has a state (not just in/out), enumerate all 3^(
 
 **Why for CP:** generalises MITM beyond subset-sum to any problem where the state decomposes across a split and the number of states per half is ≤ 10⁷.
 
-## Worked problems
-
-### LC 1755 - Closest Subsequence Sum
-
-**Problem:** Given an integer array `nums` of length n ≤ 40 and a target integer `goal`, return the minimum absolute difference between `goal` and the sum of any non-empty subset of `nums`.
-
-**Approach (MITM - closest subset sum):** n ≤ 40 rules out O(2ⁿ) brute force and makes DP infeasible (values can be ±10⁹). Split into two halves, enumerate all 2^(n/2) sums for each, sort the right list, then for each left sum binary-search for the complementary right sum that brings the total closest to `goal`. Check both the floor and ceiling neighbours in the sorted right list.
-
-```python
-from bisect import bisect_left
-
-class Solution:
-    def minAbsDifference(self, nums: list[int], goal: int) -> int:
-        def gen(arr: list[int]) -> list[int]:
-            sums: list[int] = []
-            n = len(arr)
-            for mask in range(1 << n):
-                s = sum(arr[i] for i in range(n) if mask >> i & 1)
-                sums.append(s)
-            return sums
-
-        mid = len(nums) // 2
-        left = gen(nums[:mid])
-        right = sorted(gen(nums[mid:]))
-        ans = abs(goal)  # empty subset
-        for s in left:
-            need = goal - s
-            pos = bisect_left(right, need)
-            for p in (pos, pos - 1):
-                if 0 <= p < len(right):
-                    ans = min(ans, abs(s + right[p] - goal))
-        return ans
-```
-
-**Complexity:** O(2^(n/2) · n) time, O(2^(n/2)) space.
-
-**Duplicate problems:**
-- Subset Sum (LC 416 - Partition Equal Subset Sum) - same MITM or DP approach; find a subset summing to total/2. DP works here because values ≤ 200 bound the sum space; MITM is the fallback when values are large.
-- Target Sum (LC 494) - assign +/− signs to elements; each sign assignment is a "subset selection" - count assignments where the signed sum equals target. MITM applies when n is up to 40 (not LC 494's n ≤ 20).
-
----
-
-### LC 805 - Split Array With Same Average
-
-**Problem:** Given integer array `nums` of length n ≤ 30, return True if you can split nums into two non-empty subsets A and B such that `average(A) == average(B)`. The split must use every element exactly once.
-
-**Approach (MITM + feasibility check):** The condition `average(A) == average(B)` is equivalent to `sum(A) / |A| == total / n`, i.e. `sum(A) * n == total * |A|`. Enumerate all subset sums *along with subset sizes* for each half. For each (sum, size) from the left half check whether the right half contains a complementary (sum, size) such that the totals add up correctly. Store right half entries as a set of `(right_sum, right_size)` pairs.
-
-```python
-class Solution:
-    def splitArraySameAverage(self, nums: list[int]) -> bool:
-        n = len(nums)
-        total = sum(nums)
-        mid = n // 2
-
-        # generate (sum, size) pairs for left half
-        def gen(arr: list[int]) -> set[tuple[int, int]]:
-            results: set[tuple[int, int]] = set()
-            m = len(arr)
-            for mask in range(1, 1 << m):
-                s, cnt = 0, 0
-                for i in range(m):
-                    if mask >> i & 1:
-                        s += arr[i]
-                        cnt += 1
-                results.add((s, cnt))
-            return results
-
-        left = gen(nums[:mid])
-        right = gen(nums[mid:])
-
-        for ls, lc in left:
-            for rc in range(1, n - lc):   # O(n) per left entry - total O(2^(n/2) · n)
-                needed_total = total * (lc + rc)
-                if needed_total % n != 0:
-                    continue
-                rs = needed_total // n - ls
-                if (rs, rc) in right:
-                    return True
-        return False
-```
-
-**Complexity:** O(2^(n/2) · n) time - the `rc` loop runs at most n times per left entry, giving 2^(n/2) × n total iterations. O(2^(n/2)) space.
-
-**Duplicate problems:**
-- Fair Split (partition into two equal-sum groups) - same feasibility check pattern; MITM if n ≤ 40, DP if values are bounded.
-
----
-
-### Classic - Subset Sum with Large Values
-
-**Problem:** Given n ≤ 40 integers each up to 10¹⁸, determine if any subset sums exactly to T. Standard DP is infeasible (sum space too large). Return True or False.
-
-**Approach (canonical MITM):** This is the textbook motivation for MITM. DP breaks because the sum space is up to 40 × 10¹⁸ - no table fits in memory. Backtracking is O(2ⁿ) ≈ 10¹² - TLE. MITM: split into two halves of size 20, enumerate all 2²⁰ ≈ 10⁶ sums for each, sort the right list, binary-search from the left. Runs in ~1 second.
-
-```python
-from bisect import bisect_left
-
-def subset_sum_large(A: list[int], T: int) -> bool:
-    mid = len(A) // 2
-    left, right = A[:mid], A[mid:]
-
-    def all_sums(items: list[int]) -> list[int]:
-        sums: list[int] = []
-        n = len(items)
-        for mask in range(1 << n):
-            s = 0
-            for i in range(n):
-                if mask >> i & 1:
-                    s += items[i]
-            sums.append(s)
-        return sums
-
-    left_sums = all_sums(left)
-    right_sums = sorted(all_sums(right))
-
-    for s in left_sums:
-        need = T - s
-        pos = bisect_left(right_sums, need)
-        if pos < len(right_sums) and right_sums[pos] == need:
-            return True
-    return False
-```
-
-**Complexity:** O(2^(n/2) · n) time, O(2^(n/2)) space.
-
-**Duplicate problems:**
-- Partition to K Equal Sum Subsets (LC 698) - for k=2 reduces to subset-sum; MITM applies when n is large and sum space is huge.
-- Sum of Squares (find four perfect squares summing to N) - Lagrange's 4-square theorem; MITM on two pairs cuts the search from O(N²) to O(N).
-
 ## Pitfalls
 
 **1. Forgetting the empty subset (sum = 0)**
@@ -473,28 +267,138 @@ At n ≤ 20, bitmask DP runs in O(2²⁰ · n) and gives not just existence but 
 
 ## Practice problems
 
-### LC 454 - 4Sum II
+### 1. Subset Sum with Large Values (classic)
 
-**Problem statement:** Given four integer arrays `nums1`, `nums2`, `nums3`, `nums4` each of length n ≤ 200, return the number of tuples (i, j, k, l) such that `nums1[i] + nums2[j] + nums3[k] + nums4[l] == 0`. Constraints: n ≤ 200.
+Given n ≤ 40 integers each up to 10¹⁸, determine if any subset sums exactly to T. Standard DP is infeasible (sum space too large). Return True or False.
 
-**Approach:** MITM on pairs - treat (nums1[i] + nums2[j]) as "left half sums" and (nums3[k] + nums4[l]) as "right half sums". Build a frequency counter of all n² AB-sums; for each of the n² CD-sums look up its negation. O(n²) - the n² pair enumeration replaces the 2^(n/2) element enumeration because here each "item" is a pair.
+**Worked examples:**
+- **Example 1**
+  - **Input:** A = [5, 10, 15, 100000000000000000], T = 15 | **Output:** true
+  - **Explanation:** the subset {5, 10} sums to 15.
+- **Example 2**
+  - **Input:** A = [3, 7], T = 11 | **Output:** false
+
+**Constraints:** `1 ≤ n ≤ 40`, `0 ≤ A[i] ≤ 10¹⁸`, `0 ≤ T ≤ 40 × 10¹⁸`.
+
+**Approach (canonical MITM).** This is the textbook motivation for MITM. DP breaks because the sum space is up to 40 × 10¹⁸ - no table fits in memory. Backtracking is O(2ⁿ) ≈ 10¹² - TLE. MITM: split into two halves of size 20, enumerate all 2²⁰ ≈ 10⁶ sums for each, sort the right list, binary-search from the left. Runs in ~1 second.
+
+```python
+from bisect import bisect_left
+
+def subset_sum_large(A: list[int], T: int) -> bool:
+    mid = len(A) // 2
+    left, right = A[:mid], A[mid:]
+
+    def all_sums(items: list[int]) -> list[int]:
+        sums: list[int] = []
+        n = len(items)
+        for mask in range(1 << n):
+            s = 0
+            for i in range(n):
+                if mask >> i & 1:
+                    s += items[i]
+            sums.append(s)
+        return sums
+
+    left_sums = all_sums(left)
+    right_sums = sorted(all_sums(right))
+
+    for s in left_sums:
+        need = T - s
+        pos = bisect_left(right_sums, need)
+        if pos < len(right_sums) and right_sums[pos] == need:
+            return True
+    return False
+```
+
+**Complexity.** O(2^(n/2) · n) time, O(2^(n/2)) space.
+
+**Duplicate problems:**
+- Closest Subsequence Sum (LC 1755) - same split + sort + binary-search combine, minimizing `|sum - goal|` instead of requiring an exact match; check both floor and ceiling neighbors in the sorted right list.
+- Partition Equal Subset Sum (LC 416) - same MITM approach when values are large; DP is preferred when values are small enough to bound the sum space.
+- Target Sum (LC 494) - assign +/− signs to elements; each sign assignment is a "subset selection" - count assignments where the signed sum equals target. MITM applies when n is up to 40.
+- Sum of Squares (find four perfect squares summing to N) - Lagrange's 4-square theorem; MITM on two pairs cuts the search from O(N²) to O(N).
+
+---
+
+### 2. Split Array With Same Average (LC 805)
+
+Given integer array `nums` of length n ≤ 30, return True if you can split nums into two non-empty subsets A and B such that `average(A) == average(B)`. The split must use every element exactly once.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,2,3,4,5,6,7,8] | **Output:** true
+  - **Explanation:** {1,4,5,8} and {2,3,6,7} both average 4.5.
+- **Example 2**
+  - **Input:** nums = [3,1] | **Output:** false
+
+**Constraints:** `1 ≤ nums.length ≤ 30`, `0 ≤ nums[i] ≤ 10⁴`.
+
+**Approach (MITM + feasibility check).** Distinct from Subset Sum with Large Values: the state tracked per subset is a **(sum, size) pair**, not just sum, and the combine step is a hash-set membership check rather than sort+binary-search. The condition `average(A) == average(B)` is equivalent to `sum(A) / |A| == total / n`, i.e. `sum(A) * n == total * |A|`. Enumerate all subset sums *along with subset sizes* for each half. For each (sum, size) from the left half, check whether the right half contains a complementary (sum, size) such that the totals add up correctly.
+
+```python
+def split_array_same_average(nums: list[int]) -> bool:
+    n = len(nums)
+    total = sum(nums)
+    mid = n // 2
+
+    def gen(arr: list[int]) -> set[tuple[int, int]]:
+        results: set[tuple[int, int]] = set()
+        m = len(arr)
+        for mask in range(1, 1 << m):
+            s, cnt = 0, 0
+            for i in range(m):
+                if mask >> i & 1:
+                    s += arr[i]
+                    cnt += 1
+            results.add((s, cnt))
+        return results
+
+    left = gen(nums[:mid])
+    right = gen(nums[mid:])
+
+    for ls, lc in left:
+        for rc in range(1, n - lc):   # O(n) per left entry - total O(2^(n/2) · n)
+            needed_total = total * (lc + rc)
+            if needed_total % n != 0:
+                continue
+            rs = needed_total // n - ls
+            if (rs, rc) in right:
+                return True
+    return False
+```
+
+**Complexity.** O(2^(n/2) · n) time - the `rc` loop runs at most n times per left entry. O(2^(n/2)) space.
+
+**Duplicate problems:**
+- Fair Split (partition into two equal-sum groups) - same feasibility check pattern; MITM if n ≤ 40, DP if values are bounded.
+
+---
+
+### 3. 4Sum II (LC 454)
+
+Given four integer arrays `nums1`, `nums2`, `nums3`, `nums4` each of length n ≤ 200, return the number of tuples (i, j, k, l) such that `nums1[i] + nums2[j] + nums3[k] + nums4[l] == 0`. Constraints: n ≤ 200.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums1 = [1,2], nums2 = [-2,-1], nums3 = [-1,2], nums4 = [0,2] | **Output:** 2
+- **Example 2**
+  - **Input:** nums1 = [0], nums2 = [0], nums3 = [0], nums4 = [0] | **Output:** 1
+
+**Constraints:** `n == nums1.length == nums2.length == nums3.length == nums4.length`, `1 ≤ n ≤ 200`, `-2²⁸ ≤ nums1[i], nums2[i], nums3[i], nums4[i] ≤ 2²⁸`.
+
+**Approach.** MITM on **pairs**, not individual elements - the enumeration unit and combine mechanism both differ from the subset-sum entries above. Treat `(nums1[i] + nums2[j])` as "left half sums" and `(nums3[k] + nums4[l])` as "right half sums". Build a frequency counter (hash map) of all n² AB-sums; for each of the n² CD-sums, look up its negation. O(n²) - the n² pair enumeration replaces the 2^(n/2) element enumeration because here each "item" being combined is a pair, and the combine step is a hash-map lookup rather than sort+binary-search or a hash-set membership check.
 
 ```python
 from collections import Counter
 
-class Solution:
-    def fourSumCount(self, nums1: list[int], nums2: list[int],
-                     nums3: list[int], nums4: list[int]) -> int:
-        ab = Counter(a + b for a in nums1 for b in nums2)
-        return sum(ab[-(c + d)] for c in nums3 for d in nums4)
+def four_sum_count(nums1: list[int], nums2: list[int],
+                    nums3: list[int], nums4: list[int]) -> int:
+    ab = Counter(a + b for a in nums1 for b in nums2)
+    return sum(ab[-(c + d)] for c in nums3 for d in nums4)
 ```
 
-**Complexity:** O(n²) time, O(n²) space.
+**Complexity.** O(n²) time, O(n²) space.
 
 **Duplicate problems:**
 - Two Sum (LC 1) - same hash-map lookup on a single array; MITM on pairs generalises it to 4 arrays.
-- 4-Sum (LC 18, unique quadruples in one array) - two-pointer on sorted array; different problem shape from 4Sum II.
-
----
-
-For additional worked examples with full solutions, see the [Worked problems](#worked-problems) section above: LC 1755 (closest subset sum), LC 805 (equal-average split), and the classic large-value subset-sum problem.

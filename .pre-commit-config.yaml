@@ -18,8 +18,9 @@ repos:
         # Authored wiki content is excluded here; also skip generated/data.
         # pres = plural of <pre> elements; couldn = "couldn't" w/ escaped apostrophe.
         # ths = table-headers variable (Array.from querySelectorAll th)
+        # atmost = atMost(k) sliding-window helper name in plan docs
         exclude: '^(content/|\.venv/|\.pytest_cache/)'
-        args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths"]
+        args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths,atmost"]
 
   # ── JS/CSS lint + format (Biome - standalone binary, no node_modules) ───────
   - repo: https://github.com/biomejs/pre-commit

@@ -13,12 +13,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -87,82 +85,6 @@ Output: 1, 2, 3, 4, 5, 6, 7, 8, 9
 **Invariant:** after every pop-and-push, the heap contains exactly one "current front" per non-exhausted list, and the heap minimum is the global minimum across all fronts. When a list exhausts, its slot simply disappears from the heap (no push). The heap shrinks from k to 0 as lists drain.
 
 **Why O(N log k):** N total pops, each followed by at most one push, each O(log k) since the heap size never exceeds k.
-
-## Skeleton
-
-**Pseudocode (CLRS style):**
-
-```
-KWayMerge(lists[0..k-1]) → sorted array:
-    result ← []
-    H ← MinHeap()
-    for i = 0 to k-1
-        if lists[i] is not empty
-            H.push( (lists[i][0], i, 0) )   ▷ (value, list_idx, elem_idx)
-    while H is not empty
-        (val, li, ei) ← H.pop()
-        result.append(val)
-        if ei + 1 < len(lists[li])
-            H.push( (lists[li][ei+1], li, ei+1) )
-    return result
-```
-
-**Python template:**
-
-```python
-import heapq
-from typing import Iterator
-
-def k_way_merge(lists: list[list[int]]) -> list[int]:
-    result: list[int] = []
-    heap: list[tuple[int, int, int]] = []
-
-    for i, lst in enumerate(lists):
-        if lst:
-            heapq.heappush(heap, (lst[0], i, 0))
-
-    while heap:
-        val, li, ei = heapq.heappop(heap)
-        result.append(val)
-        if ei + 1 < len(lists[li]):
-            heapq.heappush(heap, (lists[li][ei + 1], li, ei + 1))
-
-    return result
-
-# For linked-list inputs, store (node.val, list_index, node) in the heap.
-# For iterator/stream inputs, call next() on the iterator instead of advancing an index.
-# your logic here
-```
-
-**Linked-list variant (LC 23 shape):**
-
-```python
-import heapq
-from typing import Optional
-
-class ListNode:
-    def __init__(self, val: int = 0, next: "Optional[ListNode]" = None) -> None:
-        self.val = val
-        self.next = next
-
-def merge_k_lists(lists: list[Optional[ListNode]]) -> Optional[ListNode]:
-    heap: list[tuple[int, int, ListNode]] = []
-    for i, node in enumerate(lists):
-        if node:
-            heapq.heappush(heap, (node.val, i, node))
-
-    dummy = ListNode()
-    curr = dummy
-    while heap:
-        val, i, node = heapq.heappop(heap)
-        curr.next = node
-        curr = curr.next
-        if node.next:
-            heapq.heappush(heap, (node.next.val, i, node.next))
-    return dummy.next
-```
-
-The `i` tiebreaker in the tuple prevents Python from comparing `ListNode` objects when values are equal - without it, the heap raises `TypeError`.
 
 ## Complexity
 
@@ -257,32 +179,6 @@ def merge_iterators(iters: list[Iterator[int]]) -> Iterator[int]:
             pass
 ```
 
-## Worked problems
-
-### 1. Merge K Sorted Lists (LC 23)
-
-k linked lists, each sorted ascending. Merge into one sorted linked list. k ≤ 10⁴, total nodes N ≤ 5 × 10⁴.
-
-**Approach (k ≤ 10⁴, N ≤ 5 × 10⁴):** heap of `(node.val, tiebreak_idx, node)`. Pop the minimum, link it into the result, push `node.next` if it exists. The tiebreak index prevents Python from comparing `ListNode` objects when values tie. O(N log k). At k = 10⁴ and N = 5 × 10⁴ each list averages 5 nodes - the heap is often much smaller than k.
-
-### 2. Kth Smallest Element in a Sorted Matrix (LC 378)
-
-n × n matrix where each row and each column is sorted. Find the k-th smallest element. n ≤ 300, k ≤ n².
-
-**Approach:** treat each row as one sorted list - n-way merge. Pop k times from the heap; the k-th pop is the answer. Time O(k log n). Alternative: binary search on value in O(n log(max−min)) - prefer this when k is large (close to n²) since it avoids O(k log n) heap ops. The constraint tells you which: k ≤ n ≈ 300 → heap; k ≈ n² → binary search.
-
-### 3. Smallest Range Covering Elements from K Lists (LC 632)
-
-k sorted lists. Find the smallest range [a, b] such that at least one element from each list lies in [a, b]. k ≤ 3500, each list length ≤ 50.
-
-**Approach:** the key insight is that at any moment during a k-way merge, the heap holds exactly one element per list - the current minimum is `heap.top`, and you also track `cur_max` as the largest element ever pushed. So `[heap.top, cur_max]` is the tightest range currently covering one element per list. Advancing the list that contributes the minimum moves the left boundary up (the only direction that can shrink the range, since `cur_max` only grows). Stop the moment any list exhausts - from that point, you can no longer cover all k lists. O(N log k), N = total elements.
-
-### 4. Merge K Sorted Arrays
-
-Given k sorted integer arrays, merge into one sorted array. Classic external-sort simulation; k ≤ 500, total N ≤ 10⁶.
-
-**Approach (N ≤ 10⁶):** heap of `(value, list_index, element_index)` - standard k-way merge skeleton. Each of N elements is pushed and popped exactly once, each at O(log k), giving O(N log k) ≈ 10⁶ × 9 ≈ 10⁷ ops, well within limits. The index triple avoids comparisons between equal-value elements from different arrays. If k = 2, use two-pointer merge instead - O(N) with no heap overhead. The heap only wins when k > 2 because two-pointer linear scan of k heads is O(N·k) which dominates at large k.
-
 ## Pitfalls
 
 - **Not including a tiebreaker in the heap tuple.** When two lists have equal values at their fronts, Python tries to compare the third element of the tuple. For linked lists that's a `ListNode` - which raises `TypeError`. Always include a unique integer tiebreaker (list index) as the second element: `(value, list_idx, node_or_index)`.
@@ -323,6 +219,14 @@ A min-heap of size k still works correctly - it makes no assumption about global
 
 You are given an array of k linked lists, each sorted in ascending order. Merge all the linked lists into one sorted linked list and return it. k ≤ 10⁴, total nodes N ≤ 5 × 10⁴.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** lists = [[1,4,5],[1,3,4],[2,6]] | **Output:** [1,1,2,3,4,4,5,6]
+- **Example 2**
+  - **Input:** lists = [] | **Output:** []
+
+**Constraints:** `0 ≤ k ≤ 10⁴`, `0 ≤ list length ≤ 500`, total nodes N ≤ 5×10⁴, `-10⁴ ≤ Node.val ≤ 10⁴`.
+
 **Approach:** min-heap of `(node.val, list_index, node)`. Pop min, link to result, push `node.next` if non-null. Include list index as tiebreaker to avoid comparing `ListNode` objects. O(N log k) time, O(k) heap space.
 
 ```python
@@ -354,13 +258,24 @@ def mergeKLists(lists: list[Optional[ListNode]]) -> Optional[ListNode]:
 **Complexity:** O(N log k) time, O(k) space.
 
 **Duplicate problems:**
+- Merge K Sorted Arrays (classic) - same skeleton on arrays instead of linked-list nodes; heap of `(value, list_index, element_index)`.
 - Merge Two Sorted Lists (LC 21) - k=2 special case; two-pointer merge is O(N) and simpler, no heap needed.
 - Merge Sorted Array (LC 88) - in-place 2-way merge; same idea, fill from right to avoid shifting, O(m+n) time.
 - Sort List (LC 148) - merge sort a linked list; the merge step is 2-way, but recognizing it as k-way (k=2) solidifies the pattern.
 
+---
+
 ### 2. Kth Smallest Element in a Sorted Matrix (LC 378)
 
 An n × n matrix where each row and column is sorted ascending. Find the k-th smallest element. n ≤ 300, k ≤ n².
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** matrix = [[1,5,9],[10,11,13],[12,13,15]], k = 8 | **Output:** 13
+- **Example 2**
+  - **Input:** matrix = [[-5]], k = 1 | **Output:** -5
+
+**Constraints:** `1 ≤ n ≤ 300`, `-10⁹ ≤ matrix[i][j] ≤ 10⁹`, `1 ≤ k ≤ n²`.
 
 **Approach:** treat each row as a sorted list - n-way merge with a heap. Pop k times; the k-th popped value is the answer. Push `(matrix[r][c+1], r, c+1)` after each pop (if in bounds). O(k log n) time. For large k (near n²), binary search on value with O(n) counting is O(n log(max−min)) and better.
 
@@ -384,12 +299,21 @@ def kthSmallest(matrix: List[List[int]], k: int) -> int:
 **Complexity:** O(k log n) time, O(n) space.
 
 **Duplicate problems:**
-- Find K Pairs with Smallest Sums (LC 373) - same heap structure; pairs `(nums1[i] + nums2[j], i, j)` form k sorted streams indexed by `i`; k-way merge over them.
 - Kth Smallest in Multiplication Table (LC 668) - each row is `[m*1, m*2, ...]`; same n-way merge shape, or binary search on value.
+
+---
 
 ### 3. Smallest Range Covering Elements from K Lists (LC 632)
 
 Given k sorted lists of integers, find the smallest range [a, b] that includes at least one number from each list. k ≤ 3500, each list has ≤ 50 elements.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [[4,10,15,24,26],[0,9,12,20],[5,18,22,30]] | **Output:** [20,24]
+- **Example 2**
+  - **Input:** nums = [[1,2,3],[1,2,3],[1,2,3]] | **Output:** [1,1]
+
+**Constraints:** `1 ≤ k ≤ 3500`, `1 ≤ each list length ≤ 50`, `-10⁵ ≤ element ≤ 10⁵`, each list sorted ascending.
 
 **Approach:** k-way merge with a running max. Initialize heap with all list heads and track `cur_max`. At each step the range is `[heap.min, cur_max]`. If it's the best seen, record it. Pop the min, push the next from its list (updating `cur_max`). Stop when any list runs out (you can't cover all k lists anymore). O(N log k) where N = total elements.
 
@@ -419,3 +343,41 @@ def smallestRange(nums: List[List[int]]) -> List[int]:
 
 **Duplicate problems:**
 - Minimum Window Substring (LC 76) - sliding window over one string with a character-count constraint; different pattern (not k-way merge) despite the "smallest window" framing.
+
+---
+
+### 4. Find K Pairs with Smallest Sums (LC 373)
+
+Given two integer arrays `nums1` and `nums2`, both sorted ascending, and integer `k`, return the `k` pairs `(nums1[i], nums2[j])` with the smallest sums. `1 ≤ nums1.length, nums2.length ≤ 10⁵`, `1 ≤ k ≤ 10⁴`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums1 = [1,7,11], nums2 = [2,4,6], k = 3 | **Output:** [[1,2],[1,4],[1,6]]
+- **Example 2**
+  - **Input:** nums1 = [1,1,2], nums2 = [1,2,3], k = 2 | **Output:** [[1,1],[1,1]]
+
+**Constraints:** `1 ≤ nums1.length, nums2.length ≤ 10⁵`, `-10⁹ ≤ nums1[i], nums2[i] ≤ 10⁹`, `1 ≤ k ≤ 10⁴`.
+
+**Approach.** Materializing all `nums1.length × nums2.length` pairs and sorting is too slow. Instead, treat this as a heap-driven lazy generation: seed the heap with `(nums1[i] + nums2[0], i, 0)` for every `i` (each `i` is the head of an implicit sorted stream `nums1[i] + nums2[j]` for increasing `j`). Pop the smallest sum, record the pair, and push that stream's next element `(nums1[i] + nums2[j+1], i, j+1)`. This differs from Kth Smallest Matrix's mechanic: the "sorted lists" here aren't given directly, they're generated on demand as `(i, j+1)` pairs, and only `k` pops are needed rather than draining every stream.
+
+```python
+import heapq
+
+def k_smallest_pairs(nums1: list[int], nums2: list[int], k: int) -> list[list[int]]:
+    if not nums1 or not nums2:
+        return []
+    heap = [(nums1[i] + nums2[0], i, 0) for i in range(min(k, len(nums1)))]
+    heapq.heapify(heap)
+    result: list[list[int]] = []
+    while heap and len(result) < k:
+        s, i, j = heapq.heappop(heap)
+        result.append([nums1[i], nums2[j]])
+        if j + 1 < len(nums2):
+            heapq.heappush(heap, (nums1[i] + nums2[j + 1], i, j + 1))
+    return result
+```
+
+**Complexity.** O(k log k) time (heap bounded to O(min(k, len(nums1))) entries), O(k) space.
+
+**Duplicate problems:**
+- Kth Smallest Element in a Sorted Matrix (LC 378) - conceptually related (both merge sorted streams via a heap), but that problem's streams are literal matrix rows, not lazily-generated index pairs.

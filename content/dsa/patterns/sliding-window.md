@@ -12,12 +12,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -101,114 +99,6 @@ Step 6: R=5, window="bcc",distinct=2 ✓  best=4
 ```
 
 **Key invariant:** after every step, the window `[L, R]` satisfies the constraint. `R` never moves left; `L` never moves right past `R`.
-
----
-
-## Skeleton
-
-### Fixed-size window (pseudocode)
-
-```
-FIXED-WINDOW(arr, n, k)
-  window_sum = sum of arr[0..k-1]
-  best = window_sum
-  for i = k to n - 1
-    window_sum = window_sum + arr[i] - arr[i - k]
-    best = max(best, window_sum)
-  return best
-```
-
-### Variable-size window - maximize length (pseudocode)
-
-```
-VARIABLE-WINDOW-MAX(arr, n)
-  L = 0
-  state = empty             ▷ frequency map or counter
-  best = 0
-  for R = 0 to n - 1
-    ADD arr[R] to state     ▷ expand right
-    while VIOLATED(state)   ▷ shrink left until valid
-      REMOVE arr[L] from state
-      L = L + 1
-    best = max(best, R - L + 1)
-  return best
-```
-
-### Minimum-window (find smallest valid) (pseudocode)
-
-```
-MIN-WINDOW(s, t)
-  need = frequency map of t
-  have = 0,  required = number of distinct chars in t
-  L = 0,  best = (∞, 0, 0)
-  for R = 0 to len(s) - 1
-    ADD s[R] to window_count
-    if s[R] in need and window_count[s[R]] == need[s[R]]
-      have = have + 1
-    while have == required         ▷ try to shrink
-      if R - L + 1 < best length
-        best = (R - L + 1, L, R)
-      REMOVE s[L] from window_count
-      if s[L] in need and window_count[s[L]] < need[s[L]]
-        have = have - 1
-      L = L + 1
-  return best
-```
-
-### Python templates
-
-```python
-from collections import deque
-from typing import Optional
-
-# ── Fixed-size window ────────────────────────────────────────────────────────
-def max_sum_fixed(arr: list[int], k: int) -> int:
-    window = sum(arr[:k])
-    best = window
-    for i in range(k, len(arr)):
-        window += arr[i] - arr[i - k]
-        best = max(best, window)
-    return best
-
-
-# ── Variable-size window (maximize length) ───────────────────────────────────
-def longest_valid_window(arr: list[int], k: int) -> int:
-    freq: dict[int, int] = {}
-    L = 0
-    best = 0
-    for R, val in enumerate(arr):
-        freq[val] = freq.get(val, 0) + 1
-        while len(freq) > k:
-            freq[arr[L]] -= 1
-            if freq[arr[L]] == 0:
-                del freq[arr[L]]
-            L += 1
-        best = max(best, R - L + 1)
-    return best
-
-
-# ── Minimum window (minimize length) ────────────────────────────────────────
-def min_window(s: str, t: str) -> str:
-    need: dict[str, int] = {}
-    for c in t:
-        need[c] = need.get(c, 0) + 1
-    have, required = 0, len(need)
-    window: dict[str, int] = {}
-    best: Optional[tuple[int, int]] = None
-    L = 0
-    for R, c in enumerate(s):
-        window[c] = window.get(c, 0) + 1
-        if c in need and window[c] == need[c]:
-            have += 1
-        while have == required:
-            if best is None or (R - L + 1) < (best[1] - best[0] + 1):
-                best = (L, R)
-            window[s[L]] -= 1
-            if s[L] in need and window[s[L]] < need[s[L]]:
-                have -= 1
-            L += 1
-    return s[best[0] : best[1] + 1] if best else ""
-```
 
 ---
 
@@ -340,11 +230,54 @@ def count_subarrays_with_exactly_k(nums: list[int], k: int) -> int:
 
 ---
 
-## Worked problems
+## Pitfalls
+
+1. **Treating variable-size as fixed-size.** Not shrinking `L` at all - just advancing `R`. Produces wrong answers on violation cases and may not terminate correctly.
+
+2. **Off-by-one on window size check.** In fixed windows: `window_size = R - L + 1`, not `R - L`. Forgetting the `+1` causes a window one element too small throughout.
+
+3. **Using sliding window when elements aren't contiguous.** If the problem allows skipping elements or selecting non-adjacent ones (e.g. "pick any k elements from the array"), there is no contiguous window - reach for sorting, heap, or DP instead.
+
+4. **Missing the exactly-K trap.** "Exactly K distinct" cannot be directly windowed because the window can't maintain a simple monotonic valid/invalid boundary. Apply `atMost(K) − atMost(K−1)`.
+
+5. **Shrinking past the violation.** In minimum-window, stopping the shrink loop too early (e.g., `while have == required: L += 1` without checking) misses the optimal left boundary. Always record best *before* shrinking.
+
+---
+
+## First 30 seconds
+
+*"Sliding window - contiguous sub-range, two pointers. Expand R one step at a time; shrink L whenever the window violates the constraint. Maintain the aggregate state (sum, frequency map) incrementally. O(n) because each element enters and leaves at most once."*
+
+Then clarify: fixed size K (simpler) or variable size (need a constraint to drive shrinking)?
+
+---
+
+## Related
+
+- [Two Pointers](./two-pointers.md) - parent pattern; sliding window is two-pointers with window semantics
+- [Prefix Sum](./prefix-sum.md) - alternative for arbitrary range queries without a constraint to drive shrinking
+- [Monotonic Stack](./monotonic-stack.md) - next-greater-element sibling; monotonic deque is the window-max version
+- [Deque](../data-structures/deque.md) - the data structure powering the monotonic deque CP-primitive
+- [Hash Table](../data-structures/hash-table.md) - frequency maps for character/value distribution in variable windows
+- [Fast & Slow Pointers](./fast-slow-pointers.md) - different two-pointer variant (cycle detection, not window)
+
+---
+
+## Practice problems
 
 ### 1. Maximum Sum Subarray of Size K
 
 Given an integer array `nums` and integer `k`, find the maximum sum of any contiguous subarray of length exactly `k`. Constraints: `1 ≤ k ≤ n ≤ 10⁵`, values in `[-10⁴, 10⁴]`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [2, 1, 5, 1, 3, 2], k = 3 | **Output:** 9
+  - **Explanation:** window [5,1,3] has the largest sum among all size-3 windows.
+- **Example 2**
+  - **Input:** nums = [2, 3, 4, 1, 5], k = 2 | **Output:** 7
+  - **Explanation:** window [3,4] sums to 7.
+
+**Constraints:** `1 ≤ k ≤ n ≤ 10⁵`, values in `[-10⁴, 10⁴]`.
 
 **Approach:** Fixed-size window. Compute the sum of the first `k` elements, then slide: subtract the element leaving the left, add the element entering the right. Track the running max. O(n) instead of O(nk) brute force.
 
@@ -370,6 +303,15 @@ def max_sum_subarray(nums: list[int], k: int) -> int:
 
 Given a string `s`, find the length of the longest substring without repeating characters. Constraints: `0 ≤ n ≤ 5×10⁴`, any ASCII characters.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "abcabcbb" | **Output:** 3
+  - **Explanation:** "abc" is the longest substring with no repeats.
+- **Example 2**
+  - **Input:** s = "bbbbb" | **Output:** 1
+
+**Constraints:** `0 ≤ n ≤ 5×10⁴`, `s` consists of English letters, digits, symbols, and spaces.
+
 **Approach:** Variable-size window. Maintain a set of characters in `[L, R]`. Expand `R`; when `s[R]` already in set (violation), advance `L` until the duplicate is removed. The window is always duplicate-free. This is O(n) because `L` only moves right.
 
 ```python
@@ -390,12 +332,25 @@ def length_of_longest_substring(s: str) -> int:
 **Duplicate problems:**
 - Longest Substring with At Most Two Distinct Characters (LC 159) - same pattern, `len(freq) > 2` is the violation.
 - Longest Substring with At Most K Distinct Characters (LC 340) - generalize to K.
+- Longest Repeating Character Replacement (LC 424) - count max-frequency char in window; violation when `window_len − max_freq > k`.
+- Fruit Into Baskets (LC 904) - at most 2 distinct "types" (k=2), different framing.
+- Max Consecutive Ones III (LC 1004) - at most K zeros allowed; same window violation structure.
 
 ---
 
 ### 3. Minimum Window Substring (LC 76)
 
 Given strings `s` and `t`, find the minimum window in `s` that contains every character of `t` (including duplicates). If none exists, return `""`. Constraints: `1 ≤ len(s), len(t) ≤ 10⁵`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "ADOBECODEBANC", t = "ABC" | **Output:** "BANC"
+  - **Explanation:** "BANC" is the smallest window containing all of A, B, C.
+- **Example 2**
+  - **Input:** s = "a", t = "aa" | **Output:** ""
+  - **Explanation:** s doesn't have two 'a's, so no valid window exists.
+
+**Constraints:** `1 ≤ len(s), len(t) ≤ 10⁵`, `s` and `t` consist of English letters.
 
 **Approach:** Minimum-window template. Track `need[c]` (how many of each `t` character we still need) and `have` (count of fully satisfied characters). Expand `R` to grow the window; once `have == required`, try to shrink `L` to minimize length. Every time we shrink, check if a character drops below its needed count (decrement `have`).
 
@@ -432,40 +387,18 @@ def min_window(s: str, t: str) -> str:
 
 ---
 
-### 4. Longest Substring with At Most K Distinct Characters (LC 340)
-
-Given string `s` and integer `k`, return the length of the longest substring with at most `k` distinct characters. Constraints: `1 ≤ k ≤ 10⁵`, `1 ≤ n ≤ 5×10⁴`.
-
-**Approach:** Variable-size window with a frequency map. Violation = `len(freq) > k`. On violation, shrink `L`: decrement `freq[s[L]]`, delete key if zero, advance `L`. Window length after shrink is `R - L + 1`.
-
-```python
-from collections import defaultdict
-
-def length_of_longest_substring_k_distinct(s: str, k: int) -> int:
-    freq: defaultdict[str, int] = defaultdict(int)
-    L = best = 0
-    for R, c in enumerate(s):
-        freq[c] += 1
-        while len(freq) > k:
-            freq[s[L]] -= 1
-            if freq[s[L]] == 0:
-                del freq[s[L]]
-            L += 1
-        best = max(best, R - L + 1)
-    return best
-```
-
-**Complexity:** O(n) time, O(k) space.
-
-**Duplicate problems:**
-- Fruit Into Baskets (LC 904) - identical: at most 2 distinct "types" (k=2), different framing.
-- Max Consecutive Ones III (LC 1004) - at most K zeros allowed; same window violation structure.
-
----
-
-### 5. Sliding Window Maximum (LC 239)
+### 4. Sliding Window Maximum (LC 239)
 
 Given array `nums` and integer `k`, return an array of the maximum value in every contiguous window of size `k`. Constraints: `1 ≤ k ≤ n ≤ 10⁵`, values in `[-10⁴, 10⁴]`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,3,-1,-3,5,3,6,7], k = 3 | **Output:** [3,3,5,5,6,7]
+  - **Explanation:** each output entry is the max of the current size-3 window as it slides right.
+- **Example 2**
+  - **Input:** nums = [1], k = 1 | **Output:** [1]
+
+**Constraints:** `1 ≤ k ≤ n ≤ 10⁵`, values in `[-10⁴, 10⁴]`.
 
 **Approach:** Monotonic deque (CP-primitive). Maintain a deque of indices in decreasing order of value. For each new element, pop smaller elements from the back (they can never be the max in any future window). Pop the front if it's outside the window. Front = current max. Each element is pushed and popped at most once → O(n).
 
@@ -494,109 +427,18 @@ def max_sliding_window(nums: list[int], k: int) -> list[int]:
 
 ---
 
-## Pitfalls
-
-1. **Treating variable-size as fixed-size.** Not shrinking `L` at all - just advancing `R`. Produces wrong answers on violation cases and may not terminate correctly.
-
-2. **Off-by-one on window size check.** In fixed windows: `window_size = R - L + 1`, not `R - L`. Forgetting the `+1` causes a window one element too small throughout.
-
-3. **Using sliding window when elements aren't contiguous.** If the problem allows skipping elements or selecting non-adjacent ones (e.g. "pick any k elements from the array"), there is no contiguous window - reach for sorting, heap, or DP instead.
-
-4. **Missing the exactly-K trap.** "Exactly K distinct" cannot be directly windowed because the window can't maintain a simple monotonic valid/invalid boundary. Apply `atMost(K) − atMost(K−1)`.
-
-5. **Shrinking past the violation.** In minimum-window, stopping the shrink loop too early (e.g., `while have == required: L += 1` without checking) misses the optimal left boundary. Always record best *before* shrinking.
-
----
-
-## First 30 seconds
-
-*"Sliding window - contiguous sub-range, two pointers. Expand R one step at a time; shrink L whenever the window violates the constraint. Maintain the aggregate state (sum, frequency map) incrementally. O(n) because each element enters and leaves at most once."*
-
-Then clarify: fixed size K (simpler) or variable size (need a constraint to drive shrinking)?
-
----
-
-## Related
-
-- [Two Pointers](./two-pointers.md) - parent pattern; sliding window is two-pointers with window semantics
-- [Prefix Sum](./prefix-sum.md) - alternative for arbitrary range queries without a constraint to drive shrinking
-- [Monotonic Stack](./monotonic-stack.md) - next-greater-element sibling; monotonic deque is the window-max version
-- [Deque](../data-structures/deque.md) - the data structure powering the monotonic deque CP-primitive
-- [Hash Table](../data-structures/hash-table.md) - frequency maps for character/value distribution in variable windows
-- [Fast & Slow Pointers](./fast-slow-pointers.md) - different two-pointer variant (cycle detection, not window)
-
----
-
-## Practice problems
-
-### 1. Longest Substring Without Repeating Characters (LC 3)
-
-Array of ASCII characters. Find the length of the longest substring (contiguous) with no repeated characters. Constraints: `0 ≤ n ≤ 5×10⁴`.
-
-**Approach:** Variable-size window with a `set`. Expand R; when `s[R]` already in set, advance L removing characters until the duplicate is gone. Window is always duplicate-free. Classic variable-window with O(1) per step.
-
-```python
-def length_of_longest_substring(s: str) -> int:
-    seen: set[str] = set()
-    L = best = 0
-    for R, c in enumerate(s):
-        while c in seen:
-            seen.discard(s[L])
-            L += 1
-        seen.add(c)
-        best = max(best, R - L + 1)
-    return best
-```
-
-**Complexity:** O(n) time, O(min(n, ∣Σ∣)) space.
-
-**Duplicate problems:**
-- Longest Substring with At Most Two Distinct Characters (LC 159) - change set to frequency map, `len(freq) > 2` as violation.
-- Longest Repeating Character Replacement (LC 424) - count max-frequency char in window; violation when `window_len − max_freq > k`.
-
----
-
-### 2. Minimum Window Substring (LC 76)
-
-String `s` and string `t`. Find the minimum-length substring of `s` containing all characters of `t`. Return `""` if none. Constraints: `1 ≤ n, m ≤ 10⁵`.
-
-**Approach:** Minimum-window template. `need` map for `t`, `have` counter. Expand R; once `have == required`, record window length then shrink L to find tighter bounds. Shrink loop stops when `have < required`.
-
-```python
-from collections import defaultdict
-
-def min_window(s: str, t: str) -> str:
-    need: defaultdict[str, int] = defaultdict(int)
-    for c in t:
-        need[c] += 1
-    have, required = 0, len(need)
-    window: defaultdict[str, int] = defaultdict(int)
-    best_len, best_L = float("inf"), 0
-    L = 0
-    for R, c in enumerate(s):
-        window[c] += 1
-        if c in need and window[c] == need[c]:
-            have += 1
-        while have == required:
-            if R - L + 1 < best_len:
-                best_len, best_L = R - L + 1, L
-            window[s[L]] -= 1
-            if s[L] in need and window[s[L]] < need[s[L]]:
-                have -= 1
-            L += 1
-    return s[best_L : best_L + best_len] if best_len != float("inf") else ""
-```
-
-**Complexity:** O(n + m) time, O(∣Σ∣) space.
-
-**Duplicate problems:**
-- Smallest Range Covering Elements from K Lists (LC 632) - generalized minimum-window with multi-list state.
-
----
-
-### 3. Subarrays with K Different Integers (LC 992)
+### 5. Subarrays with K Different Integers (LC 992)
 
 Integer array `nums` with values in `[1, n]`. Count subarrays with exactly `k` distinct integers. Constraints: `1 ≤ k ≤ n ≤ 2×10⁴`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,2,1,2,3], k = 2 | **Output:** 7
+  - **Explanation:** subarrays with exactly 2 distinct integers: [1,2], [2,1], [1,2,1], [2,1,2], [1,2,1,2], [2,1,2,3], [2,3].
+- **Example 2**
+  - **Input:** nums = [1,2,1,3,4], k = 3 | **Output:** 3
+
+**Constraints:** `1 ≤ k ≤ n ≤ 2×10⁴`, `1 ≤ nums[i] ≤ n`.
 
 **Approach:** Direct sliding window can't handle "exactly K" because validity isn't monotonic. Apply `atMost(K) − atMost(K−1)`. `atMost(limit)` counts subarrays with ≤ limit distinct values using a standard variable window; for each R, every window `[L..R]`, `[L+1..R]`, …, `[R..R]` is valid → add `R − L + 1`.
 

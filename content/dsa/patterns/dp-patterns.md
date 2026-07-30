@@ -28,11 +28,7 @@
 
 ## How it works
 
-<!-- PA2: the mechanic + a REAL diagram. -->
-
-## Skeleton
-
-<!-- PA3: reusable CLRS pseudocode + a Python template with a real signature, no syntax errors, and a `# your logic here` marker. -->
+<!-- PA2: the mechanic + a REAL diagram. Examples generic - no LC/problem names, describe the mechanic instead. -->
 
 ## Complexity
 
@@ -50,10 +46,6 @@
 
 <!-- PA11 (gated): the contest-flavored tricks/variants of THIS mechanic - the ones that show up in contests, not basic interviews (sliding window → monotonic-deque window-max; two pointers → meet-in-the-middle; binary-search-on-answer). ≥2, each with a one-line "why for CP". Distinct from PA5 (general twists). -->
 
-## Worked problems
-
-<!-- PA6: 3–5 problems reusing the pattern, each with a 2–3 sentence approach sketch (not a full solution). Favor staples; note constraint ranges where they change the approach. -->
-
 ## Pitfalls
 
 <!-- PA7: ≥2 common misapplications. -->
@@ -68,5 +60,4 @@
 
 ## Practice problems
 
-<!-- U6: ≥3 problems, each a WORKED entry (### subheading per problem): (1) full problem statement in 2–3 sentences + constraints where they matter; (2) approach/insight in prose; (3) short runnable Python solution; (4) time/space complexity. EVERY PROBLEM MUST EXERCISE A DISTINCT TECHNIQUE - no duplicates padding the count.
-     Note: keep this distinct from PA6 (Worked problems = brief approach sketches reusing the pattern). U6 here = fully worked, with code. -->
+<!-- U6: ≥3 problems, each a WORKED entry (### subheading per problem): (1) full problem statement in 2–3 sentences; (2) worked examples (2–3, nested-list format, Input|Output + Explanation); (3) constraints; (4) approach/insight in prose; (5) short runnable Python solution; (6) time/space complexity, one line after the code. EVERY PROBLEM MUST EXERCISE A DISTINCT TECHNIQUE - no duplicates padding the count. This is the article's sole problems section - no separate Skeleton or sketch-only worked-problems section exists. -->

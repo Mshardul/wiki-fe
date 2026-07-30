@@ -12,12 +12,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -79,40 +77,6 @@ Final heap: {5, 11, 12} - the 3 largest, min-heap top = 5 = the 3rd largest
 
 **Invariant:** after processing any prefix of the stream, the heap holds exactly the k largest elements seen so far (or fewer, if fewer than k have arrived) - the top is always the smallest of those k, i.e. the current k-th-largest overall.
 
-## Skeleton
-
-**Pseudocode (CLRS style):**
-
-```
-TopK(stream, k) → k largest elements:
-    H ← MinHeap()
-    for each x in stream
-        if |H| < k
-            H.push(x)
-        else if x > H.top
-            H.pop()
-            H.push(x)
-    return H                       ▷ contains the k largest; H.top is the k-th largest
-```
-
-**Python template:**
-
-```python
-import heapq
-from typing import Iterable
-
-def top_k_largest(stream: Iterable[int], k: int) -> list[int]:
-    heap: list[int] = []
-    for x in stream:
-        if len(heap) < k:
-            heapq.heappush(heap, x)
-        elif x > heap[0]:
-            heapq.heapreplace(heap, x)
-    return heap
-```
-
-`heapq.heapreplace(heap, x)` does one pop-then-push in a single O(log k) sift, cheaper than a separate `heappop` + `heappush` call pair. For "k smallest," negate values on push/peek (Python's `heapq` is min-heap only) or swap to tracking a max-heap-of-negatives the same way [Two Heaps](./two-heaps.md) does for its lower half.
-
 ## Complexity
 
 | Operation | Time | Space |
@@ -166,32 +130,13 @@ If the k largest are needed from values in a small known range `[0, V]`, skip th
 
 **Why for CP:** contest constraints often bound values tightly (e.g. scores 0-100); recognizing this swaps a log factor for a linear scan.
 
-## Worked problems
-
-### 1. Kth Largest Element in a Stream (LC 703)
-
-A class must support repeated `add(val)` calls, each returning the current k-th largest element seen so far across the entire history of adds.
-
-**Approach:** the canonical online version of this pattern - maintain the size-k min-heap as a persistent object across calls, instead of a one-shot pass over a fixed array. Each `add` is one push (and possibly one evict) - O(log k) per call, O(k) space held between calls.
-
-### 2. Find K Pairs with Smallest Sums (LC 373)
-
-Given two sorted arrays and k, find the k pairs `(u, v)` with the smallest sums.
-
-**Approach:** treat pairs starting from `(0, j)` for each row as k-way-merge-like sorted sequences, but bound the heap to size k as in top-K rather than merging everything - push candidate pairs lazily (only `(i, 0)` initially, then `(i, j+1)` after popping `(i, j)`) and stop after k pops. Blends top-K's "stop early, bound the heap" discipline with k-way merge's "advance the source that was just popped."
-
-### 3. Sort Characters by Frequency (LC 451)
-
-Given a string, sort characters by decreasing frequency.
-
-**Approach:** not a fixed top-k - every distinct character is output, so this is top-K's frequency-counting variation taken to its limit (k = number of distinct characters). Shows the boundary where "top-k frequent" generalizes into "sort by frequency," and a heap becomes strictly worse than just sorting the `(count, char)` pairs directly, O(m log m).
-
 ## Pitfalls
 
 - **Using a max-heap for "k largest."** The natural instinct is "I want the largest, so max-heap" - but a max-heap of *all* elements just gives you O(1) access to the single largest, not an efficient size-k window. The trick is inverting: a **min-heap of size k** lets you cheaply find and evict the *weakest* of your current top-k. Getting this backwards means the heap grows unbounded or evicts the wrong element.
 - **Forgetting to compare against the top before pushing.** Once the heap has k elements, a new element that's smaller than the current min-heap top must be **skipped**, not pushed-then-popped - pushing it first and immediately popping it back out is wasted work (and with `heapq.heapreplace`, actively wrong if you don't check `x > heap[0]` first, since `heapreplace` unconditionally swaps).
 - **Off-by-one on "at most k" vs "exactly k."** When fewer than k elements have arrived, just push unconditionally - the `if len(heap) < k` guard is doing real work, not padding; skipping it corrupts the heap by comparing against `heap[0]` on an empty heap.
 - **Ties at the boundary.** When multiple elements equal the k-th value, "the k largest" is ambiguous about which equal element is included - read the problem statement's tie-breaking rule (often "any valid answer" or "by original index") before assuming strict `>` vs `≥` in the eviction comparison.
+- **Misconception: the heap yields sorted output.** Finishing with a size-k heap gives you the *set* of k largest elements, not that set *in sorted order* - the heap's internal array order is heap-order (parent ≥ children in a min-heap-of-max-k setup), not a total order. If the problem wants the k largest returned sorted, add one more O(k log k) sort on just those k elements - negligible next to the O(n log k) already spent building the heap.
 
 ## First 30 seconds
 
@@ -255,6 +200,7 @@ def find_kth_largest(nums: List[int], k: int) -> int:
 **Duplicate problems:**
 - Kth Largest Element in a Stream (LC 703) - identical heap mechanic, but the heap persists across repeated `add()` calls instead of one-shot over a fixed array.
 - Top K Frequent Elements (LC 347) - same top-K heap, but ordered by a computed frequency count instead of the raw value.
+- Find K Pairs with Smallest Sums (LC 373) - same "bound the heap to size k, evict the weakest" discipline; full entry lives in [K-Way Merge](./k-way-merge.md) since the candidates are lazily-generated sorted streams, not a flat unsorted array.
 
 ### 2. Top K Frequent Elements (LC 347)
 

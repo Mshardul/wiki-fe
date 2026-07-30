@@ -12,12 +12,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -77,60 +75,6 @@ hi = min-heap (shown as sorted list, smallest = top)
 Invariant after each insert: `len(lo) == len(hi)` or `len(lo) == len(hi) + 1`. The median is `lo.top` (odd total) or `(lo.top + hi.top) / 2` (even total).
 
 **Why the rebalance is O(log n):** each insert is at most two heap operations (one push + one push/pop pair for rebalancing) - each O(log n).
-
-## Skeleton
-
-**Pseudocode (CLRS style):**
-
-```
-MedianFinder-Init():
-    lo ← MaxHeap()       ▷ lower half
-    hi ← MinHeap()       ▷ upper half
-
-MedianFinder-Add(num):
-    if lo is empty or num ≤ lo.top
-        lo.push(num)
-    else
-        hi.push(num)
-    ▷ rebalance so |lo| - |hi| ∈ {0, 1}
-    if |lo| > |hi| + 1
-        hi.push(lo.pop())
-    else if |hi| > |lo|
-        lo.push(hi.pop())
-
-MedianFinder-GetMedian() → float:
-    if |lo| > |hi|
-        return lo.top
-    return (lo.top + hi.top) / 2.0
-```
-
-**Python template:**
-
-```python
-import heapq
-
-class MedianFinder:
-    def __init__(self) -> None:
-        self._lo: list[int] = []   # max-heap (negate values)
-        self._hi: list[int] = []   # min-heap
-
-    def add_num(self, num: int) -> None:
-        if not self._lo or num <= -self._lo[0]:
-            heapq.heappush(self._lo, -num)
-        else:
-            heapq.heappush(self._hi, num)
-        if len(self._lo) > len(self._hi) + 1:
-            heapq.heappush(self._hi, -heapq.heappop(self._lo))
-        elif len(self._hi) > len(self._lo):
-            heapq.heappush(self._lo, -heapq.heappop(self._hi))
-
-    def find_median(self) -> float:
-        if len(self._lo) > len(self._hi):
-            return float(-self._lo[0])
-        return (-self._lo[0] + self._hi[0]) / 2.0
-```
-
-Python's `heapq` is a **min-heap only**. Simulate a max-heap by **negating values** on push and negating again on pop/peek. This is the standard Python two-heaps idiom - always negate `lo` entries.
 
 ## Complexity
 
@@ -237,38 +181,6 @@ Python's `sortedcontainers.SortedList` gives O(log n) insert, delete, and index 
 
 Use the hand-rolled implementation above rather than `SortedList` from the `sortedcontainers` third-party package.
 
-## Worked problems
-
-### 1. Find Median from Data Stream (LC 295)
-
-Design a data structure supporting `addNum(int num)` and `findMedian() → float`. The median of an even-length stream is the average of the two middle values. n ≤ 5 × 10⁴ numbers, values up to ±10⁶.
-
-**Approach (n ≤ 5 × 10⁴):** two heaps as in the skeleton above - O(log n) per add, O(1) per query. The constraint confirms this: at 5 × 10⁴ elements with log factor, total work is well within a second. Use the negation trick for Python's min-heap-only `heapq`.
-
-### 2. Sliding Window Median (LC 480)
-
-Given array `nums` and window size `k`, return the median of each window of size k as the window slides from left to right. `1 ≤ k ≤ n ≤ 10⁵`, values up to ±2³¹.
-
-**Approach (n ≤ 10⁵, sliding window):** two heaps + lazy deletion (see CP-primitives). On each step, add `nums[right]` and remove `nums[right - k]`. After rebalancing, read the median from heap tops. The lazy deletion avoids O(k) linear removal at each step - O(n log k) total. Values near ±2³¹ fit in Python ints natively; in C++ use `long long` for the median average to avoid overflow.
-
-### 3. IPO (LC 502) - maximize capital
-
-Given n projects each with `profit[i]` and `capital[i]`, and k project slots starting with initial capital w, greedily pick the available project with highest profit at each step. n ≤ 10⁵.
-
-**Approach:** two heaps with different roles - a min-heap on capital (all projects sorted by cost) and a max-heap on profit (currently affordable projects). Each round: pop all projects with `capital[i] ≤ w` from the min-heap into the max-heap, then pick the max-profit one. This is two heaps used as a "gating" structure rather than a median partition - the same pattern of maintaining a dynamic affordable set and extracting the best from it. O(n log n) total.
-
-### 4. Maximize Capital After k Investments (variant of IPO)
-
-Same as IPO but projects have a deadline - project i is only available during time window `[avail_i, deadline_i]`. n ≤ 10³.
-
-**Approach (n ≤ 10³):** at each time step, add projects whose `avail` has arrived to the profit max-heap, and remove (lazy-delete) any that have passed their deadline. The time-windowed availability turns this into a sliding-window two-heaps problem. At n ≤ 10³ a sorted list scan per step is also acceptable.
-
-### 5. Find Right Interval (LC 436)
-
-Given a set of intervals, for each interval find the interval with the smallest start point ≥ its end point. n ≤ 2 × 10⁴.
-
-**Approach:** not a pure two-heaps problem - sort by start, binary-search for each end. Included here because it's frequently confused with interval-tree or two-heaps problems in recognition. The distinguishing signal: you're looking up a single next-interval, not maintaining a running median or affordable set. Reach for sorted array + `bisect` here, not two heaps.
-
 ## Pitfalls
 
 - **Forgetting to negate in Python.** Python's `heapq` is a min-heap. `lo` (max-heap of lower half) must store `-num`. Forgetting to negate - or negating when reading `lo[0]` - produces silently wrong medians. Always: `heappush(lo, -num)` and `median = -lo[0]`.
@@ -292,6 +204,15 @@ Given a set of intervals, for each interval find the interval with the smallest 
 ### 1. Find Median from Data Stream (LC 295)
 
 Implement `addNum(int num)` and `findMedian() → float` for a growing stream. Median of even-length is the average of the two middle values. n ≤ 5 × 10⁴.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** addNum(1), addNum(2), findMedian() | **Output:** 1.5
+- **Example 2**
+  - **Input:** addNum(3), findMedian() | **Output:** 2.0
+  - **Explanation:** stream is now [1,2,3], median is the middle value.
+
+**Constraints:** `-10⁵ ≤ num ≤ 10⁵`, up to `5×10⁴` calls to `addNum` and `findMedian`.
 
 **Approach:** standard two-heaps skeleton - max-heap `lo` for lower half, min-heap `hi` for upper half. Insert into correct half, rebalance, read tops. O(log n) per add, O(1) per query.
 
@@ -328,6 +249,14 @@ class MedianFinder:
 ### 2. Sliding Window Median (LC 480)
 
 Given `nums` (n ≤ 10⁵) and window size k, return the median of each k-sized window as it slides. Values can be ±2³¹.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,3,-1,-3,5,3,6,7], k = 3 | **Output:** [1.0,-1.0,-1.0,3.0,5.0,6.0]
+- **Example 2**
+  - **Input:** nums = [1,2,3,4,2,3,1,4,2], k = 3 | **Output:** [2.0,3.0,3.0,3.0,2.0,3.0,2.0]
+
+**Constraints:** `1 ≤ k ≤ n ≤ 10⁵`, `-2³¹ ≤ nums[i] ≤ 2³¹-1`.
 
 **Approach:** two heaps + lazy deletion. Add incoming element, lazy-remove outgoing element, rebalance by effective sizes. Cast to float for the average to handle near-overflow values.
 
@@ -405,6 +334,15 @@ def medianSlidingWindow(nums: List[int], k: int) -> List[float]:
 
 n projects, each with `profits[i]` and `capital[i]`. Starting capital w, do at most k projects. Each project adds its profit to w. Maximize final capital. n ≤ 10⁵, k ≤ 10⁵.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** k = 2, w = 0, profits = [1,2,3], capital = [0,1,1] | **Output:** 4
+  - **Explanation:** start with project 0 (capital 0 ≤ w=0), gain 1, w=1; then project 2 (capital 1 ≤ w=1), gain 3, w=4.
+- **Example 2**
+  - **Input:** k = 3, w = 0, profits = [1,2,3], capital = [0,1,2] | **Output:** 6
+
+**Constraints:** `1 ≤ k ≤ 10⁵`, `0 ≤ w ≤ 10⁹`, `n == profits.length == capital.length`, `1 ≤ n ≤ 10⁵`.
+
 **Approach:** min-heap on (capital, profit) for all projects; max-heap for available profits. Each round: push all affordable projects to the profit max-heap, pick the best. O(n log n + k log n).
 
 ```python
@@ -428,5 +366,4 @@ def findMaximizedCapital(k: int, w: int, profits: List[int], capital: List[int])
 **Complexity:** O(n log n) sort + O((n + k) log n) heap ops = O((n + k) log n) total.
 
 **Duplicate problems:**
-- Task Scheduler (LC 621) - greedy with a max-heap of frequencies; same "pick the most abundant available" structure.
 - Reorganize String (LC 767) - place most-frequent characters greedily; max-heap, not two heaps.

@@ -11,12 +11,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -107,46 +105,6 @@ The sweep only ever needs to look at `result[-1]` (the most recently closed grou
 
 ---
 
-## Skeleton
-
-**Pseudocode (CLRS style):**
-
-```
-MERGE-INTERVALS(A, n)
-  SORT(A, key = start)                 ▷ sort ascending by start; O(n log n)
-  let result = empty list
-  APPEND(result, A[1])
-  for i = 2 to n
-    last = result[length(result)]
-    if A[i].start <= last.end          ▷ overlap or touch - adjust to < for strict semantics
-      last.end = MAX(last.end, A[i].end)
-    else
-      APPEND(result, A[i])
-  return result
-```
-
-**Python template:**
-
-```python
-def merge_intervals(intervals: list[list[int]]) -> list[list[int]]:
-    if not intervals:
-        return []
-
-    intervals.sort(key=lambda x: x[0])   # sort by start
-    result: list[list[int]] = [intervals[0]]
-
-    for start, end in intervals[1:]:
-        last = result[-1]
-        if start <= last[1]:            # your logic here: <= vs < depends on the problem's overlap definition
-            last[1] = max(last[1], end)
-        else:
-            result.append([start, end])
-
-    return result
-```
-
----
-
 ## Complexity
 
 Time: **O(n log n)**, dominated entirely by the sort - the sweep itself is a single O(n) pass. Space: **O(n)** for the result list (or O(log n)–O(n) extra for the sort's own recursion/temp buffers, depending on the sort implementation) - O(1) *extra* beyond the output only if sorting is done in-place and the merge overwrites the input array.
@@ -213,40 +171,6 @@ def compress_coordinates(intervals: list[list[int]]) -> list[list[int]]:
 
 ---
 
-## Worked problems
-
-### 1. Merge Intervals (LC 56)
-
-Given an array of intervals, merge all overlapping ones and return the non-overlapping set that covers all the input ranges. Constraints: `1 ≤ n ≤ 10⁴`.
-
-**Approach sketch:** the textbook case - sort by start, sweep, merge when `start <= result[-1].end`. This problem's own examples confirm touching endpoints merge (`[1,4]` and `[4,5]` → `[1,5]`), so the comparison is non-strict `<=`.
-
-### 2. Insert Interval (LC 57)
-
-Given a sorted, non-overlapping list of intervals and one new interval, insert it and merge as needed, keeping the list sorted and disjoint. Constraints: `0 ≤ n ≤ 10⁵`.
-
-**Approach sketch:** because the input is already sorted and disjoint, this isn't "append then re-run merge-intervals from scratch" - binary-search for the first interval whose `end >= new.start` (that's the first one that could possibly overlap; everything before it ends too early to ever touch the new interval, so they're copied through unchanged). From that index, walk forward absorbing every subsequent interval whose `start <= new.end` into a running merged `[lo, hi]`, stop at the first one that doesn't overlap, then splice `[lo, hi]` in and copy the remaining tail unchanged. The binary search only saves the *locate* step (O(log n) instead of O(n)); the splice/copy is still O(n) because output size is O(n) - so the win is real but partial, not an asymptotic drop to O(log n) overall.
-
-### 3. Meeting Rooms II (LC 253)
-
-Given meeting time intervals, find the minimum number of conference rooms required to hold all meetings without conflict. Constraints: `1 ≤ n ≤ 10⁴`.
-
-**Approach sketch:** this is not a merge - merging tells you which meetings share *some* room across their whole span, not how many rooms are needed *simultaneously*. Sort meetings by start; push each meeting's end time onto a min-heap, popping first whenever the heap's smallest end time is `<=` the current meeting's start (a room just freed up). The heap's peak size across the sweep is the answer. (Equivalently, the event-based sweep-line from CP-primitives #1 solves this without a heap.)
-
-### 4. Non-overlapping Intervals (LC 435)
-
-Given a list of intervals, find the minimum number to remove so the rest are non-overlapping. Constraints: `1 ≤ n ≤ 10⁵`.
-
-**Approach sketch:** the trap - this is greedy-by-**end** time, not the usual sort-by-start. Sort by end; walk left to right keeping track of the last kept interval's end. Whenever the next interval's start is before that end, it must be removed (greedily keep the interval that frees up the earliest end time for future intervals, which is provably optimal). Count removals instead of building a merged list.
-
-### 5. Interval List Intersections (LC 986)
-
-Given two lists of disjoint, sorted intervals, return their pairwise intersections. Constraints: `1 ≤ n, m ≤ 1000`.
-
-**Approach sketch:** this is a genuine Two Pointers problem, not Merge Intervals - one index walks each list. At each step compute `[max(a.start, b.start), min(a.end, b.end)]`; if that range is valid (`start <= end`), record it. Advance whichever of the two current intervals has the smaller end time, since it can't intersect anything further along the other list.
-
----
-
 ## Pitfalls
 
 1. **Getting the boundary condition backwards.** Using `<` when the problem's definition of "overlap" includes touching endpoints (or vice versa) silently produces a plausible but wrong merged list - it never crashes, so this bug survives casual testing. Always check the problem's own worked example for a touching-endpoint case (`[1,4]`/`[4,5]`) before picking `<` or `<=`.
@@ -276,6 +200,16 @@ Given two lists of disjoint, sorted intervals, return their pairwise intersectio
 
 Given an array of `intervals` where `intervals[i] = [start_i, end_i]`, merge all overlapping intervals and return an array of the non-overlapping intervals that cover all the ranges in the input. Constraints: `1 ≤ n ≤ 10⁴`, `0 ≤ start_i ≤ end_i ≤ 10⁴`.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** intervals = [[1,3],[2,6],[8,10],[15,18]] | **Output:** [[1,6],[8,10],[15,18]]
+  - **Explanation:** [1,3] and [2,6] overlap, merged into [1,6].
+- **Example 2**
+  - **Input:** intervals = [[1,4],[4,5]] | **Output:** [[1,5]]
+  - **Explanation:** touching endpoints (4 == 4) still count as overlapping.
+
+**Constraints:** `1 ≤ n ≤ 10⁴`, `0 ≤ start_i ≤ end_i ≤ 10⁴`.
+
 **Approach.** Sort by start. Walk the sorted list keeping a `result` list; if the current interval's start is `<=` the last merged interval's end, extend the end to the max of the two ends - otherwise start a new group. Correctness relies entirely on the sort: once a gap opens between `result[-1].end` and the next start, no later interval (all of which start even later) can close it.
 
 ```python
@@ -295,6 +229,7 @@ def merge(intervals: list[list[int]]) -> list[list[int]]:
 **Complexity.** O(n log n) time (sort dominates), O(n) space for the result (O(log n)-O(n) extra for the sort itself, implementation-dependent).
 
 **Duplicate problems:**
+- Insert Interval (LC 57) - already-sorted, disjoint input plus one new interval; binary-search the insertion point instead of re-sorting, then absorb overlaps the same way.
 - Employee Free Time (LC 759) - flatten all employees' intervals into one list, run the identical merge, then report the gaps between consecutive merged intervals.
 - Merge Sorted Array (LC 88) - different data shape (values, not intervals), but the same "sorted input, single sweep, no re-sorting needed" spirit.
 
@@ -303,6 +238,15 @@ def merge(intervals: list[list[int]]) -> list[list[int]]:
 ### 2. Meeting Rooms II (LC 253)
 
 Given an array of meeting time intervals, return the minimum number of conference rooms required so no two meetings using the same room overlap. Constraints: `1 ≤ n ≤ 10⁴`, `0 ≤ start_i < end_i ≤ 10⁶`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** intervals = [[0,30],[5,10],[15,20]] | **Output:** 2
+  - **Explanation:** [5,10] and [15,20] both overlap [0,30] at different times, needing a 2nd room at peak, but never a 3rd since [5,10] ends before [15,20] starts.
+- **Example 2**
+  - **Input:** intervals = [[7,10],[2,4]] | **Output:** 1
+
+**Constraints:** `1 ≤ n ≤ 10⁴`, `0 ≤ start_i < end_i ≤ 10⁶`.
 
 **Approach.** This needs concurrency count, not a merged shape, so a plain merge sweep is the wrong tool. Sort meetings by start time. Maintain a min-heap of currently-occupied rooms' end times. For each meeting, first pop-while the heap's smallest end time is `<=` the meeting's start (that room is now free and reusable), then push the current meeting's end time. The heap's maximum size at any point during the scan is the answer.
 
@@ -326,14 +270,59 @@ def min_meeting_rooms(intervals: list[list[int]]) -> int:
 **Complexity.** O(n log n) time (sort plus n heap operations, each O(log n)), O(n) space for the heap in the worst case (all meetings overlapping).
 
 **Duplicate problems:**
-- Minimum Number of Arrows to Burst Balloons (LC 452) - same "sort + track a running boundary" family, but greedy-by-end with a counter instead of a heap since it only needs a count of groups, not a room-reuse simulation.
 - Car Pooling (LC 1094) - identical event-sweep-line shape (CP-primitives #1) with capacity in place of room count.
 
 ---
 
-### 3. Interval List Intersections (LC 986)
+### 3. Non-overlapping Intervals (LC 435)
+
+Given an array of intervals, find the minimum number to remove so the rest are non-overlapping. Constraints: `1 ≤ n ≤ 10⁵`, `-5×10⁴ ≤ start_i < end_i ≤ 5×10⁴`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** intervals = [[1,2],[2,3],[3,4],[1,3]] | **Output:** 1
+  - **Explanation:** remove [1,3] and the rest are non-overlapping.
+- **Example 2**
+  - **Input:** intervals = [[1,2],[1,2],[1,2]] | **Output:** 2
+  - **Explanation:** remove two of the three duplicates.
+
+**Constraints:** `1 ≤ n ≤ 10⁵`, `-5×10⁴ ≤ start_i < end_i ≤ 5×10⁴`.
+
+**Approach.** The trap: this is greedy-by-**end** time, not the usual sort-by-start. Sort by end; walk left to right keeping track of the last kept interval's end. Whenever the next interval's start is before that end, it must be removed (greedily keeping the interval that frees up the earliest end time for future intervals is provably optimal). Count removals instead of building a merged list.
+
+```python
+def erase_overlap_intervals(intervals: list[list[int]]) -> int:
+    if not intervals:
+        return 0
+    intervals.sort(key=lambda x: x[1])
+    removals = 0
+    last_end = intervals[0][1]
+    for start, end in intervals[1:]:
+        if start < last_end:
+            removals += 1
+        else:
+            last_end = end
+    return removals
+```
+
+**Complexity.** O(n log n) time (sort dominates), O(1) extra space.
+
+**Duplicate problems:**
+- Minimum Number of Arrows to Burst Balloons (LC 452) - identical sort-by-end greedy sweep; counts arrows (groups) instead of removals, but the same core loop.
+
+---
+
+### 4. Interval List Intersections (LC 986)
 
 Given two lists `firstList` and `secondList` of closed, pairwise-disjoint, sorted intervals, return the list of their pairwise intersections. Constraints: `0 ≤ n, m ≤ 1000`, `-10⁹ ≤ start_i ≤ end_i ≤ 10⁹`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** first = [[0,2],[5,10],[13,23],[24,25]], second = [[1,5],[8,12],[15,24],[25,26]] | **Output:** [[1,2],[5,5],[8,10],[15,23],[24,24],[25,25]]
+- **Example 2**
+  - **Input:** first = [[1,3],[5,9]], second = [] | **Output:** []
+
+**Constraints:** `0 ≤ n, m ≤ 1000`, `-10⁹ ≤ start_i ≤ end_i ≤ 10⁹`.
 
 **Approach.** This is Two Pointers, not a merge sweep - each list is already internally sorted and disjoint, so walk one index into each list independently. At every step, the candidate intersection is `[max(a.start, b.start), min(a.end, b.end)]`; keep it only if that range is valid (`start <= end`). Advance whichever interval has the smaller end, since by definition it cannot intersect anything further along in the *other* list.
 

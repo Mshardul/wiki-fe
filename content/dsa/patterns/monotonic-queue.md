@@ -11,12 +11,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -77,44 +75,6 @@ i=4  5 >= nums[3]=-3, pop 3
 
 Each index is pushed exactly once and popped at most once (from either end) across the whole run - that's the O(n) argument, not "it feels linear."
 
-## Skeleton
-
-**Pseudocode (CLRS-style contract):**
-
-```
-MONOTONIC-QUEUE-MAX(A, k)
-1   Q = empty deque                    ▷ stores indices, values decreasing
-2   result = empty list
-3   for i = 0 to A.length − 1
-4       while Q not empty and A[Q.back] ≤ A[i]
-5           Q.pop_back()                ▷ evict dominated
-6       Q.push_back(i)
-7       if Q.front == i − k
-8           Q.pop_front()               ▷ evict expired
-9       if i ≥ k − 1
-10          result.append(A[Q.front])
-11  return result
-```
-
-**Python template (paste-and-adapt):**
-
-```python
-from collections import deque
-
-def monotonic_queue_template(nums: list[int], k: int) -> list[int]:
-    dq: deque[int] = deque()   # indices; nums[dq[i]] strictly decreasing for max-queue
-    result = []
-    for i, x in enumerate(nums):
-        while dq and nums[dq[-1]] <= x:   # your logic here: flip to >= for min-queue
-            dq.pop()
-        dq.append(i)
-        if dq[0] <= i - k:                # your logic here: expiry condition for this problem
-            dq.popleft()
-        if i >= k - 1:                    # your logic here: when a window is "complete"
-            result.append(nums[dq[0]])
-    return result
-```
-
 ## Complexity
 
 **O(n) time, O(k) space** - each of the `n` indices is pushed once and popped at most once total (across both ends), so the amortized per-element work is O(1) despite the `while` loop. Space is bounded by the window size `k` since stale/dominated indices never accumulate.
@@ -135,29 +95,13 @@ The tell: if the window **slides** (one element in, one out, repeatedly) and you
 
 - **Min-queue** - flip the eviction comparison (`≥` instead of `≤`) to track the window minimum instead of maximum.
 - **Variable-size window** - instead of a fixed `k`, expand/shrink `L`/`R` per a constraint (classic sliding-window skeleton), using the monotonic queue only to answer "what's the max in `[L, R]` right now" as the window moves - the eviction-from-front step becomes "pop while front index `< L`" rather than a fixed `i - k` check.
-- **Two monotonic queues at once** - track both a max-queue and a min-queue over the same window to answer "is `max - min` within a bound" (see [Worked problems](#worked-problems)).
+- **Two monotonic queues at once** - track both a max-queue and a min-queue over the same window to answer "is `max - min` within a bound" (see [Practice problems](#practice-problems)).
 
 ## CP-primitives
 
 - **Monotonic-deque optimization of DP transitions** - when a DP recurrence looks like `dp[i] = min(dp[j] + cost) for j in [i-k, i)`, the sliding-window-min is exactly a monotonic queue, collapsing an O(n·k) DP to **O(n)**. Common in "jump game with cost" and constrained knapsack variants.
 - **2D sliding-window max via two monotonic-queue passes** - for the max over every `k×k` submatrix, run the 1D monotonic queue along each row first (collapsing every row to its sliding-row-max), then run it again along each column of the row-max result. Two O(rows·cols) passes instead of an O(rows·cols·k²) brute force per submatrix - the pattern composes cleanly because "max of a window" is associative across dimensions.
 - **Monotonic queue as a poor-man's convex hull trick (CHT) gateway** - when a DP transition is `dp[i] = min_j(dp[j] + b[j]·a[i])` and the `b[j]` values arrive in monotonic order, tracking the best line with a deque (push new lines to the back, pop dominated ones, evict from the front when the query point moves past the optimal line) is a monotonic queue over lines instead of values. Recognizing this shape is the on-ramp to full CHT/Li Chao tree for the harder DP-speedup problems.
-
-## Worked problems
-
-Three problems, each mapping the skeleton differently - none overlap with [deque.md's practice problems](../data-structures/deque.md#practice-problems) (which cover the canonical Sliding Window Maximum, Circular Deque design, prefix-sum variant, and the median counterexample).
-
-### 1. Constrained Subsequence Sum
-
-Sketch: `dp[i] = nums[i] + max(0, dp[j] for j in [i-k, i-1])`. The `max(dp[j])` over the trailing window of size `k` is a monotonic queue on the `dp` array itself, run *while* computing `dp` left to right - the DP and the window slide together in one pass. This is the DP-optimization use of the pattern, distinct from a plain array-max query.
-
-### 2. Shortest Subarray with Sum at Least K
-
-Sketch: build [prefix sums](./prefix-sum.md), then for each `j` want the closest earlier `i` with `prefix[i] ≤ prefix[j] - k`. An **increasing** monotonic queue of prefix-sum indices lets both the "pop from front once it can't help a later `j`" and "pop from back because a later smaller prefix dominates" happen in one O(n) pass - the monotonic queue applied to a derived array (prefix sums), not the raw input. (Full worked solution lives on [deque.md problem 3](../data-structures/deque.md#3-shortest-subarray-with-sum-at-least-k--monotonic-deque-on-prefix-sums); linked here as the "prefix-sum twist" entry in this pattern's problem set.)
-
-### 3. Longest Continuous Subarray With Absolute Diff ≤ Limit
-
-Sketch: maintain **two** monotonic queues simultaneously over the same sliding window - a max-queue and a min-queue. Expand `R`; while `max_queue.front - min_queue.front > limit`, shrink `L` (popping expired indices from both queues). The window is valid whenever the two queues' fronts stay within `limit` of each other - a genuinely different shape from problems 1–2 because it fuses the pattern with the general variable-size [sliding window](./sliding-window.md) skeleton, using two monotonic queues as the constraint check instead of one.
 
 ## Pitfalls
 
@@ -180,9 +124,17 @@ Sketch: maintain **two** monotonic queues simultaneously over the same sliding w
 
 ## Practice problems
 
-### 1. Sliding Window Maximum
+### 1. Sliding Window Maximum (LC 239)
 
-**Problem.** Given an array `nums` and window size `k`, return an array of the maximum of every contiguous window of size `k`. E.g. `nums=[1,3,-1,-3,5,3,6,7], k=3` → `[3,3,5,5,6,7]`. Constraints: `n ≤ 10⁵`, so O(n·k) and even O(n log k) heap solutions risk TLE - O(n) is intended.
+**Problem.** Given an array `nums` and window size `k`, return an array of the maximum of every contiguous window of size `k`. Constraints: `1 ≤ k ≤ n ≤ 10⁵`, values in `[-10⁴, 10⁴]` - O(n·k) and even O(n log k) heap solutions risk TLE, O(n) is intended.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,3,-1,-3,5,3,6,7], k = 3 | **Output:** [3,3,5,5,6,7]
+- **Example 2**
+  - **Input:** nums = [1], k = 1 | **Output:** [1]
+
+**Constraints:** `1 ≤ k ≤ n ≤ 10⁵`, values in `[-10⁴, 10⁴]`.
 
 **Approach.** Maintain a decreasing monotonic queue of indices: pop smaller-or-equal values off the back before pushing the new index, pop the front once its index has slid out of the window. The front is always the current max. This is the pattern's namesake problem - the direct skeleton application.
 
@@ -207,40 +159,66 @@ def max_sliding_window(nums: list[int], k: int) -> list[int]:
 
 **Duplicate problems:**
 - Sliding Window Minimum (LC-adjacent, no canonical number) - identical technique with the comparison flipped (`>=` instead of `<=`).
+- Jump Game VI (LC 1696) - same algorithm run over a `dp` array computed on the fly instead of a given input array: `dp[i] = nums[i] + max(dp[j] for j in [i-k, i-1])`.
+- Constrained Subsequence Sum (LC 1425) - same DP-transition shape as Jump Game VI, with a max-with-zero clamp: `dp[i] = nums[i] + max(0, dp[j] for j in [i-k, i-1])`.
 - Maximum of Minimums of Every Window Size (GfG) - repeated application of the same monotonic-queue max/min extraction across all window sizes at once.
 
-### 2. Jump Game VI
+---
 
-**Problem.** Starting at index 0 of `nums`, at each step jump to any index in `[i+1, i+k]`. Your score is the sum of visited `nums` values; maximize the total score reaching the last index. Constraints: `n ≤ 10⁵`, `1 ≤ k ≤ n` - a naive O(n·k) DP (checking all `k` previous states per index) is too slow.
+### 2. Shortest Subarray with Sum at Least K (LC 862)
 
-**Approach.** `dp[i] = nums[i] + max(dp[j] for j in [i-k, i-1])`. The `max` over a trailing window of size `k` is exactly a sliding-window-max query on the `dp` array - run a monotonic queue over `dp` *as it's being filled*, evicting indices `< i-k` and dominated values, same as problem 1 but the array being windowed is computed on the fly rather than given upfront. This is the DP-transition-speedup use of the pattern (see [CP-primitives](#cp-primitives)).
+**Problem.** Given an integer array `nums` and integer `k`, return the length of the shortest non-empty contiguous subarray with a sum at least `k`, or `-1` if none exists. Constraints: `1 ≤ n ≤ 10⁵`, `-10⁵ ≤ nums[i] ≤ 10⁵`, `1 ≤ k ≤ 10⁹`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1], k = 1 | **Output:** 1
+- **Example 2**
+  - **Input:** nums = [2,-1,2], k = 3 | **Output:** 3
+  - **Explanation:** the whole array sums to 3; no shorter subarray reaches the target since values can be negative.
+
+**Constraints:** `1 ≤ n ≤ 10⁵`, `-10⁵ ≤ nums[i] ≤ 10⁵`, `1 ≤ k ≤ 10⁹`.
+
+**Approach.** Build [prefix sums](./prefix-sum.md), then for each `j` want the closest earlier `i` with `prefix[i] ≤ prefix[j] - k`. Maintain an **increasing** monotonic queue of prefix-sum indices: for the current `j`, pop from the front while `prefix[j] - prefix[front] ≥ k` (that front index just gave a valid, and shortest-so-far, answer - it can never help again since any later `j'` would give a longer subarray). Pop from the back while `prefix[back] ≥ prefix[j]` (a later, smaller-or-equal prefix always dominates for future queries). This differs from Sliding Window Maximum's mechanic: there's no fixed window size, and the queue is over a derived array (prefix sums) with eviction driven by the sum constraint, not a fixed offset.
 
 ```python
 from collections import deque
 
-def max_result(nums: list[int], k: int) -> int:
+def shortest_subarray(nums: list[int], k: int) -> int:
     n = len(nums)
-    dp = [0] * n
-    dp[0] = nums[0]
-    dq: deque[int] = deque([0])   # indices into dp, values decreasing
-    for i in range(1, n):
-        while dq and dq[0] < i - k:
-            dq.popleft()
-        dp[i] = nums[i] + dp[dq[0]]
-        while dq and dp[dq[-1]] <= dp[i]:
+    prefix = [0] * (n + 1)
+    for i, x in enumerate(nums):
+        prefix[i + 1] = prefix[i] + x
+
+    dq: deque[int] = deque()   # indices into prefix, increasing prefix value
+    best = n + 1
+    for j in range(n + 1):
+        while dq and prefix[j] - prefix[dq[0]] >= k:
+            best = min(best, j - dq.popleft())
+        while dq and prefix[dq[-1]] >= prefix[j]:
             dq.pop()
-        dq.append(i)
-    return dp[-1]
+        dq.append(j)
+    return best if best <= n else -1
 ```
 
-**Complexity.** O(n) time, O(k) space.
+**Complexity.** O(n) time, O(n) space.
 
 **Duplicate problems:**
-- Constrained Subsequence Sum (LC 1425) - same `dp[i] = nums[i] + max(0, dp[j])` sliding-window-max-in-DP shape, with a max-with-zero clamp instead of a plain jump.
+- Subarray Sum Equals K (LC 560) - same prefix-sum-over-a-target idea, but counts all matching subarrays via a hash map instead of finding the shortest one via a monotonic queue (only works there because values can repeat arbitrarily; the monotonic-queue trick here specifically exploits the "shortest" objective).
 
-### 3. Longest Continuous Subarray With Absolute Diff Less Than or Equal to Limit
+---
 
-**Problem.** Given `nums` and integer `limit`, return the length of the longest contiguous subarray where `max(subarray) - min(subarray) ≤ limit`. Constraints: `n ≤ 10⁵`.
+### 3. Longest Continuous Subarray With Absolute Diff Less Than or Equal to Limit (LC 1438)
+
+**Problem.** Given `nums` and integer `limit`, return the length of the longest contiguous subarray where `max(subarray) - min(subarray) ≤ limit`. Constraints: `1 ≤ n ≤ 10⁵`, `-10⁴ ≤ nums[i] ≤ 10⁴`, `0 ≤ limit ≤ 10⁴`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [8,2,4,7], limit = 4 | **Output:** 2
+  - **Explanation:** [2,4] has max-min = 2 ≤ 4; extending to [8,2,4] gives max-min = 6 > 4.
+- **Example 2**
+  - **Input:** nums = [10,1,2,4,7,2], limit = 5 | **Output:** 4
+
+**Constraints:** `1 ≤ n ≤ 10⁵`, `-10⁴ ≤ nums[i] ≤ 10⁴`, `0 ≤ limit ≤ 10⁴`.
 
 **Approach.** Variable-size sliding window (expand `R`, shrink `L` on violation) with **two** monotonic queues tracked in parallel - one decreasing (for the window max), one increasing (for the window min). After each expansion, while `max_queue.front - min_queue.front > limit`, advance `L` and evict any front indices `< L` from both queues. Track the best `R - L + 1` seen. Distinct from problems 1–2: two synchronized monotonic queues driving a variable-size window rather than one queue over a fixed window.
 

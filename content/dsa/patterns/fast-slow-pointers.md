@@ -10,12 +10,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -98,67 +96,6 @@ on a finite loop.
 
 ---
 
-## Skeleton
-
-**Pseudocode (CLRS style):**
-
-```
-HAS-CYCLE(head)
-  slow = head
-  fast = head
-  while fast != NIL and fast.next != NIL
-    slow = slow.next             ▷ 1 step
-    fast = fast.next.next        ▷ 2 steps
-    if slow == fast
-      return TRUE                ▷ they met - cycle exists
-  return FALSE                   ▷ fast hit NIL - no cycle
-
-FIND-CYCLE-START(head)
-  slow = head
-  fast = head
-  while fast != NIL and fast.next != NIL
-    slow = slow.next
-    fast = fast.next.next
-    if slow == fast
-      break                      ▷ met inside the cycle
-  if fast == NIL or fast.next == NIL
-    return NIL                   ▷ no cycle
-  slow = head                    ▷ reset one pointer to head
-  while slow != fast
-    slow = slow.next             ▷ both now move at speed 1
-    fast = fast.next
-  return slow                    ▷ meeting point = cycle start
-```
-
-**Python template:**
-
-```python
-class ListNode:
-    def __init__(self, val: int = 0, next: "ListNode | None" = None):
-        self.val = val
-        self.next = next
-
-
-def has_cycle(head: ListNode | None) -> bool:
-    slow = fast = head
-    while fast and fast.next:
-        slow = slow.next            # your logic here: 1 step
-        fast = fast.next.next       # your logic here: 2 steps
-        if slow is fast:
-            return True
-    return False
-
-
-def find_middle(head: ListNode | None) -> ListNode | None:
-    slow = fast = head
-    while fast and fast.next:
-        slow = slow.next
-        fast = fast.next.next
-    return slow                     # for even length, this is the second middle
-```
-
----
-
 ## Complexity
 
 Typical time: **O(n)** - fast traverses at most 2n steps total before either hitting `None` (no cycle) or meeting slow (cycle found); the second phase (finding cycle start) is another O(n) at worst. Space: **O(1)** - only two pointers, regardless of list length. This O(1) space is the entire point of the pattern - the hash-set alternative for the same problem is O(n) space.
@@ -235,40 +172,6 @@ def brent_cycle_length(f, x0):
 
 ---
 
-## Worked problems
-
-### 1. Linked List Cycle (LC 141)
-
-Given the head of a linked list, determine if it has a cycle.
-
-**Approach sketch:** direct application of the skeleton's `has_cycle` - slow moves one node, fast moves two, per iteration. If they ever occupy the same node, a cycle exists; if fast reaches `None` first, it doesn't. No extra data structure needed, in contrast to a hash-set-of-visited-nodes approach.
-
-### 2. Linked List Cycle II (LC 142)
-
-Given the head of a linked list, return the node where the cycle begins, or `None` if there is no cycle.
-
-**Approach sketch:** run the detection phase first (`find_cycle_start`'s first loop) to find a meeting point inside the cycle. Then reset one pointer to `head` and advance both pointers one step at a time; the node where they next meet is the cycle's entry - a direct consequence of the μ/λ distance argument covered in How it works.
-
-### 3. Middle of the Linked List (LC 876)
-
-Given the head of a singly linked list, return the middle node (the second of two middles if the length is even).
-
-**Approach sketch:** slow and fast both start at head; fast moves two steps for every one of slow's. When fast reaches the end (`None` or `.next is None`), slow sits exactly at the midpoint - this falls directly out of the 2:1 speed ratio without needing to know the list's length up front.
-
-### 4. Happy Number (LC 202)
-
-A number is "happy" if repeatedly replacing it with the sum of squares of its digits eventually reaches 1; otherwise it loops forever in a cycle that never includes 1. Determine if a given number is happy.
-
-**Approach sketch:** this isn't a linked list at all - but define `next(x)` as the digit-square-sum function, and apply the same slow/fast pointer idea over the *sequence of values* it generates: `slow = next(slow)`, `fast = next(next(fast))`. If they ever meet, there's a cycle (unhappy) unless the cycle degenerates to just `{1}` (happy); this shows the pattern generalizes beyond literal linked-list nodes to any function-defined implicit sequence.
-
-### 5. Find the Duplicate Number (LC 287)
-
-Given an array of `n+1` integers where each value is in `[1, n]`, find the one duplicate value, without modifying the array and using O(1) extra space.
-
-**Approach sketch:** treat the array as an implicit linked list where `nums[i]` is the "next pointer" from index `i` - because there are `n+1` values crammed into the range `[1, n]`, by pigeonhole this functional graph *must* contain a cycle, and the duplicate value is exactly the cycle's entry point. Run the same two-phase Floyd's algorithm (`slow = nums[slow]`, `fast = nums[nums[fast]]`, then reset-and-walk-at-1×) treating array indices as node identities. This only works because every value is constrained to `[1, n]` - guaranteeing each is a valid index to jump to next; a value of `0` or `> n` would break the "array as linked list" mapping entirely.
-
----
-
 ## Pitfalls
 
 1. **Off-by-one in the loop condition, causing a null-pointer dereference.** The loop guard must check `fast and fast.next` (not just `fast`) before computing `fast.next.next` - otherwise, on an odd-vs-even length edge case, `fast.next` can be `None` and `.next.next` crashes. This is the single most common bug when first implementing this pattern.
@@ -305,6 +208,15 @@ Then, if the problem asks for the cycle's *start* (not just existence), name the
 
 Given the head of a linked list, determine if it has a cycle. Constraints: `0 ≤ n ≤ 10⁴` nodes.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = [3,2,0,-4], pos = 1 (tail connects to index 1) | **Output:** true
+  - **Explanation:** the last node points back to the node at index 1, forming a cycle.
+- **Example 2**
+  - **Input:** head = [1,2], pos = -1 (no cycle) | **Output:** false
+
+**Constraints:** `0 ≤ n ≤ 10⁴` nodes, `−10⁵ ≤ Node.val ≤ 10⁵`.
+
 **Approach.** Slow moves one node per iteration, fast moves two. If they ever reference the same node, a cycle exists; if fast reaches `None`, it doesn't.
 
 ```python
@@ -336,6 +248,15 @@ def has_cycle(head: ListNode | None) -> bool:
 
 Given the head of a linked list, return the node where the cycle begins, or `None` if none exists. Constraints: `0 ≤ n ≤ 10⁴` nodes.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = [3,2,0,-4], pos = 1 | **Output:** node at index 1
+  - **Explanation:** the cycle begins at the node with value 2.
+- **Example 2**
+  - **Input:** head = [1], pos = -1 | **Output:** None
+
+**Constraints:** `0 ≤ n ≤ 10⁴` nodes, `−10⁵ ≤ Node.val ≤ 10⁵`.
+
 **Approach.** Two-phase Floyd's: detect a meeting point inside the cycle first, then reset one pointer to head and advance both at speed 1 until they meet again - that node is the cycle's start, by the μ/λ distance argument.
 
 ```python
@@ -363,9 +284,48 @@ def detect_cycle(head: ListNode | None) -> ListNode | None:
 
 ---
 
-### 3. Palindrome Linked List (LC 234)
+### 3. Middle of the Linked List (LC 876)
+
+Given the head of a singly linked list, return the middle node (the second of two middles if the length is even). Constraints: `1 ≤ n ≤ 100`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = [1,2,3,4,5] | **Output:** node with val 3
+- **Example 2**
+  - **Input:** head = [1,2,3,4,5,6] | **Output:** node with val 4
+  - **Explanation:** even length, returns the second of the two middles.
+
+**Constraints:** `1 ≤ n ≤ 100`, `1 ≤ Node.val ≤ 100`.
+
+**Approach.** Slow and fast both start at head; fast moves two steps for every one of slow's. When fast reaches the end (`None` or `.next is None`), slow sits exactly at the midpoint - this falls directly out of the 2:1 speed ratio without needing to know the list's length up front.
+
+```python
+def middle_node(head: ListNode | None) -> ListNode | None:
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+    return slow
+```
+
+**Complexity.** O(n) time, O(1) space.
+
+**Duplicate problems:**
+- (none - see Palindrome Linked List below for a problem that composes this technique with another)
+
+---
+
+### 4. Palindrome Linked List (LC 234)
 
 Determine if a singly linked list is a palindrome, ideally in O(1) space. Constraints: `1 ≤ n ≤ 5×10⁴`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = [1,2,2,1] | **Output:** true
+- **Example 2**
+  - **Input:** head = [1,2] | **Output:** false
+
+**Constraints:** `1 ≤ n ≤ 5×10⁴`, `0 ≤ Node.val ≤ 9`.
 
 **Approach.** Use fast & slow to find the middle in one pass, reverse the second half in-place, then walk two pointers (one from head, one from the reversed second-half's head) comparing values. This combines fast & slow (finding the midpoint without knowing length up front) with in-place reversal - a common pairing.
 

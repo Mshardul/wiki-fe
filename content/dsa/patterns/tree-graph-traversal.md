@@ -13,12 +13,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -93,150 +91,6 @@ The full proof that BFS gives shortest-path and DFS gives discovery/finish struc
 
 ---
 
-## Skeleton
-
-Two structural skeletons cover the overwhelming majority of traversal problems: a **tree** version (no visited set needed - trees are acyclic) and a **graph** version (visited set mandatory - cycles are possible). Both come in BFS and DFS flavors.
-
-### Tree BFS (level order) - pseudocode
-
-```
-TREE-BFS(root)
-  if root = NIL
-      return []
-  result ← empty list
-  Q ← empty queue
-  ENQUEUE(Q, root)
-  while Q ≠ ∅
-      level_size ← SIZE(Q)         ▷ snapshot: freezes this level's boundary
-      level ← empty list
-      for i = 1 to level_size
-          node ← DEQUEUE(Q)
-          APPEND(level, PROCESS(node))     ▷ your logic here
-          if node.left ≠ NIL
-              ENQUEUE(Q, node.left)
-          if node.right ≠ NIL
-              ENQUEUE(Q, node.right)
-      APPEND(result, level)
-  return result
-```
-
-### Tree DFS (pre/in/post-order) - pseudocode
-
-```
-TREE-DFS(node, path, result)
-  if node = NIL
-      return
-  ▷ pre-order hook: PROCESS(node) here
-  APPEND(path, node.val)
-  TREE-DFS(node.left, path, result)
-  ▷ in-order hook: PROCESS(node) here
-  TREE-DFS(node.right, path, result)
-  ▷ post-order hook: PROCESS(node) here
-  REMOVE-LAST(path)                ▷ backtrack if path is being reused across calls
-```
-
-### Graph BFS (visited-set variant) - pseudocode
-
-```
-GRAPH-BFS(G, source)
-  visited ← {source}               ▷ mark on enqueue, not dequeue
-  Q ← empty queue
-  ENQUEUE(Q, source)
-  while Q ≠ ∅
-      u ← DEQUEUE(Q)
-      PROCESS(u)                   ▷ your logic here
-      for each v ∈ G.Adj[u]
-          if v ∉ visited
-              visited ← visited ∪ {v}
-              ENQUEUE(Q, v)
-```
-
-### Graph DFS (visited-set variant) - pseudocode
-
-```
-GRAPH-DFS(G, u, visited)
-  visited ← visited ∪ {u}
-  PROCESS(u)                       ▷ your logic here
-  for each v ∈ G.Adj[u]
-      if v ∉ visited
-          GRAPH-DFS(G, v, visited)
-```
-
-### Python templates
-
-```python
-from collections import deque
-from typing import Optional
-
-
-# ── Tree BFS: level-by-level ─────────────────────────────────────────────
-def tree_bfs(root: Optional["TreeNode"]) -> list[list[int]]:
-    if not root:
-        return []
-    result: list[list[int]] = []
-    queue: deque = deque([root])
-    while queue:
-        level_size = len(queue)          # snapshot the level boundary
-        level: list[int] = []
-        for _ in range(level_size):
-            node = queue.popleft()
-            # your logic here (e.g. level.append(node.val))
-            level.append(node.val)
-            if node.left:
-                queue.append(node.left)
-            if node.right:
-                queue.append(node.right)
-        result.append(level)
-    return result
-
-
-# ── Tree DFS: recursive, pick the hook you need ──────────────────────────
-def tree_dfs(node: Optional["TreeNode"], acc: list[int]) -> None:
-    if node is None:
-        return
-    # pre-order: your logic here, e.g. acc.append(node.val)
-    tree_dfs(node.left, acc)
-    # in-order: your logic here
-    tree_dfs(node.right, acc)
-    # post-order: your logic here
-
-
-# ── Graph BFS: visited-set variant ───────────────────────────────────────
-def graph_bfs(graph: dict[int, list[int]], source: int) -> list[int]:
-    visited: set[int] = {source}
-    order: list[int] = []
-    queue: deque[int] = deque([source])
-    while queue:
-        u = queue.popleft()
-        # your logic here (e.g. order.append(u))
-        order.append(u)
-        for v in graph.get(u, []):
-            if v not in visited:
-                visited.add(v)
-                queue.append(v)
-    return order
-
-
-# ── Graph DFS: visited-set variant, iterative (production-safe) ─────────
-def graph_dfs(graph: dict[int, list[int]], source: int) -> list[int]:
-    visited: set[int] = {source}
-    order: list[int] = []
-    stack: list[int] = [source]
-    while stack:
-        u = stack.pop()
-        # your logic here (e.g. order.append(u))
-        order.append(u)
-        for v in graph.get(u, []):
-            if v not in visited:
-                visited.add(v)
-                stack.append(v)
-    return order
-```
-
-The whole pattern-transfer skill is: identify which of these four shapes the problem needs (tree vs graph, level-grouping vs exhaustive-explore), then fill the `# your logic here` slot. For full correctness proofs, complexity derivations, and edge-case handling of the underlying engines, see [BFS](../algorithms/bfs.md) and [DFS](../algorithms/dfs.md) - this article does not re-derive them.
-
----
-
 ## Complexity
 
 | Skeleton | Time | Space |
@@ -289,30 +143,6 @@ These are the same bounds as the underlying BFS/DFS algorithms - the pattern add
 
 ---
 
-## Worked problems
-
-### 1. Number of Islands (LC 200)
-
-Grid of `'1'`/`'0'`, count connected components of land. **Skeleton mapping:** the grid is the implicit graph (Matrix Traversal specializes the neighbor function to `±row/±col`); the outer double-loop is the disconnected-graph wrapper from the graph skeleton (`for each unvisited node, launch a new traversal`); each launch is one Graph DFS (or BFS) call, and `PROCESS(node)` is simply "mark visited." DFS is the natural choice here since no shortest-path or level information is needed - just exhaustive marking. n up to 300×300 keeps either BFS or DFS well within O(m·n).
-
-### 2. Binary Tree Level Order Traversal (LC 102)
-
-Return node values grouped by depth. **Skeleton mapping:** this *is* the Tree BFS skeleton verbatim - the `level_size = len(queue)` snapshot before the inner loop is exactly what separates one level's output list from the next. No DFS variant does this as cleanly, because DFS's recursion doesn't naturally expose "how many nodes remain at this depth" without passing an explicit depth parameter and bucketing by it.
-
-### 3. Clone Graph (LC 133)
-
-Deep-copy an undirected graph reachable from a given node. **Skeleton mapping:** Graph DFS (or BFS - either works) with `PROCESS(node)` replaced by "look up or create the clone, register it in a visited map *before* recursing into neighbors." The register-before-recurse discipline is what makes the skeleton handle cycles correctly - it is a direct instance of the visited-set rule, just storing a clone reference instead of a boolean.
-
-### 4. Course Schedule (LC 207)
-
-Determine if all courses can be finished given prerequisite edges - i.e., is the prerequisite graph acyclic? **Skeleton mapping:** Graph DFS, but the visited set is upgraded to three colors (WHITE/GRAY/BLACK) instead of a boolean, because "is this neighbor still on my current recursion path" (a cycle) is a different question than "have I ever visited this neighbor." This is the direct bridge to <!-- [Topological Sort](../algorithms/topological-sort.md) --> Topological Sort (not yet written): the same DFS skeleton, run to completion without finding a back edge, yields a valid build order for free via post-order.
-
-### 5. Path Sum II (LC 113)
-
-Find all root-to-leaf paths in a binary tree summing to a target. **Skeleton mapping:** Tree DFS with the pre-order hook appending the current node to a shared `path` list and a post-order hook popping it back off (the explicit backtrack step in the Tree DFS pseudocode). `PROCESS(node)` here is "check if leaf and running sum equals target, and if so snapshot `path` into the result." The append/recurse/pop discipline is what turns a single mutable list into a correct enumeration of every distinct path.
-
----
-
 ## Pitfalls
 
 1. **Forgetting the outer loop for disconnected graphs.** A single BFS/DFS call from one source only reaches its component. Problems like Number of Islands or Number of Provinces need the `for each unvisited node → launch new traversal` wrapper; omitting it silently undercounts.
@@ -347,54 +177,206 @@ Then clarify: explicit tree/graph or implicit (grid, state space)? Single traver
 
 ## Practice problems
 
-### 1. Rotting Oranges (LC 994)
+### 1. Binary Tree Level Order Traversal (LC 102)
 
-**Problem.** A grid contains cells that are empty (0), fresh oranges (1), or rotten oranges (2). Every minute, any fresh orange adjacent (4-directionally) to a rotten orange becomes rotten. Return the minimum number of minutes until no cell has a fresh orange, or -1 if impossible. Grid dimensions up to 10×10 in the classic version, generalizable to m,n ≤ 10³.
+**Problem.** Given the root of a binary tree, return the values of its nodes grouped by depth, top to bottom. Up to 2000 nodes.
 
-**Approach.** Multi-source BFS: seed the queue with every initially-rotten cell at time 0 (the virtual-super-source trick from CP-primitives), then run standard grid BFS, incrementing the timer each time the queue's current level empties. The answer is the timer value when BFS finishes, provided no fresh orange remains unreached (check by counting fresh cells before and after).
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [3,9,20,null,null,15,7] | **Output:** [[3],[9,20],[15,7]]
+- **Example 2**
+  - **Input:** root = [1] | **Output:** [[1]]
+
+**Constraints:** `0 ≤ n ≤ 2000`, `-1000 ≤ Node.val ≤ 1000`.
+
+**Approach.** Tree BFS with a level-size snapshot: before draining the inner loop, record `level_size = len(queue)`. The inner loop runs exactly `level_size` times, popping only nodes that belonged to the current level before any of their children got enqueued - that snapshot is what separates one level's output list from the next.
 
 ```python
 from collections import deque
+from typing import Optional
 
-def orangesRotting(grid: list[list[int]]) -> int:
-    rows, cols = len(grid), len(grid[0])
-    queue: deque[tuple[int, int]] = deque()
-    fresh = 0
+class TreeNode:
+    def __init__(self, val: int = 0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
 
-    for r in range(rows):
-        for c in range(cols):
-            if grid[r][c] == 2:
-                queue.append((r, c))
-            elif grid[r][c] == 1:
-                fresh += 1
-
-    minutes = 0
-    directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-    while queue and fresh > 0:
-        minutes += 1
-        for _ in range(len(queue)):          # process one full minute/level
-            r, c = queue.popleft()
-            for dr, dc in directions:
-                nr, nc = r + dr, c + dc
-                if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 1:
-                    grid[nr][nc] = 2
-                    fresh -= 1
-                    queue.append((nr, nc))
-
-    return minutes if fresh == 0 else -1
+def levelOrder(root: Optional[TreeNode]) -> list[list[int]]:
+    if not root:
+        return []
+    result: list[list[int]] = []
+    queue: deque[TreeNode] = deque([root])
+    while queue:
+        level_size = len(queue)
+        level: list[int] = []
+        for _ in range(level_size):
+            node = queue.popleft()
+            level.append(node.val)
+            if node.left:
+                queue.append(node.left)
+            if node.right:
+                queue.append(node.right)
+        result.append(level)
+    return result
 ```
 
-**Complexity.** O(m·n) time (each cell enqueued at most once), O(m·n) space for the queue in the worst case.
+**Complexity.** O(n) time (each node visited once), O(w) space where w is the tree's maximum width (worst case O(n) for a complete binary tree).
 
 **Duplicate problems:**
-- 01 Matrix (LC 542) - same multi-source BFS seeding all zero-cells at once instead of rotten oranges.
-- Walls and Gates (classic) - multi-source BFS from gate cells; identical mechanic, different terminal condition.
+- Binary Tree Right Side View (LC 199) - same level-BFS skeleton, keep only the last node of each level instead of all of them.
+- Average of Levels in Binary Tree (LC 637) - same skeleton, aggregate = mean instead of the full list.
+- Find Bottom Left Tree Value (LC 513) - same skeleton, keep the first node of the last level.
 
 ---
 
-### 2. Number of Provinces (LC 547)
+### 2. Clone Graph (LC 133)
+
+**Problem.** Given a reference node in a connected undirected graph, return a deep copy of the graph. Each node has a value and a list of neighbors. Up to 100 nodes.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** adjList = [[2,4],[1,3],[2,4],[1,3]] | **Output:** [[2,4],[1,3],[2,4],[1,3]]
+  - **Explanation:** node 1's neighbors are 2 and 4; the clone must preserve this exact adjacency between newly-created nodes.
+- **Example 2**
+  - **Input:** adjList = [[]] | **Output:** [[]]
+  - **Explanation:** single node, no neighbors.
+
+**Constraints:** `0 ≤ n ≤ 100`, no repeated edges, no self-loops, graph is connected.
+
+**Approach.** Graph DFS (BFS works equally well) with `PROCESS(node)` replaced by "look up or create the clone, and register it in a `visited` map *before* recursing into neighbors." Registering before recursing is what makes the skeleton handle cycles correctly - without it, a cycle back to the original node would recurse forever, cloning the same node repeatedly.
+
+```python
+class Node:
+    def __init__(self, val: int = 0, neighbors: list["Node"] | None = None):
+        self.val = val
+        self.neighbors = neighbors if neighbors is not None else []
+
+def cloneGraph(node: "Node | None") -> "Node | None":
+    if not node:
+        return None
+    visited: dict["Node", "Node"] = {}
+
+    def dfs(n: "Node") -> "Node":
+        if n in visited:
+            return visited[n]
+        clone = Node(n.val)
+        visited[n] = clone
+        for neighbor in n.neighbors:
+            clone.neighbors.append(dfs(neighbor))
+        return clone
+
+    return dfs(node)
+```
+
+**Complexity.** O(V + E) time, O(V) space for the visited map and recursion stack.
+
+**Duplicate problems:**
+- Copy List with Random Pointer (LC 138) - same register-before-recurse visited-map trick, applied to a linked list with an extra pointer instead of a graph's neighbor list.
+
+---
+
+### 3. Course Schedule (LC 207)
+
+**Problem.** Given `numCourses` and a list of prerequisite pairs `[a, b]` (must take `b` before `a`), determine if it's possible to finish all courses - i.e., is the prerequisite graph acyclic? Up to 2000 courses, 5000 prerequisite pairs.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** numCourses = 2, prerequisites = [[1,0]] | **Output:** true
+  - **Explanation:** take course 0, then course 1.
+- **Example 2**
+  - **Input:** numCourses = 2, prerequisites = [[1,0],[0,1]] | **Output:** false
+  - **Explanation:** course 0 needs course 1 and vice versa - a cycle, impossible to finish.
+
+**Constraints:** `1 ≤ numCourses ≤ 2000`, `0 ≤ prerequisites.length ≤ 5000`.
+
+**Approach.** Graph DFS, but the visited set is upgraded to three colors (WHITE/GRAY/BLACK) instead of a boolean, because "is this neighbor still on my current recursion path" (a cycle) is a different question from "have I ever visited this neighbor." A GRAY node reached again means a back edge - a cycle.
+
+```python
+def canFinish(numCourses: int, prerequisites: list[list[int]]) -> bool:
+    graph: list[list[int]] = [[] for _ in range(numCourses)]
+    for course, prereq in prerequisites:
+        graph[course].append(prereq)
+
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = [WHITE] * numCourses
+
+    def has_cycle(u: int) -> bool:
+        color[u] = GRAY
+        for v in graph[u]:
+            if color[v] == GRAY:
+                return True
+            if color[v] == WHITE and has_cycle(v):
+                return True
+        color[u] = BLACK
+        return False
+
+    return not any(color[c] == WHITE and has_cycle(c) for c in range(numCourses))
+```
+
+**Complexity.** O(V + E) time, O(V + E) space for the adjacency list and color array.
+
+**Duplicate problems:**
+- Course Schedule II (LC 210) - same three-color DFS, additionally records post-order finish sequence as the topological (build) order.
+
+---
+
+### 4. Path Sum II (LC 113)
+
+**Problem.** Given the root of a binary tree and a target sum, return all root-to-leaf paths where the node values sum to the target. Up to 5000 nodes.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [5,4,8,11,null,13,4,7,2,null,null,5,1], targetSum = 22 | **Output:** [[5,4,11,2],[5,8,4,5]]
+- **Example 2**
+  - **Input:** root = [1,2,3], targetSum = 5 | **Output:** []
+
+**Constraints:** `0 ≤ n ≤ 5000`, `-1000 ≤ Node.val ≤ 1000`, `-1000 ≤ targetSum ≤ 1000`.
+
+**Approach.** Tree DFS with a pre-order hook appending the current node to a shared `path` list and a post-order hook popping it back off - the explicit backtrack step. `PROCESS(node)` checks if it's a leaf with running sum equal to target, and if so snapshots `path` into the result. The append/recurse/pop discipline is what turns one mutable list into a correct enumeration of every distinct path, instead of a single path or a corrupted shared list.
+
+```python
+from typing import Optional
+
+def pathSum(root: Optional[TreeNode], targetSum: int) -> list[list[int]]:
+    result: list[list[int]] = []
+    path: list[int] = []
+
+    def dfs(node: Optional[TreeNode], remaining: int) -> None:
+        if not node:
+            return
+        path.append(node.val)
+        remaining -= node.val
+        if not node.left and not node.right and remaining == 0:
+            result.append(list(path))
+        else:
+            dfs(node.left, remaining)
+            dfs(node.right, remaining)
+        path.pop()
+
+    dfs(root, targetSum)
+    return result
+```
+
+**Complexity.** O(n²) time worst case (each of up to n root-to-leaf paths can be O(n) long to copy), O(n) space for the recursion stack and path buffer, excluding output.
+
+**Duplicate problems:**
+- Path Sum (LC 112) - same DFS skeleton, only needs a boolean existence check instead of full path enumeration; no `path` list or backtrack needed.
+- Binary Tree Maximum Path Sum (LC 124) - DFS with a different accumulation (max path through any node, not just root-to-leaf) but the same "process on the way down, combine on the way up" recursive shape.
+
+---
+
+### 5. Number of Provinces (LC 547)
 
 **Problem.** Given an n×n adjacency matrix `isConnected` where `isConnected[i][j] = 1` means cities i and j are directly connected, return the number of provinces (connected components). `1 ≤ n ≤ 200`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** isConnected = [[1,1,0],[1,1,0],[0,0,1]] | **Output:** 2
+  - **Explanation:** cities 0 and 1 form one province; city 2 is its own province.
+- **Example 2**
+  - **Input:** isConnected = [[1,0,0],[0,1,0],[0,0,1]] | **Output:** 3
+
+**Constraints:** `1 ≤ n ≤ 200`, `isConnected[i][j]` is `0` or `1`, `isConnected[i][i] = 1`, symmetric matrix.
 
 **Approach.** This is connected-components DFS on a graph given as an adjacency matrix instead of a list - the outer loop (disconnected-graph wrapper) launches one DFS per unvisited city, and each DFS call marks every city reachable from it. The province count is the number of DFS launches. Since the input is a matrix, each DFS call's neighbor scan is O(n) regardless of actual degree, giving O(n²) total - acceptable at n ≤ 200 but a reminder that adjacency-matrix DFS does not scale the way adjacency-list DFS does.
 
@@ -420,48 +402,5 @@ def findCircleNum(isConnected: list[list[int]]) -> int:
 **Complexity.** O(n²) time (matrix scan per DFS call), O(n) space for the visited array and recursion stack.
 
 **Duplicate problems:**
-- Number of Islands (LC 200) - same connected-components DFS, but on a grid (implicit graph) instead of an explicit adjacency matrix.
+- Number of Islands (LC 200) - same connected-components DFS, but on a grid (implicit graph) instead of an explicit adjacency matrix. Full entry in [Matrix Traversal](./matrix-traversal.md).
 - Number of Connected Components in an Undirected Graph (classic) - identical mechanic on an edge-list-to-adjacency-list graph.
-
----
-
-### 3. Binary Tree Right Side View (LC 199)
-
-**Problem.** Given the root of a binary tree, return the values of the nodes visible from the right side, ordered top to bottom (i.e., the last node at each depth). Up to 100 nodes.
-
-**Approach.** Tree BFS with the level-size snapshot; within each level's inner loop, only the *last* node processed is kept (`level_size - 1`-th iteration), which is the rightmost node at that depth. This is the canonical instance of "level-order BFS, but the per-level aggregation is `last` instead of `all`" - the same skeleton also answers "leftmost per level," "max per level," or "average per level" by swapping which element of the level you keep.
-
-```python
-from collections import deque
-from typing import Optional
-
-class TreeNode:
-    def __init__(self, val: int = 0, left=None, right=None):
-        self.val = val
-        self.left = left
-        self.right = right
-
-def rightSideView(root: Optional[TreeNode]) -> list[int]:
-    if not root:
-        return []
-    result: list[int] = []
-    queue: deque[TreeNode] = deque([root])
-    while queue:
-        level_size = len(queue)
-        for i in range(level_size):
-            node = queue.popleft()
-            if i == level_size - 1:          # last node in this level
-                result.append(node.val)
-            if node.left:
-                queue.append(node.left)
-            if node.right:
-                queue.append(node.right)
-    return result
-```
-
-**Complexity.** O(n) time (each node visited once), O(w) space where w is the tree's maximum width (worst case O(n) for a complete binary tree).
-
-**Duplicate problems:**
-- Average of Levels in Binary Tree (LC 637) - same level-BFS skeleton, aggregate = mean instead of last.
-- Binary Tree Level Order Traversal (LC 102) - same skeleton with no aggregation, keep every value per level.
-- Find Bottom Left Tree Value (LC 513) - same skeleton, keep the *first* node of the *last* level instead of the last node of every level.

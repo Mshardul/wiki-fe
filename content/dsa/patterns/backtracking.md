@@ -14,20 +14,20 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
 - [Practice problems](#practice-problems)
-  - [N-Queens](#1-n-queens--constraint-checks--symmetry)
-  - [Sudoku Solver](#2-sudoku-solver--constraint-propagation--mrv)
-  - [Combination Sum](#3-combination-sum--reuse-with-a-start-index)
-  - [Restore IP Addresses](#4-restore-ip-addresses--bounded-segment-partition)
+  - [N-Queens](#1-n-queens---constraint-checks--symmetry)
+  - [Sudoku Solver](#2-sudoku-solver---constraint-propagation--mrv)
+  - [Combination Sum](#3-combination-sum---reuse-with-a-start-index)
+  - [Restore IP Addresses](#4-restore-ip-addresses---bounded-segment-partition)
+  - [Word Break II](#5-word-break-ii---backtracking--memoization)
+  - [Palindrome Partitioning](#6-palindrome-partitioning---predicate-gated-cut)
 
 ## What it is
 
@@ -88,58 +88,6 @@ The pruned `C` subtree is the entire point: without the prune predicate this is 
 
 This choose/explore/un-choose-with-pruning frame is the engine of real **constraint-satisfaction solvers** - SAT solvers (DPLL, the backbone of hardware verification and dependency resolvers like `apt`/`pip`) are backtracking with unit-propagation as the prune, and regex backtracking engines (PCRE, Python's `re`) walk exactly this decision tree over match alternatives - which is why a pathological pattern can trigger catastrophic exponential backtracking.
 
-## Skeleton
-
-**Pseudocode (CLRS-style contract):**
-
-```
-BACKTRACK(state, choices)
-1   if IS-COMPLETE(state)
-2       RECORD(state)                       ▷ a full valid solution
-3       return
-4   for each candidate in choices(state)
-5       if not IS-VALID(state, candidate)   ▷ PRUNE: skip dead branches
-6           continue
-7       MAKE-CHOICE(state, candidate)
-8       BACKTRACK(state, choices)
-9       UNMAKE-CHOICE(state, candidate)      ▷ un-choose (restore state)
-```
-
-**Python template - real signature, paste and adapt:**
-
-```python
-from typing import TypeVar
-
-State = TypeVar("State")
-Candidate = TypeVar("Candidate")
-
-
-def solve(start_state: State) -> list[State]:
-    results: list[State] = []
-    path: list[Candidate] = []          # the current partial solution
-
-    def backtrack(state: State) -> None:
-        if is_complete(state):
-            results.append(snapshot(path))   # COPY the path - it mutates
-            return
-        for candidate in candidates(state):
-            if not is_valid(state, candidate):
-                continue
-            make_choice(state, path, candidate)
-            backtrack(state)
-            unmake_choice(state, path, candidate)   # un-choose - restore exactly
-
-    backtrack(start_state)
-    return results
-
-    # your logic here: fill in is_complete / candidates / is_valid /
-    # make_choice / unmake_choice for the specific problem. The frame never changes.
-```
-
-The four problem-specific holes are `candidates`, `is_valid` (the prune), and the symmetric `make_choice` / `unmake_choice` pair. Get the choose/un-choose **exactly symmetric** and snapshot the path on record - those are the two places bugs live.
-
-**The skeleton invariant that decides speed: prune _before_ recursing, never after.** There are two valid places to reject a dead branch - at the parent (test `is_valid(candidate)` before `make_choice`, as above) or at the child (recurse, then bail at the top via an `is_invalid(state)` guard). They produce the same answers but **not** the same speed: the child-guard form still pays a function call, a make, and an unmake for every dead candidate, whereas the parent-test form skips the branch entirely. Always push the check to the parent so a pruned subtree costs _zero_ recursion. The deeper version is **incremental validity** - maintain the constraint state (occupied columns, running sum) _inside_ `state` so `is_valid` is O(1) per candidate instead of an O(n) re-scan of the whole partial solution; that single change is often what turns a TLE into an accept, and it's why real backtracking carries conflict-sets/bitmasks in the state rather than recomputing validity from `path`. The frame never changes; where and how cheaply you prune is the entire performance story.
-
 ## Complexity
 
 - **Time: O(b^d · c)** in the worst case - branching factor `b`, depth `d` (decisions), `c` = cost of the validity check + recording per node. This is the size of the explored tree; **pruning shrinks the effective `b^d` dramatically** but doesn't change the worst-case bound (an adversarial input prunes nothing). For permutations `b·d ≈ n!`; for subsets `2ⁿ`; for a k-ary grid `kᶜᵉˡˡˢ`.
@@ -180,16 +128,6 @@ The contest-flavored upgrades that separate a TLE from an accepted solution - no
 - **Symmetry breaking** - fix a canonical first choice to skip mirror-image solutions (N-Queens: only place the first queen in the left half, double the count). **Why for CP:** divides the explored tree by the symmetry group size - a 2×–8× speedup for free.
 - **Meet-in-the-middle** - for `n ≤ ~40` subset problems too big for `2ⁿ`, split in half, enumerate each `2^(n/2)` side, and combine. **Why for CP:** turns `2⁴⁰` (infeasible) into `2²⁰` (instant) - the standard escape when `n` is just past the backtracking ceiling.
 
-## Worked problems
-
-Five constraint-satisfaction staples - each a **distinct** facet of the pattern, none overlapping the enumeration problems on [Subsets & Permutations](./subsets-permutations.md) or the algorithm page.
-
-- **N-Queens** - place `N` queens on an `N×N` board, none attacking. Track occupied columns and both diagonals as sets (or bitmasks); the prune is "is this column/diagonal taken?" before placing. Recurse row by row; record a board when all `N` rows are filled. The canonical "place with conflict constraints" problem.
-- **Sudoku Solver** - fill a 9×9 grid so every row, column, and 3×3 box has 1–9. Find the next empty cell, try each digit valid by the three constraints, recurse, undo on failure. Add **MRV** (fill the most-constrained empty cell first) and it solves instantly. Showcases constraint propagation + ordering heuristics.
-- **Combination Sum** - all multisets of candidates summing to a target, reuse allowed. Pass a `start` index so each recursion only considers candidates ≥ the last picked (prevents permutation duplicates); prune when the running sum exceeds the target. The "unbounded choice with a start-index dedup" technique.
-- **Restore IP Addresses** - split a digit string into 4 valid octets (0–255, no leading zeros). Recurse over 4 segments, each taking 1–3 digits, pruning octets > 255 or with leading zeros. A **bounded-depth partition** - exactly 4 cuts - distinct from the open-ended sum search.
-- **Word Break II** - return all sentences formed by inserting spaces so every word is in a dictionary. Backtrack over prefixes that are valid words; **memoize** suffixes that recur to avoid re-exploring - the bridge from pure backtracking to memoized search.
-
 ## Pitfalls
 
 - **Forgetting to un-choose (asymmetric make/unmake).** The single most common backtracking bug: you mutate shared state going down but don't restore it coming up, so sibling branches inherit a polluted state and emit garbage. Every `make_choice` needs an exactly-mirroring `unmake_choice`; verify the state is byte-for-byte restored after the recursive call returns.
@@ -214,6 +152,14 @@ Five constraint-satisfaction staples - each a **distinct** facet of the pattern,
 ### 1. N-Queens - constraint checks + symmetry
 
 **Problem.** Place `N` queens on an `N×N` board so no two share a row, column, or diagonal; return all distinct solutions. Constraints: `N ≤ 9`, so an `O(N!)`-ish search with pruning is intended.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 4 | **Output:** [[".Q..","...Q","Q...","..Q."],["..Q.","Q...","...Q",".Q.."]]
+- **Example 2**
+  - **Input:** n = 1 | **Output:** [["Q"]]
+
+**Constraints:** `1 ≤ n ≤ 9`.
 
 **Approach.** Place one queen per row (forces the row constraint for free). Track occupied **columns**, **↘ diagonals** (`row - col`), and **↗ diagonals** (`row + col`) in three sets; a placement is valid iff none of the three is occupied - an O(1) prune. Recurse to the next row, undo on return. The distinct facet: **conflict-set pruning** across three simultaneous constraints, with the diagonal-indexing trick.
 
@@ -246,6 +192,13 @@ Time O(N!) worst case (far less with pruning), space O(N). Technique: multi-cons
 ### 2. Sudoku Solver - constraint propagation + MRV
 
 **Problem.** Fill a 9×9 grid (some cells given) so every row, column, and 3×3 box contains 1–9 exactly once. Modify the board in place. Constraints: a single solution exists; the board is 9×9.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** board (81 cells, '.' = empty, partially filled) | **Output:** board fully filled in-place, no return value
+  - **Explanation:** each empty cell gets a digit 1-9 such that no row, column, or 3×3 box repeats a digit.
+
+**Constraints:** board is exactly 9×9, guaranteed to have exactly one solution.
 
 **Approach.** Find an empty cell, try each digit that doesn't already appear in its row, column, or box, recurse, undo on failure, and **return on the first complete fill** (find-one). The senior speedup is **MRV**: always fill the empty cell with the _fewest_ legal candidates next - failing fast prunes enormous subtrees. Distinct facet: **find-one short-circuit + ordering heuristic**, not collect-all.
 
@@ -290,6 +243,14 @@ Time exponential worst case, near-instant with MRV; space O(1) extra (in-place).
 
 **Problem.** Given distinct positive `candidates` and a `target`, return all unique combinations summing to `target`; each candidate may be used **unlimited** times. Constraints: `candidates ≤ 30`, `target ≤ 40` - small enough for exhaustive search.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** candidates = [2,3,6,7], target = 7 | **Output:** [[2,2,3],[7]]
+- **Example 2**
+  - **Input:** candidates = [2,3,5], target = 8 | **Output:** [[2,2,2,2],[2,3,3],[3,5]]
+
+**Constraints:** `1 ≤ candidates.length ≤ 30`, `2 ≤ candidates[i] ≤ 40`, all candidates distinct, `1 ≤ target ≤ 40`.
+
 **Approach.** Recurse carrying a `start` index and the remaining target. At each step, try candidates from `start` onward (allowing reuse by recursing with the _same_ index, but never going backward - that kills permutation duplicates). Prune the moment `remaining < 0`. Distinct facet: **unbounded reuse with start-index deduplication** - neither a fixed-length nor a permutation search.
 
 ```python
@@ -319,6 +280,14 @@ Time O(2^target) worst case, space O(target/min) depth. Technique: start-index d
 
 **Problem.** Given a string of digits, return all valid IP addresses formable by inserting three dots - four octets, each 0–255, no leading zeros (except "0" itself). Constraints: `|s| ≤ 20`.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "25525511135" | **Output:** ["255.255.11.135","255.255.111.35"]
+- **Example 2**
+  - **Input:** s = "0000" | **Output:** ["0.0.0.0"]
+
+**Constraints:** `1 ≤ s.length ≤ 20`, `s` consists of digits only.
+
 **Approach.** Recurse over exactly **four** segments; at each, take 1–3 leading digits, pruning any octet > 255 or with a leading zero. The fixed depth of 4 and the "consume the whole string in exactly 4 cuts" requirement make this a **bounded partition** - distinct from Combination Sum's open-ended depth. Stop when 4 segments are placed _and_ the string is fully consumed.
 
 ```python
@@ -346,3 +315,93 @@ def restore_ip_addresses(s: str) -> list[str]:
 ```
 
 Time O(1) effectively (≤ 3⁴ = 81 leaf attempts), space O(1). Technique: fixed-depth bounded-segment partition.
+
+**Duplicate problems:** none - the fixed-depth-4 bounded partition here is distinct from every other entry in this file.
+
+---
+
+### 5. Word Break II - backtracking + memoization
+
+**Problem.** Given a string `s` and a dictionary `wordDict`, return all sentences formed by inserting spaces so every resulting word is in the dictionary. Constraints: `|s| ≤ 20`, `wordDict.length ≤ 1000`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "catsanddog", wordDict = ["cat","cats","and","sand","dog"] | **Output:** ["cats and dog","cat sand dog"]
+- **Example 2**
+  - **Input:** s = "pineapplepenapple", wordDict = ["apple","pen","applepen","pine","pineapple"] | **Output:** ["pine apple pen apple","pineapple pen apple","pine applepen apple"]
+
+**Constraints:** `1 ≤ s.length ≤ 20`, `1 ≤ wordDict.length ≤ 1000`, all dictionary words distinct.
+
+**Approach.** Backtrack over prefixes of the remaining suffix: at each position, try every dictionary word that matches the upcoming characters, recurse on the rest, and join words with spaces on a complete parse. The bridge from pure backtracking to memoized search: cache the list of sentences producible from each suffix (`memo[suffix] = [sentence, ...]`) so a suffix reachable via multiple different prefixes is only explored once. Without the memo, overlapping suffixes get re-explored exponentially; with it, each distinct suffix is solved once and reused.
+
+```python
+def word_break(s: str, word_dict: list[str]) -> list[str]:
+    words = set(word_dict)
+    memo: dict[str, list[str]] = {}
+
+    def backtrack(suffix: str) -> list[str]:
+        if suffix in memo:
+            return memo[suffix]
+        if not suffix:
+            return [""]
+        sentences: list[str] = []
+        for end in range(1, len(suffix) + 1):
+            word = suffix[:end]
+            if word in words:
+                for rest in backtrack(suffix[end:]):
+                    sentences.append(word if not rest else f"{word} {rest}")
+        memo[suffix] = sentences
+        return sentences
+
+    return backtrack(s)
+```
+
+**Complexity.** O(n³ + 2ⁿ) worst case without memo pruning the overlap; with the suffix memo, each of the O(n) distinct suffixes is computed once, each costing O(n) to try all split points - O(n²) plus the cost of joining sentences. Space O(n) for the memo, plus output size.
+
+**Duplicate problems:**
+- Word Break (LC 139) - same suffix-backtracking shape, but only needs a boolean existence check instead of enumerating every sentence - no need to collect or join strings, memo stores `True`/`False` per suffix.
+
+---
+
+### 6. Palindrome Partitioning - predicate-gated cut
+
+**Problem.** Given a string `s`, partition it so every substring is a palindrome; return all such partitions. Constraints: `1 ≤ |s| ≤ 16`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "aab" | **Output:** [["a","a","b"],["aa","b"]]
+- **Example 2**
+  - **Input:** s = "a" | **Output:** [["a"]]
+
+**Constraints:** `1 ≤ s.length ≤ 16`, `s` consists of lowercase English letters only.
+
+**Approach.** Recurse over cut positions: at each step, try every prefix of the remaining suffix, and only recurse into it if that prefix is itself a palindrome (the prune predicate). This differs from both bounded-depth partition (Restore IP Addresses, which gates on a fixed numeric range and exactly 4 cuts) and dictionary-lookup partition (Word Break II, which gates on set membership) - here the gate is a **computed predicate over the substring itself** (is this a palindrome?), and the depth is unbounded (any number of cuts, not a fixed count).
+
+```python
+def partition(s: str) -> list[list[str]]:
+    results: list[list[str]] = []
+    path: list[str] = []
+    n = len(s)
+
+    def is_palindrome(sub: str) -> bool:
+        return sub == sub[::-1]
+
+    def backtrack(start: int) -> None:
+        if start == n:
+            results.append(path[:])
+            return
+        for end in range(start + 1, n + 1):
+            piece = s[start:end]
+            if is_palindrome(piece):
+                path.append(piece)
+                backtrack(end)
+                path.pop()
+
+    backtrack(0)
+    return results
+```
+
+**Complexity.** O(n · 2ⁿ) worst case (2ⁿ possible partitions, O(n) palindrome check each, though precomputing a palindrome table reduces the per-check cost to O(1)). Space O(n) recursion depth, plus output.
+
+**Duplicate problems:**
+- Palindrome Partitioning II (LC 132) - same palindrome-gated cut concept, but asks for the minimum number of cuts (an optimization, not enumeration) - solved with DP instead of backtracking once only a count is needed, illustrating the backtracking-vs-DP boundary from Recognition signals.

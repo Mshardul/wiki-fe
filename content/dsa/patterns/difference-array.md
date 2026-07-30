@@ -10,12 +10,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -92,50 +90,6 @@ The `+4` written at index 1 "flows rightward" through the prefix sum until the `
 ### Why it works
 
 Define `D[i] = A[i] - A[i-1]` (with `A[-1] = 0`). Then `A[i] = D[0] + D[1] + … + D[i]` (prefix sum of D). Incrementing `A[l..r]` by `val` means `D[l]` increases by `val` (since `A[l] - A[l-1]` grows) and `D[r+1]` decreases by `val` (since `A[r+1] - A[r]` shrinks); all other `D[i]` are unchanged.
-
-## Skeleton
-
-### CLRS pseudocode
-
-```
-DIFFERENCE-ARRAY-BUILD(A, n)
-  let D[0..n] be a new array of zeros
-  for i = 0 to n-1
-    D[i] ← A[i]          ▷ if A is non-zero initially
-  for i = n-1 downto 1
-    D[i] ← D[i] - D[i-1] ▷ compute difference; D now holds deltas
-  return D
-
-RANGE-UPDATE(D, l, r, val)
-  D[l] ← D[l] + val
-  D[r+1] ← D[r+1] - val  ▷ sentinel slot at n absorbs r = n-1
-
-RECONSTRUCT(D, n)
-  for i = 1 to n-1
-    D[i] ← D[i] + D[i-1]  ▷ prefix sum restores final values
-  return D[0..n-1]
-```
-
-### Python template
-
-```python
-def range_updates(n: int, updates: list[tuple[int, int, int]]) -> list[int]:
-    """
-    Apply q range updates to a zero-initialized array of length n.
-    Each update: (l, r, val) → add val to A[l..r] inclusive.
-    Returns the final array.
-    """
-    diff: list[int] = [0] * (n + 1)   # extra slot for D[r+1] when r == n-1
-
-    for l, r, val in updates:
-        diff[l] += val
-        diff[r + 1] -= val             # your logic here - adapt l/r to 0- or 1-indexed
-
-    for i in range(1, n):
-        diff[i] += diff[i - 1]
-
-    return diff[:n]
-```
 
 ## Complexity
 
@@ -240,107 +194,6 @@ When the range can wrap around (index `l > r` in a circular array of length `n`)
 
 **Why for CP:** circular scheduler problems, wrap-around range painting on rings. Common in IOI / CF problems with circular indices.
 
-## Worked problems
-
-### 1. Range Addition (LC 370)
-
-Given an array of `n` zeros and a list of operations `(i, j, inc)`, return the array after all operations.
-
-**Approach:** textbook difference array - `D[i] += inc`, `D[j+1] -= inc` for each operation; prefix sum of `D` is the answer. Every operation is O(1); total O(n + q).
-
-```python
-def get_modified_array(n: int, updates: list[list[int]]) -> list[int]:
-    diff = [0] * (n + 1)
-    for l, r, val in updates:
-        diff[l] += val
-        diff[r + 1] -= val
-    for i in range(1, n):
-        diff[i] += diff[i - 1]
-    return diff[:n]
-```
-
-**Complexity:** O(n + q) time, O(n) space.
-
-### 2. Corporate Flight Bookings (LC 1109)
-
-`n` flights numbered 1..n; `bookings[i] = [first, last, seats]` means `seats` seats are booked on flights `first` through `last`. Return an array where `ans[i]` is the total seats booked on flight `i`.
-
-**Approach:** difference array on 1-indexed positions - `D[first-1] += seats`, `D[last] -= seats`; prefix sum of `D[0..n-1]` is the answer. The problem is a verbatim range-addition task.
-
-```python
-def corp_flight_bookings(bookings: list[list[int]], n: int) -> list[int]:
-    diff = [0] * (n + 1)
-    for first, last, seats in bookings:
-        diff[first - 1] += seats
-        diff[last] -= seats
-    for i in range(1, n):
-        diff[i] += diff[i - 1]
-    return diff[:n]
-```
-
-**Complexity:** O(n + q) time, O(n) space.
-
-### 3. Meeting Rooms II (LC 253)
-
-Given a list of meeting intervals `[start, end]`, find the minimum number of conference rooms required (equivalently, the maximum number of concurrent meetings at any point).
-
-**Approach:** event sweep - place `+1` at each `start` and `-1` at each `end`; sort events; running sum gives occupancy at each moment; max occupancy = rooms needed. This is the overlap-counting variant of the difference array on a large-integer axis.
-
-```python
-def min_meeting_rooms(intervals: list[list[int]]) -> int:
-    events: list[tuple[int, int]] = []
-    for start, end in intervals:
-        events.append((start, 1))
-        events.append((end, -1))
-    events.sort()
-    rooms = cur = 0
-    for _, delta in events:
-        cur += delta
-        rooms = max(rooms, cur)
-    return rooms
-```
-
-**Complexity:** O(q log q) time (dominated by sort), O(q) space.
-
-### 4. Points That Intersect With Cars (LC 2848)
-
-`nums[i] = [start_i, end_i]` represents a car occupying a 1D segment. Count the number of integer points covered by at least one car.
-
-**Approach:** textbook difference array on integer points - `D[start_i] += 1`, `D[end_i + 1] -= 1` for each car; prefix sum of `D` gives coverage at each point; count positions where `D[i] > 0`. This is the overlap-counting variant on a bounded integer axis.
-
-```python
-def number_of_points(nums: list[list[int]]) -> int:
-    diff = [0] * 102
-    for start, end in nums:
-        diff[start] += 1
-        diff[end + 1] -= 1
-    running = covered = 0
-    for v in diff:
-        running += v
-        if running > 0:
-            covered += 1
-    return covered
-```
-
-**Complexity:** O(n + max_coord) time, O(max_coord) space.
-
-### 5. Number of Flowers in Full Bloom (LC 2251)
-
-`n` flowers bloom in `[start_i, end_i]` (inclusive). For each of `m` people at position `time_j`, count how many flowers are in bloom.
-
-**Approach:** difference array on the time axis - `D[start_i] += 1`, `D[end_i + 1] -= 1` for each flower, then prefix-sum gives `bloom[t]` = count of blooming flowers at time `t`. Each person query is answered in O(log n) via binary search on a sorted coordinate array (coordinate-compress the time axis since `start_i` can reach 10⁹). This combines the core difference-array mechanic with offline coordinate compression, a common CP pairing.
-
-```python
-from bisect import bisect_left, bisect_right
-
-def full_bloom_flowers(flowers: list[list[int]], people: list[int]) -> list[int]:
-    starts = sorted(f[0] for f in flowers)
-    ends = sorted(f[1] for f in flowers)
-    return [bisect_right(starts, p) - bisect_left(ends, p) for p in people]
-```
-
-**Complexity:** O((n + m) log n) time, O(n) space.
-
 ## Pitfalls
 
 ### 1. Off-by-one on the sentinel slot
@@ -371,9 +224,17 @@ For the 2D variant, you must apply prefix sums in *both* dimensions - row-wise t
 
 ## Practice problems
 
-### LC 370 - Range Addition
+### 1. Range Addition (LC 370)
 
 Given `n` (array length) and `updates`, a list of `[i, j, inc]` operations, apply each operation (add `inc` to `A[i..j]` inclusive) and return the final array. `1 ≤ n ≤ 10⁴`, `0 ≤ i ≤ j < n`. The problem is the textbook difference array problem.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 5, updates = [[1,3,2],[2,4,3],[0,2,-2]] | **Output:** [-2,0,3,5,3]
+- **Example 2**
+  - **Input:** n = 3, updates = [[0,2,1]] | **Output:** [1,1,1]
+
+**Constraints:** `1 ≤ n ≤ 10⁴`, `0 ≤ updates.length ≤ 10⁴`, `0 ≤ i ≤ j < n`, `-1000 ≤ inc ≤ 1000`.
 
 **Insight:** each operation is exactly one difference-array update; reconstruct with one prefix-sum pass.
 
@@ -390,36 +251,23 @@ def get_modified_array(n: int, updates: list[list[int]]) -> list[int]:
 
 **Complexity:** O(n + q) time, O(n) space.
 
-**Duplicate problems:** LC 1109 (Corporate Flight Bookings) is structurally identical - 1-indexed range-add then read.
+**Duplicate problems:**
+- Corporate Flight Bookings (LC 1109) - structurally identical, 1-indexed range-add then read.
+- Points That Intersect With Cars (LC 2848) - same diff array + prefix sum over an integer axis, finishes by counting positions with coverage > 0 instead of returning the array.
 
 ---
 
-### LC 1109 - Corporate Flight Bookings
-
-`n` flights, `bookings` list of `[first, last, seats]`; `seats` are booked on every flight from `first` to `last` (1-indexed). Return the total seats on each flight. `1 ≤ n ≤ 2×10⁴`.
-
-**Insight:** difference array on 0-indexed positions: `D[first-1] += seats`, `D[last] -= seats`.
-
-```python
-def corp_flight_bookings(bookings: list[list[int]], n: int) -> list[int]:
-    diff = [0] * (n + 1)
-    for first, last, seats in bookings:
-        diff[first - 1] += seats
-        diff[last] -= seats          # last is inclusive → sentinel at last (0-indexed last)
-    for i in range(1, n):
-        diff[i] += diff[i - 1]
-    return diff[:n]
-```
-
-**Complexity:** O(n + q) time, O(n) space.
-
-**Duplicate problems:** LC 370 (Range Addition) is the same problem with 0-indexed input.
-
----
-
-### LC 253 - Meeting Rooms II
+### 2. Meeting Rooms II (LC 253)
 
 Given `intervals` where `intervals[i] = [start_i, end_i]`, return the minimum number of conference rooms required. `1 ≤ intervals.length ≤ 10⁴`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** intervals = [[0,30],[5,10],[15,20]] | **Output:** 2
+- **Example 2**
+  - **Input:** intervals = [[7,10],[2,4]] | **Output:** 1
+
+**Constraints:** `1 ≤ intervals.length ≤ 10⁴`, `0 ≤ start_i < end_i ≤ 10⁶`.
 
 **Insight:** event sweep (floating difference array) - `+1` at each start, `-1` at each end. Sort events by time; track running sum; max running sum = minimum rooms.
 
@@ -439,31 +287,36 @@ def min_meeting_rooms(intervals: list[list[int]]) -> int:
 
 **Complexity:** O(q log q) time, O(q) space.
 
-**Duplicate problems:** LC 2406 (Divide Intervals Into Minimum Number of Groups) is identical in structure.
+**Duplicate problems:**
+- Divide Intervals Into Minimum Number of Groups (LC 2406) - identical in structure.
+- Car Pooling (LC 1094) - same event-sweep shape, deltas are passenger counts instead of ±1, checked against a capacity threshold.
 
 ---
 
-### LC 2848 - Points That Intersect With Cars
+### 3. Number of Flowers in Full Bloom (LC 2251)
 
-`nums[i] = [start_i, end_i]` is a car on a 1D road. Return the number of integer points covered by at least one car. `1 ≤ nums.length ≤ 100`, `1 ≤ start_i ≤ end_i ≤ 100`.
+`n` flowers bloom in `[start_i, end_i]` (inclusive). For each of `m` people at position `time_j`, count how many flowers are in bloom. `1 ≤ n, m ≤ 5×10⁴`.
 
-**Insight:** difference array on the integer axis - increment at `start`, decrement at `end + 1`; prefix sum gives coverage count at each point; count positions with coverage > 0.
+**Worked examples:**
+- **Example 1**
+  - **Input:** flowers = [[1,6],[3,7],[9,12],[4,13]], people = [2,3,7,11] | **Output:** [1,2,2,2]
+- **Example 2**
+  - **Input:** flowers = [[1,10],[3,3]], people = [3,3,2] | **Output:** [2,2,1]
+
+**Constraints:** `1 ≤ n, m ≤ 5×10⁴`, `1 ≤ start_i ≤ end_i ≤ 10⁹`, `1 ≤ time_j ≤ 10⁹`.
+
+**Approach.** Difference array on the time axis conceptually - `D[start_i] += 1`, `D[end_i + 1] -= 1` for each flower - but `start_i`/`end_i` can reach 10⁹, so a literal array is infeasible. Instead, sort `start` and `end` values separately: for a query time `p`, the number of flowers blooming is `(flowers with start ≤ p)` minus `(flowers with end < p)`, both answerable in O(log n) via binary search on the two sorted lists. This is the difference-array mechanic (a `+1`/`-1` per flower, net effect at a point = accumulated deltas up to that point) computed via counting instead of materializing the array.
 
 ```python
-def number_of_points(nums: list[list[int]]) -> int:
-    diff = [0] * 102          # coordinates up to 100, sentinel at 101
-    for start, end in nums:
-        diff[start] += 1
-        diff[end + 1] -= 1
-    covered = 0
-    running = 0
-    for v in diff:
-        running += v
-        if running > 0:
-            covered += 1
-    return covered
+from bisect import bisect_left, bisect_right
+
+def full_bloom_flowers(flowers: list[list[int]], people: list[int]) -> list[int]:
+    starts = sorted(f[0] for f in flowers)
+    ends = sorted(f[1] for f in flowers)
+    return [bisect_right(starts, p) - bisect_left(ends, p) for p in people]
 ```
 
-**Complexity:** O(n + max_coord) time, O(max_coord) space.
+**Complexity:** O((n + m) log n) time, O(n) space.
 
-**Duplicate problems:** LC 2251 (Number of Flowers in Full Bloom) is the same overlap-count pattern with coordinate compression for large ranges.
+**Duplicate problems:**
+- Meeting Rooms II (LC 253) - same "each interval contributes a +1/-1 delta" idea, but asks for the peak concurrent count rather than per-query counts at arbitrary points.

@@ -10,12 +10,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -95,98 +93,6 @@ arr = [1, 2, 3, 1]
 lo=0 hi=3  mid=1  arr[1]=2 < arr[2]=3  →  peak is right:  lo=2
 lo=2 hi=3  mid=2  arr[2]=3 > arr[3]=1  →  peak is left (or here):  hi=2
 lo==hi==2  →  peak at index 2
-```
-
-## Skeleton
-
-**CLRS pseudocode - rotated sorted array search:**
-
-```
-SEARCH-ROTATED(A, lo, hi, target):
-  while lo ≤ hi:
-    mid ← lo + ⌊(hi - lo) / 2⌋
-    if A[mid] == target:
-      return mid
-    if A[lo] ≤ A[mid]:                    ▷ left half is sorted
-      if A[lo] ≤ target < A[mid]:
-        hi ← mid - 1                      ▷ target in sorted left half
-      else:
-        lo ← mid + 1                      ▷ target in right (pivot) half
-    else:                                 ▷ right half is sorted
-      if A[mid] < target ≤ A[hi]:
-        lo ← mid + 1                      ▷ target in sorted right half
-      else:
-        hi ← mid - 1                      ▷ target in left (pivot) half
-  return -1
-```
-
-**Python template - generic modified binary search:**
-
-```python
-def modified_binary_search(nums: list[int], target: int) -> int:
-    lo, hi = 0, len(nums) - 1
-
-    while lo <= hi:
-        mid = lo + (hi - lo) // 2
-
-        if nums[mid] == target:
-            return mid
-
-        # Determine which half is structured, then check if target lives there.
-        if nums[lo] <= nums[mid]:
-            if nums[lo] <= target < nums[mid]:
-                hi = mid - 1
-            else:
-                lo = mid + 1
-        else:
-            if nums[mid] < target <= nums[hi]:
-                lo = mid + 1
-            else:
-                hi = mid - 1              # your logic here - target in left half
-
-    return -1
-```
-
-**Python template - peak finding:**
-
-```python
-def find_peak(nums: list[int]) -> int:
-    lo, hi = 0, len(nums) - 1
-
-    while lo < hi:                         # loop until lo == hi == peak
-        mid = lo + (hi - lo) // 2
-        if nums[mid] < nums[mid + 1]:
-            lo = mid + 1
-        else:
-            hi = mid
-    return lo
-```
-
-**Python template - first/last position (bisect-style):**
-
-```python
-def search_range(nums: list[int], target: int) -> tuple[int, int]:
-    # bisect_left: first index where nums[i] >= target
-    lo, hi = 0, len(nums)
-    while lo < hi:
-        mid = (lo + hi) // 2
-        if nums[mid] < target:
-            lo = mid + 1
-        else:
-            hi = mid
-    left = lo
-    if left == len(nums) or nums[left] != target:
-        return (-1, -1)
-    # bisect_right: first index where nums[i] > target
-    lo, hi = 0, len(nums)
-    while lo < hi:
-        mid = (lo + hi) // 2
-        if nums[mid] <= target:
-            lo = mid + 1
-        else:
-            hi = mid
-    right = lo - 1
-    return (left, right)
 ```
 
 ## Complexity
@@ -296,135 +202,6 @@ def first_true(lo: int, hi: int, predicate) -> int:
 
 Why for CP: "first index where condition holds" appears across problem categories - duplicates search, rotation minimum, allocation problems; one clean template handles all of them without re-deriving the loop each time.
 
-## Worked problems
-
-### Search in Rotated Sorted Array (LC 33)
-
-Array `nums` of distinct integers, sorted and then rotated at an unknown pivot. Given `target`, return its index or -1. Constraints: n ≤ 10⁴, O(log n) required.
-
-**Approach:** At every `mid`, one half is guaranteed sorted (no pivot in it). Test `nums[lo] <= nums[mid]` to identify the sorted half. Check if `target` falls in that sorted range; if yes, discard the other half; if no, discard the sorted half. One comparison per step → O(log n).
-
-```python
-def search(nums: list[int], target: int) -> int:
-    lo, hi = 0, len(nums) - 1
-    while lo <= hi:
-        mid = lo + (hi - lo) // 2
-        if nums[mid] == target:
-            return mid
-        if nums[lo] <= nums[mid]:
-            if nums[lo] <= target < nums[mid]:
-                hi = mid - 1
-            else:
-                lo = mid + 1
-        else:
-            if nums[mid] < target <= nums[hi]:
-                lo = mid + 1
-            else:
-                hi = mid - 1
-    return -1
-```
-
-**Time:** O(log n). **Space:** O(1).
-
-**Duplicate problems:**
-- Search in Rotated Sorted Array II (LC 81) - same algorithm; when `nums[lo] == nums[mid]`, can't determine sorted half → `lo += 1; hi -= 1`, worst case O(n).
-- Find Minimum in Rotated Sorted Array (LC 153) - no target; search for pivot where `nums[mid] > nums[hi]`; same sorted-half identification.
-- Find Minimum in Rotated Sorted Array II (LC 154) - same as LC 153 with duplicates; same O(n) worst-case caveat.
-
----
-
-### Find Peak Element (LC 162)
-
-Array `nums` where `nums[i] ≠ nums[i+1]`. A peak is any index `i` where `nums[i] > nums[i-1]` and `nums[i] > nums[i+1]` (boundaries count as -∞). Return any peak index. Constraints: n ≤ 10⁵, O(log n) required.
-
-**Approach:** At `mid`, compare `nums[mid]` with `nums[mid+1]`. If `nums[mid] < nums[mid+1]` the slope is rising - a peak must exist to the right (LC guarantees a peak exists). If `nums[mid] > nums[mid+1]` the slope is falling - `mid` itself could be a peak, or there's one to the left. Shrink to `[lo, mid]`. Loop ends when `lo == hi` - that's a peak.
-
-```python
-def findPeakElement(nums: list[int]) -> int:
-    lo, hi = 0, len(nums) - 1
-    while lo < hi:
-        mid = lo + (hi - lo) // 2
-        if nums[mid] < nums[mid + 1]:
-            lo = mid + 1
-        else:
-            hi = mid
-    return lo
-```
-
-**Time:** O(log n). **Space:** O(1).
-
-**Duplicate problems:**
-- Peak Index in a Mountain Array (LC 852) - identical peak-finding mechanic; array is guaranteed bitonic (strictly up then strictly down), so any peak-finding binary search applies directly.
-- Find Peak Element in 2D Matrix (LC 1901) - 2D extension; find column of global row-max, binary search columns; same "move toward the higher neighbor" rule applied to columns.
-
----
-
-### Find First and Last Position of Element in Sorted Array (LC 34)
-
-Given sorted array `nums` and `target`, return `[first, last]` index of `target`, or `[-1, -1]` if absent. Constraints: n ≤ 10⁵, O(log n) required.
-
-**Approach:** Two separate binary searches. First: `bisect_left` - find the leftmost index where `nums[i] >= target` (the "lower bound"). Second: `bisect_right` - find the leftmost index where `nums[i] > target`, subtract 1 (the "upper bound"). If `lower_bound` is out of range or `nums[lower_bound] != target`, return `[-1,-1]`.
-
-```python
-def searchRange(nums: list[int], target: int) -> list[int]:
-    # bisect_left: first index where nums[i] >= target
-    lo, hi = 0, len(nums)
-    while lo < hi:
-        mid = (lo + hi) // 2
-        if nums[mid] < target:
-            lo = mid + 1
-        else:
-            hi = mid
-    left = lo
-    if left == len(nums) or nums[left] != target:
-        return [-1, -1]
-    # bisect_right: first index where nums[i] > target
-    lo, hi = 0, len(nums)
-    while lo < hi:
-        mid = (lo + hi) // 2
-        if nums[mid] <= target:
-            lo = mid + 1
-        else:
-            hi = mid
-    right = lo - 1
-    return [left, right]
-```
-
-**Time:** O(log n). **Space:** O(1).
-
-**Duplicate problems:**
-- Count of Range Sum (LC 327) - uses `bisect_left`/`bisect_right` on a sorted prefix-sum array to count values in a range; same lower/upper bound pattern.
-- Search Insert Position (LC 35) - pure `bisect_left`; the simplest application of the lower-bound search.
-
----
-
-### Search a 2D Matrix (LC 74)
-
-`m × n` matrix where each row is sorted and the first element of each row is greater than the last element of the previous row. Find if `target` exists. Constraints: m, n ≤ 100, O(log(m·n)) required.
-
-**Approach:** The matrix is equivalent to a flattened sorted array of length `m*n`. Binary search over indices 0 to `m*n - 1`. Decode `mid` as `row = mid // n`, `col = mid % n`. Standard binary search comparisons apply.
-
-```python
-def searchMatrix(matrix: list[list[int]], target: int) -> bool:
-    m, n = len(matrix), len(matrix[0])
-    lo, hi = 0, m * n - 1
-    while lo <= hi:
-        mid = lo + (hi - lo) // 2
-        val = matrix[mid // n][mid % n]
-        if val == target:
-            return True
-        elif val < target:
-            lo = mid + 1
-        else:
-            hi = mid - 1
-    return False
-```
-
-**Time:** O(log(m·n)). **Space:** O(1).
-
-**Duplicate problems:**
-- Search a 2D Matrix II (LC 240) - rows sorted, columns sorted, but first element of row is NOT > last of previous row; the flattening trick fails. Instead start top-right and move left (target smaller) or down (target larger). Different algorithm - O(m + n), not O(log(m·n)).
-
 ## Pitfalls
 
 **1. Using `arr[lo] < arr[mid]` instead of `<=` in rotated search**
@@ -460,23 +237,28 @@ Modified binary search requires at least local monotonicity - one half is always
 
 ## Practice problems
 
-### 1. Search in Rotated Sorted Array II (LC 81)
+### 1. Search in Rotated Sorted Array (LC 33)
 
-Array `nums` of integers (may contain duplicates), sorted and rotated at an unknown pivot. Given `target`, return `true` if it exists. Constraints: n ≤ 5000, O(log n) average required.
+Array `nums` of distinct integers, sorted and then rotated at an unknown pivot. Given `target`, return its index or -1. Constraints: n ≤ 10⁴, O(log n) required.
 
-**Approach:** Same sorted-half identification as LC 33, but duplicates break the test: when `nums[lo] == nums[mid] == nums[hi]`, you cannot tell which half is sorted. Shrink both ends by one (`lo += 1; hi -= 1`) and continue. This is the key extension over LC 33 - handle the ambiguous equal case explicitly. Average O(log n), worst case O(n) when all elements are equal.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [4,5,6,7,0,1,2], target = 0 | **Output:** 4
+- **Example 2**
+  - **Input:** nums = [4,5,6,7,0,1,2], target = 3 | **Output:** -1
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁴`, `-10⁴ ≤ nums[i] ≤ 10⁴`, all values distinct, `nums` is a rotated sorted array.
+
+**Approach:** At every `mid`, one half is guaranteed sorted (no pivot in it). Test `nums[lo] <= nums[mid]` to identify the sorted half. Check if `target` falls in that sorted range; if yes, discard the other half; if no, discard the sorted half. One comparison per step → O(log n).
 
 ```python
-def search(nums: list[int], target: int) -> bool:
+def search(nums: list[int], target: int) -> int:
     lo, hi = 0, len(nums) - 1
     while lo <= hi:
         mid = lo + (hi - lo) // 2
         if nums[mid] == target:
-            return True
-        if nums[lo] == nums[mid] == nums[hi]:  # ambiguous - can't tell which half is sorted
-            lo += 1
-            hi -= 1
-        elif nums[lo] <= nums[mid]:
+            return mid
+        if nums[lo] <= nums[mid]:
             if nums[lo] <= target < nums[mid]:
                 hi = mid - 1
             else:
@@ -486,100 +268,135 @@ def search(nums: list[int], target: int) -> bool:
                 lo = mid + 1
             else:
                 hi = mid - 1
-    return False
+    return -1
 ```
 
-**Time:** O(log n) average, O(n) worst case. **Space:** O(1).
+**Complexity:** O(log n) time, O(1) space.
 
 **Duplicate problems:**
-- Find Minimum in Rotated Sorted Array II (LC 154) - same duplicate-ambiguity handling (`lo += 1; hi -= 1`); goal is the minimum value rather than a target, but the same equal-case shrink applies.
+- Search in Rotated Sorted Array II (LC 81) - same algorithm; when `nums[lo] == nums[mid] == nums[hi]`, can't determine sorted half → `lo += 1; hi -= 1`, worst case O(n).
+- Find Minimum in Rotated Sorted Array (LC 153) - no target; search for pivot where `nums[mid] > nums[hi]`; same sorted-half identification.
+- Find Minimum in Rotated Sorted Array II (LC 154) - same as LC 153 with duplicates; same O(n) worst-case caveat.
 
 ---
 
-### 2. Find in Mountain Array (LC 1095)
+### 2. Find Peak Element (LC 162)
 
-A mountain array first strictly increases then strictly decreases. You can call `MountainArray.get(index)` (limited calls). Find the minimum index of `target`, or -1. Constraints: `MountainArray.length()` ≤ 10⁴.
+Array `nums` where `nums[i] ≠ nums[i+1]`. A peak is any index `i` where `nums[i] > nums[i-1]` and `nums[i] > nums[i+1]` (boundaries count as -∞). Return any peak index. Constraints: n ≤ 10⁵, O(log n) required.
 
-**Approach:** Three binary searches. (1) Find the peak index using the rising/falling comparison. (2) Binary search the ascending half `[0, peak]` for `target`. (3) If not found, binary search the descending half `[peak, n-1]` with a reversed comparator. Total O(log n) calls.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,2,3,1] | **Output:** 2
+- **Example 2**
+  - **Input:** nums = [1,2,1,3,5,6,4] | **Output:** 5
+  - **Explanation:** index 1 (value 2) and index 5 (value 6) are both valid peaks; any one is accepted.
+
+**Constraints:** `1 ≤ nums.length ≤ 1000`, `-2³¹ ≤ nums[i] ≤ 2³¹-1`, `nums[i] ≠ nums[i+1]`.
+
+**Approach:** At `mid`, compare `nums[mid]` with `nums[mid+1]`. If `nums[mid] < nums[mid+1]` the slope is rising - a peak must exist to the right (LC guarantees a peak exists). If `nums[mid] > nums[mid+1]` the slope is falling - `mid` itself could be a peak, or there's one to the left. Shrink to `[lo, mid]`. Loop ends when `lo == hi` - that's a peak.
 
 ```python
-def findInMountainArray(target: int, mountain_arr) -> int:
-    n = mountain_arr.length()
-
-    lo, hi = 0, n - 1
+def findPeakElement(nums: list[int]) -> int:
+    lo, hi = 0, len(nums) - 1
     while lo < hi:
         mid = lo + (hi - lo) // 2
-        if mountain_arr.get(mid) < mountain_arr.get(mid + 1):
+        if nums[mid] < nums[mid + 1]:
             lo = mid + 1
         else:
             hi = mid
-    peak = lo
+    return lo
+```
 
-    lo, hi = 0, peak
+**Complexity:** O(log n) time, O(1) space.
+
+**Duplicate problems:**
+- Peak Index in a Mountain Array (LC 852) - identical peak-finding mechanic; array is guaranteed bitonic (strictly up then strictly down), so any peak-finding binary search applies directly.
+- Find in Mountain Array (LC 1095) - same peak-finding as its first phase, then two plain binary searches (one per side of the peak, one with a reversed comparator) to locate a target - no new halving mechanic beyond peak-finding and classic search.
+- Find Peak Element in 2D Matrix (LC 1901) - 2D extension; find column of global row-max, binary search columns; same "move toward the higher neighbor" rule applied to columns.
+
+---
+
+### 3. Find First and Last Position of Element in Sorted Array (LC 34)
+
+Given sorted array `nums` and `target`, return `[first, last]` index of `target`, or `[-1, -1]` if absent. Constraints: n ≤ 10⁵, O(log n) required.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [5,7,7,8,8,10], target = 8 | **Output:** [3,4]
+- **Example 2**
+  - **Input:** nums = [5,7,7,8,8,10], target = 6 | **Output:** [-1,-1]
+
+**Constraints:** `0 ≤ nums.length ≤ 10⁵`, `-10⁹ ≤ nums[i], target ≤ 10⁹`, `nums` sorted ascending.
+
+**Approach:** Two separate binary searches. First: `bisect_left` - find the leftmost index where `nums[i] >= target` (the "lower bound"). Second: `bisect_right` - find the leftmost index where `nums[i] > target`, subtract 1 (the "upper bound"). If `lower_bound` is out of range or `nums[lower_bound] != target`, return `[-1,-1]`.
+
+```python
+def searchRange(nums: list[int], target: int) -> list[int]:
+    # bisect_left: first index where nums[i] >= target
+    lo, hi = 0, len(nums)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if nums[mid] < target:
+            lo = mid + 1
+        else:
+            hi = mid
+    left = lo
+    if left == len(nums) or nums[left] != target:
+        return [-1, -1]
+    # bisect_right: first index where nums[i] > target
+    lo, hi = 0, len(nums)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if nums[mid] <= target:
+            lo = mid + 1
+        else:
+            hi = mid
+    right = lo - 1
+    return [left, right]
+```
+
+**Complexity:** O(log n) time, O(1) space.
+
+**Duplicate problems:**
+- Search Insert Position (LC 35) - pure `bisect_left`; the simplest application of the lower-bound search.
+- Count of Range Sum (LC 327) - uses `bisect_left`/`bisect_right` on a sorted prefix-sum array to count values in a range; same lower/upper bound pattern.
+- Time Based Key-Value Store (LC 981) - same `bisect_right` floor-lookup mechanic (largest key ≤ query), applied to a per-key list that grows via appends instead of a static array.
+- Find Right Interval (LC 436) - `bisect_left` on sorted start points to find the smallest start ≥ each interval's end.
+- Online Election (LC 911) - `bisect_right` on timestamps to find the leader at query time; identical temporal binary search pattern.
+
+---
+
+### 4. Search a 2D Matrix (LC 74)
+
+`m × n` matrix where each row is sorted and the first element of each row is greater than the last element of the previous row. Find if `target` exists. Constraints: m, n ≤ 100, O(log(m·n)) required.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 3 | **Output:** true
+- **Example 2**
+  - **Input:** matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 13 | **Output:** false
+
+**Constraints:** `1 ≤ m, n ≤ 100`, `-10⁴ ≤ matrix[i][j], target ≤ 10⁴`.
+
+**Approach:** The matrix is equivalent to a flattened sorted array of length `m*n`. Binary search over indices 0 to `m*n - 1`. Decode `mid` as `row = mid // n`, `col = mid % n`. Standard binary search comparisons apply.
+
+```python
+def searchMatrix(matrix: list[list[int]], target: int) -> bool:
+    m, n = len(matrix), len(matrix[0])
+    lo, hi = 0, m * n - 1
     while lo <= hi:
         mid = lo + (hi - lo) // 2
-        val = mountain_arr.get(mid)
+        val = matrix[mid // n][mid % n]
         if val == target:
-            return mid
+            return True
         elif val < target:
             lo = mid + 1
         else:
             hi = mid - 1
-
-    lo, hi = peak, n - 1
-    while lo <= hi:
-        mid = lo + (hi - lo) // 2
-        val = mountain_arr.get(mid)
-        if val == target:
-            return mid
-        elif val > target:
-            lo = mid + 1
-        else:
-            hi = mid - 1
-
-    return -1
+    return False
 ```
 
-**Time:** O(log n) calls. **Space:** O(1).
+**Complexity:** O(log(m·n)) time, O(1) space.
 
 **Duplicate problems:**
-- Peak Index in a Mountain Array (LC 852) - identical peak-finding step; skips the two subsequent searches since only the peak is needed.
-
----
-
-### 3. Time Based Key-Value Store (LC 981)
-
-Design a data structure supporting `set(key, value, timestamp)` and `get(key, timestamp)` which returns the value with the largest timestamp ≤ the given timestamp, or `""` if none exists. Constraints: up to 10⁵ calls, timestamps strictly increasing per key.
-
-**Approach:** Store values per key in a list of `(timestamp, value)` pairs (they arrive in strictly increasing timestamp order, so the list is automatically sorted). For `get`, binary search the list for the largest timestamp ≤ the query timestamp using `bisect_right` - the answer is at index `pos - 1`.
-
-```python
-class TimeMap:
-    def __init__(self) -> None:
-        self.store: dict[str, list[tuple[int, str]]] = {}
-
-    def set(self, key: str, value: str, timestamp: int) -> None:
-        self.store.setdefault(key, []).append((timestamp, value))
-
-    def get(self, key: str, timestamp: int) -> str:
-        entries = self.store.get(key, [])
-        # bisect_right on (timestamp, chr(127)): find first entry with ts > timestamp
-        # chr(127) is the largest printable ASCII, so (timestamp, chr(127)) sorts past
-        # all real values at this timestamp
-        target = (timestamp, chr(127))
-        lo, hi = 0, len(entries)
-        while lo < hi:
-            mid = (lo + hi) // 2
-            if entries[mid] <= target:
-                lo = mid + 1
-            else:
-                hi = mid
-        pos = lo
-        return entries[pos - 1][1] if pos > 0 else ""
-```
-
-**Time:** O(1) set, O(log n) get per key. **Space:** O(n) total entries.
-
-**Duplicate problems:**
-- Find Right Interval (LC 436) - binary search on sorted start points to find the smallest start ≥ each interval's end; same `bisect_left` on a sorted list of values.
-- Online Election (LC 911) - `bisect_right` on timestamps to find the leader at query time; identical temporal binary search pattern.
+- Search a 2D Matrix II (LC 240) - rows sorted, columns sorted, but first element of row is NOT > last of previous row; the flattening trick fails. Instead start top-right and move left (target smaller) or down (target larger). Different algorithm - O(m + n), not O(log(m·n)) - but same problem shape (search a sorted matrix).

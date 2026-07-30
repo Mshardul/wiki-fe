@@ -12,19 +12,18 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
 - [Practice problems](#practice-problems)
-  - [Valid Anagram](#1-valid-anagram--character-frequency-comparison)
-  - [Find All Anagrams in a String](#2-find-all-anagrams-in-a-string--sliding-window--frequency-array)
-  - [Top K Frequent Elements](#3-top-k-frequent-elements--frequency-then-bucket)
+  - [Valid Anagram](#1-valid-anagram---character-frequency-comparison)
+  - [Group Anagrams](#2-group-anagrams-lc-49)
+  - [Find All Anagrams in a String](#3-find-all-anagrams-in-a-string---sliding-window--freq-array)
+  - [Sort Characters By Frequency](#4-sort-characters-by-frequency-lc-451---frequency-of-frequencies)
 
 ## What it is
 
@@ -109,63 +108,6 @@ All slots zero → anagram ✓
 Counter-example - "rat" vs "car":
 After increment "rat":  r=1 a=1 t=1
 After decrement "car":  r=0 a=0 t=1 c=-1  ← c slot goes negative → NOT anagram
-```
-
-## Skeleton
-
-**Pseudocode (CLRS style):**
-
-```
-BUILD-FREQ(A, k)
-1  freq[0..k-1] = all 0
-2  for each element v in A
-3      freq[v] = freq[v] + 1
-4  return freq
-
-QUERY(freq, v)
-1  return freq[v]          ▷ O(1)
-
-IS-SAME-DISTRIBUTION(A, B, k)
-1  if length(A) ≠ length(B)
-2      return FALSE               ▷ fast reject before any allocation
-3  freq[0..k-1] = all 0
-4  for each element v in A
-5      freq[v] = freq[v] + 1
-6  for each element v in B
-7      freq[v] = freq[v] - 1
-8      if freq[v] < 0             ▷ early exit: B has more of v than A ever did
-9          return FALSE
-10 for i = 0 to k-1
-11     if freq[i] ≠ 0
-12         return FALSE
-13 return TRUE
-```
-
-**Python template:**
-
-```python
-def solve_with_freq_array(s: str) -> ...:
-    k = 26  # or 128 for full ASCII
-    freq = [0] * k
-
-    for ch in s:
-        freq[ord(ch) - ord('a')] += 1  # your logic here: increment, decrement, etc.
-
-    # your logic here: query freq, compare two freq arrays, find max, etc.
-    ...
-```
-
-For integer arrays with values in [0, n]:
-
-```python
-def solve_with_freq_array_int(nums: list[int], k: int) -> ...:
-    freq = [0] * (k + 1)
-
-    for v in nums:
-        freq[v] += 1  # your logic here
-
-    # your logic here
-    ...
 ```
 
 ## Complexity
@@ -259,82 +201,6 @@ def count_anagram_windows(s: str, p: str) -> list[int]:
 
 For "find the element that appears an odd number of times", XOR all elements: `reduce(xor, nums)`. This is equivalent to a frequency array mod 2 - XOR collapses the even counts to 0 and leaves the odd one. Generalization: `freq[v] % 2` tells you parity without storing full counts. Useful in bitmask-DP problems where you only care whether a value appears an even or odd number of times.
 
-## Worked problems
-
-### 1. Longest Substring with At Most K Distinct Characters (LC 340)
-
-Given a string `s` and integer `k`, return the length of the longest substring containing at most `k` distinct characters. `1 ≤ len(s) ≤ 5 × 10⁴`, `1 ≤ k ≤ 50`.
-
-**Approach:** sliding window with a freq array as the window's character counter. Expand `right`; when the number of distinct characters (non-zero slots) exceeds `k`, shrink from `left` until it's ≤ k again. Track distinct count with a single integer - increment when `freq[c]` goes from 0→1, decrement when it goes 1→0. Window length at each step is a candidate answer.
-
-**Why freq array over a hash map here?** `k ≤ 50` and characters are ASCII - the freq array is 128 integers, fits in cache, and the distinct-count trick (watching zero-crossings) is O(1) per move. A `Counter` would work but adds hashing overhead on a hot inner loop.
-
-**Time:** O(n). **Space:** O(1) (k = 128 constant).
-
-### 2. Find All Anagrams in a String (LC 438)
-
-Given strings `s` and `p`, return all start indices of `p`'s anagrams in `s`. `1 ≤ len(s), len(p) ≤ 3 × 10⁴`, lowercase.
-
-**Approach:** sliding-window frequency array (CP-primitive 2). Build `pf` for pattern `p`. Slide a window of size `len(p)` over `s`, maintaining `wf` and a `mismatches` counter. Window is an anagram when `mismatches == 0`. Each slide is O(1), full scan is O(n).
-
-**Why not compare the two 26-element arrays per window?** That's also O(26) = O(1) per step and works, but the mismatch counter makes it cleaner and is the contest-standard technique.
-
-```python
-def find_anagrams(s: str, p: str) -> list[int]:
-    k = len(p)
-    if k > len(s):
-        return []
-    pf, wf = [0] * 26, [0] * 26
-    for c in p:
-        pf[ord(c) - 97] += 1
-    mismatches = 26
-
-    def update(c: str, delta: int) -> int:
-        nonlocal mismatches
-        idx = ord(c) - 97
-        was_match = wf[idx] == pf[idx]
-        wf[idx] += delta
-        now_match = wf[idx] == pf[idx]
-        return mismatches - (1 if now_match and not was_match else 0) + (1 if was_match and not now_match else 0)
-
-    result = []
-    for r in range(len(s)):
-        mismatches = update(s[r], 1)
-        if r >= k:
-            mismatches = update(s[r - k], -1)
-        if r >= k - 1 and mismatches == 0:
-            result.append(r - k + 1)
-    return result
-```
-
-**Time:** O(n + m). **Space:** O(1).
-
-### 3. Top K Frequent Elements (LC 347)
-
-Given `nums` and integer `k`, return the `k` most frequent elements. `1 ≤ len(nums) ≤ 10⁵`, `-10⁴ ≤ nums[i] ≤ 10⁴`.
-
-**Approach:** two-pass technique. First, build a `Counter` (values are arbitrary integers in [−10⁴, 10⁴] - coordinate compress or use dict). Second, bucket by frequency: `bucket[freq]` holds all values that appeared `freq` times (bucket array of size n+1). Scan buckets right-to-left to collect the top-k. This gives O(n) - better than the O(n log k) heap approach.
-
-**Why a bucket (freq array) in the second pass?** Frequencies are in [1, n], so indexing directly by freq is safe and O(1) per insert. The bucket pass replaces a sort of the (value, count) pairs.
-
-```python
-def top_k_frequent(nums: list[int], k: int) -> list[int]:
-    from collections import Counter
-    count = Counter(nums)
-    bucket: list[list[int]] = [[] for _ in range(len(nums) + 1)]
-    for val, freq in count.items():
-        bucket[freq].append(val)
-    result = []
-    for freq in range(len(bucket) - 1, 0, -1):
-        for val in bucket[freq]:
-            result.append(val)
-            if len(result) == k:
-                return result
-    return result
-```
-
-**Time:** O(n). **Space:** O(n).
-
 ## Pitfalls
 
 **1. Off-by-one on the key range / wrong offset.**
@@ -367,6 +233,14 @@ Two strings of different lengths can never be anagrams, but a buggy freq-array c
 
 Given two strings `s` and `t`, return `true` if `t` is an anagram of `s`, and `false` otherwise. `1 ≤ len(s), len(t) ≤ 5 × 10⁴`, lowercase English letters only.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "anagram", t = "nagaram" | **Output:** true
+- **Example 2**
+  - **Input:** s = "rat", t = "car" | **Output:** false
+
+**Constraints:** `1 ≤ s.length, t.length ≤ 5×10⁴`, `s` and `t` consist of lowercase English letters.
+
 **Approach:** classic freq array delta. Increment for every character in `s`, decrement for every character in `t`. If all 26 slots are zero at the end, same multiset → anagram. Guard: if `len(s) != len(t)`, return early - the delta check won't catch differing lengths cleanly.
 
 ```python
@@ -385,12 +259,55 @@ def is_anagram(s: str, t: str) -> bool:
 
 **Duplicate problems:**
 - Ransom Note (LC 383) - one-directional delta: magazine freq must cover ransom note freq; same increment/decrement mechanic, no length guard needed.
-- Group Anagrams (LC 49) - use the 26-slot freq array as a hashable tuple key to bucket strings by distribution instead of comparing two strings.
 - Check if Two String Arrays are Equivalent (LC 1662) - iterate both arrays as a single implicit string and apply the same all-zero delta check.
 
-### 2. Find All Anagrams in a String - sliding window + freq array
+---
+
+### 2. Group Anagrams (LC 49)
+
+Given an array of strings, group the anagrams together (any order). `1 ≤ strs.length ≤ 10⁴`, `0 ≤ strs[i].length ≤ 100`, lowercase English letters.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** strs = ["eat","tea","tan","ate","nat","bat"] | **Output:** [["bat"],["nat","tan"],["ate","eat","tea"]]
+- **Example 2**
+  - **Input:** strs = [""] | **Output:** [[""]]
+
+**Constraints:** `1 ≤ strs.length ≤ 10⁴`, `0 ≤ strs[i].length ≤ 100`, `strs[i]` consists of lowercase English letters.
+
+**Approach.** Distinct from Valid Anagram's direct two-string comparison: here the freq array itself becomes a **grouping key**. For each string, build its 26-slot character-frequency array, convert it to an immutable hashable form (a tuple), and use that as a dictionary key mapping to the list of strings sharing that exact distribution. Two strings are anagrams iff their freq-array tuples are identical, so this buckets all of them in one O(total characters) pass with no pairwise comparison.
+
+```python
+from collections import defaultdict
+
+def group_anagrams(strs: list[str]) -> list[list[str]]:
+    groups: dict[tuple[int, ...], list[str]] = defaultdict(list)
+    for s in strs:
+        freq = [0] * 26
+        for c in s:
+            freq[ord(c) - 97] += 1
+        groups[tuple(freq)].append(s)
+    return list(groups.values())
+```
+
+**Complexity.** O(n·k) time (n strings, average length k), O(n·k) space.
+
+**Duplicate problems:**
+- Find All Duplicates via Anagram Signature (informal variant) - same freq-array-as-key idea applied to deduplication instead of grouping.
+
+---
+
+### 3. Find All Anagrams in a String - sliding window + freq array
 
 Given strings `s` and `p`, return a list of all start indices where `p` is an anagram of the substring of `s`. `1 ≤ len(s), len(p) ≤ 3 × 10⁴`, lowercase.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "cbaebabacd", p = "abc" | **Output:** [0,6]
+- **Example 2**
+  - **Input:** s = "abab", p = "ab" | **Output:** [0,1,2]
+
+**Constraints:** `1 ≤ s.length, p.length ≤ 3×10⁴`, `s` and `p` consist of lowercase English letters.
 
 **Approach:** sliding-window with mismatch counter (see Worked Problems above and CP-primitive 2). The O(n) solution uses the freq array for the window and a single integer `mismatches` so each slide is O(1) - no per-slide array comparison.
 
@@ -425,9 +342,19 @@ def find_anagrams(s: str, p: str) -> list[int]:
 - Permutation in String (LC 567) - identical mismatch-counter sliding window; returns a boolean instead of all start indices.
 - Minimum Window Substring (LC 76) - same freq-array window but variable-size: shrink from left until the coverage constraint is met.
 
-### 3. Sort Characters By Frequency (LC 451) - frequency of frequencies
+### 4. Sort Characters By Frequency (LC 451) - frequency of frequencies
 
 Given a string `s`, sort it so characters appear in decreasing order of frequency. `1 ≤ len(s) ≤ 5 × 10⁵`, ASCII.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "tree" | **Output:** "eert"
+  - **Explanation:** 'e' appears twice, 'r' and 't' once each; any valid ordering of the ties is accepted.
+- **Example 2**
+  - **Input:** s = "cccaaa" | **Output:** "cccaaa"
+  - **Explanation:** 'c' and 'a' both appear 3 times; both orderings are valid.
+
+**Constraints:** `1 ≤ s.length ≤ 5×10⁵`, `s` consists of uppercase/lowercase letters and digits.
 
 **Approach:** build a freq array for all 128 ASCII characters. Then use a bucket indexed by frequency (freq-of-freq variant): `bucket[freq]` holds all characters appearing exactly `freq` times. Scan buckets from high to low, appending each character `freq` times. This is O(n + k) - no comparison sort on the characters needed.
 
@@ -452,5 +379,6 @@ def frequency_sort(s: str) -> str:
 **Time:** O(n). **Space:** O(n + k).
 
 **Duplicate problems:**
+- Top K Frequent Elements (LC 347) - same bucket-by-frequency structure, stops early once k elements are collected instead of emitting the full sorted output.
 - Top K Frequent Words (LC 692) - same bucket-by-frequency structure; only difference is lexicographic tiebreaking within a frequency bucket.
 - Reorganize String (LC 767) - build freq array, check max freq ≤ ⌈n/2⌉, then greedily interleave using a heap over the freq array.

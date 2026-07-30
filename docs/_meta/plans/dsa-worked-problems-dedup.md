@@ -102,36 +102,15 @@ Per-file: strip every Prerequisites bullet from `[Title](./path.md) [Must read] 
 
 **Follow-on found during this sweep - Prerequisites tier standardization.** Auditing tier markers project-wide turned up a stray `[Recommended]` (one occurrence, `ford-fulkerson.md`, an HTML-comment-wrapped pending link to `edmonds-karp.md`) alongside the standard `[Must read]` (216 occurrences) / `[Should read]` (63 occurrences) - and neither `dsa-writer.md` nor `dsa-rater.md` had ever actually defined what distinguishes the two tiers or forbidden a third. Fixed: `ford-fulkerson.md`'s stray tier changed to `[Should read]`; `dsa-writer.md` U9 (and the Format-conventions line) now explicitly define Must-read ("reader genuinely cannot follow this article without it") vs Should-read ("materially helps, article still followable without it") and forbid inventing further tiers; `dsa-rater.md` U9 now flags a third tier as a format violation and checks tier *correctness* (not just presence) in its NOTE. Confirmed via `dsa_check.py`/`dsa-check.sh` read-through that this script only covers U8/U11/U12 (filename/title/link-resolution) - no overlap with any of this session's changes, no update needed there.
 
-### Patterns (25 filled articles - Skeleton removal + Worked/Practice merge applies to all)
+### Patterns (26 filled articles - Skeleton removal + Worked/Practice merge applies to all; re-verified 2026-07-31 via `grep -l "^## Skeleton" content/dsa/patterns/*.md`)
 
-Per-file checklist, every article: (a) remove `## Skeleton` section body, (b) remove its `- [Skeleton](#skeleton)` line from that file's own `## Table of Contents` section (confirmed present in 22 of 25 - see verification above; check the remaining 3 stub-sized ones too), (c) merge `## Worked problems` + `## Practice problems` content into a single `## Practice problems` section per the Phase 1 spec - **problem selection/distinct-technique judgment happens in the steps file, not here**, (d) remove the now-redundant `- [Worked problems](#worked-problems)` ToC line if the merged section drops that anchor name, (e) rewrite `## How it works`'s per-variant examples to drop named-problem framing per decision 7 - same numbers/diagrams, generic mechanic description instead of the problem name.
+Per-file checklist, every article: (a) remove `## Skeleton` section body, (b) remove its `- [Skeleton](#skeleton)` line from that file's own `## Table of Contents` section, (c) merge `## Worked problems` + `## Practice problems` content into a single `## Practice problems` section per the Phase 1 spec - **problem selection/distinct-technique judgment happens in the steps file, not here, deferred to the deep-dive stage**, (d) remove the now-redundant `- [Worked problems](#worked-problems)` ToC line once the merge lands (deferred alongside (c)), (e) rewrite `## How it works`'s per-variant examples to drop named-problem framing per decision 7 - same numbers/diagrams, generic mechanic description instead of the problem name.
 
-- [ ] `two-pointers.md` - first candidate, already audited this session. Rough surviving-problem direction (re-derive fresh against final spec, don't copy verbatim): Two Sum II (opposite-ends), Container With Most Water (opposite-ends + running-max/greedy-wall; Trapping Rain Water becomes its duplicate-problems entry, confirmed same technique per decision 4), Remove Duplicates or Move Zeroes (same-direction write-head - pick one canonical, other becomes duplicate entry), 3Sum (kSum/fixed-pointer + two-pointer), Valid Palindrome (opposite-ends, non-numeric target).
-- [ ] `backtracking.md`
-- [ ] `binary-search-on-answer.md`
-- [ ] `bitmask-dp.md`
-- [ ] `cyclic-sort.md`
-- [ ] `difference-array.md`
-- [ ] `dp-patterns.md`
-- [ ] `fast-slow-pointers.md`
-- [ ] `frequency-array.md`
-- [ ] `graph-coloring.md`
-- [ ] `in-place-reversal.md`
-- [ ] `interval-dp.md`
-- [ ] `k-way-merge.md`
-- [ ] `matrix-traversal.md`
-- [ ] `meet-in-the-middle.md`
-- [ ] `merge-intervals.md`
-- [ ] `modified-binary-search.md`
-- [ ] `monotonic-queue.md`
-- [ ] `monotonic-stack.md`
-- [ ] `prefix-sum.md`
-- [ ] `sliding-window.md`
-- [ ] `state-machine-dp.md`
-- [ ] `subsets-permutations.md`
-- [ ] `top-k-elements.md`
-- [ ] `tree-graph-traversal.md`
-- [ ] `two-heaps.md`
+**(a), (b), (e) done for all 26 files - 2026-07-31.** `two-pointers.md` hand-edited first as the reference case (Skeleton removed, ToC cleaned, all 3 How-it-works examples genericized: Two Sum → "pair summing to a target"; Container With Most Water → "maximize `min(a,b) * width` over a height array"; Remove Duplicates → "compact array keeping only unique adjacent runs"). Remaining 22 real articles done via agent using two-pointers.md as the calibration reference - 7 needed actual How-it-works label rewrites (binary-search-on-answer: Koko Eating Bananas → "minimum feasible rate to clear piles within a deadline"; bitmask-dp: TSP → "visit every node exactly once at minimum cost, then return to start"; interval-dp: Burst Balloons → "maximize score from merging adjacent values..." plus in-trace comment consistency fixes; monotonic-stack: Next Greater Element → "next strictly-greater element to the right..."; state-machine-dp: stock-cooldown LC framing → "buy/hold/sell with a mandatory cooldown after selling"), 15 already had generic framing, no change needed. The 3 stub-sized files (`cyclic-sort.md`, `dp-patterns.md`, `subsets-permutations.md` - unwritten templates, every section a comment placeholder) got their stale PA3/PA6 instruction-comments updated to match the new spec instead of full (a)/(b)/(e) treatment, per user decision - full cleanup deferred to whenever these are actually written. Independently re-verified: `grep -l "^## Skeleton" content/dsa/patterns/*.md` and `grep -rn "\[Skeleton\](#skeleton)"` both return empty across the whole directory; exactly 26 files show as modified in git status, nothing else touched.
+
+**(c), (d) done for all 23 filled Patterns files - 2026-07-31.** Problem selection tracked in `docs/_meta/plans/dsa-worked-problems-dedup-inventory.md` (final per-file entry lists, one `[x]` section per file). Each file's `## Worked problems` + `## Practice problems` merged into a single `## Practice problems` section: every entry now carries worked examples + constraints + approach + solution + complexity + duplicate-problems line, entry counts range 2-6 per file depending on how many genuinely distinct techniques the pattern covers (verified independently per file against the distinct-technique constraint, not copied from any single source list). The 3 stub-sized files (`cyclic-sort.md`, `dp-patterns.md`, `subsets-permutations.md`) remain deferred until actually written, per earlier decision - their instruction-comments already reflect the merged-section spec.
+
+**Inventory-vs-content verification pass, done 2026-07-31.** Cross-checked all 23 files: does `dsa-worked-problems-dedup-inventory.md`'s per-file entry/dup-list accurately mirror what's actually in each `content/dsa/patterns/*.md` file's `## Practice problems` section. Found 12 files with drift (inventory missing a dup-list entry the content file actually has, or vice versa) - all fixed in inventory.md. Found 1 real content bug in the process: `tree-graph-traversal.md` had "Find Bottom Left Tree Value (LC 513)" duplicated under two entries (correctly under Level Order Traversal, wrongly also under Number of Provinces) - removed the misplaced copy. Inventory and content now verified matching across all 23 files.
 
 Not in scope: `pattern-selection-cheatsheet.md` (different format entirely, no Skeleton/Practice-problems structure).
 
@@ -147,3 +126,5 @@ These types never had the 3-way overlap, so no structural change is expected. St
 ### Every file touched, regardless of type
 
 Regenerate search-index/backlinks per CLAUDE.md completion checklist, log in `content/CHANGELOG.md`.
+
+**Done 2026-07-31** for the 23-file Patterns merge: `search-index.json` and `backlinks.json` regenerated, `CHANGELOG.md` entry added.

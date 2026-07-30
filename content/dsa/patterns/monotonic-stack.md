@@ -10,12 +10,10 @@
 - [What it is](#what-it-is)
 - [Recognition signals](#recognition-signals)
 - [How it works](#how-it-works)
-- [Skeleton](#skeleton)
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
 - [CP-primitives](#cp-primitives)
-- [Worked problems](#worked-problems)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -61,7 +59,7 @@ A **monotonic stack** is a stack maintained so its elements are always in strict
 
 ## How it works
 
-**Worked example: Next Greater Element for `[2, 1, 2, 4, 3]`.**
+**Worked example: next strictly-greater element to the right, for each index of `[2, 1, 2, 4, 3]`.**
 
 For each index, find the next element to its right that is strictly greater; `-1` if none exists.
 
@@ -103,41 +101,6 @@ and the popped element's answer is the element that broke it.
 ```
 
 **Why each element is pushed and popped at most once (the amortized argument):** every index enters the stack exactly once (one push per iteration of the main loop) and can leave the stack at most once (one pop, ever, per index) - so across the whole run, total pushes + pops ≤ 2n, giving O(n) total work even though there's a `while` loop nested inside the `for` loop that looks like it could be O(n²).
-
----
-
-## Skeleton
-
-**Pseudocode (CLRS style) - "next greater element to the right":**
-
-```
-NEXT-GREATER-ELEMENT(A, n)
-  let result[1..n] = -1                 ▷ default: no next greater element
-  let S = empty stack                   ▷ stack holds INDICES, kept decreasing by value
-  for i = 1 to n
-    while S is not empty and A[top(S)] < A[i]
-      j = pop(S)                        ▷ A[i] is the "next greater" for index j
-      result[j] = A[i]
-    push(S, i)
-  return result
-```
-
-**Python template:**
-
-```python
-def next_greater_element(arr: list[int]) -> list[int]:
-    n = len(arr)
-    result = [-1] * n
-    stack: list[int] = []               # holds indices, values decreasing bottom-to-top
-    for i in range(n):
-        while stack and arr[stack[-1]] < arr[i]:
-            j = stack.pop()
-            result[j] = arr[i]          # your logic here: what to record on resolution
-        stack.append(i)
-    return result
-```
-
-For **"next smaller"** instead of "next greater," flip the comparison (`arr[stack[-1]] > arr[i]`). For **"previous greater/smaller"** instead of "next," iterate right-to-left, or push answers while scanning left-to-right and interpret the stack differently - the invariant (keep the stack monotonic, pop-and-resolve on violation) stays the same; only the comparison direction and scan direction change.
 
 ---
 
@@ -227,40 +190,6 @@ def sum_subarray_mins(arr: list[int]) -> int:
 
 ---
 
-## Worked problems
-
-### 1. Next Greater Element I (LC 496)
-
-Given two arrays where `nums1` is a subset of `nums2`, find the next greater element for each `nums1` value within `nums2`.
-
-**Approach sketch:** build the next-greater-element mapping for *all* of `nums2` once using the standard decreasing monotonic stack (the skeleton's `next_greater_element`, keyed by value instead of index since all values are distinct), then look up each `nums1` element in that mapping - O(n + m) instead of recomputing per query.
-
-### 2. Daily Temperatures (LC 739)
-
-Given daily temperatures, for each day find how many days until a warmer temperature; `0` if none.
-
-**Approach sketch:** same decreasing monotonic stack as next-greater-element, but instead of recording the *value* that resolved each index, record the **distance** (`i - j`) between the current index and the popped index - the skeleton's resolution step changes from "record the value" to "record the index gap," everything else is identical.
-
-### 3. Largest Rectangle in Histogram (LC 84)
-
-Given bar heights, find the largest rectangular area that fits entirely under the histogram's outline.
-
-**Approach sketch:** maintain an increasing monotonic stack of bar indices. When a shorter bar arrives and pops a taller one, the popped bar's rectangle width spans from the (new) stack top's position to the current index - exactly the CP-primitive #1 span trick above. A sentinel zero-height bar appended at the end flushes any bars still on the stack.
-
-### 4. Remove K Digits (LC 402)
-
-Given a number as a string and an integer `k`, remove `k` digits to make the smallest possible resulting number.
-
-**Approach sketch:** greedily build an increasing monotonic stack of digits: for each incoming digit, pop any larger digit currently on top of the stack as long as removals remain (`k > 0`) - removing a larger digit before a smaller one always helps make the number smaller. After the scan, if removals remain, trim from the end (largest remaining suffix); this maps "remove k digits to minimize" directly onto "maintain an increasing stack, popping while budget remains."
-
-### 5. Trapping Rain Water (LC 42)
-
-Given an elevation map, compute total trapped water (also solvable with two pointers - see [Two Pointers](./two-pointers.md) - but the monotonic-stack solution generalizes the same "span between resolving boundaries" idea from Largest Rectangle).
-
-**Approach sketch:** maintain a decreasing monotonic stack of bar indices (by height). When a taller bar arrives and pops a shorter one, the popped bar acts as a "basin floor" - water trapped above it is bounded by `min(current height, new stack top's height) - popped height`, times the width between them. This reuses the exact same "resolve on pop, compute a span-based quantity" shape as Largest Rectangle, applied to volume instead of area.
-
----
-
 ## Pitfalls
 
 1. **Using `<=` instead of `<` (or vice versa) in the comparison, silently changing behavior on duplicates.** Whether to pop on strictly-less-than or less-than-or-equal changes how ties are resolved (which of two equal elements "wins" as the next-greater), and can cause double-counting in contribution-style problems (like sum-of-subarray-minimums) if not chosen deliberately and consistently between the left-scan and right-scan passes.
@@ -299,6 +228,15 @@ Then state which direction (increasing vs decreasing) and which comparison (stri
 
 Given `nums1` (a subset of `nums2`, all distinct values), find the next greater element in `nums2` for each `nums1` value, or `-1`. Constraints: `1 ≤ nums1.length ≤ nums2.length ≤ 1000`.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums1 = [4,1,2], nums2 = [1,3,4,2] | **Output:** [-1,3,-1]
+  - **Explanation:** for 4, no next greater; for 1, next greater is 3; for 2, no next greater.
+- **Example 2**
+  - **Input:** nums1 = [2,4], nums2 = [1,2,3,4] | **Output:** [3,-1]
+
+**Constraints:** `1 ≤ nums1.length ≤ nums2.length ≤ 1000`, `0 ≤ nums1[i], nums2[i] ≤ 10⁴`, all values in `nums2` distinct.
+
 **Approach.** Build a value→next-greater map for all of `nums2` in one O(n) monotonic-stack pass, then answer each `nums1` query with an O(1) lookup.
 
 ```python
@@ -317,39 +255,22 @@ def next_greater_element(nums1: list[int], nums2: list[int]) -> list[int]:
 **Duplicate problems:**
 - Daily Temperatures (LC 739) - same decreasing-stack mechanic, records index gap instead of value.
 - Next Greater Element II (LC 503) - same idea with circular-array wraparound.
-
----
-
-### 2. Daily Temperatures (LC 739)
-
-Given daily temperatures, return for each day the number of days until a warmer temperature, or `0` if none exists. Constraints: `1 ≤ n ≤ 10⁵`, `30 ≤ temperatures[i] ≤ 100`.
-
-**Approach.** Decreasing monotonic stack of indices. When a warmer day arrives, pop all cooler days off the stack and record the index gap as their answer.
-
-```python
-def daily_temperatures(temperatures: list[int]) -> list[int]:
-    n = len(temperatures)
-    result = [0] * n
-    stack: list[int] = []
-    for i, t in enumerate(temperatures):
-        while stack and temperatures[stack[-1]] < t:
-            j = stack.pop()
-            result[j] = i - j
-        stack.append(i)
-    return result
-```
-
-**Complexity.** O(n) time, O(n) space.
-
-**Duplicate problems:**
-- Next Greater Element I (LC 496) - identical mechanic, records value instead of distance.
 - Online Stock Span (LC 901) - same decreasing-stack idea, run incrementally instead of on a fixed array.
 
 ---
 
-### 3. Largest Rectangle in Histogram (LC 84)
+### 2. Largest Rectangle in Histogram (LC 84)
 
 Given an array of bar heights, find the area of the largest rectangle that fits under the histogram. Constraints: `1 ≤ n ≤ 10⁵`, `0 ≤ heights[i] ≤ 10⁴`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** heights = [2,1,5,6,2,3] | **Output:** 10
+  - **Explanation:** the rectangle spans bars [5,6] with height 5, area 5×2=10.
+- **Example 2**
+  - **Input:** heights = [2,4] | **Output:** 4
+
+**Constraints:** `1 ≤ n ≤ 10⁵`, `0 ≤ heights[i] ≤ 10⁴`.
 
 **Approach.** Increasing monotonic stack of indices. When a shorter bar pops a taller one, the popped bar's rectangle spans from the new stack top (exclusive) to the current index (exclusive) - compute area at each pop. A sentinel `0` appended at the end flushes the stack.
 
@@ -371,5 +292,79 @@ def largest_rectangle_area(heights: list[int]) -> int:
 
 **Duplicate problems:**
 - Maximal Rectangle (LC 85) - same histogram algorithm run once per row of a binary matrix (accumulating column heights).
-- Trapping Rain Water (LC 42) - same "resolve on pop, compute a span-based quantity" shape, applied to trapped volume.
+
+---
+
+### 3. Trapping Rain Water (LC 42)
+
+Given an elevation map, compute total trapped water after raining. Also solvable with two pointers (see [Two Pointers](./two-pointers.md)); the monotonic-stack solution generalizes the same "span between resolving boundaries" idea as Largest Rectangle. Constraints: `1 ≤ n ≤ 2×10⁴`, `0 ≤ height[i] ≤ 10⁵`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** height = [0,1,0,2,1,0,1,3,2,1,2,1] | **Output:** 6
+- **Example 2**
+  - **Input:** height = [4,2,0,3,2,5] | **Output:** 9
+
+**Constraints:** `1 ≤ n ≤ 2×10⁴`, `0 ≤ height[i] ≤ 10⁵`.
+
+**Approach.** Maintain a decreasing monotonic stack of bar indices (by height). When a taller bar arrives and pops a shorter one, the popped bar acts as a "basin floor" - water trapped above it is bounded by `min(current height, new stack top's height) - popped height`, times the width between them. This reuses the "resolve on pop, compute a span-based quantity" shape from Largest Rectangle, applied to volume instead of area.
+
+```python
+def trap(height: list[int]) -> int:
+    stack: list[int] = []          # indices, decreasing height bottom-to-top
+    water = 0
+    for i, h in enumerate(height):
+        while stack and height[stack[-1]] < h:
+            floor = stack.pop()
+            if not stack:
+                break
+            width = i - stack[-1] - 1
+            bounded_height = min(h, height[stack[-1]]) - height[floor]
+            water += width * bounded_height
+        stack.append(i)
+    return water
+```
+
+**Complexity.** O(n) time (amortized), O(n) space.
+
+**Duplicate problems:**
+- Largest Rectangle in Histogram (LC 84) - same "resolve on pop, compute a span-based quantity" shape, applied to area instead of trapped volume.
+
+---
+
+### 4. Remove K Digits (LC 402)
+
+Given a number as a string and an integer `k`, remove `k` digits to make the smallest possible resulting number. Constraints: `1 ≤ num.length ≤ 10⁵`, `0 ≤ k ≤ num.length`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** num = "1432219", k = 3 | **Output:** "1219"
+  - **Explanation:** removing digits 4, 3, 2 (the largest violating digits) leaves the smallest number.
+- **Example 2**
+  - **Input:** num = "10200", k = 1 | **Output:** "200"
+  - **Explanation:** removing the leading 1 leaves "0200"; leading zeros are stripped.
+
+**Constraints:** `1 ≤ num.length ≤ 10⁵`, `num` consists of digits, `0 ≤ k ≤ num.length`.
+
+**Approach.** Greedily build an increasing monotonic stack of digits: for each incoming digit, pop any larger digit currently on top of the stack as long as removals remain (`k > 0`) - removing a larger digit before a smaller one always helps make the number smaller. After the scan, if removals remain, trim from the end (largest remaining suffix). Strip leading zeros from the result.
+
+```python
+def remove_k_digits(num: str, k: int) -> str:
+    stack: list[str] = []
+    for digit in num:
+        while stack and k > 0 and stack[-1] > digit:
+            stack.pop()
+            k -= 1
+        stack.append(digit)
+    if k > 0:
+        stack = stack[:-k]
+    result = "".join(stack).lstrip("0")
+    return result if result else "0"
+```
+
+**Complexity.** O(n) time (amortized), O(n) space.
+
+**Duplicate problems:**
+- Remove Duplicate Letters (LC 316) - same increasing-stack greedy-removal shape, with an additional "each letter must appear exactly once" constraint gating the pop.
+- Create Maximum Number (LC 321) - same greedy monotonic-stack digit selection, extended to picking the best subsequence of a target length and merging two such subsequences.
 
