@@ -202,7 +202,7 @@ const AuthModal = {
 
 registerModal({ isOpen: () => AuthModal.isOpen(), close: () => AuthModal.close() });
 
-// Disables btnId during fn() to block double-fire from rapid clicks/Enter, always re-enables after.
+// Disables btnId during fn(), re-enabling after unless fn() started a longer-lived disable (e.g. resend cooldown).
 async function _withSubmitGuard(btnId, fn) {
   const btn = document.getElementById(btnId);
   if (btn?.disabled) return;
@@ -210,7 +210,7 @@ async function _withSubmitGuard(btnId, fn) {
   try {
     await fn();
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn && !btn.dataset.cooldownActive) btn.disabled = false;
   }
 }
 
@@ -244,6 +244,7 @@ function _startResendCooldown(btnId) {
   const originalLabel = labelEl ? labelEl.textContent : btn.textContent;
   let remaining = RESEND_COOLDOWN_SECONDS;
   btn.disabled = true;
+  btn.dataset.cooldownActive = "1";
   const setLabel = (text) => {
     if (labelEl) labelEl.textContent = text;
     else btn.textContent = text;
@@ -253,6 +254,7 @@ function _startResendCooldown(btnId) {
     remaining -= 1;
     if (remaining <= 0) {
       clearInterval(tick);
+      delete btn.dataset.cooldownActive;
       btn.disabled = false;
       setLabel(originalLabel);
     } else {

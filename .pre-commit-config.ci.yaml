@@ -16,7 +16,8 @@ repos:
         exclude: '^(content/|\.venv/|\.pytest_cache/)'
         # pres = plural of <pre> elements; couldn = "couldn't" w/ escaped apostrophe.
         # ths = table-headers variable (Array.from querySelectorAll th)
-        args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths"]
+        # atmost = atMost(k) sliding-window helper name in plan docs
+        args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths,atmost"]
 
   - repo: https://github.com/biomejs/pre-commit
     rev: v0.6.1
