@@ -3,7 +3,7 @@
 Which structure to reach for, given the operations you need fast.
 
 > 📖 Full articles:
-> [Array](../data-structures/array.md) · [Dynamic Array](../data-structures/dynamic-array.md) · [Circular Buffer](../data-structures/circular-buffer.md) · [Heap](../data-structures/heap.md) · [String](../data-structures/string.md) · [Linked List](../data-structures/linked-list.md) · [Stack](../data-structures/stack.md) · [Queue](../data-structures/queue.md) · [Deque](../data-structures/deque.md) · [Hash Table](../data-structures/hash-table.md) · [LRU Cache](../data-structures/lru-cache.md) · [LFU Cache](../data-structures/lfu-cache.md) · [Binary Tree](../data-structures/binary-tree.md) · [Binary Search Tree](../data-structures/binary-search-tree.md) · [Trie](../data-structures/trie.md) · [Balanced BST](../data-structures/balanced-bst.md) · [Skip List](../data-structures/skip-list.md) · [AVL Tree](../data-structures/avl-tree.md) · [Red-Black Tree](../data-structures/red-black-tree.md) · [B-Tree](../data-structures/b-tree.md) · [Fenwick Tree](../data-structures/fenwick-tree.md) · [Union-Find](../data-structures/union-find.md) · [Graph](../data-structures/graph.md) · [Bloom Filter](../data-structures/bloom-filter.md) · [B+ Tree](../data-structures/b-plus-tree.md) · [Interval Tree](../data-structures/interval-tree.md) · [Suffix Array](../data-structures/suffix-array.md)
+> [Array](../data-structures/array.md) · [Dynamic Array](../data-structures/dynamic-array.md) · [Circular Buffer](../data-structures/circular-buffer.md) · [Heap](../data-structures/heap.md) · [String](../data-structures/string.md) · [Linked List](../data-structures/linked-list.md) · [Stack](../data-structures/stack.md) · [Queue](../data-structures/queue.md) · [Deque](../data-structures/deque.md) · [Hash Table](../data-structures/hash-table.md) · [LRU Cache](../data-structures/lru-cache.md) · [LFU Cache](../data-structures/lfu-cache.md) · [Binary Tree](../data-structures/binary-tree.md) · [Binary Search Tree](../data-structures/binary-search-tree.md) · [Trie](../data-structures/trie.md) · [Balanced BST](../data-structures/balanced-bst.md) · [Skip List](../data-structures/skip-list.md) · [AVL Tree](../data-structures/avl-tree.md) · [Red-Black Tree](../data-structures/red-black-tree.md) · [B-Tree](../data-structures/b-tree.md) · [Fenwick Tree](../data-structures/fenwick-tree.md) · [Union-Find](../data-structures/union-find.md) · [Graph](../data-structures/graph.md) · [Bloom Filter](../data-structures/bloom-filter.md) · [B+ Tree](../data-structures/b-plus-tree.md) · [Interval Tree](../data-structures/interval-tree.md) · [Suffix Tree](../data-structures/suffix-tree.md)
 
 ## Comparison
 
@@ -35,7 +35,7 @@ Which structure to reach for, given the operations you need fast.
 | B-Tree | O(log_m n), few disk seeks | O(log_m n) | O(log_m n) | O(log_m n) | on-disk/DB index |
 | B+ Tree | O(log_m n) point, O(log_m n + k/m) range | O(log_m n) | O(log_m n) | leftmost leaf O(log_m n) | disk storage + range scans (default DB index) |
 | Interval Tree | O(log n) one overlap, O(log n + k) all | O(log n) | O(log n) | - | dynamic intervals, repeated overlap queries |
-| Suffix Array | O(m log n) pattern query | O(n log² n) build, static | - | - | multi-query text search, CP string tasks |
+| Suffix Tree / Suffix Array | O(m) tree / O(m log n) array pattern query | O(n) tree / O(n log² n) array build, static | - | - | multi-query text search, CP string tasks |
 
 ## Gotchas
 

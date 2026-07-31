@@ -222,7 +222,17 @@ def heapsort_via_heapq(a: list[int]) -> list[int]:
 
 ### 1. Sort an Array - heapsort in place
 
-Sort an integer array in O(n log n) **worst case** with O(1) extra space, no library sort. Constraints: `n ≤ 5·10⁴`; the worst-case + space requirement is what points at heapsort over quicksort.
+Sort an integer array in O(n log n) **worst case** with O(1) extra space, no library sort.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [5, 2, 3, 1] | **Output:** [1, 2, 3, 5]
+  - **Explanation:** build-max-heap then repeated root-swap-and-sift-down grows a sorted suffix from the right.
+- **Example 2**
+  - **Input:** nums = [5, 1, 1, 2, 0, 0] | **Output:** [0, 0, 1, 1, 2, 5]
+  - **Explanation:** duplicate values sift correctly since comparisons use `>`, not `>=`, so equal children never force an unnecessary swap.
+
+**Constraints:** `n ≤ 5·10⁴`; the worst-case + space requirement is what points at heapsort over quicksort.
 
 **Approach:** Textbook in-place heapsort: build a max-heap (O(n)), then repeatedly swap the root to the shrinking end and sift down. Unlike quicksort it has no O(n²) input and unlike merge sort it needs no buffer - the guarantees are the point of choosing it here.
 
@@ -242,11 +252,21 @@ def sort_array(nums: list[int]) -> list[int]:
     return nums
 ```
 
-Time O(n log n) worst case, space O(1). Pattern: in-place heapsort.
+**Complexity:** O(n log n) time worst case, O(1) space.
 
 ### 2. Kth Largest Element - partial heapsort
 
-Find the k-th largest element. Constraints: `n ≤ 10⁵`; a full sort is O(n log n), but you only need `k` extractions.
+Find the k-th largest element in an unsorted array.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [3, 2, 1, 5, 6, 4], k = 2 | **Output:** 5
+  - **Explanation:** sorted descending the array is `[6, 5, 4, 3, 2, 1]`; the 2nd largest is 5, found after 2 extractions.
+- **Example 2**
+  - **Input:** nums = [3, 2, 3, 1, 2, 4, 5, 5, 6], k = 4 | **Output:** 4
+  - **Explanation:** duplicates count individually; the 4th largest in descending order `[6,5,5,4,3,3,2,2,1]` is 4.
+
+**Constraints:** `n ≤ 10⁵`; a full sort is O(n log n), but you only need `k` extractions.
 
 **Approach:** **Partial heapsort** - build a max-heap (O(n)), then extract the max only `k` times; the k-th extraction is the answer. O(n + k log n), better than a full sort when `k ≪ n`. (A size-`k` _min_-heap is the alternative, O(n log k); partial heapsort wins when `k` is moderate and you've already got the array.)
 
@@ -261,11 +281,21 @@ def find_kth_largest(nums: list[int], k: int) -> int:
     return -heapq.heappop(h)
 ```
 
-Time O(n + k log n), space O(n). Pattern: partial heapsort (extract k times).
+**Complexity:** O(n + k log n) time, O(n) space.
 
 ### 3. Sort a Nearly Sorted Array - heap of window size
 
-Each element is at most `k` positions from its sorted spot. Sort it efficiently. Constraints: `k ≪ n` - bounded displacement, the heap-window signal.
+Each element is at most `k` positions from its sorted spot; sort it efficiently.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [6, 5, 3, 2, 8, 10, 9], k = 2 | **Output:** [2, 3, 5, 6, 8, 9, 10]
+  - **Explanation:** a size-3 sliding min-heap always holds the next sorted element among the closest displaced candidates.
+- **Example 2**
+  - **Input:** nums = [2, 1, 3, 4, 5], k = 1 | **Output:** [1, 2, 3, 4, 5]
+  - **Explanation:** with displacement at most 1, a size-2 window suffices to resolve every swap.
+
+**Constraints:** `k ≪ n` - bounded displacement, the heap-window signal.
 
 **Approach:** Maintain a **min-heap of size `k+1`**. Because no element is more than `k` away, the smallest of the next `k+1` elements is the next sorted element. Push the first `k+1`, then for each subsequent position pop the min (it's finalized) and push the next. O(n log k) - heapsort's machinery applied to a sliding window. (Insertion sort also does O(n·k) here; the heap wins when `k` is larger.)
 
@@ -283,11 +313,21 @@ def sort_nearly_sorted(nums: list[int], k: int) -> list[int]:
     return out
 ```
 
-Time O(n log k), space O(k). Pattern: sliding min-heap over a bounded-displacement array.
+**Complexity:** O(n log k) time, O(k) space.
 
 ### 4. Last Stone Weight - repeated extract-max
 
-Repeatedly smash the two heaviest stones (`a, b` → `|a-b|`, or both gone if equal) until ≤ 1 remains; return its weight (0 if none). Constraints: `n ≤ 30`, weights ≤ 1000 - the "repeatedly take the two largest" structure is a max-heap loop.
+Repeatedly smash the two heaviest stones (`a, b` → `|a-b|`, or both gone if equal) until ≤ 1 remains; return its weight (0 if none).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** stones = [2, 7, 4, 1, 8, 1] | **Output:** 1
+  - **Explanation:** repeated smashing of the two heaviest stones (`8,7→1`, `4,2→2`, `2,1→1`, `1,1→0`) leaves a single stone of weight 1.
+- **Example 2**
+  - **Input:** stones = [1, 3] | **Output:** 2
+  - **Explanation:** the only two stones smash into `|3-1| = 2`, which remains since nothing is left to smash it against.
+
+**Constraints:** `n ≤ 30`, weights ≤ 1000 - the "repeatedly take the two largest" structure is a max-heap loop.
 
 **Approach:** The core heapsort/heap move - repeated extract-max - without the full sort. Build a max-heap; each round pop the two largest, push back their difference if nonzero. The heap keeps the max accessible in O(log n) per smash, so the whole process is O(n log n).
 
@@ -305,4 +345,4 @@ def last_stone_weight(stones: list[int]) -> int:
     return -h[0] if h else 0
 ```
 
-Time O(n log n), space O(n). Pattern: repeated extract-max via a heap.
+**Complexity:** O(n log n) time, O(n) space.

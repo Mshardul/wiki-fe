@@ -252,9 +252,19 @@ Run a reachability search (BFS/DFS) from `s` in the final residual graph. The se
 
 ### 1. Max Flow / Min Cut (generic network, LC-style: "Maximum Flow" is not on LeetCode directly - canonical reference: CSES "Download Speed")
 
-**Problem.** Given a directed graph with edge capacities, a source, and a sink, compute the maximum amount of flow that can be routed from source to sink without violating any edge's capacity. n ≤ 500 nodes, m ≤ 1000 edges, capacities up to 100 (small enough that Ford-Fulkerson's capacity-dependent bound is safe - see Constraints table above).
+Given a directed graph with edge capacities, a source, and a sink, compute the maximum amount of flow that can be routed from source to sink without violating any edge's capacity.
 
-**Approach.** Direct application of Ford-Fulkerson: build the residual graph, repeatedly find an augmenting path via DFS, push the bottleneck flow, until no path remains. If this same problem allowed capacities up to 10⁹, the Constraints table's own guidance says switch to [Edmonds-Karp](./edmonds-karp.md) instead - the small bound here is what makes Ford-Fulkerson the right choice.
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 4, edges = [(1,2,10),(1,3,10),(2,3,2),(2,4,4),(3,4,9)], source = 1, sink = 4 | **Output:** 13
+  - **Explanation:** DFS finds `1→3→4` (bottleneck 9) then `1→2→4` (bottleneck 4); no augmenting path remains after both are saturated.
+- **Example 2**
+  - **Input:** n = 2, edges = [(1,2,7)], source = 1, sink = 2 | **Output:** 7
+  - **Explanation:** a single edge is the only path and its capacity is the max flow.
+
+**Constraints:** n ≤ 500 nodes, m ≤ 1000 edges, capacities up to 100 (small enough that Ford-Fulkerson's capacity-dependent bound is safe - see Constraints table above).
+
+**Approach:** Direct application of Ford-Fulkerson: build the residual graph, repeatedly find an augmenting path via DFS, push the bottleneck flow, until no path remains. If this same problem allowed capacities up to 10⁹, the Constraints table's own guidance says switch to [Edmonds-Karp](./edmonds-karp.md) instead - the small bound here is what makes Ford-Fulkerson the right choice.
 
 ```python
 def download_speed(n: int, edges: list[tuple[int, int, int]]) -> int:
@@ -264,7 +274,7 @@ def download_speed(n: int, edges: list[tuple[int, int, int]]) -> int:
     return net.max_flow(source=1, sink=n)
 ```
 
-**Complexity.** O(E · max_flow) time, O(V + E) space.
+**Complexity:** O(E · max_flow) time, O(V + E) space.
 
 **Duplicate problems:**
 - Police Chase (CSES) - min-cut formulation; same max-flow computation, answer is the cut edges rather than the flow value.
@@ -274,9 +284,19 @@ def download_speed(n: int, edges: list[tuple[int, int, int]]) -> int:
 
 ### 2. Maximum Bipartite Matching (LC 1349 - Maximum Students Taking Exam, reducible; canonical: CSES "School Dance")
 
-**Problem.** Given a bipartite graph (two disjoint sets of nodes, edges only between the sets), find the maximum number of edges such that no two selected edges share an endpoint. n, m ≤ 500 nodes per side.
+Given a bipartite graph (two disjoint sets of nodes, edges only between the sets), find the maximum number of edges such that no two selected edges share an endpoint.
 
-**Approach.** Reduce to max-flow: add a super-source connected to every left-side node (capacity 1), every original edge left→right (capacity 1), and every right-side node connected to a super-sink (capacity 1). The max flow in this network equals the maximum matching size, because a unit of flow through `source → l → r → sink` corresponds exactly to matching `l` with `r`, and capacity-1 edges prevent any node from being matched twice.
+**Worked examples:**
+- **Example 1**
+  - **Input:** left_n = 3, right_n = 3, edges = [(1,1),(1,2),(2,2),(3,3)] | **Output:** 3
+  - **Explanation:** matching `1-1, 2-2, 3-3` saturates all three left-side nodes.
+- **Example 2**
+  - **Input:** left_n = 2, right_n = 1, edges = [(1,1),(2,1)] | **Output:** 1
+  - **Explanation:** both left nodes compete for the same right node, so only one can be matched.
+
+**Constraints:** n, m ≤ 500 nodes per side.
+
+**Approach:** Reduce to max-flow: add a super-source connected to every left-side node (capacity 1), every original edge left→right (capacity 1), and every right-side node connected to a super-sink (capacity 1). The max flow in this network equals the maximum matching size, because a unit of flow through `source → l → r → sink` corresponds exactly to matching `l` with `r`, and capacity-1 edges prevent any node from being matched twice.
 
 ```python
 def max_bipartite_matching(left_n: int, right_n: int, edges: list[tuple[int, int]]) -> int:
@@ -291,7 +311,7 @@ def max_bipartite_matching(left_n: int, right_n: int, edges: list[tuple[int, int
     return net.max_flow(SOURCE, SINK)
 ```
 
-**Complexity.** O(E · max_flow) = O(E · min(left_n, right_n)) since matching size is bounded by the smaller side. Space: O(V + E).
+**Complexity:** O(E · max_flow) = O(E · min(left_n, right_n)) since matching size is bounded by the smaller side. O(V + E) space.
 
 **Duplicate problems:**
 - Assignment Problem (jobs to workers, unweighted feasibility variant) - identical bipartite-matching-via-max-flow reduction.
@@ -301,9 +321,19 @@ def max_bipartite_matching(left_n: int, right_n: int, edges: list[tuple[int, int
 
 ### 3. Min-Cost to Connect All Points... (not flow) → use instead: Circulation with Lower Bounds (conceptual/advanced, canonical: CSES "Distinct Routes")
 
-**Problem.** Given a directed graph, find the maximum number of edge-disjoint paths from node 1 to node n (no two paths share an edge), and output the paths. n ≤ 500, m ≤ 1000.
+Given a directed graph, find the maximum number of edge-disjoint paths from node 1 to node n (no two paths share an edge), and output the paths.
 
-**Approach.** Set every edge's capacity to 1 (edge-disjoint constraint) and run max-flow from node 1 to node n. The max flow value equals the maximum number of edge-disjoint paths. To recover the actual paths, this needs more care than "follow any used edge": a naive greedy walk can wander into a dead end when a node has more than one candidate used-edge and the wrong one is picked first (no way to backtrack). The safe approach - **DFS with backtracking**, undoing a used edge if it doesn't lead to the sink - is what a correct reconstruction from a flow assignment actually requires, and that DFS-with-undo is the distinct technique this problem exercises over problems 1-2.
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 4, edges = [(1,2),(2,4),(1,3),(3,4)] | **Output:** 2 paths - `1→2→4` and `1→3→4`
+  - **Explanation:** both paths are edge-disjoint (no shared edge), and setting each edge's capacity to 1 gives a max flow of 2.
+- **Example 2**
+  - **Input:** n = 3, edges = [(1,2),(1,2),(2,3)] | **Output:** 1 path - `1→2→3`
+  - **Explanation:** even with two parallel `1→2` edges, only one unit can reach the sink because `2→3` has capacity 1 and is the bottleneck.
+
+**Constraints:** n ≤ 500, m ≤ 1000.
+
+**Approach:** Set every edge's capacity to 1 (edge-disjoint constraint) and run max-flow from node 1 to node n. The max flow value equals the maximum number of edge-disjoint paths. To recover the actual paths, this needs more care than "follow any used edge": a naive greedy walk can wander into a dead end when a node has more than one candidate used-edge and the wrong one is picked first (no way to backtrack). The safe approach - **DFS with backtracking**, undoing a used edge if it doesn't lead to the sink - is what a correct reconstruction from a flow assignment actually requires, and that DFS-with-undo is the distinct technique this problem exercises over problems 1-2.
 
 ```python
 def distinct_routes(n: int, edges: list[tuple[int, int]]) -> list[list[int]]:
@@ -335,7 +365,7 @@ def distinct_routes(n: int, edges: list[tuple[int, int]]) -> list[list[int]]:
     return paths
 ```
 
-**Complexity.** O(E · max_flow) to compute flow, O(V · E · max_flow) worst case to reconstruct all paths (DFS with backtracking per path). Space: O(V + E).
+**Complexity:** O(E · max_flow) to compute flow, O(V · E · max_flow) worst case to reconstruct all paths (DFS with backtracking per path). O(V + E) space.
 
 **Duplicate problems:**
 - Download Speed variant with path output - same reconstruction technique layered on top of problem 1's flow computation.

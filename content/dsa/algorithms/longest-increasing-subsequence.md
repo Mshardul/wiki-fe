@@ -293,9 +293,19 @@ The pseudocode spells out the binary search inline with explicit `lo`/`hi`/`mid`
 
 ### 1. Longest Increasing Subsequence (LC 300)
 
-**Problem.** Given an integer array `nums`, return the length of the longest strictly increasing subsequence. Constraints: `1 <= nums.length <= 2500`, values up to `10^4` in magnitude - `n <= 2500` technically allows O(n²) (`~6.25M` ops), but the intended/optimal solution is O(n log n).
+Given an integer array `nums`, return the length of the longest strictly increasing subsequence.
 
-**Approach.** This is the article's core algorithm: maintain `tails[k]` = smallest tail of an increasing run of length `k+1`; binary-search each new number's insertion point with `bisect_left`, append or overwrite accordingly. `len(tails)` at the end is the answer.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [10,9,2,5,3,7,101,18] | **Output:** 4
+  - **Explanation:** the LIS is `[2,3,7,101]` (or `[2,3,7,18]`), length 4.
+- **Example 2**
+  - **Input:** nums = [7,7,7,7] | **Output:** 1
+  - **Explanation:** strictly increasing means no two equal elements can both be kept, so the answer collapses to a single element.
+
+**Constraints:** `1 ≤ nums.length ≤ 2500`, values up to `10^4` in magnitude - `n ≤ 2500` technically allows O(n²) (`~6.25M` ops), but the intended/optimal solution is O(n log n).
+
+**Approach:** This is the article's core algorithm: maintain `tails[k]` = smallest tail of an increasing run of length `k+1`; binary-search each new number's insertion point with `bisect_left`, append or overwrite accordingly. `len(tails)` at the end is the answer.
 
 ```python
 import bisect
@@ -312,7 +322,7 @@ def length_of_lis(nums: List[int]) -> int:
     return len(tails)
 ```
 
-**Complexity.** O(n log n) time, O(n) space.
+**Complexity:** O(n log n) time, O(n) space.
 
 **Duplicate problems:**
 - Longest String Chain (LC 1048) - same "extend the best chain ending in a compatible predecessor" DP shape, but the predecessor relation is "remove one character" instead of "smaller value"; still an ends-at-`i` DP with an O(n²)-or-better transition search.
@@ -320,9 +330,19 @@ def length_of_lis(nums: List[int]) -> int:
 
 ### 2. Russian Doll Envelopes (LC 354) - the 2D extension
 
-**Problem.** Given pairs `(width, height)` representing envelopes, find the maximum number that can be nested inside each other, where an envelope `A` fits inside `B` only if both `A.width < B.width` and `A.height < B.height` (no rotation allowed). Constraints: `1 <= n <= 10^5` - an O(n²) DP over pairs is far too slow; the reduction to 1D LIS at O(n log n) is required.
+Given pairs `(width, height)` representing envelopes, find the maximum number that can be nested inside each other, where an envelope `A` fits inside `B` only if both `A.width < B.width` and `A.height < B.height` (no rotation allowed).
 
-**Approach.** Sort envelopes by width ascending; for envelopes tied on width, sort by height **descending** (so same-width envelopes can never both extend a run - one must come before the other in sorted order but neither can nest inside the other). Then run ordinary 1D LIS on the height sequence alone - the width ordering is already guaranteed by the sort, so LIS on height alone captures "both dimensions strictly increase."
+**Worked examples:**
+- **Example 1**
+  - **Input:** envelopes = [[5,4],[6,4],[6,7],[2,3]] | **Output:** 3
+  - **Explanation:** `[2,3] → [5,4] → [6,7]` nests three deep; `[6,4]` can't nest with `[5,4]` (same height rule) or extend past `[6,7]` (same width).
+- **Example 2**
+  - **Input:** envelopes = [[1,1],[1,1],[1,1]] | **Output:** 1
+  - **Explanation:** identical envelopes can never nest inside each other, so the answer is 1 regardless of count.
+
+**Constraints:** `1 ≤ n ≤ 10^5` - an O(n²) DP over pairs is far too slow; the reduction to 1D LIS at O(n log n) is required.
+
+**Approach:** Sort envelopes by width ascending; for envelopes tied on width, sort by height **descending** (so same-width envelopes can never both extend a run - one must come before the other in sorted order but neither can nest inside the other). Then run ordinary 1D LIS on the height sequence alone - the width ordering is already guaranteed by the sort, so LIS on height alone captures "both dimensions strictly increase."
 
 ```python
 import bisect
@@ -342,16 +362,26 @@ def max_envelopes(envelopes: List[Tuple[int, int]]) -> int:
     return len(tails)
 ```
 
-**Complexity.** O(n log n) time (dominated by the sort and the LIS pass), O(n) space.
+**Complexity:** O(n log n) time (dominated by the sort and the LIS pass), O(n) space.
 
 **Duplicate problems:**
 - Maximum Length of Pair Chain (LC 646) - superficially a 2D LIS-shaped problem, but because chains only require `b[i] < a[i+1]` (a strict-enough gap, not "both dimensions increase"), it's actually solvable by an interval-scheduling greedy in O(n log n) - a good contrast case for "when does the 2D-LIS reduction genuinely apply vs when greedy suffices."
 
 ### 3. Maximum Length of Pair Chain (LC 646)
 
-**Problem.** Given pairs `(a, b)` with `a < b`, find the longest chain you can form where pair `p` can follow pair `q` only if `q.b < p.a` (no shared or overlapping ranges). Constraints: `n <= 1000` - small enough that either an O(n²) LIS-style DP or an O(n log n) greedy both pass, making this a good "which technique is actually needed" gut-check.
+Given pairs `(a, b)` with `a < b`, find the longest chain you can form where pair `p` can follow pair `q` only if `q.b < p.a` (no shared or overlapping ranges).
 
-**Approach.** Although this *looks* like 2D LIS, it reduces further: because the chain condition is a strict ordering by end-then-start, sorting pairs by their second element and greedily taking every pair whose start exceeds the last chosen pair's end is provably optimal (interval-scheduling exchange argument) - no DP table needed at all. Contrast with Russian Doll Envelopes, where both dimensions must independently increase and greedy alone doesn't suffice, forcing the LIS reduction.
+**Worked examples:**
+- **Example 1**
+  - **Input:** pairs = [[1,2],[2,3],[3,4]] | **Output:** 2
+  - **Explanation:** `[1,2] → [3,4]` is a valid chain of length 2; `[2,3]` can't follow `[1,2]` since `2` is not `> 2`.
+- **Example 2**
+  - **Input:** pairs = [[1,2],[7,8],[4,5]] | **Output:** 3
+  - **Explanation:** sorted by end (`[1,2],[4,5],[7,8]`), every pair's start exceeds the previous chosen pair's end - the greedy takes all three.
+
+**Constraints:** `n ≤ 1000` - small enough that either an O(n²) LIS-style DP or an O(n log n) greedy both pass, making this a good "which technique is actually needed" gut-check.
+
+**Approach:** Although this *looks* like 2D LIS, it reduces further: because the chain condition is a strict ordering by end-then-start, sorting pairs by their second element and greedily taking every pair whose start exceeds the last chosen pair's end is provably optimal (interval-scheduling exchange argument) - no DP table needed at all. Contrast with Russian Doll Envelopes, where both dimensions must independently increase and greedy alone doesn't suffice, forcing the LIS reduction.
 
 ```python
 from typing import List, Tuple
@@ -366,7 +396,7 @@ def find_longest_chain(pairs: List[Tuple[int, int]]) -> int:
     return count
 ```
 
-**Complexity.** O(n log n) time (dominated by the sort), O(1) extra space.
+**Complexity:** O(n log n) time (dominated by the sort), O(1) extra space.
 
 **Duplicate problems:**
 - Non-overlapping Intervals (LC 435) - identical greedy-by-end-time exchange argument; "maximize chain length" and "minimize removals to make non-overlapping" are complementary framings of the same interval-scheduling greedy.

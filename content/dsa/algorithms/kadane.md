@@ -309,7 +309,17 @@ Both - it's the same algorithm viewed through two lenses. The DP lens: `dp[i] = 
 
 ### 1. Maximum Subarray (LC 53)
 
-Given an integer array `nums`, find the contiguous subarray with the largest sum and return its sum. Constraints: 1 ≤ n ≤ 10⁵, -10⁴ ≤ nums[i] ≤ 10⁴.
+Given an integer array `nums`, find the contiguous subarray with the largest sum and return its sum.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [-2,1,-3,4,-1,2,1,-5,4] | **Output:** 6
+  - **Explanation:** the subarray `[4,-1,2,1]` sums to 6, the largest of any contiguous run.
+- **Example 2**
+  - **Input:** nums = [-1] | **Output:** -1
+  - **Explanation:** a single negative element - the max subarray is forced to include it, since the array can't be empty.
+
+**Constraints:** `1 ≤ n ≤ 10⁵`, `-10⁴ ≤ nums[i] ≤ 10⁴`.
 
 **Approach:** Direct Kadane's application. Initialise `current = best = nums[0]`. For each subsequent element: `current = max(num, current + num)`, `best = max(best, current)`. Single pass, O(1) space. The all-negative case is handled correctly by initialising to `nums[0]` rather than 0.
 
@@ -322,7 +332,7 @@ def maxSubArray(nums: list[int]) -> int:
     return best
 ```
 
-**Time:** O(n). **Space:** O(1).
+**Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
 - Maximum Sum Circular Subarray (LC 918) - same Kadane's base, adds the `total - min_subarray` case for wrap-around; same "all negative" edge case caveat.
@@ -332,7 +342,17 @@ def maxSubArray(nums: list[int]) -> int:
 
 ### 2. Maximum Sum Circular Subarray (LC 918)
 
-Given a circular integer array `nums` (last element wraps to first), return the maximum subarray sum. The subarray may not be empty. Constraints: 1 ≤ n ≤ 3×10⁴, -3×10⁴ ≤ nums[i] ≤ 3×10⁴.
+Given a circular integer array `nums` (last element wraps to first), return the maximum subarray sum. The subarray may not be empty.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,-2,3,-2] | **Output:** 3
+  - **Explanation:** the best subarray is `[3]` alone - wrapping around (`[3,-2,1]` = 2, or similar) doesn't beat it.
+- **Example 2**
+  - **Input:** nums = [5,-3,5] | **Output:** 10
+  - **Explanation:** wrapping wins here: `[5, 5]` (last element wraps to first, skipping `-3`) sums to 10, computed as `total_sum - min_subarray_sum = 7 - (-3) = 10`.
+
+**Constraints:** `1 ≤ n ≤ 3×10⁴`, `-3×10⁴ ≤ nums[i] ≤ 3×10⁴`.
 
 **Approach:** Two cases. Case 1: max subarray does not wrap - plain Kadane's. Case 2: max subarray wraps - it consists of a prefix + suffix, equivalent to `total_sum - min_subarray_sum`. Run Kadane's for max, then run Kadane's again with `min` instead of `max` for min subarray sum. Answer = `max(case1, total - case2)`. Edge case: if all elements are negative, `total - case2 = 0` (empty subarray) - return `case1` (the least-negative element).
 
@@ -353,7 +373,7 @@ def maxSubarraySumCircular(nums: list[int]) -> int:
     return max(best_max, total - best_min)
 ```
 
-**Time:** O(n). **Space:** O(1).
+**Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
 - Maximum Sum of Two Non-Overlapping Subarrays (LC 1031) - run two Kadane-style passes (prefix max and suffix max arrays), then combine; same extend/restart mechanic, different structure.
@@ -362,7 +382,17 @@ def maxSubarraySumCircular(nums: list[int]) -> int:
 
 ### 3. Maximum Product Subarray (LC 152)
 
-Given integer array `nums`, find the contiguous subarray with the largest product and return its product. Constraints: 1 ≤ n ≤ 2×10⁴, -10 ≤ nums[i] ≤ 10 (note: LC's actual constraint is up to 30, but the algorithm is identical).
+Given integer array `nums`, find the contiguous subarray with the largest product and return its product.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [2,3,-2,4] | **Output:** 6
+  - **Explanation:** `[2,3]` has product 6 - the largest, since including `-2` or `4` afterward turns it negative or smaller.
+- **Example 2**
+  - **Input:** nums = [-2,3,-4] | **Output:** 24
+  - **Explanation:** the two negatives multiply into a positive: `-2 × 3 × -4 = 24`, which only a tracked running-minimum can catch.
+
+**Constraints:** `1 ≤ n ≤ 2×10⁴`, `-10 ≤ nums[i] ≤ 10` (note: LC's actual constraint is up to 30, but the algorithm is identical).
 
 **Approach:** Product does not share Kadane's "restart on negative" logic - a large negative times another negative yields a large positive. Track both `cur_max` (running maximum product ending here) and `cur_min` (running minimum product ending here). At each element: `cur_max, cur_min = max(num, cur_max*num, cur_min*num), min(num, cur_max*num, cur_min*num)`. A zero resets both to `num` (the `max`/`min` with `num` alone handles this). This exercises the key insight: Kadane's extend-or-restart breaks for products; you need both extremes.
 
@@ -376,7 +406,7 @@ def maxProduct(nums: list[int]) -> int:
     return best
 ```
 
-**Time:** O(n). **Space:** O(1).
+**Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
 - Maximum Absolute Value Expression (LC 1131) - tracks two running extremes simultaneously; same dual-track pattern as max-product.

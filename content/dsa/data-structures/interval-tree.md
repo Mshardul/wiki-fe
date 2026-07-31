@@ -324,6 +324,16 @@ The BST key is `lo`, so duplicates with the same `lo` land in the right subtree.
 
 Design a calendar that rejects a new booking `[start, end)` if it overlaps any existing booking. Implement `book(start, end) → bool`. Up to 10⁹ calls possible in the general case; n ≤ 1000 in the LC version.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** book(10, 20) | **Output:** true
+  - **Explanation:** the calendar is empty, so no overlap is possible.
+- **Example 2**
+  - **Input:** book(15, 25) (after book(10, 20) above) | **Output:** false
+  - **Explanation:** `[15, 25)` overlaps `[10, 20)` in the range `[15, 20)`, so the booking is rejected.
+
+**Constraints:** `0 ≤ start < end ≤ 10⁹`, up to 1000 calls to `book`.
+
 **Approach:** This is the canonical interval-tree use-case: dynamic inserts with overlap queries. Maintain an interval tree keyed on start. On each `book(start, end)`, run an overlap search for `[start, end)` - if any existing interval overlaps, return `False`; otherwise insert and return `True`. Each call is O(log n). For n ≤ 1000 a sorted list + `bisect` suffices, but the interval tree is the correct O(log n) solution for large n.
 
 ```python
@@ -387,82 +397,160 @@ class MyCalendar:
 - My Calendar II (LC 731) - allow double-booking, reject triple; maintain a second interval tree of overlapping pairs and query it before inserting.
 - My Calendar III (LC 732) - return maximum k-booking; difference array sweep is simpler here than interval tree.
 
-### 2. Interval List Intersections (LC 986) - all-overlaps between two sorted lists
+### 2. Find All Conflicting Meetings - multi-result overlap query
 
-Given two lists of closed intervals `A` and `B` (each sorted, non-overlapping within the list), return all intersecting pairs. For example, `A = [[0,2],[5,10],[13,23]]`, `B = [[1,5],[8,12],[15,24]]` → `[[1,2],[5,5],[8,10],[15,23]]`. n, m ≤ 1000.
+Given a set of booked meetings and a new candidate meeting `[q_lo, q_hi]`, return **every** existing meeting that conflicts with it (not just whether one exists). This is the textbook interval-tree "stabbing query, all results" operation - the one My Calendar I deliberately doesn't need, since it only cares about the first conflict. Up to 10⁵ existing meetings, up to 10³ queries.
 
-**Approach:** at n, m ≤ 1000 the two-pointer sweep is optimal (O(n + m)), but the interval tree shows the all-overlaps retrieval pattern. Build an interval tree from A; for each interval in B, call `all_overlaps(b.lo, b.hi)` and clip each result to the intersection. This directly exercises the O(log n + k) all-overlaps query - each B interval retrieves exactly its k matches. For large n with a dynamic A, the tree wins over the two-pointer which requires A to stay sorted.
+**Worked examples:**
+- **Example 1**
+  - **Input:** meetings = [[1,4],[2,6],[3,5],[7,9],[8,10]], query = [5,8] | **Output:** [[2,6],[3,5],[7,9],[8,10]]
+  - **Explanation:** `[1,4]` ends before 5 so it's excluded; the other four all overlap `[5,8]` somewhere.
+- **Example 2**
+  - **Input:** meetings = [[1,4],[2,6],[3,5],[7,9],[8,10]], query = [11,12] | **Output:** []
+  - **Explanation:** no meeting extends past 10, so nothing overlaps a query starting at 11.
+
+**Constraints:** `0 ≤ lo < hi ≤ 10⁹` per meeting, up to `10⁵` meetings, up to `10³` queries.
+
+**Approach:** Build one interval tree from all existing meetings. For each query, recurse from the root: prune the entire left subtree the moment `node.max_hi < q_lo` (nothing there can reach far enough right to overlap), otherwise visit left, test the current node, and only descend right if `node.lo ≤ q_hi` (a right subtree keyed on larger `lo` values can't overlap once the current node's `lo` already exceeds the query). This is `max_hi` pruning doing real work - on a query interval near one end of the dataset, entire subtrees are skipped instead of scanned, unlike My Calendar I's search which stops at the first hit.
 
 ```python
-from typing import List
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Optional
 
-def intervalIntersection(A: List[List[int]], B: List[List[int]]) -> List[List[int]]:
-    result: List[List[int]] = []
-    i = j = 0
-    while i < len(A) and j < len(B):
-        lo = max(A[i][0], B[j][0])
-        hi = min(A[i][1], B[j][1])
-        if lo <= hi:
-            result.append([lo, hi])
-        if A[i][1] < B[j][1]:   # A exhausted first, advance A
-            i += 1
+@dataclass
+class INode:
+    lo: int
+    hi: int
+    max_hi: int = field(init=False)
+    left: Optional["INode"] = field(default=None, repr=False)
+    right: Optional["INode"] = field(default=None, repr=False)
+
+    def __post_init__(self) -> None:
+        self.max_hi = self.hi
+
+    def _update_max(self) -> None:
+        self.max_hi = self.hi
+        if self.left:
+            self.max_hi = max(self.max_hi, self.left.max_hi)
+        if self.right:
+            self.max_hi = max(self.max_hi, self.right.max_hi)
+
+
+class ConflictFinder:
+    def __init__(self, meetings: list[tuple[int, int]]) -> None:
+        self._root: Optional[INode] = None
+        for lo, hi in meetings:
+            self._root = self._insert(self._root, lo, hi)
+
+    def _insert(self, node: Optional[INode], lo: int, hi: int) -> INode:
+        if node is None:
+            return INode(lo, hi)
+        if lo < node.lo:
+            node.left = self._insert(node.left, lo, hi)
         else:
-            j += 1
-    return result
+            node.right = self._insert(node.right, lo, hi)
+        node._update_max()
+        return node
+
+    def conflicts(self, q_lo: int, q_hi: int) -> list[tuple[int, int]]:
+        results: list[tuple[int, int]] = []
+        self._query(self._root, q_lo, q_hi, results)
+        return results
+
+    def _query(
+        self, node: Optional[INode], q_lo: int, q_hi: int, results: list[tuple[int, int]]
+    ) -> None:
+        if node is None or node.max_hi < q_lo:
+            return                              # whole subtree ends before query starts
+        self._query(node.left, q_lo, q_hi, results)
+        if node.lo <= q_hi and q_lo <= node.hi:
+            results.append((node.lo, node.hi))
+        if node.lo <= q_hi:                     # right subtree could still start in range
+            self._query(node.right, q_lo, q_hi, results)
 ```
 
-**Complexity:** O(n + m) time (two-pointer), O(1) space (output excluded). With interval tree on A: O((n + m) log n) - worse here, but optimal when A is dynamic.
+**Complexity:** O(log n + k) per query, where k is the number of conflicts returned; O(n) space for the tree.
 
 **Duplicate problems:**
-- Remove Interval (LC 1272) - given a sorted list of disjoint intervals and one interval to remove, return the result; same clip-to-intersection logic.
-- Minimum Number of Arrows to Burst Balloons (LC 452) - greedy on sorted intervals; overlap detection but no retrieval needed.
+- Remove Interval (LC 1272) - given a sorted list of disjoint intervals and one interval to remove, return the result; same "find everything overlapping a query range" retrieval, but on a static sorted array instead of a tree.
+- Minimum Number of Arrows to Burst Balloons (LC 452) - greedy on sorted intervals; needs only overlap detection, no multi-result retrieval.
 
-### 3. Data Stream as Disjoint Intervals - dynamic interval merging
+### 3. Employee Free Time - multi-interval merge via tree sweep
 
-Receive integers one at a time via `addNum(val)`. After each add, return all current intervals as a sorted list of disjoint intervals. At any time, `getIntervals()` should return the merged set (e.g. adding 1, 3, 7, 2, 6 yields `[[1,3],[6,7]]`). n ≤ 5 × 10⁴.
+Given each employee's working intervals (unsorted across employees, sorted within each employee), find every gap where **no** employee is working, excluding the gaps before the first and after the last interval. E.g. `[[1,3],[6,7]], [[2,4]], [[2,5],[9,12]]` → `[[5,6],[7,9]]`. Up to 5 × 10⁴ total intervals.
 
-**Approach:** maintain a sorted set of disjoint intervals keyed by start. On `addNum(v)`, insert `[v, v]` and merge with any overlapping neighbors - check the predecessor (its end ≥ v − 1) and successor (its start ≤ v + 1). This is the interval-tree use-case: dynamic inserts with overlap resolution. Python's `sortedcontainers.SortedList` gives O(log n) insert and neighbor lookup without a hand-rolled BST.
+**Worked examples:**
+- **Example 1**
+  - **Input:** schedule = [[[1,3],[6,7]],[[2,4]],[[2,5],[9,12]]] | **Output:** [[5,6],[7,9]]
+  - **Explanation:** merging every interval across all employees gives busy blocks [1,5] and [6,7] and [9,12]; the free gaps between consecutive busy blocks are [5,6] and [7,9].
+- **Example 2**
+  - **Input:** schedule = [[[1,2],[5,6]],[[1,3]]] | **Output:** [[3,5]]
+  - **Explanation:** merged busy blocks are [1,3] and [5,6]; the one gap between them is [3,5].
+
+**Constraints:** total intervals across all employees `≤ 5 × 10⁴`, `0 ≤ lo < hi ≤ 10⁹`.
+
+**Approach:** unlike entry 2's targeted range query, this problem needs **every** interval visited in sorted order to detect gaps between merged clusters - so build the interval tree from all intervals (any employee, flattened), then do an in-order traversal, which yields intervals sorted by `lo` for free (the BST-ordering half of the augmented invariant, not the `max_hi` half). While walking in order, track the current merged cluster's end via `max_hi`-style running max: if the next interval's `lo` falls at or before the running end, it's absorbed into the same cluster; otherwise a gap has been found. This exercises the tree's sorted-traversal property the way entry 2 exercises its pruning - genuinely different tree mechanic, not a copy.
 
 ```python
-from sortedcontainers import SortedList
-from typing import List
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Optional
 
-class SummaryRanges:
-    def __init__(self) -> None:
-        self.intervals: SortedList[tuple[int, int]] = SortedList(key=lambda x: x[0])
+@dataclass
+class INode:
+    lo: int
+    hi: int
+    max_hi: int = field(init=False)
+    left: Optional["INode"] = field(default=None, repr=False)
+    right: Optional["INode"] = field(default=None, repr=False)
 
-    def addNum(self, val: int) -> None:
-        new_lo, new_hi = val, val
-        to_remove: list[tuple[int, int]] = []
+    def __post_init__(self) -> None:
+        self.max_hi = self.hi
 
-        # find predecessor: the largest start ≤ val
-        i = self.intervals.bisect_right((val, val)) - 1
-        if i >= 0:
-            lo, hi = self.intervals[i]
-            if hi >= val - 1:             # adjacent or overlapping
-                new_lo = min(new_lo, lo)
-                new_hi = max(new_hi, hi)
-                to_remove.append((lo, hi))
+    def _update_max(self) -> None:
+        self.max_hi = self.hi
+        if self.left:
+            self.max_hi = max(self.max_hi, self.left.max_hi)
+        if self.right:
+            self.max_hi = max(self.max_hi, self.right.max_hi)
 
-        # find successor: smallest start > val
-        j = self.intervals.bisect_left((val + 1, 0))
-        if j < len(self.intervals):
-            lo, hi = self.intervals[j]
-            if lo <= val + 1:             # adjacent or overlapping
-                new_lo = min(new_lo, lo)
-                new_hi = max(new_hi, hi)
-                to_remove.append((lo, hi))
 
-        for iv in to_remove:
-            self.intervals.remove(iv)
-        self.intervals.add((new_lo, new_hi))
+def employee_free_time(schedule: list[list[list[int]]]) -> list[list[int]]:
+    root: Optional[INode] = None
 
-    def getIntervals(self) -> List[List[int]]:
-        return [[lo, hi] for lo, hi in self.intervals]
+    def insert(node: Optional[INode], lo: int, hi: int) -> INode:
+        if node is None:
+            return INode(lo, hi)
+        if lo < node.lo:
+            node.left = insert(node.left, lo, hi)
+        else:
+            node.right = insert(node.right, lo, hi)
+        node._update_max()
+        return node
+
+    for employee in schedule:
+        for lo, hi in employee:
+            root = insert(root, lo, hi)
+
+    merged: list[list[int]] = []
+
+    def inorder(node: Optional[INode]) -> None:
+        if node is None:
+            return
+        inorder(node.left)
+        if merged and node.lo <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], node.hi)   # absorb into current cluster
+        else:
+            merged.append([node.lo, node.hi])             # start a new cluster
+        inorder(node.right)
+
+    inorder(root)
+    return [[merged[i - 1][1], merged[i][0]] for i in range(1, len(merged))]
 ```
 
-**Complexity:** O(log n) per `addNum`, O(n) for `getIntervals`.
+**Complexity:** O(n log n) to build the tree, O(n) for the in-order sweep; O(n) space.
 
 **Duplicate problems:**
-- Insert Interval (LC 57) - static list, insert one interval and merge; same merge logic, no dynamic structure needed.
-- Merge Intervals (LC 56) - sort then sweep; the static batch version of this problem.
+- Insert Interval (LC 57) - static list, insert one interval and merge; same merge-adjacent-clusters logic, no traversal needed since the input is already sorted.
+- Merge Intervals (LC 56) - sort then sweep; the direct array equivalent of this entry's in-order-then-merge approach, without the tree.

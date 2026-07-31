@@ -24,11 +24,10 @@
   - [Array as a direct-address (frequency) map](#array-as-a-direct-address-frequency-map)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [Practice problems](#practice-problems)
-  - [Subarray Sum Equals K](#1-subarray-sum-equals-k--prefix-sum--hashing)
-  - [Trapping Rain Water](#2-trapping-rain-water--converging-two-pointers)
-  - [Next Permutation](#3-next-permutation--in-place-index-manipulation)
-  - [Find the Duplicate Number](#4-find-the-duplicate-number--array-as-function-floyd-cycle-detection)
-  - [Maximum Subarray](#5-maximum-subarray--kadanes-dynamic-programming)
+  - [Trapping Rain Water](#1-trapping-rain-water--converging-two-pointers)
+  - [Next Permutation](#2-next-permutation--in-place-index-manipulation)
+  - [Maximum Subarray](#3-maximum-subarray--kadanes-dynamic-programming)
+  - [Minimum Size Subarray Sum](#4-minimum-size-subarray-sum--sliding-window)
 
 ## What it is
 
@@ -343,33 +342,23 @@ When values are large but sparse, **coordinate-compress** first (map the distinc
 
 ## Practice problems
 
-Five staples, each a **distinct** technique on an array - no two solved the same way.
+Four staples, each a **distinct** technique on an array - no two solved the same way.
 
-### 1. Subarray Sum Equals K - _prefix sum + hashing_
+### 1. Trapping Rain Water - _converging two pointers_
 
-**Problem.** Given an integer array `nums` (values may be negative) and an integer `k`, count the number of **contiguous subarrays** whose sum equals `k`. E.g. `nums = [1, 1, 1], k = 2` → `2` (the two adjacent `[1,1]` pairs).
+Given `height`, an array of non-negative bar heights of width 1, compute how much rain water is trapped between the bars after it rains. This is the two-pointer workhorse: no extra array, just two indices closing inward while a running max on each side does the work.
 
-**Approach.** A subarray `(i..j]` sums to `prefix[j] − prefix[i]`. So `sum(i..j] == k` ⟺ `prefix[i] == prefix[j] − k`. Sweep left to right keeping a running prefix sum and a hashmap of _how many times each prefix value has occurred_. At each `j`, the count of valid left endpoints is how many earlier prefixes equalled `prefix − k`. One pass - negatives are fine (no sliding window, which would need monotonicity).
+**Worked examples:**
+- **Example 1**
+  - **Input:** height = [0,1,0,2,1,0,1,3,2,1,2,1] | **Output:** 6
+  - **Explanation:** water pools above the shorter bars between the two tallest peaks (indices 7 and 11), totaling 6 units.
+- **Example 2**
+  - **Input:** height = [4,2,0,3,2,5] | **Output:** 9
+  - **Explanation:** the two tall bars at the ends (4 and 5) trap water over the dip between them.
 
-```python
-def subarray_sum(nums: list[int], k: int) -> int:
-    count = 0
-    prefix = 0
-    seen: dict[int, int] = {0: 1}    # empty prefix, so subarrays starting at index 0 count
-    for x in nums:
-        prefix += x
-        count += seen.get(prefix - k, 0)
-        seen[prefix] = seen.get(prefix, 0) + 1
-    return count
-```
+**Constraints:** `1 ≤ height.length ≤ 2 × 10⁴`, `0 ≤ height[i] ≤ 10⁵`.
 
-**Complexity.** O(n) time, O(n) space.
-
-### 2. Trapping Rain Water - _converging two pointers_
-
-**Problem.** Given `height`, an array of non-negative bar heights of width 1, compute how much rain water is trapped between the bars after it rains. E.g. `[0,1,0,2,1,0,1,3,2,1,2,1]` → `6`.
-
-**Approach.** Water above bar `i` is `min(maxLeft, maxRight) − height[i]`. Instead of precomputing both prefix-max arrays (O(n) space), walk two pointers inward from both ends, tracking `left_max` and `right_max`. The shorter side is the binding constraint, so advance whichever pointer has the smaller running max - that side's water is fully determined. O(1) space.
+**Approach:** Water above bar `i` is `min(maxLeft, maxRight) − height[i]`. Instead of precomputing both prefix-max arrays (O(n) space), walk two pointers inward from both ends, tracking `left_max` and `right_max`. The shorter side is the binding constraint, so advance whichever pointer has the smaller running max - that side's water is fully determined without ever needing to know the exact max on the other side. O(1) space.
 
 ```python
 def trap(height: list[int]) -> int:
@@ -388,13 +377,28 @@ def trap(height: list[int]) -> int:
     return water
 ```
 
-**Complexity.** O(n) time, O(1) space.
+**Complexity:** O(n) time, O(1) space.
 
-### 3. Next Permutation - _in-place index manipulation_
+**Duplicate problems:**
+- Container With Most Water (LC 11) - same converging two-pointer shape, moving the shorter side inward each step; simpler objective (`min(a,b) × width`) with no running-max accumulation.
 
-**Problem.** Rearrange `nums` into the **next lexicographically greater** permutation in place. If it's already the largest (descending), wrap to the smallest (ascending). E.g. `[1,2,3]→[1,3,2]`, `[3,2,1]→[1,2,3]`, `[1,1,5]→[1,5,1]`.
+---
 
-**Approach.** Scan from the right for the first index `i` where `nums[i] < nums[i+1]` - the pivot, the rightmost spot that can be increased. Everything right of it is descending (already maximal). Find the rightmost element greater than `nums[i]`, swap them (smallest possible increase at the pivot), then **reverse the suffix** after `i` to make it ascending (smallest tail). Pure index work, O(1) space.
+### 2. Next Permutation - _in-place index manipulation_
+
+Rearrange `nums` into the **next lexicographically greater** permutation in place. If it's already the largest (descending), wrap to the smallest (ascending). Pure index arithmetic - no auxiliary structure at all, which is what makes it distinct from every other entry here.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,2,3] | **Output:** [1,3,2]
+  - **Explanation:** the pivot is index 1 (`2 < 3`); swap with the rightmost greater element (3), then reverse the empty suffix.
+- **Example 2**
+  - **Input:** nums = [3,2,1] | **Output:** [1,2,3]
+  - **Explanation:** fully descending - no pivot exists, so it wraps to the smallest permutation (full reverse).
+
+**Constraints:** `1 ≤ nums.length ≤ 100`, `0 ≤ nums[i] ≤ 100`.
+
+**Approach:** Scan from the right for the first index `i` where `nums[i] < nums[i+1]` - the pivot, the rightmost spot that can be increased. Everything right of it is descending (already maximal). Find the rightmost element greater than `nums[i]`, swap them (smallest possible increase at the pivot), then **reverse the suffix** after `i` to make it ascending (smallest tail).
 
 ```python
 def next_permutation(nums: list[int]) -> None:
@@ -410,36 +414,28 @@ def next_permutation(nums: list[int]) -> None:
     nums[i + 1:] = reversed(nums[i + 1:])
 ```
 
-**Complexity.** O(n) time, O(1) space.
+**Complexity:** O(n) time, O(1) space.
 
-### 4. Find the Duplicate Number - _array-as-function, Floyd cycle detection_
+**Duplicate problems:**
+- Previous Permutation With One Swap (LC 1053) - mirror-image technique: scan from the right for the first descent (`arr[i] > arr[i+1]` instead of `<`), then swap with the right candidate to decrease instead of increase.
 
-**Problem.** An array `nums` of `n + 1` integers, each in `[1, n]`. Exactly one value is duplicated (possibly many times). Find it **without modifying the array** and in **O(1) extra space**. E.g. `[1,3,4,2,2] → 2`.
+---
 
-**Approach.** Treat the array as a function `i → nums[i]`. Because values are in `[1, n]` and there are `n + 1` of them, following `next = nums[cur]` must eventually revisit a value → a cycle, and the cycle's entrance is the duplicate. Use Floyd's tortoise-and-hare: phase 1 finds a meeting point inside the cycle; phase 2 walks one pointer from the start and one from the meeting point at equal speed - they meet at the cycle entrance.
+### 3. Maximum Subarray - _Kadane's dynamic programming_
 
-```python
-def find_duplicate(nums: list[int]) -> int:
-    slow = fast = nums[0]
-    while True:                       # phase 1: find a point inside the cycle
-        slow = nums[slow]
-        fast = nums[nums[fast]]
-        if slow == fast:
-            break
-    slow = nums[0]
-    while slow != fast:               # phase 2: find the cycle entrance
-        slow = nums[slow]
-        fast = nums[fast]
-    return slow
-```
+Find the contiguous subarray with the largest sum and return that sum. At least one element; values may be negative. The DP-over-endpoints technique: no pointers to move, just a running decision at each index.
 
-**Complexity.** O(n) time, O(1) space - beats the O(n)-space hashset and the array-mutating sign-flip trick.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [-2,1,-3,4,-1,2,1,-5,4] | **Output:** 6
+  - **Explanation:** the subarray [4,-1,2,1] sums to 6, the largest of any contiguous run.
+- **Example 2**
+  - **Input:** nums = [1] | **Output:** 1
+  - **Explanation:** a single element is trivially its own maximum subarray.
 
-### 5. Maximum Subarray - _Kadane's dynamic programming_
+**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-10⁴ ≤ nums[i] ≤ 10⁴`.
 
-**Problem.** Find the contiguous subarray with the largest sum and return that sum. At least one element; values may be negative. E.g. `[-2,1,-3,4,-1,2,1,-5,4] → 6` (the subarray `[4,-1,2,1]`).
-
-**Approach.** DP over endpoints: `best_ending_here` = the max sum of a subarray that _ends_ at the current index. Either extend the previous one or start fresh at the current element - `max(x, best_ending_here + x)`. Track the global best across all endpoints. One pass; the insight is that a negative running sum is never worth carrying forward.
+**Approach:** DP over endpoints: `best_ending_here` = the max sum of a subarray that _ends_ at the current index. Either extend the previous one or start fresh at the current element - `max(x, best_ending_here + x)`. Track the global best across all endpoints. One pass; the insight is that a negative running sum is never worth carrying forward.
 
 ```python
 def max_subarray(nums: list[int]) -> int:
@@ -450,4 +446,45 @@ def max_subarray(nums: list[int]) -> int:
     return best
 ```
 
-**Complexity.** O(n) time, O(1) space.
+**Complexity:** O(n) time, O(1) space.
+
+**Duplicate problems:**
+- Maximum Sum Circular Subarray (LC 918) - same Kadane's DP, extended with the complement trick (`max(kadane(nums), total − kadane(-nums))`) to handle wraparound.
+- Maximum Product Subarray (LC 152) - same extend-or-restart DP shape, tracking running min *and* max per index since a negative can flip the sign.
+
+---
+
+### 4. Minimum Size Subarray Sum - _sliding window_
+
+Given an array of positive integers `nums` and a target sum, find the length of the **shortest contiguous subarray** whose sum is `>= target`, or `0` if none exists. The sliding-window technique: a window that only ever expands on the right and contracts on the left, never resetting - the core array pattern the other three entries don't exercise.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** target = 7, nums = [2,3,1,2,4,3] | **Output:** 2
+  - **Explanation:** the subarray [4,3] sums to 7 in just 2 elements, the shortest such run.
+- **Example 2**
+  - **Input:** target = 4, nums = [1,4,4] | **Output:** 1
+  - **Explanation:** the single element 4 already meets the target.
+
+**Constraints:** `1 ≤ target ≤ 10⁹`, `1 ≤ nums.length ≤ 10⁵`, `1 ≤ nums[i] ≤ 10⁴`.
+
+**Approach:** Because every value is positive, the window sum is **monotonic** in both directions: growing the window (moving `hi` right) only increases the sum, shrinking it (moving `lo` right) only decreases it. Expand `hi` one step at a time, adding to a running `total`; whenever `total >= target`, the window is a candidate - record its length, then shrink from `lo` while the condition still holds, since a smaller valid window is always preferred. Each index enters and leaves the window at most once, so the two pointers together do O(n) work despite the nested loop shape.
+
+```python
+def min_subarray_len(target: int, nums: list[int]) -> int:
+    lo = 0
+    total = 0
+    best = float("inf")
+    for hi, x in enumerate(nums):
+        total += x
+        while total >= target:
+            best = min(best, hi - lo + 1)
+            total -= nums[lo]
+            lo += 1
+    return best if best != float("inf") else 0
+```
+
+**Complexity:** O(n) time, O(1) space - each pointer traverses the array at most once.
+
+**Duplicate problems:**
+- Minimum Window Substring (LC 76) - same shrink-while-valid variable window minimizing length; the validity condition is character-count coverage instead of a numeric sum threshold.

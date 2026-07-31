@@ -27,7 +27,7 @@
 - [Practice problems](#practice-problems)
   - [Sliding Window Maximum](#1-sliding-window-maximum--monotonic-deque)
   - [Design Circular Deque](#2-design-circular-deque--ring-buffer-both-ends)
-  - [Shortest Subarray with Sum at Least K](#3-shortest-subarray-with-sum-at-least-k--monotonic-deque-on-prefix-sums)
+  - [Shortest Subarray with Sum at Least K](#3-shortest-subarray-with-sum-at-least-k-lc-862--monotonic-deque-on-prefix-sums)
   - [Sliding Window Median](#4-sliding-window-median--why-a-deque-is-not-enough)
 
 ## What it is
@@ -213,7 +213,6 @@ from typing import Generic, Optional, TypeVar
 
 T = TypeVar("T")
 
-
 class CircularDeque(Generic[T]):
     """Fixed-capacity double-ended queue over a ring buffer; O(1) both ends."""
 
@@ -341,7 +340,17 @@ Four staples, each a **distinct** deque technique - no two solved the same way.
 
 **Problem.** Given an array `nums` and window size `k`, return the maximum of each contiguous window. E.g. `nums=[1,3,-1,-3,5,3,6,7], k=3` → `[3,3,5,5,6,7]`. Constraints: `n ≤ 10⁵`, so O(n·k) brute force and even O(n log n) heaps are on the edge - O(n) is the intended bound.
 
-**Approach.** A **decreasing monotonic deque of indices**: pop smaller values off the back before pushing `i`, pop the front when it leaves the window; the front index is always the window max. Each index enters and leaves once → O(n). This is the deque's signature primitive in its canonical problem.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,3,-1,-3,5,3,6,7], k = 3 | **Output:** [3,3,5,5,6,7]
+  - **Explanation:** the monotonic deque holds decreasing values per window; for window [1,3,-1] the front is 3, and as the window slides the front updates to 5 once 5 enters and dominates.
+- **Example 2**
+  - **Input:** nums = [9,8,7,6], k = 2 | **Output:** [9,8,7]
+  - **Explanation:** values are already strictly decreasing, so every element stays in the deque only until it slides out the front - the max of each window is always its leftmost (oldest) element.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-10⁴ ≤ nums[i] ≤ 10⁴`, `1 ≤ k ≤ nums.length`.
+
+**Approach:** A **decreasing monotonic deque of indices**: pop smaller values off the back before pushing `i`, pop the front when it leaves the window; the front index is always the window max. Each index enters and leaves once → O(n). This is the deque's signature primitive in its canonical problem.
 
 ```python
 from collections import deque
@@ -360,13 +369,27 @@ def max_sliding_window(nums: list[int], k: int) -> list[int]:
     return res
 ```
 
-**Complexity.** O(n) time, O(k) space. Pattern: [Sliding Window](../patterns/sliding-window.md).
+**Complexity:** O(n) time, O(k) space. Pattern: [Sliding Window](../patterns/sliding-window.md).
+
+**Duplicate problems:**
+- Jump Game VI (LC 1696) - same monotonic-deque max-in-window extraction, run over a `dp` array computed on the fly instead of a given input array.
+- Constrained Subsequence Sum (LC 1425) - same monotonic-deque DP-transition shape as Jump Game VI, with a max-with-zero clamp.
 
 ### 2. Design Circular Deque - _ring buffer, both ends_
 
 **Problem.** Design a fixed-capacity deque with `insertFront`, `insertLast`, `deleteFront`, `deleteLast`, `getFront`, `getRear`, `isEmpty`, `isFull` - all O(1).
 
-**Approach.** A fixed array with a `front` index and a `size` count; the back slot is `(front + size) % cap`. `insertFront` walks `front` backward with wrap; `insertLast` writes the back slot. Tracking `size` explicitly resolves the empty-vs-full ambiguity. This makes the ring-buffer layout concrete and exercises both-end wrapping arithmetic - distinct from the monotonic-deque technique.
+**Worked examples:**
+- **Example 1**
+  - **Input:** MyCircularDeque(3); insertLast(1); insertLast(2); insertFront(3); insertLast(4) | **Output:** True, True, True, False
+  - **Explanation:** the first three inserts fill the capacity-3 ring (front=3, back has 1,2); the fourth insert fails because `_size == _cap`, correctly rejecting the overflow.
+- **Example 2**
+  - **Input:** same deque after the above; getRear(); isFull() | **Output:** 2, True
+  - **Explanation:** the rear slot is computed as `(front + size - 1) % cap`, which still points at value 2 since the failed `insertLast(4)` never mutated state; `isFull` reads `size == cap` directly.
+
+**Constraints:** `1 ≤ k ≤ 1000` (deque capacity), `0 ≤ value ≤ 1000`, at most `2000` calls to the deque methods.
+
+**Approach:** A fixed array with a `front` index and a `size` count; the back slot is `(front + size) % cap`. `insertFront` walks `front` backward with wrap; `insertLast` writes the back slot. Tracking `size` explicitly resolves the empty-vs-full ambiguity. This makes the ring-buffer layout concrete and exercises both-end wrapping arithmetic - distinct from the monotonic-deque technique.
 
 ```python
 class MyCircularDeque:
@@ -417,13 +440,29 @@ class MyCircularDeque:
         return self._size == self._cap
 ```
 
-**Complexity.** O(1) per operation, O(k) space. See [Circular Buffer](./circular-buffer.md).
+**Complexity:** O(1) per operation, O(k) space. See [Circular Buffer](./circular-buffer.md).
 
-### 3. Shortest Subarray with Sum at Least K - _monotonic deque on prefix sums_
+**Duplicate problems:**
+- Design Circular Queue (LC 622) - identical ring-buffer wrapping-index technique (`front`/`size`, `% cap` arithmetic), restricted to single-ended enqueue/dequeue.
+
+### 3. Shortest Subarray with Sum at Least K (LC 862) - _monotonic deque on prefix sums_
 
 **Problem.** Given an integer array `nums` (values may be **negative**) and integer `k`, return the length of the shortest non-empty contiguous subarray with sum ≥ `k`, or -1. Constraints: `n ≤ 10⁵`; negatives rule out the simple two-pointer sliding window that works for all-positive arrays.
 
-**Approach.** Build [prefix sums](../patterns/prefix-sum.md) `P`, where subarray `(i, j]` has sum `P[j] - P[i]`. For each `j` we want the smallest window, so the closest earlier `i` with `P[i] ≤ P[j] - k`. Keep an **increasing monotonic deque of prefix-sum indices**: pop the front while `P[j] - P[deque.front] ≥ k` (record the length - it can't help a later `j` better), and pop the back while `P[j] ≤ P[deque.back]` (a later, smaller prefix dominates). This is the monotonic deque applied to prefix sums rather than raw values - a distinct twist from problem 1, and the canonical "monotonic deque handles negatives where two-pointer can't" problem.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1], k = 1 | **Output:** 1
+  - **Explanation:** the single-element subarray [1] already sums to 1 ≥ k, so the shortest length is 1.
+- **Example 2**
+  - **Input:** nums = [1,2], k = 4 | **Output:** -1
+  - **Explanation:** the maximum possible sum (the whole array) is 3, which never reaches k = 4, so no valid subarray exists.
+- **Example 3**
+  - **Input:** nums = [2,-1,2], k = 3 | **Output:** 3
+  - **Explanation:** prefix sums are [0,2,1,3]; the negative value makes the length-2 windows fail, but the deque finds that the full array (prefix[3]-prefix[0] = 3 ≥ k) is the shortest qualifying window, showing why negatives defeat plain two-pointer.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-10⁵ ≤ nums[i] ≤ 10⁵`, `1 ≤ k ≤ 10⁹`.
+
+**Approach:** Build [prefix sums](../patterns/prefix-sum.md) `P`, where subarray `(i, j]` has sum `P[j] - P[i]`. For each `j` we want the smallest window, so the closest earlier `i` with `P[i] ≤ P[j] - k`. Keep an **increasing monotonic deque of prefix-sum indices**: pop the front while `P[j] - P[deque.front] ≥ k` (record the length - it can't help a later `j` better), and pop the back while `P[j] ≤ P[deque.back]` (a later, smaller prefix dominates). This is the monotonic deque applied to prefix sums rather than raw values - a distinct twist from problem 1, and the canonical "monotonic deque handles negatives where two-pointer can't" problem.
 
 ```python
 from collections import deque
@@ -444,13 +483,23 @@ def shortest_subarray(nums: list[int], k: int) -> int:
     return best if best <= n else -1
 ```
 
-**Complexity.** O(n) time, O(n) space. Pattern: [Prefix Sum](../patterns/prefix-sum.md) + monotonic deque.
+**Complexity:** O(n) time, O(n) space. Pattern: [Prefix Sum](../patterns/prefix-sum.md) + monotonic deque.
 
 ### 4. Sliding Window Median - _why a deque is **not** enough_
 
 **Problem.** Return the median of every window of size `k`. E.g. `nums=[1,3,-1,-3,5,3,6,7], k=3` → `[1,-1,-1,3,5,6]`. Constraints: `n ≤ 10⁵`.
 
-**Approach.** This problem looks like Sliding Window Maximum but a deque **cannot** solve it - a deque only exposes its two ends, and the median is an interior order statistic, not an extremum. The fix is **two heaps** (a max-heap for the lower half, a min-heap for the upper half) kept balanced, with lazy deletion of out-of-window elements. The teaching point: recognize when "sliding window + order statistic" exceeds the deque's reach and demands a [heap](./heap.md)-based structure instead - the distinct technique here is knowing the deque's limit.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,3,-1,-3,5,3,6,7], k = 3 | **Output:** [1,-1,-1,3,5,6]
+  - **Explanation:** for window [1,3,-1] the two heaps balance to lower half {-1,1} and upper half {3}, giving median = max(lower) = 1; the deque cannot produce this because -1 is neither the min nor max of the window.
+- **Example 2**
+  - **Input:** nums = [1,2], k = 2 | **Output:** [1.5]
+  - **Explanation:** the only window [1,2] has an even size, so the median is the average of the two balanced-heap tops (1 and 2) = 1.5 - an order-statistic average a deque's two ends alone cannot expose.
+
+**Constraints:** `1 ≤ k ≤ nums.length ≤ 2 × 10⁴`, `-2³¹ ≤ nums[i] ≤ 2³¹ - 1`.
+
+**Approach:** This problem looks like Sliding Window Maximum but a deque **cannot** solve it - a deque only exposes its two ends, and the median is an interior order statistic, not an extremum. The fix is **two heaps** (a max-heap for the lower half, a min-heap for the upper half) kept balanced, with lazy deletion of out-of-window elements. The teaching point: recognize when "sliding window + order statistic" exceeds the deque's reach and demands a [heap](./heap.md)-based structure instead - the distinct technique here is knowing the deque's limit.
 
 ```python
 import heapq
@@ -489,4 +538,7 @@ def median_sliding_window(nums: list[int], k: int) -> list[float]:
     return res
 ```
 
-**Complexity.** O(n log k) time, O(k) space. Pattern: [Top-K / two-heaps](../patterns/top-k-elements.md) - the counterexample that defines the deque's boundary.
+**Complexity:** O(n log k) time, O(k) space. Pattern: [Top-K / two-heaps](../patterns/top-k-elements.md) - the counterexample that defines the deque's boundary.
+
+**Duplicate problems:**
+- Find Median from Data Stream (LC 295) - the same two-heap balancing + lazy-deletion-free core technique, without the sliding-window eviction.

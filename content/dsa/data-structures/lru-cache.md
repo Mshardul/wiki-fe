@@ -294,13 +294,23 @@ pos = {}                  # value → its node/index in the ordered structure
 
 ## Practice problems
 
-Five problems, each exercising a **distinct** technique that the LRU design teaches - no two solved the same way.
+Three problems, each exercising a **distinct** technique that the LRU design teaches - no two solved the same way, and every entry genuinely depends on the map→node + doubly-linked-list splice mechanism this article is about.
 
 ### 1. LRU Cache - _map + doubly linked list, O(1)_
 
-**Problem.** Design a data structure for an LRU cache with `get(key)` and `put(key, value)`, both O(1), evicting the least-recently-used key when capacity is exceeded. Capacity is given at construction; up to ~10⁵ operations.
+Design a data structure for an LRU cache with `get(key)` and `put(key, value)`, both O(1), evicting the least-recently-used key when capacity is exceeded. The canonical hashmap+DLL composition - every other entry here is a variation on this splice.
 
-**Approach.** The canonical design above: hash map `key → node`, doubly linked list ordered MRU→LRU with sentinels, `get`/`put` both = unlink + add-front, evict = pop `tail.prev` and delete its key. The O(1) requirement on _both_ operations is exactly what forces the two-structure composition - a single dict can't give O(1) eviction order.
+**Worked examples:**
+- **Example 1**
+  - **Input:** capacity = 2; put(1,1), put(2,2), get(1), put(3,3), get(2) | **Output:** get(1) → 1, get(2) → -1
+  - **Explanation:** put(3,3) evicts key 2 - it was the LRU entry after get(1) refreshed key 1's recency.
+- **Example 2**
+  - **Input:** capacity = 1; put(2,1), get(2), put(3,2), get(2), get(3) | **Output:** get(2) → 1, then get(2) → -1, get(3) → 2
+  - **Explanation:** capacity 1 means put(3,2) immediately evicts key 2.
+
+**Constraints:** `1 ≤ capacity ≤ 3000`, `0 ≤ key, value ≤ 10⁴`, up to `2 × 10⁵` calls to `get`/`put`.
+
+**Approach:** The canonical design: hash map `key → node`, doubly linked list ordered MRU→LRU with sentinels, `get`/`put` both = unlink + add-front, evict = pop `tail.prev` and delete its key. The O(1) requirement on _both_ operations is exactly what forces the two-structure composition - a single dict can't give O(1) eviction order.
 
 ```python
 from collections import OrderedDict
@@ -315,13 +325,25 @@ class LRUCache:
         if len(self.od) > self.cap: self.od.popitem(last=False)
 ```
 
-Time: O(1) per op. Space: O(capacity).
+**Complexity:** O(1) per op, O(capacity) space.
+
+---
 
 ### 2. LFU Cache - _frequency buckets, O(1)_
 
-**Problem.** Same as LRU, but evict the **least-frequently-used** key; break ties by least-recently-used among that frequency. Both operations O(1).
+Same as LRU, but evict the **least-frequently-used** key; break ties by least-recently-used among that frequency. Both operations O(1). Kept here as the intentional contrast entry: same map→node backbone, but recency alone is no longer the eviction key.
 
-**Approach.** A different structure entirely - recency alone is wrong. Keep `key → (value, freq)`, plus `freq → OrderedDict of keys at that frequency` (LRU order within a freq), plus a `min_freq` pointer. A touch moves a key from bucket `f` to bucket `f+1`; eviction pops the LRU key from bucket `min_freq`. This is why LFU is "LRU with an extra dimension" - recency tie-breaking _inside_ frequency.
+**Worked examples:**
+- **Example 1**
+  - **Input:** capacity = 2; put(1,1), put(2,2), get(1), put(3,3), get(2), get(3), put(4,4), get(1), get(3), get(4) | **Output:** get(1) → 1, get(2) → -1, get(3) → 3, get(1) → -1, get(3) → 3, get(4) → 4
+  - **Explanation:** put(3,3) evicts key 2 (freq 1, the only candidate at min_freq); put(4,4) evicts key 1 (freq 2, same as key 3, but key 1 is the older touch at that frequency).
+- **Example 2**
+  - **Input:** capacity = 0; put(0,0), get(0) | **Output:** get(0) → -1
+  - **Explanation:** zero capacity means every put is a no-op.
+
+**Constraints:** `0 ≤ capacity ≤ 10⁴`, `0 ≤ key ≤ 10⁵`, `0 ≤ value ≤ 10⁹`, up to `2 × 10⁵` calls to `get`/`put`.
+
+**Approach:** A different structure entirely - recency alone is wrong. Keep `key → (value, freq)`, plus `freq → OrderedDict of keys at that frequency` (LRU order within a freq), plus a `min_freq` pointer. A touch moves a key from bucket `f` to bucket `f+1`; eviction pops the LRU key from bucket `min_freq`. This is why LFU is "LRU with an extra dimension" - recency tie-breaking _inside_ frequency.
 
 ```python
 from collections import defaultdict, OrderedDict
@@ -347,69 +369,71 @@ class LFUCache:
         self.buckets[1][key] = None; self.min_freq = 1
 ```
 
-Time: O(1) per op. Space: O(capacity).
+**Complexity:** O(1) per op, O(capacity) space.
 
-### 3. Design a HashMap - _the lookup half, from scratch_
+---
 
-**Problem.** Implement `put`, `get`, `remove` for an integer-keyed map without using a built-in hash map. Keys in a large range, ~10⁴ operations.
+### 3. LRU Cache with TTL - _map + DLL splice, with expiry-on-access_
 
-**Approach.** The O(1)-lookup engine LRU depends on, stripped of recency. Bucket array of fixed size `B`; `index = key % B`; each bucket is a list (chaining) for collisions. `get`/`remove` scan only the (short, average-O(1)) collision chain. Understanding this is understanding _why_ LRU's lookup is O(1) average and where the worst case comes from.
+Design an LRU cache where each entry also carries a **time-to-live**: `put(key, value, ttl)` and `get(key, now)`, and a `get` on an expired entry must act as a miss (and lazily evict it) even if it's still the MRU node. Genuinely distinct from entry 1: eviction is no longer purely recency-driven - a check against a wall-clock timestamp gates every access before the splice happens.
 
-```python
-class MyHashMap:
-    def __init__(self): self.B = 769; self.buckets = [[] for _ in range(self.B)]
-    def _b(self, key): return self.buckets[key % self.B]
-    def put(self, key: int, value: int) -> None:
-        b = self._b(key)
-        for i, (k, _) in enumerate(b):
-            if k == key: b[i] = (key, value); return
-        b.append((key, value))
-    def get(self, key: int) -> int:
-        return next((v for k, v in self._b(key) if k == key), -1)
-    def remove(self, key: int) -> None:
-        b = self._b(key); b[:] = [(k, v) for k, v in b if k != key]
-```
+**Worked examples:**
+- **Example 1**
+  - **Input:** capacity = 2; put(1, "a", ttl=10, now=0); get(1, now=5) | **Output:** "a"
+  - **Explanation:** at time 5 the entry (expires at time 10) is still valid, so it's returned and moved to MRU front.
+- **Example 2**
+  - **Input:** capacity = 2; put(1, "a", ttl=10, now=0); get(1, now=11) | **Output:** -1
+  - **Explanation:** at time 11 the entry has passed its expiry (10), so `get` treats it as a miss and lazily unlinks it from both the map and the list.
 
-Time: O(1) average per op. Space: O(n).
+**Constraints:** `1 ≤ capacity ≤ 3000`, `1 ≤ ttl ≤ 10⁹`, `0 ≤ now ≤ 10⁹` and non-decreasing across calls, up to `2 × 10⁵` operations.
 
-### 4. First Unique Character in a Stream - _ordered structure + O(1) relocation_
-
-**Problem.** Process a stream of characters; after each, report the first character so far that has appeared exactly once (or a sentinel if none). The recency-ordering + O(1)-removal-of-a-known-key skill, applied.
-
-**Approach.** Keep a [queue](./queue.md) of candidate "seen-once" characters in arrival order, plus a count map. On each new char, increment its count; lazily pop from the queue's front while the front's count > 1. The front is always the answer. This reuses LRU's _"maintain an ordering with O(1) removal of entries that fall out of contention"_ idea - the queue is the ordering, the count map is the side index.
+**Approach:** Same hashmap `key → node` plus doubly linked list as the canonical design, but each node also stores `expires_at`. `get` first checks `node.expires_at <= now`; if expired, unlink the node and delete the map entry (a miss), rather than touching it. If still valid, `get` proceeds with the normal unlink + add-front splice. `put` always evicts a genuinely-expired entry lazily rather than scanning for one - there's no active background sweep, so a stale entry can sit in the structure until it's next touched or until it becomes the LRU victim on overflow. This is the same map→node→splice mechanism as entry 1, gated by one extra field and one extra branch.
 
 ```python
-from collections import deque
-def first_unique_stream(chars):
-    counts, q, out = {}, deque(), []
-    for c in chars:
-        counts[c] = counts.get(c, 0) + 1; q.append(c)
-        while q and counts[q[0]] > 1: q.popleft()
-        out.append(q[0] if q else "#")
-    return out
+class Node:
+    __slots__ = ("key", "value", "expires_at", "prev", "next")
+    def __init__(self, key=0, value=0, expires_at=0):
+        self.key, self.value, self.expires_at = key, value, expires_at
+        self.prev = self.next = None
+
+class LRUCacheTTL:
+    def __init__(self, capacity: int) -> None:
+        self.cap = capacity
+        self.map: dict[int, Node] = {}
+        self.head, self.tail = Node(), Node()
+        self.head.next, self.tail.prev = self.tail, self.head
+
+    def _unlink(self, node: Node) -> None:
+        node.prev.next, node.next.prev = node.next, node.prev
+
+    def _add_front(self, node: Node) -> None:
+        node.prev, node.next = self.head, self.head.next
+        self.head.next.prev = node
+        self.head.next = node
+
+    def get(self, key: int, now: int) -> int:
+        node = self.map.get(key)
+        if node is None:
+            return -1
+        if node.expires_at <= now:            # lazy expiry check gates the splice
+            self._unlink(node)
+            del self.map[key]
+            return -1
+        self._unlink(node)
+        self._add_front(node)
+        return node.value
+
+    def put(self, key: int, value: int, ttl: int, now: int) -> None:
+        if key in self.map:
+            self._unlink(self.map[key])
+        elif len(self.map) == self.cap:
+            lru = self.tail.prev
+            self._unlink(lru)
+            del self.map[lru.key]
+        node = Node(key, value, now + ttl)
+        self._add_front(node)
+        self.map[key] = node
 ```
 
-Time: O(n) amortized (each char enqueued/dequeued once). Space: O(alphabet).
+**Complexity:** O(1) per op, O(capacity) space.
 
-### 5. Insert / Delete / GetRandom O(1) - _array + map back-reference_
-
-**Problem.** Build a set supporting `insert`, `remove`, and `getRandom` (uniform) all in O(1) average.
-
-**Approach.** Not recency, but the **same map→position back-reference trick** LRU uses for O(1) eviction. Keep a dynamic [array](./array.md) of values plus a map `value → index in the array`. `getRandom` indexes the array; `remove` swaps the target with the last element (using the map to find its index in O(1)), pops the tail, and fixes the swapped element's index - O(1) deletion from the middle of an array, exactly the move LRU makes against a list.
-
-```python
-import random
-class RandomizedSet:
-    def __init__(self): self.vals = []; self.idx = {}
-    def insert(self, x: int) -> bool:
-        if x in self.idx: return False
-        self.idx[x] = len(self.vals); self.vals.append(x); return True
-    def remove(self, x: int) -> bool:
-        if x not in self.idx: return False
-        i, last = self.idx[x], self.vals[-1]
-        self.vals[i] = last; self.idx[last] = i          # swap target with tail
-        self.vals.pop(); del self.idx[x]; return True
-    def getRandom(self) -> int: return random.choice(self.vals)
-```
-
-Time: O(1) average per op. Space: O(n).

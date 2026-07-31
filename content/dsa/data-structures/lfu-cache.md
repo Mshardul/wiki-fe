@@ -289,9 +289,19 @@ Five problems, each a **distinct** technique that LFU's design teaches - no two 
 
 ### 1. LFU Cache - _frequency buckets + min_freq pointer, O(1)_
 
-**Problem.** Design an LFU cache with O(1) `get` and `put`, evicting the least-frequently-used key (ties broken by LRU). Capacity given at construction; up to ~10⁵ operations.
+Design an LFU cache with O(1) `get` and `put`, evicting the least-frequently-used key (ties broken by LRU). Capacity given at construction; up to ~10⁵ operations. The canonical bucketed-frequency design this article teaches.
 
-**Approach.** The canonical design above: `val`/`freq` maps, `buckets: freq → LRU-list`, and a `min_freq` pointer that increments when the min bucket empties and resets to 1 on insert. The O(1)-on-eviction requirement is exactly what forces the `min_freq` cache instead of a heap or a scan.
+**Worked examples:**
+- **Example 1**
+  - **Input:** capacity = 2; put(1,1), put(2,2), get(1), put(3,3), get(2), get(3), put(4,4), get(1), get(3), get(4) | **Output:** get(1) → 1, get(2) → -1, get(3) → 3, get(1) → -1, get(3) → 3, get(4) → 4
+  - **Explanation:** put(3,3) evicts key 2 (freq 1, the only min-freq candidate); put(4,4) evicts key 1 (tied at freq 2 with key 3, but key 1 is the older touch).
+- **Example 2**
+  - **Input:** capacity = 0; put(0,0), get(0) | **Output:** get(0) → -1
+  - **Explanation:** zero capacity means every put is a no-op.
+
+**Constraints:** `0 ≤ capacity ≤ 10⁴`, `0 ≤ key ≤ 10⁵`, `0 ≤ value ≤ 10⁹`, up to `2 × 10⁵` calls to `get`/`put`.
+
+**Approach:** The canonical design: `val`/`freq` maps, `buckets: freq → LRU-list`, and a `min_freq` pointer that increments when the min bucket empties and resets to 1 on insert. The O(1)-on-eviction requirement is exactly what forces the `min_freq` cache instead of a heap or a scan.
 
 ```python
 from collections import defaultdict, OrderedDict
@@ -317,29 +327,108 @@ class LFUCache:
         self.buckets[1][key] = None; self.min_freq = 1
 ```
 
-Time: O(1) per op. Space: O(capacity).
+**Complexity:** O(1) per op, O(capacity) space.
+
+---
 
 ### 2. All O`one` Data Structure - _bucketed counts, O(1) min and max_
 
-**Problem.** Support `inc(key)`, `dec(key)`, `getMaxKey()`, `getMinKey()`, all O(1). Counts move by ±1.
+Support `inc(key)`, `dec(key)`, `getMaxKey()`, `getMinKey()`, all O(1). Counts move by ±1. Generalizes LFU's single-ended bucket trick to both extremes at once.
 
-**Approach.** Generalizes LFU's bucket trick to **both** extremes. Keep a doubly linked list of count-buckets ordered by count, each bucket holding the set of keys at that count; `inc`/`dec` move a key to the adjacent bucket (creating/removing buckets as needed). `getMax`/`getMin` read the two ends of the bucket list. The ±1-step property is what keeps every operation O(1) - same engine as LFU's `min_freq`, made two-sided.
+**Worked examples:**
+- **Example 1**
+  - **Input:** inc("hello"), inc("hello") | **Output:** getMaxKey() → "hello", getMinKey() → "hello"
+  - **Explanation:** with only one distinct key, it's simultaneously both the max and min.
+- **Example 2**
+  - **Input:** inc("hello"), inc("hello"), inc("leet"), getMaxKey(), getMinKey() | **Output:** "hello", "leet"
+  - **Explanation:** "hello" has count 2, "leet" has count 1, so the bucket list has two nodes and the ends read off directly.
+
+**Constraints:** `1 ≤ key.length ≤ 10`, lowercase English letters, at most `5 × 10⁴` calls total, `getMaxKey`/`getMinKey` return `""` on an empty structure.
+
+**Approach:** Generalizes LFU's bucket trick to **both** extremes. Keep a doubly linked list of count-buckets ordered by count, each bucket holding the set of keys at that count; `inc`/`dec` move a key to the adjacent bucket (creating/removing buckets as needed). `getMax`/`getMin` read the two ends of the bucket list. The ±1-step property is what keeps every operation O(1) - same engine as LFU's `min_freq`, made two-sided.
 
 ```python
 class Bucket:
     __slots__ = ("count", "keys", "prev", "next")
-    def __init__(self, count): self.count, self.keys = count, set(); self.prev = self.next = None
-# inc(key): move key from its bucket to the count+1 bucket (insert one if absent);
-# dec(key): move to count-1 (or drop if count hits 0); getMax/getMin read list ends.
+    def __init__(self, count: int) -> None:
+        self.count = count
+        self.keys: set[str] = set()
+        self.prev = self.next = None
+
+class AllOne:
+    def __init__(self) -> None:
+        self.key_bucket: dict[str, Bucket] = {}
+        self.head = Bucket(0)              # sentinel, count always 0 (below every real bucket)
+        self.tail = Bucket(0)              # sentinel, count always +inf (above every real bucket)
+        self.head.next = self.tail
+        self.tail.prev = self.head
+
+    def _insert_after(self, node: Bucket, count: int) -> Bucket:
+        b = Bucket(count)
+        b.prev, b.next = node, node.next
+        node.next.prev = b
+        node.next = b
+        return b
+
+    def _remove(self, b: Bucket) -> None:
+        b.prev.next, b.next.prev = b.next, b.prev
+
+    def inc(self, key: str) -> None:
+        if key not in self.key_bucket:
+            cur = self.head
+        else:
+            cur = self.key_bucket[key]
+            cur.keys.discard(key)
+        nxt = cur.next
+        if nxt is self.tail or nxt.count != cur.count + 1:
+            nxt = self._insert_after(cur, cur.count + 1)
+        nxt.keys.add(key)
+        self.key_bucket[key] = nxt
+        if key not in cur.keys and cur is not self.head and not cur.keys:
+            self._remove(cur)
+
+    def dec(self, key: str) -> None:
+        if key not in self.key_bucket:
+            return
+        cur = self.key_bucket[key]
+        cur.keys.discard(key)
+        if cur.count == 1:
+            del self.key_bucket[key]
+        else:
+            prv = cur.prev
+            if prv is self.head or prv.count != cur.count - 1:
+                prv = self._insert_after(cur.prev, cur.count - 1)
+            prv.keys.add(key)
+            self.key_bucket[key] = prv
+        if not cur.keys:
+            self._remove(cur)
+
+    def getMaxKey(self) -> str:
+        return next(iter(self.tail.prev.keys)) if self.tail.prev is not self.head else ""
+
+    def getMinKey(self) -> str:
+        return next(iter(self.head.next.keys)) if self.head.next is not self.tail else ""
 ```
 
-Time: O(1) per op. Space: O(n).
+**Complexity:** O(1) per op, O(n) space.
+
+---
 
 ### 3. Top K Frequent Elements - _bucket sort by frequency_
 
-**Problem.** Given an array, return the `k` most frequent elements. `n` up to ~10⁵; better than O(n log n) if possible.
+Given an array, return the `k` most frequent elements. Better than O(n log n) if possible. The *static* cousin of LFU's idea - buckets built once, not maintained live.
 
-**Approach.** The *static* cousin of LFU's idea: instead of maintaining buckets live, build them once. Count with a [hash table](./hash-table.md), then **bucket by frequency** into an array indexed `0..n` (frequency can't exceed `n`), and sweep from the high-frequency end collecting `k`. O(n) total - no heap, no sort - because frequencies live in a bounded range, exactly why LFU buckets by count.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,1,1,2,2,3], k = 2 | **Output:** [1, 2]
+  - **Explanation:** 1 appears 3 times, 2 appears twice, 3 appears once - the top 2 by frequency are 1 and 2.
+- **Example 2**
+  - **Input:** nums = [1], k = 1 | **Output:** [1]
+  - **Explanation:** a single distinct value is trivially the most frequent.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-10⁴ ≤ nums[i] ≤ 10⁴`, `k` is guaranteed valid (`1 ≤ k ≤` number of distinct elements).
+
+**Approach:** Instead of maintaining buckets live, build them once. Count with a [hash table](./hash-table.md), then **bucket by frequency** into an array indexed `0..n` (frequency can't exceed `n`), and sweep from the high-frequency end collecting `k`. O(n) total - no heap, no sort - because frequencies live in a bounded range, exactly why LFU buckets by count.
 
 ```python
 def top_k_frequent(nums: list[int], k: int) -> list[int]:
@@ -355,45 +444,56 @@ def top_k_frequent(nums: list[int], k: int) -> list[int]:
     return out
 ```
 
-Time: O(n). Space: O(n).
+**Complexity:** O(n) time, O(n) space.
 
-### 4. Sort Characters By Frequency - _frequency as a sort key_
+**Duplicate problems:**
+- Top K Frequent Words (LC 692) - identical count-then-bucket-by-frequency-then-sweep technique, only the tie-break (lexicographic instead of arbitrary) differs.
+- Sort Characters By Frequency (LC 451) - same static bucket-by-frequency array and high-to-low sweep, but emits every element in frequency order instead of stopping at k.
 
-**Problem.** Given a string, sort its characters in decreasing order of frequency (`"tree"` → `"eert"` or `"eetr"`).
+---
 
-**Approach.** Frequency-bucketing applied to output ordering - the inverse of LFU's "evict the *least* frequent." Count characters, bucket by count, then emit from the highest-count bucket down, repeating each character `count` times. O(n) via bounded-range bucketing rather than an O(n log n) comparison sort on counts.
+### 4. Maximum Frequency Stack (LC 895) - _live frequency-bucket eviction, LIFO within a bucket_
 
-```python
-def frequency_sort(s: str) -> str:
-    counts = {}
-    for ch in s: counts[ch] = counts.get(ch, 0) + 1
-    buckets = [[] for _ in range(len(s) + 1)]
-    for ch, c in counts.items(): buckets[c].append(ch)
-    out = []
-    for c in range(len(s), 0, -1):
-        for ch in buckets[c]: out.append(ch * c)
-    return "".join(out)
-```
+Design a stack-like structure: `push(val)` adds an element, and `pop()` removes and returns the **most frequent** element seen so far; ties broken by which was pushed most recently. Distinct from every entry above: eviction tracks the **maximum**, not the minimum, and each bucket is a plain stack (LIFO), not an LRU-ordered structure - there's no recency tie-break dimension at all, just push order within a frequency group.
 
-Time: O(n). Space: O(n).
+**Worked examples:**
+- **Example 1**
+  - **Input:** push(5), push(7), push(5), push(7), push(4), push(5), then pop() ×4 | **Output:** 5, 7, 5, 4
+  - **Explanation:** 5 has the highest frequency (3) so it pops first; the next pop re-evaluates and 7 (frequency 2, now the max among what remains) pops next; then 5 again (its second-most-recent push); then 4 (frequency 1).
+- **Example 2**
+  - **Input:** push(1), pop() | **Output:** 1
+  - **Explanation:** a single element is trivially both the most frequent and the most recent.
 
-### 5. LRU Cache - _the recency-only sibling, for contrast_
+**Constraints:** `0 ≤ val ≤ 10⁹`, at most `2 × 10⁴` calls to `push`, `pop` is only called when the structure is non-empty.
 
-**Problem.** Design an O(1) cache that evicts the **least-recently-used** key (not least-frequent). Highlights what LFU adds and what it costs.
-
-**Approach.** A single LRU-ordered structure - no frequency dimension, no `min_freq`, no per-count buckets. Touch = move-to-front, evict = pop-back. Solving this right after LFU makes the extra machinery explicit: LFU is *this* plus a frequency axis and a min-pointer. See the full [LRU Cache](./lru-cache.md) page.
+**Approach:** Maintain `freq: value → current count` and `group: frequency → stack of values pushed at that frequency`, plus a `max_freq` counter. `push` bumps the value's frequency and appends it to the new frequency's group stack; if that frequency is a new high, bump `max_freq`. `pop` pops from `group[max_freq]` (LIFO breaks the tie among equally-frequent values), decrements that value's tracked frequency, and drops `max_freq` by one if its group just emptied. This is live frequency-bucket eviction like LFU's `min_freq`, but mirrored to track a maximum and with no per-bucket ordering beyond push order - simpler than LFU because there's only one axis to tie-break on (recency-of-push), not two.
 
 ```python
-from collections import OrderedDict
-class LRUCache:
-    def __init__(self, capacity: int): self.cap, self.od = capacity, OrderedDict()
-    def get(self, key: int) -> int:
-        if key not in self.od: return -1
-        self.od.move_to_end(key); return self.od[key]
-    def put(self, key: int, value: int) -> None:
-        if key in self.od: self.od.move_to_end(key)
-        self.od[key] = value
-        if len(self.od) > self.cap: self.od.popitem(last=False)
+from collections import defaultdict
+
+class FreqStack:
+    def __init__(self) -> None:
+        self.freq: dict[int, int] = defaultdict(int)
+        self.group: dict[int, list[int]] = defaultdict(list)   # freq -> stack of values
+        self.max_freq = 0
+
+    def push(self, val: int) -> None:
+        f = self.freq[val] + 1
+        self.freq[val] = f
+        if f > self.max_freq:
+            self.max_freq = f
+        self.group[f].append(val)
+
+    def pop(self) -> int:
+        val = self.group[self.max_freq].pop()
+        self.freq[val] -= 1
+        if not self.group[self.max_freq]:      # bucket emptied → max drops by exactly 1
+            self.max_freq -= 1
+        return val
 ```
 
-Time: O(1) per op. Space: O(capacity).
+**Complexity:** O(1) per op, O(n) space.
+
+**Duplicate problems:**
+- LRU Cache - the recency-only sibling: no frequency dimension, no `min_freq`, no per-count buckets, just move-to-front on touch and pop-back on evict. Solving it right after LFU makes the extra machinery explicit - LFU is this plus a frequency axis and a min-pointer. See [LRU Cache](./lru-cache.md#1-lru-cache--map--doubly-linked-list-o1) for the full treatment.
+

@@ -27,7 +27,7 @@
   - [Implement a Trie](#1-implement-a-trie--insert-search-startswith)
   - [Word Search II](#2-word-search-ii--trie--dfs-on-a-grid)
   - [Replace Words](#3-replace-words--shortest-prefix-lookup)
-  - [Maximum XOR of Two Numbers](#4-maximum-xor-of-two-numbers--bitwise-trie)
+  - [Maximum XOR of Two Numbers](#4-maximum-xor-of-two-numbers-lc-421---bitwise-trie)
   - [Design Add and Search Words](#5-design-add-and-search-words--wildcard-dfs)
 
 ## What it is
@@ -183,12 +183,10 @@ TRIE-WALK(root, s)                                  ▷ follow s; NIL if path br
 from __future__ import annotations
 from dataclasses import dataclass, field
 
-
 @dataclass
 class TrieNode:
     children: dict[str, "TrieNode"] = field(default_factory=dict)
     is_end: bool = False
-
 
 class Trie:
     def __init__(self) -> None:
@@ -276,7 +274,17 @@ Five staples, each a **distinct** trie technique - no two solved the same way.
 
 **Problem.** Build a trie supporting `insert(word)`, `search(word)` (exact, complete word), and `startsWith(prefix)`. E.g. after inserting "apple", `search("app")` → false, `startsWith("app")` → true, `search("apple")` → true.
 
-**Approach.** A node per prefix with a children map and an `is_end` flag. Insert walks/extends the path and marks the last node. Search walks then checks `is_end`; startsWith walks and just checks the path exists. The `is_end` distinction between "word" and "prefix" is the whole exercise.
+**Worked examples:**
+- **Example 1**
+  - **Input:** `insert("apple"); search("apple")` | **Output:** `True`
+  - **Explanation:** "apple" was inserted, so walking its full path lands on a node with `is_end` set.
+- **Example 2**
+  - **Input:** `insert("apple"); search("app")` | **Output:** `False`
+  - **Explanation:** "app" is a prefix of "apple" (the path exists) but was never inserted as its own word, so its node's `is_end` is false.
+
+**Constraints:** up to `3 × 10⁴` calls to insert/search/startsWith combined; word/prefix length `1 ≤ length ≤ 2000`; lowercase English letters only.
+
+**Approach:** A node per prefix with a children map and an `is_end` flag. Insert walks/extends the path and marks the last node. Search walks then checks `is_end`; startsWith walks and just checks the path exists. The `is_end` distinction between "word" and "prefix" is the whole exercise.
 
 ```python
 # see Trie in Implementation - the canonical solution.
@@ -285,13 +293,27 @@ t.insert("apple")
 print(t.search("app"), t.starts_with("app"), t.search("apple"))   # False True True
 ```
 
-**Complexity.** O(L) per operation, O(total chars) space.
+**Complexity:** O(L) per operation, O(total chars) space.
+
+**Duplicate problems:**
+- Map Sum Pairs (LC 677) - same trie insert/walk core, augmented with a prefix-sum instead of an is_end flag.
+- Longest Word in Dictionary (LC 720) - same insert-then-walk core, checking that every prefix along the way is itself a complete word.
 
 ### 2. Word Search II - _trie + DFS on a grid_
 
 **Problem.** Given a grid of letters and a list of words, return all words findable by connecting 4-directionally adjacent cells (no cell reused per word). E.g. find "oath", "eat" in a board of letters.
 
-**Approach.** Build a trie of the word list, then DFS the grid following trie edges - prune the moment the current path isn't a trie prefix (this is what makes it fast vs searching each word separately). When a DFS reaches an `is_end` node, record the word. Searching all words simultaneously through one trie is the key efficiency.
+**Worked examples:**
+- **Example 1**
+  - **Input:** `board = [["o","a","a","n"],["e","t","a","e"],["i","h","k","r"],["i","f","l","v"]]`, `words = ["oath","pea","eat","rain"]` | **Output:** `["oath","eat"]`
+  - **Explanation:** "oath" is spelled by a connected path of adjacent cells; "eat" likewise; "pea" and "rain" have no valid adjacent path on this board.
+- **Example 2**
+  - **Input:** `board = [["a","b"],["c","d"]]`, `words = ["abcb"]` | **Output:** `[]`
+  - **Explanation:** "abcb" would require reusing cell "b" twice in one path, which is disallowed, so the DFS prunes it out.
+
+**Constraints:** `1 ≤ board rows, cols ≤ 12`; `1 ≤ words.length ≤ 3 × 10⁴`; `1 ≤ word length ≤ 10`; lowercase English letters only.
+
+**Approach:** Build a trie of the word list, then DFS the grid following trie edges - prune the moment the current path isn't a trie prefix (this is what makes it fast vs searching each word separately). When a DFS reaches an `is_end` node, record the word. Searching all words simultaneously through one trie is the key efficiency.
 
 ```python
 def find_words(board, words):
@@ -315,13 +337,23 @@ def find_words(board, words):
     return list(found)
 ```
 
-**Complexity.** O(cells · 4^L) worst, pruned hard by the trie in practice. Pattern: [Tree & Graph Traversal](../patterns/tree-graph-traversal.md) + [Backtracking](../patterns/subsets-permutations.md).
+**Complexity:** O(cells · 4^L) worst, pruned hard by the trie in practice. Pattern: [Tree & Graph Traversal](../patterns/tree-graph-traversal.md) + [Backtracking](../patterns/subsets-permutations.md).
 
 ### 3. Replace Words - _shortest-prefix lookup_
 
 **Problem.** Given a dictionary of root words and a sentence, replace every word by the **shortest root** that is a prefix of it. E.g. roots `["cat","bat"]`, "the cattle was rattled" → "the cat was rattled".
 
-**Approach.** Insert all roots into a trie. For each word, walk its characters down the trie, stopping at the **first** `is_end` node - that's the shortest matching root. If the path breaks before any `is_end`, keep the word. The early-stop-at-first-is_end is the shortest-prefix idiom.
+**Worked examples:**
+- **Example 1**
+  - **Input:** `roots = ["cat","bat"]`, `sentence = "the cattle was rattled"` | **Output:** `"the cat was rattled"`
+  - **Explanation:** "cattle" walks to the `is_end` node at "cat" first, so it's replaced by "cat"; "rattled" has no matching root, so it's kept as-is.
+- **Example 2**
+  - **Input:** `roots = ["a","b","c"]`, `sentence = "aadsfasf absfasf acbfekk"` | **Output:** `"a a a"`
+  - **Explanation:** every word starts with a single-letter root, so the walk hits an `is_end` node after just one character each time.
+
+**Constraints:** `1 ≤ roots.length ≤ 1000`, `1 ≤ root length ≤ 100`, `1 ≤ sentence length ≤ 10⁶`, lowercase English letters only.
+
+**Approach:** Insert all roots into a trie. For each word, walk its characters down the trie, stopping at the **first** `is_end` node - that's the shortest matching root. If the path breaks before any `is_end`, keep the word. The early-stop-at-first-is_end is the shortest-prefix idiom.
 
 ```python
 def replace_words(roots, sentence):
@@ -336,13 +368,23 @@ def replace_words(roots, sentence):
     return " ".join(shortest_root(w) for w in sentence.split())
 ```
 
-**Complexity.** O(total chars) time and space.
+**Complexity:** O(total chars) time and space.
 
-### 4. Maximum XOR of Two Numbers - _bitwise trie_
+### 4. Maximum XOR of Two Numbers (LC 421) - _bitwise trie_
 
 **Problem.** Given an array of integers, return the maximum `nums[i] XOR nums[j]`. E.g. `[3,10,5,25,2,8]` → `28` (`5 XOR 25`).
 
-**Approach.** Insert every number's bits (MSB-first) into a **binary trie**. For each number, greedily walk choosing the **opposite** bit at each step when possible - each differing bit contributes a 1 to the XOR at that position, maximizing it. O(n · 32) instead of the O(n²) all-pairs check. The bitwise-trie CP-primitive in its defining problem.
+**Worked examples:**
+- **Example 1**
+  - **Input:** `nums = [3,10,5,25,2,8]` | **Output:** `28`
+  - **Explanation:** `5 XOR 25 = 28`, the largest XOR among all pairs; the bitwise trie finds it by greedily choosing opposite bits for each number.
+- **Example 2**
+  - **Input:** `nums = [0]` | **Output:** `0`
+  - **Explanation:** with only one number, the only "pair" is `0 XOR 0 = 0`.
+
+**Constraints:** `1 ≤ nums.length ≤ 2 × 10⁵`, `0 ≤ nums[i] ≤ 2³¹ - 1`.
+
+**Approach:** Insert every number's bits (MSB-first) into a **binary trie**. For each number, greedily walk choosing the **opposite** bit at each step when possible - each differing bit contributes a 1 to the XOR at that position, maximizing it. O(n · 32) instead of the O(n²) all-pairs check. The bitwise-trie CP-primitive in its defining problem.
 
 ```python
 def find_maximum_xor(nums: list[int]) -> int:
@@ -355,13 +397,26 @@ def find_maximum_xor(nums: list[int]) -> int:
     return best
 ```
 
-**Complexity.** O(n · B) time (B = bit-width), O(n · B) space.
+**Complexity:** O(n · B) time (B = bit-width), O(n · B) space.
+
+**Duplicate problems:**
+- Maximum XOR With an Element From Array (LC 1707) - same binary-trie greedy-opposite-bit max-XOR walk, adapted to offline queries with a value limit (sort queries by limit, insert numbers incrementally).
 
 ### 5. Design Add and Search Words - _wildcard DFS_
 
 **Problem.** Support `addWord(word)` and `search(word)` where `search` may contain `.` matching any single character. E.g. after adding "bad","dad", `search("b..")` → true, `search(".ad")` → true.
 
-**Approach.** A trie for `addWord`. For `search`, DFS: at a normal character follow that one edge; at `.` recurse into **all** children. The wildcard turns the linear walk into a branching DFS, but only where dots appear, so it stays efficient for few wildcards. Combines trie traversal with backtracking on `.`.
+**Worked examples:**
+- **Example 1**
+  - **Input:** `addWord("bad"); addWord("dad"); addWord("mad"); search("pad")` | **Output:** `False`
+  - **Explanation:** "pad" has no wildcard and was never added, so the plain walk breaks before reaching an `is_end` node.
+- **Example 2**
+  - **Input:** `addWord("bad"); addWord("dad"); addWord("mad"); search(".ad")` | **Output:** `True`
+  - **Explanation:** the `.` branches into all three first-letter children (b, d, m); the "d"→"a"→"d" branch reaches an `is_end` node, so the DFS returns true.
+
+**Constraints:** up to `3 × 10⁴` calls to addWord/search combined; word length `1 ≤ length ≤ 25`; lowercase English letters and `.` only in search.
+
+**Approach:** A trie for `addWord`. For `search`, DFS: at a normal character follow that one edge; at `.` recurse into **all** children. The wildcard turns the linear walk into a branching DFS, but only where dots appear, so it stays efficient for few wildcards. Combines trie traversal with backtracking on `.`.
 
 ```python
 class WordDictionary:
@@ -383,4 +438,5 @@ class WordDictionary:
         return dfs(self.root, 0)
 ```
 
-**Complexity.** O(L) for no-wildcard search; up to O(alphabet^(dots) · L) worst with many dots.
+**Complexity:** O(L) for no-wildcard search; up to O(alphabet^(dots) · L) worst with many dots.
+

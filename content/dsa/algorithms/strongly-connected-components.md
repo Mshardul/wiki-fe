@@ -484,7 +484,17 @@ Each boolean variable x creates two nodes (x and ¬x). Each clause (a ∨ b) add
 
 ### 1. Number of Provinces (LC 547)
 
-There are n cities, and some pairs are directly connected. Given an n×n `isConnected` matrix, return the number of provinces (groups of directly or indirectly connected cities). Note: this is an **undirected** connected-components problem - not SCC - but it's the canonical gateway to understand the outer loop needed in both algorithms.
+**Problem:** There are n cities, and some pairs are directly connected. Given an n×n `isConnected` matrix, return the number of provinces (groups of directly or indirectly connected cities). Note: this is an **undirected** connected-components problem - not SCC - but it's the canonical gateway to understand the outer loop needed in both algorithms.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** isConnected = [[1,1,0],[1,1,0],[0,0,1]] | **Output:** 2
+  - **Explanation:** cities 0 and 1 are directly connected (one province); city 2 is isolated (a second province).
+- **Example 2**
+  - **Input:** isConnected = [[1,0,0],[0,1,0],[0,0,1]] | **Output:** 3
+  - **Explanation:** no city is connected to any other, so each is its own province.
+
+**Constraints:** `1 ≤ n ≤ 200`, `isConnected[i][j] ∈ {0, 1}`, `isConnected[i][i] = 1`, matrix is symmetric.
 
 **Approach:** DFS/BFS from each unvisited city, counting starts. Identical in structure to the outer `for v in range(n)` loop in Kosaraju/Tarjan. Forces the insight that disconnected graphs require iterating all nodes.
 
@@ -507,7 +517,7 @@ def findCircleNum(isConnected: list[list[int]]) -> int:
     return count
 ```
 
-**Time:** O(V²) (adjacency matrix). **Space:** O(V) recursion stack.
+**Complexity:** O(V²) time (adjacency matrix), O(V) space (recursion stack).
 
 **Duplicate problems:**
 - Number of Connected Components in an Undirected Graph (LC 323) - identical BFS/DFS outer-loop structure, graph given as edge list instead of matrix.
@@ -517,7 +527,17 @@ def findCircleNum(isConnected: list[list[int]]) -> int:
 
 ### 2. Critical Connections in a Network (LC 1192)
 
-There are n servers and a list of undirected connections. A **critical connection** (bridge) is one whose removal makes some server unreachable. Find all bridges. Constraints: n, edges ≤ 10⁵.
+**Problem:** There are n servers and a list of undirected connections. A **critical connection** (bridge) is one whose removal makes some server unreachable. Find all bridges.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 4, connections = [[0,1],[1,2],[2,0],[1,3]] | **Output:** [[1,3]]
+  - **Explanation:** removing edge (1,3) disconnects server 3; the triangle 0-1-2 has no bridges since any edge removed still leaves a path.
+- **Example 2**
+  - **Input:** n = 2, connections = [[0,1]] | **Output:** [[0,1]]
+  - **Explanation:** the only edge is itself a bridge - removing it disconnects the graph.
+
+**Constraints:** n, edges ≤ 10⁵.
 
 **Approach:** Tarjan's bridge-finding algorithm - a close relative of SCC. Run DFS tracking `disc[]` and `low[]`. An edge (u, v) is a bridge if `low[v] > disc[u]` after DFS from u → v: no back edge in v's subtree reaches u or above, so the edge is the only connection. This exercises the Tarjan low-link intuition directly - the same mechanic as SCC but the condition is strict inequality (bridge) vs equality (SCC root).
 
@@ -554,7 +574,7 @@ def criticalConnections(n: int, connections: list[list[int]]) -> list[list[int]]
     return bridges
 ```
 
-**Time:** O(V + E). **Space:** O(V + E).
+**Complexity:** O(V + E) time, O(V + E) space.
 
 **Duplicate problems:**
 - Articulation Points (classic graph problem, no LC number) - same Tarjan low-link, condition `low[v] >= disc[u]` for non-root nodes and degree check for root; same solution mechanic.
@@ -563,7 +583,17 @@ def criticalConnections(n: int, connections: list[list[int]]) -> list[list[int]]
 
 ### 3. Largest Component Size by Common Factor (LC 952)
 
-Given an array of positive integers `nums`, consider each integer as a node. Connect two nodes with an edge if they share a common factor > 1. Return the size of the largest connected component. Constraints: 1 ≤ nums[i] ≤ 10⁵, len(nums) ≤ 2×10⁴.
+**Problem:** Given an array of positive integers `nums`, consider each integer as a node. Connect two nodes with an edge if they share a common factor > 1. Return the size of the largest connected component.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [4, 6, 15, 35] | **Output:** 4
+  - **Explanation:** 4 and 6 share factor 2; 6 and 15 share factor 3; 15 and 35 share factor 5 - all four numbers union into one component via shared prime factors.
+- **Example 2**
+  - **Input:** nums = [20, 50, 9, 63] | **Output:** 2
+  - **Explanation:** 20 and 50 share factor 5 (and 2); 9 and 63 share factor 3 - two separate components of size 2 each.
+
+**Constraints:** `1 ≤ nums[i] ≤ 10⁵`, `len(nums) ≤ 2×10⁴`.
 
 **Approach:** This is a connected-components problem (undirected), but the naive O(n²) pairwise GCD approach times out. Instead, use a Union-Find (DSU): for each number, factorize it and union the number with each prime factor. Then find the largest group. Exercises the insight that "connected component" thinking applies even when edges are implicit - the same outer-loop structure, but the graph is never materialized explicitly. Constraints (n ≤ 2×10⁴, values ≤ 10⁵) invite O(n·√max_val) factorization.
 
@@ -600,7 +630,7 @@ def largestComponentSize(nums: list[int]) -> int:
     return max(count.values())
 ```
 
-**Time:** O(n · √max_val · α(n)) where α is the inverse Ackermann from DSU. **Space:** O(max_val).
+**Complexity:** O(n · √max_val · α(n)) time (α is the inverse Ackermann from DSU), O(max_val) space.
 
 **Duplicate problems:**
 - Accounts Merge (LC 721) - union emails by shared account; same DSU pattern, different surface (strings instead of integers).
@@ -610,7 +640,17 @@ def largestComponentSize(nums: list[int]) -> int:
 
 ### 4. Find Eventual Safe States (LC 802)
 
-A directed graph of `n` nodes. A node is **safe** if every path from it eventually leads to a terminal node (no outgoing edges) and never enters a cycle. Return all safe nodes in sorted order. Constraints: n ≤ 10⁴, edges ≤ 4×10⁴.
+**Problem:** A directed graph of `n` nodes. A node is **safe** if every path from it eventually leads to a terminal node (no outgoing edges) and never enters a cycle. Return all safe nodes in sorted order. (Note: this same problem also appears in [DFS](./dfs.md) as a simple 3-color DFS entry - kept in both files intentionally, since the two solutions are genuinely different techniques: this file's full Tarjan+condensation pipeline vs DFS's direct 3-color cycle check.)
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** graph = [[1,2],[2,3],[5],[0],[5],[],[]] | **Output:** [2, 4, 5, 6]
+  - **Explanation:** nodes 5 and 6 are terminal (safe by definition); node 4 only reaches 5 (safe); node 2 only reaches 5 (safe); nodes 0, 1, 3 form a cycle (0→1→3→0) and are unsafe, so the condensation marks their SCC as unsafe while the singleton, self-loop-free SCCs {2}, {4}, {5}, {6} stay safe.
+- **Example 2**
+  - **Input:** graph = [[1,2,3,4],[1,2],[3,4],[0,4],[]] | **Output:** [4]
+  - **Explanation:** node 4 is terminal (safe); nodes 0, 1, 2, 3 all sit in or feed into the cycle 0→3→0, so only node 4 survives the condensation's safety propagation.
+
+**Constraints:** n ≤ 10⁴, edges ≤ 4×10⁴.
 
 **Approach:** A node is unsafe iff it lies in or can reach a cycle - i.e., it belongs to or has a path into an SCC of size > 1 (or a size-1 SCC with a self-loop). Run Tarjan to find all SCCs. In the condensation DAG, a node is safe iff its SCC is a singleton with no self-loop AND all SCCs reachable from it are also singletons with no self-loops. Traversing the condensation in reverse topological order (sinks first) marks safe SCCs in O(V + E). This is the canonical problem that requires the full SCC pipeline - recognition → condensation → DP on the DAG.
 
@@ -677,7 +717,7 @@ def eventualSafeNodes(graph: list[list[int]]) -> list[int]:
     return sorted(u for u in range(n) if safe_scc[comp[u]])
 ```
 
-**Time:** O(V + E). **Space:** O(V + E).
+**Complexity:** O(V + E) time, O(V + E) space.
 
 **Duplicate problems:**
 - Course Schedule II (LC 210) - topological sort on condensation DAG; same "build condensation, process in order" skeleton but goal is ordering, not safety.

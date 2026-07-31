@@ -341,9 +341,7 @@ from typing import Any, Optional, Union
 
 MIN_DEGREE = 3  # t: each node has between t-1 and 2t-1 keys
 
-
 Node = Union["LeafNode", "InternalNode"]
-
 
 @dataclass
 class LeafNode:
@@ -351,12 +349,10 @@ class LeafNode:
     values: list[Any] = field(default_factory=list)
     next: Optional["LeafNode"] = None
 
-
 @dataclass
 class InternalNode:
     keys: list[int] = field(default_factory=list)          # routing keys
     children: list[Node] = field(default_factory=list)
-
 
 class BPlusTree:
     def __init__(self, t: int = MIN_DEGREE) -> None:
@@ -544,7 +540,17 @@ class BPlusTree:
 
 ### 1. Range query on a sorted structure
 
-**Problem:** Given a sorted list of integers and a query `[lo, hi]`, return all integers in that range. The list may have millions of entries and must support both point lookups and range queries efficiently. Assume a B+ tree backed structure is available. Constraints: `1 ≤ n ≤ 10⁷`, `10⁵` queries.
+Given a sorted list of integers and a query `[lo, hi]`, return all integers in that range. The list may have millions of entries and must support both point lookups and range queries efficiently. Assume a B+ tree backed structure is available.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [10,20,30,40,50], query = (15, 40) | **Output:** [20, 30, 40]
+  - **Explanation:** the descent lands on the leaf containing 20 (first key ≥ 15), then the leaf-list walk collects 20, 30, 40 and stops once 50 exceeds 40.
+- **Example 2**
+  - **Input:** nums = [5,10,15], query = (100, 200) | **Output:** []
+  - **Explanation:** no keys fall in range; the descent still lands on a valid leaf (the rightmost), but the scan immediately finds nothing ≥ lo within bounds.
+
+**Constraints:** `1 ≤ n ≤ 10⁷`, `10⁵` queries, `lo ≤ hi`.
 
 **Approach:** Build a B+ tree over the integers (key = value). For each query, `_find_leaf(lo)` descends the tree in `O(log_m n)`, then `range_query` walks the linked leaf list until exceeding `hi` in `O(k/m)`. Total per query: `O(log_m n + k/m)`. This directly exercises the linked-leaf superpower: a B-tree without the leaf list would require a separate root-to-leaf descent per matching record.
 
@@ -564,15 +570,23 @@ def solve(nums: list[int], queries: list[tuple[int, int]]) -> list[list[int]]:
 **Complexity:** O(n log_m n) build, O(log_m n + k/m) per query, O(n) space.
 
 **Duplicate problems:**
-- Count of numbers in a range (LC 2250) - same bisect-left/right pattern; count instead of slice.
 - Find first and last position of element in sorted array (LC 34) - boundary search is exactly leaf-descent + boundary walk.
-- Kth smallest element in sorted matrix (LC 378) - range-scan intuition extends to 2D; same O(log n) entry-point idea.
 
 ---
 
 ### 2. Design an index for a database column
 
-**Problem:** You are asked to choose a data structure to index a `timestamp` column in a database table with 500 million rows. The workload is 70% range queries (`WHERE ts BETWEEN a AND b`), 20% point lookups, and 10% inserts. Explain your choice and the key structural properties that make it efficient.
+You are asked to choose a data structure to index a `timestamp` column in a database table with 500 million rows. The workload is 70% range queries (`WHERE ts BETWEEN a AND b`), 20% point lookups, and 10% inserts. Explain your choice and the key structural properties that make it efficient.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** Workload(range_pct=70, point_pct=20, insert_pct=10, rows=500_000_000, fits_in_ram=False) | **Output:** "B+ tree (clustered on timestamp)"
+  - **Explanation:** any nonzero range-query percentage on disk-resident data immediately favors B+ tree over a hash index.
+- **Example 2**
+  - **Input:** Workload(range_pct=0, point_pct=100, insert_pct=0, rows=1_000_000, fits_in_ram=True) | **Output:** "Hash index"
+  - **Explanation:** pure equality lookups on RAM-resident data favor a hash table's O(1) over the B+ tree's O(log_m n).
+
+**Constraints:** `range_pct + point_pct + insert_pct = 100`, `rows ≤ 10¹⁰`.
 
 **Approach:** B+ tree is the correct choice. The linked leaf layer makes range scans `O(log n + k/m)` - after a single root-to-leaf descent, the result is a sequential walk along the leaf list, which is friendly to disk prefetching. Point lookups are `O(log n)` - same as a B-tree. The high fan-out (`m ~ 500` for a 16KB page) keeps height at 3–4 for 500M rows, so even point lookups cost ≤ 4 I/Os. A hash index is eliminated by the range workload. A B-tree (no leaf links) would re-traverse the tree per record on range scans, costing `O(k log n)` instead of `O(log n + k/m)`.
 
@@ -608,32 +622,40 @@ print(choose_index(Workload(range_pct=70, point_pct=20, insert_pct=10,
 
 **Duplicate problems:**
 - Design a key-value store with range queries (system design) - same reasoning, B+ tree at storage layer.
-- Implement a time series range query (LC 732 "My Calendar III" extended) - interval overlap is a range-scan variant.
 
 ---
 
-### 3. Count of smaller numbers after self
+### 3. Insert-with-leaf-split (copy-up)
 
-**Problem (LC 315):** Given an integer array `nums`, return an array `counts` where `counts[i]` is the number of elements to the right of `nums[i]` that are smaller than `nums[i]`. Constraints: `1 ≤ n ≤ 10⁵`, `-10⁴ ≤ nums[i] ≤ 10⁴`.
+Implement B+ tree leaf insert with split-on-overflow: when a leaf reaches its maximum key count, split it into two leaves, **copy** (not move) the smallest key of the right half up into the parent as a routing key, and keep both leaves linked into the sorted leaf list.
 
-**Approach:** Process from right to left, maintaining a sorted structure. Use a Fenwick tree (or sorted list with bisect) as a proxy for a B+ tree leaf layer: each key maps to a count of times seen. For each `nums[i]`, query "how many keys < nums[i] have been inserted?" (a prefix-sum range query), then insert `nums[i]`. This is a range-query-then-insert pattern - exactly what a B+ tree's linked leaf layer supports, here simulated with coordinate compression + prefix sums.
+**Worked examples:**
+- **Example 1**
+  - **Input:** t = 2 (max 3 keys/leaf), root leaf = [10, 20, 30] (full), insert(25, 25) | **Output:** root becomes internal [30], left leaf = [10, 20, 25], right leaf = [30]; leaves linked left → right
+  - **Explanation:** inserting 25 into the full leaf `[10,20,30]` makes it hold `[10,20,25,30]` (4 keys) conceptually; split point is index `t=2`, so the right half `[30]` becomes a new leaf and the left half `[10,20,25]` stays in the original. The smallest key of the right half, 30, is **copied** up as the new root's routing key - it still physically exists in the right leaf's `keys` list, unlike a B-tree median which would be removed from the leaf.
+  - **Handwork trace:** `search(30)` after this insert still finds it directly at the leaf (copy-up preserves the data); `range_query(10, 30)` walks `[10,20,25]` then follows `.next` to `[30]`, returning all four values without ever revisiting the root.
+- **Example 2**
+  - **Input:** t = 2, tree from Example 1 (root=[30], leaves [10,20,25] and [30]), insert(22, 22) | **Output:** root becomes [25, 30], leaves [10, 20, 22], [25], [30]
+  - **Explanation:** descending for key 22 lands on the left leaf `[10,20,25]`, which is already full (`2t-1=3` keys) - the top-down discipline splits it *before* descending further: its smallest-of-right-half key 25 is copied up into the parent (root goes from `[30]` to `[25, 30]`), the leaf divides into `[10,20]` and `[25]`, and only then does 22 get inserted into the left half `[10,20]`, landing at `[10,20,22]`. The key pushed up (25) is not the key being inserted (22) - a common source of confusion.
+
+**Constraints:** minimum degree `t ≥ 2`, each leaf holds between `t-1` and `2t-1` keys, `1 ≤ number of inserts ≤ 10⁶`, keys distinct.
+
+**Approach:** Descend to the target leaf using the same routing-key comparisons as search, splitting any full node encountered along the way (top-down, one-pass variant - same discipline as [B-tree's own split-on-insert](./b-tree.md#5-insert-with-node-split--median-push-up)). The **critical difference from a B-tree split**: when the node being split is a **leaf**, the smallest key of the right half is **copied** into the parent - it remains in the leaf's own key list, because that's where the actual data lives. Only an **internal** node split moves its median up and removes it (identical to a plain B-tree, since internal nodes carry no data to preserve). This copy-vs-move asymmetry is *the* B+ tree distinguishing mechanic - "push copies up, never data" - and it's why deleting a key later never has to touch a routing key: the routing key was always just a copy, never authoritative.
 
 ```python
-from sortedcontainers import SortedList
+# LeafNode / InternalNode / BPlusTree._split_child are defined in Implementation above -
+# this entry exercises exactly the leaf-split branch with a worked trace.
+tree = BPlusTree(t=2)
+for k in [10, 20, 30]:
+    tree.insert(k, k)                 # root leaf = [10, 20, 30], already at max (2t-1 = 3 keys)
 
-def count_smaller(nums: list[int]) -> list[int]:
-    sl = SortedList()
-    result = []
-    for n in reversed(nums):
-        # bisect_left = index of first element >= n = count of elements < n
-        result.append(sl.bisect_left(n))
-        sl.add(n)
-    return result[::-1]
+tree.insert(25, 25)                   # leaf overflow -> split, COPY-UP (not move)
+# root is now InternalNode(keys=[30])
+# root.children[0].keys == [10, 20, 25]   <- left leaf keeps everything below the split
+# root.children[1].keys == [30]           <- 30 is copied here AND still lives in a leaf
+assert tree.search(30) == 30          # copy-up: 30 is still directly findable at the leaf
+assert [v for _, v in tree.range_query(10, 30)] == [10, 20, 25, 30]
 ```
 
-**Complexity:** O(n log n) time (SortedList insert + bisect, each O(log n)), O(n) space.
+**Complexity:** O(log_m n) node visits on the way down, O(t) work per split (copying up to `t` keys into the new leaf) - amortized O(log_m n) per insert overall, matching B-tree's split-insert cost; the only difference is *what* gets pushed up (a copy vs. a move), not the asymptotic cost.
 
-**Duplicate problems:**
-- Number of inversions (merge sort variant) - same "count smaller to the right" semantics.
-- Count of range sum (LC 327) - range sum ∈ [lower, upper]: prefix sums + sorted structure range query.
-- Reverse pairs (LC 493) - count pairs `(i,j)` where `i<j` and `nums[i] > 2*nums[j]`; same right-to-left sorted-structure pattern.

@@ -536,6 +536,16 @@ Forward edges (to a BLACK descendant) and cross edges (to a BLACK non-ancestor) 
 
 **Problem:** Given an m × n binary grid where `'1'` is land and `'0'` is water, count the number of islands. An island is a maximal group of horizontally or vertically adjacent land cells. `1 ≤ m, n ≤ 300`.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [["1","1","0","0"],["1","1","0","0"],["0","0","1","0"],["0","0","0","1"]] | **Output:** 3
+  - **Explanation:** the top-left 2×2 block of land forms one island; the two isolated single-cell lands are two more, totaling 3.
+- **Example 2**
+  - **Input:** grid = [["1","0"],["0","1"]] | **Output:** 2
+  - **Explanation:** the two land cells are diagonal, not 4-adjacent, so they form two separate islands.
+
+**Constraints:** `1 ≤ m, n ≤ 300`, `grid[i][j]` is `'0'` or `'1'`.
+
 **Approach:** Model the grid as an implicit graph - each `'1'` cell is a vertex, edges connect 4-adjacent land cells. The answer is the number of connected components. For each unvisited land cell, run DFS from it, marking all reachable land cells as visited in-place (overwrite `'1'` with `'0'`), then increment the island count. The outer loop over all cells handles the disconnected-graph case - each DFS call discovers exactly one island.
 
 This is the canonical application of DFS connected-components, matching the outer-loop pattern from the Correctness section. The "mark in-place" trick avoids a separate `visited` array at the cost of mutating the input - a trade-off worth mentioning.
@@ -562,7 +572,7 @@ def numIslands(grid: list[list[str]]) -> int:
     return count
 ```
 
-**Time:** O(m × n) - each cell visited at most once. **Space:** O(m × n) worst-case recursion depth (all land). Use iterative DFS in production for large grids.
+**Complexity:** O(m × n) time - each cell visited at most once. O(m × n) space, worst-case recursion depth (all land). Use iterative DFS in production for large grids.
 
 **Duplicate problems:**
 - Max Area of Island (LC 695) - same flood-fill DFS, return max component size instead of count; identical mechanics.
@@ -575,6 +585,16 @@ def numIslands(grid: list[list[str]]) -> int:
 ### Problem 2 - Course Schedule / Directed Cycle Detection (LeetCode 207)
 
 **Problem:** There are `numCourses` courses labeled 0 to numCourses−1. Given a list of prerequisite pairs `[a, b]` (to take course a, you must first complete course b), determine whether you can finish all courses. `1 ≤ numCourses ≤ 2000`, up to 5000 pairs.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** numCourses = 2, prerequisites = [[1,0]] | **Output:** true
+  - **Explanation:** take course 0 first, then course 1 - no cycle exists in the dependency graph.
+- **Example 2**
+  - **Input:** numCourses = 2, prerequisites = [[1,0],[0,1]] | **Output:** false
+  - **Explanation:** course 0 requires course 1 and course 1 requires course 0 - a 2-cycle makes it impossible to finish either.
+
+**Constraints:** `1 ≤ numCourses ≤ 2000`, `0 ≤ prerequisites.length ≤ 5000`.
 
 **Approach:** Build a directed graph: edge b → a means "b must come before a." The courses can all be completed if and only if this graph is a DAG - no directed cycle exists. Use DFS with WHITE/GRAY/BLACK coloring: if DFS ever encounters a GRAY vertex while exploring from some vertex u, then u's ancestor is also reachable from u - a cycle exists.
 
@@ -603,7 +623,7 @@ def canFinish(numCourses: int, prerequisites: list[list[int]]) -> bool:
     return all(dfs(u) for u in range(numCourses) if color[u] == WHITE)
 ```
 
-**Time:** O(V + E). **Space:** O(V + E) for the graph, O(V) for color array and recursion stack.
+**Complexity:** O(V + E) time. O(V + E) space for the graph, O(V) for color array and recursion stack.
 
 **Duplicate problems:**
 - Course Schedule II (LC 210) - same DFS; additionally collect post-order to return the valid topological ordering.
@@ -615,6 +635,16 @@ def canFinish(numCourses: int, prerequisites: list[list[int]]) -> bool:
 ### Problem 3 - Clone Graph (LeetCode 133)
 
 **Problem:** Given a reference to a node in an undirected connected graph where each node has an integer value and a list of neighbors, return a **deep copy** (clone) of the entire graph. Node values are unique and in range [1, n]. `1 ≤ n ≤ 100`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** adjList = [[2,4],[1,3],[2,4],[1,3]] | **Output:** [[2,4],[1,3],[2,4],[1,3]]
+  - **Explanation:** node 1 connects to nodes 2 and 4; the clone must reproduce the exact same adjacency structure with entirely new node objects.
+- **Example 2**
+  - **Input:** adjList = [[]] | **Output:** [[]]
+  - **Explanation:** a single node with no neighbors clones to a single node with no neighbors.
+
+**Constraints:** the number of nodes is in the range `[0, 100]`, `1 ≤ Node.val ≤ 100`, node values are unique, the graph is connected.
 
 **Approach:** DFS from the given node, keeping a `visited` dictionary mapping original node → its clone. The critical correctness point: **insert the clone into `visited` before recursing into its neighbors**. If you wait until after, a cycle in the graph brings DFS back to the same node before its clone is registered, triggering a second clone creation and breaking the cycle's back-reference.
 
@@ -644,7 +674,7 @@ def cloneGraph(node: Optional[Node]) -> Optional[Node]:
     return dfs(node)
 ```
 
-**Time:** O(V + E) - each node cloned once, each neighbor link followed once. **Space:** O(V) for the `visited` map and recursion stack.
+**Complexity:** O(V + E) time - each node cloned once, each neighbor link followed once. O(V) space for the `visited` map and recursion stack.
 
 **Duplicate problems:**
 - Copy List with Random Pointer (LC 138) - same "register before recurse" DFS pattern on a linked list with arbitrary forward/back pointers; the visited-map discipline is identical.

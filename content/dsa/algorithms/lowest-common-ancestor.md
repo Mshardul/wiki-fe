@@ -268,9 +268,19 @@ class LCA:
 
 ### 1. Lowest Common Ancestor of a Binary Tree - _recursive one-pass_
 
-**Problem.** Given the root of a binary tree and two nodes `p` and `q` guaranteed to exist in the tree, return their lowest common ancestor. No parent pointers, no depth/ancestor preprocessing assumed.
+Given the root of a binary tree and two nodes `p` and `q` guaranteed to exist in the tree, return their lowest common ancestor. No parent pointers, no depth/ancestor preprocessing assumed.
 
-**Approach.** Single post-order DFS: if the current node is `p`, `q`, or null, return it up. Recurse both children; if **both** sides return non-null, the current node is the split point (found `p` on one side, `q` on the other) - it's the LCA. If only one side is non-null, bubble that answer further up. This is the O(n) single-query baseline every heavier LCA technique optimizes away.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 1 | **Output:** 3
+  - **Explanation:** `5` and `1` are on opposite children of the root, so `3` is the split point where both sides first report "found."
+- **Example 2**
+  - **Input:** root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 4 | **Output:** 5
+  - **Explanation:** `4` is a descendant of `5`, so `5` itself is the LCA - the recursion returns `5` up as soon as it's matched, without needing the other side to also report non-null.
+
+**Constraints:** number of nodes in `[2, 10⁵]`; `p` and `q` are distinct and both guaranteed to exist in the tree.
+
+**Approach:** Single post-order DFS: if the current node is `p`, `q`, or null, return it up. Recurse both children; if **both** sides return non-null, the current node is the split point (found `p` on one side, `q` on the other) - it's the LCA. If only one side is non-null, bubble that answer further up. This is the O(n) single-query baseline every heavier LCA technique optimizes away.
 
 ```python
 def lowest_common_ancestor(root, p, q):
@@ -283,7 +293,7 @@ def lowest_common_ancestor(root, p, q):
     return left or right
 ```
 
-**Complexity.** O(n) time (visits every node once, worst case), O(h) space (recursion stack).
+**Complexity:** O(n) time (visits every node once, worst case), O(h) space (recursion stack).
 
 **Duplicate problems:**
 - Lowest Common Ancestor of a Binary Tree III (LC 1650) - identical problem with parent pointers given instead of the root; solved by walking both nodes up to equal depth then together, the two-pointer analogue of binary lifting's depth-equalize step.
@@ -291,9 +301,19 @@ def lowest_common_ancestor(root, p, q):
 
 ### 2. Lowest Common Ancestor of a Binary Search Tree - _ordering shortcut_
 
-**Problem.** Given the root of a **binary search tree** and two nodes `p` and `q`, return their lowest common ancestor. Both values exist in the tree.
+Given the root of a **binary search tree** and two nodes `p` and `q`, return their lowest common ancestor. Both values exist in the tree.
 
-**Approach.** The BST ordering property makes this simpler than the general case: starting at the root, if both `p.val` and `q.val` are less than the current node, the LCA must be in the left subtree; if both are greater, it's in the right subtree; the moment they're **not** on the same side (or one equals the current node), the current node is the split point - stop there. No recursion into both children needed, unlike the general binary-tree version; a single downward walk suffices because ordering tells you which way to go.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [6,2,8,0,4,7,9,null,null,3,5], p = 2, q = 8 | **Output:** 6
+  - **Explanation:** `2 < 6 < 8`, so `p` and `q` fall on opposite sides of the root - `6` is the split point.
+- **Example 2**
+  - **Input:** root = [6,2,8,0,4,7,9,null,null,3,5], p = 2, q = 4 | **Output:** 2
+  - **Explanation:** both `2` and `4` are `≤ 6`, sending the walk left; at node `2`, `q = 4` is greater and `p` equals the node itself, so `2` is returned as the split point.
+
+**Constraints:** number of nodes in `[2, 5×10⁴]`; all node values are unique; `p` and `q` both exist in the BST.
+
+**Approach:** The BST ordering property makes this simpler than the general case: starting at the root, if both `p.val` and `q.val` are less than the current node, the LCA must be in the left subtree; if both are greater, it's in the right subtree; the moment they're **not** on the same side (or one equals the current node), the current node is the split point - stop there. No recursion into both children needed, unlike the general binary-tree version; a single downward walk suffices because ordering tells you which way to go.
 
 ```python
 def lowest_common_ancestor_bst(root, p, q):
@@ -308,16 +328,26 @@ def lowest_common_ancestor_bst(root, p, q):
     return None
 ```
 
-**Complexity.** O(h) time (h = tree height, O(log n) balanced / O(n) skewed), O(1) space (iterative, no recursion stack).
+**Complexity:** O(h) time (h = tree height, O(log n) balanced / O(n) skewed), O(1) space (iterative, no recursion stack).
 
 **Duplicate problems:**
 - Two Sum IV - Input is a BST (LC 653) - not LCA itself, but the same "use BST ordering to skip the general-tree algorithm" recognition, applied to a different query.
 
 ### 3. Kth Ancestor of a Tree Node - _binary lifting_
 
-**Problem.** Design a data structure that, given a rooted tree via parent pointers, answers repeated `getKthAncestor(node, k)` queries - the ancestor `k` steps above `node`, or `-1` if `k` exceeds the node's depth.
+Design a data structure that, given a rooted tree via parent pointers, answers repeated `getKthAncestor(node, k)` queries - the ancestor `k` steps above `node`, or `-1` if `k` exceeds the node's depth.
 
-**Approach.** Exactly the jump table binary lifting builds for LCA, used directly rather than as a subroutine: precompute `up[node][i]` = ancestor `2^i` steps above `node` in O(n log n), then answer each query by decomposing `k` into its binary representation and following the corresponding jumps, in O(log k) per query. This is the "free" second capability the same table gives you once built for LCA - worth calling out explicitly as the connection.
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 7, parent = [-1,0,0,1,1,2,2], getKthAncestor(3, 1) | **Output:** 1
+  - **Explanation:** node `3`'s parent is `1` - one jump up (`k=1`) lands directly on it, no binary decomposition needed.
+- **Example 2**
+  - **Input:** n = 7, parent = [-1,0,0,1,1,2,2], getKthAncestor(5, 2) | **Output:** 0
+  - **Explanation:** `5 → 2 → 0` is two steps up; the jump table answers this by decomposing `k=2` into a single `2^1` jump via `up[5][1]`.
+
+**Constraints:** `1 ≤ n ≤ 5×10⁴` nodes, up to `5×10⁴` queries - repeated queries on a static tree is exactly the signal to preprocess once via binary lifting rather than walk up one parent pointer at a time per query.
+
+**Approach:** Exactly the jump table binary lifting builds for LCA, used directly rather than as a subroutine: precompute `up[node][i]` = ancestor `2^i` steps above `node` in O(n log n), then answer each query by decomposing `k` into its binary representation and following the corresponding jumps, in O(log k) per query. This is the "free" second capability the same table gives you once built for LCA - worth calling out explicitly as the connection.
 
 ```python
 class TreeAncestor:
@@ -340,7 +370,7 @@ class TreeAncestor:
         return node
 ```
 
-**Complexity.** O(n log n) preprocessing, O(log k) per query. O(n log n) space.
+**Complexity:** O(n log n) preprocessing, O(log k) per query, O(n log n) space.
 
 **Duplicate problems:**
 - Binary Lifting for LCA (this article's core algorithm) - identical table, different query on top of it: LCA jumps both nodes to equal depth then binary-searches the split; this jumps one node by a fixed k.

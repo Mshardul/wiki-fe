@@ -26,10 +26,7 @@
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [Practice problems](#practice-problems)
   - [Valid Anagram](#1-valid-anagram--character-count)
-  - [Longest Substring Without Repeating Characters](#2-longest-substring-without-repeating-characters--sliding-window)
-  - [Valid Palindrome](#3-valid-palindrome--two-pointers)
-  - [Find All Anagrams in a String](#4-find-all-anagrams-in-a-string--fixed-window--count-match)
-  - [Implement strStr / Find the Index](#5-implement-strstr--find-the-index--rolling-hash-rabinkarp)
+  - [Implement strStr / Find the Index](#2-implement-strstr--find-the-index--rolling-hash-rabinkarp)
 
 ## What it is
 
@@ -133,7 +130,7 @@ The string's identity is **O(1)-indexed immutable text**. The list/`bytearray` t
 - **C string (null-terminated)** - a raw `char*` array ending in `\0`; length is O(n) to compute (scan to the terminator), and the source of countless buffer-overflow bugs. Know it exists; modern code stores length explicitly.
 - **Rope** - a balanced tree of string chunks giving O(log n) insert/delete/concat in the middle, used by text editors for huge documents where rebuilding a flat string per keystroke would be O(n). A structural variant; reach for it only at editor scale.
 - **Interned string** - runtimes deduplicate identical literals into one shared object so equality can be a pointer compare. An optimization, not a different structure; see [Gotchas](#gotchas--edge-cases).
-- **Suffix array / suffix automaton** - preprocessed indexes over all suffixes enabling O(log n) substring queries; the heavy CP machinery for repeated pattern search. <!-- suffix-array not yet written --> Named here; far beyond a basic interview.
+- **Suffix array / suffix tree / suffix automaton** - preprocessed indexes over all suffixes enabling O(log n) or O(m) substring queries; see [Suffix Tree](./suffix-tree.md) (covers both the tree and its array-based variant). The heavy CP machinery for repeated pattern search - far beyond a basic interview.
 
 ## Memory layout
 
@@ -282,13 +279,23 @@ def longest_unique(s: str) -> int:
 
 ## Practice problems
 
-Five staples, each a **distinct** string technique - no two solved the same way.
+Two staples, each a **distinct**, genuinely string-native technique - no generic array/sequence technique that would solve identically over a plain array of chars.
 
 ### 1. Valid Anagram - _character count_
 
 **Problem.** Given two strings, decide if one is an anagram of the other (same characters, same counts). E.g. `"anagram"`, `"nagaram"` → true; `"rat"`, `"car"` → false.
 
-**Approach.** Two strings are anagrams iff their character frequencies match. With a bounded alphabet, a **26-length count array** is the fastest check: increment for one string, decrement for the other, then verify all zeros. O(n) time, O(1) space (alphabet is fixed). The count-array primitive in its plainest form - no sorting, no hashing.
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "anagram", t = "nagaram" | **Output:** true
+  - **Explanation:** both strings contain the same 7 letters with identical counts, just reordered.
+- **Example 2**
+  - **Input:** s = "rat", t = "car" | **Output:** false
+  - **Explanation:** `'t'` appears in `s` but not `t`, so the character counts can't match.
+
+**Constraints:** `1 ≤ s.length, t.length ≤ 5·10⁴`, `s` and `t` consist of lowercase English letters.
+
+**Approach:** Two strings are anagrams iff their character frequencies match. With a bounded alphabet, a **26-length count array** is the fastest check: increment for one string, decrement for the other, then verify all zeros. O(n) time, O(1) space (alphabet is fixed). The count-array primitive in its plainest form - no sorting, no hashing.
 
 ```python
 def is_anagram(s: str, t: str) -> bool:
@@ -301,85 +308,26 @@ def is_anagram(s: str, t: str) -> bool:
     return all(c == 0 for c in count)
 ```
 
-**Complexity.** O(n) time, O(1) space.
+**Complexity:** O(n) time, O(1) space.
 
-### 2. Longest Substring Without Repeating Characters - _sliding window_
+**Duplicate problems:**
+- Ransom Note (LC 383) - one-directional variant of the same increment/decrement count-array mechanic (magazine counts must cover note counts, no length guard).
 
-**Problem.** Find the length of the longest substring with all distinct characters. E.g. `"abcabcbb"` → `3` (`"abc"`), `"bbbbb"` → `1`.
-
-**Approach.** An **expanding/contracting window** with a map of each char's last index. When the current char was seen inside the window, jump the window's start past its previous occurrence - never revisiting characters, so it's one O(n) pass. The window always holds a distinct-char substring; track the max length. Classic sliding window on characters.
-
-```python
-def length_of_longest(s: str) -> int:
-    last: dict[str, int] = {}
-    start = best = 0
-    for i, ch in enumerate(s):
-        if ch in last and last[ch] >= start:
-            start = last[ch] + 1
-        last[ch] = i
-        best = max(best, i - start + 1)
-    return best
-```
-
-**Complexity.** O(n) time, O(min(n, alphabet)) space. Pattern: [Sliding Window](../patterns/sliding-window.md).
-
-### 3. Valid Palindrome - _two pointers_
-
-**Problem.** Decide if a string is a palindrome, considering only alphanumeric characters and ignoring case. E.g. `"A man, a plan, a canal: Panama"` → true.
-
-**Approach.** **Converging two pointers** from both ends: skip non-alphanumeric characters, compare the rest case-insensitively, move inward. They must match all the way to the middle. O(1) extra space - no cleaned-copy allocation needed if you skip in place. The two-pointer primitive on a string.
-
-```python
-def is_palindrome(s: str) -> bool:
-    lo, hi = 0, len(s) - 1
-    while lo < hi:
-        while lo < hi and not s[lo].isalnum():
-            lo += 1
-        while lo < hi and not s[hi].isalnum():
-            hi -= 1
-        if s[lo].lower() != s[hi].lower():
-            return False
-        lo, hi = lo + 1, hi - 1
-    return True
-```
-
-**Complexity.** O(n) time, O(1) space. Pattern: [Two Pointers](../patterns/two-pointers.md).
-
-### 4. Find All Anagrams in a String - _fixed window + count match_
-
-**Problem.** Given strings `s` and `p`, return all start indices of `p`'s anagrams in `s`. E.g. `s="cbaebabacd", p="abc"` → `[0, 6]`.
-
-**Approach.** A **fixed-size sliding window** of length `len(p)` with two count arrays. Slide the window one char at a time, updating counts in O(1) (add the entering char, remove the leaving one), and record a match whenever the window's counts equal `p`'s counts. Comparing two 26-arrays is O(1), so the whole scan is O(n). Combines the count-array and fixed-window primitives.
-
-```python
-def find_anagrams(s: str, p: str) -> list[int]:
-    if len(p) > len(s):
-        return []
-    need: dict[str, int] = {}
-    for ch in p:
-        need[ch] = need.get(ch, 0) + 1
-    window: dict[str, int] = {}
-    for ch in s[:len(p)]:
-        window[ch] = window.get(ch, 0) + 1
-    res = [0] if window == need else []
-    for i in range(len(p), len(s)):
-        window[s[i]] = window.get(s[i], 0) + 1
-        left = s[i - len(p)]
-        window[left] -= 1
-        if window[left] == 0:
-            del window[left]              # keep dicts comparable
-        if window == need:
-            res.append(i - len(p) + 1)
-    return res
-```
-
-**Complexity.** O(n) time, O(1) space (bounded alphabet). Pattern: [Sliding Window](../patterns/sliding-window.md).
-
-### 5. Implement strStr / Find the Index - _rolling hash (Rabin–Karp)_
+### 2. Implement strStr / Find the Index - _rolling hash (Rabin–Karp)_
 
 **Problem.** Return the index of the first occurrence of `needle` in `haystack`, or -1. E.g. `haystack="sadbutsad", needle="sad"` → `0`.
 
-**Approach.** **Rabin–Karp**: hash the needle and the first window of the haystack, then **roll** the window hash one char at a time in O(1). On a hash match, verify the actual characters (to rule out a collision). O(n + m) average - far better than the O(n·m) brute force on adversarial inputs. The rolling-hash primitive in its defining problem.
+**Worked examples:**
+- **Example 1**
+  - **Input:** haystack = "sadbutsad", needle = "sad" | **Output:** 0
+  - **Explanation:** `"sad"` matches at index 0 (and again at index 6, but the first occurrence wins).
+- **Example 2**
+  - **Input:** haystack = "leetcode", needle = "leeto" | **Output:** -1
+  - **Explanation:** `"leeto"` never appears in `"leetcode"`, so no window hash (even after collision verification) matches.
+
+**Constraints:** `1 ≤ haystack.length, needle.length ≤ 10⁴`, `haystack` and `needle` consist of lowercase English characters.
+
+**Approach:** **Rabin–Karp**: hash the needle and the first window of the haystack, then **roll** the window hash one char at a time in O(1). On a hash match, verify the actual characters (to rule out a collision). O(n + m) average - far better than the O(n·m) brute force on adversarial inputs. The rolling-hash primitive in its defining problem.
 
 ```python
 def str_str(haystack: str, needle: str) -> int:
@@ -400,4 +348,7 @@ def str_str(haystack: str, needle: str) -> int:
     return -1
 ```
 
-**Complexity.** O(n + m) average time, O(1) space. (KMP gives O(n+m) worst-case without the collision risk.)
+**Complexity:** O(n + m) average time, O(1) space. (KMP gives O(n+m) worst-case without the collision risk.)
+
+**Duplicate problems:**
+- Repeated DNA Sequences (LC 187) - same rolling-hash-over-a-fixed-window technique, applied to dedupe 10-grams instead of searching for a single pattern; see [Rabin-Karp](../algorithms/rabin-karp.md#2-repeated-dna-sequences--multi-pattern-via-hash-set).

@@ -232,9 +232,21 @@ The pseudocode is the contract (`sort by finish`, `▷ greedy choice`); the Pyth
 
 Each problem below exercises a **distinct** greedy structure - interval scheduling, sort-then-pair, heap-driven dynamic priority, and a stay-ahead reachability sweep.
 
-### Non-overlapping Intervals (interval scheduling, minimize removals)
+### 1. Non-overlapping Intervals (LC 435)
 
-Given intervals, find the minimum number to **remove** so the rest don't overlap. Constraints: `n ≤ 10^5`. Technique: **the activity-selection greedy in disguise** - sort by end time, greedily keep the earliest-finishing compatible intervals; removals = total − kept. Keeping the most is the same as removing the fewest.
+Given an array of intervals, find the minimum number to **remove** so the rest don't overlap.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** intervals = [[1,2],[2,3],[3,4],[1,3]] | **Output:** 1
+  - **Explanation:** removing `[1,3]` leaves `[1,2],[2,3],[3,4]`, which don't overlap - only one removal needed.
+- **Example 2**
+  - **Input:** intervals = [[1,2],[1,2],[1,2]] | **Output:** 2
+  - **Explanation:** keep one `[1,2]` and remove the other two identical, fully-overlapping copies.
+
+**Constraints:** `1 ≤ n ≤ 10^5`, interval bounds fit in 32-bit range.
+
+**Approach:** The activity-selection greedy in disguise - sort by end time, greedily keep the earliest-finishing compatible intervals; removals = total − kept. Keeping the most is the same as removing the fewest.
 
 ```python
 def erase_overlap_intervals(intervals: List[List[int]]) -> int:
@@ -249,11 +261,28 @@ def erase_overlap_intervals(intervals: List[List[int]]) -> int:
     return len(intervals) - kept
 ```
 
-**Complexity:** `O(n log n)` time, `O(1)` space. Pattern: interval scheduling - see [Merge Intervals](../patterns/merge-intervals.md).
+**Complexity:** O(n log n) time, O(1) space.
 
-### Assign Cookies (sort-then-two-pointer greedy)
+**Duplicate problems:**
+- Minimum Number of Arrows to Burst Balloons (LC 452) - identical sort-by-end greedy; an arrow "keeps" a group of overlapping balloons the same way this problem keeps non-overlapping intervals.
 
-Each child has a greed factor `g[i]`; each cookie a size `s[j]`. A child is content if assigned a cookie with `s[j] ≥ g[i]`; maximize content children. Constraints: `n, m ≤ 5·10^4`. Technique: **sort both, greedily give the smallest sufficient cookie to the least-greedy child** - never "waste" a big cookie on a small need. The exchange argument: swapping to the smallest sufficient cookie never reduces the count.
+---
+
+### 2. Assign Cookies (LC 455)
+
+Each child has a greed factor `g[i]`; each cookie a size `s[j]`. A child is content if assigned a cookie with `s[j] ≥ g[i]`; maximize the number of content children.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** g = [1, 2, 3], s = [1, 1] | **Output:** 1
+  - **Explanation:** only one cookie (size 1) can satisfy the least-greedy child (greed 1); neither cookie satisfies greed 2 or 3.
+- **Example 2**
+  - **Input:** g = [1, 2], s = [1, 2, 3] | **Output:** 2
+  - **Explanation:** the smallest sufficient cookie (size 1) goes to the child with greed 1, and size 2 satisfies the child with greed 2 - both content.
+
+**Constraints:** `1 ≤ n, m ≤ 5·10^4`, `1 ≤ g[i], s[j] ≤ 2^31 - 1`.
+
+**Approach:** Sort both arrays, greedily give the smallest sufficient cookie to the least-greedy child - never "waste" a big cookie on a small need. The exchange argument: swapping to the smallest sufficient cookie never reduces the count.
 
 ```python
 def find_content_children(g: List[int], s: List[int]) -> int:
@@ -266,11 +295,29 @@ def find_content_children(g: List[int], s: List[int]) -> int:
     return child
 ```
 
-**Complexity:** `O(n log n + m log m)` time, `O(1)` space. Pattern: sort-both + two-pointer greedy.
+**Complexity:** O(n log n + m log m) time, O(1) space.
 
-### Minimum Cost to Connect Sticks (heap-driven greedy)
+**Duplicate problems:**
+- Maximum Matching of Players With Trainers (LC 2410) - LC states this is literally the same problem restated with players/trainers instead of children/cookies.
+- Boats to Save People (LC 881) - same sort-both-and-greedily-pair shape, but pairs from opposite ends (lightest with heaviest) instead of matching smallest-sufficient.
 
-Connect all sticks into one; cost of each connection = sum of the two stick lengths; minimize total cost. Constraints: `n ≤ 10^4`. Technique: **dynamic-priority greedy via a min-heap** - always merge the two shortest sticks (a Huffman-style choice); the merged length re-enters the heap, so the priority changes as you go and a one-time sort won't do.
+---
+
+### 3. Minimum Cost to Connect Sticks (LC 1167)
+
+Connect all sticks into one; the cost of each connection is the sum of the two stick lengths being joined; minimize total cost.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** sticks = [2, 4, 3] | **Output:** 14
+  - **Explanation:** connect 2+3=5 (cost 5), then connect 5+4=9 (cost 9); total cost 5+9=14.
+- **Example 2**
+  - **Input:** sticks = [1, 8, 3, 5] | **Output:** 30
+  - **Explanation:** connect 1+3=4 (cost 4), then 4+5=9 (cost 9), then 9+8=17 (cost 17); total 4+9+17=30 - always merging the two currently-shortest sticks minimizes the running total.
+
+**Constraints:** `1 ≤ n ≤ 10^4`, `1 ≤ sticks[i] ≤ 10^4`.
+
+**Approach:** Dynamic-priority greedy via a min-heap - always merge the two shortest sticks (a Huffman-style choice); the merged length re-enters the heap, so the priority changes as you go and a one-time sort won't do.
 
 ```python
 import heapq
@@ -285,11 +332,25 @@ def connect_sticks(sticks: List[int]) -> int:
     return total
 ```
 
-**Complexity:** `O(n log n)` time, `O(n)` space. Pattern: heap greedy (Huffman family) - cross-link [Heap](../data-structures/heap.md).
+**Complexity:** O(n log n) time, O(n) space.
 
-### Jump Game (greedy reachability, "stays ahead")
+---
 
-Given an array where `nums[i]` is the max jump length from `i`, determine if you can reach the last index. Constraints: `n ≤ 10^4`. Technique: **track the farthest reachable index in one sweep** - a "greedy stays ahead" argument: maintain `reach = max(reach, i + nums[i])`; if any `i > reach`, you're stuck. No DP table needed because the farthest-reach frontier dominates.
+### 4. Jump Game (LC 55)
+
+Given an array where `nums[i]` is the maximum jump length from index `i`, determine if you can reach the last index.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [2, 3, 1, 1, 4] | **Output:** true
+  - **Explanation:** jump 1 step from index 0 to 1, then 3 steps to the last index; the reachable frontier never falls behind the current position.
+- **Example 2**
+  - **Input:** nums = [3, 2, 1, 0, 4] | **Output:** false
+  - **Explanation:** every path gets stuck at index 3 (value 0), and the farthest reachable index (3) never exceeds 3, so index 4 is unreachable.
+
+**Constraints:** `1 ≤ n ≤ 10^4`, `0 ≤ nums[i] ≤ 10^5`.
+
+**Approach:** Track the farthest reachable index in one sweep - a "greedy stays ahead" argument: maintain `reach = max(reach, i + nums[i])`; if any `i > reach`, you're stuck. No DP table needed because the farthest-reach frontier dominates.
 
 ```python
 def can_jump(nums: List[int]) -> bool:
@@ -301,4 +362,7 @@ def can_jump(nums: List[int]) -> bool:
     return True
 ```
 
-**Complexity:** `O(n)` time, `O(1)` space. Pattern: greedy reachability / stays-ahead - distinct from the sort-based greedies above.
+**Complexity:** O(n) time, O(1) space.
+
+**Duplicate problems:**
+- Jump Game II (LC 45) - same farthest-reach frontier tracked across sweeps, extended to count the minimum number of jumps (a level-by-level frontier expansion) rather than just feasibility.

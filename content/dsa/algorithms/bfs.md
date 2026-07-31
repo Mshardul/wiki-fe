@@ -440,6 +440,16 @@ During BFS, assign alternating colors (0/1) to nodes: source gets 0, each neighb
 
 **Problem statement:** Given two words `beginWord` and `endWord` and a dictionary `wordList`, find the length of the shortest transformation sequence from `beginWord` to `endWord` where each intermediate word must differ from its predecessor by exactly one letter and must be in `wordList`. Return the sequence length (counting both endpoints), or 0 if no such sequence exists. Constraints: words have length 1–10, dictionary has up to 5000 words.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** beginWord = "hit", endWord = "cog", wordList = ["hot","dot","dog","lot","log","cog"] | **Output:** 5
+  - **Explanation:** the shortest transformation is hit → hot → dot → dog → cog, 5 words counting both endpoints.
+- **Example 2**
+  - **Input:** beginWord = "hit", endWord = "cog", wordList = ["hot","dot","dog","lot","log"] | **Output:** 0
+  - **Explanation:** endWord "cog" is not in wordList, so no valid transformation sequence can end there.
+
+**Constraints:** `1 ≤ beginWord.length ≤ 10`, `endWord.length == beginWord.length`, `1 ≤ wordList.length ≤ 5000`, all words consist of lowercase letters.
+
 **Approach:** Model as BFS on an implicit graph. Each word is a node; two words share an edge if they differ by exactly one letter. We want the shortest path from `beginWord` to `endWord`. Key optimization: instead of comparing all pairs of words to build the adjacency list upfront (O(n² × L)), build neighbor lists lazily by replacing each character position with a wildcard and using a pattern-to-words map. This turns neighbor generation from O(n × L) per node to O(L × 26) per node.
 
 ```python
@@ -476,6 +486,8 @@ def ladderLength(beginWord: str, endWord: str, wordList: list[str]) -> int:
 
 **Complexity:** O(M² × N) time where M = word length, N = dictionary size (pattern map construction). Space: O(M² × N) for pattern map.
 
+
+
 **Duplicate problems:**
 - Minimum Genetic Mutation (LC 433) - same BFS on an implicit graph, genes differ by one character; bank plays the role of wordList.
 - Word Ladder II (LC 126) - same BFS but must return all shortest paths; requires storing multiple parents per node, not just one.
@@ -486,6 +498,16 @@ def ladderLength(beginWord: str, endWord: str, wordList: list[str]) -> int:
 ### Problem 2: Binary Tree Level Order Traversal (LC 102)
 
 **Problem statement:** Given the root of a binary tree, return the node values grouped by level (top to bottom, left to right within each level) as a list of lists. The tree can have up to 2000 nodes.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [3,9,20,null,null,15,7] | **Output:** [[3],[9,20],[15,7]]
+  - **Explanation:** level 0 has just the root; level 1 has its two children; level 2 has the grandchildren, left to right.
+- **Example 2**
+  - **Input:** root = [1] | **Output:** [[1]]
+  - **Explanation:** a single-node tree has exactly one level containing the root.
+
+**Constraints:** the number of nodes is in the range `[0, 2000]`, `-1000 ≤ Node.val ≤ 1000`.
 
 **Approach:** Standard BFS with a level-size snapshot. Before processing each level, record `len(queue)` - this tells you exactly how many nodes belong to the current level. Process exactly that many nodes, appending their children to the queue for the next level. This avoids using a sentinel `None` value or two-queue rotation.
 
@@ -533,6 +555,16 @@ def levelOrder(root: Optional[TreeNode]) -> list[list[int]]:
 ### Problem 3: 01 Matrix / Multi-source BFS (LC 542)
 
 **Problem statement:** Given an m×n binary matrix, return a matrix of the same size where each cell contains the distance to the nearest 0 (using 4-directional movement). The matrix has at least one 0. Constraints: m, n ≤ 10⁴ (so up to 10⁸ cells in theory, but 10⁴ × 10⁴ is the practical max, i.e., m·n ≤ 10⁴).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** mat = [[0,0,0],[0,1,0],[0,0,0]] | **Output:** [[0,0,0],[0,1,0],[0,0,0]]
+  - **Explanation:** the single 1-cell is adjacent to four 0-cells, so its distance is 1.
+- **Example 2**
+  - **Input:** mat = [[0,0,0],[0,1,0],[1,1,1]] | **Output:** [[0,0,0],[0,1,0],[1,2,1]]
+  - **Explanation:** the center-bottom 1-cell is 2 steps from the nearest 0 (it must route around the other 1-cells).
+
+**Constraints:** `m == mat.length`, `n == mat[i].length`, `1 ≤ m, n ≤ 10⁴`, `1 ≤ m · n ≤ 10⁴`, `mat[i][j]` is `0` or `1`, at least one `0` exists.
 
 **Approach:** Multi-source BFS. Initialize the queue with all cells that contain 0 at distance 0. Then run BFS outward - each step adds 1 to the distance. The first time BFS reaches any cell containing 1, it has found that cell's nearest 0. This is O(m·n) - strictly better than running a separate BFS from each 1-cell (which would be O((m·n)²) in the worst case).
 

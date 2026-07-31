@@ -29,7 +29,6 @@
   - [Linked List Cycle II](#2-linked-list-cycle-ii--floyds-tortoise-and-hare)
   - [Merge Two Sorted Lists](#3-merge-two-sorted-lists--dummy-head--splice)
   - [Remove Nth Node From End](#4-remove-nth-node-from-end--two-pointers-one-pass)
-  - [LRU Cache](#5-lru-cache--hashmap--doubly-linked-list)
 
 ## What it is
 
@@ -200,12 +199,10 @@ from typing import Generic, Iterator, Optional, TypeVar
 
 T = TypeVar("T")
 
-
 @dataclass
 class Node(Generic[T]):
     val: T
     next: Optional["Node[T]"] = None
-
 
 class LinkedList(Generic[T]):
     """Singly linked list with a tail pointer for O(1) append."""
@@ -322,9 +319,19 @@ Five staples, each a **distinct** technique on a linked list - no two solved the
 
 ### 1. Reverse a Linked List - _iterative pointer rewiring_
 
-**Problem.** Given the head of a singly linked list, reverse it and return the new head. E.g. `1→2→3→4→5` becomes `5→4→3→2→1`. Do it in O(1) extra space.
+Given the head of a singly linked list, reverse it and return the new head. Do it in O(1) extra space. The in-place-reversal CP-primitive in its purest form.
 
-**Approach.** Walk once with three pointers - `prev`, `cur`, `nxt`. At each step, save `nxt = cur.next` (or you lose the tail), point `cur.next` back at `prev`, then advance both. When `cur` is null, `prev` is the new head. The whole list is reversed by flipping links in place, no new nodes - the in-place-reversal CP-primitive in its purest form.
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = 1→2→3→4→5 | **Output:** 5→4→3→2→1
+  - **Explanation:** every `next` pointer is flipped to point backward; the old tail becomes the new head.
+- **Example 2**
+  - **Input:** head = 1→2 | **Output:** 2→1
+  - **Explanation:** a two-node list swaps direction in a single iteration.
+
+**Constraints:** `0 ≤ list length ≤ 5000`, `-5000 ≤ node.val ≤ 5000`.
+
+**Approach:** Walk once with three pointers - `prev`, `cur`, `nxt`. At each step, save `nxt = cur.next` (or you lose the tail), point `cur.next` back at `prev`, then advance both. When `cur` is null, `prev` is the new head. The whole list is reversed by flipping links in place, no new nodes.
 
 ```python
 def reverse_list(head: Optional[Node]) -> Optional[Node]:
@@ -336,13 +343,28 @@ def reverse_list(head: Optional[Node]) -> Optional[Node]:
     return prev
 ```
 
-**Complexity.** O(n) time, O(1) space.
+**Complexity:** O(n) time, O(1) space.
+
+**Duplicate problems:**
+- Reverse Linked List II (LC 92) - identical prev/cur/nxt pointer-rewiring loop, applied to a sublist bounded by positions `left`/`right` instead of the whole list.
+
+---
 
 ### 2. Linked List Cycle II - _Floyd's tortoise and hare_
 
-**Problem.** Given the head of a list, return the node where a cycle begins, or null if there's no cycle. Solve in O(1) extra space (no visited set). E.g. a list whose tail links back to the 2nd node returns that 2nd node.
+Given the head of a list, return the node where a cycle begins, or null if there's no cycle. Solve in O(1) extra space (no visited set). The fast/slow-pointer technique for extracting positional facts in one pass.
 
-**Approach.** Phase 1: fast (2×) and slow (1×) pointers; if they meet, there's a cycle. Phase 2 (the insight): reset one pointer to the head and advance both at 1× - they meet exactly at the cycle's entrance. (The math: the distance from head to entrance equals the distance from the meeting point to the entrance, modulo the cycle length.) Pure fast/slow, no extra memory - beats the O(n)-space hashset.
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = 3→2→0→-4, tail connects to node at index 1 | **Output:** node with value 2
+  - **Explanation:** the list's tail (-4) links back to the node holding 2, so that's the cycle's entrance.
+- **Example 2**
+  - **Input:** head = 1→2, no cycle | **Output:** null
+  - **Explanation:** the list terminates normally, so fast never meets slow.
+
+**Constraints:** `0 ≤ number of nodes ≤ 10⁴`, `-10⁵ ≤ node.val ≤ 10⁵`, `pos` (cycle entry index) is `-1` if no cycle.
+
+**Approach:** Phase 1: fast (2×) and slow (1×) pointers; if they meet, there's a cycle. Phase 2 (the insight): reset one pointer to the head and advance both at 1× - they meet exactly at the cycle's entrance. (The math: the distance from head to entrance equals the distance from the meeting point to the entrance, modulo the cycle length.) Pure fast/slow, no extra memory - beats the O(n)-space hashset.
 
 ```python
 def detect_cycle(head: Optional[Node]) -> Optional[Node]:
@@ -357,13 +379,28 @@ def detect_cycle(head: Optional[Node]) -> Optional[Node]:
     return None
 ```
 
-**Complexity.** O(n) time, O(1) space. Pattern: [Fast & Slow Pointers](../patterns/fast-slow-pointers.md).
+**Complexity:** O(n) time, O(1) space. Pattern: [Fast & Slow Pointers](../patterns/fast-slow-pointers.md).
+
+**Duplicate problems:**
+- Find the Duplicate Number (LC 287) - identical Floyd's tortoise-and-hare cycle-detection technique, applied to an array of indices instead of node pointers.
+
+---
 
 ### 3. Merge Two Sorted Lists - _dummy head + splice_
 
-**Problem.** Given the heads of two sorted singly linked lists, splice them into one sorted list and return its head. E.g. `1→2→4` and `1→3→4` → `1→1→2→3→4→4`. Reuse the existing nodes (no new allocations).
+Given the heads of two sorted singly linked lists, splice them into one sorted list and return its head. Reuse the existing nodes (no new allocations). The dummy-head CP-primitive applied to a two-way merge.
 
-**Approach.** A **dummy head** removes the "which list's first node becomes the overall head?" edge case. Keep a `tail` pointer; repeatedly attach whichever of the two current nodes is smaller, advance that list. When one list runs out, attach the rest of the other (already sorted). Return `dummy.next`. The dummy-head CP-primitive applied to a two-way merge - exactly merge-sort's merge step on lists.
+**Worked examples:**
+- **Example 1**
+  - **Input:** list1 = 1→2→4, list2 = 1→3→4 | **Output:** 1→1→2→3→4→4
+  - **Explanation:** nodes are spliced in sorted order by repeatedly taking the smaller current head.
+- **Example 2**
+  - **Input:** list1 = [], list2 = [] | **Output:** []
+  - **Explanation:** both lists empty produces an empty result - the dummy head handles this without a special case.
+
+**Constraints:** `0 ≤ number of nodes in each list ≤ 50`, `-100 ≤ node.val ≤ 100`, both lists sorted non-decreasing.
+
+**Approach:** A **dummy head** removes the "which list's first node becomes the overall head?" edge case. Keep a `tail` pointer; repeatedly attach whichever of the two current nodes is smaller, advance that list. When one list runs out, attach the rest of the other (already sorted). Return `dummy.next`. Exactly merge-sort's merge step on lists.
 
 ```python
 def merge_two_lists(a: Optional[Node], b: Optional[Node]) -> Optional[Node]:
@@ -379,13 +416,28 @@ def merge_two_lists(a: Optional[Node], b: Optional[Node]) -> Optional[Node]:
     return dummy.next
 ```
 
-**Complexity.** O(n + m) time, O(1) extra space.
+**Complexity:** O(n + m) time, O(1) extra space.
+
+**Duplicate problems:**
+- Merge Sorted Array (LC 88) - the same "repeatedly attach the smaller of two current heads" merge invariant, reframed as an in-place array merge instead of a pointer splice.
+
+---
 
 ### 4. Remove Nth Node From End - _two pointers, one pass_
 
-**Problem.** Given a list head and an integer `n`, remove the n-th node from the end and return the head. E.g. `1→2→3→4→5`, `n=2` → `1→2→3→5`. Do it in one pass.
+Given a list head and an integer `n`, remove the n-th node from the end and return the head. Do it in one pass. The gap-trick variant of two pointers - a fixed offset instead of variable-rate movement.
 
-**Approach.** Advance a `fast` pointer `n` nodes ahead, then move `fast` and `slow` together until `fast` hits the end - now `slow` sits just before the target (k-from-end via the gap trick). A **dummy head** handles the case where the node to remove _is_ the head. Splice `slow.next` out. One pass, no length pre-count.
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = 1→2→3→4→5, n = 2 | **Output:** 1→2→3→5
+  - **Explanation:** the 2nd node from the end (4) is removed.
+- **Example 2**
+  - **Input:** head = 1, n = 1 | **Output:** []
+  - **Explanation:** removing the only node from a single-element list yields an empty list.
+
+**Constraints:** `1 ≤ number of nodes ≤ 30`, `0 ≤ node.val ≤ 100`, `1 ≤ n ≤ number of nodes`.
+
+**Approach:** Advance a `fast` pointer `n` nodes ahead, then move `fast` and `slow` together until `fast` hits the end - now `slow` sits just before the target (k-from-end via the gap trick). A **dummy head** handles the case where the node to remove _is_ the head. Splice `slow.next` out. One pass, no length pre-count.
 
 ```python
 def remove_nth_from_end(head: Optional[Node], n: int) -> Optional[Node]:
@@ -399,34 +451,7 @@ def remove_nth_from_end(head: Optional[Node], n: int) -> Optional[Node]:
     return dummy.next
 ```
 
-**Complexity.** O(n) time, O(1) space.
+**Complexity:** O(n) time, O(1) space.
 
-### 5. LRU Cache - _hashmap + doubly linked list_
-
-**Problem.** Design a cache with `get(key)` and `put(key, value)`, both O(1), that evicts the **least-recently-used** entry when it exceeds a fixed capacity. A `get` or `put` counts as a use.
-
-**Approach.** The reason a linked list shows up in system design: a **hashmap** (key → node) gives O(1) lookup, and a **doubly** linked list orders nodes by recency (most-recent at the head, LRU at the tail). On access, unlink the node and move it to the head - O(1) only because it's _doubly_ linked (you have `prev`). On overflow, evict the tail. Hashmap for lookup + doubly list for O(1) recency reordering is the canonical pairing. (Python shortcut: `collections.OrderedDict` does this internally with `move_to_end`.)
-
-```python
-from collections import OrderedDict
-
-class LRUCache:
-    def __init__(self, capacity: int) -> None:
-        self.cap = capacity
-        self.cache: OrderedDict[int, int] = OrderedDict()
-
-    def get(self, key: int) -> int:
-        if key not in self.cache:
-            return -1
-        self.cache.move_to_end(key)          # mark most-recently-used
-        return self.cache[key]
-
-    def put(self, key: int, value: int) -> None:
-        if key in self.cache:
-            self.cache.move_to_end(key)
-        self.cache[key] = value
-        if len(self.cache) > self.cap:
-            self.cache.popitem(last=False)   # evict LRU
-```
-
-**Complexity.** O(1) average per `get`/`put`, O(capacity) space.
+**Duplicate problems:**
+- LRU Cache - the canonical hashmap + doubly-linked-list composite structure, showing why the list needs to be *doubly* linked (O(1) unlink at an arbitrary node); see [LRU Cache](./lru-cache.md#1-lru-cache--map--doubly-linked-list-o1) for the full treatment.

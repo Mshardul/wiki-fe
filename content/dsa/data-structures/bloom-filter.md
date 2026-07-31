@@ -25,7 +25,6 @@
   - [1. Design a Web Crawler URL Deduplication System](#1-design-a-web-crawler-url-deduplication-system)
   - [2. First Missing Positive](#2-first-missing-positive-membership--exact-fallback)
   - [3. Design a Counting Bloom Filter with Delete](#3-design-a-counting-bloom-filter-with-delete)
-  - [4. Design a Spell Checker](#4-design-a-spell-checker)
 
 ## What it is
 
@@ -329,6 +328,16 @@ k_opt = (m/n) × ln 2 ≈ 0.693 × (m/n). More hash functions → more bits set 
 
 Given a web crawler that processes millions of URLs per minute, design a component that tracks whether a URL has already been visited. URLs are up to 2000 characters; memory budget is 512 MB; occasional re-crawling is acceptable but missing unvisited URLs is not.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** mark("https://a.com/x"); seen("https://a.com/x") | **Output:** True
+  - **Explanation:** all k bit positions set by `mark` are found set on query, so the filter reports MAYBE (correct - it was inserted).
+- **Example 2**
+  - **Input:** seen("https://never-crawled.com") without a prior `mark` | **Output:** False (usually), occasionally True
+  - **Explanation:** if any of the k positions is still 0, the filter correctly returns DEFINITELY_NOT; a false positive (returning True) only happens when other URLs' bits happen to cover all k positions - acceptable per the re-crawl tolerance.
+
+**Constraints:** URL length ≤ 2000 chars, memory budget ≤ 512 MB, target FP rate ≤ 1%, n up to ~4.5 × 10⁸ URLs.
+
 **Approach:** This is a canonical bloom filter use case. A hash set of 10⁹ URLs (∼10 bytes each after hashing) would need ∼10 GB. A bloom filter sized for n = 10⁹, FP rate = 0.1% costs m ≈ 14.4 × 10⁹ bits = 1.8 GB - still over budget. At FP = 1%, m ≈ 9.6 × 10⁹ bits = 1.2 GB - fits. Key insight: a false positive means the crawler skips a URL it hasn't visited (re-crawlable); a false negative is impossible, so no URL is permanently missed. Choose m = 512 MB × 8 = 4.3 × 10⁹ bits, giving n_max ≈ 4.5 × 10⁸ URLs at 1% FP. For larger n, chain multiple filters (Scalable BF) or rotate filters on a time window.
 
 ```python
@@ -357,17 +366,28 @@ class UrlDeduplicator:
             self.bits[p >> 3] |= 1 << (p & 7)
 ```
 
-**Time:** O(k) per operation. **Space:** O(m) bits ≈ 512 MB for 4.5 × 10⁸ URLs at 1% FP.
+**Complexity:** O(k) time per operation, O(m) bits ≈ 512 MB space for 4.5 × 10⁸ URLs at 1% FP.
 
 **Duplicate problems:**
 - Design a spam filter for email deduplication (same mechanic: large n, tolerate FP, no FN, no deletion).
 - "Implement a visited-set for a large-scale graph crawler with a 1 GB memory cap" - bloom filter sizing + the scalable-BF extension when n is unbounded.
+- Design a Spell Checker (static dictionary load, FP-rate-vs-memory sizing) - same sizing formula and bit-array code shape as this entry; the only real difference is dynamic mutation under a memory ceiling (here) vs a static load-once set tuned for FP-asymmetry (there). See [When to use / when not](#when-to-use--when-not) for the FP-asymmetry framing.
 
 ---
 
 ### 2. First Missing Positive (Membership + Exact Fallback)
 
 Given an unsorted array `nums` of n integers (1 ≤ n ≤ 10⁵), find the smallest positive integer not present. Constraints: O(n) time, O(1) extra space.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [3,4,-1,1] | **Output:** 2
+  - **Explanation:** after index-marking, positions for values 1, 3, 4 are marked present; 2 is the first index whose value doesn't match, so 2 is missing.
+- **Example 2**
+  - **Input:** nums = [1,2,0] | **Output:** 3
+  - **Explanation:** values 1 and 2 occupy their index slots; no slot is left for 3, so the answer falls past the array end (n+1 case).
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-2³¹ ≤ nums[i] ≤ 2³¹ - 1`.
 
 **Approach:** This problem is NOT solved by a bloom filter - it's solved by using the input array itself as a presence bit array (cyclic sort / index marking). It's included to sharpen the "when NOT to use a bloom filter" instinct. The key insight is that the answer must lie in [1, n+1] (pigeonhole), so you can mark `nums[nums[i]-1]` negative to record presence of value `nums[i]`, then scan for the first positive index. A bloom filter would add O(m) space unnecessarily and still require a second pass - wrong tool.
 
@@ -383,7 +403,7 @@ def first_missing_positive(nums: list[int]) -> int:
     return n + 1
 ```
 
-**Time:** O(n). **Space:** O(1) - each element swapped at most once.
+**Complexity:** O(n) time, O(1) space - each element swapped at most once.
 
 **Duplicate problems:**
 - "Find the duplicate number in [1..n] with O(1) space" (LC 287) - same index-as-presence trick, different termination.
@@ -394,6 +414,19 @@ def first_missing_positive(nums: list[int]) -> int:
 ### 3. Design a Counting Bloom Filter with Delete
 
 Implement a bloom filter that supports deletion. Support `add(item)`, `remove(item)`, `might_contain(item)`. Assume at most 10⁶ distinct elements, 1% FP rate target. Constraints: O(k) per operation; counters must not overflow.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** add("x"); add("x"); remove("x"); "x" in filter? | **Output:** True
+  - **Explanation:** two adds increment each of x's k counters to 2; one remove decrements them to 1, which is still > 0, so membership correctly still reads true (counting semantics, not a boolean bit).
+- **Example 2**
+  - **Input:** add("y"); remove("y"); remove("y") (extra remove); "y" in filter? | **Output:** False, no exception
+  - **Explanation:** the `remove` guard checks `item not in self` before decrementing, and counters are floored at 0 in `add`/`remove` logic, so a redundant remove is a safe no-op rather than underflowing the counter.
+- **Example 3**
+  - **Input:** a counter at 255 receives another add() | **Output:** counter stays at 255 (saturates, does not wrap)
+  - **Explanation:** the `if self.counters[pos] < 255` guard in `add` prevents overflow past the 8-bit counter's max, avoiding the wraparound-to-0 bug that would cause a false negative.
+
+**Constraints:** up to `10⁶` distinct elements, target FP rate ≈ 1%, counters must not silently overflow (8-bit counters, max 255 per slot).
 
 **Approach:** Replace the bit array with an array of small unsigned integers (4-bit or 8-bit counters). Increment on `add`, decrement on `remove`, check `> 0` on `might_contain`. The critical senior insight: 4-bit counters saturate at 15. If an element is inserted 16 times (or 16 collisions land on one counter), the counter saturates and a subsequent `remove` decrements from 15, leaving a phantom 14 - a false positive that never clears. For correctness, either use 8-bit counters (2× space) or assert `counter < 255` before incrementing and refuse insertion at saturation.
 
@@ -433,51 +466,8 @@ class CountingBloomFilter:
         return all(self.counters[pos] > 0 for pos in self._positions(item))
 ```
 
-**Time:** O(k) per operation. **Space:** O(m) bytes (8-bit counters, ~8× the standard bit array).
+**Complexity:** O(k) time per operation, O(m) bytes space (8-bit counters, ~8× the standard bit array).
 
 **Duplicate problems:**
 - "Design a rate limiter using a sliding-window with probabilistic eviction" - counting BF is one option for the seen-set with TTL-based removal.
 - "Design a distributed deduplication service where messages can be retracted" - same counting BF mechanic, deletion required, same counter-overflow risk to handle.
-
----
-
-### 4. Design a Spell Checker
-
-Given a dictionary of `n` valid English words (n ≈ 10⁵), design a spell checker that flags likely misspellings. A false positive (flagging a valid word as misspelled) is acceptable; a false negative (silently passing a misspelled word) is not. Memory budget: 256 KB.
-
-**Approach:** Load the dictionary into a bloom filter sized for n = 10⁵ words at FP rate ≤ 1%. Required bits: m ≈ 9.6 × 10⁵ ≈ 960,000 bits = 120 KB - well within budget, vs ~1 MB for a hash set of 10-byte average word length. On query, "definitely not" → flag as misspelled (correct); "maybe" → accept as valid (FP: occasionally passes a misspelling that hashes to occupied bits). The FP asymmetry is the key insight: a spell checker must not miss real words, and can tolerate rare phantom passes of misspellings. This is exactly the bloom filter's guarantee. No deletion needed - the dictionary is static.
-
-```python
-from __future__ import annotations
-import math
-import mmh3
-
-
-class SpellChecker:
-    def __init__(self, dictionary: list[str], fp_rate: float = 0.01) -> None:
-        n = len(dictionary)
-        self.m = math.ceil(-n * math.log(fp_rate) / (math.log(2) ** 2))
-        self.k = max(1, round((self.m / n) * math.log(2)))
-        self.bits: bytearray = bytearray(math.ceil(self.m / 8))
-        for word in dictionary:
-            self._add(word)
-
-    def _positions(self, word: str) -> list[int]:
-        h1 = mmh3.hash(word, seed=0, signed=False)
-        h2 = mmh3.hash(word, seed=1, signed=False)
-        return [(h1 + i * h2) % self.m for i in range(self.k)]
-
-    def _add(self, word: str) -> None:
-        for pos in self._positions(word):
-            self.bits[pos >> 3] |= 1 << (pos & 7)
-
-    def is_valid(self, word: str) -> bool:
-        """Returns True if word is probably in the dictionary (may FP), False if definitely not."""
-        return all(self.bits[p >> 3] & (1 << (p & 7)) for p in self._positions(word))
-```
-
-**Time:** O(k) per lookup, O(n·k) to build. **Space:** O(m) bits ≈ 120 KB for 10⁵ words at 1% FP - 8× less than a hash set.
-
-**Duplicate problems:**
-- "Design a username availability checker for a social platform" (same mechanic: static set loaded once, FP = rare false "available" claim tolerable, FN = saying taken when free is the real sin).
-- "Filter malicious URLs using a pre-built blocklist" - same static-dictionary BF pattern; FP = occasional innocent URL blocked (tolerable), FN = passing a malicious URL (not tolerable).

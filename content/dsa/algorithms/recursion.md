@@ -298,9 +298,19 @@ def factorial_iterative(n: int) -> int:
 
 ### 1. Fibonacci Number (LC 509)
 
-Compute the n-th Fibonacci number, where `F(0) = 0`, `F(1) = 1`, `F(n) = F(n-1) + F(n-2)`. Constraints: `0 ≤ n ≤ 30` (small on purpose - the naive version is exponential).
+**Problem:** Compute the n-th Fibonacci number, where `F(0) = 0`, `F(1) = 1`, `F(n) = F(n-1) + F(n-2)`.
 
-**Approach.** Direct translation of the recurrence into recursive code is the natural first instinct; the interview follow-up is almost always "what's the time complexity, and can you improve it?" - naive recursion is O(2ⁿ) because `F(n-2)` is recomputed independently down every branch. Adding memoization (top-down) or converting to an iterative bottom-up loop both bring it to O(n).
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 2 | **Output:** 1
+  - **Explanation:** `F(2) = F(1) + F(0) = 1 + 0 = 1`.
+- **Example 2**
+  - **Input:** n = 4 | **Output:** 3
+  - **Explanation:** `F(4) = F(3) + F(2) = 2 + 1 = 3`.
+
+**Constraints:** `0 ≤ n ≤ 30` (small on purpose - the naive version is exponential).
+
+**Approach:** Direct translation of the recurrence into recursive code is the natural first instinct; the interview follow-up is almost always "what's the time complexity, and can you improve it?" - naive recursion is O(2ⁿ) because `F(n-2)` is recomputed independently down every branch. Adding memoization (top-down) or converting to an iterative bottom-up loop both bring it to O(n).
 
 ```python
 def fib(n: int) -> int:
@@ -317,7 +327,7 @@ def fib_memo(n: int, memo: dict[int, int] = {}) -> int:
     return memo[n]                           # memoized: O(n)
 ```
 
-**Complexity.** Naive: O(2ⁿ) time, O(n) space (stack depth). Memoized: O(n) time, O(n) space (stack depth + memo table).
+**Complexity:** Naive: O(2ⁿ) time, O(n) space (stack depth). Memoized: O(n) time, O(n) space (stack depth + memo table).
 
 **Duplicate problems:**
 
@@ -329,9 +339,19 @@ def fib_memo(n: int, memo: dict[int, int] = {}) -> int:
 
 ### 2. Reverse a Linked List (LC 206)
 
-Given the head of a singly linked list, reverse it and return the new head. Constraints: `0 ≤ n ≤ 5000` nodes.
+**Problem:** Given the head of a singly linked list, reverse it and return the new head.
 
-**Approach.** The recursive formulation: `reverse(head)` reverses everything after `head`, and trusts that the returned new head is correct; then it fixes up `head.next.next = head` and `head.next = None` to splice `head` onto the end. The base case is an empty list or single node, which is already "reversed." This is a clean demonstration of the induction argument: assume `reverse(head.next)` correctly reverses the rest of the list, then show how to attach `head`.
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = [1, 2, 3, 4, 5] | **Output:** [5, 4, 3, 2, 1]
+  - **Explanation:** recursion reverses everything after the head first, then splices the head onto the new tail.
+- **Example 2**
+  - **Input:** head = [] | **Output:** []
+  - **Explanation:** base case - an empty list is already reversed.
+
+**Constraints:** `0 ≤ n ≤ 5000` nodes.
+
+**Approach:** The recursive formulation: `reverse(head)` reverses everything after `head`, and trusts that the returned new head is correct; then it fixes up `head.next.next = head` and `head.next = None` to splice `head` onto the end. The base case is an empty list or single node, which is already "reversed." This is a clean demonstration of the induction argument: assume `reverse(head.next)` correctly reverses the rest of the list, then show how to attach `head`.
 
 ```python
 class ListNode:
@@ -349,7 +369,7 @@ def reverse_list(head: ListNode | None) -> ListNode | None:
     return new_head
 ```
 
-**Complexity.** O(n) time, O(n) space (call stack depth equals list length - note the constraint caps at 5000, near Python's default recursion limit, which is itself an interview-relevant observation).
+**Complexity:** O(n) time, O(n) space (call stack depth equals list length - note the constraint caps at 5000, near Python's default recursion limit, which is itself an interview-relevant observation).
 
 **Duplicate problems:**
 
@@ -360,9 +380,19 @@ def reverse_list(head: ListNode | None) -> ListNode | None:
 
 ### 3. Pow(x, n) - Fast Exponentiation (LC 50)
 
-Implement `pow(x, n)` computing `x` raised to the integer power `n`, including negative `n`. Constraints: `-2^31 ≤ n ≤ 2^31 - 1`, `-100 < x < 100`.
+**Problem:** Implement `pow(x, n)` computing `x` raised to the integer power `n`, including negative `n`.
 
-**Approach.** Naive recursion (`x * pow(x, n-1)`) is O(n) - too slow if `n` is near 2³¹. The key insight is a **different recursive decomposition**: `x^n = (x^(n/2))^2` when `n` is even, and `x^n = x * (x^(n/2))^2` (integer division) when `n` is odd. This halves the problem size each call instead of decrementing by 1, turning O(n) into O(log n) - the same idea as binary exponentiation used throughout number theory and modular arithmetic.
+**Worked examples:**
+- **Example 1**
+  - **Input:** x = 2.0, n = 10 | **Output:** 1024.0
+  - **Explanation:** `10 = 2·5`, so `x^10 = (x^5)^2`, halving the exponent each recursive call.
+- **Example 2**
+  - **Input:** x = 2.0, n = -2 | **Output:** 0.25
+  - **Explanation:** negative exponent flips to `1 / pow(x, 2) = 1/4`.
+
+**Constraints:** `-2^31 ≤ n ≤ 2^31 - 1`, `-100 < x < 100`.
+
+**Approach:** Naive recursion (`x * pow(x, n-1)`) is O(n) - too slow if `n` is near 2³¹. The key insight is a **different recursive decomposition**: `x^n = (x^(n/2))^2` when `n` is even, and `x^n = x * (x^(n/2))^2` (integer division) when `n` is odd. This halves the problem size each call instead of decrementing by 1, turning O(n) into O(log n) - the same idea as binary exponentiation used throughout number theory and modular arithmetic.
 
 ```python
 def my_pow(x: float, n: int) -> float:
@@ -376,20 +406,29 @@ def my_pow(x: float, n: int) -> float:
     return half * half * x
 ```
 
-**Complexity.** O(log n) time, O(log n) space (recursion depth halves each level).
+**Complexity:** O(log n) time, O(log n) space (recursion depth halves each level).
 
 **Duplicate problems:**
 
 - Super Pow (LC 372) - same halving recursion, combined with modular arithmetic for a huge exponent given digit-by-digit.
-- Sqrt(x) (LC 69) - not the same recursion shape, but the same "logarithmic-depth recursion beats linear" lesson via binary search instead.
 
 ---
 
 ### 4. Generate Parentheses (LC 22)
 
-Generate all combinations of `n` pairs of well-formed parentheses. Constraints: `1 ≤ n ≤ 8`.
+**Problem:** Generate all combinations of `n` pairs of well-formed parentheses.
 
-**Approach.** This is recursion with **branching state** (as opposed to the single-child recursion above) - at each call, there are up to two choices: add `(` if fewer than `n` opens used so far, add `)` if fewer closes than opens so far. The base case is "used `2n` characters total." This is the bridge from plain recursion into backtracking: the recursive state (open count, close count, partial string) fully determines what's legal next, exactly per the [State & recurrence](#state--recurrence) section's state-definition question.
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 1 | **Output:** ["()"]
+  - **Explanation:** the only well-formed combination with one pair.
+- **Example 2**
+  - **Input:** n = 3 | **Output:** ["((()))", "(()())", "(())()", "()(())", "()()()"]
+  - **Explanation:** backtracking explores every legal open/close choice at each of the `2n` positions, pruning branches that would go invalid.
+
+**Constraints:** `1 ≤ n ≤ 8`.
+
+**Approach:** This is recursion with **branching state** (as opposed to the single-child recursion above) - at each call, there are up to two choices: add `(` if fewer than `n` opens used so far, add `)` if fewer closes than opens so far. The base case is "used `2n` characters total." This is the bridge from plain recursion into backtracking: the recursive state (open count, close count, partial string) fully determines what's legal next, exactly per the [State & recurrence](#state--recurrence) section's state-definition question.
 
 ```python
 def generate_parenthesis(n: int) -> list[str]:
@@ -412,7 +451,7 @@ def generate_parenthesis(n: int) -> list[str]:
     return result
 ```
 
-**Complexity.** O(4ⁿ / n^1.5) time (the nth Catalan number, the count of valid sequences), O(n) space for recursion depth (each level adds one character, max depth `2n`).
+**Complexity:** O(4ⁿ / n^1.5) time (the nth Catalan number, the count of valid sequences), O(n) space for recursion depth (each level adds one character, max depth `2n`).
 
 **Duplicate problems:**
 
@@ -423,9 +462,19 @@ def generate_parenthesis(n: int) -> list[str]:
 
 ### 5. Maximum Depth of Binary Tree (LC 104)
 
-Given the root of a binary tree, return its maximum depth. Constraints: `0 ≤ n ≤ 10⁴` nodes.
+**Problem:** Given the root of a binary tree, return its maximum depth.
 
-**Approach.** The canonical tree recursion: `depth(node) = 0` if `node` is `None` (base case), else `1 + max(depth(node.left), depth(node.right))`. This is the simplest possible instance of "trust the recursive call on a smaller (sub)tree, combine at this level" - and it generalizes directly to every other tree-recursion problem (sum, diameter, balanced-check).
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [3, 9, 20, null, null, 15, 7] | **Output:** 3
+  - **Explanation:** the deepest path is `3 → 20 → 15` (or `3 → 20 → 7`), 3 nodes deep.
+- **Example 2**
+  - **Input:** root = [] | **Output:** 0
+  - **Explanation:** base case - an empty tree has depth 0.
+
+**Constraints:** `0 ≤ n ≤ 10⁴` nodes.
+
+**Approach:** The canonical tree recursion: `depth(node) = 0` if `node` is `None` (base case), else `1 + max(depth(node.left), depth(node.right))`. This is the simplest possible instance of "trust the recursive call on a smaller (sub)tree, combine at this level" - and it generalizes directly to every other tree-recursion problem (sum, diameter, balanced-check).
 
 ```python
 def max_depth(root: TreeNode | None) -> int:
@@ -434,7 +483,7 @@ def max_depth(root: TreeNode | None) -> int:
     return 1 + max(max_depth(root.left), max_depth(root.right))
 ```
 
-**Complexity.** O(n) time (visits every node once), O(h) space where `h` is tree height - O(log n) for a balanced tree, O(n) worst case for a completely skewed (linked-list-shaped) tree. This worst case is exactly why "recursion is O(log n) space" is a claim that needs the balance assumption stated explicitly, not assumed.
+**Complexity:** O(n) time (visits every node once), O(h) space where `h` is tree height - O(log n) for a balanced tree, O(n) worst case for a completely skewed (linked-list-shaped) tree. This worst case is exactly why "recursion is O(log n) space" is a claim that needs the balance assumption stated explicitly, not assumed.
 
 **Duplicate problems:**
 

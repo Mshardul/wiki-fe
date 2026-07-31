@@ -294,6 +294,7 @@ Use an implicit treap: replace explicit keys with in-order position (tracked via
 
 **Problem.** Design a data structure supporting `insert(x)`, `delete(x)`, `contains(x)`, and `rank(x)` (count of elements strictly less than x) - all in O(log n) expected time, on a stream of up to 10⁵ operations with values that may arrive in sorted (adversarial-for-a-plain-BST) order.
 
+**Worked examples:**
 - **Example 1**
   - **Input:** `insert(5); insert(3); insert(8); rank(6)` | **Output:** `2`
   - **Explanation:** elements less than 6 are `{3, 5}`, so rank is 2.
@@ -301,9 +302,9 @@ Use an implicit treap: replace explicit keys with in-order position (tracked via
   - **Input:** `insert(1); insert(2); insert(3); insert(4); contains(3)` | **Output:** `True`
   - **Explanation:** insertion is in strictly sorted order - a plain BST would degrade to a chain here, but the treap's random priorities keep it balanced regardless.
 
-**Constraints.** Up to `10⁵` operations; values fit in a 32-bit signed integer; insertion order may be adversarial (sorted) for a plain BST.
+**Constraints:** Up to `10⁵` operations; values fit in a 32-bit signed integer; insertion order may be adversarial (sorted) for a plain BST.
 
-**Approach.** A treap augmented with a `subtree_size` field on each node answers `rank(x)` in O(log n): walk down as in a normal search, and at each node where you go right, add `size(left subtree) + 1` to a running rank counter. The key point for this problem is that insertion order being sorted - the exact case that breaks a plain BST - has no effect on the treap's expected height, because shape depends on random priorities, not arrival order.
+**Approach:** A treap augmented with a `subtree_size` field on each node answers `rank(x)` in O(log n): walk down as in a normal search, and at each node where you go right, add `size(left subtree) + 1` to a running rank counter. The key point for this problem is that insertion order being sorted - the exact case that breaks a plain BST - has no effect on the treap's expected height, because shape depends on random priorities, not arrival order.
 
 ```python
 import random
@@ -370,7 +371,7 @@ def rank(root: Optional[Node], key: int) -> int:
     return _size(root.left) + 1 + rank(root.right, key)
 ```
 
-**Complexity.** O(log n) expected per operation, O(n) space.
+**Complexity:** O(log n) expected per operation, O(n) space.
 
 **Duplicate problems:**
 - Order-Statistics Tree (k-th smallest) - same augmented-size idea, answering "k-th smallest" instead of "rank of x"; identical treap-with-size-field mechanic.
@@ -380,6 +381,7 @@ def rank(root: Optional[Node], key: int) -> int:
 
 **Problem.** Given an initial array of n integers, support two operations any number of times: `reverse(l, r)` (reverse the subarray from index l to r, inclusive) and `query(i)` (return the value at index i after all reversals so far). n, queries ≤ 10⁵.
 
+**Worked examples:**
 - **Example 1**
   - **Input:** `arr = [1,2,3,4,5]; reverse(1,3); query(1)` | **Output:** `4`
   - **Explanation:** reversing indices 1..3 (0-indexed, values `[2,3,4]`) gives `[1,4,3,2,5]`; index 1 is now 4.
@@ -387,20 +389,115 @@ def rank(root: Optional[Node], key: int) -> int:
   - **Input:** `arr = [1,2,3]; reverse(0,2); reverse(0,2); query(0)` | **Output:** `1`
   - **Explanation:** two reversals of the same range cancel out, restoring the original array.
 
-**Constraints.** `1 ≤ n ≤ 10⁵`; up to `10⁵` operations; a naive O(n) reverse per operation is `O(n · q)` ≈ `10¹⁰` - too slow, forcing the O(log n)-per-op structure.
+**Constraints:** `1 ≤ n ≤ 10⁵`; up to `10⁵` operations; a naive O(n) reverse per operation is `O(n · q)` ≈ `10¹⁰` - too slow, forcing the O(log n)-per-op structure.
 
-**Approach.** This is the canonical implicit-treap application: build a treap keyed by **position** (not value), with a lazy `reversed` flag per node propagated to children on descent, exactly like a lazy segment tree. `split` at positions `l` and `r+1` isolates the target range as its own subtree; flip its lazy bit (swap left/right children, toggle the flag instead of eagerly recursing); `merge` the three pieces back together. Each reverse is two splits + a flag flip + two merges, all O(log n). The constraint (`n, q ≤ 10⁵` with naive O(n·q) too slow) is what forces this data structure rather than a plain array - a textbook "the constraint tells you the technique" case.
+**Approach:** This is the canonical implicit-treap application: build a treap keyed by **position** (not value), with a lazy `reversed` flag per node propagated to children on descent, exactly like a lazy segment tree. `split` at positions `l` and `r+1` isolates the target range as its own subtree; flip its lazy bit (swap left/right children, toggle the flag instead of eagerly recursing); `merge` the three pieces back together. Each reverse is two splits + a flag flip + two merges, all O(log n). The constraint (`n, q ≤ 10⁵` with naive O(n·q) too slow) is what forces this data structure rather than a plain array - a textbook "the constraint tells you the technique" case.
 
-**Complexity.** O(log n) expected per operation, O(n) space.
+```python
+import random
+from typing import Optional
+
+
+class INode:
+    def __init__(self, value: int) -> None:
+        self.value = value
+        self.priority = random.random()
+        self.size = 1
+        self.rev = False
+        self.left: Optional["INode"] = None
+        self.right: Optional["INode"] = None
+
+
+def _size(n: Optional[INode]) -> int:
+    return n.size if n else 0
+
+
+def _update(n: Optional[INode]) -> None:
+    if n:
+        n.size = 1 + _size(n.left) + _size(n.right)
+
+
+def _push_down(n: Optional[INode]) -> None:
+    if n and n.rev:                          # lazily swap children, propagate the flag
+        n.left, n.right = n.right, n.left
+        if n.left:
+            n.left.rev = not n.left.rev
+        if n.right:
+            n.right.rev = not n.right.rev
+        n.rev = False
+
+
+def split(root: Optional[INode], k: int) -> tuple[Optional[INode], Optional[INode]]:
+    """First k elements (by position) go left, the rest go right."""
+    if root is None:
+        return None, None
+    _push_down(root)
+    left_size = _size(root.left)
+    if left_size < k:
+        l, r = split(root.right, k - left_size - 1)
+        root.right = l
+        _update(root)
+        return root, r
+    else:
+        l, r = split(root.left, k)
+        root.left = r
+        _update(root)
+        return l, root
+
+
+def merge(l: Optional[INode], r: Optional[INode]) -> Optional[INode]:
+    if l is None:
+        return r
+    if r is None:
+        return l
+    _push_down(l)
+    _push_down(r)
+    if l.priority > r.priority:
+        l.right = merge(l.right, r)
+        _update(l)
+        return l
+    else:
+        r.left = merge(l, r.left)
+        _update(r)
+        return r
+
+
+def build(values: list[int]) -> Optional[INode]:
+    root = None
+    for v in values:
+        root = merge(root, INode(v))          # append-only build keeps in-order = input order
+    return root
+
+
+def reverse_range(root: Optional[INode], l: int, r: int) -> Optional[INode]:
+    left, mid_right = split(root, l)
+    mid, right = split(mid_right, r - l + 1)
+    if mid:
+        mid.rev = not mid.rev                 # toggle instead of eagerly recursing
+    return merge(merge(left, mid), right)
+
+
+def query(root: Optional[INode], i: int) -> int:
+    _push_down(root)
+    left_size = _size(root.left)
+    if i < left_size:
+        return query(root.left, i)
+    elif i == left_size:
+        return root.value
+    else:
+        return query(root.right, i - left_size - 1)
+```
+
+**Complexity:** O(log n) expected per operation, O(n) space.
 
 **Duplicate problems:**
-- Reverse Substring range-update variants in competitive programming judges (Codeforces "array with range reverse") - identical implicit-treap mechanic, different surface wording.
 - Rope data structure operations (used in text editors for large-document insert/delete/substring) - same split/merge-by-position idea applied to characters instead of integers.
 
 ### 3. Merge Two Treaps / Union of Two Sorted Sets
 
 **Problem.** Given two treaps representing sorted sets where every key in treap A is guaranteed less than every key in treap B, combine them into a single treap representing the union, in O(log n) expected time (not O(n) by re-inserting every element).
 
+**Worked examples:**
 - **Example 1**
   - **Input:** `A = {1, 3, 5}` (as a treap), `B = {8, 9}` (as a treap) | **Output:** a single treap containing `{1, 3, 5, 8, 9}`
   - **Explanation:** since every key in A < every key in B, `merge(A, B)` combines them directly without violating BST order.
@@ -408,9 +505,9 @@ def rank(root: Optional[Node], key: int) -> int:
   - **Input:** `A = {}` (empty), `B = {2, 4}` | **Output:** a treap containing `{2, 4}`
   - **Explanation:** merging with an empty treap just returns the other treap unchanged - the base case of the recursion.
 
-**Constraints.** Combined size of A and B up to `10⁵` nodes; must run in O(log(|A| + |B|)) expected time, not O(|A| + |B|).
+**Constraints:** Combined size of A and B up to `10⁵` nodes; must run in O(log(|A| + |B|)) expected time, not O(|A| + |B|).
 
-**Approach.** This is the direct application of the `merge` primitive from CP-primitives: since every key in the left treap is less than every key in the right, recursively attach whichever root has the **lower** priority as a child of the higher-priority root, on the correct side to preserve BST order. The recursion depth is O(log n) expected because priorities are random - this is the "why for CP" that makes treap merge genuinely faster than rebuilding, unlike naively merging two AVL or Red-Black trees (which generally requires O(n) rebuilding or complex weight-balanced-tree join algorithms to stay within O(log n)).
+**Approach:** This is the direct application of the `merge` primitive from CP-primitives: since every key in the left treap is less than every key in the right, recursively attach whichever root has the **lower** priority as a child of the higher-priority root, on the correct side to preserve BST order. The recursion depth is O(log n) expected because priorities are random - this is the "why for CP" that makes treap merge genuinely faster than rebuilding, unlike naively merging two AVL or Red-Black trees (which generally requires O(n) rebuilding or complex weight-balanced-tree join algorithms to stay within O(log n)).
 
 ```python
 from typing import Optional
@@ -430,7 +527,7 @@ def merge(left: Optional[Node], right: Optional[Node]) -> Optional[Node]:
         return right
 ```
 
-**Complexity.** O(log n) expected time, O(log n) expected recursion depth/space.
+**Complexity:** O(log n) expected time, O(log n) expected recursion depth/space.
 
 **Duplicate problems:**
 - Union of Two Balanced BSTs (weight-balanced tree "join" algorithm) - same goal, but the classic AVL/weight-balanced approach requires careful case analysis on height difference; the treap version is the simple case for comparison.

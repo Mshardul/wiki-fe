@@ -215,7 +215,6 @@ from typing import Generic, Hashable, Iterator, Optional, TypeVar
 K = TypeVar("K", bound=Hashable)
 V = TypeVar("V")
 
-
 class HashMap(Generic[K, V]):
     """Separate-chaining hash map; resizes at load factor 0.75."""
 
@@ -329,9 +328,19 @@ Five staples, each a **distinct** hashing technique - no two solved the same way
 
 ### 1. Two Sum - _complement lookup_
 
-**Problem.** Given an integer array `nums` and a target, return the indices of the two numbers that add to `target`. Exactly one solution exists. E.g. `nums = [2, 7, 11, 15], target = 9` → `[0, 1]`.
+Given an integer array `nums` and a target, return the indices of the two numbers that add to `target`. Exactly one solution exists. The seen-map/complement-lookup primitive in its purest form.
 
-**Approach.** The seen-map primitive: sweep once, storing each value→index. For each `x`, check if `target - x` is already in the map - if so, you've found the pair in O(1). One pass, trading O(n) memory to drop the brute-force O(n²) double loop. Storing the index (not just the value) lets you return positions.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [2, 7, 11, 15], target = 9 | **Output:** [0, 1]
+  - **Explanation:** nums[0] + nums[1] = 2 + 7 = 9.
+- **Example 2**
+  - **Input:** nums = [3, 2, 4], target = 6 | **Output:** [1, 2]
+  - **Explanation:** nums[1] + nums[2] = 2 + 4 = 6; note the answer isn't necessarily the first pair scanned.
+
+**Constraints:** `2 ≤ nums.length ≤ 10⁴`, `-10⁹ ≤ nums[i] ≤ 10⁹`, exactly one valid answer exists.
+
+**Approach:** The seen-map primitive: sweep once, storing each value→index. For each `x`, check if `target - x` is already in the map - if so, you've found the pair in O(1). One pass, trading O(n) memory to drop the brute-force O(n²) double loop. Storing the index (not just the value) lets you return positions.
 
 ```python
 def two_sum(nums: list[int], target: int) -> list[int]:
@@ -343,13 +352,29 @@ def two_sum(nums: list[int], target: int) -> list[int]:
     return []
 ```
 
-**Complexity.** O(n) time, O(n) space. Pattern: complement / seen-map.
+**Complexity:** O(n) time, O(n) space.
+
+**Duplicate problems:**
+- Two Sum IV - Input is a BST (LC 653) - same seen-set complement lookup, applied during a tree traversal instead of a linear array scan.
+- 4Sum II (LC 454) - same complement-lookup trick generalized to pairwise sums from two arrays stored in a hashmap.
+
+---
 
 ### 2. Group Anagrams - _canonical key_
 
-**Problem.** Given a list of strings, group the anagrams together (any order). E.g. `["eat","tea","tan","ate","nat","bat"]` → `[["eat","tea","ate"],["tan","nat"],["bat"]]`.
+Given a list of strings, group the anagrams together (any order). The canonical-key/bucketing technique - hashing a derived signature rather than the raw value.
 
-**Approach.** Two strings are anagrams iff their sorted characters match - so the **sorted string is a canonical key**. Bucket each word under its sorted-char signature in a `defaultdict(list)`. (Faster signature: a 26-count tuple, avoiding the O(L log L) sort.) Hashing a derived canonical key is the grouping primitive.
+**Worked examples:**
+- **Example 1**
+  - **Input:** words = ["eat","tea","tan","ate","nat","bat"] | **Output:** [["eat","tea","ate"],["tan","nat"],["bat"]]
+  - **Explanation:** "eat", "tea", "ate" all sort to "aet"; "tan", "nat" both sort to "ant"; "bat" is alone.
+- **Example 2**
+  - **Input:** words = [""] | **Output:** [[""]]
+  - **Explanation:** a single empty string forms its own group of one.
+
+**Constraints:** `1 ≤ words.length ≤ 10⁴`, `0 ≤ words[i].length ≤ 100`, lowercase English letters only.
+
+**Approach:** Two strings are anagrams iff their sorted characters match - so the **sorted string is a canonical key**. Bucket each word under its sorted-char signature in a `defaultdict(list)`. (Faster signature: a 26-count tuple, avoiding the O(L log L) sort.) Hashing a derived canonical key is the grouping primitive.
 
 ```python
 def group_anagrams(words: list[str]) -> list[list[str]]:
@@ -360,13 +385,28 @@ def group_anagrams(words: list[str]) -> list[list[str]]:
     return list(groups.values())
 ```
 
-**Complexity.** O(n · L log L) time (L = max word length), O(n · L) space.
+**Complexity:** O(n · L log L) time (L = max word length), O(n · L) space.
+
+**Duplicate problems:**
+- Group Shifted Strings (LC 249) - same canonical-key bucketing technique; the key is a shift-normalized signature (difference between consecutive letters) instead of a sorted string, but the grouping mechanic is identical.
+
+---
 
 ### 3. Longest Consecutive Sequence - _set membership_
 
-**Problem.** Given an unsorted integer array, return the length of the longest run of consecutive integers (e.g. `[100,4,200,1,3,2]` → `4`, the run `1,2,3,4`). Must run in O(n) - no sorting.
+Given an unsorted integer array, return the length of the longest run of consecutive integers. Must run in O(n) - no sorting. The set-membership technique: turning "is the next value present?" into O(1).
 
-**Approach.** Put everything in a set for O(1) membership. Only start counting a run at a value that has **no left neighbor** (`x-1 not in set`) - that guarantees each run is walked once, keeping it O(n) overall despite the inner while. The set turns "is x+1 present?" into O(1), which is the whole trick.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [100,4,200,1,3,2] | **Output:** 4
+  - **Explanation:** the run 1,2,3,4 is the longest consecutive sequence (100 and 200 are isolated).
+- **Example 2**
+  - **Input:** nums = [0,3,7,2,5,8,4,6,0,1] | **Output:** 9
+  - **Explanation:** the run 0,1,2,3,4,5,6,7,8 spans nine consecutive values; duplicates in the input don't extend it.
+
+**Constraints:** `0 ≤ nums.length ≤ 10⁵`, `-10⁹ ≤ nums[i] ≤ 10⁹`.
+
+**Approach:** Put everything in a set for O(1) membership. Only start counting a run at a value that has **no left neighbor** (`x-1 not in set`) - that guarantees each run is walked once, keeping it O(n) overall despite the inner while. The set turns "is x+1 present?" into O(1), which is the whole trick.
 
 ```python
 def longest_consecutive(nums: list[int]) -> int:
@@ -381,13 +421,25 @@ def longest_consecutive(nums: list[int]) -> int:
     return best
 ```
 
-**Complexity.** O(n) time, O(n) space.
+**Complexity:** O(n) time, O(n) space.
+
+---
 
 ### 4. Subarray Sum Equals K - _prefix sum + hashing_
 
-**Problem.** Count contiguous subarrays of `nums` (values may be negative) whose sum equals `k`. E.g. `nums = [1,1,1], k = 2` → `2`.
+Count contiguous subarrays of `nums` (values may be negative) whose sum equals `k`. The prefix-sum-plus-hashmap technique - the hashmap is the load-bearing structure that makes this problem's home here rather than on [Array](./array.md), since a plain sliding window can't handle negative values.
 
-**Approach.** `sum(i..j] == k` ⟺ `prefix[j] - prefix[i] == k` ⟺ `prefix[i] == prefix[j] - k`. Sweep keeping a running prefix and a **hashmap of how many times each prefix value has occurred**; at each step add the count of `prefix - k`. Hashing prefix sums turns an O(n²) range scan into O(n) - and handles negatives, which a sliding window can't. (Same problem appears on [Array](./array.md#practice-problems); here the hashing is the star.)
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,1,1], k = 2 | **Output:** 2
+  - **Explanation:** the two adjacent pairs [1,1] (indices 0-1 and 1-2) both sum to 2.
+- **Example 2**
+  - **Input:** nums = [1,2,3], k = 3 | **Output:** 2
+  - **Explanation:** [1,2] and the standalone [3] both sum to 3.
+
+**Constraints:** `1 ≤ nums.length ≤ 2 × 10⁴`, `-1000 ≤ nums[i] ≤ 1000`, `-10⁷ ≤ k ≤ 10⁷`.
+
+**Approach:** `sum(i..j] == k` ⟺ `prefix[j] - prefix[i] == k` ⟺ `prefix[i] == prefix[j] - k`. Sweep keeping a running prefix and a **hashmap of how many times each prefix value has occurred**; at each step add the count of `prefix - k`. Hashing prefix sums turns an O(n²) range scan into O(n) - and handles negatives, which a sliding window can't.
 
 ```python
 def subarray_sum(nums: list[int], k: int) -> int:
@@ -400,13 +452,29 @@ def subarray_sum(nums: list[int], k: int) -> int:
     return count
 ```
 
-**Complexity.** O(n) time, O(n) space.
+**Complexity:** O(n) time, O(n) space.
+
+**Duplicate problems:**
+- Contiguous Array (LC 525) - same prefix-sum + hashmap-of-first-occurrence technique, with values transformed to +1/-1 before accumulating.
+- Subarray Sums Divisible by K (LC 974) - same prefix-sum + hashmap counting, keyed by remainder mod K instead of raw prefix value.
+
+---
 
 ### 5. First Unique Character - _frequency map_
 
-**Problem.** Given a string, return the index of the first non-repeating character, or -1 if none. E.g. `"leetcode"` → `0` (`l`), `"loveleetcode"` → `2` (`v`).
+Given a string, return the index of the first non-repeating character, or -1 if none. The counter primitive in its plainest form - two passes over a frequency map.
 
-**Approach.** Two passes with a frequency map: first count every character, then scan left to right for the first with count 1. The counter primitive in its plainest form - O(n) instead of an O(n²) "for each char, scan the rest". A bounded 26-array would shave the constant (see [Array CP-primitives](./array.md#cp-primitives)).
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "leetcode" | **Output:** 0
+  - **Explanation:** 'l' at index 0 is the first character that appears exactly once.
+- **Example 2**
+  - **Input:** s = "aabb" | **Output:** -1
+  - **Explanation:** every character repeats, so no unique character exists.
+
+**Constraints:** `1 ≤ s.length ≤ 10⁵`, lowercase English letters only.
+
+**Approach:** Two passes with a frequency map: first count every character, then scan left to right for the first with count 1. The counter primitive in its plainest form - O(n) instead of an O(n²) "for each char, scan the rest". A bounded 26-array would shave the constant (see [Array CP-primitives](./array.md#cp-primitives)).
 
 ```python
 def first_uniq_char(s: str) -> int:
@@ -419,4 +487,8 @@ def first_uniq_char(s: str) -> int:
     return -1
 ```
 
-**Complexity.** O(n) time, O(1) space (alphabet bounded at 26).
+**Complexity:** O(n) time, O(1) space (alphabet bounded at 26).
+
+**Duplicate problems:**
+- Sort Characters By Frequency (LC 451) - same count-then-scan frequency map, but sorts by count instead of scanning for the first count-1 character.
+

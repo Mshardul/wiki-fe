@@ -209,7 +209,17 @@ for x in (5, 2, 8, 1):
 
 ### 1. Sort an Array (small / nearly sorted) - insertion sort
 
-Sort an array known to be **small** or **nearly sorted** (each element is within a few positions of its final spot). Constraints: when `n` is tiny or inversions are few, the O(n²) bound is effectively linear and the tiny constant wins.
+Sort an array known to be **small** or **nearly sorted** (each element is within a few positions of its final spot).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [3, 1, 2] | **Output:** [1, 2, 3]
+  - **Explanation:** a tiny array - the O(n²) bound is effectively O(1) work here, and insertion sort's small constant wins over invoking a general-purpose sort.
+- **Example 2**
+  - **Input:** nums = [1, 2, 4, 3, 5, 6] | **Output:** [1, 2, 3, 4, 5, 6]
+  - **Explanation:** nearly sorted - only `4` and `3` are out of place, so `3` shifts left past a single element and the rest do zero work.
+
+**Constraints:** `n` is small (roughly ≤ 10³) or the array is nearly sorted (few inversions) - the constraint that makes an O(n²) sort the right call instead of a red flag.
 
 **Approach:** Plain insertion sort. On nearly-sorted input each key shifts only a short distance, so the total work is O(n + inversions) ≈ O(n) - faster than invoking an O(n log n) sort with its larger constant and recursion overhead. This is the exact scenario library sorts detect and hand to insertion sort.
 
@@ -223,11 +233,21 @@ def sort_small(nums: list[int]) -> list[int]:
     return nums
 ```
 
-Time O(n + inversions) - O(n) nearly-sorted, O(n²) worst; space O(1). Pattern: adaptive insertion sort.
+**Complexity:** O(n + inversions) time - O(n) nearly-sorted, O(n²) worst; O(1) space.
 
 ### 2. Insertion Sort List - insertion into a linked list
 
-Sort a singly linked list using insertion sort. Constraints: no random access, so you can't shift by index - you splice nodes. `n ≤ 5000`.
+Sort a singly linked list using insertion sort.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = [4, 2, 1, 3] | **Output:** [1, 2, 3, 4]
+  - **Explanation:** each node is spliced into the growing sorted list at the first position larger than it.
+- **Example 2**
+  - **Input:** head = [-1, 5, 3, 4, 0] | **Output:** [-1, 0, 3, 4, 5]
+  - **Explanation:** negative and duplicate-free values splice the same way; no index shifting is involved, only pointer relinking.
+
+**Constraints:** `0 ≤ n ≤ 5000`; no random access, so shifting by index is impossible - nodes must be spliced by relinking pointers.
 
 **Approach:** Build a new sorted list by **splicing** each node into place. For each node from the input, walk the sorted portion from a dummy head until you find the first node larger than it, then relink. Insertion sort suits linked lists because inserting a node is O(1) pointer surgery - no shifting - though finding the spot is still O(n), keeping the total O(n²).
 
@@ -250,29 +270,53 @@ def insertion_sort_list(head: ListNode) -> ListNode:
     return dummy.next
 ```
 
-Time O(n²), space O(1). Pattern: insertion via pointer splicing (no shifts).
+**Complexity:** O(n²) time, O(1) space.
 
 ### 3. Sort a K-Sorted Array - bounded displacement
 
-Each element is at most `k` positions away from its sorted position. Sort it efficiently. Constraints: `k ≪ n` (e.g. `k ≤ 100`, `n ≤ 10⁶`) - the bounded displacement is the whole hint.
+Each element is at most `k` positions away from its sorted position. Sort it efficiently.
 
-**Approach:** Because no element travels more than `k` slots, insertion sort shifts each key at most `k` times → O(n·k), near-linear when `k` is small - and it beats a general O(n log n) sort here. (The classic alternative is a size-`k` min-heap, also O(n log k); insertion sort wins when `k` is tiny and the data is in an array.)
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [3, 1, 2, 6, 4, 5], k = 2 | **Output:** [1, 2, 3, 4, 5, 6]
+  - **Explanation:** every element is at most 2 slots from its final position, so a size-3 (`k+1`) min-heap window always contains the true next-smallest element.
+- **Example 2**
+  - **Input:** nums = [10, 9, 8, 11, 12], k = 2 | **Output:** [8, 9, 10, 11, 12]
+  - **Explanation:** `8` starts 2 positions from home; once the heap has seen indices 0-2 it can safely emit the minimum.
+
+**Constraints:** `k ≪ n` (e.g. `k ≤ 100`, `n ≤ 10⁶`) - the bounded displacement is the whole hint.
+
+**Approach:** The well-known accepted solution here is a size-`(k+1)` **min-heap**, not repeated insertion sort: push the first `k+1` elements, then repeatedly pop the minimum (it's guaranteed to be the true next element in sorted order, since nothing more than `k` positions further back can be smaller) and push the next incoming element. This is O(n log k) - near-linear when `k` is small, and it's the standard answer interviewers expect for this problem, distinct from insertion sort's O(n·k) shifting approach.
 
 ```python
+import heapq
+
 def sort_k_sorted(nums: list[int], k: int) -> list[int]:
-    for i in range(1, len(nums)):
-        key, j = nums[i], i - 1
-        while j >= 0 and nums[j] > key:         # shifts at most k times per element
-            nums[j + 1] = nums[j]; j -= 1
-        nums[j + 1] = key
-    return nums
+    heap = nums[:k + 1]
+    heapq.heapify(heap)
+    result = []
+    for i in range(k + 1, len(nums)):
+        result.append(heapq.heappushpop(heap, nums[i]))
+    while heap:
+        result.append(heapq.heappop(heap))
+    return result
 ```
 
-Time O(n·k), space O(1). Pattern: insertion sort exploiting bounded displacement.
+**Complexity:** O(n log k) time, O(k) space.
 
 ### 4. Insert Interval - insertion into a sorted sequence
 
-Given a list of **non-overlapping, sorted** intervals and a new interval, insert it and merge any overlaps, keeping the result sorted. Constraints: `n ≤ 10⁴`; the existing list is already ordered - the insertion-into-sorted-structure pattern.
+Given a list of **non-overlapping, sorted** intervals and a new interval, insert it and merge any overlaps, keeping the result sorted.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** intervals = [[1,3],[6,9]], newInterval = [2,5] | **Output:** [[1,5],[6,9]]
+  - **Explanation:** `[2,5]` overlaps `[1,3]`, merging into `[1,5]`; `[6,9]` is untouched.
+- **Example 2**
+  - **Input:** intervals = [[1,2],[3,5],[6,7],[8,10],[12,16]], newInterval = [4,8] | **Output:** [[1,2],[3,10],[12,16]]
+  - **Explanation:** `[4,8]` overlaps three existing intervals (`[3,5]`, `[6,7]`, `[8,10]`), all merged into one `[3,10]` span.
+
+**Constraints:** `n ≤ 10⁴`; the existing list is already sorted and non-overlapping - the insertion-into-sorted-structure pattern.
 
 **Approach:** The core insertion-sort move generalized to intervals: walk the sorted list, copy intervals strictly left of the new one, **merge** all that overlap the new one into a single widened interval (inserting it in its sorted place), then copy the rest. One linear pass because the input is already sorted - no full re-sort needed, exactly the "maintain a sorted structure under insertion" idea.
 
@@ -289,4 +333,7 @@ def insert_interval(intervals: list[list[int]], new: list[int]) -> list[list[int
     return out
 ```
 
-Time O(n), space O(n). Pattern: insertion into a sorted sequence with merge.
+**Complexity:** O(n) time, O(n) space.
+
+**Duplicate problems:**
+- Merge Intervals (LC 56) - same overlap-merge logic, without the "insert one new interval" framing - just sort and merge everything.

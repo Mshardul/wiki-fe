@@ -342,7 +342,17 @@ def count_inversions(a: list[int]) -> int:
 
 **Problem.** Given an integer array, support two operations: `update(index, val)` (set `a[index] = val`) and `sumRange(left, right)` (return the sum of `a[left..right]`, inclusive), with both called repeatedly in any order.
 
-**Approach.** The textbook Fenwick shape. Build a BIT over the array; `update` computes the delta (`val - current_value`, tracked in a parallel array) and calls `add`; `sumRange` calls `range_sum`. This is the problem the structure exists to solve - recognizing "repeated point updates + range sum queries" as the trigger is the entire skill.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,3,5], update(1, 2), sumRange(0, 2) | **Output:** 8
+  - **Explanation:** after `update(1, 2)` the array is [1,2,5]; the range sum over indices 0..2 is 1+2+5 = 8.
+- **Example 2**
+  - **Input:** nums = [1,3,5], sumRange(0, 1), update(0, 10), sumRange(0, 1) | **Output:** 4, then 13
+  - **Explanation:** first query sums [1,3] = 4; after `update(0, 10)` the array is [10,3,5], and the same range now sums to 13.
+
+**Constraints:** `1 ≤ nums.length ≤ 3 × 10⁴`, `-100 ≤ nums[i] ≤ 100`, `0 ≤ index < nums.length`, `0 ≤ left ≤ right < nums.length`, at most `3 × 10⁴` calls to `update` and `sumRange` combined.
+
+**Approach:** The textbook Fenwick shape. Build a BIT over the array; `update` computes the delta (`val - current_value`, tracked in a parallel array) and calls `add`; `sumRange` calls `range_sum`. This is the problem the structure exists to solve - recognizing "repeated point updates + range sum queries" as the trigger is the entire skill.
 
 ```python
 class NumArray:
@@ -359,7 +369,7 @@ class NumArray:
         return self.bit.range_sum(left + 1, right + 1)   # shift to 1-indexed
 ```
 
-**Complexity.** O(log n) per `update` and `sumRange`, O(n) build. O(n) space.
+**Complexity:** O(log n) per `update` and `sumRange`, O(n) build. O(n) space.
 
 **Duplicate problems:**
 - Range Sum Query 2D - Mutable (LC 308) - identical shape extended to 2D via a BIT-of-BITs; same point-update/range-query recognition, one more dimension of index arithmetic.
@@ -369,7 +379,17 @@ class NumArray:
 
 **Problem.** Given an integer array `nums`, return an array `counts` where `counts[i]` is the number of elements to the right of `nums[i]` that are smaller than it. E.g. `[5,2,6,1]` → `[2,1,1,0]`.
 
-**Approach.** Coordinate-compress the values to ranks `1..k`, then scan **right to left**, maintaining a value-indexed BIT of counts. For each element, `prefix_sum(rank - 1)` gives the count of smaller elements already inserted (i.e., to its right in original order); then insert it (`add(rank, 1)`). This is the order-statistics reframe from [CP-primitives](#bit-as-an-order-statistics-structure-count-inversions--k-th-element) applied per-element instead of as a single inversion count.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [5,2,6,1] | **Output:** [2,1,1,0]
+  - **Explanation:** to the right of 5 are {2,1}, both smaller (2); to the right of 2 is {1}, smaller (1); to the right of 6 is {1}, smaller (1); 1 has nothing to its right (0).
+- **Example 2**
+  - **Input:** nums = [-1] | **Output:** [0]
+  - **Explanation:** a single element has no elements to its right, so its count is trivially 0.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-10⁴ ≤ nums[i] ≤ 10⁴`.
+
+**Approach:** Coordinate-compress the values to ranks `1..k`, then scan **right to left**, maintaining a value-indexed BIT of counts. For each element, `prefix_sum(rank - 1)` gives the count of smaller elements already inserted (i.e., to its right in original order); then insert it (`add(rank, 1)`). This is the order-statistics reframe from [CP-primitives](#bit-as-an-order-statistics-structure-count-inversions--k-th-element) applied per-element instead of as a single inversion count.
 
 ```python
 def count_smaller(nums: list[int]) -> list[int]:
@@ -383,7 +403,7 @@ def count_smaller(nums: list[int]) -> list[int]:
     return result
 ```
 
-**Complexity.** O(n log n) time (n inserts/queries at O(log n) each, plus O(n log n) sort for compression), O(n) space.
+**Complexity:** O(n log n) time (n inserts/queries at O(log n) each, plus O(n log n) sort for compression), O(n) space.
 
 **Duplicate problems:**
 - Reverse Pairs (LC 493) - same right-to-left BIT-over-ranks scan, counting pairs `i < j, nums[i] > 2*nums[j]` instead of raw inversions.
@@ -393,7 +413,17 @@ def count_smaller(nums: list[int]) -> list[int]:
 
 **Problem.** Support `update(left, right, val)` (add `val` to every element in `[left, right]`) and `sumRange(left, right)` (return the sum of `a[left..right]`), both called repeatedly.
 
-**Approach.** Point-update Fenwick can't do range updates in O(log n) directly. Use the **two-BIT range-update/range-query** trick from [CP-primitives](#range-update-range-query-two-bits): one BIT tracks the raw delta array, a second tracks `delta * (index - 1)` correction terms, and `prefix_sum(i) = i * B1.prefix_sum(i) - B2.prefix_sum(i)` reconstructs the true prefix sum in O(log n).
+**Worked examples:**
+- **Example 1**
+  - **Input:** a = [0,0,0,0,0], update(1, 3, 2), sumRange(0, 4) | **Output:** 6
+  - **Explanation:** adding 2 to indices 1..3 gives [0,2,2,2,0]; summing all five elements gives 0+2+2+2+0 = 6.
+- **Example 2**
+  - **Input:** a = [0,0,0,0,0], update(0, 2, 5), update(2, 4, 3), sumRange(2, 2) | **Output:** 8
+  - **Explanation:** the first update makes index 2 equal 5; the second update adds 3 more to index 2 (it's in `[2,4]`), so `a[2] = 8`, matching the single-index range sum.
+
+**Constraints:** `1 ≤ n ≤ 10⁵`, `0 ≤ left ≤ right < n`, `-10³ ≤ val ≤ 10³`, up to `10⁵` calls to `update` and `sumRange` combined.
+
+**Approach:** Point-update Fenwick can't do range updates in O(log n) directly. Use the **two-BIT range-update/range-query** trick from [CP-primitives](#range-update-range-query-two-bits): one BIT tracks the raw delta array, a second tracks `delta * (index - 1)` correction terms, and `prefix_sum(i) = i * B1.prefix_sum(i) - B2.prefix_sum(i)` reconstructs the true prefix sum in O(log n).
 
 ```python
 class RangeUpdateRangeQuery:
@@ -407,7 +437,7 @@ class RangeUpdateRangeQuery:
         return self.range_bit.range_sum(left + 1, right + 1)
 ```
 
-**Complexity.** O(log n) per `update` and `sumRange`. O(n) space (two BITs).
+**Complexity:** O(log n) per `update` and `sumRange`. O(n) space (two BITs).
 
 **Duplicate problems:**
 - Range Addition (LC 370) - the same range-update mechanism, but only needs the final array (a single difference-array pass suffices; the two-BIT machinery is overkill if queries never interleave with updates).

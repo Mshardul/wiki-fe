@@ -360,7 +360,17 @@ math.gcd(*[4, 8, 12, 20])  # 4  - variadic: GCD of a whole list
 
 ### 1. Greatest Common Divisor of Strings - LC 1071
 
-**Problem:** Given two strings `str1` and `str2`, return the largest string `x` such that `x` divides both (`str1` and `str2` are each `x` repeated some number of times). If no such `x` exists, return the empty string.
+Given two strings `str1` and `str2`, return the largest string `x` such that `x` divides both (`str1` and `str2` are each `x` repeated some number of times). If no such `x` exists, return the empty string.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** str1 = "ABCABC", str2 = "ABC" | **Output:** "ABC"
+  - **Explanation:** "ABC" repeated twice gives str1 and once gives str2, and `gcd(6, 3) = 3` matches its length.
+- **Example 2**
+  - **Input:** str1 = "ABABAB", str2 = "ABAB" | **Output:** "AB"
+  - **Explanation:** `str1 + str2 == str2 + str1` holds, and `gcd(6, 4) = 2` gives the length of the largest common divisor string "AB".
+
+**Constraints:** `1 ≤ len(str1), len(str2) ≤ 1000`, uppercase English letters only.
 
 **Approach:** The key insight: if such an `x` exists, then `str1 + str2 == str2 + str1` (concatenation order doesn't matter - a necessary and sufficient condition). Given that check passes, the answer's length is `gcd(len(str1), len(str2))` - the "divides both lengths" structure of the string problem is a direct transliteration of numeric GCD onto string length.
 
@@ -382,7 +392,17 @@ def gcdOfStrings(str1: str, str2: str) -> str:
 
 ### 2. Water and Jug Problem - LC 365
 
-**Problem:** Given two jugs with capacities `x` and `y` liters and no other measuring tools, determine if it's possible to measure exactly `z` liters using the two jugs, where you can fill, empty, and pour water between them. Constraints: `0 ≤ x, y, z ≤ 10^6`.
+Given two jugs with capacities `x` and `y` liters and no other measuring tools, determine if it's possible to measure exactly `z` liters using the two jugs, where you can fill, empty, and pour water between them.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** x = 3, y = 5, z = 4 | **Output:** true
+  - **Explanation:** `gcd(3, 5) = 1` divides every integer, so any reachable target ≤ 8 including 4 is achievable via a fill/empty/pour sequence.
+- **Example 2**
+  - **Input:** x = 2, y = 6, z = 5 | **Output:** false
+  - **Explanation:** `gcd(2, 6) = 2` does not divide 5, so no combination of fills/empties/pours can reach exactly 5 liters.
+
+**Constraints:** `0 ≤ x, y, z ≤ 10^6`.
 
 **Approach:** This is Bézout's identity in disguise. Every reachable water level via fill/empty/pour operations is an integer linear combination `a·x + b·y` for some integers `a, b` (positive = fill, negative = empty/pour-out) - exactly the form extended Euclid analyzes. By Bézout, `a·x + b·y = z` has an integer solution **if and only if** `gcd(x, y) | z`. The problem reduces entirely to: compute `g = gcd(x, y)`, then check `z ≤ x + y` (can't exceed total capacity) and `z % g == 0`. This is the cleanest real interview signal that Bézout's identity isn't just a bookkeeping trick for modular inverses - it directly answers "which target values are reachable by integer combinations of two numbers."
 
@@ -406,7 +426,17 @@ def canMeasureWater(x: int, y: int, z: int) -> bool:
 
 ### 3. Modular inverse for combinatorics with a non-prime modulus
 
-**Problem:** Compute `n! mod m` divided by `k! mod m` and `(n-k)! mod m` - i.e., `C(n, k) mod m` - where `m` is **not guaranteed prime** (unlike the classic `10^9+7` contest modulus). Constraints: `0 ≤ k ≤ n ≤ 10^5`, `m` arbitrary composite up to `10^9`.
+Compute `n! mod m` divided by `k! mod m` and `(n-k)! mod m` - i.e., `C(n, k) mod m` - where `m` is **not guaranteed prime** (unlike the classic `10^9+7` contest modulus).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 5, k = 2, m = 13 | **Output:** 10
+  - **Explanation:** `C(5,2) = 10`, and since 10 < 13 it equals `10 mod 13` directly, verifying the modular-inverse machinery against a known small case.
+- **Example 2**
+  - **Input:** n = 6, k = 3, m = 8 | **Output:** 4
+  - **Explanation:** `C(6,3) = 20`, and `20 mod 8 = 4`; here `m = 8` is composite, so Fermat's little theorem would silently give a wrong answer while extended Euclid's inverse (applied per factorial, since each factorial happens to stay coprime to `m` for this case) still works.
+
+**Constraints:** `0 ≤ k ≤ n ≤ 10^5`, `m` arbitrary composite up to `10^9`.
 
 **Approach:** Fermat's little theorem (`pow(a, m-2, m)`) is invalid here because `m` isn't prime. Extended Euclid is the general tool: compute the modular inverse of each factorial via `mod_inverse(fact[i], m)`, which works as long as `gcd(fact[i], m) = 1`. This is the canonical scenario that separates "I memorized Fermat's formula" from "I understand what a modular inverse actually requires."
 

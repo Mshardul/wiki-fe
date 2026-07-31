@@ -350,7 +350,17 @@ def rabin_karp_multi(text: str, patterns: list[str], base: int = 31, q: int = 10
 
 ### 1. Find all anagrams in a string - rolling hash over character counts
 
-Given strings `s` and `p`, return all start indices of `p`'s anagrams in `s`. An anagram is any permutation of `p`'s characters. Constraints: `1 ≤ |p| ≤ |s| ≤ 3·10⁴`, lowercase letters only.
+**Problem:** Given strings `s` and `p`, return all start indices of `p`'s anagrams in `s`. An anagram is any permutation of `p`'s characters.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "cbaebabacd", p = "abc" | **Output:** [0, 6]
+  - **Explanation:** the windows `s[0:3] = "cba"` and `s[6:9] = "bac"` both have the same character counts as `p`.
+- **Example 2**
+  - **Input:** s = "abab", p = "ab" | **Output:** [0, 1, 2]
+  - **Explanation:** every window of length 2 is a permutation of `"ab"`.
+
+**Constraints:** `1 ≤ |p| ≤ |s| ≤ 3·10⁴`, lowercase letters only.
 
 **Approach:** Rabin-Karp applied to a character-count fingerprint rather than a polynomial hash. Since anagrams have the same character counts, two windows are anagram-equivalent iff their sorted character frequency vectors are equal. The rolling update: when sliding the window, decrement the count for the leaving character and increment for the entering character, then compare the 26-element count array to the pattern's count array. Use a running `equal_count` variable tracking how many of the 26 letters currently match between the window and pattern - decrement on a count becoming unequal, increment on a count becoming equal again - so each slide is O(1) average. This is rolling hash where the "hash" is the count vector, and the "collision-free" property holds because count equality implies anagram equality (no verification step needed - count equality is exact).
 
@@ -389,13 +399,26 @@ def find_anagrams(s: str, p: str) -> list[int]:
     return matches
 ```
 
-Time O(n + m), space O(1) (fixed 26-element arrays). Pattern: rolling frequency count as an exact fingerprint.
+**Complexity:** O(n + m) time, O(1) space (fixed 26-element arrays).
 
-**Duplicate problems:** LeetCode 567 (Permutation in String) - identical logic, just return `True` on first match instead of collecting all indices.
+**Duplicate problems:**
+- Permutation in String (LC 567) - identical logic, just return `True` on first match instead of collecting all indices.
+
+---
 
 ### 2. Repeated DNA sequences - multi-pattern via hash set
 
-Given a string `s` of nucleotides (A, C, G, T), find all 10-letter-long sequences that appear more than once. Return all such sequences. Constraints: `1 ≤ |s| ≤ 10⁵`.
+**Problem:** Given a string `s` of nucleotides (A, C, G, T), find all 10-letter-long sequences that appear more than once. Return all such sequences.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "AAAAACCCCCAAAAACCCCCCAAAAAGGGTTT" | **Output:** ["AAAAACCCCC", "CCCCCAAAAA"]
+  - **Explanation:** both 10-letter windows recur later in the string, so their rolling hashes collide and are reported once each.
+- **Example 2**
+  - **Input:** s = "AAAAAAAAAAAAA" | **Output:** ["AAAAAAAAAA"]
+  - **Explanation:** the only distinct 10-gram is all-A, which repeats across every shifted window.
+
+**Constraints:** `1 ≤ |s| ≤ 10⁵`.
 
 **Approach:** This is Rabin-Karp applied as a substring deduplication tool - not searching for a fixed pattern, but identifying which 10-grams appear more than once. Compute a rolling hash over the string with window size 10; maintain a `seen` set of hashes and a `repeated_hashes` set. When a hash from `seen` appears again, it's a candidate repeat; verify by string comparison (or use a `seen_strings` set directly if memory is acceptable). For this small window size and small alphabet, storing the actual 10-character substrings in a set is also O(n) in time and O(n) in space - and simpler. The rolling hash version avoids the O(m) substring construction cost per window, trading it for hash computation.
 
@@ -431,15 +454,27 @@ def find_repeated_dna_sequences(s: str) -> list[str]:
     return list(repeated)
 ```
 
-Time O(n), space O(n). Pattern: rolling hash for substring deduplication.
+**Complexity:** O(n) time, O(n) space.
 
 **Duplicate problems:**
 - Find All Anagrams in a String (LC 438) - same sliding-window dedup idea but checking anagram equality via frequency count rather than hash; the +q guard and window-slide structure are identical.
 - Contains Duplicate (LC 217) - degenerate case: fixed window = entire string; rolling hash overkill here but the membership-check pattern is the same.
 
+---
+
 ### 3. Longest duplicate substring - binary search + rolling hash
 
-Given a string `s`, find the longest substring that appears at least twice. Return the substring (empty string if none). Constraints: `2 ≤ |s| ≤ 3·10⁴`.
+**Problem:** Given a string `s`, find the longest substring that appears at least twice. Return the substring (empty string if none).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "banana" | **Output:** "ana"
+  - **Explanation:** binary search settles on length 3 as the largest `L` for which some L-gram (here "ana") repeats.
+- **Example 2**
+  - **Input:** s = "abcd" | **Output:** ""
+  - **Explanation:** no substring of any length repeats, so binary search shrinks to length 0 and returns empty.
+
+**Constraints:** `2 ≤ |s| ≤ 3·10⁴`.
 
 **Approach:** Binary search on the answer length `L`, then use Rabin-Karp with window size `L` to check whether any L-gram appears more than once in O(n) average time. The binary search runs O(log n) iterations; each iteration runs Rabin-Karp in O(n). Total: O(n log n) average. This combination - binary search on length + rolling hash for the existence check - is the canonical "longest repeated substring" pattern. The hash check must handle collisions (store actual substrings in the seen set or use double hashing to reduce false positive probability to negligible).
 
@@ -482,7 +517,7 @@ def longest_dup_substring(s: str) -> str:
     return result
 ```
 
-Time O(n log n) average, O(n² log n) worst case (all hash collisions and verification). Space O(n). Pattern: binary search on answer length combined with rolling hash existence check - a compound technique distinct from the previous two problems.
+**Complexity:** O(n log n) time average, O(n² log n) worst case (all hash collisions and verification), O(n) space.
 
 **Duplicate problems:**
 - Longest Duplicate Substring (LC 1044) - same problem, same binary search + rolling hash approach; this IS LC 1044.

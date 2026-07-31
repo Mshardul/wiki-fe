@@ -212,7 +212,6 @@ from typing import Optional
 
 RED, BLACK = 0, 1
 
-
 @dataclass
 class Node:
     key: int
@@ -220,7 +219,6 @@ class Node:
     left: Optional["Node"] = None
     right: Optional["Node"] = None
     parent: Optional["Node"] = None
-
 
 class RedBlackTree:
     def __init__(self) -> None:
@@ -322,15 +320,35 @@ Four problems, each a **distinct** facet of red-black trees - no two the same.
 
 **Problem.** Explain to an interviewer why `std::map` and Java's `TreeMap` use red-black trees rather than AVL, given both are O(log n).
 
-**Approach.** Frame it as a read/write trade. AVL keeps a tighter height (≤ 1.44 log n) → marginally faster lookups, but its strict invariant forces more rebalancing work, especially on delete. Red-black tolerates a taller tree (≤ 2 log n) but fixes most violations by **recoloring** (O(1) bit flips, no pointer moves), doing **≤ 2–3 rotations** per write. A general-purpose library serves mixed read/write workloads, so cheaper writes with negligibly slower reads is the better default. (No code - this is the conceptual probe; rehearse the soundbite.)
+**Worked examples:**
+- **Example 1**
+  - **Input:** insert the sequence [10, 20, 30] into an empty AVL tree vs. an empty red-black tree | **Output:** AVL performs 1 rotation (the classic "straight-line" LL/RR case at 20's insertion of 30 rebalances via a single left rotation); red-black performs 0 rotations (the same insert sequence only ever recolors, since each new node's uncle is nil/black and rule 4 is never violated in a way that needs straightening for this pattern).
+  - **Explanation:** even on a small sequence, AVL's stricter height-balance rule forces a rotation that red-black's looser color rule avoids, illustrating "recolor first, rotate rarely."
+- **Example 2**
+  - **Input:** height comparison for n = 1,000,000 nodes | **Output:** AVL height ≤ 1.44 · log₂(10⁶) ≈ 28.7 → 29 levels; red-black height ≤ 2 · log₂(10⁶ + 1) ≈ 39.9 → 40 levels
+  - **Explanation:** red-black allows roughly 11 more levels than AVL at a million nodes, which costs a handful of extra comparisons per lookup - negligible against the write savings from fewer rotations, which is the trade a general-purpose library optimizes for.
 
-**Complexity.** N/A - the answer is the trade-off, stated crisply.
+**Constraints:** n/a - this is a conceptual/reasoning question, not a coded problem; the "input" is the interview question itself and the "output" is the verbal trade-off argument.
+
+**Approach:** Frame it as a read/write trade. AVL keeps a tighter height (≤ 1.44 log n) → marginally faster lookups, but its strict invariant forces more rebalancing work, especially on delete. Red-black tolerates a taller tree (≤ 2 log n) but fixes most violations by **recoloring** (O(1) bit flips, no pointer moves), doing **≤ 2–3 rotations** per write. A general-purpose library serves mixed read/write workloads, so cheaper writes with negligibly slower reads is the better default. (No code - this is the conceptual probe; rehearse the soundbite.)
+
+**Complexity:** N/A - the answer is the trade-off, stated crisply.
 
 ### 2. Verify red-black properties - _black-height check_
 
 **Problem.** Given a red-black tree (nodes with colors), verify it satisfies the invariants: root black, no red-red, and equal black-height on every root-to-leaf path.
 
-**Approach.** One recursion returning each subtree's **black-height**, or a sentinel (−1) on any violation. At each node: a red node with a red child fails (rule 4); the two children's black-heights must match (rule 5); add 1 if the node is black. Abort early on −1. The tree-DP shape applied to color verification.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root(B, key=10) with left child(R, key=5) and right child(R, key=15), both children's children are nil | **Output:** True
+  - **Explanation:** root is black with two red children whose own children are nil (black); no red node has a red child and both root-to-nil paths pass through the same number of black nodes, so every rule holds.
+- **Example 2**
+  - **Input:** root(B, key=10) with left child(R, key=5) whose left child is also (R, key=2) | **Output:** False
+  - **Explanation:** the red node at key=5 has a red child at key=2, violating rule 4 (no red node may have a red child), so `black_height` returns -1 on that subtree.
+
+**Constraints:** tree has `0 ≤ n ≤ 10⁵` nodes, each node colored RED or BLACK, nil leaves treated as black sentinels.
+
+**Approach:** One recursion returning each subtree's **black-height**, or a sentinel (−1) on any violation. At each node: a red node with a red child fails (rule 4); the two children's black-heights must match (rule 5); add 1 if the node is black. Abort early on −1. The tree-DP shape applied to color verification.
 
 ```python
 def black_height(node) -> int:            # -1 if any rule violated
@@ -351,28 +369,145 @@ def is_valid_rb(root) -> bool:
     return black_height(root) != -1
 ```
 
-**Complexity.** O(n) time, O(h) space.
+**Complexity:** O(n) time, O(h) space.
+
+**Duplicate problems:**
+- Balanced Binary Tree (LC 110) - the same single-recursion, -1-sentinel-on-violation shape, checked against plain height balance instead of red-black's color/black-height rules.
 
 ### 3. Red-black insert fixup - _recolor then rotate_
 
 **Problem.** Implement red-black insert: BST-insert the new (red) node, then restore the color rules via the three fixup cases.
 
-**Approach.** Insert red; while the parent is red, branch on the **uncle's color** - red uncle recolors and climbs (Case 1, no rotation); black uncle straightens any zig-zag (Case 2) then recolors + rotates (Case 3). Color the root black at the end. The reusable code is in [Implementation](#implementation) above; the skill is choosing the case from the uncle and recognizing recolor-vs-rotate.
+**Worked examples:**
+- **Example 1**
+  - **Input:** insert(10), insert(20), insert(30) into an empty tree | **Output:** root = 20 (black), left child 10 (red), right child 30 (red)
+  - **Explanation:** 10 becomes the root (recolored black); inserting 20 makes it 10's red right child (parent black, no violation); inserting 30 triggers Case 2/3 (black uncle, outer grandchild) which rotates left about 10, leaving 20 as the new black root with 10 and 30 as red children.
+- **Example 2**
+  - **Input:** insert(10), insert(5), insert(1) into an empty tree | **Output:** root = 5 (black), left child 1 (red), right child 10 (red)
+  - **Explanation:** this is the mirror of Example 1 - inserting 1 after 10 and 5 forms a "zig-zig" on the left, which recolors 5 to black, 10 to red, and right-rotates about 10, producing the same balanced shape mirrored.
+
+**Constraints:** `1 ≤ number of insertions ≤ 10⁵`, keys are distinct integers.
+
+**Approach:** Insert red; while the parent is red, branch on the **uncle's color** - red uncle recolors and climbs (Case 1, no rotation); black uncle straightens any zig-zag (Case 2) then recolors + rotates (Case 3). Color the root black at the end. Same class as [Implementation](#implementation) above, reproduced standalone here so the case logic is visible in one place.
 
 ```python
-# see RedBlackTree.insert / _fixup in Implementation - the canonical solution.
+from __future__ import annotations
+from dataclasses import dataclass
+from typing import Optional
+
+RED, BLACK = 0, 1
+
+@dataclass
+class Node:
+    key: int
+    color: int = RED                       # new nodes start red
+    left: Optional["Node"] = None
+    right: Optional["Node"] = None
+    parent: Optional["Node"] = None
+
+class RedBlackTree:
+    def __init__(self) -> None:
+        self.nil = Node(key=0, color=BLACK)    # shared black sentinel (rule 3)
+        self.root = self.nil
+
+    def _left_rotate(self, x: Node) -> None:
+        y = x.right
+        x.right = y.left
+        if y.left is not self.nil:
+            y.left.parent = x
+        y.parent = x.parent
+        if x.parent is self.nil:
+            self.root = y
+        elif x is x.parent.left:
+            x.parent.left = y
+        else:
+            x.parent.right = y
+        y.left = x
+        x.parent = y
+
+    def _right_rotate(self, x: Node) -> None:
+        y = x.left
+        x.left = y.right
+        if y.right is not self.nil:
+            y.right.parent = x
+        y.parent = x.parent
+        if x.parent is self.nil:
+            self.root = y
+        elif x is x.parent.right:
+            x.parent.right = y
+        else:
+            x.parent.left = y
+        y.right = x
+        x.parent = y
+
+    def insert(self, key: int) -> None:
+        z = Node(key, left=self.nil, right=self.nil)
+        y, x = self.nil, self.root
+        while x is not self.nil:            # ordinary BST descent
+            y = x
+            x = x.left if key < x.key else x.right
+        z.parent = y
+        if y is self.nil:
+            self.root = z
+        elif key < y.key:
+            y.left = z
+        else:
+            y.right = z
+        self._fixup(z)
+
+    def _fixup(self, z: Node) -> None:
+        while z.parent.color == RED:
+            g = z.parent.parent
+            if z.parent is g.left:
+                u = g.right
+                if u.color == RED:                 # CASE 1: recolor, climb
+                    z.parent.color = u.color = BLACK
+                    g.color = RED
+                    z = g
+                else:
+                    if z is z.parent.right:        # CASE 2: straighten
+                        z = z.parent
+                        self._left_rotate(z)
+                    z.parent.color = BLACK         # CASE 3: recolor + rotate
+                    g.color = RED
+                    self._right_rotate(g)
+            else:                                   # mirror
+                u = g.left
+                if u.color == RED:
+                    z.parent.color = u.color = BLACK
+                    g.color = RED
+                    z = g
+                else:
+                    if z is z.parent.left:
+                        z = z.parent
+                        self._right_rotate(z)
+                    z.parent.color = BLACK
+                    g.color = RED
+                    self._left_rotate(g)
+        self.root.color = BLACK                     # rule 2
+
 t = RedBlackTree()
 for k in [10, 20, 30, 15, 25]:
     t.insert(k)                            # stays balanced; root black, no red-red
 ```
 
-**Complexity.** O(log n) time, ≤ 2 rotations, O(log n) space.
+**Complexity:** O(log n) time, ≤ 2 rotations, O(log n) space.
 
 ### 4. Order-statistics with a red-black tree - _augmentation_
 
 **Problem.** Support `insert`, `delete`, and **`rank(x)`** (how many keys < x) and **`select(k)`** (the k-th smallest), all in O(log n).
 
-**Approach.** Augment each node with the **size of its subtree**. `select(k)` descends using left-subtree sizes (like a [BST](./binary-search-tree.md) search guided by counts); `rank(x)` accumulates sizes of left subtrees passed while searching. Insert/delete update sizes along the path and during rotations (a rotation only moves O(1) subtree sizes). This is the **order-statistic tree** - a red-black tree carrying one extra integer per node. (In Python, `sortedcontainers.SortedList` gives `bisect`-based rank/select without the augmentation.)
+**Worked examples:**
+- **Example 1**
+  - **Input:** tree built from [20, 10, 30, 5, 15], select(3) | **Output:** 15
+  - **Explanation:** the sorted order is [5, 10, 15, 20, 30]; the 3rd smallest (1-indexed) is 15, found by descending using left-subtree sizes without a full in-order scan.
+- **Example 2**
+  - **Input:** same tree, rank(20) | **Output:** 3
+  - **Explanation:** exactly 3 keys (5, 10, 15) are strictly less than 20, accumulated by summing left-subtree sizes passed while searching for 20.
+
+**Constraints:** `1 ≤ number of keys ≤ 10⁵`, keys are distinct integers, `1 ≤ k ≤ n`.
+
+**Approach:** Augment each node with the **size of its subtree**. `select(k)` descends using left-subtree sizes (like a [BST](./binary-search-tree.md) search guided by counts); `rank(x)` accumulates sizes of left subtrees passed while searching. Insert/delete update sizes along the path and during rotations (a rotation only moves O(1) subtree sizes). This is the **order-statistic tree** - a red-black tree carrying one extra integer per node. (In Python, `sortedcontainers.SortedList` gives `bisect`-based rank/select without the augmentation.)
 
 ```python
 # conceptual: each node also stores `size`; on rotation, recompute the two
@@ -384,4 +519,7 @@ def select(node, k):                      # k-th smallest, 1-indexed
     return select(node.left, k) if k <= left_size else select(node.right, k - left_size - 1)
 ```
 
-**Complexity.** O(log n) per operation, O(n) space.
+**Complexity:** O(log n) per operation, O(n) space.
+
+**Duplicate problems:**
+- Count of Smaller Numbers After Self (LC 315) - same rank-via-augmented-BST technique (subtree-size counters answer "how many inserted-so-far elements are smaller"), applied per-element while inserting right-to-left instead of as a single rank/select API.

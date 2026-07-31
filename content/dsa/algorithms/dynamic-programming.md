@@ -252,9 +252,21 @@ The pseudocode is a contract (`for a ← 1 to amount`, `▷ relax`, explicit `�
 
 Each problem below exercises a **distinct** DP shape - 1D linear, sequence-alignment 2D, unbounded-vs-0/1, and binary-search-accelerated.
 
-### House Robber (1D linear DP)
+### 1. House Robber (1D linear DP)
 
-Rob houses along a street for maximum money, but you cannot rob two adjacent houses. Constraints: `n ≤ 100`, values up to `10^4` - trivially in range for `O(n)`. Technique: **1D DP with a two-variable rolling window** - at each house, choose `max(skip = prev, rob = prev2 + value)`; only the last two results matter, so space is `O(1)`.
+Rob houses along a street for maximum money, but you cannot rob two adjacent houses.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1, 2, 3, 1] | **Output:** 4
+  - **Explanation:** rob house 0 (value 1) and house 2 (value 3) for a total of 4; robbing 1 and 3 instead gives only 3.
+- **Example 2**
+  - **Input:** nums = [2, 7, 9, 3, 1] | **Output:** 12
+  - **Explanation:** rob houses 0, 2, 4 (values 2 + 9 + 1 = 12), which beats any adjacent-avoiding alternative.
+
+**Constraints:** `n ≤ 100`, values up to `10^4` - trivially in range for `O(n)`.
+
+**Approach:** **1D DP with a two-variable rolling window** - at each house, choose `max(skip = prev, rob = prev2 + value)`; only the last two results matter, so space is `O(1)`.
 
 ```python
 def rob(nums: List[int]) -> int:
@@ -264,11 +276,29 @@ def rob(nums: List[int]) -> int:
     return prev
 ```
 
-**Complexity:** `O(n)` time, `O(1)` space. Pattern: linear DP with space-rolling.
+**Complexity:** O(n) time, O(1) space.
 
-### Edit Distance (2D sequence alignment)
+**Duplicate problems:**
+- House Robber II (LC 213) - same recurrence run twice, once excluding the first house and once excluding the last, to handle the circular-street constraint.
+- Delete and Earn (LC 740) - transforms into House Robber on a value-bucketed array (deleting `x` forfeits `x-1` and `x+1`, the same adjacency-avoidance shape).
 
-Find the minimum insert/delete/replace operations to turn string `a` into `b`. Constraints: `len ≤ 500` → `O(m·n)` table is fine. Technique: **2D DP on `(i, j)` prefixes** - if `a[i]==b[j]` carry the diagonal; else `1 + min(insert, delete, replace)`. The canonical alignment recurrence behind `diff` and spell-checkers.
+---
+
+### 2. Edit Distance (2D sequence alignment)
+
+Find the minimum insert/delete/replace operations to turn string `a` into string `b`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** a = "horse", b = "ros" | **Output:** 3
+  - **Explanation:** replace 'h' with 'r', delete 'r', delete 'e' - 3 operations transform "horse" into "ros".
+- **Example 2**
+  - **Input:** a = "intention", b = "execution" | **Output:** 5
+  - **Explanation:** a mix of replace/insert/delete operations along the two strings' shared alignment.
+
+**Constraints:** `len ≤ 500` → `O(m·n)` table is fine.
+
+**Approach:** **2D DP on `(i, j)` prefixes** - if `a[i]==b[j]` carry the diagonal; else `1 + min(insert, delete, replace)`. The canonical alignment recurrence behind `diff` and spell-checkers.
 
 ```python
 def min_distance(a: str, b: str) -> int:
@@ -287,11 +317,28 @@ def min_distance(a: str, b: str) -> int:
     return dp[m][n]
 ```
 
-**Complexity:** `O(m·n)` time and space (rollable to `O(n)`). Pattern: 2D alignment - see [DP Patterns](../patterns/dp-patterns.md).
+**Complexity:** O(m·n) time and space (rollable to O(n)).
 
-### Coin Change II - count ways (unbounded knapsack, order matters)
+**Duplicate problems:**
+- Delete Operation for Two Strings (LC 583) - same 2D alignment table, restricted to delete-only operations (equivalent to `m + n - 2·LCS(a,b)`).
 
-Count the number of distinct combinations of coins that sum to `amount` (unlimited supply of each coin). Constraints: `amount ≤ 5000`. Technique: **unbounded knapsack with the coin loop _outside_ the amount loop** - iterating coins on the outer loop counts _combinations_ (not permutations), the subtle ordering that distinguishes this from the min-coins variant.
+---
+
+### 3. Coin Change II - count ways (unbounded knapsack, order matters)
+
+Count the number of distinct combinations of coins that sum to `amount` (unlimited supply of each coin).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** amount = 5, coins = [1, 2, 5] | **Output:** 4
+  - **Explanation:** the 4 combinations are `5`, `2+2+1`, `2+1+1+1`, `1+1+1+1+1` - order doesn't matter, so `2+1+2` isn't counted separately.
+- **Example 2**
+  - **Input:** amount = 3, coins = [2] | **Output:** 0
+  - **Explanation:** no combination of 2's sums to 3.
+
+**Constraints:** `amount ≤ 5000`.
+
+**Approach:** **Unbounded knapsack with the coin loop _outside_ the amount loop** - iterating coins on the outer loop counts _combinations_ (not permutations), the subtle ordering that distinguishes this from the min-coins variant.
 
 ```python
 def change(amount: int, coins: List[int]) -> int:
@@ -302,11 +349,29 @@ def change(amount: int, coins: List[int]) -> int:
     return dp[amount]
 ```
 
-**Complexity:** `O(amount · K)` time, `O(amount)` space. Pattern: counting DP, loop-order = combinations vs permutations trap.
+**Complexity:** O(amount · K) time, O(amount) space.
 
-### Longest Increasing Subsequence (DP → binary-search acceleration)
+**Duplicate problems:**
+- Combination Sum IV (LC 377) - same unbounded-knapsack table, but loop order flipped (amount outside, coins inside) because it deliberately counts permutations, not combinations - a useful contrast case to cite alongside this entry.
+- Partition Equal Subset Sum (LC 416) - 0/1 (not unbounded) subset-sum reachability, same table shape with a backward capacity loop instead of forward.
 
-Find the length of the longest strictly increasing subsequence. Constraints: `n ≤ 10^5` - `O(n^2)` DP is too slow, must hit `O(n log n)`. Technique: **patience-sorting DP** - maintain `tails[k]` = smallest tail of any increasing subsequence of length `k+1`; binary-search the insertion point for each number. The DP recurrence is implicit in the monotone `tails` array.
+---
+
+### 4. Longest Increasing Subsequence (DP → binary-search acceleration)
+
+Find the length of the longest strictly increasing subsequence.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [10, 9, 2, 5, 3, 7, 101, 18] | **Output:** 4
+  - **Explanation:** the subsequence `[2, 3, 7, 101]` (or `[2, 3, 7, 18]`) is strictly increasing and has length 4, the longest possible.
+- **Example 2**
+  - **Input:** nums = [7, 7, 7, 7] | **Output:** 1
+  - **Explanation:** no two equal elements form a strictly increasing pair, so the best is a single element.
+
+**Constraints:** `n ≤ 10^5` - `O(n^2)` DP is too slow, must hit `O(n log n)`.
+
+**Approach:** **Patience-sorting DP** - maintain `tails[k]` = smallest tail of any increasing subsequence of length `k+1`; binary-search the insertion point for each number. The DP recurrence is implicit in the monotone `tails` array.
 
 ```python
 def length_of_lis(nums: List[int]) -> int:
@@ -328,4 +393,8 @@ def length_of_lis(nums: List[int]) -> int:
     return len(tails)
 ```
 
-**Complexity:** `O(n log n)` time, `O(n)` space - the binary search is what beats the naive `O(n^2)` DP. Pattern: DP + binary search; cross-link [Binary Search](./binary-search.md).
+**Complexity:** O(n log n) time, O(n) space - the binary search is what beats the naive O(n^2) DP.
+
+**Duplicate problems:**
+- Russian Doll Envelopes (LC 354) - sort by width ascending (height descending on ties), then run LIS on heights - same acceleration, one extra sorting trick to avoid double-counting same-width envelopes.
+- Maximum Length of Pair Chain (LC 646) - sort by first element, then it reduces to the same patience-sorting LIS shape over the second elements.

@@ -465,6 +465,16 @@ Python integers are arbitrary precision and always sign-extend: `~n = -(n+1)` (n
 
 Given a non-empty array of integers where every element appears *exactly twice* except for one element, find that element. Constraints: `1 ≤ n ≤ 3 × 10⁴`; must run in O(n) time with O(1) space.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [2, 2, 1] | **Output:** 1
+  - **Explanation:** 2 appears twice and cancels via XOR (`2^2=0`); 1 appears once and survives.
+- **Example 2**
+  - **Input:** nums = [4, 1, 2, 1, 2] | **Output:** 4
+  - **Explanation:** 1 and 2 each appear twice and cancel; 4 is the only odd-frequency element and survives.
+
+**Constraints:** `1 ≤ nums.length ≤ 3 × 10⁴`, `-3 × 10⁴ ≤ nums[i] ≤ 3 × 10⁴`, every element appears twice except one.
+
 **Approach:** XOR all elements. Pairs cancel (`a ^ a = 0`); the unique element survives (`a ^ 0 = a`). No hash set needed - O(1) extra space. This is the canonical XOR reduction problem: the correctness invariant (XOR accumulator holds the XOR of all odd-frequency elements) ensures the answer emerges from a single linear scan.
 
 ```python
@@ -488,6 +498,16 @@ def single_number(nums: List[int]) -> int:
 ### Counting Bits (popcount over a range)
 
 Given an integer `n`, return an array `ans` of length `n + 1` where `ans[i]` is the number of 1-bits in `i`. Constraints: `0 ≤ n ≤ 10⁵`. Follow-up: achieve O(n) time without calling any built-in popcount.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 2 | **Output:** [0, 1, 1]
+  - **Explanation:** 0 has zero set bits, 1 (`0b1`) has one, 2 (`0b10`) has one.
+- **Example 2**
+  - **Input:** n = 5 | **Output:** [0, 1, 1, 2, 1, 2]
+  - **Explanation:** 3 (`0b11`) has two set bits, 4 (`0b100`) has one, 5 (`0b101`) has two.
+
+**Constraints:** `0 ≤ n ≤ 10⁵`.
 
 **Approach:** use the recurrence `popcount(i) = popcount(i >> 1) + (i & 1)`. Right-shifting `i` removes the least-significant bit; `ans[i >> 1]` is already computed (smaller index); `(i & 1)` adds back that last bit. This gives O(1) per value using previously computed results - no Brian Kernighan O(k) loop per number, no string conversion.
 
@@ -513,6 +533,16 @@ def count_bits(n: int) -> List[int]:
 
 Given an integer array `nums` of `n` **unique** elements, return all `2ⁿ` possible subsets (the power set). Constraints: `1 ≤ n ≤ 10`; elements are unique. Output order does not matter.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1, 2, 3] | **Output:** [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]
+  - **Explanation:** each of the 8 masks from 0 to 7 selects a distinct combination of the 3 elements by its set bits.
+- **Example 2**
+  - **Input:** nums = [0] | **Output:** [[],[0]]
+  - **Explanation:** a single element has exactly 2 subsets: the empty set (mask 0) and the set containing it (mask 1).
+
+**Constraints:** `1 ≤ nums.length ≤ 10`, `-10 ≤ nums[i] ≤ 10`, all elements unique.
+
 **Approach:** encode each subset as a bitmask. For `n = len(nums)`, iterate `mask` from 0 to `(1 << n) - 1`. For each mask, include `nums[i]` in the subset if bit `i` of `mask` is set. This is the direct bitmask enumeration that underpins bitmask DP - the same "state = integer encoding a subset" reasoning, applied to output generation rather than optimization.
 
 ```python
@@ -536,6 +566,16 @@ def subsets(nums: List[int]) -> List[List[int]]:
 ### Number of Ways to Wear Different Hats (bitmask DP over persons)
 
 There are `n ≤ 10` people and 40 hat types. Each person has a list of hats they like. Count the number of ways to assign each person a **different** hat (from their preferred list) such that no two people share a hat. Return the count modulo 10⁹ + 7.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** hats = [[3,4],[4,5],[5]] | **Output:** 1
+  - **Explanation:** the only valid assignment is person 0 gets hat 3, person 1 gets hat 4, person 2 gets hat 5 - any other pairing conflicts.
+- **Example 2**
+  - **Input:** hats = [[3,5,1],[3,5]] | **Output:** 4
+  - **Explanation:** person 1 can take hat 3 or 5, and person 0 can take any of its 3 hats as long as it doesn't clash, giving 4 valid combinations total.
+
+**Constraints:** `n ≤ 10` people, `1 ≤ hats.length ≤ 40` hat types, `1 ≤ hats[i].length ≤ 40`.
 
 **Approach:** `n ≤ 10` persons screams bitmask DP - encode "which persons have been assigned a hat" as the DP state. `dp[mask]` = number of ways to assign hats such that exactly the persons in `mask` have been assigned. Iterate hats 1..40; for each hat, update `dp[mask]` → `dp[mask | (1<<p)]` for each person `p` who likes that hat and is not yet in `mask`. Iterate masks in decreasing order within each hat's pass so each hat is used at most once (same as 0/1 knapsack ordering).
 
@@ -576,6 +616,16 @@ def number_ways(hats: List[List[int]]) -> int:
 ### Find Minimum Time to Finish All Jobs (bitmask DP with min-max objective)
 
 You are given an integer array `jobs` where `jobs[i]` is the amount of time it takes to complete the i-th job. There are `k` workers. Split the jobs among the workers to minimize the maximum working time of any worker. Constraints: `1 ≤ k ≤ jobs.length ≤ 12`, `1 ≤ jobs[i] ≤ 10⁷`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** jobs = [3,2,3], k = 3 | **Output:** 3
+  - **Explanation:** with 3 workers for 3 jobs, each worker takes exactly one job; the maximum load is the largest single job, 3.
+- **Example 2**
+  - **Input:** jobs = [1,2,4,7,8], k = 2 | **Output:** 11
+  - **Explanation:** the best split is {1,2,8} for one worker (load 11) and {4,7} for the other (load 11); no split achieves a lower maximum.
+
+**Constraints:** `1 ≤ k ≤ jobs.length ≤ 12`, `1 ≤ jobs[i] ≤ 10⁷`.
 
 **Approach:** Bitmask DP. Precompute `total[mask]` = sum of job times for the subset represented by `mask`. Then `dp[mask]` = minimum possible "last worker's load" when all jobs in `mask` are assigned optimally across the fewest workers possible. Enumerate submasks to fill the DP: for each `mask`, try assigning a contiguous submask `sub` of jobs to a single worker with load `total[sub]`; the remaining jobs `mask ^ sub` are assigned to previous workers with cost `dp[mask ^ sub]`. Take `max` to capture the worst-case worker load and minimize over all such splits. `n ≤ 12` → 2¹² = 4096 states, and subset enumeration totals O(3¹²) ≈ 531K iterations - fully feasible.
 

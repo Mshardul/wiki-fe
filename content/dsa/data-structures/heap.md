@@ -24,8 +24,9 @@
 - [Practice problems](#practice-problems)
   - [Kth Largest Element in a Stream](#1-kth-largest-element-in-a-stream--bounded-min-heap)
   - [Top K Frequent Elements](#2-top-k-frequent-elements--heap-of-size-k)
-  - [Merge K Sorted Lists](#3-merge-k-sorted-lists--k-way-merge-with-a-heap)
+  - [Merge K Sorted Lists](#3-merge-k-sorted-lists-lc-23---k-way-merge-with-a-heap)
   - [Find Median from Data Stream](#4-find-median-from-data-stream--two-heaps)
+  - [Swim in Rising Water](#5-swim-in-rising-water-lc-778---dijkstra-style-heap-shortest-path)
 
 ## What it is
 
@@ -218,6 +219,16 @@ Contest tools the heap unlocks (advisory for the Tree/heap family, but heaps are
 
 Design a class that, given `k`, returns the k-th largest element seen so far after each `add(val)`. Constraints: a stream - elements arrive over time, so you can't sort once; queries are continuous.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** k = 3, nums = [4,5,8,2], add(3) | **Output:** 4
+  - **Explanation:** after adding 3, the stream is [4,5,8,2,3]; the 3rd largest is 4.
+- **Example 2**
+  - **Input:** k = 3 (continued from Example 1), add(5) | **Output:** 5
+  - **Explanation:** the stream is now [4,5,8,2,3,5]; the 3rd largest is 5.
+
+**Constraints:** `1 ≤ k ≤ 10⁴`, `0 ≤ nums.length ≤ 10⁴`, at most `10⁴` calls to `add`.
+
 **Approach:** Keep a **min-heap of size `k`** holding the k largest values seen. On `add`, push the value; if the heap exceeds size `k`, pop the smallest. The root is always the k-th largest. O(log k) per add, O(k) space - vastly better than re-sorting the stream.
 
 ```python
@@ -238,11 +249,26 @@ class KthLargest:
         return self.heap[0]
 ```
 
-Time O(log k) per add, space O(k). Pattern: bounded-size min-heap for top-K.
+**Complexity:** O(log k) per add, O(k) space. Pattern: bounded-size min-heap for top-K.
+
+**Duplicate problems:**
+- Kth Largest Element in an Array (LC 215) - identical bounded size-K min-heap whose root is the answer; the only difference is a one-shot batch query instead of a streaming `add`.
+
+---
 
 ### 2. Top K Frequent Elements - heap of size K
 
 Return the `k` most frequent elements of an array. Constraints: `n ≤ 10⁵`; expected better than O(n log n) full sort when `k ≪ n`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,1,1,2,2,3], k = 2 | **Output:** [1,2]
+  - **Explanation:** 1 appears 3 times, 2 appears twice, 3 appears once; the two most frequent are 1 and 2.
+- **Example 2**
+  - **Input:** nums = [1], k = 1 | **Output:** [1]
+  - **Explanation:** only one distinct value exists, so it's trivially the most frequent.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `k` is in the range `[1, number of distinct elements]`.
 
 **Approach:** Count frequencies (a hash map), then keep a **min-heap of size `k`** keyed on frequency: push each `(freq, value)`, pop the smallest when size exceeds `k`. The heap ends holding the k most frequent. O(n log k) - better than sorting all distinct elements when `k` is small. (`heapq.nlargest(k, ...)` does exactly this in one call.)
 
@@ -260,11 +286,27 @@ def top_k_frequent(nums: list[int], k: int) -> list[int]:
     return [val for _, val in heap]
 ```
 
-Time O(n log k), space O(n). Pattern: size-K min-heap on frequency.
+**Complexity:** O(n log k) time, O(n) space. Pattern: size-K min-heap on frequency.
 
-### 3. Merge K Sorted Lists - k-way merge with a heap
+**Duplicate problems:**
+- Top K Frequent Words (LC 692) - same count-then-size-K-heap mechanic; only the tiebreak comparator (lexicographic) changes.
+- K Closest Points to Origin (LC 973) - same size-K heap, keyed on distance instead of frequency.
+
+---
+
+### 3. Merge K Sorted Lists (LC 23) - k-way merge with a heap
 
 Merge `k` sorted lists into one sorted list. Constraints: total `N` elements across `k` lists; naive concatenate-then-sort is O(N log N) - the heap does O(N log k).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** lists = [[1,4,5],[1,3,4],[2,6]] | **Output:** [1,1,2,3,4,4,5,6]
+  - **Explanation:** merging three sorted lists yields one fully sorted sequence of all 8 elements.
+- **Example 2**
+  - **Input:** lists = [] | **Output:** []
+  - **Explanation:** no lists to merge produces an empty result.
+
+**Constraints:** `0 ≤ k ≤ 10⁴`, total nodes across all lists `≤ 10⁴`, each list individually sorted ascending.
 
 **Approach:** Heap of the `k` current heads. Pop the smallest, append it to output, push that list's next element. The heap never exceeds size `k`, so each of the `N` pops/pushes is O(log k) → O(N log k). This is the canonical heap-based k-way merge, the engine of external sorting.
 
@@ -283,11 +325,26 @@ def merge_k_lists(lists: list[list[int]]) -> list[int]:
     return out
 ```
 
-Time O(N log k), space O(k). Pattern: k-way merge via a min-heap.
+**Complexity:** O(N log k) time, O(k) space. Pattern: k-way merge via a min-heap.
+
+**Duplicate problems:**
+- Kth Smallest Element in a Sorted Matrix (LC 378) - same k-way merge over sorted rows via a heap of current heads; also this article's own dedicated entry in [k-way-merge.md](../patterns/k-way-merge.md).
+
+---
 
 ### 4. Find Median from Data Stream - two heaps
 
 Support `addNum(x)` and `findMedian()` on a growing stream. Constraints: continuous queries, so you must keep order statistics incrementally - no re-sorting.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** addNum(1), addNum(2), findMedian() | **Output:** 1.5
+  - **Explanation:** the stream [1,2] has an even count, so the median is the average of the two middle values.
+- **Example 2**
+  - **Input:** addNum(3) (continued from Example 1), findMedian() | **Output:** 2.0
+  - **Explanation:** the stream [1,2,3] has an odd count, so the median is the single middle value.
+
+**Constraints:** up to `5 × 10⁴` calls to `addNum` and `findMedian` combined, `-10⁵ ≤ num ≤ 10⁵`.
 
 **Approach:** **Two heaps.** A **max-heap** holds the smaller half, a **min-heap** the larger half, kept balanced in size (differ by ≤ 1). The median is the max-heap root (odd total) or the average of both roots (even). Each `addNum` pushes to one heap and rebalances in O(log n); `findMedian` is O(1). The textbook two-heap streaming pattern.
 
@@ -311,4 +368,53 @@ class MedianFinder:
         return (-self.lo[0] + self.hi[0]) / 2
 ```
 
-Time O(log n) add / O(1) median, space O(n). Pattern: two balanced heaps for streaming median.
+**Complexity:** O(log n) per `addNum`, O(1) per `findMedian`, O(n) space. Pattern: two balanced heaps for streaming median.
+
+**Duplicate problems:**
+- Sliding Window Median (LC 480) - same balanced-two-heap invariant, with the added mechanic of lazily deleting values that slide out of the window.
+
+---
+
+### 5. Swim in Rising Water (LC 778) - Dijkstra-style heap shortest path
+
+An `n × n` grid where `grid[r][c]` is the elevation of that cell. Starting at `(0,0)`, at time `t` you can move to any adjacent cell whose elevation is `≤ t` (water has risen to level `t` everywhere). Find the minimum time to reach `(n-1, n-1)`. Elevations are a permutation of `0..n²-1`; `n ≤ 50`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [[0,2],[1,3]] | **Output:** 3
+  - **Explanation:** at t=3, all cells are submerged (0,1,2 all ≤ 3), so a path from (0,0) to (1,1) exists; t=2 leaves elevation-3 unreachable, blocking the only route.
+- **Example 2**
+  - **Input:** grid = [[0,1,2,3,4],[24,23,22,21,5],[12,13,14,15,16],[11,17,18,19,20],[10,9,8,7,6]] | **Output:** 16
+  - **Explanation:** the spiral layout forces the path through the highest elevation on the only viable route, which is 16.
+
+**Constraints:** `1 ≤ n ≤ 50`, `grid[r][c]` is a permutation of `[0, n² - 1]`.
+
+**Approach:** This is the coverage gap the article's own prose names explicitly - the heap as "the priority queue of frontier nodes" behind Dijkstra - but no entry above exercises it; all four are top-K/merge/median uses, not shortest-path. Reframe the grid as an implicit weighted graph where the "cost" to enter a cell is its elevation, and the "distance" to minimize along a path is the **maximum** elevation seen so far (not a sum - the water has to reach every cell on the path, so the bottleneck cell decides the answer). Run Dijkstra with a min-heap keyed on that running max: always expand the frontier cell reachable at the lowest current bottleneck, relax neighbors by `max(current_bottleneck, neighbor_elevation)`. This is the same greedy frontier-expansion discipline as sum-based Dijkstra, just with `max` swapped in for `+` in the relax step.
+
+```python
+import heapq
+
+def swimInWater(grid: list[list[int]]) -> int:
+    n = len(grid)
+    visited = [[False] * n for _ in range(n)]
+    pq: list[tuple[int, int, int]] = [(grid[0][0], 0, 0)]   # (bottleneck so far, r, c)
+    visited[0][0] = True
+
+    while pq:
+        t, r, c = heapq.heappop(pq)
+        if r == n - 1 and c == n - 1:
+            return t
+        for dr, dc in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < n and 0 <= nc < n and not visited[nr][nc]:
+                visited[nr][nc] = True
+                heapq.heappush(pq, (max(t, grid[nr][nc]), nr, nc))
+
+    return -1  # unreachable - not possible given the problem's constraints
+```
+
+**Complexity:** O(n² log n) time (each of n² cells pushed/popped once from a heap of size up to n²), O(n²) space.
+
+**Duplicate problems:**
+- Path with Minimum Effort (LC 1631) - identical "minimize the max edge weight along a path" Dijkstra variant, framed as absolute elevation difference between adjacent cells instead of raw elevation.
+- Path with Maximum Probability (LC 1514) - same heap-frontier-expansion shape, but combines edge weights by multiplication (probabilities) instead of max, and maximizes instead of minimizes - the heap becomes a max-heap via negation.

@@ -211,6 +211,16 @@ def leftmost(a: list[int], target: int) -> int:
 
 You have `n` versions `[1..n]`; after some version `k`, all are bad. Given an `isBadVersion(v)` API, find the first bad one with the fewest API calls. Constraints: `n ≤ 2³¹ - 1`, so you cannot scan linearly - and the overflow trap is live.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 5, first bad version = 4 | **Output:** 4
+  - **Explanation:** versions 1-3 are good, versions 4-5 are bad; the predicate flips to true at 4.
+- **Example 2**
+  - **Input:** n = 1, first bad version = 1 | **Output:** 1
+  - **Explanation:** the only version is already bad, so it's trivially the first bad one.
+
+**Constraints:** `1 ≤ n ≤ 2³¹ - 1`, `1 ≤ bad ≤ n`.
+
 **Approach:** The predicate `isBadVersion(v)` is _monotonic_ - once true, always true. That's a textbook binary search even though there's no array: search the version _range_ `[1, n]` for the first index where the predicate flips to true. Use the half-open boundary form so the loop converges on the boundary itself.
 
 ```python
@@ -225,11 +235,26 @@ def first_bad_version(n: int, is_bad) -> int:
     return lo
 ```
 
-Time O(log n), space O(1). Pattern: binary search on a monotonic predicate.
+**Complexity:** O(log n) time, O(1) space.
+
+**Duplicate problems:**
+- Find Peak Element (LC 162) - same monotonic-predicate binary search; the predicate is "is `a[mid] < a[mid+1]`" (ascending toward a peak) instead of `isBadVersion`.
+
+---
 
 ### 2. Search in Rotated Sorted Array - half is always sorted
 
 A sorted array rotated at an unknown pivot (`[4,5,6,7,0,1,2]`); find a target's index, or -1. No duplicates; `n ≤ 5000`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [4,5,6,7,0,1,2], target = 0 | **Output:** 4
+  - **Explanation:** the array is rotated at index 4; target 0 sits exactly at the rotation point.
+- **Example 2**
+  - **Input:** nums = [4,5,6,7,0,1,2], target = 3 | **Output:** -1
+  - **Explanation:** 3 does not appear anywhere in the rotated array.
+
+**Constraints:** `1 ≤ nums.length ≤ 5000`, all values unique, array is rotated at an unknown pivot.
 
 **Approach:** The array isn't globally sorted, so the naive predicate breaks - but at any `mid`, **at least one half (`lo..mid` or `mid..hi`) is fully sorted**. Detect which (compare `a[lo]` to `a[mid]`), check whether the target lies within that sorted half's range, and recurse into the half that must contain it. Sortedness is restored _locally_, which is all binary search needs.
 
@@ -253,11 +278,27 @@ def search_rotated(a: list[int], target: int) -> int:
     return -1
 ```
 
-Time O(log n), space O(1). Pattern: binary search with a locally-sorted half.
+**Complexity:** O(log n) time, O(1) space.
+
+**Duplicate problems:**
+- Search in Rotated Sorted Array II (LC 81) - same locally-sorted-half technique, but duplicates can make `a[lo] == a[mid] == a[hi]` ambiguous; shrink both ends by one when that happens.
+- Find Minimum in Rotated Sorted Array (LC 153) - same "detect which half is sorted" logic, simplified to just tracking the pivot value instead of a target.
+
+---
 
 ### 3. Koko Eating Bananas - binary search on the answer
 
 `piles[i]` bananas, `h` hours. Koko picks an eating speed `k`/hour; each hour she eats from one pile (finishing it if it's smaller). Find the minimum `k` that clears all piles within `h` hours. Constraints: `piles[i] ≤ 10⁹`, so the answer range is huge - the tell for searching the _answer_.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** piles = [3,6,7,11], h = 8 | **Output:** 4
+  - **Explanation:** at speed 4, hours needed = ceil(3/4)+ceil(6/4)+ceil(7/4)+ceil(11/4) = 1+2+2+3 = 8, exactly fitting the budget.
+- **Example 2**
+  - **Input:** piles = [30,11,23,4,20], h = 5 | **Output:** 30
+  - **Explanation:** with only 5 hours for 5 piles, Koko must finish each pile in one hour, so speed must cover the largest pile.
+
+**Constraints:** `1 ≤ piles.length ≤ 10⁴`, `piles.length ≤ h ≤ 10⁹`, `1 ≤ piles[i] ≤ 10⁹`.
 
 **Approach:** "Can Koko finish at speed `k`?" is **monotonic** - if speed `k` works, every speed `> k` also works. So binary-search `k` over `[1, max(piles)]`, and for each candidate run an O(n) feasibility check (`sum(ceil(p/k))` hours). You're searching the answer space, not the input.
 
@@ -278,11 +319,26 @@ def min_eating_speed(piles: list[int], h: int) -> int:
     return lo
 ```
 
-Time O(n log(max piles)), space O(1). Pattern: binary search on the answer + monotonic feasibility check.
+**Complexity:** O(n log(max piles)) time, O(1) space.
+
+**Duplicate problems:**
+- Capacity To Ship Packages Within D Days (LC 1011) - identical binary-search-on-the-answer shape; the feasibility check sums packages per day against a capacity instead of hours per pile against a speed.
+
+---
 
 ### 4. Median of Two Sorted Arrays - partition search
 
 Two sorted arrays of sizes `m, n`; find the median of their union in O(log(m+n)). Constraints rule out merging (O(m+n)) for full credit.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums1 = [1,3], nums2 = [2] | **Output:** 2.0
+  - **Explanation:** merged order is [1,2,3]; the median of an odd-length union is the middle element.
+- **Example 2**
+  - **Input:** nums1 = [1,2], nums2 = [3,4] | **Output:** 2.5
+  - **Explanation:** merged order is [1,2,3,4]; the median of an even-length union is the average of the two middle elements.
+
+**Constraints:** `nums1.length == m`, `nums2.length == n`, `0 ≤ m, n ≤ 1000`, `1 ≤ m + n ≤ 2000`.
 
 **Approach:** Don't search for a value - **search for a partition**. Binary-search a cut position in the smaller array; the cut in the larger array is forced by the median's count requirement. A cut is correct when `max(left side) <= min(right side)` across both arrays - a monotonic condition on the cut index, so binary search applies. This is the hardest application: the search space is _partition positions_, not elements.
 
@@ -310,4 +366,6 @@ def find_median_sorted_arrays(a: list[int], b: list[int]) -> float:
     raise ValueError("inputs not sorted")
 ```
 
-Time O(log(min(m, n))), space O(1). Pattern: binary search on a partition index.
+**Complexity:** O(log(min(m, n))) time, O(1) space.
+
+**Duplicate problems:** none found at verified confidence - the partition-search technique is distinctive enough that no close LC duplicate shares this exact mechanic.

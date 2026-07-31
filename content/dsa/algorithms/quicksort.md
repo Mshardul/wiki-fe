@@ -228,7 +228,17 @@ nums.sort()                                     # CPython: Timsort; C++ std::sor
 
 ### 1. Sort an Array - quicksort with a randomized pivot
 
-Sort an integer array in O(n log n) average without the library sort. Constraints: `n ≤ 5·10⁴`, and test suites often include **already-sorted** and **all-equal** inputs specifically to punish naive pivots.
+**Problem:** Sort an integer array in ascending order in O(n log n) average time, without using the library sort.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [5, 2, 3, 1] | **Output:** [1, 2, 3, 5]
+  - **Explanation:** randomized-pivot partitioning recursively sorts each side around a pivot until the array is fully ordered.
+- **Example 2**
+  - **Input:** nums = [5, 1, 1, 2, 0, 0] | **Output:** [0, 0, 1, 1, 2, 5]
+  - **Explanation:** duplicates land contiguously; the randomized pivot avoids the O(n²) degeneracy that a fixed first/last pivot hits on adversarial or heavily-duplicated input.
+
+**Constraints:** `n ≤ 5·10⁴`, and test suites often include **already-sorted** and **all-equal** inputs specifically to punish naive pivots.
 
 **Approach:** Quicksort with a **randomized pivot** and recursion into the smaller side. The randomization is not optional here - a fixed first/last pivot times out on the adversarial sorted-input cases. For robustness against heavy duplicates, a 3-way partition (problem 3) is even safer, but randomized 2-way passes.
 
@@ -252,11 +262,23 @@ def sort_array(nums: list[int]) -> list[int]:
     return nums
 ```
 
-Time O(n log n) average / O(n²) worst (randomization-mitigated), space O(log n). Pattern: randomized quicksort.
+**Complexity:** O(n log n) time average / O(n²) worst (randomization-mitigated), O(log n) space.
+
+---
 
 ### 2. Kth Largest Element - quickselect
 
-Find the k-th largest element in an unsorted array. Constraints: `n ≤ 10⁵`, expected O(n) - so a full sort (O(n log n)) is the "works but not optimal" answer.
+**Problem:** Find the k-th largest element in an unsorted array, in expected O(n) rather than a full O(n log n) sort.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [3, 2, 1, 5, 6, 4], k = 2 | **Output:** 5
+  - **Explanation:** quickselect partitions until the pivot lands exactly at the index for the 2nd-largest value.
+- **Example 2**
+  - **Input:** nums = [3, 2, 3, 1, 2, 4, 5, 5, 6], k = 4 | **Output:** 4
+  - **Explanation:** duplicates don't change the target index; recursion prunes to the single side containing it.
+
+**Constraints:** `n ≤ 10⁵`, expected O(n) - so a full sort (O(n log n)) is the "works but not optimal" answer.
 
 **Approach:** **Quickselect** - quicksort that recurses into only the side containing the target index. Partition around a random pivot; the pivot lands at its final index `p`. If `p` is the target, return it; else recurse into the single side that contains the target. Pruning to one side gives `T(n)=T(n/2)+O(n)` → O(n) average.
 
@@ -282,11 +304,25 @@ def find_kth_largest(nums: list[int], k: int) -> int:
             hi = i - 1                          # recurse left only
 ```
 
-Time O(n) average / O(n²) worst, space O(1). Pattern: quickselect (one-sided quicksort).
+**Complexity:** O(n) time average / O(n²) worst, O(1) space.
+
+**Duplicate problems:**
+- Top K Frequent Elements (LC 347) - quickselect on frequency counts instead of raw values; partition by frequency to find the top-k cutoff.
+
+---
 
 ### 3. Sort Colors - three-way partition
 
-Sort an array of `0`s, `1`s, `2`s in-place, one pass, O(1) space. Constraints: `n ≤ 300`, exactly 3 distinct keys - the tell for a single 3-way partition, not a general sort.
+**Problem:** Sort an array containing only `0`s, `1`s, and `2`s in-place, in one pass, using O(1) extra space.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [2, 0, 2, 1, 1, 0] | **Output:** [0, 0, 1, 1, 2, 2]
+  - **Explanation:** the three pointers `low`/`mid`/`high` classify each element into its region as `mid` sweeps once across the array.
+- **Example 2**
+  - **Input:** nums = [2, 0, 1] | **Output:** [0, 1, 2]
+
+**Constraints:** `n ≤ 300`, exactly 3 distinct keys - the tell for a single 3-way partition, not a general sort.
 
 **Approach:** This _is_ quicksort's partition with a fixed pivot value (1) and three regions - the **Dutch National Flag**. Three pointers: `low` (boundary of 0s), `mid` (cursor), `high` (boundary of 2s). Swap each element into its region as `mid` sweeps. It's also the cure for quicksort's all-equal O(n²) degeneracy, demonstrated standalone.
 
@@ -304,11 +340,25 @@ def sort_colors(nums: list[int]) -> None:
             high -= 1                            # don't advance mid: swapped-in value unchecked
 ```
 
-Time O(n), space O(1). Pattern: 3-way partition (Dutch National Flag).
+**Complexity:** O(n) time, O(1) space.
+
+**Duplicate problems:**
+- Partition Array According to Given Pivot (LC 2161) - same three-region classification, but around an arbitrary pivot value instead of the fixed `{0,1,2}` alphabet.
+
+---
 
 ### 4. Wiggle Sort II - quickselect + three-way partition
 
-Reorder an array so `a[0] < a[1] > a[2] < a[3] …` (strictly alternating). Constraints: `n ≤ 5·10⁴`; duplicates near the median make the naive interleave fail, so this composes two quicksort primitives.
+**Problem:** Reorder an array so `a[0] < a[1] > a[2] < a[3] …` (strictly alternating peaks and valleys).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1, 5, 1, 1, 6, 4] | **Output:** [1, 6, 1, 5, 1, 4]
+  - **Explanation:** the median (found via quickselect) is 4; values above and below it are interleaved on a virtual odd-first index map so equal medians land apart.
+- **Example 2**
+  - **Input:** nums = [1, 3, 2, 2, 3, 1] | **Output:** [2, 3, 1, 3, 1, 2]
+
+**Constraints:** `n ≤ 5·10⁴`; duplicates near the median make the naive interleave fail, so this composes two quicksort primitives.
 
 **Approach:** Find the **median** with quickselect (O(n)), 3-way-partition around it so equal-to-median values cluster, then place the larger half and smaller half into alternating index positions (odd indices first, descending, to keep equal medians apart). It's the hardest because the duplicate handling - separating equal medians to opposite ends - is exactly why a plain sort-and-interleave breaks.
 
@@ -331,4 +381,4 @@ def wiggle_sort(nums: list[int]) -> None:
             i += 1
 ```
 
-Time O(n) average, space O(1). Pattern: quickselect for the median + 3-way partition on a virtual index map.
+**Complexity:** O(n) time average, O(1) space.

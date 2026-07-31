@@ -332,9 +332,19 @@ When summing path weights, the running total can exceed 32-bit int range. In Pyt
 
 ## Practice problems
 
-### Number of Islands (LC 200)
+### 1. Number of Islands (LC 200) - BFS/DFS connected components
 
 Given a 2D binary grid of `'1'`s (land) and `'0'`s (water), count the number of islands. An island is a maximal group of connected `'1'`s (4-directional). Grid size up to 300 × 300.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [["1","1","0"],["1","0","0"],["0","0","1"]] | **Output:** 2
+  - **Explanation:** the top-left 3 land cells form one connected island; the bottom-right corner is a second, isolated island.
+- **Example 2**
+  - **Input:** grid = [["1","0"],["0","1"]] | **Output:** 2
+  - **Explanation:** the two land cells are diagonal, not 4-directionally adjacent, so they belong to separate islands.
+
+**Constraints:** `1 ≤ rows, cols ≤ 300`, grid contains only `'0'` and `'1'`.
 
 **Approach:** Classic implicit-graph BFS/DFS. Each `'1'` cell is a node; valid 4-directional moves to adjacent `'1'` cells are edges. Iterate all cells; when an unvisited `'1'` is found, run BFS/DFS to mark the entire island visited and increment the count. This is the "connected components" pattern.
 
@@ -376,9 +386,19 @@ def numIslands(grid: list[list[str]]) -> int:
 
 ---
 
-### Clone Graph (LC 133)
+### 2. Clone Graph (LC 133) - BFS + hashmap original-to-clone
 
 Given a reference to a node in a connected undirected graph (each node has a value and a list of neighbors), return a deep copy. Nodes have values 1 to n; n ≤ 100.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** adjList = [[2,4],[1,3],[2,4],[1,3]] | **Output:** [[2,4],[1,3],[2,4],[1,3]]
+  - **Explanation:** node 1 connects to 2 and 4, node 2 connects to 1 and 3, etc.; the clone reproduces the exact same adjacency structure with new node objects.
+- **Example 2**
+  - **Input:** adjList = [[]] | **Output:** [[]]
+  - **Explanation:** a single node with no neighbors clones to a single isolated node.
+
+**Constraints:** `0 ≤` number of nodes `≤ 100`, node values are unique, graph is connected and undirected.
 
 **Approach:** BFS from the given node. Maintain a `clone_map: dict[Node, Node]` mapping original nodes to their clones. When first encountering a neighbor, create its clone and enqueue it. After BFS, wire each clone's neighbor list by looking up neighbors in `clone_map`. The visited check is `node in clone_map`.
 
@@ -416,9 +436,19 @@ def cloneGraph(node: Optional[Node]) -> Optional[Node]:
 
 ---
 
-### Course Schedule (LC 207)
+### 3. Course Schedule (LC 207) - DFS three-color cycle detection / topo sort
 
 Given `numCourses` and a list of `[a, b]` prerequisites (must take b before a), determine if all courses can be finished. Up to 2000 courses, 5000 prerequisites.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** numCourses = 2, prerequisites = [[1,0]] | **Output:** true
+  - **Explanation:** take course 0, then course 1 - no cycle.
+- **Example 2**
+  - **Input:** numCourses = 2, prerequisites = [[1,0],[0,1]] | **Output:** false
+  - **Explanation:** course 0 requires course 1 and course 1 requires course 0 - a cycle, so neither can ever be taken first.
+
+**Constraints:** `1 ≤ numCourses ≤ 2000`, `0 ≤ prerequisites.length ≤ 5000`, no duplicate prerequisite pairs.
 
 **Approach:** Build a directed graph; the problem reduces to cycle detection in a DAG. Use DFS with three-color marking: WHITE (unvisited), GRAY (in current DFS path), BLACK (fully processed). If DFS reaches a GRAY node, a cycle exists → return False. This is topological-sort cycle detection, not simple visited/unvisited.
 
@@ -450,3 +480,49 @@ def canFinish(numCourses: int, prerequisites: list[list[int]]) -> bool:
 - Course Schedule II (LC 210) - same cycle detection + topological sort; return the order instead of just True/False.
 - Find Eventual Safe States (LC 802) - same three-color DFS; nodes that are not on any cycle (BLACK nodes) are "safe."
 - Alien Dictionary (LC 269) - build a directed graph from character ordering constraints, then topological sort + cycle detection.
+
+---
+
+### 4. Network Delay Time (LC 743) - weighted shortest path (Dijkstra)
+
+A signal starts at node `k` and travels through a weighted directed graph (`times[i] = [u, v, w]`, edge u→v costs w). Return the time for the signal to reach every node, or -1 if some node is unreachable. Up to 100 nodes, 6000 edges, positive weights.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** times = [[2,1,1],[2,3,1],[3,4,1]], n = 4, k = 2 | **Output:** 2
+  - **Explanation:** from node 2, node 1 is reached in 1, node 3 in 1, node 4 (via 3) in 2 - the last node to receive the signal sets the answer.
+- **Example 2**
+  - **Input:** times = [[1,2,1]], n = 2, k = 2 | **Output:** -1
+  - **Explanation:** node 2 has no outgoing edge to node 1, so node 1 is unreachable from source 2.
+
+**Constraints:** `1 ≤ n ≤ 100`, `1 ≤ times.length ≤ 6000`, `1 ≤ w ≤ 100`, `1 ≤ u, v, k ≤ n`, all edge weights positive.
+
+**Approach:** This is the coverage gap in this article: all three entries above are unweighted BFS/DFS, but the article's own "When to use" section names Dijkstra as the canonical graph use case, so this is the entry that actually exercises it. Run Dijkstra from `k`: a min-priority-queue of `(distance, node)` pairs, always expanding the closest unvisited frontier node next and relaxing its outgoing edges. Unlike BFS (all edges cost 1, so a plain FIFO queue suffices), positive unequal weights require the greedy "always expand the globally closest frontier node" discipline that only a heap gives efficiently. The answer is the max over all shortest distances, or -1 if any node was never reached.
+
+```python
+import heapq
+
+def networkDelayTime(times: list[list[int]], n: int, k: int) -> int:
+    graph: dict[int, list[tuple[int, int]]] = {}
+    for u, v, w in times:
+        graph.setdefault(u, []).append((v, w))
+
+    dist: dict[int, int] = {}
+    pq: list[tuple[int, int]] = [(0, k)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if u in dist:                 # already finalized via a shorter path
+            continue
+        dist[u] = d
+        for v, w in graph.get(u, []):
+            if v not in dist:
+                heapq.heappush(pq, (d + w, v))
+
+    return max(dist.values()) if len(dist) == n else -1
+```
+
+**Complexity:** O(E log V) time (each edge relaxation pushes to a heap of at most V entries), O(V + E) space.
+
+**Duplicate problems:**
+- Path with Minimum Effort (LC 1631) - same Dijkstra-on-graph shape, but the "distance" being minimized is the max step-height along the path instead of a sum, so the relax rule swaps `+` for `max`.
+- Cheapest Flights Within K Stops (LC 787) - Dijkstra-shaped but with a stop-count constraint added to the state, so plain Dijkstra needs a Bellman-Ford-style relaxation-count bound instead of a simple visited set.

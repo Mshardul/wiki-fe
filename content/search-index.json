@@ -429,16 +429,10 @@
           "description": "Augmented BST storing intervals; O(log n + k) stabbing and overlap queries - the structure for sweep-line and scheduling problems."
         },
         {
-          "title": "Suffix Array",
-          "path": "./content/dsa/data-structures/suffix-array.md",
-          "slug": "suffix-array",
-          "description": "Sorted array of suffix indices. O(n log² n) prefix-doubling build, O(m log n) pattern search - lighter than a suffix tree; the CP string and genomics workhorse."
-        },
-        {
           "title": "Suffix Tree",
           "path": "./content/dsa/data-structures/suffix-tree.md",
           "slug": "suffix-tree",
-          "description": "Compressed trie of every suffix. O(n) Ukkonen build, O(m) pattern search regardless of text size - at 5-10× a suffix array's memory footprint and much harder to implement."
+          "description": "Compressed trie of every suffix, plus its array-based variant (suffix array + LCP array). Tree: O(n) Ukkonen build, O(m) pattern search regardless of text size. Array: O(n log² n) build, O(m log n) search, lighter and simpler - the CP string and genomics workhorse."
         }
       ]
     },

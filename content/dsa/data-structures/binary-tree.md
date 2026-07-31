@@ -211,20 +211,17 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Optional
 
-
 @dataclass
 class TreeNode:
     val: int
     left: Optional["TreeNode"] = None
     right: Optional["TreeNode"] = None
 
-
 def inorder(root: Optional[TreeNode]) -> list[int]:
     """Recursive in-order: left, node, right → sorted on a BST."""
     if root is None:
         return []
     return inorder(root.left) + [root.val] + inorder(root.right)
-
 
 def inorder_iterative(root: Optional[TreeNode]) -> list[int]:
     """Same walk with an explicit stack - no recursion-depth limit."""
@@ -237,7 +234,6 @@ def inorder_iterative(root: Optional[TreeNode]) -> list[int]:
         out.append(cur.val)
         cur = cur.right
     return out
-
 
 def level_order(root: Optional[TreeNode]) -> list[list[int]]:
     """BFS grouped by level using a queue."""
@@ -310,9 +306,19 @@ Five staples, each a **distinct** tree technique - no two solved the same way.
 
 ### 1. Maximum Depth of Binary Tree - _DFS recursion_
 
-**Problem.** Return the maximum depth (number of nodes on the longest root-to-leaf path) of a binary tree. E.g. a balanced 3-level tree → `3`; empty → `0`.
+Return the maximum depth (number of nodes on the longest root-to-leaf path) of a binary tree.
 
-**Approach.** The self-similar definition is the solution: depth of a node = 1 + max(depth of left, depth of right), with empty = 0. A direct post-order recursion - solve both subtrees, combine. The cleanest demonstration of "recurse, combine" on a tree.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [3,9,20,null,null,15,7] | **Output:** 3
+  - **Explanation:** the longest root-to-leaf path is 3→20→15 (or 3→20→7), 3 nodes deep.
+- **Example 2**
+  - **Input:** root = [] | **Output:** 0
+  - **Explanation:** an empty tree has no nodes, so depth is 0 by convention.
+
+**Constraints:** `0 ≤ number of nodes ≤ 10⁴`, `-100 ≤ node.val ≤ 100`.
+
+**Approach:** The self-similar definition is the solution: depth of a node = 1 + max(depth of left, depth of right), with empty = 0. A direct post-order recursion - solve both subtrees, combine. The cleanest demonstration of "recurse, combine" on a tree.
 
 ```python
 def max_depth(root: Optional[TreeNode]) -> int:
@@ -321,13 +327,26 @@ def max_depth(root: Optional[TreeNode]) -> int:
     return 1 + max(max_depth(root.left), max_depth(root.right))
 ```
 
-**Complexity.** O(n) time, O(h) space (recursion stack).
+**Complexity:** O(n) time, O(h) space (recursion stack).
+
+**Duplicate problems:**
+- Minimum Depth of Binary Tree (LC 111) - same post-order recurse-and-combine shape, but must special-case a single-child node (it's not a leaf, so the shorter side doesn't count).
 
 ### 2. Binary Tree Level Order Traversal - _BFS_
 
-**Problem.** Return the node values grouped by level, top to bottom. E.g. the tree `[3,9,20,null,null,15,7]` → `[[3],[9,20],[15,7]]`.
+Return the node values grouped by level, top to bottom.
 
-**Approach.** BFS with a [queue](./queue.md), snapshotting the queue length at the start of each iteration so you process exactly one level before moving down. The FIFO order guarantees left-to-right within a level. The canonical "process by depth" tree problem.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [3,9,20,null,null,15,7] | **Output:** [[3],[9,20],[15,7]]
+  - **Explanation:** level 0 has just the root; level 1 has 9 and 20; level 2 has 15 and 7.
+- **Example 2**
+  - **Input:** root = [1] | **Output:** [[1]]
+  - **Explanation:** a single-node tree has exactly one level.
+
+**Constraints:** `0 ≤ number of nodes ≤ 2000`, `-1000 ≤ node.val ≤ 1000`.
+
+**Approach:** BFS with a [queue](./queue.md), snapshotting the queue length at the start of each iteration so you process exactly one level before moving down. The FIFO order guarantees left-to-right within a level. The canonical "process by depth" tree problem.
 
 ```python
 from collections import deque
@@ -347,13 +366,27 @@ def level_order(root: Optional[TreeNode]) -> list[list[int]]:
     return out
 ```
 
-**Complexity.** O(n) time, O(n) space (queue holds up to a full level). Pattern: [Tree & Graph Traversal](../patterns/tree-graph-traversal.md).
+**Complexity:** O(n) time, O(n) space (queue holds up to a full level). Pattern: [Tree & Graph Traversal](../patterns/tree-graph-traversal.md).
+
+**Duplicate problems:**
+- Binary Tree Zigzag Level Order Traversal (LC 103) - identical BFS-by-level mechanic, alternating the append direction per level.
+- Average of Levels in Binary Tree (LC 637) - same level-snapshot BFS, averaging instead of collecting.
 
 ### 3. Invert Binary Tree - _recursive swap_
 
-**Problem.** Mirror a binary tree: swap every node's left and right children. E.g. `[4,2,7,1,3,6,9]` → `[4,7,2,9,6,3,1]`.
+Mirror a binary tree: swap every node's left and right children.
 
-**Approach.** Recurse: swap the current node's two children, then invert each subtree. A pre-order (swap then descend) or post-order (descend then swap) both work - the swap is local and the recursion handles the rest. The "famous whiteboard" one-liner of tree recursion.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [4,2,7,1,3,6,9] | **Output:** [4,7,2,9,6,3,1]
+  - **Explanation:** each node's children are swapped, recursively, so the whole tree becomes its mirror image.
+- **Example 2**
+  - **Input:** root = [] | **Output:** []
+  - **Explanation:** an empty tree inverts to itself - the base case returns immediately.
+
+**Constraints:** `0 ≤ number of nodes ≤ 100`, `-100 ≤ node.val ≤ 100`.
+
+**Approach:** Recurse: swap the current node's two children, then invert each subtree. A pre-order (swap then descend) or post-order (descend then swap) both work - the swap is local and the recursion handles the rest. The "famous whiteboard" one-liner of tree recursion.
 
 ```python
 def invert_tree(root: Optional[TreeNode]) -> Optional[TreeNode]:
@@ -363,13 +396,23 @@ def invert_tree(root: Optional[TreeNode]) -> Optional[TreeNode]:
     return root
 ```
 
-**Complexity.** O(n) time, O(h) space.
+**Complexity:** O(n) time, O(h) space.
 
 ### 4. Diameter of Binary Tree - _tree DP_
 
-**Problem.** Return the length of the longest path between any two nodes (counted in edges), which may or may not pass through the root. E.g. `[1,2,3,4,5]` → `3` (the path `4→2→1→3` or `5→2→1→3`).
+Return the length of the longest path between any two nodes (counted in edges), which may or may not pass through the root.
 
-**Approach.** **Tree DP**: at each node, the longest path _through_ it is `leftHeight + rightHeight`; update a global max with that, while _returning_ `1 + max(leftHeight, rightHeight)` (the height) to the parent. The two-values trick - return one thing, track another - is the heart of tree DP. One post-order pass.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [1,2,3,4,5] | **Output:** 3
+  - **Explanation:** the longest path is `4→2→1→3` (or `5→2→1→3`), 3 edges.
+- **Example 2**
+  - **Input:** root = [1,2] | **Output:** 1
+  - **Explanation:** the only path is the single edge from 1 to 2.
+
+**Constraints:** `1 ≤ number of nodes ≤ 10⁴`, `-100 ≤ node.val ≤ 100`.
+
+**Approach:** **Tree DP**: at each node, the longest path _through_ it is `leftHeight + rightHeight`; update a global max with that, while _returning_ `1 + max(leftHeight, rightHeight)` (the height) to the parent. The two-values trick - return one thing, track another - is the heart of tree DP. One post-order pass.
 
 ```python
 def diameter_of_binary_tree(root: Optional[TreeNode]) -> int:
@@ -385,13 +428,26 @@ def diameter_of_binary_tree(root: Optional[TreeNode]) -> int:
     return best
 ```
 
-**Complexity.** O(n) time, O(h) space.
+**Complexity:** O(n) time, O(h) space.
+
+**Duplicate problems:**
+- Binary Tree Maximum Path Sum (LC 124) - same return-one-track-another tree DP shape, summing values instead of counting edges (and clamping negative subtree contributions to 0).
 
 ### 5. Lowest Common Ancestor - _recursive search_
 
-**Problem.** Given two nodes `p` and `q` in a binary tree, return their lowest common ancestor (the deepest node having both as descendants). Both nodes exist in the tree.
+Given two nodes `p` and `q` in a binary tree, return their lowest common ancestor (the deepest node having both as descendants). Both nodes exist in the tree.
 
-**Approach.** Recurse: if the current node is `p`, `q`, or null, return it. Recurse into both subtrees; if **both** sides return non-null, the current node is the split point → it's the LCA. If only one side does, the LCA is up that side. The recursion "bubbles up" the answer from where the two targets first diverge.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 1 | **Output:** 3
+  - **Explanation:** 5 and 1 are on opposite sides of the root, so the root itself is the split point.
+- **Example 2**
+  - **Input:** root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 4 | **Output:** 5
+  - **Explanation:** 4 is a descendant of 5 (via 2), so 5 is its own ancestor and the LCA.
+
+**Constraints:** `2 ≤ number of nodes ≤ 10⁵`, all node values unique, `p` and `q` both exist in the tree and `p ≠ q`.
+
+**Approach:** Recurse: if the current node is `p`, `q`, or null, return it. Recurse into both subtrees; if **both** sides return non-null, the current node is the split point → it's the LCA. If only one side does, the LCA is up that side. The recursion "bubbles up" the answer from where the two targets first diverge.
 
 ```python
 def lowest_common_ancestor(root, p, q):
@@ -404,4 +460,7 @@ def lowest_common_ancestor(root, p, q):
     return left or right                    # both on one side (or neither)
 ```
 
-**Complexity.** O(n) time, O(h) space.
+**Complexity:** O(n) time, O(h) space.
+
+**Duplicate problems:**
+- Lowest Common Ancestor of a Binary Tree II (LC 1644) - same bubble-up recursion, but must handle the case where `p` or `q` might not exist in the tree at all.

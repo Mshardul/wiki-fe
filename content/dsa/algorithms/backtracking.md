@@ -311,6 +311,18 @@ Each problem below exercises a **distinct** backtracking technique - incremental
 
 Given `n` and `k`, return all `k`-length combinations of `1..n`. Constraints: `1 ≤ k ≤ n ≤ 20`, so `C(n,k)` results - squarely in backtracking range. Technique: **incremental construction with a moving `start` index** so each element is only used after the previous, preventing reordered duplicates.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 4, k = 2 | **Output:** [[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
+  - **Explanation:** every 2-element combination of `{1,2,3,4}` in increasing order, no repeats since `start` always moves forward.
+- **Example 2**
+  - **Input:** n = 1, k = 1 | **Output:** [[1]]
+  - **Explanation:** only one element and one slot, so the only combination is `[1]`.
+
+**Constraints:** `1 ≤ k ≤ n ≤ 20`.
+
+**Approach:** Build combinations incrementally with a moving `start` index so each element is only considered after the previous one, which prevents both reuse and reordered duplicates. Prune branches where too few numbers remain to fill the remaining slots.
+
 ```python
 def combine(n: int, k: int) -> List[List[int]]:
     res, path = [], []
@@ -326,11 +338,29 @@ def combine(n: int, k: int) -> List[List[int]]:
     return res
 ```
 
-**Complexity:** `O(k · C(n,k))` time, `O(k)` space. Pattern: subsets-of-fixed-size - see [Subsets & Permutations](../patterns/subsets-permutations.md).
+**Complexity:** `O(k · C(n,k))` time, `O(k)` space.
+
+**Duplicate problems:**
+- Combination Sum (LC 39) - same incremental-construction-with-moving-index technique, gated by a running sum target instead of a fixed slot count; elements may repeat, so the recursive call passes `i` not `i+1`.
+- Letter Combinations of a Phone Number (LC 17) - same index-driven incremental build, mapping digits to letters instead of numbers to a fixed range.
+
+---
 
 ### Word Search (grid backtracking)
 
 Given an `m×n` board of letters and a `word`, return whether the word can be traced through adjacent (up/down/left/right) cells, each used at most once. Constraints: `m, n ≤ 6`, `word ≤ 15` - small enough for DFS from every cell. Technique: **backtracking on a grid with in-place visited marking** (mutate the cell, restore on return) - no separate visited array needed.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "ABCCED" | **Output:** true
+  - **Explanation:** the path A→B→C→C→E→D traces adjacent cells without reusing any cell.
+- **Example 2**
+  - **Input:** board = [["A","B"],["C","D"]], word = "ABCB" | **Output:** false
+  - **Explanation:** after A→B→C, the only adjacent unused cell needed is B again, but B is already used - no valid path exists.
+
+**Constraints:** `1 ≤ m, n ≤ 6`, `1 ≤ word.length ≤ 15`.
+
+**Approach:** Backtrack on the grid with in-place visited marking - mutate the current cell to a sentinel before recursing into its neighbors, then restore it on return. This avoids a separate visited array and makes the "un-choose" step a single assignment.
 
 ```python
 def exist(board: List[List[str]], word: str) -> bool:
@@ -347,11 +377,28 @@ def exist(board: List[List[str]], word: str) -> bool:
     return any(dfs(r, c, 0) for r in range(rows) for c in range(cols))
 ```
 
-**Complexity:** `O(m · n · 4^L)` time (`L` = word length), `O(L)` recursion space. Pattern: grid DFS + backtrack.
+**Complexity:** `O(m · n · 4^L)` time (`L` = word length), `O(L)` recursion space.
+
+**Duplicate problems:**
+- Word Search II (LC 212) - same grid backtracking with in-place marking, but searches for many words at once using a trie to share prefixes across the DFS instead of restarting per word.
+
+---
 
 ### Palindrome Partitioning
 
 Partition a string `s` so every substring is a palindrome; return all such partitions. Constraints: `s ≤ 16`, so up to `2^(n-1)` cut-point choices. Technique: **backtracking over cut positions with a validity check (palindrome) gating each choice** - prune any cut that produces a non-palindromic prefix.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "aab" | **Output:** [["a","a","b"],["aa","b"]]
+  - **Explanation:** both partitions split `s` into pieces that are each individually palindromic.
+- **Example 2**
+  - **Input:** s = "a" | **Output:** [["a"]]
+  - **Explanation:** a single character is trivially a palindrome, so the only partition is itself.
+
+**Constraints:** `1 ≤ s.length ≤ 16`, `s` consists of lowercase English letters.
+
+**Approach:** Backtrack over cut positions, gating each choice with a palindrome-validity check on the candidate substring - only recurse into cuts that keep every emitted piece a palindrome, pruning the rest immediately.
 
 ```python
 def partition(s: str) -> List[List[str]]:
@@ -371,11 +418,28 @@ def partition(s: str) -> List[List[str]]:
     return res
 ```
 
-**Complexity:** `O(n · 2^n)` time, `O(n)` recursion depth. Pattern: partition + constraint-gated choice.
+**Complexity:** `O(n · 2^n)` time, `O(n)` recursion depth.
+
+**Duplicate problems:**
+- Restore IP Addresses (LC 93) - same partition-with-validity-gating technique, cutting the string into 4 segments each valid as an IP octet instead of a palindrome.
+
+---
 
 ### Generate Parentheses
 
 Generate all valid combinations of `n` pairs of parentheses. Constraints: `1 ≤ n ≤ 8` → Catalan(`n`) results. Technique: **choice-counting prune** - track open/close counts and only branch where the partial string can still become valid (`open < n`, `close < open`), so no invalid string is ever built.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 3 | **Output:** ["((()))","(()())","(())()","()(())","()()()"]
+  - **Explanation:** all 5 (Catalan(3)) balanced arrangements of 3 pairs of parentheses.
+- **Example 2**
+  - **Input:** n = 1 | **Output:** ["()"]
+  - **Explanation:** one pair has exactly one valid arrangement.
+
+**Constraints:** `1 ≤ n ≤ 8`.
+
+**Approach:** Track running counts of open and close parentheses placed so far and only branch where the partial string can still be completed validly (`open < n` to add another open, `close < open` to add a close) - this counter-based prune guarantees every generated string is balanced without ever needing to validate after the fact.
 
 ```python
 def generate_parenthesis(n: int) -> List[str]:
@@ -391,4 +455,6 @@ def generate_parenthesis(n: int) -> List[str]:
     return res
 ```
 
-**Complexity:** `O(4^n / √n)` time (Catalan number), `O(n)` space. Pattern: prune-by-counter - distinct from the index/grid/partition techniques above.
+**Complexity:** `O(4^n / √n)` time (Catalan number), `O(n)` space.
+
+**Duplicate problems:** none found at verified confidence - the counter-based prune is distinctive enough on its own that no close LC duplicate shares this exact mechanic.

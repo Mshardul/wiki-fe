@@ -27,7 +27,7 @@
   - [Insert into an AVL tree](#1-insert-into-an-avl-tree--rebalance-on-the-way-up)
   - [Validate height-balanced](#2-validate-height-balanced--bottom-up-heights)
   - [Build a balanced BST from sorted data](#3-build-a-balanced-bst-from-sorted-data--vs-avl)
-  - [Count rotations on a sequence](#4-count-rotations-on-a-sequence--tracing-the-fixups)
+  - [AVL delete with rebalance-on-removal](#4-avl-delete-with-rebalance-on-removal--multi-ancestor-fixup)
 
 ## What it is
 
@@ -195,7 +195,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-
 @dataclass
 class Node:
     key: int
@@ -203,18 +202,14 @@ class Node:
     left: Optional["Node"] = None
     right: Optional["Node"] = None
 
-
 def _h(n: Optional[Node]) -> int:
     return n.height if n else 0
-
 
 def _bf(n: Node) -> int:
     return _h(n.left) - _h(n.right)
 
-
 def _update(n: Node) -> None:
     n.height = 1 + max(_h(n.left), _h(n.right))
-
 
 def _rotate_right(z: Node) -> Node:
     y = z.left                       # y becomes the new root of this subtree
@@ -222,13 +217,11 @@ def _rotate_right(z: Node) -> Node:
     _update(z); _update(y)           # heights: children before parent
     return y
 
-
 def _rotate_left(z: Node) -> Node:
     y = z.right
     z.right, y.left = y.left, z
     _update(z); _update(y)
     return y
-
 
 def insert(node: Optional[Node], key: int) -> Node:
     if node is None:
@@ -269,9 +262,19 @@ Four problems, each a **distinct** facet of AVL - no two the same.
 
 ### 1. Insert into an AVL tree - _rebalance on the way up_
 
-**Problem.** Implement AVL insert: insert a key as in a BST, then restore the height-balance invariant with rotations, returning the new subtree root.
+Implement AVL insert: insert a key as in a BST, then restore the height-balance invariant with rotations, returning the new subtree root.
 
-**Approach.** Recurse down to insert (BST rule), then on the way back up: update height, compute balance factor, and apply the matching one of the four rotation cases (LL/RR/LR/RL). The case is chosen by the node's bf and its heavy child's bf. Only the lowest unbalanced node needs fixing, so insert does ≤ 1 (single or double) rotation.
+**Worked examples:**
+- **Example 1**
+  - **Input:** insert [10, 20, 30] into an empty AVL tree | **Output:** root = 20, left = 10, right = 30
+  - **Explanation:** inserting 30 after 10,20 makes node 10's balance factor −2 (RR case) - a single left rotation at 10 makes 20 the new root.
+- **Example 2**
+  - **Input:** insert [30, 20, 10] into an empty AVL tree | **Output:** root = 20, left = 10, right = 30
+  - **Explanation:** mirror of example 1 - inserting 10 last makes 30's balance factor +2 (LL case), a single right rotation at 30 makes 20 the root.
+
+**Constraints:** keys are distinct integers, `1 ≤ number of inserts ≤ 10⁴`, duplicates ignored on insert.
+
+**Approach:** Recurse down to insert (BST rule), then on the way back up: update height, compute balance factor, and apply the matching one of the four rotation cases (LL/RR/LR/RL). The case is chosen by the node's bf and its heavy child's bf. Only the lowest unbalanced node needs fixing, so insert does ≤ 1 (single or double) rotation.
 
 ```python
 # (uses the helpers and insert() from Implementation above)
@@ -281,13 +284,26 @@ for k in [10, 20, 30, 40, 50, 25]:
 # tree stays height-balanced after every insert; height ~ log n
 ```
 
-**Complexity.** O(log n) time, O(log n) space (recursion).
+**Complexity:** O(log n) time, O(log n) space (recursion).
+
+**Duplicate problems:**
+- Balance a Binary Search Tree (LC 1382) - same rotation-based rebalancing goal, framed as one-shot rebalance of an existing tree rather than incremental insert.
 
 ### 2. Validate height-balanced - _bottom-up heights_
 
-**Problem.** Given a binary tree, decide whether it satisfies the AVL invariant: every node's subtree heights differ by ≤ 1. E.g. a skewed chain → false; a perfect tree → true.
+Given a binary tree, decide whether it satisfies the AVL invariant: every node's subtree heights differ by ≤ 1.
 
-**Approach.** Compute heights **bottom-up**, returning a sentinel (−1) the moment any subtree is unbalanced, so you abort early instead of recomputing heights repeatedly (the naive O(n²) version recomputes height at every node). One post-order pass - the tree-DP shape.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [3,9,20,null,null,15,7] | **Output:** true
+  - **Explanation:** every node's left/right subtree heights differ by at most 1.
+- **Example 2**
+  - **Input:** root = [1,2,2,3,3,null,null,4,4] | **Output:** false
+  - **Explanation:** the leftmost chain makes node 2's subtrees differ in height by 2.
+
+**Constraints:** `0 ≤ number of nodes ≤ 5000`, `-10⁴ ≤ node value ≤ 10⁴`.
+
+**Approach:** Compute heights **bottom-up**, returning a sentinel (−1) the moment any subtree is unbalanced, so you abort early instead of recomputing heights repeatedly (the naive O(n²) version recomputes height at every node). One post-order pass - the tree-DP shape.
 
 ```python
 def is_balanced(root) -> bool:
@@ -303,13 +319,23 @@ def is_balanced(root) -> bool:
     return check(root) != -1
 ```
 
-**Complexity.** O(n) time, O(h) space.
+**Complexity:** O(n) time, O(h) space.
 
 ### 3. Build a balanced BST from sorted data - _vs AVL_
 
-**Problem.** Given a sorted array, build a height-balanced BST. Contrast with inserting the same keys one-by-one into an AVL.
+Given a sorted array, build a height-balanced BST. Contrast with inserting the same keys one-by-one into an AVL.
 
-**Approach.** Pick the middle element as the root and recurse on each half - balance _by construction_, no rotations, O(n). This is what you'd do for **static** data; AVL is for when keys arrive over time and must stay balanced through inserts/deletes. The contrast is the lesson: build-balanced (cheap, static) vs maintain-balanced (AVL, dynamic).
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [-10, -3, 0, 5, 9] | **Output:** root = 0, left subtree from [-10,-3], right subtree from [5,9]
+  - **Explanation:** the midpoint 0 becomes the root; each half recurses the same way, giving height ⌈log₂ 5⌉.
+- **Example 2**
+  - **Input:** nums = [1, 2, 3, 4] | **Output:** root = 3 (or 2, either valid midpoint), height 2
+  - **Explanation:** an even-length array has two valid midpoints - either produces a height-balanced tree.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁴`, `nums` strictly sorted ascending.
+
+**Approach:** Pick the middle element as the root and recurse on each half - balance _by construction_, no rotations, O(n). This is what you'd do for **static** data; AVL is for when keys arrive over time and must stay balanced through inserts/deletes. The contrast is the lesson: build-balanced (cheap, static) vs maintain-balanced (AVL, dynamic).
 
 ```python
 def sorted_to_balanced(nums: list[int]):
@@ -321,21 +347,62 @@ def sorted_to_balanced(nums: list[int]):
     return build(0, len(nums) - 1)
 ```
 
-**Complexity.** O(n) time, O(log n) space.
+**Complexity:** O(n) time, O(log n) space.
 
-### 4. Count rotations on a sequence - _tracing the fixups_
+**Duplicate problems:**
+- Convert Sorted List to Binary Search Tree (LC 109) - identical midpoint-recursion technique, adapted to a linked list's lack of random access.
 
-**Problem.** Insert a given sequence of keys into an AVL tree and count how many rotations occur. E.g. inserting `1,2,3` triggers one rotation (RR at the root after inserting 3).
+### 4. AVL delete with rebalance-on-removal - _multi-ancestor fixup_
 
-**Approach.** Instrument the insert: increment a counter inside each rotation helper. The exercise builds intuition for _when_ AVL pays its write cost - sorted input triggers a rotation roughly every other insert, which is exactly the work that keeps the height logarithmic. Compare the count to red-black on the same sequence to see why libraries prefer fewer rotations.
+Delete a node from an AVL tree and return the new root. The tree must remain height-balanced after the delete - unlike insert, a delete can require rebalancing at **multiple** ancestors on the way back up, not just the lowest violator.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** tree built by inserting [10, 20, 30], then delete(10) | **Output:** root = 20, left = null, right = 30
+  - **Explanation:** 10 is a leaf; splice it out, retrace to 20 - already balanced, no rotation needed.
+- **Example 2**
+  - **Input:** tree built by inserting [5, 2, 8, 1, 3, 7, 9, 6], then delete(2) | **Output:** height-balanced tree with 2 removed and no residual imbalance
+  - **Explanation:** 2 has two children (1 and 3); replace it with in-order successor 3, delete 3 from its original spot, then retrace from 3's old parent to the root - the removal shortens the left side, so the ancestor at 5 may need rebalancing even though the deletion happened two levels below it, which is the multi-ancestor case insert never triggers.
+
+**Constraints:** keys are distinct integers, `1 ≤ number of nodes ≤ 10⁴`, the key to delete is guaranteed present.
+
+**Approach:** First delete exactly as in a plain BST: a leaf splices out directly, a one-child node is replaced by its child, and a two-child node is replaced by its in-order successor (leftmost of the right subtree), which is then deleted from its original position - the same three cases as [BST delete](./binary-search-tree.md#implementation). The AVL-specific part starts after the splice: retrace the path from the deleted node's **parent** back to the root, updating each ancestor's height and checking its balance factor. Because removing a node can shorten a subtree, an ancestor several levels up can become unbalanced even though the rotation at a lower node already fixed *its* local imbalance - so, unlike insert, you do not stop at the first fix. Continue checking and rotating (LL/RR/LR/RL, same four cases as insert) all the way to the root; delete can trigger up to O(log n) rotations in the worst case, versus insert's at most one.
 
 ```python
-rotations = 0
-def _rotate_right_counting(z):
-    global rotations
-    rotations += 1
-    return _rotate_right(z)
-# ... swap the helpers, insert the sequence, read `rotations`
+def delete(node: Optional[Node], key: int) -> Optional[Node]:
+    if node is None:
+        return None
+    if key < node.key:
+        node.left = delete(node.left, key)
+    elif key > node.key:
+        node.right = delete(node.right, key)
+    else:
+        if node.left is None:
+            return node.right                 # 0 or 1 child → splice
+        if node.right is None:
+            return node.left
+        succ = node.right                     # in-order successor = leftmost of right subtree
+        while succ.left:
+            succ = succ.left
+        node.key = succ.key
+        node.right = delete(node.right, succ.key)   # remove successor from its original spot
+
+    _update(node)
+    bf = _bf(node)
+    # unlike insert, delete must check-and-rotate at EVERY ancestor on the way up,
+    # since a fix here can still leave an ancestor further up unbalanced
+    if bf > 1 and _bf(node.left) >= 0:                # LL
+        return _rotate_right(node)
+    if bf > 1 and _bf(node.left) < 0:                 # LR
+        node.left = _rotate_left(node.left)
+        return _rotate_right(node)
+    if bf < -1 and _bf(node.right) <= 0:              # RR
+        return _rotate_left(node)
+    if bf < -1 and _bf(node.right) > 0:                # RL
+        node.right = _rotate_right(node.right)
+        return _rotate_left(node)
+    return node
 ```
 
-**Complexity.** O(n log n) to insert n keys; the count is O(n) in the worst case (a rotation can happen on most inserts).
+**Complexity:** O(log n) time, O(log n) space (recursion) - the retrace touches every node on the root-to-deleted-node path, and each can trigger a rotation, unlike insert's single rebalance point.
+

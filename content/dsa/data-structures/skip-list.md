@@ -250,11 +250,21 @@ Augment each forward pointer with a **span** - the number of level-0 nodes it sk
 
 ## Practice problems
 
-### 1. Design Skip List (LeetCode 1206)
+### 1. Design Skiplist (LeetCode 1206)
 
 **Problem.** Implement a skip list supporting `search(target)`, `add(num)`, and `erase(num)` - the canonical "build the structure from scratch" interview question. Values fit in a reasonable integer range; up to 2×10⁴ calls.
 
-**Approach.** Direct implementation of the search/insert/delete algorithms above: maintain an `update` array while descending to record where each level's forward pointer needs splicing, randomize the new node's tower height, splice at every level up to that height.
+**Worked examples:**
+- **Example 1**
+  - **Input:** add(1), add(2), add(3), search(2) | **Output:** true
+  - **Explanation:** 2 was inserted, so descending the towers and dropping levels locates it at level 0.
+- **Example 2**
+  - **Input:** add(4), erase(0), search(1) | **Output:** false
+  - **Explanation:** 1 was never added (erase(0) is a no-op since 0 isn't present), so search runs off the end of level 0 without a match.
+
+**Constraints:** `0 ≤ num, target ≤ 2 × 10⁴`, at most `2 × 10⁴` calls to `search`, `add`, and `erase` combined.
+
+**Approach:** Direct implementation of the search/insert/delete algorithms above: maintain an `update` array while descending to record where each level's forward pointer needs splicing, randomize the new node's tower height, splice at every level up to that height.
 
 ```python
 class Solution:
@@ -271,7 +281,7 @@ class Solution:
         return self.skip_list.delete(num)
 ```
 
-**Complexity.** O(log n) expected per operation, O(n) expected space.
+**Complexity:** O(log n) expected per operation, O(n) expected space.
 
 **Duplicate problems:**
 - Design a Sorted Set / Ordered Map from scratch - identical operation set, same underlying structure.
@@ -282,7 +292,17 @@ class Solution:
 
 **Problem.** Maintain a dynamic multiset of numbers supporting insert, delete, and "count of elements in range `[lo, hi]`" queries, with the set changing frequently between queries (ruling out a static sorted array + binary search, since each insert/delete would cost O(n) to shift). n, q ≤ 10⁵.
 
-**Approach.** A span-augmented skip list (see CP-primitives) answers "how many elements are ≤ x" in O(log n) by accumulating span while descending to the position just past x; range count is `rank(hi) - rank(lo - 1)`. This is a genuinely different technique from problem 1 - it requires the order-statistics augmentation, not plain search/insert/delete.
+**Worked examples:**
+- **Example 1**
+  - **Input:** insert(5), insert(2), insert(8), count(2, 8) | **Output:** 3
+  - **Explanation:** all three inserted values (2, 5, 8) fall within `[2, 8]`, so `rank(8) - rank(1)` counts all of them.
+- **Example 2**
+  - **Input:** insert(1), insert(9), delete(1), count(1, 5) | **Output:** 0
+  - **Explanation:** after deleting 1, only 9 remains, which lies outside `[1, 5]`, so the range count is zero.
+
+**Constraints:** `1 ≤ n, q ≤ 10⁵`, values fit in a 32-bit signed integer range.
+
+**Approach:** A span-augmented skip list (see CP-primitives) answers "how many elements are ≤ x" in O(log n) by accumulating span while descending to the position just past x; range count is `rank(hi) - rank(lo - 1)`. This is a genuinely different technique from problem 1 - it requires the order-statistics augmentation, not plain search/insert/delete.
 
 ```python
 # Sketch: extend SkipNode.forward entries with a parallel `span` list,
@@ -291,7 +311,7 @@ def range_count(skip_list_with_span, lo: float, hi: float) -> int:
     return skip_list_with_span.rank(hi) - skip_list_with_span.rank(lo)
 ```
 
-**Complexity.** O(log n) per insert/delete/range-count, O(n) space.
+**Complexity:** O(log n) per insert/delete/range-count, O(n) space.
 
 **Duplicate problems:**
 - Count of Smaller Numbers After Self (LeetCode 315) - same rank-query technique, though a Fenwick tree over coordinate-compressed values is the more common accepted solution in practice.
@@ -302,7 +322,17 @@ def range_count(skip_list_with_span, lo: float, hi: float) -> int:
 
 **Problem.** Design a structure that maps members to scores, supports O(log n) insert/update/remove, and can answer "give me the top-k members by score" and "what is member x's rank" - effectively, design Redis's sorted set. n ≤ 10⁵ members, up to 10⁵ operations.
 
-**Approach.** Pair a hash table (member → score, O(1) lookup) with a span-augmented skip list keyed by score (O(log n) ordered operations and rank queries) - exactly Redis's real implementation. This demonstrates the pattern of combining a hash table for O(1) point lookup with a skip list for ordered/ranked access, a composition that shows up whenever a problem needs *both* fast point lookup *and* ordered range/rank queries.
+**Worked examples:**
+- **Example 1**
+  - **Input:** set_score("alice", 50), set_score("bob", 80), top-1 by score | **Output:** "bob"
+  - **Explanation:** bob's score (80) is higher than alice's (50), so descending the score-ordered skip list returns bob first.
+- **Example 2**
+  - **Input:** set_score("alice", 50), set_score("alice", 90), rank("alice") | **Output:** 0
+  - **Explanation:** updating alice's score deletes her old skip-list entry (found via the hash-table lookup) and re-inserts at 90; with no other members, her rank is 0.
+
+**Constraints:** `1 ≤ n ≤ 10⁵` members, up to `10⁵` operations, scores fit in a double-precision float.
+
+**Approach:** Pair a hash table (member → score, O(1) lookup) with a span-augmented skip list keyed by score (O(log n) ordered operations and rank queries) - exactly Redis's real implementation. This demonstrates the pattern of combining a hash table for O(1) point lookup with a skip list for ordered/ranked access, a composition that shows up whenever a problem needs *both* fast point lookup *and* ordered range/rank queries.
 
 ```python
 class ScoreBoard:
@@ -319,7 +349,7 @@ class ScoreBoard:
         self.by_score.insert(score, member)
 ```
 
-**Complexity.** O(log n) per update, O(1) point lookup by member, O(n) space.
+**Complexity:** O(log n) per update, O(1) point lookup by member, O(n) space.
 
 **Duplicate problems:**
 - Leaderboard design problems (LeetCode 1244 "Design A Leaderboard") - same hash-table + ordered-structure composition, though small `n` there often permits a simpler sorted-list-with-bisect approach.

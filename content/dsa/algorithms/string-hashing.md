@@ -92,7 +92,7 @@ Comparing two substrings for equality is then: compute both O(1) hashes, compare
 | `n ≤ 10³`, few queries | any | direct substring comparison / brute force is simpler and safe |
 | `n ≤ 10⁵`–`10⁶`, many substring-equality queries | repeated equality checks on varying ranges | **string hashing, O(n) preprocess + O(1) per query** |
 | Need a *guaranteed* correct answer (adversarial tests, hacks likely) | equality-critical (e.g. judging distinctness for a final count) | **double hashing** (two independent mod pairs) or suffix array/suffix automaton - single hash risks an adversarial collision |
-| Need lexicographic comparison, not just equality | substring "less than" comparisons, e.g. longest common prefix ordering | hash + binary search on LCP length works, but a [suffix array](../data-structures/suffix-array.md) directly supports comparison and is often simpler once you need many such comparisons |
+| Need lexicographic comparison, not just equality | substring "less than" comparisons, e.g. longest common prefix ordering | hash + binary search on LCP length works, but a [suffix array](../data-structures/suffix-tree.md#suffix-array-array-based-variant) directly supports comparison and is often simpler once you need many such comparisons |
 | One sliding window sweeping the whole string once | fixed-length pattern search | plain single-hash rolling window ([Rabin-Karp](./rabin-karp.md)) is simpler than full prefix-hash machinery |
 
 The tell: if you need to compare **arbitrary, non-adjacent substrings** repeatedly (not just one sliding window), you want the prefix-hash-array form here, not Rabin-Karp's rolling window.
@@ -107,7 +107,7 @@ The tell: if you need to compare **arbitrary, non-adjacent substrings** repeated
 
 **Reach for something else when:**
 
-- You need **guaranteed zero false positives** and can't double-hash for some reason → build a [suffix array](../data-structures/suffix-array.md) or suffix automaton; O(n log n) build, exact comparisons via LCP, no probabilistic risk.
+- You need **guaranteed zero false positives** and can't double-hash for some reason → build a [suffix array](../data-structures/suffix-tree.md#suffix-array-array-based-variant) or suffix automaton; O(n log n) build, exact comparisons via LCP, no probabilistic risk.
 - You're doing a **single left-to-right scan for one pattern** → plain [Rabin-Karp](./rabin-karp.md)'s rolling window (or [KMP](./string-matching.md)/[Z-algorithm](./z-algorithm.md), which are also deterministic) - simpler, no prefix array needed.
 - You need substring **ordering** (not just equality) across many pairs → a suffix array gives you that natively; hashing needs an extra binary-search-on-LCP layer to simulate it.
 
@@ -211,9 +211,19 @@ same = ph.hash_range(0, 3) == ph.hash_range(3, 6)   # "abc" == "abc" -> True, O(
 
 ### 1. Longest Duplicate Substring
 
-**Problem.** Given a string `s`, return the longest substring that appears at least twice (as a contiguous substring), or empty string if none exists. Constraints: `n ≤ 3·10⁴`, so an O(n²) or O(n³) direct approach is too slow; O(n log n) is intended.
+**Problem:** Given a string `s`, return the longest substring that appears at least twice (as a contiguous substring), or empty string if none exists.
 
-**Approach.** Binary search on the answer length `L`: for a candidate `L`, hash every length-`L` substring (O(n) with prefix hashing) and check for a duplicate via a hash set - O(n) per check. Binary search over `L` (O(log n) iterations) gives **O(n log n)** total. This is the canonical "hash + binary search on answer" combination that only works because substring-hash lookup is O(1).
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "banana" | **Output:** "ana"
+  - **Explanation:** binary search on length combined with a rolling-hash duplicate check finds "ana" as the longest substring appearing twice.
+- **Example 2**
+  - **Input:** s = "abcd" | **Output:** ""
+  - **Explanation:** no substring of any length repeats.
+
+**Constraints:** `n ≤ 3·10⁴`, so an O(n²) or O(n³) direct approach is too slow; O(n log n) is intended.
+
+**Approach:** Binary search on the answer length `L`: for a candidate `L`, hash every length-`L` substring (O(n) with prefix hashing) and check for a duplicate via a hash set - O(n) per check. Binary search over `L` (O(log n) iterations) gives **O(n log n)** total. This is the canonical "hash + binary search on answer" combination that only works because substring-hash lookup is O(1).
 
 ```python
 def longest_dup_substring(s: str) -> str:
@@ -253,17 +263,29 @@ def longest_dup_substring(s: str) -> str:
     return s[start:start + best_len]
 ```
 
-**Complexity.** O(n log n) time average, O(n) space.
+**Complexity:** O(n log n) time average, O(n) space.
 
 **Duplicate problems:**
 - Longest Common Substring of two strings - same binary-search-on-length + rolling-hash-set technique, checking across two strings instead of within one.
 - Distinct Substrings Count - same rolling hash per length, but counting unique hashes at each length instead of finding a duplicate.
 
+---
+
 ### 2. Shortest Palindrome (via string hashing)
 
-**Problem.** Given a string `s`, add characters in front of it to make the whole string a palindrome, and return the shortest such palindrome. Constraints: `n ≤ 5·10⁴`.
+**Problem:** Given a string `s`, add characters in front of it to make the whole string a palindrome, and return the shortest such palindrome.
 
-**Approach.** Compute a forward hash of `s` and a forward hash of `s` **reversed** (`rs`), using the same base/mod, and precompute powers of `B` once. Find the longest prefix of `s` that is also a palindrome by scanning the largest `k` such that `hash(s[0:k])` equals `hash(rs[n-k:n])` - the last `k` characters of `rs`, read forward, are exactly `s[0:k]` read backward, so this comparison directly tests "does `s[0:k]` read the same forwards and backwards". Prepend the reverse of the remaining suffix `s[k:]`. This shows string hashing used for **palindrome-prefix detection**, a genuinely different query shape than problem 1's duplicate-detection.
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "aacecaaa" | **Output:** "aaacecaaa"
+  - **Explanation:** the longest palindromic prefix is "aacecaa"; prepending the reverse of the remaining suffix "a" gives the shortest palindrome.
+- **Example 2**
+  - **Input:** s = "abcd" | **Output:** "dcbabcd"
+  - **Explanation:** no palindromic prefix longer than "a" exists, so the reverse of "bcd" is prepended.
+
+**Constraints:** `n ≤ 5·10⁴`.
+
+**Approach:** Compute a forward hash of `s` and a forward hash of `s` **reversed** (`rs`), using the same base/mod, and precompute powers of `B` once. Find the longest prefix of `s` that is also a palindrome by scanning the largest `k` such that `hash(s[0:k])` equals `hash(rs[n-k:n])` - the last `k` characters of `rs`, read forward, are exactly `s[0:k]` read backward, so this comparison directly tests "does `s[0:k]` read the same forwards and backwards". Prepend the reverse of the remaining suffix `s[k:]`. This shows string hashing used for **palindrome-prefix detection**, a genuinely different query shape than problem 1's duplicate-detection.
 
 **The trap this problem exposes:** it's tempting to compare `hash(s[0:k])` directly against a `rev[k]` array built the same way as `fwd` (`rev[i] = rev[i-1]*B + ord(s[n-1-i])`). That's wrong - `rev[k]` built that way is the hash of `s`'s **last** `k` characters read in reverse, not of `s[0:k]` reversed, and the two only coincide by accident at `k = n`. The fix is to hash the *entire reversed string* once, then take a **substring hash query** (`rev[n] - rev[n-k]·pow[k]`, the same formula from [How it works](#how-it-works)) on its trailing `k` characters - not a raw prefix hash of `rev`.
 
@@ -297,16 +319,28 @@ def shortest_palindrome(s: str) -> str:
     return suffix_to_prepend + s
 ```
 
-**Complexity.** O(n) time, O(n) space.
+**Complexity:** O(n) time, O(n) space.
 
 **Duplicate problems:**
 - Palindrome Pairs - same forward/reverse hash comparison technique, applied pairwise across a list of words instead of within one string.
 
+---
+
 ### 3. Distinct Echo Substrings
 
-**Problem.** Return the number of distinct substrings of `s` that can be written as `t + t` for some non-empty string `t` (i.e. a string that is two identical halves concatenated). Constraints: `n ≤ 2000`.
+**Problem:** Return the number of distinct substrings of `s` that can be written as `t + t` for some non-empty string `t` (i.e. a string that is two identical halves concatenated).
 
-**Approach.** For every even-length substring `s[i:j]`, split it in half and use O(1) hash comparison to check whether the first half equals the second half - turning an O(n) character comparison per candidate into O(1). Collect distinct valid `t` values in a hash set (comparing the underlying strings, not just hash values, to guard against collisions - or use double hashing to trust the hash alone). Demonstrates hashing used purely as an O(1) **equality primitive** inside a different enumeration (halves of substrings), a third distinct query shape from problems 1 and 2.
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "abcabcabc" | **Output:** 3
+  - **Explanation:** the three distinct echo substrings are "abcabc", "bcabca", and "cabcab" - each starts at a different offset but hash-verifies as two equal halves.
+- **Example 2**
+  - **Input:** s = "leetcodeleetcode" | **Output:** 2
+  - **Explanation:** the echo substrings are "ee" (t="e") and the whole string "leetcodeleetcode" (t="leetcode").
+
+**Constraints:** `n ≤ 2000`.
+
+**Approach:** For every even-length substring `s[i:j]`, split it in half and use O(1) hash comparison to check whether the first half equals the second half - turning an O(n) character comparison per candidate into O(1). Collect distinct valid `t` values in a hash set (comparing the underlying strings, not just hash values, to guard against collisions - or use double hashing to trust the hash alone). Demonstrates hashing used purely as an O(1) **equality primitive** inside a different enumeration (halves of substrings), a third distinct query shape from problems 1 and 2.
 
 ```python
 def distinct_echo_substrings(s: str) -> int:
@@ -331,7 +365,7 @@ def distinct_echo_substrings(s: str) -> int:
     return len(seen)
 ```
 
-**Complexity.** O(n² ) time (all substring halves checked in O(1) each via hashing, vs O(n³) with direct comparison), O(n) space for hashes plus the found substrings.
+**Complexity:** O(n² ) time (all substring halves checked in O(1) each via hashing, vs O(n³) with direct comparison), O(n) space for hashes plus the found substrings.
 
 **Duplicate problems:**
 - Repeated Substring Pattern (LC 459) - same halves-equality-via-hash idea applied to the whole string instead of every substring.

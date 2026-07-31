@@ -286,9 +286,19 @@ def dijkstra_with_path(
 
 ### 1. Network Delay Time (LC 743)
 
-**Problem.** Given a directed, weighted graph of `n` nodes (labeled 1 to n) and a list of travel times as directed edges `(u, v, w)`, find how long it takes for a signal sent from node `k` to reach all `n` nodes. Return the maximum of the shortest distances from `k`, or -1 if any node is unreachable. Constraints: `n ≤ 100`, `edges ≤ 6000`, weights are positive integers - small enough that any correct Dijkstra runs comfortably.
+**Problem:** Given a directed, weighted graph of `n` nodes (labeled 1 to n) and a list of travel times as directed edges `(u, v, w)`, find how long it takes for a signal sent from node `k` to reach all `n` nodes. Return the maximum of the shortest distances from `k`, or -1 if any node is unreachable. Constraints: `n ≤ 100`, `edges ≤ 6000`, weights are positive integers - small enough that any correct Dijkstra runs comfortably.
 
-**Approach.** This is textbook single-source Dijkstra with no twist: run Dijkstra from `k`, then check whether every node received a finite distance (if not, some node is unreachable, return -1), and return the max of all distances (the last node to receive the signal is the bottleneck).
+**Worked examples:**
+- **Example 1**
+  - **Input:** times = [[2,1,1],[2,3,1],[3,4,1]], n = 4, k = 2 | **Output:** 2
+  - **Explanation:** from node 2, node 1 and node 3 are reached at time 1, and node 4 (via node 3) is reached at time 2 - the maximum of all shortest distances.
+- **Example 2**
+  - **Input:** times = [[1,2,1]], n = 2, k = 1 | **Output:** 1
+  - **Explanation:** node 2 is reached directly in 1 unit of time; both nodes are covered.
+
+**Constraints:** `1 ≤ k ≤ n ≤ 100`, `1 ≤ times.length ≤ 6000`, `1 ≤ wᵢ ≤ 100`.
+
+**Approach:** This is textbook single-source Dijkstra with no twist: run Dijkstra from `k`, then check whether every node received a finite distance (if not, some node is unreachable, return -1), and return the max of all distances (the last node to receive the signal is the bottleneck).
 
 ```python
 import heapq
@@ -319,99 +329,29 @@ def network_delay_time(times: list[list[int]], n: int, k: int) -> int:
     return max(dist.values())
 ```
 
-**Complexity.** O((V + E) log V) time, O(V + E) space.
+**Complexity:** O((V + E) log V) time, O(V + E) space.
 
 **Duplicate problems:**
-- Path with Maximum Probability (LC 1514) - same single-source Dijkstra structure with the comparison flipped to a max-heap and "relaxation" multiplying probabilities instead of adding weights.
+- Path with Maximum Probability (LC 1514) - contrast only, not a true dup: same single-source Dijkstra structure with the comparison flipped to a max-heap and "relaxation" multiplying probabilities instead of adding weights, but the max-combining variant is treated as its own full entry below (Swim in Rising Water) rather than a duplicate of this sum-based entry.
 - Cheapest Flights Within K Stops (LC 787) - same graph shape but needs the state-augmented variant below; not a pure duplicate, listed here to contrast.
 
 ---
 
-### 2. Path with Maximum Probability (LC 1514)
+### 2. Swim in Rising Water (LC 778)
 
-**Problem.** Given an undirected weighted graph where each edge has a "success probability" between 0 and 1, and a start and end node, find the path from start to end that maximizes the product of probabilities along the path. Return that maximum probability, or 0 if no path exists. Constraints: `n ≤ 10⁴` nodes, `edges ≤ 2·10⁴`.
+**Problem:** Given an `n×n` grid where `grid[i][j]` is the elevation at that cell, you start at `(0,0)` at time 0. At time `t`, you can move to an adjacent cell if its elevation is ≤ `t`, and the water level rises so every cell's effective wait time is `max(elevation)` along your path. Find the minimum time to reach `(n-1, n-1)`. Constraints: `n ≤ 50`.
 
-**Approach.** This is Dijkstra with the monoid swapped: instead of *minimizing a sum* of non-negative weights, we *maximize a product* of probabilities in `[0, 1]`. The greedy argument transfers directly because multiplying by a probability in `[0, 1]` can only shrink or hold a running product - the exact analogue of "adding a non-negative weight can only grow or hold a running distance." Use a **max-heap** (negate probabilities, since `heapq` is min-only) and relax with multiplication: `new_prob = prob[u] * edge_prob`, updating `v` if `new_prob > prob[v]`.
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [[0,2],[1,3]] | **Output:** 3
+  - **Explanation:** the path (0,0)→(0,1)→(1,1) has max elevation 3; the path (0,0)→(1,0)→(1,1) also has max elevation 3 - both routes bottleneck at the highest cell they must cross.
+- **Example 2**
+  - **Input:** grid = [[0,1,2,3,4],[24,23,22,21,5],[12,13,14,15,16],[11,17,18,19,20],[10,9,8,7,6]] | **Output:** 16
+  - **Explanation:** the optimal path snakes through the grid staying below elevation 16 as long as possible, bottlenecking at cell value 16 on the way to (4,4).
 
-```python
-import heapq
-from collections import defaultdict
+**Constraints:** `n == grid.length == grid[i].length`, `1 ≤ n ≤ 50`, `0 ≤ grid[i][j] < n²`, every value in `grid` is unique.
 
-def max_probability(
-    n: int, edges: list[list[int]], succ_prob: list[float], start: int, end: int
-) -> float:
-    graph: dict[int, list[tuple[int, float]]] = defaultdict(list)
-    for (a, b), p in zip(edges, succ_prob):
-        graph[a].append((b, p))
-        graph[b].append((a, p))
-
-    prob: dict[int, float] = {start: 1.0}
-    heap: list[tuple[float, int]] = [(-1.0, start)]   # negate for max-heap
-    finalized: set[int] = set()
-
-    while heap:
-        neg_p, u = heapq.heappop(heap)
-        p = -neg_p
-        if u in finalized:
-            continue
-        finalized.add(u)
-        if u == end:
-            return p
-        for v, edge_p in graph[u]:
-            new_p = p * edge_p
-            if new_p > prob.get(v, 0.0):
-                prob[v] = new_p
-                heapq.heappush(heap, (-new_p, v))
-
-    return 0.0
-```
-
-**Complexity.** O((V + E) log V) time, O(V + E) space.
-
-**Duplicate problems:**
-- Network Delay Time (LC 743) - identical Dijkstra skeleton, minimizing sums instead of maximizing products.
-- Swim in Rising Water (LC 778) - same "Dijkstra with a different combining function" idea, minimizing the max edge on a path instead of the sum.
-
----
-
-### 3. Cheapest Flights Within K Stops (LC 787)
-
-**Problem.** Given `n` cities connected by flights with prices, and a source, destination, and a maximum number of stops `k`, find the cheapest price to fly from source to destination using at most `k` stops (`k+1` edges). Return -1 if impossible. Constraints: `n ≤ 100`, `k ≤ n-1`, prices are positive.
-
-**Approach - why plain Dijkstra needs modification.** This is the twist that trips people up: plain Dijkstra's finalize-once invariant is built on "the cheapest path to a node, period" - but here we need "the cheapest path to a node **using at most k edges**", which is a fundamentally different quantity. A node might have a cheaper overall path that uses too many stops, and a more expensive path that fits the stop budget - Dijkstra's greedy finalization would lock in the globally cheapest path and discard the stop-constrained one, giving a wrong answer. The fix: **augment the state from `node` to `(node, stops_used)`**, and relax by stop-count layer rather than by pure distance, so a node can be legitimately "revisited" at a higher stop count if that's cheaper within the budget. In practice this is solved either with a Bellman-Ford-style layered relaxation (exactly `k+1` rounds, since Bellman-Ford's repeated-relaxation structure naturally handles the "at most k edges" constraint that Dijkstra's greedy pop order cannot) or with a modified Dijkstra where the heap state includes stop count and a node can be popped multiple times at different stop counts.
-
-```python
-def find_cheapest_price(n: int, flights: list[list[int]], src: int, dst: int, k: int) -> int:
-    # Bellman-Ford-style layered relaxation - exactly k+1 rounds of edges.
-    # This is the natural fix because Dijkstra's greedy finalize-once model
-    # cannot represent "cheapest path using at most k edges" - only Bellman-Ford's
-    # bounded-round relaxation does.
-    INF = float("inf")
-    dist = [INF] * n
-    dist[src] = 0
-
-    for _ in range(k + 1):
-        new_dist = dist[:]
-        for u, v, w in flights:
-            if dist[u] != INF and dist[u] + w < new_dist[v]:
-                new_dist[v] = dist[u] + w
-        dist = new_dist
-
-    return -1 if dist[dst] == INF else dist[dst]
-```
-
-**Complexity.** O(K · E) time (K+1 rounds, each scanning all edges), O(V) space. Note this is deliberately *not* Dijkstra's complexity - the stop constraint forces a Bellman-Ford-shaped bound instead.
-
-**Duplicate problems:**
-- Path With Minimum Effort (LC 1631) - superficially similar grid-Dijkstra, but does NOT have this twist (no stop limit), so plain Dijkstra with a "minimize max edge" combining function applies directly - a useful contrast for recognizing when the constraint does vs doesn't break Dijkstra's assumptions.
-
----
-
-### 4. Swim in Rising Water (LC 778)
-
-**Problem.** Given an `n×n` grid where `grid[i][j]` is the elevation at that cell, you start at `(0,0)` at time 0. At time `t`, you can move to an adjacent cell if its elevation is ≤ `t`, and the water level rises so every cell's effective wait time is `max(elevation)` along your path. Find the minimum time to reach `(n-1, n-1)`. Constraints: `n ≤ 50`.
-
-**Approach.** This is Dijkstra with the combining function changed from **sum** to **max**: instead of minimizing the sum of edge weights along a path, minimize the *maximum* node elevation encountered along the path (a "minimax path" problem). The greedy argument still transfers: replacing the running max with `max(current, next_elevation)` can only stay the same or increase, exactly like adding a non-negative weight can only stay the same or increase - so popping the minimum-max-so-far node from the heap is still safe to finalize. This combining-function swap (sum → max, sum → product as in problem 2) is the single most common "disguised Dijkstra" twist in interviews - recognize it whenever a problem asks for the "bottleneck" or "minimum of the maximum" along a path.
+**Approach:** This is Dijkstra with the combining function changed from **sum** to **max**: instead of minimizing the sum of edge weights along a path, minimize the *maximum* node elevation encountered along the path (a "minimax path" problem). The greedy argument still transfers: replacing the running max with `max(current, next_elevation)` can only stay the same or increase, exactly like adding a non-negative weight can only stay the same or increase - so popping the minimum-max-so-far node from the heap is still safe to finalize. This combining-function swap (sum → max, sum → product) is the single most common "disguised Dijkstra" twist in interviews - recognize it whenever a problem asks for the "bottleneck" or "minimum of the maximum" along a path. It is **not** a duplicate of plain sum-based Dijkstra (problem 1): the relaxation rule and the greedy-safety argument both change shape (max instead of add), even though the pop-the-cheapest-frontier-node skeleton is identical - which is why it earns its own full entry rather than a dup-line.
 
 ```python
 import heapq
@@ -440,9 +380,52 @@ def swim_in_water(grid: list[list[int]]) -> int:
     return -1
 ```
 
-**Complexity.** O(n² log n) time (grid has n² cells, each heap operation is O(log(n²)) = O(log n)), O(n²) space.
+**Complexity:** O(n² log n) time (grid has n² cells, each heap operation is O(log(n²)) = O(log n)), O(n²) space.
 
 **Duplicate problems:**
+- Path with Maximum Probability (LC 1514) - same "swap the combining function" trick as this entry (max-combining instead of sum), but multiplying probabilities with a max-heap instead of taking the max elevation; ruled not distinct from this entry's max-combining mechanic, so it's folded in here rather than given its own full entry.
 - Path With Minimum Effort (LC 1631) - identical minimax-Dijkstra on a grid, minimizing the maximum absolute difference between adjacent cells instead of the maximum elevation.
-- Path with Maximum Probability (LC 1514) - same "swap the combining function" trick, but with product/max-heap instead of max/min-heap.
+
+---
+
+### 3. Cheapest Flights Within K Stops (LC 787)
+
+**Problem:** Given `n` cities connected by flights with prices, and a source, destination, and a maximum number of stops `k`, find the cheapest price to fly from source to destination using at most `k` stops (`k+1` edges). Return -1 if impossible. Constraints: `n ≤ 100`, `k ≤ n-1`, prices are positive.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 4, flights = [[0,1,100],[1,2,100],[2,0,100],[1,3,600],[2,3,200]], src = 0, dst = 3, k = 1 | **Output:** 700
+  - **Explanation:** with at most 1 stop, the path 0→1→3 costs 100+600=700; the cheaper path 0→1→2→3 needs 2 stops, which exceeds the budget.
+- **Example 2**
+  - **Input:** n = 3, flights = [[0,1,100],[1,2,100],[0,2,500]], src = 0, dst = 2, k = 1 | **Output:** 200
+  - **Explanation:** with 1 stop allowed, 0→1→2 costs 100+100=200, cheaper than the direct 0→2 edge at 500.
+
+**Constraints:** `1 ≤ n ≤ 100`, `0 ≤ flights.length ≤ (n × (n-1) / 2)`, `0 ≤ src, dst ≤ n-1`, `0 ≤ k ≤ n-1`.
+
+**Approach:** Why plain Dijkstra needs modification here - this is the twist that trips people up: plain Dijkstra's finalize-once invariant is built on "the cheapest path to a node, period" - but here we need "the cheapest path to a node **using at most k edges**", which is a fundamentally different quantity. A node might have a cheaper overall path that uses too many stops, and a more expensive path that fits the stop budget - Dijkstra's greedy finalization would lock in the globally cheapest path and discard the stop-constrained one, giving a wrong answer. The fix: **augment the state from `node` to `(node, stops_used)`**, and relax by stop-count layer rather than by pure distance, so a node can be legitimately "revisited" at a higher stop count if that's cheaper within the budget. In practice this is solved either with a Bellman-Ford-style layered relaxation (exactly `k+1` rounds, since Bellman-Ford's repeated-relaxation structure naturally handles the "at most k edges" constraint that Dijkstra's greedy pop order cannot) or with a modified Dijkstra where the heap state includes stop count and a node can be popped multiple times at different stop counts.
+
+```python
+def find_cheapest_price(n: int, flights: list[list[int]], src: int, dst: int, k: int) -> int:
+    # Bellman-Ford-style layered relaxation - exactly k+1 rounds of edges.
+    # This is the natural fix because Dijkstra's greedy finalize-once model
+    # cannot represent "cheapest path using at most k edges" - only Bellman-Ford's
+    # bounded-round relaxation does.
+    INF = float("inf")
+    dist = [INF] * n
+    dist[src] = 0
+
+    for _ in range(k + 1):
+        new_dist = dist[:]
+        for u, v, w in flights:
+            if dist[u] != INF and dist[u] + w < new_dist[v]:
+                new_dist[v] = dist[u] + w
+        dist = new_dist
+
+    return -1 if dist[dst] == INF else dist[dst]
+```
+
+**Complexity:** O(K · E) time (K+1 rounds, each scanning all edges), O(V) space. Note this is deliberately *not* Dijkstra's complexity - the stop constraint forces a Bellman-Ford-shaped bound instead.
+
+**Duplicate problems:**
+- Path With Minimum Effort (LC 1631) - superficially similar grid-Dijkstra, but does NOT have this twist (no stop limit), so plain Dijkstra with a "minimize max edge" combining function applies directly - a useful contrast for recognizing when the constraint does vs doesn't break Dijkstra's assumptions.
 

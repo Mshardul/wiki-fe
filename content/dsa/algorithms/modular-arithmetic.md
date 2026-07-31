@@ -447,11 +447,21 @@ def comb(n: int, k: int, fact: list[int], inv_fact: list[int], p: int) -> int:
 
 ### 1. Fibonacci Number (large n variant)
 
-**Problem:** Compute the n-th Fibonacci number modulo 10^9+7, where `1 ≤ n ≤ 10^18`. The standard recursive or iterative definition is too slow for n = 10^18.
+Compute the n-th Fibonacci number modulo 10^9+7, where `1 ≤ n ≤ 10^18`. The standard recursive or iterative definition is too slow for n = 10^18.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 10 | **Output:** 55
+  - **Explanation:** the 10th Fibonacci number is 55, well under the modulus, so `mod` has no visible effect yet.
+- **Example 2**
+  - **Input:** n = 10^18 | **Output:** (some value in `[0, 10^9+7)`)
+  - **Explanation:** at this scale the true Fibonacci number has millions of digits; matrix exponentiation computes the answer mod 10^9+7 in O(log n) matrix multiplications instead of ever forming the full number.
+
+**Constraints:** `1 ≤ n ≤ 10^18`.
 
 **Approach:** Matrix exponentiation is the fast-Fibonacci technique: the recurrence `[F(n+1), F(n)] = [[1,1],[1,0]]^n × [F(1), F(0)]`. Binary exponentiation on 2×2 matrices takes O(log n) matrix multiplications, each O(1) (fixed size). Each matrix entry is taken mod 10^9+7 after every multiply.
 
-*Insight that unlocks it:* Binary exponentiation works on *any* structure with an associative multiply - integers, matrices, or polynomials. Here the "base" is a 2×2 matrix.
+*Insight that unlocks it:* Binary exponentiation works on *any* structure with an associative multiply - integers, matrices, or polynomials. Here the "base" is a 2×2 matrix - genuinely distinct from scalar binary exponentiation (see the Pow(x,n) duplicate below, which uses the identical squaring loop but on a plain scalar, not a matrix).
 
 ```python
 MOD = 10**9 + 7
@@ -480,17 +490,28 @@ def fib(n: int) -> int:
     return mat_pow(M, n)[0][1]
 ```
 
-**Complexity:** O(log n) matrix multiplications, each O(1) → O(log n) total. Space: O(1).
+**Complexity:** O(log n) matrix multiplications, each O(1) → O(log n) total, O(1) space.
 
 **Duplicate problems:**
 - Climbing Stairs (LC 70) - same Fibonacci recurrence, n ≤ 45; naive iteration works, but matrix pow generalizes to arbitrary linear recurrences.
 - K-th Symbol in Grammar (LC 779) - recursive structure; different recurrence, same halving-per-step pattern.
+- Pow(x, n) (LC 50) - same binary exponentiation squaring loop, applied to a scalar float base instead of a 2×2 matrix; ruled the same core technique (binary exponentiation) as this entry, just on a simpler structure, so it's folded in here rather than kept as its own entry.
 
 ---
 
 ### 2. Count Vowel Permutations (LC 1220)
 
-**Problem:** Count the number of strings of length n using only vowels `{a, e, i, o, u}` where each character can follow only specific vowels (a→e only, e→a or i, etc.). Return the count modulo 10^9+7. Constraints: `1 ≤ n ≤ 2×10^4`.
+Count the number of strings of length n using only vowels `{a, e, i, o, u}` where each character can follow only specific vowels (a→e only, e→a or i, etc.). Return the count modulo 10^9+7.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 1 | **Output:** 5
+  - **Explanation:** any single vowel is valid - all 5 base cases count.
+- **Example 2**
+  - **Input:** n = 2 | **Output:** 10
+  - **Explanation:** each of the 5 length-1 strings extends to exactly 2 valid length-2 strings under the adjacency rules, summing to 10.
+
+**Constraints:** `1 ≤ n ≤ 2×10^4`.
 
 **Approach:** DP over positions and last character. Let `dp[i][v]` = number of valid strings of length i ending in vowel v. Each transition multiplies by at most a handful of previous states. Take mod after each addition to prevent overflow.
 
@@ -522,7 +543,17 @@ def countVowelPermutation(n: int) -> int:
 
 ### 3. Combination Sum IV / nCr mod p
 
-**Problem:** Given integers n and r, compute C(n, r) mod p where p = 10^9+7. Constraints: `0 ≤ r ≤ n ≤ 10^6`. Multiple queries with the same n possible.
+Given integers n and r, compute C(n, r) mod p where p = 10^9+7. Multiple queries with the same n possible.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 10, r = 3 | **Output:** 120
+  - **Explanation:** C(10, 3) = 10!/(3!·7!) = 120, well under the modulus.
+- **Example 2**
+  - **Input:** n = 1000000, r = 500000 | **Output:** (a large value mod 10^9+7)
+  - **Explanation:** the true value has hundreds of thousands of digits; the precomputed factorial/inverse-factorial tables answer this specific query in O(1) once built.
+
+**Constraints:** `0 ≤ r ≤ n ≤ 10^6`.
 
 **Approach:** Precompute factorial and inverse-factorial arrays using the O(n + log p) setup. Each query is then O(1): `C(n, r) = fact[n] × inv_fact[r] × inv_fact[n-r] mod p`.
 
@@ -547,32 +578,3 @@ def solve_combinations() -> None:
 **Duplicate problems:**
 - Unique Paths (LC 62) - `C(m+n-2, m-1)` with small m,n; mod not needed but the formula generalizes to large inputs with this technique.
 - Binomial Coefficient (LC 1569 / many contest variants) - same factorial inverse table; constraint determines whether sieve or Fermat is cheaper.
-
----
-
-### 4. Pow(x, n) (LC 50)
-
-**Problem:** Implement `pow(x, n)` where `x` is a float and `n` is a 32-bit integer (including negative). Return `x^n`. Constraints: `-100.0 < x < 100.0`, `-2^31 ≤ n ≤ 2^31 - 1`.
-
-**Approach:** Binary exponentiation on floats. Handle negative `n` by computing `1.0 / pow(x, -n)`. Edge case: `n = -2^31` overflows when negated in 32-bit int - convert to 64-bit first.
-
-*Insight:* This problem tests whether you know binary exponentiation, not modular arithmetic specifically - but it's the same squaring loop. Demonstrates the algorithm family applies beyond integer mod contexts.
-
-```python
-def myPow(x: float, n: int) -> float:
-    if n < 0:
-        x, n = 1 / x, -n   # safe in Python: arbitrary int, no overflow
-    result = 1.0
-    while n > 0:
-        if n & 1:
-            result *= x
-        x *= x
-        n >>= 1
-    return result
-```
-
-**Complexity:** O(log |n|) time, O(1) space.
-
-**Duplicate problems:**
-- Fast Matrix Exponentiation (e.g., LC 509 matrix variant) - same squaring loop, matrix multiply instead of scalar multiply.
-- Super Pow (LC 372) - `a^b mod 1337` where `b` is given as a digit array; decompose by Euler's theorem + binary exp per digit.

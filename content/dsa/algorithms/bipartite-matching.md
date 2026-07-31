@@ -198,9 +198,19 @@ No - O(VE) at that scale is likely too slow; switch to Hopcroft-Karp for the O(E
 
 ### 1. Maximum Bipartite Matching (canonical, CSES "School Dance")
 
-**Problem.** Given `n` boys and `m` girls with a list of compatible pairs, find the maximum number of pairs that can dance simultaneously, each person paired at most once. n, m ≤ 500, pairs ≤ 1000.
+**Problem:** Given `n` boys and `m` girls with a list of compatible pairs, find the maximum number of pairs that can dance simultaneously, each person paired at most once. n, m ≤ 500, pairs ≤ 1000.
 
-**Approach.** Direct application of Kuhn's algorithm: for each boy, DFS for an augmenting path through currently-matched girls, incrementing the match count on success. Small constraints make Kuhn's O(VE) comfortably fast without needing Hopcroft-Karp.
+**Worked examples:**
+- **Example 1**
+  - **Input:** n_boys = 3, adj = {0: [0, 1], 1: [0], 2: [1]} | **Output:** 3
+  - **Explanation:** boy 0 matches girl 1 (freeing girl 0 for boy 1 via an augmenting path), boy 1 matches girl 0, boy 2 matches girl 1's alternative - a perfect matching of size 3 exists.
+- **Example 2**
+  - **Input:** n_boys = 2, adj = {0: [0], 1: [0]} | **Output:** 1
+  - **Explanation:** both boys are only compatible with the same single girl, so at most one pair can be matched.
+
+**Constraints:** `n, m ≤ 500`, pairs `≤ 1000`.
+
+**Approach:** Direct application of Kuhn's algorithm: for each boy, DFS for an augmenting path through currently-matched girls, incrementing the match count on success. Small constraints make Kuhn's O(VE) comfortably fast without needing Hopcroft-Karp.
 
 ```python
 def school_dance(n_boys: int, adj: dict[int, list[int]]) -> int:
@@ -208,7 +218,7 @@ def school_dance(n_boys: int, adj: dict[int, list[int]]) -> int:
     return matched
 ```
 
-**Complexity.** O(V·E) time, O(V + E) space.
+**Complexity:** O(V·E) time, O(V + E) space.
 
 **Duplicate problems:**
 
@@ -219,9 +229,19 @@ def school_dance(n_boys: int, adj: dict[int, list[int]]) -> int:
 
 ### 2. Minimum Vertex Cover in a Bipartite Graph (König's theorem application)
 
-**Problem.** Given a bipartite graph, find the minimum number of vertices that touch every edge (a vertex cover). n, m ≤ 500.
+**Problem:** Given a bipartite graph, find the minimum number of vertices that touch every edge (a vertex cover). n, m ≤ 500.
 
-**Approach.** This is a *distinct technique layered on top* of matching, not a repeat: König's theorem states that in a bipartite graph, the size of the **minimum vertex cover** equals the size of the **maximum matching**. For the size alone, run max matching and return it directly. To recover the actual cover *set* (not just its size): (1) find all left nodes unmatched, (2) alternate-path DFS from them to mark every reachable node, (3) the cover = unmarked left nodes + marked right nodes. Recognizing that a "minimum cover" question is secretly a matching question is the core insight - the code below solves the size variant only.
+**Worked examples:**
+- **Example 1**
+  - **Input:** left_n = 3, adj = {0: [0], 1: [0, 1], 2: [1]} | **Output:** 2
+  - **Explanation:** the maximum matching has size 2 (e.g. boy 0-girl 0, boy 1-girl 1), and by König's theorem the minimum vertex cover also has size 2.
+- **Example 2**
+  - **Input:** left_n = 1, adj = {0: [0, 1, 2]} | **Output:** 1
+  - **Explanation:** a single left vertex covers every edge on its own, since all edges pass through it.
+
+**Constraints:** `n, m ≤ 500`.
+
+**Approach:** This is a *distinct technique layered on top* of matching, not a repeat: König's theorem states that in a bipartite graph, the size of the **minimum vertex cover** equals the size of the **maximum matching**. For the size alone, run max matching and return it directly. To recover the actual cover *set* (not just its size): (1) find all left nodes unmatched, (2) alternate-path DFS from them to mark every reachable node, (3) the cover = unmarked left nodes + marked right nodes. Recognizing that a "minimum cover" question is secretly a matching question is the core insight - the code below solves the size variant only.
 
 ```python
 def min_vertex_cover_size(left_n: int, adj: dict[int, list[int]]) -> int:
@@ -229,7 +249,7 @@ def min_vertex_cover_size(left_n: int, adj: dict[int, list[int]]) -> int:
     return matched  # König's theorem: min vertex cover size == max matching size
 ```
 
-**Complexity.** O(V·E) time (dominated by the matching computation), O(V + E) space.
+**Complexity:** O(V·E) time (dominated by the matching computation), O(V + E) space.
 
 **Duplicate problems:**
 
@@ -239,9 +259,19 @@ def min_vertex_cover_size(left_n: int, adj: dict[int, list[int]]) -> int:
 
 ### 3. Assignment Problem with Costs (Hungarian algorithm territory, contrast case)
 
-**Problem.** `n` workers, `n` tasks, a cost matrix `cost[i][j]` for assigning worker `i` to task `j`. Find the assignment minimizing total cost. n ≤ 200.
+**Problem:** `n` workers, `n` tasks, a cost matrix `cost[i][j]` for assigning worker `i` to task `j`. Find the assignment minimizing total cost. n ≤ 200.
 
-**Approach.** Deliberately **not** solvable by Kuhn's or Hopcroft-Karp - those only maximize the *count* of matched pairs, ignoring weights entirely. This problem needs the Hungarian algorithm (O(V³)), which maintains a system of "potentials" (dual values) and repeatedly finds augmenting paths in a way that preserves optimality with respect to total cost, not just cardinality. Included here specifically to draw the line: recognizing when a problem has *drifted* from cardinality-matching into weighted-assignment territory is itself the interview-tested skill.
+**Worked examples:**
+- **Example 1**
+  - **Input:** cost = [[4, 1, 3], [2, 0, 5], [3, 2, 2]] | **Output:** 5
+  - **Explanation:** the minimum-cost assignment is worker 0 to task 1 (cost 1), worker 1 to task 0 (cost 2), worker 2 to task 2 (cost 2), total 5.
+- **Example 2**
+  - **Input:** cost = [[1, 2], [2, 1]] | **Output:** 2
+  - **Explanation:** assigning worker 0 to task 0 and worker 1 to task 1 both cost 1 each, totaling 2 - cheaper than the crossed assignment (cost 4).
+
+**Constraints:** `n ≤ 200`, `cost[i][j] ≥ 0`.
+
+**Approach:** Deliberately **not** solvable by Kuhn's or Hopcroft-Karp - those only maximize the *count* of matched pairs, ignoring weights entirely. This problem needs the Hungarian algorithm (O(V³)), which maintains a system of "potentials" (dual values) and repeatedly finds augmenting paths in a way that preserves optimality with respect to total cost, not just cardinality. Included here specifically to draw the line: recognizing when a problem has *drifted* from cardinality-matching into weighted-assignment territory is itself the interview-tested skill.
 
 ```python
 # Sketch only - full Hungarian algorithm is out of scope for this article.
@@ -251,7 +281,7 @@ def hungarian_min_cost_assignment(cost: list[list[float]]) -> float:
     raise NotImplementedError("O(V^3) potential-based algorithm - see Hungarian algorithm literature")
 ```
 
-**Complexity.** O(V³) time, O(V²) space (for the full Hungarian algorithm; not implemented above).
+**Complexity:** O(V³) time, O(V²) space (for the full Hungarian algorithm; not implemented above).
 
 **Duplicate problems:**
 

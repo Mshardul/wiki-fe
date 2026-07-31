@@ -41,8 +41,7 @@ Structural references. Each page covers how it works, operations with their comp
 | [Bloom Filter](./data-structures/bloom-filter.md)                   | Probabilistic membership structure - never false negatives, tunable false-positive rate. O(k) insert/lookup, O(m) bits for m bits and k hash functions.             |
 | [B-Plus Tree](./data-structures/b-plus-tree.md)                     | B-tree variant with all values at leaves, internal nodes as pure routing keys, leaves linked for range scans - the structure behind MySQL InnoDB and PostgreSQL indexes. |
 | [Interval Tree](./data-structures/interval-tree.md)                 | Augmented BST storing intervals; O(log n + k) stabbing and overlap queries - the structure for sweep-line and scheduling problems.                     |
-| [Suffix Array](./data-structures/suffix-array.md)                   | Sorted array of suffix indices. O(n log² n) prefix-doubling build, O(m log n) pattern search - lighter than a suffix tree; the CP string and genomics workhorse.         |
-| [Suffix Tree](./data-structures/suffix-tree.md)                     | Compressed trie of every suffix. O(n) Ukkonen build, O(m) pattern search regardless of text size - at 5-10× a suffix array's memory footprint and much harder to implement. |
+| [Suffix Tree](./data-structures/suffix-tree.md)                     | Compressed trie of every suffix, plus its array-based variant (suffix array + LCP array). Tree: O(n) Ukkonen build, O(m) pattern search regardless of text size. Array: O(n log² n) build, O(m log n) search, lighter and simpler - the CP string and genomics workhorse. |
 
 ---
 

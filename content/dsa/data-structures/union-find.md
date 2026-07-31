@@ -27,7 +27,7 @@
   - [Kruskal's MST (edge-sort + DSU)](#2-kruskals-mst-edge-sort--dsu-cycle-detection)
   - [Accounts Merge](#3-accounts-merge)
   - [Redundant Connection](#4-redundant-connection--cycle-detection)
-  - [Satisfiability of Equality Equations](#5-satisfiability-of-equality-equations)
+  - [Satisfiability of Equality Equations](#5-satisfiability-of-equality-equations-lc-990)
 
 ## What it is
 
@@ -274,7 +274,7 @@ Contest tools that Union-Find unlocks (advisory for the Tree/heap family, but DS
 
 - **Component counting and size queries.** Maintain a `components` counter (decrement on each successful union) and a `size[]` array (update the absorbing root). After processing all edges, `components` gives the number of connected components; `size[find(x)]` gives x's component size in O(α(n)). Why for CP: problems like "number of islands after flipping cells", "accounts merge", "friend circles", and "largest component after unions" all reduce to this - count components, find the max-size component, or track which merges changed the count. This turns an otherwise O(n²) simulation into O(n·α(n)).
 
-- **Offline connectivity with rollback (divide-and-conquer on time).** A stream of "add edge" + "connectivity query" events can be processed offline by dividing the time axis in half: recurse on each half, adding persistent edges to a DSU with rollback (union-by-rank only, no path compression - compression cannot be undone in O(1)). Each union records `(ry, old_parent[ry], old_rank[rx])` on a stack; undo pops the stack in O(1). Each query is answered in O(log n) per level × O(log n) levels = O(log²n) total. Note: path compression is disabled in rollback DSU - each `find()` costs O(log n) (union by rank only). O(log n) per query × O(log n) levels of D&C = O(log²n) per query total. Why for CP: enables handling edge **deletions** (reframe as "this edge is absent from a time interval") - a standard technique when online DSU cannot be used because operations must be undoable.
+- **Offline connectivity with rollback (divide-and-conquer on time).** A stream of "add edge" + "connectivity query" events can be processed offline by dividing the time axis in half: recurse on each half, adding persistent edges to a DSU with rollback (union-by-rank only, no path compression - compression cannot be undone in O(1)). Each union records `(ry, old_parent[ry], old_rank[rx])` on a stack; undo pops the stack in O(1). Note: path compression is disabled in rollback DSU, so each `find()` costs O(log n) (union by rank only) - that O(log n) per query × O(log n) levels of D&C gives O(log²n) per query total. Why for CP: enables handling edge **deletions** (reframe as "this edge is absent from a time interval") - a standard technique when online DSU cannot be used because operations must be undoable.
 
 ## Gotchas / edge cases
 
@@ -299,6 +299,16 @@ Contest tools that Union-Find unlocks (advisory for the Tree/heap family, but DS
 ### 1. Number of Connected Components in an Undirected Graph
 
 Given n nodes (labeled 0 to n-1) and a list of undirected edges, return the number of connected components in the graph. Constraints: `1 ≤ n ≤ 2000`, `0 ≤ edges.length ≤ 5000`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 5, edges = [[0,1],[1,2],[3,4]] | **Output:** 2
+  - **Explanation:** {0,1,2} form one component via the chain of edges; {3,4} form a second.
+- **Example 2**
+  - **Input:** n = 5, edges = [[0,1],[1,2],[2,3],[3,4]] | **Output:** 1
+  - **Explanation:** the edges chain all 5 nodes together into a single component.
+
+**Constraints:** `1 ≤ n ≤ 2000`, `0 ≤ edges.length ≤ min(n(n-1)/2, 5000)`, no self-loops or duplicate edges.
 
 **Approach:** Initialize DSU with n singletons (components = n). For each edge (u, v), call `union(u, v)` - if it returns True (a new merge), the component count decrements automatically. Return `components` at the end. This is the template DSU problem: the decremental counter is the most common DSU output pattern.
 
@@ -329,13 +339,27 @@ def count_components(n: int, edges: list[list[int]]) -> int:
     return count
 ```
 
-Time O(E·α(n)), space O(n). Distinct technique: component counting via decremental counter.
+**Complexity:** O(E·α(n)) time, O(n) space. Distinct technique: component counting via decremental counter.
 
-**Duplicate problems:** LeetCode 547 (Friend Circles / Number of Provinces) - identical structure with an adjacency matrix input instead of an edge list; LeetCode 200 (Number of Islands) - same component-count pattern, but the "edges" are derived from 4-directional grid adjacency rather than an explicit list.
+**Duplicate problems:**
+- Number of Provinces (LC 547) - identical structure with an adjacency matrix input instead of an edge list.
+- Number of Islands (LC 200) - same component-count pattern, but the "edges" are derived from 4-directional grid adjacency rather than an explicit list.
+
+---
 
 ### 2. Kruskal's MST (edge-sort + DSU cycle detection)
 
 Given a weighted undirected graph with V vertices and E edges, find the minimum spanning tree weight. Constraints: `1 ≤ V ≤ 10⁵`, `1 ≤ E ≤ 2×10⁵`. Return -1 if the graph is disconnected.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 4, edges = [(1,0,1),(2,0,2),(3,1,2),(3,2,3)] (weight, u, v) | **Output:** 6
+  - **Explanation:** sorted by weight, edges (1,0,1) and (2,0,2) connect nodes 0,1,2; (3,1,2) is skipped (would form a cycle); (3,2,3) connects node 3, giving total weight 1+2+3=6.
+- **Example 2**
+  - **Input:** n = 3, edges = [(5,0,1)] | **Output:** -1
+  - **Explanation:** only 2 of 3 nodes get connected, so the graph is disconnected and no spanning tree exists.
+
+**Constraints:** `1 ≤ V ≤ 10⁵`, `1 ≤ E ≤ 2×10⁵`, positive integer edge weights.
 
 **Approach:** Sort edges by weight ascending. Greedily add an edge if its endpoints are in different components (`find(u) != find(v)`). The DSU cycle check replaces an O(V + E) BFS/DFS per candidate edge - each edge costs O(α(V)) instead. Collect edges until V-1 are added (complete MST) or the list is exhausted. Without DSU, Kruskal's inner loop degenerates from O(E·α(V)) to O(E(V+E)), making the entire algorithm O(E² + EV) instead of O(E log E).
 
@@ -372,13 +396,27 @@ def kruskal_mst(n: int, edges: list[tuple[int, int, int]]) -> int:
     return -1 if edge_count < n - 1 else mst_weight
 ```
 
-Time O(E log E) sort + O(E·α(V)) DSU = O(E log E). Space O(V). Distinct technique: edge-greedy selection with DSU cycle guard.
+**Complexity:** O(E log E) time (sort dominates; DSU adds O(E·α(V))), O(V) space. Distinct technique: edge-greedy selection with DSU cycle guard.
 
-**Duplicate problems:** LeetCode 1584 (Min Cost to Connect All Points) - same Kruskal template, edges are Euclidean distances between 2D points; LeetCode 1135 (Connecting Cities With Minimum Cost) - direct Kruskal on explicit edge list.
+**Duplicate problems:**
+- Min Cost to Connect All Points (LC 1584) - same Kruskal template, edges are Euclidean distances between 2D points.
+- Connecting Cities With Minimum Cost (LC 1135) - direct Kruskal on explicit edge list.
+
+---
 
 ### 3. Accounts Merge
 
 Given a list of accounts where each account is `[name, email1, email2, ...]`, merge accounts that share any email address and return the merged accounts with emails sorted. Constraints: `1 ≤ accounts.length ≤ 1000`, each account has at most 10 emails.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** accounts = [["John","j1@x.com","j2@x.com"],["John","j3@x.com"],["John","j1@x.com","j4@x.com"]] | **Output:** [["John","j1@x.com","j2@x.com","j4@x.com"],["John","j3@x.com"]]
+  - **Explanation:** account 1 and account 3 share `j1@x.com` and merge; account 2 shares no email with either, so it stays separate.
+- **Example 2**
+  - **Input:** accounts = [["Mary","m@x.com"]] | **Output:** [["Mary","m@x.com"]]
+  - **Explanation:** a single account with no shared emails merges with nothing.
+
+**Constraints:** `1 ≤ accounts.length ≤ 1000`, `2 ≤ accounts[i].length ≤ 10`, total emails across all accounts `≤ 10⁴`.
 
 **Approach:** DSU over email strings (use a dict as the parent map). For each account, union all of its emails together (chain: `union(emails[0], emails[1])`, `union(emails[0], emails[2])`, …). After all unions, group emails by their root representative. This is the "grouping by shared property" pattern - the connection is implicit (shared email) rather than an explicit edge, but it maps to DSU identically.
 
@@ -412,13 +450,27 @@ def accounts_merge(accounts: list[list[str]]) -> list[list[str]]:
             for root, emails in groups.items()]
 ```
 
-Time O(N·α(N)) where N = total emails, space O(N). Distinct technique: string-keyed DSU for implicit grouping by shared attribute.
+**Complexity:** O(N·α(N)) time where N = total emails, O(N) space. Distinct technique: string-keyed DSU for implicit grouping by shared attribute.
 
-**Duplicate problems:** LeetCode 737 (Sentence Similarity II) - same shared-attribute grouping with word pairs; LeetCode 952 (Largest Component Size by Common Factor) - similar implicit grouping, but the shared property is a common factor rather than a shared string.
+**Duplicate problems:**
+- Sentence Similarity II (LC 737) - same shared-attribute grouping with word pairs.
+- Largest Component Size by Common Factor (LC 952) - similar implicit grouping, but the shared property is a common factor rather than a shared string.
+
+---
 
 ### 4. Redundant Connection - cycle detection
 
 A connected undirected graph of n nodes (1-indexed) is given with exactly n edges - making it a tree plus one extra edge. Return the redundant edge that creates the cycle. If multiple answers exist, return the last one in the input order. Constraints: `3 ≤ n ≤ 1000`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** edges = [[1,2],[1,3],[2,3]] | **Output:** [2,3]
+  - **Explanation:** [1,2] and [1,3] build a tree on 3 nodes; [2,3] is the extra edge that closes the cycle, so it's redundant.
+- **Example 2**
+  - **Input:** edges = [[1,2],[2,3],[3,4],[1,4],[1,5]] | **Output:** [1,4]
+  - **Explanation:** [1,4] is the last edge in input order that connects two already-connected nodes (1 and 4 are already linked via 2-3).
+
+**Constraints:** `3 ≤ n ≤ 1000`, edges given as `n` pairs of 1-indexed node labels, exactly one redundant edge exists.
 
 **Approach:** Process edges in input order. For each edge (u, v), check `find(u) == find(v)` before calling `union`. If already connected, this edge is redundant - return it immediately. Because we process in input order and return on the first cycle-forming edge, the problem's "return the last one" tiebreak is naturally satisfied. This is the pure cycle-detection DSU pattern - no weight sorting, just a per-edge connectivity gate.
 
@@ -446,13 +498,27 @@ def find_redundant_connection(edges: list[list[int]]) -> list[int]:
     return []                      # unreachable for valid input
 ```
 
-Time O(n·α(n)), space O(n). Distinct technique: per-edge cycle check as a gate before union; return the first cycle-forming edge.
+**Complexity:** O(n·α(n)) time, O(n) space. Distinct technique: per-edge cycle check as a gate before union; return the first cycle-forming edge.
 
-**Duplicate problems:** LeetCode 685 (Redundant Connection II) - directed graph variant where a node may have two parents; requires checking both "is there a node with in-degree 2?" and "does removing one candidate edge break all cycles?" - harder, requiring two-pass DSU; LeetCode 261 (Graph Valid Tree) - same cycle check but the output is a boolean rather than the offending edge.
+**Duplicate problems:**
+- Redundant Connection II (LC 685) - directed graph variant where a node may have two parents; requires checking both "is there a node with in-degree 2?" and "does removing one candidate edge break all cycles?" - harder, requiring two-pass DSU.
+- Graph Valid Tree (LC 261) - same cycle check but the output is a boolean rather than the offending edge.
 
-### 5. Satisfiability of Equality Equations
+---
+
+### 5. Satisfiability of Equality Equations (LC 990)
 
 Given a list of equations in the form `"a==b"` or `"a!=b"` where variables are single lowercase letters, return true if all equations can be satisfied simultaneously, false otherwise. Constraints: `1 ≤ equations.length ≤ 500`, variables are single lowercase letters.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** equations = ["a==b","b!=a"] | **Output:** false
+  - **Explanation:** the first equation unions a and b into one component; the second then demands they be different, which contradicts the union.
+- **Example 2**
+  - **Input:** equations = ["b==a","a==b"] | **Output:** true
+  - **Explanation:** both equations only assert equality between the same pair, no contradiction possible.
+
+**Constraints:** `1 ≤ equations.length ≤ 500`, each equation has the exact form `"xOPy"` where x, y are lowercase letters and OP is `==` or `!=`.
 
 **Approach:** Two-pass. First pass: union all `==` pairs. Second pass: for each `!=` equation, check `find(a) != find(b)` - if they share a root, the constraint is violated. This is the canonical bipartite-labeling / equality-propagation DSU problem.
 
@@ -482,6 +548,4 @@ def equationsPossible(equations: List[str]) -> bool:
     return True
 ```
 
-Time O(N · α(26)) = O(N); Space O(26) = O(1). Distinct technique: two-pass equality propagation - union all equality constraints first, then validate inequality constraints against the resulting components.
-
-**Duplicate problems:** LC 547 Number of Provinces - same two-pass union pattern on an adjacency matrix. LC 721 Accounts Merge - same equality-propagation but on strings instead of chars.
+**Complexity:** O(N · α(26)) = O(N) time, O(26) = O(1) space. Distinct technique: two-pass equality propagation - union all equality constraints first, then validate inequality constraints against the resulting components.

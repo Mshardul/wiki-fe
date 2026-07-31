@@ -101,8 +101,8 @@
       "title": "AVL Tree"
     },
     {
-      "path": "./content/dsa/data-structures/suffix-array.md",
-      "title": "Suffix Array"
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
     },
     {
       "path": "./content/dsa/algorithms/sorting.md",
@@ -115,10 +115,6 @@
     {
       "path": "./content/dsa/algorithms/heapsort.md",
       "title": "Heapsort"
-    },
-    {
-      "path": "./content/dsa/algorithms/dynamic-programming.md",
-      "title": "Dynamic Programming"
     },
     {
       "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
@@ -553,10 +549,6 @@
       "title": "Heapsort"
     },
     {
-      "path": "./content/dsa/algorithms/divide-and-conquer.md",
-      "title": "Divide and Conquer"
-    },
-    {
       "path": "./content/dsa/patterns/k-way-merge.md",
       "title": "K-Way Merge"
     },
@@ -671,8 +663,8 @@
   ],
   "./content/dsa/algorithms/rabin-karp.md": [
     {
-      "path": "./content/dsa/data-structures/suffix-array.md",
-      "title": "Suffix Array"
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
     },
     {
       "path": "./content/dsa/data-structures/suffix-tree.md",
@@ -821,10 +813,6 @@
   ],
   "./content/dsa/algorithms/string-matching.md": [
     {
-      "path": "./content/dsa/data-structures/suffix-array.md",
-      "title": "Suffix Array"
-    },
-    {
       "path": "./content/dsa/data-structures/suffix-tree.md",
       "title": "Suffix Tree"
     },
@@ -878,10 +866,6 @@
     }
   ],
   "./content/dsa/algorithms/z-algorithm.md": [
-    {
-      "path": "./content/dsa/data-structures/suffix-array.md",
-      "title": "Suffix Array"
-    },
     {
       "path": "./content/dsa/algorithms/aho-corasick.md",
       "title": "Aho-Corasick"
@@ -951,10 +935,6 @@
       "title": "Hash Table"
     },
     {
-      "path": "./content/dsa/data-structures/lru-cache.md",
-      "title": "LRU Cache"
-    },
-    {
       "path": "./content/dsa/data-structures/binary-tree.md",
       "title": "Binary Tree"
     },
@@ -979,8 +959,8 @@
       "title": "Bloom Filter"
     },
     {
-      "path": "./content/dsa/data-structures/suffix-array.md",
-      "title": "Suffix Array"
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
     },
     {
       "path": "./content/dsa/algorithms/binary-search.md",
@@ -1673,6 +1653,10 @@
   ],
   "./content/dsa/data-structures/lru-cache.md": [
     {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
       "path": "./content/dsa/data-structures/lfu-cache.md",
       "title": "LFU Cache"
     },
@@ -1825,10 +1809,6 @@
       "title": "Trie"
     },
     {
-      "path": "./content/dsa/data-structures/suffix-array.md",
-      "title": "Suffix Array"
-    },
-    {
       "path": "./content/dsa/data-structures/suffix-tree.md",
       "title": "Suffix Tree"
     },
@@ -1857,10 +1837,10 @@
       "title": "Data Structure Selection"
     }
   ],
-  "./content/dsa/data-structures/suffix-array.md": [
+  "./content/dsa/data-structures/suffix-tree.md": [
     {
-      "path": "./content/dsa/data-structures/suffix-tree.md",
-      "title": "Suffix Tree"
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
     },
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
@@ -1869,12 +1849,6 @@
     {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
-    }
-  ],
-  "./content/dsa/data-structures/suffix-tree.md": [
-    {
-      "path": "./content/dsa/data-structures/suffix-array.md",
-      "title": "Suffix Array"
     }
   ],
   "./content/dsa/data-structures/trie.md": [
@@ -1889,10 +1863,6 @@
     {
       "path": "./content/dsa/data-structures/binary-tree.md",
       "title": "Binary Tree"
-    },
-    {
-      "path": "./content/dsa/data-structures/suffix-array.md",
-      "title": "Suffix Array"
     },
     {
       "path": "./content/dsa/data-structures/suffix-tree.md",
@@ -2133,6 +2103,10 @@
   ],
   "./content/dsa/patterns/k-way-merge.md": [
     {
+      "path": "./content/dsa/data-structures/heap.md",
+      "title": "Heap"
+    },
+    {
       "path": "./content/dsa/patterns/top-k-elements.md",
       "title": "Top-K Elements"
     },
@@ -2190,6 +2164,10 @@
     }
   ],
   "./content/dsa/patterns/monotonic-queue.md": [
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
     {
       "path": "./content/dsa/patterns/monotonic-stack.md",
       "title": "Monotonic Stack"

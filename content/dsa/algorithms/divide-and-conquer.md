@@ -386,6 +386,14 @@ Recursion depth for balanced D&C is O(log n) - about 17 for n = 10⁵, which is 
 
 Given an integer array `nums`, count the number of inversions: pairs `(i, j)` with `i < j` and `nums[i] > nums[j]`. An array is sorted iff it has zero inversions.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [3, 1, 2] | **Output:** 2
+  - **Explanation:** the inversions are `(3,1)` and `(3,2)` - 3 precedes two smaller values.
+- **Example 2**
+  - **Input:** nums = [1, 2, 3] | **Output:** 0
+  - **Explanation:** already sorted ascending, so no pair violates order.
+
 **Constraints:** `1 ≤ n ≤ 5 × 10⁴`, values fit in 32-bit int. Expected O(n log n).
 
 **Approach:** Augment merge sort. During the merge of two sorted halves, whenever an element from the right half is placed before an element from the left half, all remaining elements in the left half form inversions with it - count them in O(1) per right-half element. Total: O(n log n), same as merge sort. This is the canonical D&C problem that adds a counting payload to the combine step without changing the algorithm's structure.
@@ -413,15 +421,25 @@ def count_inversions(nums: list[int]) -> int:
     return total
 ```
 
-**Time:** O(n log n) - same as merge sort. **Space:** O(n) auxiliary.
+**Complexity:** O(n log n) time - same as merge sort. O(n) auxiliary space.
 
-*Pattern:* [Merge Sort](./merge-sort.md) - D&C with a combine payload.
+**Duplicate problems:**
+- Reverse Pairs (LC 493) - same augmented-merge structure, condition changed to `nums[i] > 2*nums[j]`.
+- Count of Smaller Numbers After Self (LC 315) - same combine-step counting trick, tracked per-index instead of a running total.
 
 ---
 
 ### 2. Maximum Subarray (D&C)
 
 Given an integer array `nums`, find the contiguous subarray with the largest sum and return its sum. Values may be negative.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4] | **Output:** 6
+  - **Explanation:** the subarray `[4, -1, 2, 1]` sums to 6 and is the maximum; it crosses the midpoint of the D&C split.
+- **Example 2**
+  - **Input:** nums = [-1, -2, -3] | **Output:** -1
+  - **Explanation:** all values are negative, so the best subarray is the single largest element.
 
 **Constraints:** `1 ≤ n ≤ 10⁵`. Expected O(n log n) for D&C; O(n) with Kadane's.
 
@@ -452,15 +470,24 @@ def max_subarray_dc(nums: list[int]) -> int:
     return helper(0, len(nums) - 1)
 ```
 
-**Time:** T(n) = 2T(n/2) + O(n) → O(n log n). **Space:** O(log n) stack.
+**Complexity:** T(n) = 2T(n/2) + O(n) → O(n log n) time, O(log n) stack space.
 
-*Pattern:* Divide & Conquer - cross-boundary combine; contrast with Kadane's O(n) greedy.
+**Duplicate problems:**
+- Maximum Sum Circular Subarray (LC 918) - same crossing-case combine, extended with a wraparound case (total sum minus the minimum subarray).
 
 ---
 
 ### 3. Closest Pair of Points
 
 Given `n` points in the 2D plane, find the pair with the smallest Euclidean distance.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** points = [(0, 0), (5, 4), (3, 1)] | **Output:** distance between (0,0) and (3,1) ≈ 3.162
+  - **Explanation:** all three pairwise distances are checked at this small size, and `(0,0)-(3,1)` is the smallest.
+- **Example 2**
+  - **Input:** points = [(1, 1), (2, 2), (10, 10)] | **Output:** distance between (1,1) and (2,2) ≈ 1.414
+  - **Explanation:** the two closest points are adjacent after sorting by x; (10,10) is far from both.
 
 **Constraints:** `2 ≤ n ≤ 10⁵`. Naïve O(n²) is too slow; expected O(n log n).
 
@@ -500,15 +527,24 @@ def closest_pair(points: list[tuple[int, int]]) -> float:
     return rec(pts)
 ```
 
-**Time:** O(n log² n) as written (strip sort per level); O(n log n) with pre-sorted y. **Space:** O(n log n).
+**Complexity:** O(n log² n) as written (strip sort per level); O(n log n) with pre-sorted y. O(n log n) space.
 
-*Pattern:* D&C with geometric bounding - the strip argument is the combine step.
+**Duplicate problems:**
+- Count of Range Sum (LC 327) - different objective (count, not distance) but the same "recurse on halves, resolve the crossing case in the combine step" D&C shape via a sorted-prefix-sum strip check.
 
 ---
 
 ### 4. Karatsuba Multiplication
 
 Multiply two n-digit numbers faster than the O(n²) long-multiplication algorithm.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** x = 1234, y = 5678 | **Output:** 7006652
+  - **Explanation:** split each into high/low halves (`12,34` and `56,78`), compute 3 sub-products instead of 4, and recombine.
+- **Example 2**
+  - **Input:** x = 12, y = 34 | **Output:** 408
+  - **Explanation:** small enough to recurse to the base case (single-digit multiply) almost immediately.
 
 **Constraints:** numbers up to 10³ digits. Expected O(n^log₂3) ≈ O(n^1.585).
 
@@ -532,6 +568,7 @@ def karatsuba(x: int, y: int) -> int:
     return z2 * base * base + z1 * base + z0
 ```
 
-**Time:** O(n^log₂3) ≈ O(n^1.585) - better than O(n²) long multiplication. **Space:** O(log n) stack (each level halves digit count).
+**Complexity:** O(n^log₂3) ≈ O(n^1.585) time - better than O(n²) long multiplication. O(log n) stack space (each level halves digit count).
 
-*Pattern:* D&C algebraic trick - reducing 4 recursive calls to 3 via a linear identity, which shifts the Master Theorem case.
+**Duplicate problems:**
+- Strassen's Matrix Multiplication (name only, no standard LC number) - same "reduce sub-call count via an algebraic identity" trick, applied to matrix blocks instead of digit halves.

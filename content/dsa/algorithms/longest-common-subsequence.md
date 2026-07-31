@@ -280,9 +280,19 @@ The pseudocode is the contract (`1..n` bounds, `▷` comments, explicit stack pu
 
 ### 1. Longest Common Subsequence (LC 1143)
 
-**Problem.** Given two strings `text1` and `text2`, return the length of their longest common subsequence, or 0 if none exists. Constraints: `1 ≤ text1.length, text2.length ≤ 1000` - squarely in the `O(n·m)` comfort zone.
+Given two strings `text1` and `text2`, return the length of their longest common subsequence, or 0 if none exists.
 
-**Approach.** This is the article's core algorithm verbatim: build `dp[i][j]` over both prefixes, match extends the diagonal, mismatch takes the max of dropping a character from either side. No reconstruction needed here, just the length, so the rolled `O(min(n,m))` space version is the efficient submission.
+**Worked examples:**
+- **Example 1**
+  - **Input:** text1 = "abcde", text2 = "ace" | **Output:** 3
+  - **Explanation:** `"ace"` is a subsequence of both strings, and no longer common subsequence exists.
+- **Example 2**
+  - **Input:** text1 = "abc", text2 = "abc" | **Output:** 3
+  - **Explanation:** identical strings - the LCS is the whole string.
+
+**Constraints:** `1 ≤ text1.length, text2.length ≤ 1000` - squarely in the `O(n·m)` comfort zone.
+
+**Approach:** This is the article's core algorithm verbatim: build `dp[i][j]` over both prefixes, match extends the diagonal, mismatch takes the max of dropping a character from either side. No reconstruction needed here, just the length, so the rolled `O(min(n,m))` space version is the efficient submission.
 
 ```python
 def longest_common_subsequence(text1: str, text2: str) -> int:
@@ -298,16 +308,26 @@ def longest_common_subsequence(text1: str, text2: str) -> int:
     return prev[m]
 ```
 
-**Complexity.** `O(n·m)` time, `O(min(n, m))` space.
+**Complexity:** O(n·m) time, O(min(n, m)) space.
 
 **Duplicate problems:**
 - Uncrossed Lines (LC 1035) - identical problem restated as non-crossing connecting lines between two arrays; same LCS DP with numbers instead of characters.
 
 ### 2. Edit Distance (LC 72)
 
-**Problem.** Given two strings `word1` and `word2`, return the minimum number of insert/delete/replace operations to convert `word1` into `word2`. Constraints: `0 ≤ word1.length, word2.length ≤ 500`.
+Given two strings `word1` and `word2`, return the minimum number of insert/delete/replace operations to convert `word1` into `word2`.
 
-**Approach.** The sibling problem to LCS in the same 2D-DP family: same state `dp[i][j]`, but the mismatch case gets a third option (`1 + dp[i-1][j-1]` for substitution) alongside insert/delete, and the base cases are `i`/`j` (cost of inserting or deleting an entire empty-matched prefix) instead of 0. Seeing both problems side by side is the fastest way to internalize what LCS's `max`-only recurrence is missing relative to full edit distance.
+**Worked examples:**
+- **Example 1**
+  - **Input:** word1 = "horse", word2 = "ros" | **Output:** 3
+  - **Explanation:** replace 'h' with 'r', delete 'r', delete 'e' - three operations.
+- **Example 2**
+  - **Input:** word1 = "intention", word2 = "execution" | **Output:** 5
+  - **Explanation:** a mix of replace/insert/delete operations transforms one into the other in 5 steps, verified by the DP table's corner value.
+
+**Constraints:** `0 ≤ word1.length, word2.length ≤ 500`.
+
+**Approach:** The sibling problem to LCS in the same 2D-DP family: same state `dp[i][j]`, but the mismatch case gets a third option (`1 + dp[i-1][j-1]` for substitution) alongside insert/delete, and the base cases are `i`/`j` (cost of inserting or deleting an entire empty-matched prefix) instead of 0. Seeing both problems side by side is the fastest way to internalize what LCS's `max`-only recurrence is missing relative to full edit distance.
 
 ```python
 def min_distance(word1: str, word2: str) -> int:
@@ -326,16 +346,26 @@ def min_distance(word1: str, word2: str) -> int:
     return dp[n][m]
 ```
 
-**Complexity.** `O(n·m)` time, `O(n·m)` space (rollable to `O(min(n,m))`).
+**Complexity:** O(n·m) time, O(n·m) space (rollable to O(min(n,m))).
 
 **Duplicate problems:**
 - One Edit Distance (LC 161) - checks if edit distance is exactly ≤ 1 without the full DP; same underlying mechanic at a tiny fixed bound.
 
 ### 3. Delete Operation for Two Strings (LC 583)
 
-**Problem.** Given two strings `word1` and `word2`, return the minimum number of deletions (from either string) needed to make them equal. Constraints: `1 ≤ word1.length, word2.length ≤ 500`.
+Given two strings `word1` and `word2`, return the minimum number of deletions (from either string) needed to make them equal.
 
-**Approach.** This is LCS wearing a different hat: the minimum deletions to equalize two strings is exactly `n + m - 2·LCS(word1, word2)` - keep the LCS untouched in both strings, delete everything else. Recognizing this reduction (rather than inventing a new DP) is the "distinct technique" this problem tests: transfer, not re-derivation.
+**Worked examples:**
+- **Example 1**
+  - **Input:** word1 = "sea", word2 = "eat" | **Output:** 2
+  - **Explanation:** delete 's' from "sea" and 't' from "eat" to get "ea" in both - the LCS is "ea" (length 2), and `3 + 3 - 2×2 = 2`.
+- **Example 2**
+  - **Input:** word1 = "leetcode", word2 = "etco" | **Output:** 4
+  - **Explanation:** "etco" is already a subsequence of "leetcode" (LCS length 4), so only "leetcode"'s extra 4 characters need deleting.
+
+**Constraints:** `1 ≤ word1.length, word2.length ≤ 500`.
+
+**Approach:** This is LCS wearing a different hat: the minimum deletions to equalize two strings is exactly `n + m - 2·LCS(word1, word2)` - keep the LCS untouched in both strings, delete everything else. Recognizing this reduction (rather than inventing a new DP) is the "distinct technique" this problem tests: transfer, not re-derivation.
 
 ```python
 def min_distance_delete_only(word1: str, word2: str) -> int:
@@ -352,7 +382,7 @@ def min_distance_delete_only(word1: str, word2: str) -> int:
     return n + m - 2 * lcs_len
 ```
 
-**Complexity.** `O(n·m)` time, `O(min(n, m))` space.
+**Complexity:** O(n·m) time, O(min(n, m)) space.
 
 **Duplicate problems:**
 - Shortest Common Supersequence (LC 1092) - same LCS core, but reconstructs the actual shortest supersequence string (`n + m - LCS` length) instead of just counting deletions; requires the full reconstruction backtrack, not just the length.

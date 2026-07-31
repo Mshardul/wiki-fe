@@ -253,9 +253,19 @@ def kmp_search(text: str, pattern: str) -> list[int]:
 
 ## Practice problems
 
-### 1. Implement strStr() - the canonical search
+### 1. Implement strStr() (LC 28) - the canonical search
 
-Given `haystack` and `needle`, return the index of the first occurrence of `needle` in `haystack`, or -1 if absent. Constraints: lengths up to `5·10⁴`, so an adversarial self-similar input can push a naive nested loop toward O(n·m).
+**Problem:** Given `haystack` and `needle`, return the index of the first occurrence of `needle` in `haystack`, or -1 if absent.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** haystack = "sadbutsad", needle = "sad" | **Output:** 0
+  - **Explanation:** "sad" first occurs at index 0.
+- **Example 2**
+  - **Input:** haystack = "leetcode", needle = "leeto" | **Output:** -1
+  - **Explanation:** "leeto" never appears as a contiguous substring of "leetcode".
+
+**Constraints:** lengths up to `5·10⁴`, so an adversarial self-similar input can push a naive nested loop toward O(n·m).
 
 **Approach:** Build the `lps` for `needle`, then scan `haystack` once with the KMP loop and return the first `i - m + 1` when `j` reaches `m`. The non-rewinding scan guarantees linear time even on `"aaaa…"` haystacks. This is the textbook KMP application - first match only, so return immediately.
 
@@ -275,11 +285,23 @@ def str_str(haystack: str, needle: str) -> int:
     return -1
 ```
 
-Time O(n + m), space O(m). Pattern: KMP single-occurrence search.
+**Complexity:** O(n + m) time, O(m) space.
 
-### 2. Repeated Substring Pattern - the failure function's period trick
+---
 
-Given a string `s`, return whether it can be built by taking a substring of it and concatenating it ≥ 2 times (`"abab"` → true, `"aba"` → false). Constraints: `|s| ≤ 10⁴`. The elegant solution is pure `lps`, no text scan.
+### 2. Repeated Substring Pattern (LC 459) - the failure function's period trick
+
+**Problem:** Given a string `s`, return whether it can be built by taking a substring of it and concatenating it ≥ 2 times.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "abab" | **Output:** true
+  - **Explanation:** `s` is `"ab"` repeated twice; the failure function's final value confirms the period `2` divides `4` evenly.
+- **Example 2**
+  - **Input:** s = "aba" | **Output:** false
+  - **Explanation:** no substring repeated ≥ 2 times reconstructs `"aba"`.
+
+**Constraints:** `|s| ≤ 10⁴`. The elegant solution is pure `lps`, no text scan.
 
 **Approach:** Build `lps` for `s`. The smallest period is `k = m - lps[m-1]` (the part not covered by the longest prefix-suffix overlap). `s` is a repetition iff `lps[m-1] > 0` **and** `m % k == 0` - i.e. the period divides the length evenly. This is the failure function used as a self-structure query, distinct from problem 1's text search.
 
@@ -291,11 +313,23 @@ def repeated_substring_pattern(s: str) -> bool:
     return lps[-1] > 0 and m % k == 0
 ```
 
-Time O(m), space O(m). Pattern: failure-function period analysis.
+**Complexity:** O(m) time, O(m) space.
 
-### 3. Shortest Palindrome - KMP on `s + # + reverse(s)`
+---
 
-Given `s`, prepend the fewest characters to make it a palindrome; return the result. Constraints: `|s| ≤ 5·10⁴`, ruling out the O(n²) "try every prefix" check for the longest leading palindromic prefix.
+### 3. Shortest Palindrome (LC 214) - KMP on `s + # + reverse(s)`
+
+**Problem:** Given `s`, prepend the fewest characters to make it a palindrome; return the result.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "aacecaaa" | **Output:** "aaacecaaa"
+  - **Explanation:** the failure function over `s + "#" + reverse(s)` finds the longest palindromic prefix "aacecaa"; the reverse of the remaining "a" is prepended.
+- **Example 2**
+  - **Input:** s = "abcd" | **Output:** "dcbabcd"
+  - **Explanation:** no palindromic prefix longer than "a" exists, so the reverse of "bcd" is prepended.
+
+**Constraints:** `|s| ≤ 5·10⁴`, ruling out the O(n²) "try every prefix" check for the longest leading palindromic prefix.
 
 **Approach:** The answer is `reverse(tail) + s`, where the longest **palindromic prefix** of `s` stays put. Find that prefix's length by running the failure function over the combined string `s + "#" + reverse(s)`: `lps[-1]` is exactly the longest prefix of `s` that equals a suffix of `reverse(s)` - i.e. the longest palindromic prefix of `s`. The separator `#` prevents overlap from crossing the boundary. This reuses KMP's machinery on a _constructed_ string, a distinct technique from problems 1 and 2.
 
@@ -309,11 +343,23 @@ def shortest_palindrome(s: str) -> str:
     return s[pal_len:][::-1] + s
 ```
 
-Time O(n), space O(n). Pattern: KMP failure function over a constructed string.
+**Complexity:** O(n) time, O(n) space.
 
-### 4. Longest Happy Prefix - the failure function itself
+---
 
-Given a string `s`, return the longest **happy prefix**: the longest proper prefix that is also a suffix (the empty string if none). Constraints: `|s| ≤ 10⁵`, so an O(n²) compare-all-prefixes approach is too slow.
+### 4. Longest Happy Prefix (LC 1392) - the failure function itself
+
+**Problem:** Given a string `s`, return the longest **happy prefix**: the longest proper prefix that is also a suffix (the empty string if none).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "level" | **Output:** "l"
+  - **Explanation:** the failure function's final value is 1, meaning the longest proper prefix equal to a suffix is the single character "l".
+- **Example 2**
+  - **Input:** s = "ababab" | **Output:** "abab"
+  - **Explanation:** the prefix "abab" equals the suffix "abab", and no longer proper prefix-suffix pair exists.
+
+**Constraints:** `|s| ≤ 10⁵`, so an O(n²) compare-all-prefixes approach is too slow.
 
 **Approach:** This _is_ the definition of `lps[m-1]` - the last entry of the failure function. Build the array and slice. The problem exists to confirm you recognize that the failure function's final value answers the prefix-equals-suffix question directly, with no search at all. Distinct from the others: no text, no construction, just reading the table.
 
@@ -323,4 +369,4 @@ def longest_prefix(s: str) -> str:
     return s[:lps[-1]]                  # longest proper prefix that is also a suffix
 ```
 
-Time O(m), space O(m). Pattern: direct failure-function readout.
+**Complexity:** O(m) time, O(m) space.

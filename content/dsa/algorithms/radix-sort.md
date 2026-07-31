@@ -230,7 +230,17 @@ def radix_sort_signed(a: list[int]) -> list[int]:
 
 ### 1. Sort an Array of Large Integers - LSD radix sort
 
-Sort `n` non-negative integers with a large value range (e.g. up to `10⁹`) in linear time. Constraints: `n ≤ 10⁶`, values too spread out for a single counting array - the radix signal.
+**Problem:** Sort `n` non-negative integers with a large value range (e.g. up to `10⁹`) in linear time.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [170, 45, 75, 90, 802, 24, 2, 66] | **Output:** [2, 24, 45, 66, 75, 90, 170, 802]
+  - **Explanation:** each LSD pass stably sorts by one base-256 digit, from least to most significant, converging to fully sorted order after 4 passes.
+- **Example 2**
+  - **Input:** nums = [1000000000, 1, 500000000] | **Output:** [1, 500000000, 1000000000]
+  - **Explanation:** the large value range would need a `10⁹`-slot counting array directly, but base-256 digits keep each pass to 256 buckets.
+
+**Constraints:** `n ≤ 10⁶`, values too spread out for a single counting array - the radix signal.
 
 **Approach:** LSD radix sort. Plain counting sort would need a `10⁹`-slot array; radix with base 256 needs only 256 buckets per pass and `d ≈ 4` passes → O(4n) = O(n). Each pass is a stable counting sort on one byte. This is the textbook "counting sort can't, radix can" case.
 
@@ -254,11 +264,23 @@ def sort_large(nums: list[int]) -> list[int]:
     return nums
 ```
 
-Time O(d·(n + b)) ≈ O(n), space O(n + b). Pattern: LSD radix sort, base 256.
+**Complexity:** O(d·(n + b)) ≈ O(n) time, O(n + b) space.
+
+---
 
 ### 2. Maximum Gap - radix sort then scan
 
-Find the maximum difference between successive elements in the sorted order, in O(n). Constraints: the O(n) requirement rules out comparison sorting (O(n log n)).
+**Problem:** Find the maximum difference between successive elements in the sorted order, in O(n).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [3, 6, 9, 1] | **Output:** 3
+  - **Explanation:** sorted order is [1, 3, 6, 9]; the largest adjacent gap is 6-3=3 or 9-6=3.
+- **Example 2**
+  - **Input:** nums = [10] | **Output:** 0
+  - **Explanation:** fewer than two elements means no gap exists.
+
+**Constraints:** the O(n) requirement rules out comparison sorting (O(n log n)).
 
 **Approach:** Two linear-sort routes exist; radix is the cleanest to state. Radix-sort the array in O(n) (fixed-width integers), then a single linear scan for the max adjacent gap. (The pigeonhole/bucket approach also achieves O(n) without a full sort; radix is the more general "just sort it linearly" answer that the O(n) constraint permits.)
 
@@ -270,11 +292,22 @@ def maximum_gap(nums: list[int]) -> int:
     return max(nums[i] - nums[i - 1] for i in range(1, len(nums)))
 ```
 
-Time O(n), space O(n). Pattern: linear (radix) sort + adjacent scan.
+**Complexity:** O(n) time, O(n) space.
+
+---
 
 ### 3. Sort Strings of Equal Length - MSD vs LSD radix
 
-Sort `n` strings, all of length `L`, lexicographically, faster than O(n·L·log n). Constraints: fixed length `L`, small alphabet (e.g. lowercase, `b = 26`) - strings as digit sequences.
+**Problem:** Sort `n` strings, all of length `L`, lexicographically, faster than O(n·L·log n).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** strs = ["bca", "abc", "cab"], L = 3 | **Output:** ["abc", "bca", "cab"]
+  - **Explanation:** an LSD pass over positions 2, 1, 0 (last character to first) stably sorts each character column, converging to lexicographic order.
+- **Example 2**
+  - **Input:** strs = ["ba", "ab"], L = 2 | **Output:** ["ab", "ba"]
+
+**Constraints:** fixed length `L`, small alphabet (e.g. lowercase, `b = 26`) - strings as digit sequences.
 
 **Approach:** Treat each character position as a digit (base = alphabet size). **LSD radix**: stably counting-sort by the last character, then the second-last, … up to the first - `L` passes, O(L·(n + b)). Because all strings share length `L`, no padding is needed. (MSD radix sorts by the first character and recurses per bucket; it allows early termination but is more complex - LSD is simpler when lengths are equal.)
 
@@ -295,11 +328,23 @@ def sort_fixed_strings(strs: list[str], L: int, b: int = 26) -> list[str]:
     return strs
 ```
 
-Time O(L·(n + b)), space O(n + b). Pattern: LSD radix over character positions.
+**Complexity:** O(L·(n + b)) time, O(n + b) space.
+
+---
 
 ### 4. Maximum Number from Concatenation - digit-aware ordering
 
-Arrange a list of non-negative integers to form the largest possible concatenated number (e.g. `[3, 30, 34, 5, 9] → "9534330"`). Constraints: `n ≤ 100`; the keys are numbers but the order is _digit-string_ based, not numeric.
+**Problem:** Arrange a list of non-negative integers to form the largest possible concatenated number.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [3, 30, 34, 5, 9] | **Output:** "9534330"
+  - **Explanation:** comparing pairs by concatenation order (`"9"+"5" > "5"+"9"`, etc.) places 9 first and the two 3-prefixed numbers in `34, 3` order.
+- **Example 2**
+  - **Input:** nums = [10, 2] | **Output:** "210"
+  - **Explanation:** `"2"+"10" = "210" > "10"+"2" = "102"`, so 2 goes first even though 10 is numerically larger.
+
+**Constraints:** `n ≤ 100`; the keys are numbers but the order is _digit-string_ based, not numeric.
 
 **Approach:** Not a radix sort, but a **digit-aware comparator** - the conceptual sibling of treating numbers as digit strings. Order two numbers `x, y` by whether `xy` (concatenation) exceeds `yx`; this custom order, applied with any sort, yields the largest concatenation. It belongs here because the insight is the same as radix's: the _digit representation_, not the numeric value, drives the ordering.
 
@@ -316,4 +361,4 @@ def largest_number(nums: list[int]) -> str:
     return "0" if out[0] == "0" else out         # all-zeros edge case
 ```
 
-Time O(n log n · L) for the comparisons (`L` = digit length), space O(n). Pattern: custom digit-string comparator.
+**Complexity:** O(n log n · L) time for the comparisons (`L` = digit length), O(n) space.

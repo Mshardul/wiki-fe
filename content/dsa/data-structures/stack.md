@@ -187,7 +187,6 @@ from typing import Generic, TypeVar
 
 T = TypeVar("T")
 
-
 class Stack(Generic[T]):
     """LIFO stack over a Python list (dynamic array)."""
 
@@ -312,7 +311,17 @@ Five staples, each a **distinct** stack technique
 
 **Problem.** Given a string of `()[]{}`, decide if every bracket is closed by the correct type in the correct order. E.g. `"([)]"` → false, `"([])"` → true.
 
-**Approach.** Push each open bracket; on a close, the top must be its matching open - pop and compare. A close on an empty stack, or a mismatch, fails immediately. At the end the stack must be empty (no unclosed opens). Pure LIFO: the most-recent open is always the one a close pairs with.
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "([])" | **Output:** true
+  - **Explanation:** each open is closed by its matching type in the correct order, so the stack empties by the end.
+- **Example 2**
+  - **Input:** s = "([)]" | **Output:** false
+  - **Explanation:** after pushing `(` and `[`, the `)` tries to close against the top `[`, a mismatch, so it fails immediately.
+
+**Constraints:** `1 ≤ s.length ≤ 10⁴`, `s` consists only of `()[]{}`.
+
+**Approach:** Push each open bracket; on a close, the top must be its matching open - pop and compare. A close on an empty stack, or a mismatch, fails immediately. At the end the stack must be empty (no unclosed opens). Pure LIFO: the most-recent open is always the one a close pairs with.
 
 ```python
 def is_valid(s: str) -> bool:
@@ -326,13 +335,27 @@ def is_valid(s: str) -> bool:
     return not stack
 ```
 
-**Complexity.** O(n) time, O(n) space.
+**Complexity:** O(n) time, O(n) space.
+
+**Duplicate problems:**
+- Remove All Adjacent Duplicates In String (LC 1047) - same push-then-pop-on-match stack invariant, cancelling adjacent equal characters instead of matching bracket pairs.
+- Minimum Remove to Make Valid Parentheses (LC 1249) - same bracket-matching-with-stack technique, extended to removing the minimum unmatched parens instead of a boolean valid/invalid check.
 
 ### 2. Daily Temperatures - _monotonic stack_
 
 **Problem.** Given daily temperatures, for each day return how many days until a warmer day (0 if none). E.g. `[73,74,75,71,69,72,76,73]` → `[1,1,4,2,1,1,0,0]`.
 
-**Approach.** A **decreasing monotonic stack of indices**. For each day, pop every earlier day cooler than today - today is their answer; record the index gap. Each index is pushed and popped once → O(n). Storing indices (not temps) is what lets you compute the day-distance.
+**Worked examples:**
+- **Example 1**
+  - **Input:** temps = [73,74,75,71,69,72,76,73] | **Output:** [1,1,4,2,1,1,0,0]
+  - **Explanation:** day 0 (73) waits 1 day for 74; day 2 (75) waits 4 days for 76; the last two days have no warmer day ahead, so 0.
+- **Example 2**
+  - **Input:** temps = [30,40,50,60] | **Output:** [1,1,1,0]
+  - **Explanation:** strictly increasing temperatures mean each day's stack top is popped by the very next day, except the last, which has nothing warmer ahead.
+
+**Constraints:** `1 ≤ temps.length ≤ 10⁵`, `30 ≤ temps[i] ≤ 100`.
+
+**Approach:** A **decreasing monotonic stack of indices**. For each day, pop every earlier day cooler than today - today is their answer; record the index gap. Each index is pushed and popped once → O(n). Storing indices (not temps) is what lets you compute the day-distance.
 
 ```python
 def daily_temperatures(temps: list[int]) -> list[int]:
@@ -346,13 +369,26 @@ def daily_temperatures(temps: list[int]) -> list[int]:
     return res
 ```
 
-**Complexity.** O(n) time, O(n) space. Pattern: [Monotonic Stack](../patterns/monotonic-stack.md).
+**Complexity:** O(n) time, O(n) space. Pattern: [Monotonic Stack](../patterns/monotonic-stack.md).
+
+**Duplicate problems:**
+- Next Greater Element I (LC 496) - identical decreasing-monotonic-stack next-greater mechanic; that article's [Practice problems](../patterns/monotonic-stack.md) treats it as the canonical form and cites Daily Temperatures as its own duplicate.
 
 ### 3. Min Stack - _auxiliary stack_
 
 **Problem.** Design a stack supporting `push`, `pop`, `top`, and `get_min` - all in O(1).
 
-**Approach.** A second **auxiliary stack** tracks the running minimum: on push, append `min(x, current_min)`; on pop, pop both. The min-stack's top is always the min of all current elements, so `get_min` is O(1). The insight is that the minimum changes only at push/pop boundaries, so it can be carried alongside each element.
+**Worked examples:**
+- **Example 1**
+  - **Input:** push(5), push(2), push(7), get_min() | **Output:** 2
+  - **Explanation:** the auxiliary min-stack records [5, 2, 2] as each push carries forward the running minimum, so its top is 2.
+- **Example 2**
+  - **Input:** push(3), push(1), pop(), get_min() | **Output:** 3
+  - **Explanation:** popping removes both the top data element (1) and the top min-stack entry, exposing the previous running minimum, 3.
+
+**Constraints:** at most `3 × 10⁴` calls to `push`, `pop`, `top`, and `get_min`; values fit in a 32-bit signed integer.
+
+**Approach:** A second **auxiliary stack** tracks the running minimum: on push, append `min(x, current_min)`; on pop, pop both. The min-stack's top is always the min of all current elements, so `get_min` is O(1). The insight is that the minimum changes only at push/pop boundaries, so it can be carried alongside each element.
 
 ```python
 class MinStack:
@@ -375,13 +411,26 @@ class MinStack:
         return self._mins[-1]
 ```
 
-**Complexity.** O(1) per operation, O(n) space.
+**Complexity:** O(1) per operation, O(n) space.
+
+**Duplicate problems:**
+- Max Stack (LC 716) - identical auxiliary-stack O(1) running-extremum technique, tracking a running maximum instead of minimum.
 
 ### 4. Evaluate Reverse Polish Notation - _operand stack_
 
 **Problem.** Evaluate an arithmetic expression in postfix (RPN) form, given as tokens. E.g. `["2","1","+","3","*"]` → `9` (`(2+1)*3`).
 
-**Approach.** Push operands; on an operator, pop the **two** most recent operands, apply, push the result. RPN needs no parentheses precisely because the stack encodes the grouping - the two operands an operator wants are always the top two. Mind operand order for non-commutative ops (`a - b`, `a / b`): the first popped is the right operand.
+**Worked examples:**
+- **Example 1**
+  - **Input:** tokens = ["2","1","+","3","*"] | **Output:** 9
+  - **Explanation:** `2` and `1` push, `+` pops both and pushes 3, `3` pushes, `*` pops the two 3s and pushes 9.
+- **Example 2**
+  - **Input:** tokens = ["10","6","9","3","+","-11","*","/","*","17","+","5","+"] | **Output:** 22
+  - **Explanation:** each operator pops the two most recent operands in right-then-left order, so non-commutative ops like `-` and `/` apply correctly as the stack unwinds nested subexpressions.
+
+**Constraints:** `1 ≤ tokens.length ≤ 10⁴`, each token is an operator (`+ - * /`) or an integer in `[-200, 200]`, division truncates toward zero, the expression is always valid.
+
+**Approach:** Push operands; on an operator, pop the **two** most recent operands, apply, push the result. RPN needs no parentheses precisely because the stack encodes the grouping - the two operands an operator wants are always the top two. Mind operand order for non-commutative ops (`a - b`, `a / b`): the first popped is the right operand.
 
 ```python
 def eval_rpn(tokens: list[str]) -> int:
@@ -400,13 +449,23 @@ def eval_rpn(tokens: list[str]) -> int:
     return stack[-1]
 ```
 
-**Complexity.** O(n) time, O(n) space.
+**Complexity:** O(n) time, O(n) space.
 
 ### 5. Largest Rectangle in Histogram - _monotonic stack with widths_
 
 **Problem.** Given bar heights of width 1, find the area of the largest rectangle that fits inside the histogram. E.g. `[2,1,5,6,2,3]` → `10` (the `5,6` pair, width 2 × height 5).
 
-**Approach.** An **increasing monotonic stack of indices**. When a bar shorter than the stack top appears, the top bar can't extend further right - pop it and compute its maximal rectangle, using the new top as the left boundary to get the width. A sentinel `0` at the end flushes the stack. The width calculation (`i - stack[-1] - 1`) is why we store indices. The hardest classic monotonic-stack problem.
+**Worked examples:**
+- **Example 1**
+  - **Input:** heights = [2,1,5,6,2,3] | **Output:** 10
+  - **Explanation:** the bars at indices 2-3 (heights 5 and 6) form a width-2 rectangle of height 5, area 10, which is the maximum.
+- **Example 2**
+  - **Input:** heights = [2,4] | **Output:** 4
+  - **Explanation:** the tallest single bar (height 4, width 1) ties the two-bar rectangle at height 2 × width 2, both giving area 4.
+
+**Constraints:** `1 ≤ heights.length ≤ 10⁵`, `0 ≤ heights[i] ≤ 10⁴`.
+
+**Approach:** An **increasing monotonic stack of indices**. When a bar shorter than the stack top appears, the top bar can't extend further right - pop it and compute its maximal rectangle, using the new top as the left boundary to get the width. A sentinel `0` at the end flushes the stack. The width calculation (`i - stack[-1] - 1`) is why we store indices. The hardest classic monotonic-stack problem.
 
 ```python
 def largest_rectangle(heights: list[int]) -> int:
@@ -422,4 +481,7 @@ def largest_rectangle(heights: list[int]) -> int:
     return best
 ```
 
-**Complexity.** O(n) time, O(n) space. Pattern: [Monotonic Stack](../patterns/monotonic-stack.md).
+**Complexity:** O(n) time, O(n) space. Pattern: [Monotonic Stack](../patterns/monotonic-stack.md).
+
+**Duplicate problems:**
+- Maximal Rectangle (LC 85) - same span-based histogram algorithm run once per row of a binary matrix, accumulating column heights first; cited as the duplicate of this exact problem in the [Monotonic Stack](../patterns/monotonic-stack.md#2-largest-rectangle-in-histogram-lc-84) pattern article, where this problem (LC 84) is itself the primary entry.

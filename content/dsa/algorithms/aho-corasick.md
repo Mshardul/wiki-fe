@@ -26,8 +26,6 @@
 - [Practice problems](#practice-problems)
   - [Implement Aho-Corasick / Multi-pattern string matching](#1-implement-aho-corasick--multi-pattern-string-matching)
   - [Short Encoding of Words (LC 820)](#2-short-encoding-of-words-lc-820--trie-suffix-links-not-aho-corasick-but-the-neighbor-to-not-confuse)
-  - [Stream of Characters (LC 1032)](#3-stream-of-characters-lc-1032--suffix-link-style-online-matching)
-  - [Word Filter / Multi-keyword Content Moderation](#4-word-filter--multi-keyword-content-moderation)
 
 ## What it is
 
@@ -427,7 +425,17 @@ class AhoCorasick:
 
 **Problem.** Given a list of `k` pattern strings and a text `T`, report every occurrence of every pattern in `T` (start index and which pattern). Constraints: `k ≤ 10⁴` patterns, total pattern length `Σm ≤ 10⁵`, `|T| ≤ 10⁶` - ruling out running `k` independent KMP scans (`O(k · n)` would be `10¹⁰`, far too slow) and demanding a single-pass multi-pattern structure.
 
-**Approach.** This *is* the algorithm this article teaches: build the trie of all `k` patterns, compute failure links via BFS, chain output links, then scan `T` once. The output-link chase at each position is what keeps the total match-reporting cost proportional to the number of matches rather than to `k` or `m` per position.
+**Worked examples:**
+- **Example 1**
+  - **Input:** patterns = ["he", "she", "his", "hers"], text = "ushershe" | **Output:** {"she": [1, 4], "he": [2, 5], "hers": [2]}
+  - **Explanation:** the automaton scans the text once and reports every pattern ending at each position, including nested matches like "he" inside "she".
+- **Example 2**
+  - **Input:** patterns = ["a", "ab"], text = "ab" | **Output:** {"a": [0], "ab": [0]}
+  - **Explanation:** both patterns end at the same position (index 1), which is exactly the case output links exist to surface.
+
+**Constraints:** `k ≤ 10⁴` patterns, total pattern length `Σm ≤ 10⁵`, `|T| ≤ 10⁶`.
+
+**Approach:** This *is* the algorithm this article teaches: build the trie of all `k` patterns, compute failure links via BFS, chain output links, then scan `T` once. The output-link chase at each position is what keeps the total match-reporting cost proportional to the number of matches rather than to `k` or `m` per position.
 
 ```python
 def multi_pattern_search(text: str, patterns: list[str]) -> dict[str, list[int]]:
@@ -438,17 +446,31 @@ def multi_pattern_search(text: str, patterns: list[str]) -> dict[str, list[int]]
     return results
 ```
 
-**Complexity.** O(Σm) build, O(n + matches) search - O(n + Σm + matches) total. Space O(Σm).
+**Complexity:** O(Σm) build, O(n + matches) search - O(n + Σm + matches) total. Space O(Σm).
 
 **Duplicate problems:**
+- Stream of Characters (LC 1032) - same automaton, queried one character at a time instead of over a whole text; state (the current node) persists across calls instead of being local to one scan.
+- Word Filter / Multi-keyword Content Moderation - same build-once-scan mechanic, applied across many independent messages rather than one text; the automaton is reused, not rebuilt.
 - Multi-String Matching / Word Break II variants that ask "which dictionary words appear in this text" (various online-judge phrasings) - identical mechanic, same automaton reused verbatim.
 - Detect all forbidden substrings in a document (content-moderation-flavored judge problems) - same build-once-scan-once shape; only the reporting format differs.
+
+---
 
 ### 2. Short Encoding of Words (LC 820) - trie suffix links, *not* Aho-Corasick (but the neighbor to not confuse)
 
 **Problem.** Given a list of words, find the length of the shortest reference string `S` such that every word is a suffix of `S` (joined by `#` separators), e.g. `["time", "me", "bell"]` → `"time#bell#"` (length 10), since `"me"` is already a suffix of `"time"`.
 
-**Approach.** Build a trie of the **reversed** words; a word is redundant (not needed as its own suffix in `S`) exactly when another word's reversed trie path extends past it (i.e., it's not a leaf in the reversed trie). Sum `len(word) + 1` only over words that ARE leaves. This problem is included specifically to contrast with Aho-Corasick: it uses a *plain* trie (reversed) with no failure/output links at all - the "suffix" relationship it exploits is between whole words via trie structure, not the failure-link fallback Aho-Corasick needs for streaming text matches. A candidate who reaches for full Aho-Corasick machinery here has over-engineered; recognizing when the plain trie suffices *is* the skill being tested.
+**Worked examples:**
+- **Example 1**
+  - **Input:** words = ["time", "me", "bell"] | **Output:** 10
+  - **Explanation:** `"me"` is a suffix of `"time"` so it contributes nothing new; the encoding is `"time#bell#"` (5 + 5 = 10 characters), only the two non-redundant words.
+- **Example 2**
+  - **Input:** words = ["a", "aa", "aaa"] | **Output:** 4
+  - **Explanation:** `"a"` and `"aa"` are both suffixes of `"aaa"`, so only `"aaa"` needs encoding: `"aaa#"`, length 4.
+
+**Constraints:** words consist of lowercase letters, `1 ≤ words.length ≤ 2000`, `1 ≤ words[i].length ≤ 7`.
+
+**Approach:** Build a trie of the **reversed** words; a word is redundant (not needed as its own suffix in `S`) exactly when another word's reversed trie path extends past it (i.e., it's not a leaf in the reversed trie). Sum `len(word) + 1` only over words that ARE leaves. This problem is included specifically to contrast with Aho-Corasick: it uses a *plain* trie (reversed) with no failure/output links at all - the "suffix" relationship it exploits is between whole words via trie structure, not the failure-link fallback Aho-Corasick needs for streaming text matches. A candidate who reaches for full Aho-Corasick machinery here has over-engineered; recognizing when the plain trie suffices *is* the skill being tested.
 
 ```python
 def minimum_length_encoding(words: list[str]) -> int:
@@ -468,53 +490,6 @@ def minimum_length_encoding(words: list[str]) -> int:
     )
 ```
 
-**Complexity.** O(Σm) time and space, where `Σm` = total character count.
+**Complexity:** O(Σm) time and space, where `Σm` = total character count.
 
 **Duplicate problems:** none close - included as a **contrast** problem to sharpen the "is this Aho-Corasick or just a trie?" recognition signal, not padding.
-
-### 3. Stream of Characters (LC 1032) - suffix-link-style online matching
-
-**Problem.** Design a class that processes a stream of characters one at a time and, after each character, reports whether any word from a fixed dictionary now ends at the current stream position (`query(letter) -> bool`). Constraints: up to `4·10⁴` calls to `query`, dictionary of up to `2000` words.
-
-**Approach.** Build Aho-Corasick's trie and failure/output links once over the dictionary at construction time; maintain the **current automaton node** as state across calls (this is the online/streaming use of the exact same automaton from the worked trace - one character arrives at a time instead of a whole text at once). Each `query(letter)` does exactly the inner-loop work of `AC-SEARCH`'s per-character step: follow failure links on mismatch, then check `node.output` (or, since we only need yes/no here, just `node.is_end` or `node.output is not None`) - no full chain walk needed for existence-only queries.
-
-```python
-class StreamChecker:
-    def __init__(self, words: list[str]) -> None:
-        self.ac = AhoCorasick(words)
-        self.node = self.ac.root
-
-    def query(self, letter: str) -> bool:
-        while self.node is not self.ac.root and letter not in self.node.children:
-            self.node = self.node.fail
-        self.node = self.node.children.get(letter, self.ac.root)
-        return self.node.output is not None
-```
-
-**Complexity.** O(Σm) one-time build; O(1) amortized per `query` call (same amortized failure-chain argument as the full scan, just one character at a time). Space O(Σm).
-
-**Duplicate problems:**
-- Implement Aho-Corasick / Multi-pattern string matching (problem 1) - literally the same automaton; this problem is the *online* (one-char-at-a-time) framing of the identical structure, exercising state retention across calls instead of a single batch scan.
-
-### 4. Word Filter / Multi-keyword Content Moderation
-
-**Problem.** Given a large, fixed list of banned words (`k` up to `10⁵`, total length `Σm` up to `10⁶`) and a stream of user-submitted messages (each up to `10³` characters, potentially millions of messages over the service's lifetime), determine for each message whether it contains **any** banned word, and which ones. Constraints reflect a real content-moderation service: the banned list changes rarely; messages arrive continuously.
-
-**Approach.** Build the Aho-Corasick automaton **once** from the banned-word list at service startup; reuse it for every incoming message, amortizing the O(Σm) build cost across potentially millions of scans - the "same automaton, many texts" case this article's Constraints & approach table calls out as the strongest argument for Aho-Corasick over per-message alternatives. Each message scan is O(message length + matches in that message), independent of `k`.
-
-```python
-class ContentModerator:
-    def __init__(self, banned_words: list[str]) -> None:
-        self.ac = AhoCorasick(banned_words)     # built once, reused for every message
-
-    def check(self, message: str) -> list[str]:
-        """Return the distinct banned words found in this message."""
-        found = {pattern for _end_idx, pattern in self.ac.search(message)}
-        return sorted(found)
-```
-
-**Complexity.** O(Σm) one-time build; O(len(message) + matches) per message. Space O(Σm) for the shared automaton.
-
-**Duplicate problems:**
-- Implement Aho-Corasick / Multi-pattern string matching (problem 1) - same build+scan mechanic; this problem's distinct lesson is **reuse across many independent scans**, not the single-text case.
-- Any "detect forbidden substrings across a corpus of documents" judge problem - identical build-once-scan-many shape with a different domain label.

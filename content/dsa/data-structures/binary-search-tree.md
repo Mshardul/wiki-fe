@@ -32,6 +32,7 @@
   - [Lowest Common Ancestor of a BST](#3-lowest-common-ancestor-of-a-bst--ordering-shortcut)
   - [Insert into a BST](#4-insert-into-a-bst--recursive-descent)
   - [Convert Sorted Array to BST](#5-convert-sorted-array-to-bst--balanced-build)
+  - [Delete Node in a BST](#6-delete-node-in-a-bst--two-child-successor-replacement)
 
 ## What it is
 
@@ -212,19 +213,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-
 @dataclass
 class Node:
     key: int
     left: Optional["Node"] = None
     right: Optional["Node"] = None
 
-
 def search(root: Optional[Node], k: int) -> Optional[Node]:
     while root and root.key != k:
         root = root.left if k < root.key else root.right   # halve each step
     return root
-
 
 def insert(root: Optional[Node], k: int) -> Node:
     if root is None:
@@ -235,7 +233,6 @@ def insert(root: Optional[Node], k: int) -> Node:
         root.right = insert(root.right, k)
     # k == root.key → duplicate; ignore (or store a count)
     return root
-
 
 def delete(root: Optional[Node], k: int) -> Optional[Node]:
     if root is None:
@@ -290,13 +287,23 @@ Most BST contest problems are really "I need an ordered multiset with O(log n) i
 
 ## Practice problems
 
-Five staples, each a **distinct** BST technique - no two solved the same way.
+Six staples, each a **distinct** BST technique - no two solved the same way.
 
 ### 1. Validate Binary Search Tree - _bounded recursion_
 
-**Problem.** Determine if a binary tree is a valid BST: every node's left subtree is strictly less and right subtree strictly greater, _globally_. E.g. `[5,1,4,null,null,3,6]` → false (4's subtree has 3 < 5).
+Determine if a binary tree is a valid BST: every node's left subtree is strictly less and right subtree strictly greater, _globally_.
 
-**Approach.** Recurse carrying a valid **(low, high) open interval** each node must lie in. Going left tightens the upper bound to the node's key; going right tightens the lower bound. A null subtree is valid; any key outside its bound fails. This enforces the _global_ invariant that naive child-only checks miss.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [2,1,3] | **Output:** true
+  - **Explanation:** 1 < 2 < 3, and the invariant holds globally, not just locally.
+- **Example 2**
+  - **Input:** root = [5,1,4,null,null,3,6] | **Output:** false
+  - **Explanation:** node 4 sits in 5's right subtree but has a child 3, which is less than 5 - invalid even though `1 < 5 < 4` locally passes at node 4's parent.
+
+**Constraints:** `1 ≤ number of nodes ≤ 10⁴`, `-2³¹ ≤ node.val ≤ 2³¹ - 1`.
+
+**Approach:** Recurse carrying a valid **(low, high) open interval** each node must lie in. Going left tightens the upper bound to the node's key; going right tightens the lower bound. A null subtree is valid; any key outside its bound fails. This enforces the _global_ invariant that naive child-only checks miss.
 
 ```python
 def is_valid_bst(root, low=float("-inf"), high=float("inf")) -> bool:
@@ -308,13 +315,23 @@ def is_valid_bst(root, low=float("-inf"), high=float("inf")) -> bool:
             is_valid_bst(root.right, root.val, high))
 ```
 
-**Complexity.** O(n) time, O(h) space.
+**Complexity:** O(n) time, O(h) space.
 
 ### 2. Kth Smallest Element in a BST - _in-order counting_
 
-**Problem.** Return the k-th smallest key (1-indexed) in a BST. E.g. tree with keys `1,2,3,4` and `k=1` → `1`.
+Return the k-th smallest key (1-indexed) in a BST.
 
-**Approach.** In-order traversal visits keys in sorted order, so the k-th visited node is the answer. Use an **iterative in-order with an explicit stack** and stop as soon as you've popped k nodes - no need to walk the whole tree. The sorted-walk property turned into early-exit counting.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [3,1,4,null,2], k = 1 | **Output:** 1
+  - **Explanation:** in-order walk visits 1,2,3,4 - the 1st is 1.
+- **Example 2**
+  - **Input:** root = [5,3,6,2,4,null,null,1], k = 3 | **Output:** 3
+  - **Explanation:** in-order walk visits 1,2,3,4,5,6 - the 3rd is 3.
+
+**Constraints:** `1 ≤ number of nodes ≤ 10⁴`, `1 ≤ k ≤ number of nodes`.
+
+**Approach:** In-order traversal visits keys in sorted order, so the k-th visited node is the answer. Use an **iterative in-order with an explicit stack** and stop as soon as you've popped k nodes - no need to walk the whole tree. The sorted-walk property turned into early-exit counting.
 
 ```python
 def kth_smallest(root, k: int) -> int:
@@ -331,13 +348,26 @@ def kth_smallest(root, k: int) -> int:
     return -1
 ```
 
-**Complexity.** O(h + k) time, O(h) space.
+**Complexity:** O(h + k) time, O(h) space.
+
+**Duplicate problems:**
+- Binary Search Tree Iterator (LC 173) - same stack-based iterative in-order, wrapped as a stateful `next()`/`hasNext()` API instead of a one-shot k-th lookup.
 
 ### 3. Lowest Common Ancestor of a BST - _ordering shortcut_
 
-**Problem.** Find the LCA of two nodes `p` and `q` in a BST. E.g. in a BST rooted at 6, LCA of 2 and 8 is 6; LCA of 2 and 4 is 2.
+Find the LCA of two nodes `p` and `q` in a BST.
 
-**Approach.** Unlike a [general binary tree](./binary-tree.md#5-lowest-common-ancestor--recursive-search), a BST lets you use the ordering: if both keys are smaller than the current node, the LCA is in the left subtree; if both larger, the right; the moment they **split** (one each side, or one equals the node), the current node is the LCA. O(h), no full search.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [6,2,8,0,4,7,9,null,null,3,5], p = 2, q = 8 | **Output:** 6
+  - **Explanation:** 2 and 8 sit on opposite sides of 6 (2 < 6 < 8), so 6 is the split point.
+- **Example 2**
+  - **Input:** root = [6,2,8,0,4,7,9,null,null,3,5], p = 2, q = 4 | **Output:** 2
+  - **Explanation:** both 2 and 4 are ≥ 2 (4 is in 2's own right subtree), so descent stops at 2 itself.
+
+**Constraints:** `2 ≤ number of nodes ≤ 10⁵`, all node values unique, `p` and `q` both exist in the tree and `p ≠ q`.
+
+**Approach:** Unlike a [general binary tree](./binary-tree.md#5-lowest-common-ancestor--recursive-search), a BST lets you use the ordering: if both keys are smaller than the current node, the LCA is in the left subtree; if both larger, the right; the moment they **split** (one each side, or one equals the node), the current node is the LCA. O(h), no full search.
 
 ```python
 def lca_bst(root, p, q):
@@ -351,13 +381,26 @@ def lca_bst(root, p, q):
     return None
 ```
 
-**Complexity.** O(h) time, O(1) space.
+**Complexity:** O(h) time, O(1) space.
+
+**Duplicate problems:**
+- Lowest Common Ancestor of a Binary Tree III (LC 1650) - same ordering-based split-point shortcut, adapted to nodes carrying a `parent` pointer instead of descending from the root.
 
 ### 4. Insert into a BST - _recursive descent_
 
-**Problem.** Insert a value into a BST and return the (possibly new) root, keeping it a valid BST. The value is guaranteed not already present.
+Insert a value into a BST and return the (possibly new) root, keeping it a valid BST. The value is guaranteed not already present.
 
-**Approach.** Descend by comparison - go left if smaller, right if larger - until you hit a null child, and place the new node there. The new node is always inserted as a **leaf**, so no restructuring is needed (in a plain BST). Pure invariant-guided recursion; the base case creates the node.
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [4,2,7,1,3], val = 5 | **Output:** [4,2,7,1,3,5]
+  - **Explanation:** 5 > 4 → go right to 7; 5 < 7 → go left to null → place 5 as 7's left child.
+- **Example 2**
+  - **Input:** root = null, val = 10 | **Output:** [10]
+  - **Explanation:** an empty tree's insert creates the root directly.
+
+**Constraints:** `0 ≤ number of nodes ≤ 10⁴`, all values unique, `-10⁸ ≤ val ≤ 10⁸`.
+
+**Approach:** Descend by comparison - go left if smaller, right if larger - until you hit a null child, and place the new node there. The new node is always inserted as a **leaf**, so no restructuring is needed (in a plain BST). Pure invariant-guided recursion; the base case creates the node.
 
 ```python
 def insert_into_bst(root, val: int):
@@ -370,13 +413,23 @@ def insert_into_bst(root, val: int):
     return root
 ```
 
-**Complexity.** O(h) time, O(h) space.
+**Complexity:** O(h) time, O(h) space.
 
 ### 5. Convert Sorted Array to BST - _balanced build_
 
-**Problem.** Given a sorted array, build a **height-balanced** BST from it. E.g. `[-10,-3,0,5,9]` → a balanced tree rooted at `0`.
+Given a sorted array, build a **height-balanced** BST from it.
 
-**Approach.** Pick the **middle** element as the root (so left and right halves are equal size), then recursively build the left subtree from the left half and the right from the right half. Choosing the midpoint each time guarantees height O(log n) - the inverse of the skew problem: balanced input order by construction. Divide-and-conquer on the array.
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [-10,-3,0,5,9] | **Output:** a balanced tree rooted at 0, e.g. [0,-3,9,-10,null,5]
+  - **Explanation:** the midpoint 0 becomes the root; each half recurses the same way.
+- **Example 2**
+  - **Input:** nums = [1,3] | **Output:** [3,1] or [1,null,3]
+  - **Explanation:** a 2-element array has two valid midpoint choices - either produces a height-balanced (height-1) tree.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁴`, `nums` sorted strictly ascending.
+
+**Approach:** Pick the **middle** element as the root (so left and right halves are equal size), then recursively build the left subtree from the left half and the right from the right half. Choosing the midpoint each time guarantees height O(log n) - the inverse of the skew problem: balanced input order by construction. Divide-and-conquer on the array.
 
 ```python
 def sorted_array_to_bst(nums: list[int]):
@@ -391,4 +444,49 @@ def sorted_array_to_bst(nums: list[int]):
     return build(0, len(nums) - 1)
 ```
 
-**Complexity.** O(n) time, O(log n) space (balanced recursion).
+**Complexity:** O(n) time, O(log n) space (balanced recursion).
+
+**Duplicate problems:**
+- Convert Sorted List to Binary Search Tree (LC 109) - same midpoint-recursion technique, adapted to a linked list's lack of random access (usually solved via slow/fast pointer to find the midpoint, or an in-order simulation).
+
+### 6. Delete Node in a BST - _two-child successor-replacement_
+
+Delete a node with the given key from a BST and return the root of the resulting tree, keeping it a valid BST.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [5,3,6,2,4,null,7], key = 3 | **Output:** [5,4,6,2,null,null,7] (or [5,2,6,null,4,null,7] - either valid successor/predecessor choice)
+  - **Explanation:** 3 has two children (2 and 4); replace it with its in-order successor 4 (the leftmost node of 3's right subtree), then delete 4 from its original spot.
+- **Example 2**
+  - **Input:** root = [5,3,6,2,4,null,7], key = 6 | **Output:** [5,3,7,2,4]
+  - **Explanation:** 6 has one child (7); splice 6 out and promote 7 directly - no successor search needed.
+
+**Constraints:** `0 ≤ number of nodes ≤ 10⁴`, all node values unique, `-10⁵ ≤ key, node.val ≤ 10⁵`.
+
+**Approach:** This is [the one tricky BST operation](#how-it-works) - "the most-tested BST coding detail" per this article's own gotchas. Descend to find the key. Two of the three cases are trivial splices: a leaf is removed outright, and a one-child node is replaced by its single child. The hard case is **two children**: you cannot simply remove the node without orphaning a subtree, so you copy in the value of the **in-order successor** (the smallest key in the right subtree - found by walking left from `node.right` until there's no more left child), then recursively delete that successor from the right subtree. Because the successor has no left child by definition, deleting it recurses into one of the two easy cases - the two-child case always reduces to a simpler one exactly once.
+
+```python
+def delete_node(root, key: int):
+    if root is None:
+        return None
+    if key < root.val:
+        root.left = delete_node(root.left, key)
+    elif key > root.val:
+        root.right = delete_node(root.right, key)
+    else:
+        if root.left is None:
+            return root.right                 # 0 or 1 child (right) → splice
+        if root.right is None:
+            return root.left                  # 1 child (left) → splice
+        succ = root.right                     # two children → in-order successor
+        while succ.left:
+            succ = succ.left
+        root.val = succ.val                   # copy successor's value up
+        root.right = delete_node(root.right, succ.val)  # remove successor from its original spot
+    return root
+```
+
+**Complexity:** O(h) time, O(h) space (recursion) - one descent to find the key, plus at most one more descent to find/remove the successor, both bounded by height.
+
+**Duplicate problems:**
+- Delete Leaves With a Given Value (LC 1325) - a related but distinct splice-only variant (no two-child successor case, since only leaves are ever removed).

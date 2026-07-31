@@ -431,7 +431,20 @@ def fib(n: int) -> int:
 
 ### 1. Pow(x, n) - LC 50
 
-**Problem:** Implement `pow(x, n)` for a 64-bit float `x` and a 32-bit integer `n`, including negative exponents. Return `x^n`. Constraints: `-100.0 < x < 100.0`, `-2^31 ≤ n ≤ 2^31 - 1`.
+**Problem:** Implement `pow(x, n)` for a 64-bit float `x` and a 32-bit integer `n`, including negative exponents. Return `x^n`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** x = 2.0, n = 10 | **Output:** 1024.0
+  - **Explanation:** binary exponentiation squares `x` through 1, 2, 4, 8 bits of `n = 1010₂`, multiplying in at bits 3 and 1.
+- **Example 2**
+  - **Input:** x = 2.1, n = 3 | **Output:** 9.261
+  - **Explanation:** `n = 11₂`, both bits set, so `result = x¹ × x²`.
+- **Example 3**
+  - **Input:** x = 2.0, n = -2 | **Output:** 0.25
+  - **Explanation:** negative exponent flips to `pow(1/x, -n) = pow(0.5, 2) = 0.25`.
+
+**Constraints:** `-100.0 < x < 100.0`, `-2^31 ≤ n ≤ 2^31 - 1`.
 
 **Approach:** Binary exponentiation on floats - same bit-scan loop, no mod involved. For negative `n`, compute `pow(1/x, -n)`. The only gotcha: in C++, negating `n = -2^31` overflows a 32-bit int because `2^31` is out of range; in Python this is safe since integers are arbitrary precision.
 
@@ -453,16 +466,25 @@ def myPow(x: float, n: int) -> float:
 **Duplicate problems:**
 - Super Pow (LC 372) - `a^b mod 1337` where `b` is a digit array; decompose by digit using Euler's theorem and apply binary exponentiation per chunk.
 - Fast Matrix Power - same squaring loop, matrix multiply as the operation.
+- Fibonacci Number for large n (matrix exponentiation) - raise the 2×2 Fibonacci transition matrix `[[1,1],[1,0]]` to the n-th power via the identical bit-scan loop, matrix multiply replacing scalar multiply; needed when `n` is up to `10^18` and the O(n) iterative approach is too slow.
 
 ---
 
 ### 2. Fermat's last step - modular inverse for combinations
 
-**Problem:** Given `n` and `k`, compute `C(n, k) mod (10^9 + 7)`. Both `n` and `k` can be up to `10^6`, and you may receive up to `10^5` queries. Constraints: `0 ≤ k ≤ n ≤ 10^6`, prime modulus `p = 10^9 + 7`.
+**Problem:** Given `n` and `k`, compute `C(n, k) mod (10^9 + 7)`. Both `n` and `k` can be up to `10^6`, and you may receive up to `10^5` queries.
 
-**Approach:** `C(n, k) = n! / (k! × (n-k)!)`. Division modulo a prime is multiplication by the modular inverse. Precompute factorial and inverse-factorial arrays in O(n + log p): one forward pass for factorials, one Fermat call `pow(fact[n], p-2, p)` for the top inverse, then one backward pass to fill all inverse factorials. Each query is then O(1).
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 10, k = 3 | **Output:** 120
+  - **Explanation:** `C(10,3) = 10!/(3!·7!) = 120`, computed as `fact[10] * inv_fact[3] * inv_fact[7] mod p`.
+- **Example 2**
+  - **Input:** n = 5, k = 0 | **Output:** 1
+  - **Explanation:** choosing 0 items from any set has exactly one way.
 
-The Fermat call `pow(fact[n], p - 2, p)` is itself a modular exponentiation - this problem nests binary exponentiation inside the precomputation for the O(1) queries.
+**Constraints:** `0 ≤ k ≤ n ≤ 10^6`, prime modulus `p = 10^9 + 7`, up to `10^5` queries.
+
+**Approach:** `C(n, k) = n! / (k! × (n-k)!)`. Division modulo a prime is multiplication by the modular inverse. Precompute factorial and inverse-factorial arrays in O(n + log p): one forward pass for factorials, one Fermat call `pow(fact[n], p-2, p)` for the top inverse, then one backward pass to fill all inverse factorials. Each query is then O(1). The Fermat call `pow(fact[n], p - 2, p)` is itself a modular exponentiation - this problem nests binary exponentiation inside the precomputation for the O(1) queries.
 
 ```python
 def precompute(n: int, p: int) -> tuple[list[int], list[int]]:
@@ -491,48 +513,3 @@ print(comb(10, 3, fact, inv_fact, p))   # 120
 **Duplicate problems:**
 - Unique Paths II (LC 63) - combinatorial with obstacles; same C(n,k) formula for the obstacle-free version.
 - Binomial Coefficient (many contest variants) - same factorial inverse table.
-
----
-
-### 3. Fibonacci Number for large n - matrix exponentiation
-
-**Problem:** Compute the n-th Fibonacci number (`F(0) = 0, F(1) = 1`) modulo `10^9 + 7`, where `1 ≤ n ≤ 10^18`. The standard iterative O(n) approach is too slow for n near `10^18`.
-
-**Approach:** The Fibonacci recurrence is a linear recurrence with a 2×2 transition matrix `[[1,1],[1,0]]`. Raising this matrix to the n-th power via binary exponentiation gives `F(n)` in O(log n) matrix multiplications. This is the same bit-scan skeleton as scalar modular exponentiation - the "multiply" operation is now 2×2 matrix multiplication taken mod p.
-
-*The non-obvious connection:* binary exponentiation is not specific to integers. Any monoid (associative operation with an identity) supports repeated squaring. The identity for matrices is the identity matrix; the operation is matrix multiply. The bit-scan code is structurally identical.
-
-```python
-MOD = 10**9 + 7
-
-def mat_mul(A: list[list[int]], B: list[list[int]]) -> list[list[int]]:
-    return [
-        [(A[0][0]*B[0][0] + A[0][1]*B[1][0]) % MOD,
-         (A[0][0]*B[0][1] + A[0][1]*B[1][1]) % MOD],
-        [(A[1][0]*B[0][0] + A[1][1]*B[1][0]) % MOD,
-         (A[1][0]*B[0][1] + A[1][1]*B[1][1]) % MOD],
-    ]
-
-def mat_pow(M: list[list[int]], n: int) -> list[list[int]]:
-    result = [[1, 0], [0, 1]]  # identity matrix
-    while n > 0:
-        if n & 1:
-            result = mat_mul(result, M)
-        M = mat_mul(M, M)
-        n >>= 1
-    return result
-
-def fib(n: int) -> int:
-    if n <= 1:
-        return n
-    return mat_pow([[1, 1], [1, 0]], n)[0][1]
-
-print(fib(10))        # 55
-print(fib(10**18))    # fast
-```
-
-**Complexity:** O(log n) matrix multiplications, each O(1) for a 2×2 matrix → O(log n) total. Space: O(1) (four 2×2 matrices, constant size).
-
-**Duplicate problems:**
-- Climbing Stairs (LC 70) - same Fibonacci recurrence, n ≤ 45; naive iteration works but matrix pow demonstrates the technique.
-- Count Vowel Permutations (LC 1220) - transition matrix DP; same matrix exponentiation pattern for very large n.

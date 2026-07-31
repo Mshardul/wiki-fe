@@ -42,7 +42,7 @@ See [DSA Learning Paths](../index.md#learning-paths) for the other tracks.
 | 10   | [Z-Algorithm](../algorithms/z-algorithm.md)                               | Algorithm |                                  |
 | 11   | [Manacher Algorithm](../algorithms/manacher-algorithm.md)                 | Algorithm |                                  |
 | 11   | [Aho-Corasick](../algorithms/aho-corasick.md)                             | Algorithm |                                  |
-| 11   | [Suffix Array](../data-structures/suffix-array.md)                        | DS        |                                  |
+| 11   | [Suffix Tree](../data-structures/suffix-tree.md)                          | DS        |                                  |
 | 12   | [Graph](../data-structures/graph.md)                                      | DS        |                                  |
 | 12   | [Breadth-First Search (BFS)](../algorithms/bfs.md)                        | Algorithm |                                  |
 | 12   | [Depth-First Search (DFS)](../algorithms/dfs.md)                          | Algorithm |                                  |

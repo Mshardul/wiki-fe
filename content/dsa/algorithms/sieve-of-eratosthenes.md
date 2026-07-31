@@ -378,7 +378,17 @@ list(primerange(2, 31))   # [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
 
 ### 1. Count Primes - LC 204
 
-**Problem:** Given an integer `n`, return the number of prime numbers strictly less than `n`. Constraints: `0 ≤ n ≤ 5 × 10^6`.
+**Problem:** Given an integer `n`, return the number of prime numbers strictly less than `n`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 10 | **Output:** 4
+  - **Explanation:** the primes below 10 are 2, 3, 5, 7.
+- **Example 2**
+  - **Input:** n = 0 | **Output:** 0
+  - **Explanation:** no primes are strictly less than 0.
+
+**Constraints:** `0 ≤ n ≤ 5 × 10^6`.
 
 **Approach:** Textbook sieve application - build the boolean array up to `n - 1` and count `True` entries. The constraint (`n` up to 5 million) is the direct signal: trial division per number (`O(n√n)`) would be too slow, but a single sieve pass (`O(n log log n)`) comfortably fits the time limit.
 
@@ -406,7 +416,17 @@ def countPrimes(n: int) -> int:
 
 ### 2. Prime Factorization via Smallest Prime Factor
 
-**Problem:** Given `q` queries, each asking for the full prime factorization of a number `x_i` where `1 ≤ x_i ≤ n ≤ 10^6` and `1 ≤ q ≤ 10^5`, answer each query efficiently. Naive per-query trial division (`O(√x)` each) risks `10^5 × 10^3 = 10^8` operations - borderline, and much worse if `n` were larger.
+**Problem:** Given `q` queries, each asking for the full prime factorization of a number `x_i`, answer each query efficiently. Naive per-query trial division (`O(√x)` each) risks `10^5 × 10^3 = 10^8` operations - borderline, and much worse if `n` were larger.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** x = 360 | **Output:** [2, 2, 2, 3, 3, 5]
+  - **Explanation:** repeatedly dividing by the precomputed smallest prime factor peels off `2, 2, 2, 3, 3, 5` in order.
+- **Example 2**
+  - **Input:** x = 17 | **Output:** [17]
+  - **Explanation:** 17 is prime, so its own SPF entry is itself and the loop terminates after one division.
+
+**Constraints:** `1 ≤ x_i ≤ n ≤ 10^6`, `1 ≤ q ≤ 10^5`.
 
 **Approach:** Precompute the smallest-prime-factor (SPF) table once via the linear sieve in O(n). Each query then factorizes by repeatedly dividing by the SPF, which takes O(log x) steps since each division at least halves the remaining value (the smallest prime factor is always ≥ 2). This converts a per-query O(√x) cost into O(log x), and amortizes the sieve's one-time O(n) cost across all queries.
 
@@ -446,7 +466,17 @@ print(factorize(360, spf))   # [2, 2, 2, 3, 3, 5]
 
 ### 3. Prime Range Query (segmented sieve)
 
-**Problem:** Given a range `[L, R]` where `1 ≤ L ≤ R ≤ 10^12` and `R - L ≤ 10^6`, count how many primes lie in `[L, R]`.
+**Problem:** Given a range `[L, R]`, count how many primes lie in `[L, R]`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** L = 10, R = 20 | **Output:** 4
+  - **Explanation:** the primes in `[10, 20]` are 11, 13, 17, 19.
+- **Example 2**
+  - **Input:** L = 10^12, R = 10^12 + 100 | **Output:** count of primes in that narrow high window
+  - **Explanation:** a segmented sieve marks composites in the width-100 window using base primes up to `√R`, without ever allocating an array of size `R`.
+
+**Constraints:** `1 ≤ L ≤ R ≤ 10^12`, `R - L ≤ 10^6`.
 
 **Approach:** A full sieve up to `10^12` is impossible (would need ~1TB+ of memory even bit-packed). But since the *window width* is only `10^6`, a **segmented sieve** solves it: first sieve base primes up to `√R ≈ 10^6` with a standard small sieve, then use those base primes to mark composites directly within the `[L, R]` window (an array sized only `R - L + 1`, not `R`). This is the textbook case where the constraint's two dimensions - the huge upper bound `R` and the narrow window width - point to two different tools working together: a plain sieve for the small base-prime range, a segmented pass for the actual query range.
 
@@ -483,3 +513,54 @@ print(count_primes_in_range(10**12, 10**12 + 100))
 
 **Duplicate problems:**
 - Closest prime pairs in a range (various contest variants) - same segmented-sieve setup, different final aggregation over the surviving primes.
+
+---
+
+### 4. Count Numbers with Exactly K Distinct Prime Factors
+
+**Problem:** Given `n` and `k`, count how many integers in `[1, n]` have exactly `k` distinct prime factors (i.e. `ω(i) = k`, the number-theoretic omega function).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 20, k = 2 | **Output:** 7
+  - **Explanation:** the qualifying numbers are 6, 10, 12, 14, 15, 18, 20 - each has exactly 2 distinct prime factors (e.g. `12 = 2²·3`, `ω(12) = 2`).
+- **Example 2**
+  - **Input:** n = 10, k = 1 | **Output:** 7
+  - **Explanation:** the qualifying set is `{2, 3, 4, 5, 7, 8, 9}` - each is a power of a single prime, so `ω(i) = 1`.
+
+**Constraints:** `1 ≤ n ≤ 10^7`, `1 ≤ k ≤ log₂(n)`.
+
+**Approach:** This is a linear-sieve variant distinct from entry 2's SPF lookup: instead of a post-hoc per-query factorization, `ω[i]` (count of distinct prime factors) is derived **inline during the sieve pass itself** - a multiplicative-function accumulation, not a query-time computation. During the standard linear sieve, when marking `i * p` composite, set `ω[i * p] = ω[i] + 1` if `p` does not divide `i` (a genuinely new prime factor), or `ω[i * p] = ω[i]` if `p` already divides `i` (no new distinct factor introduced). This runs in the same O(n) pass that builds the primality/SPF tables, with no extra query-time cost - the entire `ω[]` array is ready the moment the sieve finishes, unlike entry 2 where each query still pays O(log x) after the O(n) precompute.
+
+```python
+def omega_sieve(n: int) -> list[int]:
+    """omega[i] = number of DISTINCT prime factors of i, built inline during a linear sieve."""
+    spf = [0] * (n + 1)
+    omega = [0] * (n + 1)
+    primes: list[int] = []
+    for i in range(2, n + 1):
+        if spf[i] == 0:
+            spf[i] = i
+            omega[i] = 1
+            primes.append(i)
+        for p in primes:
+            if p > spf[i] or i * p > n:
+                break
+            spf[i * p] = p
+            if i % p == 0:
+                omega[i * p] = omega[i]        # p already a factor of i - no new distinct prime
+            else:
+                omega[i * p] = omega[i] + 1    # p is a genuinely new distinct prime factor
+    return omega
+
+def count_with_k_factors(n: int, k: int) -> int:
+    omega = omega_sieve(n)
+    return sum(1 for i in range(2, n + 1) if omega[i] == k)
+
+print(count_with_k_factors(20, 2))   # 7
+```
+
+**Complexity:** O(n) time (single linear-sieve pass, `ω[]` derived inline with O(1) amortized extra work per sieved entry), O(n) space.
+
+**Duplicate problems:**
+- Four Divisors (LC 1390) - also derives a multiplicative property (divisor count/sum) during factorization, but per-query via entry 1's SPF lookup rather than inline during the sieve pass itself.

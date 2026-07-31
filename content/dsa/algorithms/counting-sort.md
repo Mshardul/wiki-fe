@@ -214,6 +214,16 @@ def counting_sort_fast(a: list[int]) -> list[int]:
 
 Sort an array where all values lie in a known small range, e.g. `0 ≤ a[i] ≤ 10⁵`, with `n` up to `10⁶`. Constraints: the bounded range plus large `n` is the explicit tell - O(n log n) works but O(n) is available.
 
+**Worked examples:**
+- **Example 1**
+  - **Input:** a = [4, 2, 2, 8, 3, 3, 1] | **Output:** [1, 2, 2, 3, 3, 4, 8]
+  - **Explanation:** each value is tallied by a count array indexed by the value itself, then emitted in ascending index order.
+- **Example 2**
+  - **Input:** a = [0, 0, 0] | **Output:** [0, 0, 0]
+  - **Explanation:** all-equal input fills one count slot with 3 and emits it unchanged.
+
+**Constraints:** `0 ≤ a[i] ≤ 10⁵`, `n ≤ 10⁶`.
+
 **Approach:** Direct counting sort. The range `k = 10⁵ + 1` is ≤ `n`, so O(n + k) = O(n). Tally, prefix-sum (or skip it and just emit from raw counts if stability over satellite data isn't needed), and write out. Linear time, no comparisons.
 
 ```python
@@ -227,11 +237,27 @@ def sort_bounded(a: list[int], k: int = 100_001) -> list[int]:
     return out
 ```
 
-Time O(n + k), space O(k). Pattern: plain counting sort on a bounded range.
+**Complexity:** O(n + k) time, O(k) space.
+
+**Duplicate problems:**
+- Sort Colors (LC 75) - same plain counting sort with a tiny fixed range (`k = 3`, the Dutch National Flag values).
+- Height Checker (LC 1051) - counting-sort the array, then compare index-by-index against the original to count mismatches.
+
+---
 
 ### 2. Sort Characters by Frequency - count then emit
 
 Given a string, return it with characters ordered by **descending frequency** (ties any order). Constraints: input is ASCII/lowercase, so the key alphabet is small (≤ 128) - a counting/bucketing problem.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "tree" | **Output:** "eert" (or "eetr")
+  - **Explanation:** 'e' appears twice, 't' and 'r' once each; 'e' is emitted first since its bucket has the highest count.
+- **Example 2**
+  - **Input:** s = "cccaaa" | **Output:** "cccaaa" (or "aaaccc")
+  - **Explanation:** 'c' and 'a' both appear 3 times, tying for the highest bucket; either order satisfies the problem.
+
+**Constraints:** `1 ≤ s.length ≤ 5 × 10⁵`, `s` consists of uppercase/lowercase letters and digits.
 
 **Approach:** Counting sort's "tally then emit" applied to frequencies. Count each character (a bounded-range tally), then bucket characters by their _count_ (counts are in `[1, n]`, another bounded range) and emit from the highest-count bucket down. Two layers of counting, zero comparisons of characters.
 
@@ -250,11 +276,26 @@ def frequency_sort(s: str) -> str:
     return "".join(out)
 ```
 
-Time O(n + alphabet), space O(n). Pattern: counting/bucketing by frequency.
+**Complexity:** O(n + alphabet) time, O(n) space.
+
+**Duplicate problems:**
+- Top K Frequent Elements (LC 347) - same count-then-bucket-by-frequency technique, stopping after collecting the top `k` buckets instead of emitting all of them.
+
+---
 
 ### 3. Relative Sort Array - counting with a custom order
 
 Sort `arr1` so elements appear in the order given by `arr2`; elements of `arr1` not in `arr2` go at the end in ascending order. Constraints: `0 ≤ arr1[i], arr2[i] ≤ 1000` - a bounded range, the counting-sort signal.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** arr1 = [2,3,1,3,2,4,6,7,9,2,19], arr2 = [2,1,4,3,9,6] | **Output:** [2,2,2,1,4,3,3,9,6,7,19]
+  - **Explanation:** values are emitted in arr2's given order first (with repeats), then leftover values (7, 19) ascending at the end.
+- **Example 2**
+  - **Input:** arr1 = [28,6,22,8,44,17], arr2 = [22,28,8,6] | **Output:** [22,28,8,6,17,44]
+  - **Explanation:** the four values in arr2 are emitted in that order; 17 and 44 aren't in arr2, so they go at the end ascending.
+
+**Constraints:** `1 ≤ arr1.length ≤ 1000`, `1 ≤ arr2.length ≤ 1000`, `0 ≤ arr1[i], arr2[i] ≤ 1000`, `arr2` has distinct elements, every element of `arr2` is in `arr1`.
 
 **Approach:** Tally `arr1` with a counting array (range 0–1000). Emit in two phases: first walk `arr2` in its given order, emitting each value `count[v]` times (and zeroing it); then walk the count array ascending for the leftovers. The bounded range lets you impose an arbitrary key order at O(n + k) with no comparisons.
 
@@ -271,11 +312,26 @@ def relative_sort(arr1: list[int], arr2: list[int]) -> list[int]:
     return out
 ```
 
-Time O(n + k), space O(k). Pattern: counting sort with an externally-specified key order.
+**Complexity:** O(n + k) time, O(k) space.
+
+**Duplicate problems:**
+- Custom Sort String (LC 791) - same "custom key order" counting technique, applied to characters instead of integers.
+
+---
 
 ### 4. H-Index - counting buckets to skip the sort
 
 Given citation counts, find the h-index: the largest `h` such that `h` papers each have ≥ `h` citations. Constraints: `n ≤ 5000`; the obvious solution sorts (O(n log n)), but counting buckets gives O(n).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** citations = [3, 0, 6, 1, 5] | **Output:** 3
+  - **Explanation:** 3 papers (citations 3, 6, 5) have at least 3 citations each, and no larger h works.
+- **Example 2**
+  - **Input:** citations = [1, 3, 1] | **Output:** 1
+  - **Explanation:** only 1 paper needs at least 1 citation to satisfy h=1; h=2 would need 2 papers with ≥2 citations, but only one qualifies.
+
+**Constraints:** `n ≤ 5000`, `0 ≤ citations[i] ≤ 1000`.
 
 **Approach:** A counting-sort _insight_ without a full sort. Bucket papers by citation count, capping at `n` (citations beyond `n` can't raise the h-index past `n`). Then sweep buckets from high to low, accumulating paper counts; the first point where the running total reaches the citation level is the h-index. The bounded range (`0..n`) is what makes the bucket array legal and the whole thing linear.
 
@@ -293,4 +349,6 @@ def h_index(citations: list[int]) -> int:
     return 0
 ```
 
-Time O(n), space O(n). Pattern: counting buckets to replace a sort.
+**Complexity:** O(n) time, O(n) space.
+
+**Duplicate problems:** none found at verified confidence - the bucket-sweep-to-skip-a-sort insight is distinctive enough that no close LC duplicate shares this exact mechanic.

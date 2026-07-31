@@ -270,9 +270,19 @@ The O(VE²) bound is a worst-case guarantee; on typical/random graphs the number
 
 ### 1. Maximum Flow (canonical, CSES "Download Speed" / general max-flow template)
 
-**Problem.** Given a directed graph with edge capacities, a source, and a sink, compute the maximum flow from source to sink. n ≤ 500 nodes, m ≤ 1000 edges, capacities up to 10⁹ (large enough that Ford-Fulkerson's DFS approach risks TLE).
+Given a directed graph with edge capacities, a source, and a sink, compute the maximum flow from source to sink.
 
-**Approach.** Direct Edmonds-Karp application: BFS for shortest augmenting path, push bottleneck flow, repeat. The large capacity bound is exactly the signal to prefer Edmonds-Karp (or Dinic) over plain Ford-Fulkerson.
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 4, edges = [(1,2,10),(1,3,10),(2,3,2),(2,4,4),(3,4,9)], source = 1, sink = 4 | **Output:** 13
+  - **Explanation:** BFS finds `1→2→4` (bottleneck 4) then `1→3→4` (bottleneck 9); a third BFS finds no path, so the flow is final at 13.
+- **Example 2**
+  - **Input:** n = 2, edges = [(1,2,7)], source = 1, sink = 2 | **Output:** 7
+  - **Explanation:** the single edge is the only augmenting path and its capacity caps the flow.
+
+**Constraints:** n ≤ 500 nodes, m ≤ 1000 edges, capacities up to 10⁹ (large enough that Ford-Fulkerson's DFS approach risks TLE).
+
+**Approach:** Direct Edmonds-Karp application: BFS for shortest augmenting path, push bottleneck flow, repeat. The large capacity bound is exactly the signal to prefer Edmonds-Karp (or Dinic) over plain Ford-Fulkerson.
 
 ```python
 def download_speed(n: int, edges: list[tuple[int, int, int]]) -> int:
@@ -282,7 +292,7 @@ def download_speed(n: int, edges: list[tuple[int, int, int]]) -> int:
     return net.max_flow(source=1, sink=n)
 ```
 
-**Complexity.** O(VE²) time, O(V + E) space.
+**Complexity:** O(VE²) time, O(V + E) space.
 
 **Duplicate problems:**
 - Police Chase (CSES) - min-cut via the same max-flow computation; answer is the saturated crossing edges, not the flow value itself.
@@ -292,9 +302,19 @@ def download_speed(n: int, edges: list[tuple[int, int, int]]) -> int:
 
 ### 2. Maximum Bipartite Matching (canonical, CSES "School Dance")
 
-**Problem.** Given a bipartite graph with `left_n` nodes on one side and `right_n` on the other, and a list of compatible pairs, find the maximum matching (maximum set of pairs with no shared endpoints). n, m ≤ 500 per side.
+Given a bipartite graph with `left_n` nodes on one side and `right_n` on the other, and a list of compatible pairs, find the maximum matching (maximum set of pairs with no shared endpoints).
 
-**Approach.** Reduce to unit-capacity max-flow: super-source → left nodes (cap 1) → right nodes via original edges (cap 1) → super-sink (cap 1). Edmonds-Karp's polynomial bound applies directly; note this is exactly the unit-capacity special case where Dinic would be asymptotically faster (O(E√V)), a good follow-up talking point.
+**Worked examples:**
+- **Example 1**
+  - **Input:** left_n = 3, right_n = 3, edges = [(1,1),(1,2),(2,2),(3,3)] | **Output:** 3
+  - **Explanation:** matching `1-1, 2-2, 3-3` saturates all three left nodes via three separate unit-capacity augmenting paths.
+- **Example 2**
+  - **Input:** left_n = 2, right_n = 1, edges = [(1,1),(2,1)] | **Output:** 1
+  - **Explanation:** both left nodes compete for the same single right node, so only one augmenting path can reach the sink.
+
+**Constraints:** n, m ≤ 500 per side.
+
+**Approach:** Reduce to unit-capacity max-flow: super-source → left nodes (cap 1) → right nodes via original edges (cap 1) → super-sink (cap 1). Edmonds-Karp's polynomial bound applies directly; note this is exactly the unit-capacity special case where Dinic would be asymptotically faster (O(E√V)), a good follow-up talking point.
 
 ```python
 def max_bipartite_matching(left_n: int, right_n: int, edges: list[tuple[int, int]]) -> int:
@@ -309,7 +329,7 @@ def max_bipartite_matching(left_n: int, right_n: int, edges: list[tuple[int, int
     return net.max_flow(SOURCE, SINK)
 ```
 
-**Complexity.** O(VE²), though the practical number of augmentations is bounded by `min(left_n, right_n)` since each augmentation adds exactly 1 unit of matching. Space: O(V + E).
+**Complexity:** O(VE²) time, though the practical number of augmentations is bounded by `min(left_n, right_n)` since each augmentation adds exactly 1 unit of matching. O(V + E) space.
 
 **Duplicate problems:**
 - Job Assignment / Task-Worker compatibility problems - identical bipartite matching reduction.
@@ -319,9 +339,19 @@ def max_bipartite_matching(left_n: int, right_n: int, edges: list[tuple[int, int
 
 ### 3. Baseball Elimination (advanced max-flow modeling, canonical algorithmic-modeling problem)
 
-**Problem.** Given final standings and remaining games between teams in a league, determine which teams are mathematically eliminated from winning (i.e., cannot possibly finish with the most wins regardless of how remaining games are played). Up to ~30 teams, remaining games modeled as a small graph.
+Given final standings and remaining games between teams in a league, determine which teams are mathematically eliminated from winning (i.e., cannot possibly finish with the most wins regardless of how remaining games are played).
 
-**Approach.** This is a distinct technique from problems 1-2: it requires **constructing** the flow network from a word problem rather than being handed one directly. Model each pair of remaining games as a "game node" with an edge from a super-source (capacity = number of games between that pair), fanning out to "team nodes" for each of the two teams in that game, then each team node to a super-sink with capacity equal to how many more wins that team can afford without surpassing the team being tested for elimination. A team is eliminated if and only if the max flow from source to sink is strictly less than the total number of remaining games (i.e., not all games can be "assigned" without some team exceeding the win cap) - a saturating-all-source-edges check, not just reading off the flow value.
+**Worked examples:**
+- **Example 1**
+  - **Input:** teams with wins = [83, 80, 78], one remaining game between teams 1 and 2, testing team 2 (wins=80) | **Output:** not eliminated
+  - **Explanation:** team 2's max possible wins (81) still doesn't guarantee elimination once the flow confirms all remaining games can be assigned without exceeding team 2's cap.
+- **Example 2**
+  - **Input:** teams with wins = [83, 80, 78], testing team 2 where team 0 already has 83 wins and team 2's maximum possible is 81 | **Output:** eliminated
+  - **Explanation:** team 0 already has more wins than team 2 can ever reach, a trivial elimination caught before the flow computation even runs.
+
+**Constraints:** up to ~30 teams, remaining games modeled as a small graph.
+
+**Approach:** This is a distinct technique from problems 1-2: it requires **constructing** the flow network from a word problem rather than being handed one directly. Model each pair of remaining games as a "game node" with an edge from a super-source (capacity = number of games between that pair), fanning out to "team nodes" for each of the two teams in that game, then each team node to a super-sink with capacity equal to how many more wins that team can afford without surpassing the team being tested for elimination. A team is eliminated if and only if the max flow from source to sink is strictly less than the total number of remaining games (i.e., not all games can be "assigned" without some team exceeding the win cap) - a saturating-all-source-edges check, not just reading off the flow value.
 
 ```python
 def is_eliminated(team: int, wins: list[int], remaining: list[list[int]]) -> bool:
@@ -358,7 +388,7 @@ def is_eliminated(team: int, wins: list[int], remaining: list[list[int]]) -> boo
     return flow < total_games
 ```
 
-**Complexity.** O(VE²) on a graph with O(n²) nodes and edges - so O(n⁴) to O(n⁶) depending on how E and V scale; feasible only because n (teams) is small (≤ 30) in this classic formulation.
+**Complexity:** O(VE²) on a graph with O(n²) nodes and edges - so O(n⁴) to O(n⁶) depending on how E and V scale; feasible only because n (teams) is small (≤ 30) in this classic formulation.
 
 **Duplicate problems:**
 - Project Selection Problem (max-profit under prerequisite constraints via min-cut) - same "model the word problem as a flow network, read off a threshold from max-flow" technique, different construction.

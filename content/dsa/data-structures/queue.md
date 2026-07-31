@@ -199,7 +199,6 @@ from typing import Generic, Optional, TypeVar
 
 T = TypeVar("T")
 
-
 class CircularQueue(Generic[T]):
     """Fixed-capacity FIFO queue over a ring buffer; O(1) both ends."""
 
@@ -321,11 +320,21 @@ def zero_one_bfs(graph, source, n):       # graph[u] = [(v, w in {0,1}), ...]
 
 Five staples, each a **distinct** queue technique - no two solved the same way.
 
-### 1. Implement Queue using Stacks - _amortized transfer_
+### 1. Implement Queue using Stacks - amortized transfer
 
-**Problem.** Implement a FIFO queue (`push`, `pop`, `peek`, `empty`) using only two LIFO stacks.
+Implement a FIFO queue (`push`, `pop`, `peek`, `empty`) using only two LIFO stacks.
 
-**Approach.** Push onto an **in** stack. To pop/peek, if the **out** stack is empty, pour the in-stack into it - reversing the order, so out's top is the oldest element. Each element is moved between stacks at most once, so the transfer amortizes to **O(1)** per operation despite the occasional O(n) pour. The classic "build FIFO from LIFO" insight: two reversals make a forward.
+**Worked examples:**
+- **Example 1**
+  - **Input:** push(1), push(2), peek(), pop(), empty() | **Output:** 1, 1, false
+  - **Explanation:** peek returns the oldest element (1) without removing it; pop removes and returns it; the queue still has [2], so empty is false.
+- **Example 2**
+  - **Input:** push(1), pop(), empty() | **Output:** 1, true
+  - **Explanation:** after popping the only element, the queue is empty.
+
+**Constraints:** at most `100` calls total to `push`/`pop`/`peek`/`empty`, all values `1 ≤ x ≤ 9`, `pop`/`peek` only called on a non-empty queue.
+
+**Approach:** Push onto an **in** stack. To pop/peek, if the **out** stack is empty, pour the in-stack into it - reversing the order, so out's top is the oldest element. Each element is moved between stacks at most once, so the transfer amortizes to **O(1)** per operation despite the occasional O(n) pour. The classic "build FIFO from LIFO" insight: two reversals make a forward.
 
 ```python
 class MyQueue:
@@ -353,13 +362,28 @@ class MyQueue:
         return not self._in and not self._out
 ```
 
-**Complexity.** Amortized O(1) per operation, O(n) space.
+**Complexity:** Amortized O(1) per operation, O(n) space.
 
-### 2. Number of Recent Calls - _sliding-window queue_
+**Duplicate problems:**
+- Implement Stack using Queues (LC 225) - the inverse "build one ADT from the other with amortized transfer" mechanic; typically solved by eager rotation on push rather than lazy pour-on-pop, but the same two-container amortization idea.
 
-**Problem.** Implement a counter `ping(t)` that returns how many calls happened in the last 3000 ms, i.e. in `[t-3000, t]`. Calls arrive in increasing `t`.
+---
 
-**Approach.** A queue of timestamps. On each `ping(t)`, enqueue `t`, then dequeue everything older than `t-3000` from the front. The queue holds exactly the in-window calls, so its size is the answer. The FIFO order matches time order, so stale calls always leave from the front - a pure sliding-window-over-time use of a queue.
+### 2. Number of Recent Calls - sliding-window queue
+
+Implement a counter `ping(t)` that returns how many calls happened in the last 3000 ms, i.e. in `[t-3000, t]`. Calls arrive in increasing `t`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** ping(1), ping(100), ping(3001), ping(3002) | **Output:** 1, 2, 3, 3
+  - **Explanation:** at t=3002, calls at 100, 3001, 3002 all fall in `[2, 3002]` (3002-3000=2), but the call at t=1 has aged out.
+- **Example 2**
+  - **Input:** ping(1) | **Output:** 1
+  - **Explanation:** the first call is trivially within its own window.
+
+**Constraints:** `1 ≤ t ≤ 10⁹`, each call to `ping` uses a strictly increasing `t`, at most `10⁴` calls.
+
+**Approach:** A queue of timestamps. On each `ping(t)`, enqueue `t`, then dequeue everything older than `t-3000` from the front. The queue holds exactly the in-window calls, so its size is the answer. The FIFO order matches time order, so stale calls always leave from the front - a pure sliding-window-over-time use of a queue.
 
 ```python
 from collections import deque
@@ -375,13 +399,25 @@ class RecentCounter:
         return len(self._q)
 ```
 
-**Complexity.** Amortized O(1) per `ping`, O(W) space (W = max calls in a window).
+**Complexity:** Amortized O(1) per `ping`, O(W) space (W = max calls in a window).
 
-### 3. Sliding Window Maximum - _monotonic deque_
+---
 
-**Problem.** Given an array and a window size `k`, return the maximum of each contiguous window. E.g. `nums=[1,3,-1,-3,5,3,6,7], k=3` → `[3,3,5,5,6,7]`.
+### 3. Sliding Window Maximum - monotonic deque
 
-**Approach.** A **decreasing monotonic deque of indices**: before adding `i`, pop smaller values off the back (they can't be the max while `nums[i]` lives); pop the front when it leaves the window. The front index is always the current window max - O(n) total, beating the O(n log n) heap. The monotonic-deque primitive in its canonical problem.
+Given an array and a window size `k`, return the maximum of each contiguous window. E.g. `nums=[1,3,-1,-3,5,3,6,7], k=3` → `[3,3,5,5,6,7]`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,3,-1,-3,5,3,6,7], k = 3 | **Output:** [3,3,5,5,6,7]
+  - **Explanation:** the first window [1,3,-1] has max 3; sliding one step at a time gives the max of each subsequent window of size 3.
+- **Example 2**
+  - **Input:** nums = [1], k = 1 | **Output:** [1]
+  - **Explanation:** a window the same size as the array has only one position, whose max is the single element.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `1 ≤ k ≤ nums.length`, `-10⁴ ≤ nums[i] ≤ 10⁴`.
+
+**Approach:** A **decreasing monotonic deque of indices**: before adding `i`, pop smaller values off the back (they can't be the max while `nums[i]` lives); pop the front when it leaves the window. The front index is always the current window max - O(n) total, beating the O(n log n) heap. The monotonic-deque primitive in its canonical problem.
 
 ```python
 from collections import deque
@@ -400,13 +436,28 @@ def max_sliding_window(nums: list[int], k: int) -> list[int]:
     return res
 ```
 
-**Complexity.** O(n) time, O(k) space. Pattern: [Sliding Window](../patterns/sliding-window.md).
+**Complexity:** O(n) time, O(k) space. Pattern: [Sliding Window](../patterns/sliding-window.md).
 
-### 4. Rotting Oranges - _multi-source BFS_
+**Duplicate problems:**
+- Shortest Subarray with Sum at Least K (LC 862) - same monotonic-deque push/pop-from-both-ends invariant, applied to prefix sums instead of raw values; also this exact problem's own dedicated entry in [monotonic-queue.md](../patterns/monotonic-queue.md).
 
-**Problem.** In a grid, `2` = rotten orange, `1` = fresh, `0` = empty. Each minute, a rotten orange rots its 4-directional fresh neighbors. Return the minutes until none are fresh, or -1 if impossible.
+---
 
-**Approach.** **Multi-source BFS**: enqueue _all_ initially-rotten cells at distance 0, then BFS outward level by level - each level is one minute. The queue's FIFO order guarantees you finish minute `t` before minute `t+1`, so the last level processed is the answer. Seeding every source up front is the key (a single-source BFS would give wrong times).
+### 4. Rotting Oranges - multi-source BFS
+
+In a grid, `2` = rotten orange, `1` = fresh, `0` = empty. Each minute, a rotten orange rots its 4-directional fresh neighbors. Return the minutes until none are fresh, or -1 if impossible.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [[2,1,1],[1,1,0],[0,1,1]] | **Output:** 4
+  - **Explanation:** the rot spreads outward from the single rotten orange one ring per minute; it takes 4 minutes to reach every fresh orange.
+- **Example 2**
+  - **Input:** grid = [[0,2]] | **Output:** 0
+  - **Explanation:** there are no fresh oranges to begin with, so 0 minutes are needed.
+
+**Constraints:** `1 ≤ rows, cols ≤ 10`, grid contains only `0`, `1`, `2`.
+
+**Approach:** **Multi-source BFS**: enqueue _all_ initially-rotten cells at distance 0, then BFS outward level by level - each level is one minute. The queue's FIFO order guarantees you finish minute `t` before minute `t+1`, so the last level processed is the answer. Seeding every source up front is the key (a single-source BFS would give wrong times).
 
 ```python
 from collections import deque
@@ -434,13 +485,28 @@ def oranges_rotting(grid: list[list[int]]) -> int:
     return minutes if fresh == 0 else -1
 ```
 
-**Complexity.** O(rows · cols) time and space. Pattern: [Tree & Graph Traversal](../patterns/tree-graph-traversal.md).
+**Complexity:** O(rows · cols) time and space. Pattern: [Tree & Graph Traversal](../patterns/tree-graph-traversal.md).
 
-### 5. Design Circular Queue - _ring buffer_
+**Duplicate problems:**
+- 01 Matrix (LC 542) - identical multi-source BFS: every zero cell seeded at distance 0, then level-by-level spread computes distance to nearest zero for every cell.
 
-**Problem.** Design a fixed-capacity circular queue with `enQueue`, `deQueue`, `Front`, `Rear`, `isEmpty`, `isFull` - all O(1).
+---
 
-**Approach.** A fixed array with a `front` index and a `size` count; the back slot is `(front + size) % capacity`. Wrapping arithmetic means nothing shifts and the array reuses freed front slots. Tracking `size` explicitly resolves the empty-vs-full ambiguity that plagues `front == back` designs. The ring-buffer primitive made concrete.
+### 5. Design Circular Queue - ring buffer
+
+Design a fixed-capacity circular queue with `enQueue`, `deQueue`, `Front`, `Rear`, `isEmpty`, `isFull` - all O(1).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** MyCircularQueue(3), enQueue(1), enQueue(2), enQueue(3), enQueue(4), Rear() | **Output:** true, true, true, false, 3
+  - **Explanation:** the queue has capacity 3; the fourth enqueue fails because the queue is full, so Rear stays at 3.
+- **Example 2**
+  - **Input:** MyCircularQueue(2), enQueue(1), deQueue(), enQueue(2), enQueue(3), Front() | **Output:** true, true, true, true, 2
+  - **Explanation:** dequeuing after the first enqueue frees a slot, so both subsequent enqueues succeed and the front is now 2.
+
+**Constraints:** `1 ≤ k ≤ 1000`, at most `3000` calls total to the queue's operations.
+
+**Approach:** A fixed array with a `front` index and a `size` count; the back slot is `(front + size) % capacity`. Wrapping arithmetic means nothing shifts and the array reuses freed front slots. Tracking `size` explicitly resolves the empty-vs-full ambiguity that plagues `front == back` designs. The ring-buffer primitive made concrete.
 
 ```python
 class MyCircularQueue:
@@ -477,4 +543,7 @@ class MyCircularQueue:
         return self._size == self._cap
 ```
 
-**Complexity.** O(1) per operation, O(k) space. See [Circular Buffer](./circular-buffer.md).
+**Complexity:** O(1) per operation, O(k) space. See [Circular Buffer](./circular-buffer.md).
+
+**Duplicate problems:**
+- First Unique Character in a Stream - queue-based stale-front eviction with a running count map, no LRU-specific hashmap+DLL mechanism.

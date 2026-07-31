@@ -313,9 +313,19 @@ When you need a bound that doesn't depend on phases at all - push-relabel (O(V²
 
 ### 1. Maximum Flow (canonical, CSES "Download Speed" / general max-flow template)
 
-**Problem.** Given a directed graph with edge capacities, a source, and a sink, compute the maximum flow from source to sink. n ≤ 500 nodes, m ≤ 1000 edges, capacities up to 10⁹.
+Given a directed graph with edge capacities, a source, and a sink, compute the maximum flow from source to sink.
 
-**Approach.** Direct Dinic application: repeatedly build the level graph via BFS, drain it via blocking-flow DFS with current-arc pointers, until BFS can't reach the sink. At this scale Edmonds-Karp would also pass, but Dinic is the natural default once you have it implemented, since it strictly dominates on denser inputs.
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 4 (nodes 1-4), edges = [(1,2,10),(1,3,10),(2,3,2),(2,4,4),(3,4,9)], source = 1, sink = 4 | **Output:** 13
+  - **Explanation:** the level graph in phase 1 admits `1→2→4` (bottleneck 4) and `1→3→4` (bottleneck 9); both saturate in one blocking flow, and no further augmenting path exists.
+- **Example 2**
+  - **Input:** n = 2, edges = [(1,2,7)], source = 1, sink = 2 | **Output:** 7
+  - **Explanation:** a single edge is itself the only augmenting path and its capacity is the max flow.
+
+**Constraints:** n ≤ 500 nodes, m ≤ 1000 edges, capacities up to 10⁹.
+
+**Approach:** Direct Dinic application: repeatedly build the level graph via BFS, drain it via blocking-flow DFS with current-arc pointers, until BFS can't reach the sink. At this scale Edmonds-Karp would also pass, but Dinic is the natural default once you have it implemented, since it strictly dominates on denser inputs.
 
 ```python
 def download_speed(n: int, edges: list[tuple[int, int, int]]) -> int:
@@ -325,7 +335,7 @@ def download_speed(n: int, edges: list[tuple[int, int, int]]) -> int:
     return net.max_flow(1, n)
 ```
 
-**Complexity.** O(V²E) time, O(V + E) space.
+**Complexity:** O(V²E) time, O(V + E) space.
 
 **Duplicate problems:**
 - Police Chase (CSES) - min-cut via the same max-flow computation; answer is the saturated crossing edges, not the flow value itself.
@@ -335,9 +345,19 @@ def download_speed(n: int, edges: list[tuple[int, int, int]]) -> int:
 
 ### 2. Maximum Bipartite Matching at scale (canonical, CSES "School Dance" generalized to large n)
 
-**Problem.** Given `left_n` nodes on one side and `right_n` on the other with a compatibility list, find the maximum matching. Unlike the small-n version solvable by Kuhn's O(VE), assume n, m up to 10⁵ - large enough that Kuhn's or Edmonds-Karp's bounds become risky.
+Given `left_n` nodes on one side and `right_n` on the other with a compatibility list, find the maximum matching.
 
-**Approach.** Model as a unit-capacity flow network (super-source → left nodes → right nodes → super-sink, all capacity 1) and run Dinic. Because every edge has capacity 1, Dinic automatically achieves the O(E√V) bound - the same asymptotic guarantee as Hopcroft-Karp, without writing a separate matching-specific algorithm.
+**Worked examples:**
+- **Example 1**
+  - **Input:** left_n = 3, right_n = 3, edges = [(1,1),(1,2),(2,2),(3,3)] | **Output:** 3
+  - **Explanation:** matching `1-1, 2-2, 3-3` saturates all three left nodes, each via a distinct capacity-1 flow unit.
+- **Example 2**
+  - **Input:** left_n = 2, right_n = 1, edges = [(1,1),(2,1)] | **Output:** 1
+  - **Explanation:** both left nodes compete for the single right node, so only one unit of flow can reach the sink.
+
+**Constraints:** unlike the small-n version solvable by Kuhn's O(VE), assume n, m up to 10⁵ - large enough that Kuhn's or Edmonds-Karp's bounds become risky.
+
+**Approach:** Model as a unit-capacity flow network (super-source → left nodes → right nodes → super-sink, all capacity 1) and run Dinic. Because every edge has capacity 1, Dinic automatically achieves the O(E√V) bound - the same asymptotic guarantee as Hopcroft-Karp, without writing a separate matching-specific algorithm.
 
 ```python
 def max_bipartite_matching(left_n: int, right_n: int, edges: list[tuple[int, int]]) -> int:
@@ -352,7 +372,7 @@ def max_bipartite_matching(left_n: int, right_n: int, edges: list[tuple[int, int
     return net.max_flow(SOURCE, SINK)
 ```
 
-**Complexity.** O(E√V) time (unit-capacity specialization), O(V + E) space - see [Bipartite Matching](./bipartite-matching.md) for the shared O(√V) phase-count proof.
+**Complexity:** O(E√V) time (unit-capacity specialization), O(V + E) space - see [Bipartite Matching](./bipartite-matching.md) for the shared O(√V) phase-count proof.
 
 **Duplicate problems:**
 - Job Assignment / Task-Worker compatibility problems at scale - identical unit-capacity reduction.
@@ -360,20 +380,36 @@ def max_bipartite_matching(left_n: int, right_n: int, edges: list[tuple[int, int
 
 ---
 
-### 3. Minimum Vertex Cover via Max Flow (König's theorem, large-graph variant)
+### 3. Vertex-Disjoint Paths via Vertex-Splitting (CSES "Distinct Routes")
 
-**Problem.** Given a bipartite graph, find the minimum vertex cover size (fewest vertices touching every edge). n, m up to 10⁵ - large enough that a direct Kuhn's-based matching computation (O(VE)) is too slow, but the underlying insight (König's theorem: min vertex cover = max matching, in bipartite graphs) still applies.
+Given a directed graph, find the maximum number of **vertex-disjoint** paths from node 1 to node n (paths may share no intermediate node, a stricter constraint than edge-disjoint), and output the paths.
 
-**Approach.** This exercises a genuinely different skill from problems 1-2: recognizing that "minimum vertex cover" is secretly a matching question (via König's theorem), then choosing the flow-based matching computation (Dinic, unit-capacity) specifically because the graph is too large for Kuhn's DFS-based approach. The reduction is identical to problem 2's; the distinct technique is applying König's theorem on top of the flow result rather than reading off the answer directly.
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 4, edges = [(1,2),(2,4),(1,3),(3,4)] | **Output:** 2 paths - `1→2→4` and `1→3→4`
+  - **Explanation:** the two paths share no intermediate node, so both survive vertex-splitting's per-node capacity-1 cap; a naive edge-capacity-1 formulation would also allow this case, so it doesn't yet show the distinction.
+- **Example 2**
+  - **Input:** n = 4, edges = [(1,2),(1,3),(2,4),(3,4),(2,3)] with an extra hub node 5 such that both 2 and 3 must route through 5 to reach 4 | **Output:** 1 path
+  - **Explanation:** even though multiple edge-disjoint routes exist into and out of node 5, vertex-splitting caps the flow **through** node 5 itself at 1 unit (its in/out copies are joined by a single capacity-1 edge), so only one path can use it - an edge-capacity-only model would wrongly allow 2.
+
+**Constraints:** n ≤ 500 nodes, m ≤ 1000 edges.
+
+**Approach:** This exercises a genuinely different technique from problems 1-2: capping flow **through a node**, not just along an edge. Split every node `v` into `v_in` and `v_out`, joined by an internal edge of capacity 1 (or ∞ for the source and sink, which don't need the disjointness cap). Every original edge `u→v` becomes `u_out → v_in` with capacity 1. Running Dinic on this doubled graph makes the max flow equal the maximum number of vertex-disjoint paths, because the capacity-1 internal edge is the only way to cross a node, so no node can be used by two paths. This is also the canonical setting for Dinic's unit-capacity O(E√V) bound, since every edge in the split graph has capacity 1.
 
 ```python
-def min_vertex_cover_size(left_n: int, right_n: int, edges: list[tuple[int, int]]) -> int:
-    # König's theorem: min vertex cover size == max matching size, in bipartite graphs
-    return max_bipartite_matching(left_n, right_n, edges)
+def distinct_routes_vertex_disjoint(n: int, edges: list[tuple[int, int]]) -> int:
+    # node v splits into v_in = 2v, v_out = 2v + 1
+    net = DinicFlowNetwork(2 * (n + 1))
+    for v in range(1, n + 1):
+        cap = float("inf") if v in (1, n) else 1
+        net.add_edge(2 * v, 2 * v + 1, cap)       # v_in -> v_out, the vertex-capacity edge
+    for u, v in edges:
+        net.add_edge(2 * u + 1, 2 * v, 1)          # u_out -> v_in
+    return net.max_flow(2 * 1, 2 * n + 1)
 ```
 
-**Complexity.** O(E√V) time (dominated by the Dinic matching computation), O(V + E) space.
+**Complexity:** O(E√V) time (unit-capacity graph after splitting), O(V + E) space (the split graph has 2V nodes and V + E edges).
 
 **Duplicate problems:**
-- Maximum Independent Set in a bipartite graph - complement of vertex cover (`|V| - min_vertex_cover`), same underlying Dinic computation.
-- Any "minimum number of items to hit every constraint pair" problem phrased as a bipartite compatibility graph.
+- Any "maximum number of vertex-disjoint paths / node-independent routes" problem - identical splitting trick whenever the disjointness constraint is on nodes rather than edges.
+- Menger's theorem applications (minimum vertex cut between two nodes equals maximum vertex-disjoint paths) - same split-graph construction, read off the min-cut side instead of the flow value.

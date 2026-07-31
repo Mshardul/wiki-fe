@@ -241,8 +241,8 @@ Palindrome Linked List not included here - full entry lives in `fast-slow-pointe
 
 ## `[x]` graph-coloring.md
 
-- Is Graph Bipartite? (LC 785) / Possible Bipartition (LC 886) - 2-coloring via BFS/DFS, conflict on same-color adjacency
-  - Divide Nodes into the Maximum Number of Groups (LC 2493), Number of Connected Components (mutual cross-refs)
+- Possible Bipartition (LC 886) - 2-coloring via BFS/DFS, conflict on same-color adjacency
+  - Is Graph Bipartite? (LC 785), Divide Nodes into the Maximum Number of Groups (LC 2493)
 - Flower Planting With No Adjacent (LC 1042) - greedy k-coloring (assign first available color), bounded-degree guarantee
   - Graph Coloring general formulation (classic)
 - Chromatic Number (bitmask DP over independent sets, n≤20, no LC citation) - exact minimum-colors via DP over subsets, distinct from both 2-coloring and greedy k-coloring

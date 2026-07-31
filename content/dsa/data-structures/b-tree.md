@@ -29,6 +29,7 @@
   - [B-tree search](#2-b-tree-search--multi-key-node-descent)
   - [Choose the order for a disk block](#3-choose-the-order-for-a-disk-block--sizing)
   - [B-tree vs B+-tree for range scans](#4-b-tree-vs-b-tree-for-range-scans--reasoning)
+  - [Insert-with-node-split](#5-insert-with-node-split--median-push-up)
 
 ## What it is
 
@@ -185,13 +186,11 @@ B-TREE-SPLIT-CHILD(x, i)                   ▷ split x's full child x.child[i]
 from __future__ import annotations
 from dataclasses import dataclass, field
 
-
 @dataclass
 class BTreeNode:
     leaf: bool
     keys: list[int] = field(default_factory=list)
     children: list["BTreeNode"] = field(default_factory=list)
-
 
 class BTree:
     def __init__(self, t: int) -> None:
@@ -262,21 +261,41 @@ class BTree:
 
 ## Practice problems
 
-Four problems, each a **distinct** facet of B-trees - no two the same.
+Five problems, each a **distinct** facet of B-trees - no two the same. The first and third are pure reasoning (no code, by design - see the note after entry 5); search and the new split entry are the two code-bearing, hands-on mechanics.
 
 ### 1. Why B-trees for databases - _reasoning_
 
-**Problem.** Explain why relational databases index with B-trees (B+-trees) rather than an in-memory balanced BST like red-black.
+Explain why relational databases index with B-trees (B+-trees) rather than an in-memory balanced BST like red-black.
 
-**Approach.** Center the answer on the **memory hierarchy**: the index is too big for RAM and lives on disk, where a seek is ~10⁵–10⁶× slower than a comparison. A binary tree of a billion rows is ~30 levels → ~30 seeks; a B-tree with fan-out ~400 is ~4 levels → ~4 seeks. Each node is sized to one disk page so a node fetch is one block read. Add that B+-trees link leaves for fast range scans (a common SQL query shape). (Conceptual - rehearse the soundbite.)
+**Worked examples:**
+- **Example 1**
+  - **Input:** 1 billion rows, binary balanced tree | **Output:** ~30 levels, ~30 disk seeks per lookup
+  - **Explanation:** a binary tree's fan-out of 2 means `log₂(10⁹) ≈ 30` levels, each a separate disk seek if the tree doesn't fit in RAM.
+- **Example 2**
+  - **Input:** 1 billion rows, B-tree with fan-out ~400 | **Output:** ~4 levels, ~4 disk seeks per lookup
+  - **Explanation:** `log₄₀₀(10⁹) ≈ 3.7 → 4` - the same billion rows collapse to a handful of seeks purely from wide fan-out.
 
-**Complexity.** N/A - the answer is the seek-count argument.
+**Constraints:** dataset too large for RAM (the premise the whole argument depends on); disk seek latency ~10⁵-10⁶× a RAM comparison.
+
+**Approach:** Center the answer on the **memory hierarchy**: the index is too big for RAM and lives on disk, where a seek is ~10⁵–10⁶× slower than a comparison. A binary tree of a billion rows is ~30 levels → ~30 seeks; a B-tree with fan-out ~400 is ~4 levels → ~4 seeks. Each node is sized to one disk page so a node fetch is one block read. Add that B+-trees link leaves for fast range scans (a common SQL query shape). (Conceptual - rehearse the soundbite.)
+
+**Complexity:** N/A - the answer is the seek-count argument, not an algorithm.
 
 ### 2. B-tree search - _multi-key-node descent_
 
-**Problem.** Implement search in a B-tree: find a key, returning the node and index, or null.
+Implement search in a B-tree: find a key, returning the node and index, or null.
 
-**Approach.** Within each node, binary-search (or linear-scan) the sorted keys to either find the key or identify the child interval to descend into; recurse into that child until found or a leaf is reached. The only "expensive" step is descending to a child (one block read in a real system). Generalizes BST search to k+1-way branching.
+**Worked examples:**
+- **Example 1**
+  - **Input:** B-tree (t=2) built by inserting [10,20,5,6,12,30,7,17], search(12) | **Output:** found (node containing 12, index 0)
+  - **Explanation:** root `[10,20]` → 12 is between 10 and 20 → descend to middle child `[12,17]` → found at index 0.
+- **Example 2**
+  - **Input:** same tree, search(99) | **Output:** null
+  - **Explanation:** descent reaches a leaf with no matching key and no further children → not found.
+
+**Constraints:** `1 ≤ number of keys ≤ 10⁶`, keys distinct, minimum degree `t ≥ 2`.
+
+**Approach:** Within each node, binary-search (or linear-scan) the sorted keys to either find the key or identify the child interval to descend into; recurse into that child until found or a leaf is reached. The only "expensive" step is descending to a child (one block read in a real system). Generalizes BST search to k+1-way branching.
 
 ```python
 # see BTree.search in Implementation - the canonical solution.
@@ -286,13 +305,23 @@ for k in [10, 20, 5, 6, 12, 30, 7, 17]:
 print(bt.search(12) is not None)          # True
 ```
 
-**Complexity.** O(log_t n) node reads, O(log_t n · log t) CPU.
+**Complexity:** O(log_t n) node reads, O(log_t n · log t) CPU.
 
 ### 3. Choose the order for a disk block - _sizing_
 
-**Problem.** A disk page is 4096 bytes; keys are 8 bytes and child pointers are 8 bytes. What order (max children) should the B-tree use, and how many levels for 1 billion keys?
+A disk page is 4096 bytes; keys are 8 bytes and child pointers are 8 bytes. What order (max children) should the B-tree use, and how many levels for 1 billion keys?
 
-**Approach.** A node with `m` children has `m−1` keys and `m` pointers: `8(m−1) + 8m ≤ 4096` → `16m ≤ 4104` → `m ≈ 256`. With fan-out ~256, height ≈ `log₂₅₆(10⁹) = log(10⁹)/log(256) ≈ 30/8 ≈ 3.7` → **~4 levels, ~4 disk reads** per lookup. The exercise is the real design calculation behind every database index.
+**Worked examples:**
+- **Example 1**
+  - **Input:** page = 4096 bytes, key = 8 bytes, ptr = 8 bytes | **Output:** order m ≈ 256
+  - **Explanation:** `8(m-1) + 8m ≤ 4096 → 16m ≤ 4104 → m ≈ 256` keys+pointers fit one page.
+- **Example 2**
+  - **Input:** n = 10⁹ keys, order m = 256 | **Output:** height ≈ 4 levels
+  - **Explanation:** `log₂₅₆(10⁹) = log(10⁹)/log(256) ≈ 30/8 ≈ 3.7`, rounded up to 4 - so 4 disk reads per lookup.
+
+**Constraints:** page size, key size, and pointer size are fixed inputs; `n` (total keys) up to 10¹² for the height calculation to matter.
+
+**Approach:** A node with `m` children has `m−1` keys and `m` pointers: `8(m−1) + 8m ≤ 4096` → `16m ≤ 4104` → `m ≈ 256`. With fan-out ~256, height ≈ `log₂₅₆(10⁹) = log(10⁹)/log(256) ≈ 30/8 ≈ 3.7` → **~4 levels, ~4 disk reads** per lookup. The exercise is the real design calculation behind every database index.
 
 ```python
 def b_tree_order(page=4096, key=8, ptr=8):
@@ -304,12 +333,58 @@ def levels(n, m):
 print(b_tree_order(), levels(10**9, b_tree_order()))   # 256 4
 ```
 
-**Complexity.** O(1) arithmetic - it's a sizing decision, not an algorithm.
+**Complexity:** O(1) arithmetic - it's a sizing decision, not an algorithm.
 
 ### 4. B-tree vs B+-tree for range scans - _reasoning_
 
-**Problem.** A query needs all keys in `[100, 500]` from a billion-row indexed table. Explain why a B+-tree handles this better than a plain B-tree.
+A query needs all keys in `[100, 500]` from a billion-row indexed table. Explain why a B+-tree handles this better than a plain B-tree.
 
-**Approach.** In a **B+-tree**, all values live in the **leaves**, and leaves are **linked** in a sorted list. So a range scan does one O(log_t n) descent to find `100`, then walks the leaf-list sequentially to `500` - sequential block reads, cache- and prefetch-friendly. A plain B-tree stores values in internal nodes too, so a range scan must hop up and down the tree (random-ish reads). For range-heavy SQL, the linked-leaf design is decisively better - which is why databases use B+-trees. (Conceptual.)
+**Worked examples:**
+- **Example 1**
+  - **Input:** range [100, 500], plain B-tree (no linked leaves) | **Output:** O(k) separate root-to-node traversals, one per matching key in the worst case
+  - **Explanation:** values can live in internal nodes, so collecting a range means hopping up and down the tree rather than scanning linearly.
+- **Example 2**
+  - **Input:** range [100, 500], B+-tree (linked leaves) | **Output:** one O(log_t n) descent to find 100, then a sequential leaf-list walk to 500
+  - **Explanation:** all values live at the leaf level and leaves are linked, so after the initial descent the scan is purely sequential.
 
-**Complexity.** Range scan: O(log_t n + k/B) block reads in a B+-tree (k results, B per block) - the `k/B` term being sequential.
+**Constraints:** range width `k` (number of matching keys) can be large relative to node fan-out; comparison assumes both trees are built over the same key set.
+
+**Approach:** In a **B+-tree**, all values live in the **leaves**, and leaves are **linked** in a sorted list. So a range scan does one O(log_t n) descent to find `100`, then walks the leaf-list sequentially to `500` - sequential block reads, cache- and prefetch-friendly. A plain B-tree stores values in internal nodes too, so a range scan must hop up and down the tree (random-ish reads). For range-heavy SQL, the linked-leaf design is decisively better - which is why databases use B+-trees. (Conceptual.)
+
+**Complexity:** Range scan: O(log_t n + k/B) block reads in a B+-tree (k results, B per block) - the `k/B` term being sequential.
+
+### 5. Insert-with-node-split - _median push-up_
+
+Implement B-tree insert with split-on-overflow: when a leaf reaches its maximum key count, split it and push the median key up into the parent, propagating the split upward if the parent also overflows.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** t = 2 (max 3 keys/node), root = [10, 20, 30] (full), insert(40) | **Output:** root = [20], left child = [10], right child = [30, 40]
+  - **Explanation:** the leaf `[10,20,30]` is already at max (2t-1=3 keys), so inserting 40 overflows it; the median 20 is pushed up to become the new root, splitting the leaf into `[10]` and `[30,40]`.
+  - **Handwork trace:** with 40 appended and sorted, the leaf would hold `[10,20,30,40]` (4 keys). Median index = `t-1 = 1` → value `20`. Left half = keys before index `t-1` = `[10]`. Right half = keys from index `t` onward = `[30,40]`. 20 moves to the (empty) parent, which becomes the new root with two children.
+- **Example 2**
+  - **Input:** t = 2, tree from Example 1 (root=[20], children [10] and [30,40]), insert(35) | **Output:** root = [20], left child = [10], right child = [30, 35, 40]
+  - **Explanation:** 35 > 20, so it descends into the right child `[30,40]`, which has only 2 keys (below the max of 3) - room to insert directly, no split needed.
+
+**Constraints:** minimum degree `t ≥ 2`, each node holds between `t-1` and `2t-1` keys, `1 ≤ number of inserts ≤ 10⁶`, keys distinct.
+
+**Approach:** Descend from the root toward the target leaf, but split **any full node you pass through on the way down** (the standard one-pass/top-down variant) so the parent always has room to absorb a pushed-up median before you need it to. At a full node (`2t-1` keys), the split takes the **median** key (index `t-1` in 0-based, after the node is conceptually full) and moves it up into the parent at the appropriate position; the remaining keys divide into a left half (indices `0..t-2`) and a right half (indices `t..2t-2`), each becoming its own node. If the node being split is the root, a brand-new empty root is created first so there is always a parent to receive the median - this is the only way a B-tree gains height, and it's why all leaves stay at the same depth (growth happens uniformly at the top, never at an individual leaf).
+
+```python
+# BTreeNode / BTree.insert / _split_child / _insert_nonfull are defined in Implementation above -
+# this entry exercises exactly that split-on-overflow path with a worked trace.
+bt = BTree(t=2)
+for k in [10, 20, 30]:
+    bt.insert(k)                      # root = [10, 20, 30], already at max (2t-1 = 3 keys)
+
+bt.insert(40)                         # overflow → split: median 20 pushed up
+# root.keys == [20]
+# root.children[0].keys == [10]
+# root.children[1].keys == [30, 40]
+
+bt.insert(35)                         # descends into [30, 40], which has room (< 2t-1 keys)
+# root.children[1].keys == [30, 35, 40]
+```
+
+**Complexity:** O(log_t n) node visits on the way down, O(t) work per split (copying up to `t-1` keys) - O(t log_t n) worst case, but split-per-insert is amortized rare since a node must fill (`t` inserts through it) before splitting again, so amortized cost stays O(log_t n) with a small constant.
+

@@ -232,9 +232,19 @@ def count_palindromic_substrings(s: str) -> int:
 
 ### 1. Longest Palindromic Substring
 
-**Problem.** Given a string `s`, return the longest substring of `s` that is a palindrome. E.g. `s = "babad"` → `"bab"` or `"aba"` (either is accepted). Constraints: `n ≤ 1000` in the classic LeetCode version, but treat `n` up to `10^5`–`10^6` as the real target to justify Manacher's over O(n²) DP.
+Given a string `s`, return the longest substring of `s` that is a palindrome.
 
-**Approach.** Direct application of Manacher's: transform the string with sentinels, run the linear scan maintaining `(C, R)` and the radius array `P[]`, take the max radius and map its center back to the original string's coordinates. This is the algorithm's namesake problem.
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "babad" | **Output:** "bab"
+  - **Explanation:** "aba" is also a valid answer - both are palindromic substrings of length 3, the longest present.
+- **Example 2**
+  - **Input:** s = "cbbd" | **Output:** "bb"
+  - **Explanation:** the only palindrome of length ≥ 2 in the string; every single character is trivially length-1.
+
+**Constraints:** `n ≤ 1000` in the classic LeetCode version, but treat `n` up to `10^5`–`10^6` as the real target to justify Manacher's over O(n²) DP.
+
+**Approach:** Direct application of Manacher's: transform the string with sentinels, run the linear scan maintaining `(C, R)` and the radius array `P[]`, take the max radius and map its center back to the original string's coordinates. This is the algorithm's namesake problem.
 
 ```python
 def longest_palindrome(s: str) -> str:
@@ -256,7 +266,7 @@ def longest_palindrome(s: str) -> str:
     return s[start:start + max_len]
 ```
 
-**Complexity.** O(n) time, O(n) space.
+**Complexity:** O(n) time, O(n) space.
 
 **Duplicate problems:**
 - Longest Palindromic Substring II (multi-query variants on the same string) - same `P[]` array reused across queries once computed.
@@ -264,9 +274,19 @@ def longest_palindrome(s: str) -> str:
 
 ### 2. Shortest Palindrome (prepend minimum characters)
 
-**Problem.** Given a string `s`, find the shortest palindrome you can form by adding characters **only in front of** `s`. E.g. `s = "aacecaaa"` → `"aaacecaaa"`. Constraints: `n ≤ 5·10⁴`.
+Given a string `s`, find the shortest palindrome you can form by adding characters **only in front of** `s`.
 
-**Approach.** The answer only requires finding the **longest palindromic prefix** of `s` - once you know it, the characters after it (reversed) get prepended. Manacher's `P[]` array, restricted to radii **centered such that the palindrome touches index 0**, gives exactly this: find the largest `i` where the palindrome centered at `i` extends all the way to the string's start (`i - P[i] == 0` in transformed coordinates). This is a genuinely different read of the same `P[]` array than problem 1 - extremal-radius-at-a-boundary rather than global-max-radius.
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "aacecaaa" | **Output:** "aaacecaaa"
+  - **Explanation:** the longest palindromic prefix is "aacecaa"; prepending the reverse of the one leftover character "a" gives the shortest palindrome.
+- **Example 2**
+  - **Input:** s = "abcd" | **Output:** "dcbabcd"
+  - **Explanation:** only the first character "a" is a palindromic prefix, so the reverse of "bcd" ("dcb") is prepended in full.
+
+**Constraints:** `n ≤ 5·10⁴`.
+
+**Approach:** The answer only requires finding the **longest palindromic prefix** of `s` - once you know it, the characters after it (reversed) get prepended. Manacher's `P[]` array, restricted to radii **centered such that the palindrome touches index 0**, gives exactly this: find the largest `i` where the palindrome centered at `i` extends all the way to the string's start (`i - P[i] == 0` in transformed coordinates). This is a genuinely different read of the same `P[]` array than problem 1 - extremal-radius-at-a-boundary rather than global-max-radius.
 
 ```python
 def shortest_palindrome(s: str) -> str:
@@ -293,16 +313,26 @@ def shortest_palindrome(s: str) -> str:
     return to_prepend + s
 ```
 
-**Complexity.** O(n) time, O(n) space.
+**Complexity:** O(n) time, O(n) space.
 
 **Duplicate problems:**
 - Shortest Palindrome via KMP failure function - a completely different technique (fail-function on `s + '#' + reverse(s)`) solving the identical problem; useful to know both exist but not a Manacher's duplicate in mechanism, only in problem statement.
 
 ### 3. Palindromic Substrings Count with Length Constraint
 
-**Problem.** Given a string `s` and an integer `minLen`, count the number of palindromic substrings with length **at least** `minLen`. Constraints: `n ≤ 10^5`.
+Given a string `s` and an integer `minLen`, count the number of palindromic substrings with length **at least** `minLen`.
 
-**Approach.** Run Manacher's once to get `P[]` (radius at every center in transformed coordinates). For each center, the number of real palindromes centered there with length `≥ minLen` is `max(0, (P[i] - (minLen_transformed - 1)) // 2 + 1)`-shaped arithmetic on the radius, rather than the simple `(radius+1)//2` full count used in problem 1's variant - a constrained-counting read of the same array, distinct from both prior problems' unconstrained max/count.
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "aaa", minLen = 2 | **Output:** 3
+  - **Explanation:** palindromes of length ≥ 2 are "aa" (indices 0-1), "aa" (indices 1-2), "aaa" - three total.
+- **Example 2**
+  - **Input:** s = "abc", minLen = 2 | **Output:** 0
+  - **Explanation:** no two adjacent characters match, so no palindrome of length ≥ 2 exists.
+
+**Constraints:** `n ≤ 10^5`, `1 ≤ minLen ≤ n`.
+
+**Approach:** Run Manacher's once to get `P[]` (radius at every center in transformed coordinates). For each center, the number of real palindromes centered there with length `≥ minLen` is `max(0, (P[i] - (minLen_transformed - 1)) // 2 + 1)`-shaped arithmetic on the radius, rather than the simple `(radius+1)//2` full count used in problem 1's variant - a constrained-counting read of the same array, distinct from both prior problems' unconstrained max/count.
 
 ```python
 def count_palindromes_min_length(s: str, min_len: int) -> int:
@@ -326,7 +356,56 @@ def count_palindromes_min_length(s: str, min_len: int) -> int:
     return total
 ```
 
-**Complexity.** O(n) time, O(n) space.
+**Complexity:** O(n) time, O(n) space.
 
 **Duplicate problems:**
 - Count Palindromic Substrings within a length range `[minLen, maxLen]` - same per-center arithmetic on `P[]`, bounded on both ends instead of one.
+
+### 4. Palindrome Partitioning II (LC 132)
+
+Given a string `s`, partition it so every substring is a palindrome, and return the minimum number of cuts needed.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "aab" | **Output:** 1
+  - **Explanation:** cutting into `"aa" | "b"` needs just one cut - both pieces are palindromes.
+- **Example 2**
+  - **Input:** s = "a" | **Output:** 0
+  - **Explanation:** already a single-character palindrome, so zero cuts are needed.
+
+**Constraints:** `1 ≤ n ≤ 2000`.
+
+**Approach:** This is a genuinely different way of using Manacher's `P[]` array than entries 1-3: there, `P[]` was read directly (max radius, boundary-touching radius, per-center counting arithmetic). Here, `P[]` instead becomes an **O(1) palindrome-check oracle** feeding a *separate* DP: precompute `P[]` once, so `is_palindrome(i, j)` (does `s[i..j]` read the same forwards and backwards) is answerable in O(1) by comparing `j - i + 1` against the radius at the transformed-coordinates center between `i` and `j`. Then run the classic min-cuts DP - `cuts[j] = min(cuts[i-1] + 1 for i in 0..j if is_palindrome(i, j))` - where every palindrome-check that would otherwise cost O(n) per query (or O(n²) precomputed via a separate DP table) is instead a single array lookup. The distinct usage pattern is the point: Manacher's radius array as a plug-in oracle for an unrelated DP, not the thing being read for its own answer.
+
+```python
+def min_cut(s: str) -> int:
+    n = len(s)
+    t = "#" + "#".join(s) + "#"
+    m = len(t)
+    p = [0] * m
+    center = right = 0
+    for i in range(1, m - 1):
+        if i < right:
+            p[i] = min(p[2 * center - i], right - i)
+        while i + p[i] + 1 < m and i - p[i] - 1 >= 0 and t[i + p[i] + 1] == t[i - p[i] - 1]:
+            p[i] += 1
+        if i + p[i] > right:
+            center, right = i, i + p[i]
+
+    def is_palindrome(i: int, j: int) -> bool:
+        # transformed-coordinates center between original indices i and j
+        center_t = i + j + 1
+        return p[center_t] >= j - i + 1
+
+    cuts = list(range(-1, n))          # cuts[j+1] = min cuts for s[0..j]; cuts[0] = -1 (empty prefix)
+    for j in range(n):
+        for i in range(j + 1):
+            if is_palindrome(i, j):
+                cuts[j + 1] = min(cuts[j + 1], cuts[i] + 1)
+    return cuts[n]
+```
+
+**Complexity:** O(n) Manacher's precompute + O(n²) DP = O(n²) time overall, O(n) space for `P[]` plus O(n) for the `cuts` array.
+
+**Duplicate problems:**
+- Palindrome Partitioning (LC 131) - same palindrome-oracle idea, but enumerates *all* valid partitions via backtracking instead of just the minimum cut count.

@@ -24,9 +24,8 @@
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Sort an Array](#1-sort-an-array--merge-sort-from-scratch)
-  - [Count of Smaller Numbers After Self](#2-count-of-smaller-numbers-after-self--merge-sort-with-a-counter)
-  - [Count Inversions](#3-count-inversions--cross-pair-counting-during-merge)
-  - [Merge k Sorted Lists](#4-merge-k-sorted-lists--k-way-merge)
+  - [Count Inversions](#2-count-inversions--cross-pair-counting-during-merge)
+  - [Merge k Sorted Lists](#3-merge-k-sorted-lists--k-way-merge)
 
 ## What it is
 
@@ -252,7 +251,17 @@ nums.sort()                                  # in-place Timsort (a merge-sort de
 
 ### 1. Sort an Array - merge sort from scratch
 
-Sort an integer array in O(n log n) without using the library sort. Constraints: `n ≤ 5·10⁴`, values fit in 32-bit - a direct "implement a sort" prompt that rejects `.sort()`.
+Sort an integer array in O(n log n) without using the library sort.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [5,2,3,1] | **Output:** [1,2,3,5]
+  - **Explanation:** split into `[5,2]`/`[3,1]`, each split to singletons, merged back up pairwise.
+- **Example 2**
+  - **Input:** nums = [5,1,1,2,0,0] | **Output:** [0,0,1,1,2,5]
+  - **Explanation:** duplicate values (`0`, `1`) keep their relative order through the merge's `<=` tie-break, since merge sort is stable.
+
+**Constraints:** `n ≤ 5·10⁴`, values fit in 32-bit - a direct "implement a sort" prompt that rejects `.sort()`.
 
 **Approach:** Textbook top-down merge sort: recurse to singletons, merge back up with the two-pointer `_merge`. The whole point is demonstrating you can write a correct, stable O(n log n) sort and explain its invariant. Quicksort also passes but risks the O(n²) tail on adversarial test cases; merge sort's guarantee is safer here.
 
@@ -274,44 +283,23 @@ def _merge(left: list[int], right: list[int]) -> list[int]:
     return out
 ```
 
-Time O(n log n), space O(n). Pattern: divide-and-conquer merge sort.
+**Complexity:** O(n log n) time, O(n) space.
 
-### 2. Count of Smaller Numbers After Self - merge sort with a counter
+### 2. Count Inversions - cross-pair counting during merge
 
-For each element, count how many elements to its **right** are smaller than it. Return the counts array. Constraints: `n ≤ 10⁵`, so the O(n²) brute force is too slow - the tell for an O(n log n) approach.
+Count pairs `(i, j)` with `i < j` but `a[i] > a[j]` (the number of swaps bubble sort would do).
 
-**Approach:** Piggyback on merge sort. When merging, an element from the **left** run that is placed _after_ some right-run elements means those right elements were smaller and to its right - count them at merge time. Track original indices so counts land in the right slots. The merge structure gives you the cross-pair information for free.
+**Worked examples:**
+- **Example 1**
+  - **Input:** a = [2, 4, 1, 3, 5] | **Output:** 3
+  - **Explanation:** the inverted pairs are `(2,1)`, `(4,1)`, `(4,3)` - three pairs out of order.
+- **Example 2**
+  - **Input:** a = [1, 2, 3, 4, 5] | **Output:** 0
+  - **Explanation:** already sorted - no pair is out of order, so every merge step takes cleanly from the left run first.
 
-```python
-def count_smaller(nums: list[int]) -> list[int]:
-    counts = [0] * len(nums)
-    enum = list(enumerate(nums))                 # (orig_index, value)
+**Constraints:** `n ≤ 10⁵`, O(n²) brute force times out.
 
-    def sort(arr):
-        if len(arr) <= 1:
-            return arr
-        mid = len(arr) // 2
-        left, right = sort(arr[:mid]), sort(arr[mid:])
-        merged, j = [], 0
-        for idx, val in left:
-            while j < len(right) and right[j][1] < val:
-                j += 1                            # right elements smaller than this left value
-            counts[idx] += j                      # ...are all to its right
-            merged.append((idx, val))
-        # standard stable merge to keep the recursion's contract
-        return sorted(left + right, key=lambda t: t[1])
-
-    sort(enum)
-    return counts
-```
-
-Time O(n log n), space O(n). Pattern: merge sort augmented to count cross-pairs.
-
-### 3. Count Inversions - cross-pair counting during merge
-
-Count pairs `(i, j)` with `i < j` but `a[i] > a[j]` (the number of swaps bubble sort would do). Constraints: `n ≤ 10⁵`, O(n²) brute force times out.
-
-**Approach:** Same merge-sort augmentation, counting globally instead of per-element. While merging two sorted halves, when you take an element from the **right** run before exhausting the left, _every_ remaining left-run element forms an inversion with it - add `len(left) - i` in one shot. Inversions split cleanly into within-left + within-right + cross, matching the recursion.
+**Approach:** Piggyback on merge sort's merge step. While merging two sorted halves, when you take an element from the **right** run before exhausting the left, _every_ remaining left-run element forms an inversion with it - add `len(left) - i` in one shot. Inversions split cleanly into within-left + within-right + cross, matching the recursion. This is the more canonical framing of "count cross-pairs during the merge step" - the same core invariant that also solves Count of Smaller Numbers After Self (see duplicate below), just counted globally here instead of per-element.
 
 ```python
 def count_inversions(a: list[int]) -> int:
@@ -333,11 +321,24 @@ def count_inversions(a: list[int]) -> int:
     return sort_count(a)[1]
 ```
 
-Time O(n log n), space O(n). Pattern: divide-and-conquer inversion counting.
+**Complexity:** O(n log n) time, O(n) space.
 
-### 4. Merge k Sorted Lists - k-way merge
+**Duplicate problems:**
+- Count of Smaller Numbers After Self (LC 315) - same merge-step cross-pair counting invariant, just recorded per-element (with original indices tracked) instead of summed into one global total.
 
-Merge `k` sorted linked lists into one sorted list. Constraints: `k ≤ 10⁴`, total nodes `≤ 10⁴` per list - naive concatenate-then-sort is O(N log N); the structure invites better.
+### 3. Merge k Sorted Lists - k-way merge
+
+Merge `k` sorted linked lists into one sorted list.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** lists = [[1,4,5],[1,3,4],[2,6]] | **Output:** [1,1,2,3,4,4,5,6]
+  - **Explanation:** the min-heap always pops the smallest head across all three lists, advancing that list's pointer each time.
+- **Example 2**
+  - **Input:** lists = [] | **Output:** []
+  - **Explanation:** no lists to merge - the heap starts and ends empty.
+
+**Constraints:** `k ≤ 10⁴`, total nodes `≤ 10⁴` per list - naive concatenate-then-sort is O(N log N); the structure invites better.
 
 **Approach:** Generalize the two-way merge to `k` ways. Two options: (a) pairwise-merge lists in a tournament - `log k` rounds, each merging all `N` nodes → O(N log k); or (b) a **min-heap** of the `k` current heads, popping the smallest and pushing its successor → also O(N log k). Both beat re-sorting; the heap version is the cleanest to code and the canonical answer.
 
@@ -356,4 +357,4 @@ def merge_k_lists(lists: list[list[int]]) -> list[int]:
     return out
 ```
 
-Time O(N log k), space O(k) for the heap. Pattern: k-way merge via a min-heap.
+**Complexity:** O(N log k) time, O(k) space for the heap.
