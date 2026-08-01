@@ -13,7 +13,7 @@ const DATE_HEADING_RE = /^##\s+(\d{4}-\d{2}-\d{2})\s*$/;
 const ENTRY_RE = /^-\s+(.+)$/;
 const FILENAME_RE = /`([^`]+)`/g;
 
-function parseChangelog(markdown) {
+function _parseChangelog(markdown) {
   const groups = [];
   let current = null;
 
@@ -163,11 +163,11 @@ async function renderChangelog() {
       fetchText("content/CHANGELOG.md"),
       _buildFilenameIndex(),
     ]);
-    _groups = parseChangelog(markdown);
+    _groups = _parseChangelog(markdown);
     _renderGroups();
   } catch {
     container.innerHTML = '<p class="changelog-empty">Failed to load changelog.</p>';
   }
 }
 
-export { renderChangelog, parseChangelog };
+export { renderChangelog };

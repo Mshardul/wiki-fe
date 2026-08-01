@@ -1,9 +1,5 @@
 import { api } from "../api.js";
-import { escHtml, sequencedMutation, state } from "../state.js";
-
-function _loggedIn() {
-  return state.session?.status === "in";
-}
+import { escHtml, scheduleSyncMutation, state } from "../state.js";
 
 /* ═══════════════════════════════════════════════════════════════
    RECENTLY VISITED
@@ -24,11 +20,9 @@ function addToRecents(entry) {
   recents.unshift({ ...entry, visitedAt: Date.now() });
   if (recents.length > RECENTS_MAX) recents = recents.slice(0, RECENTS_MAX);
   localStorage.setItem(RECENTS_KEY, JSON.stringify(recents));
-  if (_loggedIn()) {
-    sequencedMutation(`${entry.wikiId}|${entry.path}`, () =>
-      api.recents.add(entry.wikiId, entry.path),
-    ).catch(() => {});
-  }
+  scheduleSyncMutation(`${entry.wikiId}|${entry.path}`, () =>
+    api.recents.add(entry.wikiId, entry.path),
+  );
 }
 
 function saveRecents(arr) {
@@ -36,9 +30,7 @@ function saveRecents(arr) {
 }
 
 function clearRecents(wikiId) {
-  if (_loggedIn()) {
-    sequencedMutation(`clear|${wikiId}`, () => api.recents.clear(wikiId)).catch(() => {});
-  }
+  scheduleSyncMutation(`clear|${wikiId}`, () => api.recents.clear(wikiId));
   const remaining = getRecents().filter((r) => r.wikiId !== wikiId);
   saveRecents(remaining);
   document.getElementById("recents-section")?.classList.add("hidden");

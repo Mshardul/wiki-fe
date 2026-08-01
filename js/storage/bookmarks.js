@@ -1,5 +1,5 @@
 import { api } from "../api.js";
-import { WIKIS, escHtml, sequencedMutation, state } from "../state.js";
+import { WIKIS, escHtml, scheduleSyncMutation, state } from "../state.js";
 
 function _loggedIn() {
   return state.session?.status === "in";
@@ -19,21 +19,19 @@ function getBookmarks() {
 }
 
 function saveBookmarks(arr) {
-  if (_loggedIn()) {
-    const prev = getBookmarks();
-    const prevKeys = new Set(prev.map((b) => `${b.wikiId}|${b.path}`));
-    const nextKeys = new Set(arr.map((b) => `${b.wikiId}|${b.path}`));
-    for (const b of arr) {
-      const key = `${b.wikiId}|${b.path}`;
-      if (!prevKeys.has(key)) {
-        sequencedMutation(key, () => api.bookmarks.add(b.wikiId, b.path)).catch(() => {});
-      }
+  const prev = getBookmarks();
+  const prevKeys = new Set(prev.map((b) => `${b.wikiId}|${b.path}`));
+  const nextKeys = new Set(arr.map((b) => `${b.wikiId}|${b.path}`));
+  for (const b of arr) {
+    const key = `${b.wikiId}|${b.path}`;
+    if (!prevKeys.has(key)) {
+      scheduleSyncMutation(key, () => api.bookmarks.add(b.wikiId, b.path));
     }
-    for (const b of prev) {
-      const key = `${b.wikiId}|${b.path}`;
-      if (!nextKeys.has(key)) {
-        sequencedMutation(key, () => api.bookmarks.remove(b.wikiId, b.path)).catch(() => {});
-      }
+  }
+  for (const b of prev) {
+    const key = `${b.wikiId}|${b.path}`;
+    if (!nextKeys.has(key)) {
+      scheduleSyncMutation(key, () => api.bookmarks.remove(b.wikiId, b.path));
     }
   }
   localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(arr));

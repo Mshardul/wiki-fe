@@ -8,6 +8,7 @@ import {
   renderBookmarksSection,
   updateBookmarkBtn,
 } from "./bookmarks.js";
+import { clearCompletions } from "./completions.js";
 import { DATA_CATEGORIES, clearSelectedData } from "./data-clear.js";
 import { Highlights, Markers } from "./highlights.js";
 import { Notes } from "./notes.js";
@@ -261,7 +262,7 @@ function getSettings() {
     : { ...DEFAULT_SETTINGS };
 }
 
-function saveSettings(s) {
+function _saveSettings(s) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
 }
 
@@ -659,14 +660,14 @@ const Settings = {
 
   _setLineHeight(lineHeight) {
     const s = { ...getSettings(), lineHeight };
-    saveSettings(s);
+    _saveSettings(s);
     applySettingsToDOM(s);
     this._render();
   },
 
   _setParaSpacing(paraSpacing) {
     const s = { ...getSettings(), paraSpacing };
-    saveSettings(s);
+    _saveSettings(s);
     applySettingsToDOM(s);
     this._render();
   },
@@ -681,7 +682,7 @@ const Settings = {
       accentId = nowDark ? "indigo" : "indigo-l";
     }
     const updated = { ...s, backgroundId, textColorId, accentId };
-    saveSettings(updated);
+    _saveSettings(updated);
     applySettingsToDOM(updated);
     const presetKey = nowDark ? "wiki-last-dark-preset" : "wiki-last-light-preset";
     localStorage.setItem(presetKey, JSON.stringify({ backgroundId, textColorId, accentId }));
@@ -690,54 +691,54 @@ const Settings = {
 
   _setTextColor(textColorId) {
     const s = { ...getSettings(), textColorId };
-    saveSettings(s);
+    _saveSettings(s);
     applySettingsToDOM(s);
     this._render();
   },
 
   _setAccent(accentId) {
     const s = { ...getSettings(), accentId };
-    saveSettings(s);
+    _saveSettings(s);
     applySettingsToDOM(s);
     this._render();
   },
 
   _setFont(font) {
     const s = { ...getSettings(), font };
-    saveSettings(s);
+    _saveSettings(s);
     applySettingsToDOM(s);
     this._render();
   },
 
   _setSize(fontSize) {
     const s = { ...getSettings(), fontSize };
-    saveSettings(s);
+    _saveSettings(s);
     applySettingsToDOM(s);
     this._render();
   },
 
   _setWidth(contentWidth) {
     const s = { ...getSettings(), contentWidth };
-    saveSettings(s);
+    _saveSettings(s);
     applySettingsToDOM(s);
     this._render();
   },
 
   _toggleCopySourceHeader() {
     const s = getSettings();
-    saveSettings({ ...s, copySourceHeader: !s.copySourceHeader });
+    _saveSettings({ ...s, copySourceHeader: !s.copySourceHeader });
     this._render();
   },
 
   _toggleHapticFeedback() {
     const s = getSettings();
-    saveSettings({ ...s, hapticFeedback: !s.hapticFeedback });
+    _saveSettings({ ...s, hapticFeedback: !s.hapticFeedback });
     this._render();
   },
 
   _togglePracticeAnswersHidden() {
     const s = getSettings();
-    saveSettings({ ...s, practiceAnswersHidden: !s.practiceAnswersHidden });
+    _saveSettings({ ...s, practiceAnswersHidden: !s.practiceAnswersHidden });
     this._render();
   },
 
@@ -841,10 +842,11 @@ window.addEventListener("storage", (e) => {
 const Sync = {
   // Pull all server lists and overwrite localStorage with server truth.
   async pullAll() {
-    const [bm, rd, rc] = await Promise.all([
+    const [bm, rd, rc, cp] = await Promise.all([
       api.bookmarks.list().catch(() => []),
       api.reads.list().catch(() => []),
       api.recents.list().catch(() => []),
+      api.completions.list().catch(() => []),
     ]);
 
     // Bookmarks → FE shape (server order preserved as returned)
@@ -867,6 +869,20 @@ const Sync = {
       }
     }
 
+    const completedByWiki = {};
+    for (const r of cp || []) {
+      // biome-ignore lint/suspicious/noAssignInExpressions: ||= logical-assign idiom
+      (completedByWiki[r.wiki_id] ||= new Set()).add(r.path);
+    }
+    for (const wiki of WIKIS) {
+      const set = completedByWiki[wiki.id];
+      if (set) {
+        localStorage.setItem(`wiki-completed-${wiki.id}`, JSON.stringify([...set]));
+      } else {
+        localStorage.removeItem(`wiki-completed-${wiki.id}`);
+      }
+    }
+
     // Recents → FE shape, ≤6 (BE already trims; respect server order)
     localStorage.setItem(
       RECENTS_KEY,
@@ -877,7 +893,10 @@ const Sync = {
   clearUserDataCache() {
     localStorage.removeItem(BOOKMARKS_KEY);
     localStorage.removeItem(RECENTS_KEY);
-    for (const wiki of WIKIS) localStorage.removeItem(`wiki-read-${wiki.id}`);
+    for (const wiki of WIKIS) {
+      localStorage.removeItem(`wiki-read-${wiki.id}`);
+      clearCompletions(wiki.id);
+    }
     Highlights.clear();
     Markers.clear();
     Notes.clear();
@@ -891,4 +910,4 @@ const Sync = {
 
 registerModal({ isOpen: () => Settings.isOpen(), close: () => Settings.close() });
 
-export { getSettings, saveSettings, applySettingsToDOM, initOsThemeListener, Settings, Sync };
+export { getSettings, applySettingsToDOM, initOsThemeListener, Settings, Sync };

@@ -39,7 +39,8 @@ function buildTOC(contentEl, wikiId, articlePath) {
       group.dataset.h2Id = h.id;
       currentGroup = group;
 
-      const collapseKey = `wiki-toc-h2-${wikiId}-${h.id}`;
+      const slugBase = (articlePath || "").replace(/\//g, "-");
+      const collapseKey = `wiki-heading-collapsed-${wikiId}-${slugBase}-${h.id}`;
       if (getCollapsed(collapseKey)) {
         group.classList.add("section--collapsed");
       }

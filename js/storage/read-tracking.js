@@ -1,9 +1,5 @@
 import { api } from "../api.js";
-import { sequencedMutation, state } from "../state.js";
-
-function _loggedIn() {
-  return state.session?.status === "in";
-}
+import { scheduleSyncMutation, state } from "../state.js";
 
 /* ═══════════════════════════════════════════════════════════════
    MARK AS READ
@@ -33,11 +29,9 @@ function markRead(path) {
   read.add(path);
   localStorage.setItem(_readKey(), JSON.stringify([...read]));
   // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
-  if (_loggedIn()) {
-    sequencedMutation(`${state.currentWikiId}|${path}`, () =>
-      api.reads.add(state.currentWikiId, path),
-    ).catch(() => {});
-  }
+  scheduleSyncMutation(`${state.currentWikiId}|${path}`, () =>
+    api.reads.add(state.currentWikiId, path),
+  );
   document.querySelectorAll(".index-card-read-dot").forEach((dot) => {
     const card = dot.closest(".index-card");
     const timeBadge = card?.querySelector(".index-card-read-time");
@@ -52,11 +46,9 @@ function markUnread(path) {
   read.delete(path);
   localStorage.setItem(_readKey(), JSON.stringify([...read]));
   // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
-  if (_loggedIn()) {
-    sequencedMutation(`${state.currentWikiId}|${path}`, () =>
-      api.reads.remove(state.currentWikiId, path),
-    ).catch(() => {});
-  }
+  scheduleSyncMutation(`${state.currentWikiId}|${path}`, () =>
+    api.reads.remove(state.currentWikiId, path),
+  );
   document.querySelectorAll(".index-card-read-dot").forEach((dot) => {
     const card = dot.closest(".index-card");
     const timeBadge = card?.querySelector(".index-card-read-time");

@@ -48,7 +48,7 @@ function openSidecarToc() {
   return true;
 }
 
-function isSidecarTocOpen() {
+function _isSidecarTocOpen() {
   return !!(_win && !_win.closed);
 }
 
@@ -70,9 +70,9 @@ document.addEventListener("wiki:toc-updated", pushState);
 window.addEventListener(
   "scroll",
   () => {
-    if (isSidecarTocOpen()) pushState();
+    if (_isSidecarTocOpen()) pushState();
   },
   { passive: true },
 );
 
-export { openSidecarToc, isSidecarTocOpen };
+export { openSidecarToc };

@@ -166,6 +166,7 @@ Do this before any file reads or skill invocations - every session:
 | `bookmarks.js`       | Bookmark CRUD, bookmarks section render                                       |
 | `recents.js`         | Recently-visited CRUD, recents section render                                 |
 | `read-tracking.js`   | Read/unread state, quiz-reveal tracking                                       |
+| `completions.js`     | Per-wiki-per-article completion Set (`wiki-completed-*`), sync via `api.completions` |
 | `offline.js`         | Offline cache download/remove/check, offline button state                     |
 | `settings-theme.js`  | Settings object + swatches, `Settings`/`Theme`/`Sync`, multi-tab sync listener |
 | `scroll-collapse.js` | Scroll-position cache, section collapse, TOC scroll, recent searches          |

@@ -73,6 +73,7 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 | `bookmarks.js`        | Bookmark CRUD, bookmarks section render                             |
 | `recents.js`          | Recently-visited CRUD, recents section render                       |
 | `read-tracking.js`    | Read/unread state, quiz-reveal tracking                             |
+| `completions.js`      | Per-wiki-per-article completion Set + `api.completions` sync        |
 | `offline.js`          | Service-worker cache download/remove/check for offline articles      |
 | `settings-theme.js`   | Settings object, theme/background/accent/font data, `Settings`/`Theme`/`Sync`, multi-tab sync listener |
 | `scroll-collapse.js`  | Scroll-position cache, section collapse state, TOC scroll, recent searches |

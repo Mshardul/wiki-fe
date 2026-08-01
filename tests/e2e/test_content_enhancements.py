@@ -3391,3 +3391,55 @@ def test_prerequisite_chip_level_badges(page, base_url):
     )
     assert "prereq-level--must" in (must_badge.get_attribute("class") or "")
     assert "prereq-level--should" in (should_badge.get_attribute("class") or "")
+
+
+def test_code_block_disables_ligatures(page, base_url):
+    """Fenced code blocks set font-variant-ligatures:none so ->/!= stay ASCII."""
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body pre code", timeout=10_000)
+    style = page.evaluate("""() => {
+        const el = document.querySelector('#markdown-body pre code');
+        const cs = getComputedStyle(el);
+        return {
+            ligatures: cs.fontVariantLigatures,
+            features: cs.fontFeatureSettings,
+        };
+    }""")
+    lig = (style["ligatures"] or "").replace(" ", "").lower()
+    assert "none" in lig or lig == "noligatures", f"expected ligatures none, got {style}"
+
+
+def test_overflow_menu_items_have_titles_and_distinct_icons(page, base_url):
+    """Overflow actions expose title tooltips and no longer share one icon."""
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#content-overflow-menu", timeout=10_000)
+    info = page.evaluate("""() => {
+        const items = [...document.querySelectorAll('.topbar-overflow-item')];
+        return items.map((btn) => ({
+            action: btn.getAttribute('data-action'),
+            title: btn.getAttribute('title'),
+            aria: btn.getAttribute('aria-label'),
+            icon: btn.querySelector('use')?.getAttribute('href') || null,
+        }));
+    }""")
+    assert info, "expected overflow items"
+    for item in info:
+        assert item["title"], f"missing title on {item['action']}"
+        assert item["title"] == item["aria"], f"title/aria mismatch on {item['action']}: {item}"
+
+    by_action = {i["action"]: i["icon"] for i in info}
+    for action in (
+        "wiki-switcher-open",
+        "link-graph-open",
+        "complexity-compare-open",
+        "section-map-toggle",
+    ):
+        assert action in by_action, f"missing overflow action {action}"
+    icons = [
+        by_action["wiki-switcher-open"],
+        by_action["link-graph-open"],
+        by_action["complexity-compare-open"],
+        by_action["section-map-toggle"],
+    ]
+    assert len(set(icons)) == 4, f"expected 4 distinct icons, got {icons}"
+    assert "#icon-grid" not in icons, f"colliding icon-grid still present: {icons}"

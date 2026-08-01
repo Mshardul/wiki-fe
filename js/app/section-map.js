@@ -49,7 +49,7 @@ function getOverlay() {
   return document.getElementById("section-map-overlay");
 }
 
-async function openSectionMap() {
+async function _openSectionMap() {
   if (isSectionMapOpen()) return;
   const section = await currentSectionNodes();
   if (!section) return;
@@ -88,11 +88,11 @@ function isSectionMapOpen() {
 
 function toggleSectionMap() {
   if (isSectionMapOpen()) closeSectionMap();
-  else openSectionMap();
+  else _openSectionMap();
 }
 
 document.getElementById("section-map-overlay").addEventListener("click", (e) => {
   if (e.target.id === "section-map-overlay") closeSectionMap();
 });
 
-export { openSectionMap, closeSectionMap, toggleSectionMap, isSectionMapOpen };
+export { closeSectionMap, toggleSectionMap, isSectionMapOpen };

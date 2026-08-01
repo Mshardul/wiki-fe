@@ -21,8 +21,15 @@ def test_toggle_collapse_helper_exposed(page, base_url):
     group = page.locator(".toc-h2-group").first
     h2_id = group.get_attribute("data-h2-id")
     page.locator(".toc-group-chevron").first.click()
-    key = f"wiki-toc-h2-system-design-{h2_id}"
-    value = page.evaluate(f"() => localStorage.getItem({repr(key)})")
+    key = page.evaluate(
+        """(h2Id) => {
+            const wikiId = state.currentWikiId;
+            const slugBase = (state.currentFilePath || '').replace(/\\//g, '-');
+            return `wiki-heading-collapsed-${wikiId}-${slugBase}-${h2Id}`;
+        }""",
+        h2_id,
+    )
+    value = page.evaluate("(k) => localStorage.getItem(k)", key)
     assert value == "1", f"toggleCollapse must write '1' to localStorage[{key!r}]"
 
 
@@ -70,7 +77,7 @@ def test_toc_h3_collapses_under_h2(page, base_url):
 
 
 def test_toc_h2_group_collapse_persists(page, base_url):
-    """Collapsing an H2 group saves state to localStorage."""
+    """Collapsing an H2 group saves state to the shared heading-collapse key."""
     page.set_viewport_size({"width": 1280, "height": 800})
     _go_to_article(page, base_url)
     page.wait_for_selector(".toc-group-chevron", timeout=5_000)
@@ -79,9 +86,54 @@ def test_toc_h2_group_collapse_persists(page, base_url):
     h2_id = group.get_attribute("data-h2-id")
     page.locator(".toc-group-chevron").first.click()
 
-    key = f"wiki-toc-h2-system-design-{h2_id}"
-    value = page.evaluate(f"() => localStorage.getItem({repr(key)})")
+    key = page.evaluate(
+        """(h2Id) => {
+            const wikiId = state.currentWikiId;
+            const slugBase = (state.currentFilePath || '').replace(/\\//g, '-');
+            return `wiki-heading-collapsed-${wikiId}-${slugBase}-${h2Id}`;
+        }""",
+        h2_id,
+    )
+    value = page.evaluate("(k) => localStorage.getItem(k)", key)
     assert value == "1", f"localStorage[{key!r}] must be '1' after collapse"
+
+
+def test_toc_and_content_collapse_share_one_storage_key(page, base_url):
+    """TOC chevron and in-content collapse button read/write the same key (reload-safe)."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _go_to_article(page, base_url)
+    page.wait_for_selector(".toc-group-chevron", timeout=5_000)
+    page.wait_for_selector(".heading-collapse-btn", timeout=5_000)
+
+    page.locator(".toc-group-chevron").first.click()
+    keys = page.evaluate("""() => {
+        const out = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && (k.startsWith('wiki-heading-collapsed-') || k.startsWith('wiki-toc-h2-'))) {
+                out.push([k, localStorage.getItem(k)]);
+            }
+        }
+        return out;
+    }""")
+    heading_keys = [k for k, v in keys if k.startswith("wiki-heading-collapsed-") and v == "1"]
+    toc_keys = [k for k, _ in keys if k.startswith("wiki-toc-h2-")]
+    assert len(heading_keys) >= 1, f"expected shared wiki-heading-collapsed-* key, got {keys}"
+    assert toc_keys == [], f"legacy wiki-toc-h2-* keys must not be written, got {toc_keys}"
+
+    # Reload: both TOC group and content h2 restore collapsed from the same key
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector(".toc-h2-group", timeout=8_000)
+    page.wait_for_selector("#markdown-body h2", timeout=8_000)
+    both = page.evaluate("""() => {
+        const group = document.querySelector('.toc-h2-group');
+        const h2 = document.querySelector('#markdown-body h2');
+        return {
+            toc: !!(group && group.classList.contains('section--collapsed')),
+            content: !!(h2 && h2.classList.contains('section--collapsed')),
+        };
+    }""")
+    assert both["toc"] and both["content"], f"both controls must restore collapsed after reload: {both}"
 
 
 # ── Breathing TOC states ─────────────────────────────────────────────

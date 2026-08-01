@@ -60,13 +60,22 @@
   white-space: nowrap;
 }
 .content-topbar .breadcrumb a,
-.content-topbar .breadcrumb-link,
-.content-topbar .breadcrumb span:last-child {
+.content-topbar .breadcrumb-link {
   flex-shrink: 1;
   min-width: 2.5em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.content-topbar .breadcrumb span:last-child {
+  flex-shrink: 0;
+  min-width: 4em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.content-topbar .breadcrumb-sep {
+  flex-shrink: 0;
 }
 
 /* Topbar */

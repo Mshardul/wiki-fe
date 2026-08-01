@@ -134,3 +134,28 @@ def test_initial_page_load_has_no_direction_signal(page, base_url):
     sig = _direction_signal(page)
     assert sig["attr"] in (None, ""), sig
     assert not sig["forwardClass"] and not sig["backClass"], sig
+
+
+
+def test_breadcrumb_current_crumb_does_not_over_shrink(page, base_url):
+    """Current-page crumb keeps flex-shrink:0 so it loses the shrink fight less than parents."""
+    page.set_viewport_size({"width": 360, "height": 740})
+    _go_to_article(page, base_url)
+    page.wait_for_selector("#content-breadcrumb span:last-child", timeout=10_000)
+    data = page.evaluate("""() => {
+        const last = document.querySelector('#content-breadcrumb span:last-child');
+        const link = document.querySelector('#content-breadcrumb .breadcrumb-link');
+        const csLast = getComputedStyle(last);
+        const csLink = link ? getComputedStyle(link) : null;
+        return {
+            lastShrink: csLast.flexShrink,
+            lastMinWidth: csLast.minWidth,
+            linkShrink: csLink ? csLink.flexShrink : null,
+            lastWidth: last.getBoundingClientRect().width,
+            lastText: last.textContent,
+        };
+    }""")
+    assert data["lastShrink"] == "0", f"last crumb must not shrink: {data}"
+    assert data["lastWidth"] > 20, f"last crumb over-truncated: {data}"
+    if data["linkShrink"] is not None:
+        assert data["linkShrink"] == "1", f"parent crumbs should remain shrinkable: {data}"

@@ -1,7 +1,14 @@
 import { ApiError, api, getSessionToken, setSessionToken } from "./api.js";
 import { createFocusTrap, getFocusableIn, registerModal } from "./modal-registry.js";
 import { showToast } from "./render/toast.js";
-import { WIKIS, lockBodyScroll, state, unlockBodyScroll } from "./state.js";
+import {
+  WIKIS,
+  discardBootMutations,
+  flushBootMutations,
+  lockBodyScroll,
+  state,
+  unlockBodyScroll,
+} from "./state.js";
 import { getBookmarks } from "./storage/bookmarks.js";
 import { getRecents } from "./storage/recents.js";
 import { Sync } from "./storage/settings-theme.js";
@@ -330,13 +337,16 @@ const Auth = {
       try {
         const data = await api.auth.me();
         state.session = { user: data.user, status: "in" };
+        await flushBootMutations();
         await Sync.pullAll();
         document.dispatchEvent(new CustomEvent("wiki:session-changed"));
       } catch {
         state.session = { user: null, status: "out" };
+        discardBootMutations();
       }
     } else {
       state.session = { user: null, status: "out" };
+      discardBootMutations();
     }
     this.refreshButtons();
     this._wireModalInputs();

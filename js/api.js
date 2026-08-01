@@ -136,6 +136,11 @@ const api = {
     add: (wiki_id, path) => api.post("/reads", { wiki_id, path }),
     remove: (wiki_id, path) => api.del("/reads", { wiki_id, path }),
   },
+  completions: {
+    list: () => api.get("/completions"),
+    add: (wiki_id, path) => api.post("/completions", { wiki_id, path }),
+    remove: (wiki_id, path) => api.del("/completions", { wiki_id, path }),
+  },
   recents: {
     list: () => api.get("/recents"),
     add: (wiki_id, path) => api.post("/recents", { wiki_id, path }),

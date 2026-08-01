@@ -256,6 +256,29 @@ function sequencedMutation(key, fn) {
   return next;
 }
 
+// Boot-window write queue: Auth.init() leaves session.status as "loading" until
+// GET /auth/me resolves. Writes in that window must not silently become local-only
+// then get wiped by Sync.pullAll() - queue the API side and flush before pullAll.
+const _bootMutationQueue = [];
+function scheduleSyncMutation(key, fn) {
+  const status = state.session?.status;
+  if (status === "in") {
+    sequencedMutation(key, fn).catch(() => {});
+    return;
+  }
+  if (status === "loading") {
+    _bootMutationQueue.push(() => sequencedMutation(key, fn));
+  }
+}
+async function flushBootMutations() {
+  const q = _bootMutationQueue.splice(0);
+  if (!q.length) return;
+  await Promise.allSettled(q.map((run) => run()));
+}
+function discardBootMutations() {
+  _bootMutationQueue.length = 0;
+}
+
 // Ref-counted body scroll lock so overlapping modals (e.g. prefs opened from within search)
 // don't have the first modal's close re-enable background scroll while a second is still open.
 let _scrollLockCount = 0;
@@ -288,6 +311,9 @@ export {
   FADE_FLOOR,
   removeLocalStorageByPrefix,
   sequencedMutation,
+  scheduleSyncMutation,
+  flushBootMutations,
+  discardBootMutations,
   lockBodyScroll,
   unlockBodyScroll,
 };

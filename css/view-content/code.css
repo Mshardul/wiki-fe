@@ -44,6 +44,8 @@
   background: none;
   border: none;
   color: #abb2bf;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
 }
 
 /* Line numbers */

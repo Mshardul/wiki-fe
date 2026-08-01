@@ -152,11 +152,11 @@ function _execRoute(hash) {
   if (savedPath) {
     renderContent(wiki, savedPath, savedTitle || slug);
   } else {
-    resolveSlugAndRender(wiki, slug);
+    _resolveSlugAndRender(wiki, slug);
   }
 }
 
-async function resolveSlugAndRender(wiki, slug) {
+async function _resolveSlugAndRender(wiki, slug) {
   try {
     const sections = await fetchWikiIndex(wiki);
     const cards = [];
@@ -170,7 +170,7 @@ async function resolveSlugAndRender(wiki, slug) {
       }
     }
 
-    const suggestion = nearestSlugMatch(slug, cards);
+    const suggestion = _nearestSlugMatch(slug, cards);
     if (suggestion) {
       updatePageTitle("Not Found");
       history.replaceState(null, "", location.pathname);
@@ -192,7 +192,7 @@ async function resolveSlugAndRender(wiki, slug) {
 }
 
 /* Rank index cards against a bad slug; return the closest, or null */
-function nearestSlugMatch(slug, cards) {
+function _nearestSlugMatch(slug, cards) {
   const q = slug.toLowerCase();
   let best = null;
   let bestScore = 0;
@@ -211,4 +211,4 @@ function nearestSlugMatch(slug, cards) {
   return best;
 }
 
-export { progressBar, showView, navigate, route, resolveSlugAndRender, nearestSlugMatch };
+export { progressBar, showView, navigate, route };
