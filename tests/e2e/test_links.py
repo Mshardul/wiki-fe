@@ -1,5 +1,5 @@
 """
-- TLDR hover previews (017)
+- Hover previews from data/summaries.json (017/514)
 - External and Anchor link handling (049)
 - Cross-wiki `wiki://` link navigation (199)
 - Author-curated "## Recommended" section feeds the related-articles panel (027)
@@ -33,17 +33,26 @@ def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
     )
 
 
-def test_tldr_hover_preview(page, base_url):
-    """017: Hovering an internal link shows the TLDR in a popup."""
+def test_hover_preview_shows_summaries_json_entry(page, base_url):
+    """017/514: Hovering an internal link shows its hand-authored summary from
+    data/summaries.json, not a scrape of the target article's markdown (which
+    previously could surface a prereq/TOC bullet instead of a real summary)."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
     page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
 
     page.route(
-        "**/linked.md",
+        "**/data/summaries.json",
         lambda r: r.fulfill(
-            body="## TL;DR\n\nThis is the TLDR.\n\n## Body\n\nBody text."
+            content_type="application/json",
+            body=json.dumps({"content/system-design/linked.md": "This is the summary."}),
         ),
+    )
+    page.route(
+        "**/linked.md",
+        # Body is irrelevant now - hover preview no longer fetches/scrapes the
+        # target article, so a prereq-only body proves the scrape path is gone.
+        lambda r: r.fulfill(body="## Prerequisites\n\n- **Some prereq**\n"),
     )
     page.route("**/mock.md", lambda r: r.fulfill(body="# Main\n\n[Link](./linked.md)"))
 
@@ -66,7 +75,42 @@ def test_tldr_hover_preview(page, base_url):
     page.wait_for_selector("#hover-preview.visible", timeout=5_000)
 
     preview_text = page.locator("#hover-preview").inner_text()
-    assert "This is the TLDR." in preview_text
+    assert "This is the summary." in preview_text
+    assert "Some prereq" not in preview_text
+
+
+def test_hover_preview_no_summary_entry_shows_fallback(page, base_url):
+    """514: A link target with no data/summaries.json entry shows the
+    'Preview not available' fallback instead of a markdown-scraped guess."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
+
+    page.route(
+        "**/data/summaries.json",
+        lambda r: r.fulfill(content_type="application/json", body="{}"),
+    )
+    page.route("**/linked.md", lambda r: r.fulfill(body="# Linked\n\nBody text."))
+    page.route("**/mock.md", lambda r: r.fulfill(body="# Main\n\n[Link](./linked.md)"))
+
+    page.evaluate("""() => navigateToContent(
+        'system-design',
+        encodeURIComponent('../content/system-design/mock.md'),
+        encodeURIComponent('Main'),
+        'mock'
+    )""")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    page.wait_for_selector("a:has-text('Link')", timeout=5_000)
+
+    page.locator("a:has-text('Link')").dispatch_event("mouseenter")
+    page.wait_for_selector("#hover-preview.visible", timeout=5_000)
+
+    preview_text = page.locator("#hover-preview").inner_text()
+    assert "Preview not available" in preview_text
 
 
 def test_external_links_target_blank(page, base_url):

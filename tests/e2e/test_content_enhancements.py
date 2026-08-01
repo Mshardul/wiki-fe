@@ -13,6 +13,8 @@ Content view enhancements:
 - Broken image error placeholder
 """
 
+import json
+
 import pytest
 
 ARTICLE_WITH_TABLE = """\
@@ -3240,6 +3242,60 @@ def test_save_as_card_does_not_create_highlight_or_marker(page, base_url):
     assert stored is False, "Save-as-card must not persist a highlight or marker entry"
 
 
+ARTICLE_WITH_CODE_FOR_MARKERS = """\
+# Code Marker Guard
+
+## Section
+
+Prose before the block.
+
+```python
+def selectable():
+    return "inside"
+```
+
+More selectable prose after.
+"""
+
+
+def test_emoji_marker_buttons_hidden_when_selection_in_code(page, base_url):
+    """484: Selecting inside a code block keeps highlight but hides emoji marker buttons."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_CODE_FOR_MARKERS, slug="marker-code-guard")
+    _select_word(page, "inside")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+
+    assert page.locator(".highlight-toolbar-btn--highlight").is_visible()
+    visible_emoji = page.evaluate(
+        """() => [...document.querySelectorAll('.highlight-toolbar-btn--emoji')]
+            .filter(b => !b.hidden && b.offsetParent !== null).length"""
+    )
+    assert visible_emoji == 0, "Emoji marker buttons must be hidden for code selections"
+
+    # Highlight-only still works inside code.
+    page.locator(".highlight-toolbar-btn--highlight").click()
+    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
+
+
+def test_emoji_marker_is_narrow_accent_tick(page, base_url):
+    """485: Marker renders as a narrow accent tick, not a full-size inline glyph."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-accent-tick")
+    _select_word(page, "testing")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-toolbar-btn--emoji").first.click()
+    page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
+
+    metrics = page.evaluate(
+        """() => {
+            const m = document.querySelector('#markdown-body .wiki-marker');
+            const r = m.getBoundingClientRect();
+            return { width: r.width, height: r.height, emoji: m.dataset.emoji };
+        }"""
+    )
+    assert metrics["emoji"], "Marker must keep emoji identity on data-emoji"
+    assert metrics["width"] <= 6, f"Marker tick should be ~3px wide, got {metrics['width']}"
+    assert metrics["height"] >= 4, f"Marker tick should have visible height, got {metrics['height']}"
+
+
 # ── Prerequisites chips ───────────────────────────────────────────
 
 ARTICLE_WITH_PREREQUISITES = """\
@@ -3286,10 +3342,13 @@ def test_prerequisite_chip_link_navigates_and_has_no_title(page, base_url):
 
 def test_prerequisite_chip_link_shows_hover_preview_card(page, base_url):
     """Hovering a linked prereq chip reuses the same hover-preview card as normal
-    in-article links, fetching the target article's own content."""
+    in-article links, showing the target's data/summaries.json entry."""
     page.route(
-        "**/array.md",
-        lambda r: r.fulfill(body="# Array\n\n## TL;DR\n\nContiguous, indexable memory.\n"),
+        "**/data/summaries.json",
+        lambda r: r.fulfill(
+            content_type="application/json",
+            body=json.dumps({"content/system-design/array.md": "Contiguous, indexable memory."}),
+        ),
     )
     _load_mock_article(page, base_url, ARTICLE_WITH_PREREQUISITES, slug="prereqs-link-hover")
 

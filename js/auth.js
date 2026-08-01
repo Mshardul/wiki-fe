@@ -26,6 +26,14 @@ function validatePassword(pw) {
   return { valid: rules.every((r) => r.ok), rules };
 }
 
+// NETWORK carries the raw browser fetch-failure string (e.g. "Failed to fetch") - never show it verbatim.
+function _authErrorMessage(e, fallback) {
+  if (!(e instanceof ApiError)) return fallback;
+  if (e.code === "NETWORK")
+    return "Couldn't reach the server. Check your connection and try again.";
+  return e.message;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    ANON → LOGIN MIGRATION
    One prompt on login if local anon data exists. Never blocks login.
@@ -75,8 +83,11 @@ function _showMigrateModal() {
   });
 }
 
+// Returns false only when the user chose "Keep them" and the import failed - the caller
+// must then skip the following pullAll() (it would overwrite local data with server truth,
+// silently discarding what the user just asked to keep) and surface the failure.
 async function maybeMigrate() {
-  if (!_hasLocalData()) return;
+  if (!_hasLocalData()) return true;
 
   const keep = await _showMigrateModal();
 
@@ -86,10 +97,14 @@ async function maybeMigrate() {
       reads: _collectLocalReads(),
       recents: getRecents().map((r) => ({ wiki_id: r.wikiId, path: r.path })),
     };
-    await api.importAll(payload).catch(() => {});
-  } else {
-    Sync.clearUserDataCache();
+    const imported = await api.importAll(payload).then(
+      () => true,
+      () => false,
+    );
+    return imported;
   }
+  Sync.clearUserDataCache();
+  return true;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -138,8 +153,14 @@ const AuthModal = {
       p.classList.toggle("active", p.id === `auth-panel-${panel}`);
     });
     this._clearErrors();
-    if (panel === "register") this._renderChecklist("auth-pw-checklist", "");
-    if (panel === "reset") this._renderChecklist("auth-reset-pw-checklist", "");
+    if (panel === "register")
+      this._syncPasswordChecklist("auth-reg-password", "auth-pw-checklist", "auth-reg-submit");
+    if (panel === "reset")
+      this._syncPasswordChecklist(
+        "auth-reset-password",
+        "auth-reset-pw-checklist",
+        "auth-reset-submit",
+      );
     const focusId =
       panel === "login"
         ? "auth-login-email"
@@ -153,6 +174,15 @@ const AuthModal = {
                 ? "auth-resend-btn"
                 : null;
     document.getElementById(focusId)?.focus();
+  },
+
+  // Re-derives checklist + submit-disabled from the input's current value - used both on
+  // live typing and on panel re-entry, so a previously-valid password never shows stale.
+  _syncPasswordChecklist(inputId, listId, submitId) {
+    const pw = document.getElementById(inputId)?.value || "";
+    this._renderChecklist(listId, pw);
+    const submit = document.getElementById(submitId);
+    if (submit) submit.disabled = !validatePassword(pw).valid;
   },
 
   _renderChecklist(listId, pw) {
@@ -186,6 +216,8 @@ const AuthModal = {
         document.getElementById(inputId)?.removeAttribute("aria-invalid"),
       );
     });
+    const forgotSent = document.getElementById("auth-forgot-sent");
+    if (forgotSent) forgotSent.hidden = true;
   },
 
   _showError(id, msg) {
@@ -337,8 +369,18 @@ const Auth = {
       state.session = { user: data.user, status: "in" };
       AuthModal.close();
       this.refreshButtons();
-      await maybeMigrate();
-      await Sync.pullAll();
+      const migrated = await maybeMigrate();
+      if (migrated) {
+        await Sync.pullAll();
+      } else {
+        showToast(
+          "Couldn't save your local data to your account. It's still on this device - log out and back in to retry.",
+          5000,
+          null,
+          undefined,
+          "warning",
+        );
+      }
       document.dispatchEvent(new CustomEvent("wiki:session-changed"));
       _broadcastSessionChange();
       showToast("Logged in", 3000, null, undefined, "success");
@@ -356,7 +398,7 @@ const Auth = {
       } else {
         AuthModal._showError(
           "auth-login-error",
-          e instanceof ApiError ? e.message : "Couldn't log you in. Please try again.",
+          _authErrorMessage(e, "Couldn't log you in. Please try again."),
         );
       }
     }
@@ -382,7 +424,7 @@ const Auth = {
     } catch (e) {
       AuthModal._showError(
         "auth-reg-error",
-        e instanceof ApiError ? e.message : "Couldn't create your account. Please try again.",
+        _authErrorMessage(e, "Couldn't create your account. Please try again."),
       );
     }
   },
@@ -391,28 +433,37 @@ const Auth = {
     try {
       await api.auth.resend(email);
       showToast("Verification email sent");
-    } catch {
-      /* generic 200 either way; still confirm so the click isn't silent */
-      showToast("Verification email sent");
+    } catch (e) {
+      if (e instanceof ApiError && (e.code === "NETWORK" || e.code === "TIMEOUT")) {
+        showToast(
+          _authErrorMessage(e, "Couldn't reach the server. Check your connection and try again."),
+        );
+      } else {
+        /* auth-domain errors: generic 200 either way (anti-enumeration); still confirm so the click isn't silent */
+        showToast("Verification email sent");
+      }
     }
     if (btnId) _startResendCooldown(btnId);
   },
 
   async verifyFromLink(token) {
     AuthModal.open("verify-result");
+    const title = document.getElementById("auth-verify-result-title");
     const copy = document.getElementById("auth-verify-result-copy");
     const backBtn = document.getElementById("auth-verify-result-to-login");
     const resendForm = document.getElementById("auth-form-verify-result-resend");
     try {
       await api.auth.verify(token);
+      if (title) title.textContent = "Email verified";
       if (copy) copy.textContent = "Email verified! You can log in now.";
     } catch (e) {
+      if (title) title.textContent = "Verification failed";
       if (copy) {
         copy.textContent =
           e instanceof ApiError
             ? e.code === "INVALID_TOKEN"
               ? "This verification link is invalid or has expired."
-              : e.message
+              : _authErrorMessage(e, "This link is invalid or has expired.")
             : "This link is invalid or has expired.";
       }
       if (resendForm) resendForm.hidden = false;
@@ -427,7 +478,7 @@ const Auth = {
     } catch (e) {
       AuthModal._showError(
         "auth-forgot-error",
-        e instanceof ApiError ? e.message : "Couldn't send the reset link. Please try again.",
+        _authErrorMessage(e, "Couldn't send the reset link. Please try again."),
       );
     }
   },
@@ -455,7 +506,7 @@ const Auth = {
       AuthModal._showError(
         "auth-reset-error",
         e instanceof ApiError && e.code !== "INVALID_TOKEN"
-          ? e.message
+          ? _authErrorMessage(e, e.message)
           : "This reset link was already used or has expired. If you already reset your password, try logging in with your new password.",
       );
     }
@@ -496,11 +547,9 @@ const Auth = {
 
   _wireModalInputs() {
     const pw = document.getElementById("auth-reg-password");
-    const submit = document.getElementById("auth-reg-submit");
-    pw?.addEventListener("input", () => {
-      AuthModal._renderChecklist("auth-pw-checklist", pw.value);
-      if (submit) submit.disabled = !validatePassword(pw.value).valid;
-    });
+    pw?.addEventListener("input", () =>
+      AuthModal._syncPasswordChecklist("auth-reg-password", "auth-pw-checklist", "auth-reg-submit"),
+    );
     document.getElementById("auth-form-login")?.addEventListener("submit", (e) => {
       e.preventDefault();
       _withSubmitGuard("auth-login-submit", () =>
@@ -555,11 +604,13 @@ const Auth = {
     });
 
     const resetPw = document.getElementById("auth-reset-password");
-    const resetSubmit = document.getElementById("auth-reset-submit");
-    resetPw?.addEventListener("input", () => {
-      AuthModal._renderChecklist("auth-reset-pw-checklist", resetPw.value);
-      if (resetSubmit) resetSubmit.disabled = !validatePassword(resetPw.value).valid;
-    });
+    resetPw?.addEventListener("input", () =>
+      AuthModal._syncPasswordChecklist(
+        "auth-reset-password",
+        "auth-reset-pw-checklist",
+        "auth-reset-submit",
+      ),
+    );
     document.getElementById("auth-form-reset")?.addEventListener("submit", (e) => {
       e.preventDefault();
       _withSubmitGuard("auth-reset-submit", () =>

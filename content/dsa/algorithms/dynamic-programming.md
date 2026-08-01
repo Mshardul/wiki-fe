@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- [Recursion](./recursion.md) [Must read]
+- [<abbr>Recursion</abbr>](./recursion.md) [Must read]
 - [Backtracking](./backtracking.md) [Must read]
 - [Arrays](../data-structures/array.md) [Must read]
 - [DP Patterns](../patterns/dp-patterns.md)
@@ -12,7 +12,7 @@
 - [What it is](#what-it-is)
 - [Intuition](#intuition)
 - [How it works](#how-it-works)
-- [Correctness / invariant](#correctness--invariant)
+- [Correctness / <abbr>invariant</abbr>](#correctness--invariant)
 - [Complexity derivation](#complexity-derivation)
 - [Constraints & approach](#constraints--approach)
 - [When to use / when not](#when-to-use--when-not)
@@ -25,7 +25,7 @@
 
 ## What it is
 
-Dynamic programming solves a problem by **breaking it into overlapping subproblems, solving each subproblem exactly once, and reusing the stored answer** instead of recomputing it. It applies precisely when two properties hold together: **optimal substructure** (the optimal answer is built from optimal answers to subproblems) and **overlapping subproblems** (the same subproblem recurs many times in the naive recursion).
+<abbr>Dynamic programming</abbr> solves a problem by **breaking it into overlapping subproblems, solving each subproblem exactly once, and reusing the stored answer** instead of recomputing it. It applies precisely when two properties hold together: **optimal substructure** (the optimal answer is built from optimal answers to subproblems) and **overlapping subproblems** (the same subproblem recurs many times in the naive recursion).
 
 **Mental model:** a naive recursive solution is a tree that recomputes the same branches over and over; DP is that tree with a **memo pad clipped to it** - the first time you compute `f(state)` you write it down, and every later request reads the pad instead of re-descending. The exponential tree collapses into a polynomial-sized _graph_ of distinct states.
 
@@ -40,7 +40,7 @@ Plain recursion on a problem like "fewest coins to make amount `N`" recomputes `
 
 DP's insight is brutally simple: **if a subproblem's answer doesn't depend on _how_ you reached it, compute it once and remember it.** `f(amount)` is the same number regardless of which path of coin choices led there - so cache it on `amount`. The first call fills the cache; all repeats are free lookups.
 
-That's the whole idea. The two "flavors" (top-down memoization, bottom-up tabulation) are just _when_ you fill the cache - lazily on first request, or eagerly in dependency order - but both rest on the same fact: **a state's answer is path-independent, so it deserves to be computed exactly once.** If a problem _lacks_ that path-independence (the answer depends on the route taken, not just the state), DP does not apply - that's when you fall back to full search (backtracking).
+That's the whole idea. The two "flavors" (top-down <abbr>memoization</abbr>, bottom-up tabulation) are just _when_ you fill the cache - lazily on first request, or eagerly in dependency order - but both rest on the same fact: **a state's answer is path-independent, so it deserves to be computed exactly once.** If a problem _lacks_ that path-independence (the answer depends on the route taken, not just the state), DP does not apply - that's when you fall back to full search (backtracking).
 
 ## How it works
 
@@ -120,7 +120,7 @@ DP's home is the **mid-range** - too big for exhaustive search, with structure (
 
 **Prefer an alternative when:**
 
-- A **provably correct greedy choice** exists → **[greedy](./greedy.md)**, `O(n log n)` and `O(1)` space. DP explores all choices; greedy commits to the locally best one. Use greedy only when an exchange argument proves the local choice is globally safe (coin change with _canonical_ denominations is greedy; arbitrary denominations need DP - that's the classic trap).
+- A **provably correct <abbr>greedy</abbr> choice** exists → **[greedy](./greedy.md)**, `O(n log n)` and `O(1)` space. DP explores all choices; greedy commits to the locally best one. Use greedy only when an exchange argument proves the local choice is globally safe (coin change with _canonical_ denominations is greedy; arbitrary denominations need DP - that's the classic trap).
 - The problem wants **all configurations**, not an optimum/count → **[backtracking](./backtracking.md)**. DP collapses the tree by forgetting _how_ you reached a state; if you must report each full configuration, you can't forget the path.
 - Subproblems **don't overlap** (every recursive branch is distinct) → plain divide-and-conquer / recursion; a memo would never hit, just wasting space.
 - The state dependency graph has a **cycle** → DP's fill order can't exist; you need fixed-point iteration (Bellman-Ford-style relaxation) instead.
@@ -242,7 +242,7 @@ The pseudocode is a contract (`for a ← 1 to amount`, `▷ relax`, explicit `�
 
 ## What the interviewer probes for
 
-- **"Memoization or tabulation - which, and why?"** - Same complexity; pick by constraints. Tabulation when recursion depth would overflow the stack or you want to roll space to `O(row)`; memoization when the state space is sparse (many states unreachable) or the recurrence is far easier to express top-down. Lead with "they're equivalent in big-O" then name the deciding factor.
+- **"Memoization or tabulation - which, and why?"** - Same complexity; pick by constraints. Tabulation when recursion depth would overflow the stack or you want to roll space to `O(row)`; memoization when the state space is sparse (many states unreachable) or the recurrence is far easier to express top-down. Lead with "they're equivalent in <abbr>big-O</abbr>" then name the deciding factor.
 - **"Can you reduce the space?"** - Yes, whenever `dp[i]` depends only on a bounded window of previous rows. Fibonacci → two variables, Knapsack → one row (iterate backward for 0/1), 2D grid where row `i` needs only row `i-1` → two rows. State the dependency window, then keep only that.
 - **"Why is greedy wrong here?"** - Greedy commits to a locally optimal coin/choice and can't undo it; for arbitrary coin denominations (`[1,3,4]`, amount 6) greedy takes `4+1+1=3` coins but the optimum is `3+3=2`. DP is needed precisely because no safe local choice exists - give the concrete counterexample.
 - **"This DP is `O(n·W)` - is that polynomial?"** - No, it's _pseudo_-polynomial: `W` is a numeric value needing `log W` bits, so the runtime is exponential in input size. That's why knapsack is NP-hard. Flag this whenever a value (not a count) is a table dimension.

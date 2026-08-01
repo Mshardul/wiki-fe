@@ -128,6 +128,27 @@ def test_changelog_filename_unknown_in_index_renders_plain(page, base_url):
     assert any("unknown-file.md" in t for t in texts)
 
 
+def test_changelog_entry_without_backtick_filename_still_renders(page, base_url):
+    """505: Filename-less changelog notes render as plain text, not silently dropped."""
+    md = """\
+# Content Changelog
+
+## 2026-08-01
+- General maintenance note with no file reference
+- `message-queues.md` - expanded: "Delivery"
+"""
+    _stub_search_index(page)
+    _stub_changelog(page, md)
+    _open_changelog(page, base_url)
+    page.wait_for_selector(".changelog-entry", timeout=5_000)
+
+    texts = page.locator(".changelog-entry").all_inner_texts()
+    assert any("General maintenance note" in t for t in texts), (
+        f"Filename-less entry missing from changelog view: {texts}"
+    )
+    assert len(texts) == 2
+
+
 def test_changelog_link_click_navigates_to_article(page, base_url):
     _stub_search_index(page)
     _stub_changelog(page, CHANGELOG_MD)

@@ -42,6 +42,7 @@ function bindZoomGestures(overlay) {
   let panning = false;
   let lastTap = 0;
   let singleTouchStart = false;
+  let pinchOccurred = false;
 
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -75,6 +76,10 @@ function bindZoomGestures(overlay) {
         startDist = dist(e.touches);
         startScale = scale;
         singleTouchStart = false;
+        pinchOccurred = true;
+        // Drop stale 1-finger coords so pinch-release can't swipe-dismiss.
+        startX = 0;
+        startY = 0;
       } else if (e.touches.length === 1) {
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
@@ -82,6 +87,7 @@ function bindZoomGestures(overlay) {
         startTy = ty;
         panning = scale > 1;
         singleTouchStart = true;
+        pinchOccurred = false;
       }
     },
     { passive: true },
@@ -135,13 +141,14 @@ function bindZoomGestures(overlay) {
         lastTap = now;
       }
 
-      if (scale <= 1 && e.changedTouches.length === 1 && singleTouchStart) {
+      if (scale <= 1 && e.changedTouches.length === 1 && singleTouchStart && !pinchOccurred) {
         const dy = e.changedTouches[0].clientY - startY;
         const dx = e.changedTouches[0].clientX - startX;
         if (dy > 80 && Math.abs(dx) < dy) closeZoomOverlay();
       }
       panning = false;
       singleTouchStart = false;
+      if (e.touches.length === 0) pinchOccurred = false;
     },
     { passive: true },
   );

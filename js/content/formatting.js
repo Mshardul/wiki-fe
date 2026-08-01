@@ -184,9 +184,11 @@ const VAR_MAP = {
 };
 
 function _substituteLatex(latex) {
+  // Keep `\command` words intact so a glued VAR_MAP letter (e.g. `\sinn`) isn't mistokenized.
   return latex.replace(
-    /(?<!\\)(?<![a-zA-Zα-ωΑ-Ω])([a-zA-Zα-ωΑ-Ω])(?=[^a-zA-Zα-ωΑ-Ω_{]|$)/gu,
+    /\\[a-zA-Z]+|(?<!\\)(?<![a-zA-Zα-ωΑ-Ω])([a-zA-Zα-ωΑ-Ω])(?=[^a-zA-Zα-ωΑ-Ω_{]|$)/gu,
     (match) => {
+      if (match.startsWith("\\")) return match;
       return VAR_MAP[match] ? `\\text{${VAR_MAP[match]}}` : match;
     },
   );

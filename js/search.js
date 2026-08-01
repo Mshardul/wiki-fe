@@ -1,7 +1,8 @@
 import { QuizMode } from "./content/tables.js";
 import { createFocusTrap, registerModal } from "./modal-registry.js";
 import { getCurrentRenderGen, navigateToContent } from "./render/content-view.js";
-import { IndexFilter, buildSearchEntriesForWiki } from "./render/home-index.js";
+import { IndexFilter } from "./render/home-index.js";
+import { buildSearchEntriesForWiki } from "./render/home-parse.js";
 import { navigate } from "./render/router.js";
 import { showToast } from "./render/toast.js";
 import {

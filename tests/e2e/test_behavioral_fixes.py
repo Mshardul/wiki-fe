@@ -301,65 +301,27 @@ def test_scroll_position_stable_after_revisit(page, base_url):
 # ── Hover preview improvements ────────────────────────────────────
 
 
-def test_hover_preview_filters_prerequisites_from_fallback(page, base_url):
-    """fallback preview skips paragraphs starting with 'Prerequisites:'."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-
-    page.route(
-        "**/prereq-linked.md",
-        lambda r: r.fulfill(
-            body=(
-                "# Linked\n\n"
-                "Prerequisites:[Something](./x.md)\n\n"
-                "This is the real content paragraph.\n"
-            )
-        ),
-    )
-    page.route(
-        "**/prereq-host.md",
-        lambda r: r.fulfill(body="# Host\n\n[Link](./prereq-linked.md)"),
-    )
-    page.evaluate(
-        """() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/prereq-host.md'),
-        encodeURIComponent('Host'),
-        'prereq-host'
-    )"""
-    )
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-    page.wait_for_selector("a:has-text('Link')", timeout=5_000)
-
-    page.locator("a:has-text('Link')").dispatch_event("mouseenter")
-    page.wait_for_selector("#hover-preview.visible", timeout=5_000)
-
-    preview_text = page.locator("#hover-preview").inner_text()
-    assert "Prerequisites:" not in preview_text, (
-        "Preview should skip the Prerequisites: metadata paragraph"
-    )
-    assert "real content" in preview_text
-
-
 def test_hover_preview_hidden_after_mouseleave_during_fetch(page, base_url):
-    """mouseleave during slow fetch hides preview; stale content not shown."""
+    """mouseleave during slow summaries.json fetch hides preview; stale content not shown."""
+    import json
     import threading
 
     ready = threading.Event()
 
     def slow_handler(route):
         ready.wait(timeout=2.0)
-        route.fulfill(body="# L\n\n## TL;DR\n\nStale content that must not appear.\n")
+        route.fulfill(
+            content_type="application/json",
+            body=json.dumps(
+                {"content/system-design/slow-link.md": "Stale content that must not appear."}
+            ),
+        )
 
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
     page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-    page.route("**/slow-link.md", slow_handler)
+    page.route("**/data/summaries.json", slow_handler)
+    page.route("**/slow-link.md", lambda r: r.fulfill(body="# L\n\nBody."))
     page.route(
         "**/abort-host.md",
         lambda r: r.fulfill(body="# Host\n\n[Link](./slow-link.md)"),
@@ -408,6 +370,8 @@ def test_hover_preview_hidden_after_mouseleave_during_fetch(page, base_url):
 
 def test_hover_preview_left_clamped_near_right_edge(page, base_url):
     """preview left is clamped to >= 8px when viewport is narrower than preview."""
+    import json
+
     # 320px viewport is narrower than the 340px preview; clamping always fires
     page.set_viewport_size({"width": 320, "height": 800})
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
@@ -415,8 +379,11 @@ def test_hover_preview_left_clamped_near_right_edge(page, base_url):
     page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
 
     page.route(
-        "**/right-linked.md",
-        lambda r: r.fulfill(body="# L\n\n## TL;DR\n\nContent.\n"),
+        "**/data/summaries.json",
+        lambda r: r.fulfill(
+            content_type="application/json",
+            body=json.dumps({"content/system-design/right-linked.md": "Content."}),
+        ),
     )
     page.route(
         "**/right-host.md",

@@ -4,7 +4,7 @@
 
 - **TCP/IP & OSI Model** - understand the difference between L4 (transport: TCP/UDP) and L7 (application: HTTP). Load balancers operate at one of these layers, and the choice determines what they can inspect and act on.
 - **HTTP/1.1 vs HTTP/2** - connection semantics differ: HTTP/1.1 uses one request per connection (or pipelined), HTTP/2 multiplexes multiple streams over one TCP connection. This affects how LBs manage keep-alive and backend connections.
-- **[DNS](./dns.md)** - DNS-based load balancing is a distinct pattern; understanding TTL is critical to grasping why DNS LB has slow failover.
+- **[DNS](./dns.md)** - DNS-based <abbr>load balancing</abbr> is a distinct pattern; understanding TTL is critical to grasping why DNS LB has slow failover.
 - **Server Concurrency Models** - thread-per-request vs async I/O models affect how backends handle connection load, which impacts LB algorithm selection.
 
 ---
@@ -32,7 +32,7 @@
 
 ## TLDR
 
-A load balancer sits between clients and a pool of servers, distributing incoming requests to prevent any single server from becoming a bottleneck. At L4, it routes based on IP and TCP/UDP headers without inspecting application data; at L7, it can make routing decisions based on HTTP headers, URLs, and cookies. The core trade-off is between simplicity and control: L4 is faster with lower overhead, L7 is more powerful but adds latency and complexity. In production, load balancers are almost always deployed in HA pairs with floating IPs to eliminate themselves as a single point of failure.
+A load balancer sits between clients and a pool of servers, distributing incoming requests to prevent any single server from becoming a bottleneck. At L4, it routes based on IP and TCP/UDP headers without inspecting application data; at L7, it can make routing decisions based on HTTP headers, URLs, and cookies. The core trade-off is between simplicity and control: L4 is faster with lower overhead, L7 is more powerful but adds <abbr>latency</abbr> and complexity. In production, load balancers are almost always deployed in HA pairs with floating IPs to eliminate themselves as a single point of failure.
 
 ---
 
@@ -141,7 +141,7 @@ L7 Flow:  Client ──TCP──▶ LB (parses HTTP) ──TCP──▶ Backend 
 > When an interviewer asks "how would you design a load balancer for this system?", the first question to ask yourself: _do I need to make routing decisions based on request content?_ If yes → L7. If you just need to distribute TCP connections cheaply → L4. Most modern web systems need L7 for SSL termination and URL-based routing alone.
 
 > 🎯 **Interview Lens** > **Q:** When would you choose L4 over L7?
-> **Ideal answer:** L4 when you need raw throughput and low latency (gaming servers, financial tick data, large file transfers), when you cannot or don't need to inspect application payload, or when you want to avoid the overhead of terminating SSL at the LB. L7 for any HTTP-based routing, SSL offload, or content-based decisions.
+> **Ideal answer:** L4 when you need raw <abbr>throughput</abbr> and low latency (gaming servers, financial tick data, large file transfers), when you cannot or don't need to inspect application payload, or when you want to avoid the overhead of terminating SSL at the LB. L7 for any HTTP-based routing, SSL offload, or content-based decisions.
 > **Common trap:** Candidates say "L7 is always better because it's smarter." The right answer acknowledges the latency and complexity cost of two TCP handshakes per request.
 > **Follow-up pivot:** "What if the traffic is gRPC?" → gRPC runs over HTTP/2, so you need an L7 LB that understands HTTP/2 framing to properly load balance individual RPC calls, not just TCP connections.
 > **Next question:** "Your system has both gRPC microservices and HTTP/1.1 REST APIs - one LB or two?" → One L7 LB that routes by protocol/path: gRPC traffic (Content-Type: application/grpc) goes to one backend pool, REST to another. Avoids operational complexity of two separate LBs.
@@ -207,7 +207,7 @@ In practice, the line is blurred. nginx is both a reverse proxy and an LB. Envoy
 
 ## Traffic Distribution Algorithms
 
-**Interviewer TL;DR:** Round Robin for uniform workloads; Least Connections for variable ones; Consistent Hashing when backend affinity and pool stability both matter.
+**Interviewer TL;DR:** Round Robin for uniform workloads; Least Connections for variable ones; <abbr>Consistent Hashing</abbr> when backend affinity and pool stability both matter.
 
 **Mental model:** The algorithm answers one question: _given N healthy backends, which one gets this request?_ The right answer depends on whether your requests are uniform (same cost) or variable (some are cheap, some are expensive).
 
@@ -655,7 +655,7 @@ When a backend hits its limit, the LB queues or rejects new requests to that bac
 
 **The problem:** All backends are at capacity simultaneously - connection pools full, CPU pegged. The LB has nowhere to route new requests. Without a deliberate strategy, it either queues indefinitely (memory exhaustion) or drops connections silently (worse than an explicit error).
 
-**Backpressure:** Signal upstream that the system is at capacity, so the caller can slow down. At the LB level this means: stop accepting new connections from clients, or return explicit 503s, rather than queuing indefinitely.
+**<abbr>Backpressure</abbr>:** Signal upstream that the system is at capacity, so the caller can slow down. At the LB level this means: stop accepting new connections from clients, or return explicit 503s, rather than queuing indefinitely.
 
 **Load shedding:** Actively discard a portion of incoming traffic to protect the system from total collapse. The key insight: serving 70% of requests correctly is better than serving 100% of requests slowly and failing.
 
@@ -911,7 +911,7 @@ LB access logs are the ground truth. Key fields:
 
 **Fix:** TLS session resumption (clients reuse session tickets → no full handshake). ECDHE cipher suites (faster than RSA). Prefer TLS 1.3 (fewer round trips). Hardware TLS acceleration. Scale out LB instances horizontally.
 
-**TLS 1.3 0-RTT (Early Data):** TLS 1.3 introduces 0-RTT resumption - a returning client can send application data in the very first packet, with zero additional round trips. This is the maximum CPU saving on resumption. However, 0-RTT data is **replayable** - an attacker who captures the first packet can replay it to trigger the same server action again. This makes 0-RTT unsafe for any non-idempotent request (POST, payment submissions, state-changing API calls). Only enable 0-RTT for genuinely idempotent, replay-safe endpoints (e.g., GET requests for public content). Most LBs allow 0-RTT to be configured per-route.
+**TLS 1.3 0-RTT (Early Data):** TLS 1.3 introduces 0-RTT resumption - a returning client can send application data in the very first packet, with zero additional round trips. This is the maximum CPU saving on resumption. However, 0-RTT data is **replayable** - an attacker who captures the first packet can replay it to trigger the same server action again. This makes 0-RTT unsafe for any non-<abbr>idempotent</abbr> request (POST, payment submissions, state-changing API calls). Only enable 0-RTT for genuinely idempotent, replay-safe endpoints (e.g., GET requests for public content). Most LBs allow 0-RTT to be configured per-route.
 
 > **⚠️ Common Traps & How to Recover**
 >

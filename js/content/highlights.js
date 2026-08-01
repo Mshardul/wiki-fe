@@ -127,9 +127,22 @@ function _positionToolbar(bar, rect) {
   bar.style.left = `${left}px`;
 }
 
+function _selectionInCode(range) {
+  const node = range.commonAncestorContainer;
+  const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+  return !!el?.closest("pre, code");
+}
+
 function _showToolbar(range) {
   _activeRange = range.cloneRange();
   const bar = _getToolbar();
+  const inCode = _selectionInCode(range);
+  bar.querySelectorAll(".highlight-toolbar-btn--emoji").forEach((btn) => {
+    btn.hidden = inCode;
+  });
+  // First divider sits between highlight and emoji cluster.
+  const emojiDivider = bar.querySelector(".highlight-toolbar-divider");
+  if (emojiDivider) emojiDivider.hidden = inCode;
   const rect = range.getBoundingClientRect();
   bar.classList.remove("hidden");
   _positionToolbar(bar, rect);
@@ -220,6 +233,8 @@ function _createHighlight(range) {
 function _createMarker(range, emoji) {
   const contentEl = document.getElementById("markdown-body");
   if (!contentEl) return;
+  // Markers splice into the text stream - never inside code.
+  if (_selectionInCode(range)) return;
 
   const offset = _globalOffset(contentEl, range.startContainer, range.startOffset);
   if (offset < 0) return;
@@ -237,15 +252,19 @@ function _createMarker(range, emoji) {
 }
 
 function _insertMarkerBadge(node, localOffset, entry) {
+  // Skip stored markers whose offset now lands inside a code block.
+  if (node.parentElement?.closest("pre, code")) return;
+
   const badge = document.createElement("span");
   badge.className = "wiki-marker";
   badge.dataset.markerId = entry.id;
+  badge.dataset.emoji = entry.emoji;
   badge.tabIndex = 0;
   badge.setAttribute("role", "button");
-  badge.setAttribute(
-    "aria-label",
-    `${MARKER_LABELS[entry.emoji] || "marker"} note - activate to remove`,
-  );
+  const label = MARKER_LABELS[entry.emoji] || "marker";
+  badge.setAttribute("aria-label", `${label} note - activate to remove`);
+  badge.title = label;
+  // textContent keeps emoji for a11y/persist; CSS collapses glyph layout.
   badge.textContent = entry.emoji;
 
   if (localOffset <= 0) {

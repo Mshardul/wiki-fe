@@ -32,7 +32,8 @@ function parseChangelog(markdown) {
 
     const text = entryMatch[1];
     const filenames = [...text.matchAll(FILENAME_RE)].map((m) => m[1]);
-    if (filenames.length) current.entries.push({ text, filenames });
+    // Filename-less notes still render (not silently dropped).
+    current.entries.push({ text, filenames });
   }
 
   return groups;

@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- **<abbr>Big-O</abbr> Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
 - [String](./string.md) [Must read]
 - [Hash Table](./hash-table.md) [Should read]
 
@@ -17,11 +17,11 @@
 - [When to use / when not](#when-to-use--when-not)
 - [Comparison](#comparison)
 - [Variants](#variants)
-- [Traversal & invariant](#traversal--invariant)
+- [Traversal & <abbr>invariant</abbr>](#traversal--invariant)
 - [Implementation](#implementation)
 - [CP-primitives](#cp-primitives)
   - [Prefix-count augmentation](#prefix-count-augmentation)
-  - [Bitwise trie for max-XOR](#bitwise-trie-for-max-xor)
+  - [Bitwise <abbr>trie</abbr> for max-XOR](#bitwise-trie-for-max-xor)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [Practice problems](#practice-problems)
   - [Implement a Trie](#1-implement-a-trie--insert-search-startswith)
@@ -34,7 +34,7 @@
 
 A **trie** (prefix tree) is a tree that stores strings by their **characters**, one character per edge, so that all words sharing a prefix share the same path from the root - making lookup, insert, and prefix queries O(L) in the key's length, independent of how many keys are stored.
 
-Mental model: **a shared-path dictionary, like a phone-tree menu.** To find "cat" you walk root → c → a → t; "car" shares the first two steps and branches at the third. Common prefixes are stored **once**, and "does any word start with 'ca'?" is just "can I walk the path c → a?" - the operation a [hash table](./hash-table.md) can't do, because hashing destroys prefix structure.
+Mental model: **a shared-path dictionary, like a phone-tree menu.** To find "cat" you walk root → c → a → t; "car" shares the first two steps and branches at the third. Common prefixes are stored **once**, and "does any word start with 'ca'?" is just "can I walk the path c → a?" - the operation a [hash table](./hash-table.md) can't do, because <abbr>hashing</abbr> destroys prefix structure.
 
 > **Takeaway (say this out loud):** "A trie stores strings character-by-character down a tree, so shared prefixes share a path - giving O(L) lookup and, uniquely, O(L) prefix queries that a hash map can't do."
 

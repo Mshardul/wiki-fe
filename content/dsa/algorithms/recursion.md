@@ -12,7 +12,7 @@
 - [What it is](#what-it-is)
 - [Intuition](#intuition)
 - [How it works](#how-it-works)
-- [Correctness / invariant](#correctness--invariant)
+- [Correctness / <abbr>invariant</abbr>](#correctness--invariant)
 - [Complexity derivation](#complexity-derivation)
 - [Constraints \& approach](#constraints--approach)
 - [When to use / when not](#when-to-use--when-not)
@@ -32,7 +32,7 @@
 
 ## What it is
 
-**Recursion** is a function that solves a problem by calling itself on a smaller version of the same problem, until it reaches a **base case** small enough to answer directly - then the answers combine back up.
+**<abbr>Recursion</abbr>** is a function that solves a problem by calling itself on a smaller version of the same problem, until it reaches a **base case** small enough to answer directly - then the answers combine back up.
 
 **Mental model:** Russian nesting dolls. You can't open the outermost doll and see the answer - you have to open it, find a smaller doll inside, open that one too, and so on until you hit the smallest doll (the base case) that opens directly. Then you close them back up in reverse order, and each shell adds its own bit of work on the way back out.
 
@@ -166,7 +166,7 @@ The critical thing this table encodes that a plain "count operations" table miss
 
 Use recursion when the problem has a **natural self-similar decomposition** - the answer for `n` is expressible in terms of the answer for a strictly smaller version of the same problem (tree traversals, divide-and-conquer, backtracking's state-space exploration, anything defined by a mathematical recurrence). It's also the natural fit whenever the underlying data is itself recursively structured - trees, nested lists, recursive grammars - because the code structure mirrors the data structure.
 
-Don't reach for recursion over **iteration** when: the recursion is a simple linear chain with no branching and no need to "return up" (a plain accumulator loop does the same job with O(1) space instead of O(n)); the recursion depth could exceed the language's stack limit for realistic inputs; or the overhead of function-call setup (parameter passing, stack frame allocation) matters in a tight inner loop where a loop is just as readable. The alternative to name explicitly: **iteration with an explicit stack/queue** replicates any recursive algorithm's control flow while keeping memory on the heap (which can grow far larger than a call stack) instead of the call stack.
+Don't reach for recursion over **iteration** when: the recursion is a simple linear chain with no branching and no need to "return up" (a plain accumulator loop does the same job with O(1) space instead of O(n)); the recursion depth could exceed the language's stack limit for realistic inputs; or the overhead of function-call setup (parameter passing, stack frame allocation) matters in a tight inner loop where a loop is just as readable. The alternative to name explicitly: **iteration with an explicit stack/queue** replicates any recursive algorithm's control flow while keeping memory on the <abbr>heap</abbr> (which can grow far larger than a call stack) instead of the call stack.
 
 **Real-world usage:** compilers and interpreters use recursive-descent parsing to parse nested grammar (an expression inside parentheses inside an expression) - the grammar's recursive structure maps directly onto function-call recursion. **At-scale failure:** deeply nested or maliciously crafted input (e.g. a JSON payload with 100,000 nested arrays) can crash a recursive-descent parser with a stack overflow long before it becomes slow - production parsers cap nesting depth or convert to an explicit-stack iterative parser specifically to avoid this.
 
@@ -192,10 +192,10 @@ Don't reach for recursion over **iteration** when: the recursion is a simple lin
 
 **Memo vs. tabulation (when subproblems overlap):** if the same state is reached via multiple call paths (classic case: naive Fibonacci calls `fib(n-2)` from both `fib(n-1)` and directly from `fib(n)`, so `fib(n-2)` gets computed twice, `fib(n-3)` four times, and so on - the call tree has O(2ⁿ) nodes but only O(n) *distinct* states), two fixes exist:
 
-- **Memoization (top-down):** keep recursion's natural call structure, but cache `state → answer` in a dict/array; before recursing, check the cache. Turns the O(2ⁿ) call tree into an O(n) DAG of distinct states, each computed once.
+- **<abbr>Memoization</abbr> (top-down):** keep recursion's natural call structure, but cache `state → answer` in a dict/array; before recursing, check the cache. Turns the O(2ⁿ) call tree into an O(n) DAG of distinct states, each computed once.
 - **Tabulation (bottom-up):** replace recursion entirely with an explicit loop that fills a table from the base case upward, in dependency order. Same asymptotic improvement, but avoids call-stack depth entirely - relevant when `n` is large enough that even the memoized recursive version would overflow the stack.
 
-The trade-off: memoization keeps the code structurally closer to the natural recursive definition (often easier to write correctly first), while tabulation avoids recursion's O(depth) stack cost and is usually faster in practice due to lower per-call overhead. See [Dynamic Programming](./dynamic-programming.md) for the full treatment.
+The trade-off: memoization keeps the code structurally closer to the natural recursive definition (often easier to write correctly first), while tabulation avoids recursion's O(depth) stack cost and is usually faster in practice due to lower per-call overhead. See [<abbr>Dynamic Programming</abbr>](./dynamic-programming.md) for the full treatment.
 
 **State-space size:** the total number of *distinct* states the recursion can reach bounds the work when memoized - e.g. Fibonacci has O(n) distinct states (just the integers 0..n), so memoized Fibonacci is O(n) time and space; a recursion over "subsets of an n-element set" has O(2ⁿ) distinct states, so memoization doesn't rescue it from exponential blowup the way it does for Fibonacci. Recognizing the state-space size *before* writing the recursion tells you up front whether memoization will help or whether the problem is inherently exponential.
 

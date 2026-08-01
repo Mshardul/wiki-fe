@@ -125,3 +125,14 @@ jobs:
         run: |
           pip install jsonschema
           python3 scripts/validate_bridges.py
+
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Semgrep scan
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/javascript

@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- **<abbr>Big-O</abbr> Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
 - [Array](./array.md) [Must read]
 - [Dynamic Array](./dynamic-array.md) [Should read]
 
@@ -17,12 +17,12 @@
 - [When to use / when not](#when-to-use--when-not)
 - [Comparison](#comparison)
 - [Variants](#variants)
-- [Traversal & invariant](#traversal--invariant)
+- [Traversal & <abbr>invariant</abbr>](#traversal--invariant)
 - [Implementation](#implementation)
 - [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [Practice problems](#practice-problems)
-  - [Kth Largest Element in a Stream](#1-kth-largest-element-in-a-stream--bounded-min-heap)
+  - [Kth Largest Element in a Stream](#1-kth-largest-element-in-a-stream--bounded-min-<abbr>heap</abbr>)
   - [Top K Frequent Elements](#2-top-k-frequent-elements--heap-of-size-k)
   - [Merge K Sorted Lists](#3-merge-k-sorted-lists-lc-23---k-way-merge-with-a-heap)
   - [Find Median from Data Stream](#4-find-median-from-data-stream--two-heaps)
@@ -123,7 +123,7 @@ The heap's niche is the **insert + extract-extreme** combo: a sorted array peeks
 - **Min-heap vs max-heap** - the comparison direction; everything else is identical. Python's `heapq` is a min-heap; for a max-heap, negate keys or store `(-key, value)`.
 - **d-ary heap** - each node has `d` children instead of 2. Shallower tree (`log_d n` height) → faster `decrease-key` (fewer levels to sift up), slower `pop` (compare `d` children per level). Used to tune Dijkstra on dense graphs.
 - **Binary heap on an array** - the standard, covered here. The flat-array layout (no pointers) is itself the "variant" that makes heaps cache-friendly and memory-light versus a pointer-based tree.
-- **Fibonacci heap** - O(1) amortized `decrease-key` and `insert`, O(log n) `extract-min`; improves Dijkstra/Prim to O(E + V log V) in theory. Complex constants make it mostly theoretical - named because interviewers ask "can you do better than binary-heap Dijkstra?"
+- **Fibonacci heap** - O(1) <abbr>amortized</abbr> `decrease-key` and `insert`, O(log n) `extract-min`; improves Dijkstra/Prim to O(E + V log V) in theory. Complex constants make it mostly theoretical - named because interviewers ask "can you do better than binary-heap Dijkstra?"
 - **Indexed / addressable heap** - keeps a map from element → its array index so you can `decrease-key` or delete an _arbitrary_ element in O(log n). Required for a correct, efficient Dijkstra; the plain heap can't locate an element to update it.
 
 ## Traversal & invariant
@@ -389,7 +389,7 @@ An `n × n` grid where `grid[r][c]` is the elevation of that cell. Starting at `
 
 **Constraints:** `1 ≤ n ≤ 50`, `grid[r][c]` is a permutation of `[0, n² - 1]`.
 
-**Approach:** This is the coverage gap the article's own prose names explicitly - the heap as "the priority queue of frontier nodes" behind Dijkstra - but no entry above exercises it; all four are top-K/merge/median uses, not shortest-path. Reframe the grid as an implicit weighted graph where the "cost" to enter a cell is its elevation, and the "distance" to minimize along a path is the **maximum** elevation seen so far (not a sum - the water has to reach every cell on the path, so the bottleneck cell decides the answer). Run Dijkstra with a min-heap keyed on that running max: always expand the frontier cell reachable at the lowest current bottleneck, relax neighbors by `max(current_bottleneck, neighbor_elevation)`. This is the same greedy frontier-expansion discipline as sum-based Dijkstra, just with `max` swapped in for `+` in the relax step.
+**Approach:** This is the coverage gap the article's own prose names explicitly - the heap as "the priority queue of frontier nodes" behind Dijkstra - but no entry above exercises it; all four are top-K/merge/median uses, not shortest-path. Reframe the grid as an implicit weighted graph where the "cost" to enter a cell is its elevation, and the "distance" to minimize along a path is the **maximum** elevation seen so far (not a sum - the water has to reach every cell on the path, so the bottleneck cell decides the answer). Run Dijkstra with a min-heap keyed on that running max: always expand the frontier cell reachable at the lowest current bottleneck, relax neighbors by `max(current_bottleneck, neighbor_elevation)`. This is the same <abbr>greedy</abbr> frontier-expansion discipline as sum-based Dijkstra, just with `max` swapped in for `+` in the relax step.
 
 ```python
 import heapq

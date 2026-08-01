@@ -14,20 +14,46 @@
 
 /* ═══════════════════════════════════════════════
    INLINE EMOJI MARKERS
+   Narrow accent tick; emoji on data-emoji, hover-reveal.
    ═══════════════════════════════════════════════ */
 .wiki-marker {
   display: inline-block;
-  cursor: pointer;
-  font-size: 0.85em;
-  line-height: 1;
+  position: relative;
+  width: 3px;
+  height: 12px;
   margin: 0 1px;
-  vertical-align: middle;
-  border-radius: var(--r-full);
-  transition: transform var(--t-fast);
+  padding: 0;
+  vertical-align: text-top;
+  cursor: pointer;
+  font-size: 0;
+  line-height: 0;
+  color: transparent;
+  background: var(--accent);
+  border-radius: 1px;
+  opacity: 0.55;
+  overflow: visible;
+  transition: opacity var(--t-fast), transform var(--t-fast);
+}
+.wiki-marker::after {
+  content: attr(data-emoji);
+  position: absolute;
+  left: 5px;
+  top: -1.1em;
+  font-size: var(--text-sm);
+  line-height: 1;
+  color: var(--text-body);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-fast);
 }
 .wiki-marker:hover,
 .wiki-marker:focus-visible {
-  transform: scale(1.25);
+  opacity: 1;
+  transform: scaleY(1.15);
+}
+.wiki-marker:hover::after,
+.wiki-marker:focus-visible::after {
+  opacity: 1;
 }
 
 /* ═══════════════════════════════════════════════

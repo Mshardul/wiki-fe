@@ -102,6 +102,7 @@ Do this before any file reads or skill invocations - every session:
 | `search-features.js` | Search snippet extraction, recent-searches list, synonym cache use                                                                    |
 | `icon-sprite.js`   | Loads and inlines `sprite.svg` for the Tabler icon system                                                                              |
 | `toc-companion.js` | Standalone script for the sidecar TOC popup window (`toc-companion.html`) - receives BroadcastChannel payloads, renders nav, click-to-scroll |
+| `modal-registry.js` | Shared focus-trap + open-state tracking helpers reused by modal controllers (search, auth, bookmarks, wiki-switcher, etc.) |
 
 **Never read every file in a domain folder** (`content/`, `render/`, `storage/`, `app/`) - the subtables below say exactly which file owns which behavior.
 
@@ -138,13 +139,17 @@ Do this before any file reads or skill invocations - every session:
 | `freeze-frame.js`     | Exports a text selection as a shareable image card                                   |
 | `structure-viz.js`    | Inline ` ```viz ` fenced-block renderer for data-structure diagrams (bst, array, etc.) |
 | `video-embed.js`      | Converts bare YouTube/Vimeo URLs on their own line into a responsive iframe embed     |
+| `practice-toggle.js`  | Wraps DSA "Approach/Complexity" answer blocks into a collapsed reveal-on-click toggle |
+| `section-wrap.js`     | Wraps flat markdown-derived siblings under a heading into nested containers for downstream features |
 
 #### `js/render/`
 
 | File                   | Owns                                                                            |
 | ---------------------- | ------------------------------------------------------------------------------------ |
 | `router.js`            | Hash router (`navigate`/`route`), view switching, slug resolution                    |
-| `home-index.js`        | Home grid, wiki index sections, card filter/swipe/hover, article counts              |
+| `home-index.js`        | Home grid, wiki index sections render/controls, card filter/hover, key nav              |
+| `home-gestures.js`     | Index-card swipe (bookmark/read toggle), pull-to-refresh, index refresh                |
+| `home-parse.js`        | `index.md` parser, shared index-fetch cache, article counts, ⌘K search-entry builder    |
 | `content-view.js`      | Content render pipeline: fetch → parse → post-process → wire links/hover-preview      |
 | `related-articles.js` | Related-article ranking + rendering, backlink spine ("Mentioned by" panel)            |
 | `changelog-view.js`   | `#changelog` view: parses `content/CHANGELOG.md`, date-grouped entries, filename filter, filename→article resolution via search index |

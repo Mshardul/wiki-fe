@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- **<abbr>Big-O</abbr> Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
 - [Array](./array.md) [Must read]
 - [Linked List](./linked-list.md) [Should read]
 
@@ -17,7 +17,7 @@
 - [When to use / when not](#when-to-use--when-not)
 - [Comparison](#comparison)
 - [Variants](#variants)
-- [Hashing & collisions](#hashing--collisions)
+- [<abbr>Hashing</abbr> & collisions](#hashing--collisions)
   - [The hash function](#the-hash-function)
   - [Collisions are inevitable](#collisions-are-inevitable)
   - [Chaining](#chaining)
@@ -40,7 +40,7 @@
 
 A **hash table** maps keys to values by running each key through a **hash function** that computes an array index, so lookup, insert, and delete are **O(1) on average** - no search, just compute-where-it-goes and jump there.
 
-Mental model: **a coat check.** You hand over a coat (the key); the attendant runs a rule on it (the hash function) to pick a numbered hook (the bucket), and hangs it there. To get it back, the same rule recomputes the same hook - no walking the racks. Two coats can hash to the same hook (a **collision**); the table needs a plan for that, and that plan is what separates a toy from a real hash table.
+Mental model: **a coat check.** You hand over a coat (the key); the attendant runs a rule on it (the hash function) to pick a numbered hook (the bucket), and hangs it there. To get it back, the same rule recomputes the same hook - no walking the racks. Two coats can hash to the same hook (a **<abbr>collision</abbr>**); the table needs a plan for that, and that plan is what separates a toy from a real hash table.
 
 > **Takeaway (say this out loud):** "A hash table turns a key into an array index via a hash function, giving O(1) average lookup - the catch is collisions and the resize that keeps them rare."
 
@@ -93,13 +93,13 @@ Worst case is O(n) when every key collides into one bucket (a degenerate hash or
 **Reach for something else when:**
 
 - **You need sorted order or range queries** ("all keys between a and b", "the smallest key") → a **balanced BST** / sorted structure gives O(log n) ordered ops; a hash table has no order at all. <!-- balanced-bst not yet written -->
-- **You need guaranteed worst-case latency** → the O(n) resize/collision tail makes hash tables unsuitable for hard-real-time; a balanced tree's O(log n) is a firm ceiling.
+- **You need guaranteed worst-case <abbr>latency</abbr>** → the O(n) resize/collision tail makes hash tables unsuitable for hard-real-time; a balanced tree's O(log n) is a firm ceiling.
 - **Keys are small bounded integers** → a plain [array](./array.md) indexed directly (`freq[v]`) beats a hash table on constant factor with zero hashing overhead (see [CP-primitives](#cp-primitives)).
-- **You need prefix lookups on string keys** → a [trie](./trie.md) gives prefix/autocomplete queries a hash table can't.
+- **You need prefix lookups on string keys** → a [<abbr>trie</abbr>](./trie.md) gives prefix/autocomplete queries a hash table can't.
 
 Rule of thumb: **hash table for "lookup by key, order irrelevant"; tree for "lookup by key, order matters."** If the problem says "sorted", "range", "next-greater-key", or "k-th smallest", it's not a hash table.
 
-Real-world: hash tables back **database hash indexes and hash joins**, every language's `dict`/`map`/`object`, **in-memory caches** (Redis is essentially a giant hash table), symbol tables in compilers, and deduplication everywhere. The distributed cousin - spreading keys across many servers with minimal reshuffling on resize - is [consistent hashing](../../system-design/algorithms/consistent-hashing.md).
+Real-world: hash tables back **database hash indexes and hash joins**, every language's `dict`/`map`/`object`, **in-memory caches** (Redis is essentially a giant hash table), symbol tables in compilers, and deduplication everywhere. The distributed cousin - spreading keys across many servers with minimal reshuffling on resize - is [<abbr>consistent hashing</abbr>](../../system-design/algorithms/consistent-hashing.md).
 
 ## Comparison
 
@@ -317,7 +317,7 @@ groups: dict[str, list[str]] = {}       # key = "".join(sorted(word)) -> anagram
 
 - **Mutable keys are a landmine.** A key's hash must never change while it's in the table. Using a `list` as a key fails (unhashable in Python); worse, mutating an object after insertion (in languages that allow it) makes its old slot unreachable - the entry is "lost" though still in memory. **Keys must be immutable** (`tuple`, not `list`; `frozenset`, not `set`).
 - **O(1) is _average_, not guaranteed.** A degenerate hash or adversarial input (all keys colliding) degrades every op to O(n). Hash-flooding DoS attacks exploit exactly this; production hash tables use **randomized seeds** (Python's `PYTHONHASHSEED`) to defeat crafted-collision attacks. Never claim worst-case O(1) in an interview - say "O(1) average, O(n) worst on collisions".
-- **Resize cost hides in the average.** Insert is amortized O(1), but a single insert that triggers a rehash is O(n). If the problem cares about worst-case per-op latency (real-time systems), the hash table's resize spike disqualifies it - reach for a balanced tree's firm O(log n).
+- **Resize cost hides in the average.** Insert is <abbr>amortized</abbr> O(1), but a single insert that triggers a rehash is O(n). If the problem cares about worst-case per-op latency (real-time systems), the hash table's resize spike disqualifies it - reach for a balanced tree's firm O(log n).
 - **Iteration order is not sorted.** CPython preserves _insertion_ order, but that is not sorted order and is not portable across languages. If you need sorted output, sort explicitly or use a tree - relying on dict order for sortedness is a classic bug.
 - **`==` and `hash` must agree (the contract).** Two keys equal by `==` must have the same hash, or lookup misses entries it should find. When you make a custom class a key, override **both** `__hash__` and `__eq__` consistently - overriding one without the other silently breaks the table.
 - **`float` keys and NaN.** `NaN != NaN`, so a `NaN` key can never be looked up again (it won't equal itself); float keys also suffer precision surprises. Avoid floats as keys; use a rounded/int representation.

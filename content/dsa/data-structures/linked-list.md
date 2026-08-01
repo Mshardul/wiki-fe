@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- **<abbr>Big-O</abbr> Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
 - [Array](./array.md) [Must read]
 - **Computer memory model** [Should read]
 
@@ -40,7 +40,7 @@ Mental model: **a treasure hunt, not a row of lockers.** An [array](./array.md) 
 
 ## How it works
 
-Each **node** is an independently allocated object holding two things: the **value** and a **reference** (`next`) to the following node. The list itself is just a pointer to the first node, the **head**; the last node's `next` is null, marking the end. There is no index, no base address, no contiguity - the nodes can sit anywhere on the heap.
+Each **node** is an independently allocated object holding two things: the **value** and a **reference** (`next`) to the following node. The list itself is just a pointer to the first node, the **head**; the last node's `next` is null, marking the end. There is no index, no base address, no contiguity - the nodes can sit anywhere on the <abbr>heap</abbr>.
 
 ```
 head
@@ -103,7 +103,7 @@ The catch hiding in "O(1) insert": it's O(1) **only once you already hold the pr
 
 - You **splice constantly at known positions** - insert/delete in the middle or front without paying the array's O(n) shift, once you hold the node.
 - You need a structure that **grows one node at a time with no reallocation** - appends never trigger a copy-the-whole-thing resize (the array's amortized-O(1) hides occasional O(n) spikes; a list has none).
-- You're building a **queue, deque, or LRU cache** where O(1) removal from an arbitrary held position is the core requirement.
+- You're building a **queue, deque, or <abbr>LRU</abbr> cache** where O(1) removal from an arbitrary held position is the core requirement.
 
 **Reach for something else when:**
 
@@ -157,7 +157,7 @@ The array pays **zero** per-element overhead. The singly list pays one pointer p
 
 **Cache behavior - the silent killer.** CPUs fetch memory in **cache lines** (~64 bytes) and a prefetcher predicts sequential access. An array's adjacency means reading `arr[i]` pulls its neighbors into cache for free - iteration screams. A linked list's nodes sit at **arbitrary, scattered addresses**, so each `next` hop is a fresh memory location the prefetcher can't predict → a likely **cache miss** (~100× slower than a hit). The result: even for a workload where Big-O says the list should win (lots of middle inserts), the array frequently wins the wall-clock race because traversal-to-the-insert-point thrashes the cache. **This is the canonical "Big-O isn't the whole story" lesson, and a staff-level interviewer will probe it.**
 
-**No bulk allocation, no resize spikes - the one memory win.** The flip side: a linked list never copies the whole structure. A dynamic array's amortized-O(1) append hides occasional O(n) resize events (allocate a 2× block, copy everything, free the old one), which transiently needs ~2× the memory and causes latency spikes. A linked list grows one independent node at a time - no copy, no spike, no transient double-footprint. For **latency-sensitive, append-heavy** workloads where a worst-case pause matters more than throughput, that smoothness can be the deciding factor.
+**No bulk allocation, no resize spikes - the one memory win.** The flip side: a linked list never copies the whole structure. A dynamic array's amortized-O(1) append hides occasional O(n) resize events (allocate a 2× block, copy everything, free the old one), which transiently needs ~2× the memory and causes <abbr>latency</abbr> spikes. A linked list grows one independent node at a time - no copy, no spike, no transient double-footprint. For **latency-sensitive, append-heavy** workloads where a worst-case pause matters more than <abbr>throughput</abbr>, that smoothness can be the deciding factor.
 
 ## Implementation
 
@@ -309,7 +309,7 @@ while fast and fast.next:
 - **Losing the rest of the list (the classic).** When rewiring, if you overwrite `cur.next` _before_ saving it, everything after is unreachable and garbage-collected. Always `nxt = cur.next` _first_, then reassign. This is the #1 linked-list bug in interviews.
 - **The head is special - until you use a dummy node.** Inserting/deleting at the head touches `head` itself, not a `prev.next`; forgetting this branch corrupts the list or crashes on the empty case. The [dummy-head trick](#dummy-sentinel-head--kill-the-head-edge-case) erases the whole class of bug - reach for it reflexively.
 - **Singly delete needs the predecessor - O(n), not O(1).** "Delete this node I'm pointing at" is _not_ O(1) in a singly list; you need `prev` to rewire `prev.next`, so you walk from the head. The famous exception: if you're allowed to delete a **non-tail** node, copy the next node's value into the current node and unlink the _next_ node instead - O(1), but it doesn't work on the tail.
-- **Null / empty-list dereference.** `cur.next` when `cur` is null throws. Every traversal loop guards `while cur is not None`, and two-pointer loops must guard **both** `fast and fast.next` before the double hop - dropping the second check throws on even-length lists.
+- **Null / empty-list dereference.** `cur.next` when `cur` is null throws. Every traversal loop guards `while cur is not None`, and <abbr>two-pointer</abbr> loops must guard **both** `fast and fast.next` before the double hop - dropping the second check throws on even-length lists.
 - **Cycle turns traversal into an infinite loop.** A `while cur` loop never terminates if the list has a cycle. If cycles are possible, detect with fast/slow before any length-counting or full traversal - never assume a `next` chain ends.
 - **Pointer overhead and cache cost (the senior trap).** Reaching for a linked list "because inserts are O(1)" while the actual hot path is iteration is a classic mistake - the per-node allocation, pointer overhead, and cache misses ([Memory layout](#memory-layout)) routinely make a dynamic array faster end-to-end despite the worse Big-O for inserts. Justify a list by a _named_ O(1)-splice requirement, not reflex.
 
@@ -419,7 +419,7 @@ def merge_two_lists(a: Optional[Node], b: Optional[Node]) -> Optional[Node]:
 **Complexity:** O(n + m) time, O(1) extra space.
 
 **Duplicate problems:**
-- Merge Sorted Array (LC 88) - the same "repeatedly attach the smaller of two current heads" merge invariant, reframed as an in-place array merge instead of a pointer splice.
+- Merge Sorted Array (LC 88) - the same "repeatedly attach the smaller of two current heads" merge <abbr>invariant</abbr>, reframed as an in-place array merge instead of a pointer splice.
 
 ---
 

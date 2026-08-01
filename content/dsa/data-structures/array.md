@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- **<abbr>Big-O</abbr> Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
 - **Computer memory model** [Should read]
 
 ## Table of Contents
@@ -85,7 +85,7 @@ That same O(1) address arithmetic is what makes **binary search** possible on a 
 | Insert at index `i`          | O(n)     | O(1)  |
 | Delete at index `i`          | O(n)     | O(1)  |
 
-\*Amortized O(1) applies to a **dynamic** array ([Dynamic Array](./dynamic-array.md)). A true fixed array cannot grow at all - appending requires allocating a new, larger block.
+\*<abbr>Amortized</abbr> O(1) applies to a **dynamic** array ([Dynamic Array](./dynamic-array.md)). A true fixed array cannot grow at all - appending requires allocating a new, larger block.
 
 ## Complexity summary
 
@@ -143,7 +143,7 @@ The array's column is the only one with **O(1) indexed access and contiguous mem
 - **Prefix-sum array** - store cumulative sums instead of values; turns range-sum queries into O(1) subtractions.
 - **Difference array** - store deltas (`diff[l] += x; diff[r+1] -= x`); turns range _updates_ into O(1), recovered by a prefix-sum pass.
 - **Counter / bucket array** - index _by value_ (`freq[v]`) rather than by position; an O(1) direct-address map when the value range is bounded.
-- **Implicit tree (array-as-heap)** - a flat array read as a complete binary tree via index math (`children of i = 2i+1, 2i+2`); no pointers. The structural trick the heap article builds on. <!-- bst/heap.md not yet written -->
+- **Implicit tree (array-as-<abbr>heap</abbr>)** - a flat array read as a complete binary tree via index math (`children of i = 2i+1, 2i+2`); no pointers. The structural trick the heap article builds on. <!-- bst/heap.md not yet written -->
 
 ## Memory layout
 
@@ -305,7 +305,7 @@ prefix→[0|  5 |  7 |  7 |  2 |  0 ]   final deltas applied to arr
 
 ### Array as a direct-address (frequency) map
 
-When values are bounded - say `0 ≤ a[i] ≤ 10⁶` - a plain array `freq[value]` **is** an O(1) map with zero hashing overhead, often beating a hash table on constant factor. For a small fixed alphabet (lowercase letters) it's `freq = [0]*26`.
+When values are bounded - say `0 ≤ a[i] ≤ 10⁶` - a plain array `freq[value]` **is** an O(1) map with zero <abbr>hashing</abbr> overhead, often beating a hash table on constant factor. For a small fixed alphabet (lowercase letters) it's `freq = [0]*26`.
 
 ```python
 freq = [0] * 26
@@ -338,7 +338,7 @@ When values are large but sparse, **coordinate-compress** first (map the distinc
 
 - **Insertion/deletion shifts - don't forget the cost.** Saying "I'll remove the element at index i" hides an O(n) shift. If asked to delete many elements, repeated `arr.pop(i)` is O(n²); build a new array (or use two pointers) in one O(n) pass instead.
 - **Iterating while mutating.** Removing items from an array as you loop over it skips elements or shifts indices underneath you. Iterate over a copy, iterate backwards, or build a fresh list.
-- **Fixed vs dynamic confusion.** A genuine fixed array can't grow; "append is O(1)" only holds for a dynamic array and only _amortized_. The one resize is O(n) - call that out if the problem cares about worst-case latency.
+- **Fixed vs dynamic confusion.** A genuine fixed array can't grow; "append is O(1)" only holds for a dynamic array and only _amortized_. The one resize is O(n) - call that out if the problem cares about worst-case <abbr>latency</abbr>.
 
 ## Practice problems
 
@@ -346,7 +346,7 @@ Four staples, each a **distinct** technique on an array - no two solved the same
 
 ### 1. Trapping Rain Water - _converging two pointers_
 
-Given `height`, an array of non-negative bar heights of width 1, compute how much rain water is trapped between the bars after it rains. This is the two-pointer workhorse: no extra array, just two indices closing inward while a running max on each side does the work.
+Given `height`, an array of non-negative bar heights of width 1, compute how much rain water is trapped between the bars after it rains. This is the <abbr>two-pointer</abbr> workhorse: no extra array, just two indices closing inward while a running max on each side does the work.
 
 **Worked examples:**
 - **Example 1**

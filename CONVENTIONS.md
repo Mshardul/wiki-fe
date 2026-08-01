@@ -58,7 +58,9 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 | File                    | Owns                                                                          |
 | ----------------------- | -------------------------------------------------------------------------------- |
 | `router.js`             | Hash router (`navigate`/`route`), view switching, slug resolution               |
-| `home-index.js`         | Home grid, wiki index sections, card filter/swipe/hover, article counts         |
+| `home-index.js`         | Home grid, wiki index sections render/controls, card filter/hover, key nav         |
+| `home-gestures.js`      | Index-card swipe (bookmark/read toggle), pull-to-refresh, index refresh         |
+| `home-parse.js`         | `index.md` parser, shared index-fetch cache, article counts, ⌘K search-entry builder |
 | `content-view.js`       | Content render pipeline (fetch → parse → post-process → wire links/preview) - kept as one file, see size-threshold exception |
 | `related-articles.js`  | Related-article ranking + rendering                                             |
 | `nav-utils.js`          | Path resolution, breadcrumb, page title, `fetchText`, `readingTime`             |

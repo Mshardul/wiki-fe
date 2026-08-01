@@ -1,5 +1,5 @@
 import { WIKIS, escHtml } from "../state.js";
-import { fetchWikiIndex } from "./home-index.js";
+import { fetchWikiIndex } from "./home-parse.js";
 import {
   dirOf,
   fetchPrebuiltBacklinks,

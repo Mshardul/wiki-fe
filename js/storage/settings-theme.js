@@ -339,10 +339,24 @@ const BACKUP_SCHEMA = {
   settings: (v) => v === null || typeof v === "string",
 };
 
+function _isValidReadTrackingValue(val) {
+  if (typeof val !== "string") return false;
+  try {
+    const parsed = JSON.parse(val);
+    return Array.isArray(parsed) && parsed.every((p) => typeof p === "string");
+  } catch {
+    return false;
+  }
+}
+
 function _validateBackup(data) {
   if (typeof data !== "object" || data === null) return false;
   for (const [key, check] of Object.entries(BACKUP_SCHEMA)) {
     if (key in data && !check(data[key])) return false;
+  }
+  for (const [key, val] of Object.entries(data)) {
+    if (!key.startsWith("wiki-read-")) continue;
+    if (!_isValidReadTrackingValue(val)) return false;
   }
   return true;
 }

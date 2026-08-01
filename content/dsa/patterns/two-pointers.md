@@ -86,7 +86,7 @@ Place `L = 0`, `R = n-1`. Move whichever pointer is "worse" inward. Terminates w
      ...continuing...
 ```
 
-**Greedy argument:** when `height[L] < height[R]`, moving `R` inward can only decrease width while height is bounded by `height[L]` (the shorter wall). No future `R` position can improve on moving `L`. So always move the shorter wall.
+**<abbr>Greedy</abbr> argument:** when `height[L] < height[R]`, moving `R` inward can only decrease width while height is bounded by `height[L]` (the shorter wall). No future `R` position can improve on moving `L`. So always move the shorter wall.
 
 ### Variant 2: Same-direction (slow/fast write-head)
 
@@ -150,7 +150,7 @@ Result: [0, 1, 2, 3, 4, ...]  first L elements are the answer
 
 ### 1. Meet in the middle (two-pointer on two sorted halves)
 
-**The problem:** subset-sum with n ≤ 40 - brute force is O(2ⁿ), too slow. Split into two halves of size n/2. Enumerate all 2^(n/2) ≈ 2²⁰ ≈ 10⁶ subset sums for each half. Sort one list, two-pointer the other to find pairs summing to target.
+**The problem:** subset-sum with n ≤ 40 - brute force is O(2ⁿ), too slow. Split into two halves of size n/2. Enumerate all 2^(n/2) ≈ 2²⁰ ≈ 10⁶ subset sums for each half. Sort one list, <abbr>two-pointer</abbr> the other to find pairs summing to target.
 
 ```python
 def meet_in_middle(nums: list[int], target: int) -> bool:
@@ -359,7 +359,7 @@ def remove_duplicates(nums: list[int]) -> int:
 
 **Duplicate problems:**
 - Remove Duplicates from Sorted Array II (LC 80) - allow at most 2 copies; change condition to `nums[R] != nums[L-2]`.
-- Move Zeroes (LC 283) - same write-head, keep predicate = non-zero, then fill tail with zeros.
+- Move Zeroes (LC 283) - same write-head, keep <abbr>predicate</abbr> = non-zero, then fill tail with zeros.
 - Remove Element (LC 27) - same write-head, keep predicate = `nums[R] != val`.
 
 ---

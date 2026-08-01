@@ -390,6 +390,53 @@ def test_small_swipe_does_not_close_zoom_overlay(page, base_url):
     assert still_open, "A <80px swipe must not close the overlay"
 
 
+def test_pinch_release_does_not_swipe_dismiss_with_stale_coords(page, base_url):
+    """505: After a 1-finger gesture then a pinch-to-1x, release must not swipe-dismiss
+    using stale startX/startY from the earlier single-finger touch."""
+    _open_zoom_overlay(page, base_url)
+
+    still_open = page.evaluate("""() => {
+        const overlay = document.getElementById('zoom-overlay');
+        const t = (id, x, y) =>
+            new Touch({ identifier: id, target: overlay, clientX: x, clientY: y });
+
+        // 1) Brief single-finger drag that plants startX/startY high on the page.
+        overlay.dispatchEvent(new TouchEvent('touchstart', {
+            bubbles: true, touches: [t(1, 0, 50)], changedTouches: [t(1, 0, 50)],
+        }));
+        overlay.dispatchEvent(new TouchEvent('touchend', {
+            bubbles: true, touches: [], changedTouches: [t(1, 0, 60)],
+        }));
+
+        // 2) Two-finger pinch (must clear stale coords / set pinchOccurred).
+        overlay.dispatchEvent(new TouchEvent('touchstart', {
+            bubbles: true,
+            touches: [t(1, 100, 200), t(2, 140, 200)],
+            changedTouches: [t(1, 100, 200), t(2, 140, 200)],
+        }));
+        overlay.dispatchEvent(new TouchEvent('touchmove', {
+            bubbles: true, cancelable: true,
+            touches: [t(1, 100, 200), t(2, 180, 200)],
+            changedTouches: [t(1, 100, 200), t(2, 180, 200)],
+        }));
+        // Pinch back toward start distance (scale ~1).
+        overlay.dispatchEvent(new TouchEvent('touchmove', {
+            bubbles: true, cancelable: true,
+            touches: [t(1, 100, 200), t(2, 140, 200)],
+            changedTouches: [t(1, 100, 200), t(2, 140, 200)],
+        }));
+        // Lift one finger at a Y that would look like a >80px downward swipe
+        // against the stale startY=50 from step 1 (200-50=150).
+        overlay.dispatchEvent(new TouchEvent('touchend', {
+            bubbles: true,
+            touches: [t(1, 100, 200)],
+            changedTouches: [t(2, 140, 200)],
+        }));
+        return overlay.classList.contains('open');
+    }""")
+    assert still_open, "Pinch release must not swipe-dismiss via stale single-finger coords"
+
+
 # ── HTML cache ──────────────────────────────────────────────────
 
 

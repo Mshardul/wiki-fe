@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- **<abbr>Big-O</abbr> Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
 - [Array](./array.md) [Must read]
 - [Linked List](./linked-list.md) [Should read]
 
@@ -22,7 +22,7 @@
 - [CP-primitives](#cp-primitives)
   - [Monotonic stack - next greater/smaller element](#monotonic-stack---next-greatersmaller-element)
   - [Paren/bracket matching \& expression parsing](#parenbracket-matching--expression-parsing)
-  - [Explicit stack to flatten recursion](#explicit-stack-to-flatten-recursion)
+  - [Explicit stack to flatten <abbr>recursion</abbr>](#explicit-stack-to-flatten-recursion)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [Practice problems](#practice-problems)
   - [1. Valid Parentheses - _matching with a stack_](#1-valid-parentheses---matching-with-a-stack)
@@ -56,7 +56,7 @@ A stack exposes exactly three core operations, all at the **top**: **push** (add
 
 Two backings give the same O(1) interface (see [Memory layout](#memory-layout)):
 
-- **Array-backed** - push = append to the end, pop = remove from the end. The array's end is the top; both are amortized O(1). This is the default (Python `list`, Java `ArrayDeque`).
+- **Array-backed** - push = append to the end, pop = remove from the end. The array's end is the top; both are <abbr>amortized</abbr> O(1). This is the default (Python `list`, Java `ArrayDeque`).
 - **Linked-list-backed** - push = insert at head, pop = remove head. True O(1) per op, no resize spike, at the cost of per-node pointer overhead.
 
 The deep idea: a stack is the data-structure form of **recursion**. Every recursive call pushes a frame (locals, return address) onto the program's **call stack**; every return pops one. Anything you can solve recursively, you can solve with an explicit stack - and sometimes must, to avoid stack-overflow on deep inputs.
@@ -82,7 +82,7 @@ The deep idea: a stack is the data-structure form of **recursion**. Every recurs
 | Pop       | O(1) | O(1)    | O(1)                              |
 | Peek      | O(1) | O(1)    | O(1)                              |
 
-**Space:** O(n) for n elements. Array-backed carries the dynamic array's ~2× capacity slack; linked-list-backed carries one pointer per node. The famous hidden space cost is the **call stack** itself: deep recursion consumes O(depth) stack frames and can overflow - converting to an explicit heap stack trades that for O(depth) heap memory you control.
+**Space:** O(n) for n elements. Array-backed carries the dynamic array's ~2× capacity slack; linked-list-backed carries one pointer per node. The famous hidden space cost is the **call stack** itself: deep recursion consumes O(depth) stack frames and can overflow - converting to an explicit <abbr>heap</abbr> stack trades that for O(depth) heap memory you control.
 
 ## When to use / when not
 
@@ -151,7 +151,7 @@ linked-list-backed stack (top = head):
 top → [9|•] → [2|•] → [7|•] → [3|/]      push = new head node; pop = drop head
 ```
 
-- **Worst-case O(1) push** - no resize, no copy, no spike; each push is one allocation. Good when worst-case latency matters more than throughput.
+- **Worst-case O(1) push** - no resize, no copy, no spike; each push is one allocation. Good when worst-case <abbr>latency</abbr> matters more than <abbr>throughput</abbr>.
 - **Pointer overhead + cache misses** - 8 bytes/node and scattered addresses; iteration and repeated ops are slower in practice than the array despite identical Big-O.
 
 **Which to pick:** array-backed is the default and usually faster (locality wins). Choose linked-list-backed only when you need **no amortized-resize spike** (hard-real-time) or are composing nodes you already hold. This is the same array-vs-list trade as everywhere, applied to one end.
@@ -338,7 +338,7 @@ def is_valid(s: str) -> bool:
 **Complexity:** O(n) time, O(n) space.
 
 **Duplicate problems:**
-- Remove All Adjacent Duplicates In String (LC 1047) - same push-then-pop-on-match stack invariant, cancelling adjacent equal characters instead of matching bracket pairs.
+- Remove All Adjacent Duplicates In String (LC 1047) - same push-then-pop-on-match stack <abbr>invariant</abbr>, cancelling adjacent equal characters instead of matching bracket pairs.
 - Minimum Remove to Make Valid Parentheses (LC 1249) - same bracket-matching-with-stack technique, extended to removing the minimum unmatched parens instead of a boolean valid/invalid check.
 
 ### 2. Daily Temperatures - _monotonic stack_

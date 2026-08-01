@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- **[Consistency Models](./consistency-models.md)** [Must read] - CAP's "C" maps directly to linearizability; without this, the theorem's guarantees will be misread as weaker than they are.
-- **[Replication Strategies](./replication-strategies.md)** [Recommended] - CAP trade-offs play out through replication; understanding sync vs async replication clarifies why CP and AP behave the way they do.
+- **[Consistency Models](./consistency-models.md)** [Must read] - CAP's "C" maps directly to <abbr>linearizability</abbr>; without this, the theorem's guarantees will be misread as weaker than they are.
+- **[<abbr>Replication</abbr> Strategies](./replication-strategies.md)** [Recommended] - CAP trade-offs play out through replication; understanding sync vs async replication clarifies why CP and AP behave the way they do.
 
 ## Table of Contents
 
@@ -195,12 +195,12 @@ The proof formalises C and A as binary: a system either provides linearizability
 
 In practice:
 
-- **Consistency is a spectrum.** A system may offer strong consistency, causal consistency, read-your-writes, or eventual consistency - not just "linearizable or not."
+- **Consistency is a spectrum.** A system may offer <abbr>strong consistency</abbr>, causal consistency, read-your-writes, or <abbr>eventual consistency</abbr> - not just "linearizable or not."
 - **Availability is a spectrum.** A system may return errors for 0.1% of requests during a partition while serving the other 99.9% - it is neither fully available nor fully unavailable.
 
 Binary framing leads to a false dichotomy: labelling a system "CP" or "AP" as if it makes a single global choice. Real systems make this choice per-operation, per-region, or per-consistency-level. Cassandra, for example, can be configured for CP behaviour on one table and AP behaviour on another.
 
-This limitation of CAP is exactly what the [PACELC model](#pacelc) addresses - extending the framework to treat latency and consistency as a continuous trade-off, even when no partition is occurring.
+This limitation of CAP is exactly what the [PACELC model](#pacelc) addresses - extending the framework to treat <abbr>latency</abbr> and consistency as a continuous trade-off, even when no partition is occurring.
 
 **Key Takeaway:** CAP holds precisely within its assumptions: asynchronous network, binary properties. Outside those assumptions - synchronous networks, spectrum consistency - the theorem still informs design but should not be applied mechanically.
 
@@ -476,7 +476,7 @@ The most important insight for production system design: a single system can app
 
 ## Real-World Applications
 
-**Interviewer TL;DR:** CP systems - ZooKeeper, HBase, Spanner, etcd - sacrifice availability to guarantee linearizability, typically for coordination and financial workloads. AP systems - Cassandra, DynamoDB, DNS - stay available at the cost of potential staleness, typically for user-facing high-throughput workloads.
+**Interviewer TL;DR:** CP systems - ZooKeeper, HBase, Spanner, etcd - sacrifice availability to guarantee linearizability, typically for coordination and financial workloads. AP systems - Cassandra, DynamoDB, DNS - stay available at the cost of potential staleness, typically for user-facing high-<abbr>throughput</abbr> workloads.
 
 **Mental model:** Every major distributed data system is a materialised opinion on the CP/AP trade-off - understanding why they chose what they chose is more useful than memorising the labels.
 

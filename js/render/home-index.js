@@ -1,26 +1,24 @@
-import { fireStudyMilestone } from "../app/study-feedback.js";
 import {
   STUB_THRESHOLD,
   WIKIS,
-  allSearchCache,
   escHtml,
   fadeFactorForDaysSinceRead,
-  indexCache,
   markStubPath,
   readTimeCache,
   state,
   updatedDateCache,
 } from "../state.js";
-import { Bookmarks, renderBookmarksSection } from "../storage/bookmarks.js";
+import { renderBookmarksSection } from "../storage/bookmarks.js";
 import { listCachedArticlePaths } from "../storage/offline.js";
-import { getLastOpened, isRead, markRead, markUnread } from "../storage/read-tracking.js";
+import { getLastOpened, isRead } from "../storage/read-tracking.js";
 import { renderRecentsSection } from "../storage/recents.js";
 import { toggleCollapse } from "../storage/scroll-collapse.js";
 import { showHoverPreview } from "./content-view.js";
+import { bindIndexCardSwipe, bindIndexPullToRefresh } from "./home-gestures.js";
+import { parseIndexMd, updateArticleCounts } from "./home-parse.js";
 import { destroyIndexGraph, renderIndexGraph } from "./index-graph.js";
 import {
   dirOf,
-  fetchPrebuiltSearchIndex,
   fetchText,
   normalizePath,
   parseUpdatedDate,
@@ -28,7 +26,6 @@ import {
   setBreadcrumb,
 } from "./nav-utils.js";
 import { showView } from "./router.js";
-import { showToast } from "./toast.js";
 
 /* ═══════════════════════════════════════════════════════════════
    PINNED WIKIS - local-only, no backend sync (home card order)
@@ -536,217 +533,6 @@ if (_indexFilterReadSelect) {
   });
 }
 
-/* ─── Index-card swipe: right = bookmark, left = read toggle ─── */
-const CARD_SWIPE_THRESHOLD = 50;
-const CARD_SWIPE_DEADZONE = 8;
-let _cardSwipeBound = false;
-let _swipeWiki = null; // current wiki for the delegated index-card swipe
-
-function bindIndexCardSwipe(wiki) {
-  _swipeWiki = wiki;
-  const container = document.getElementById("index-sections");
-  if (!container || _cardSwipeBound) return;
-  _cardSwipeBound = true;
-
-  let card = null;
-  let sx = 0;
-  let sy = 0;
-  let axis = null; // null | "x" | "y"
-
-  const pathOf = (c) => c.querySelector(".index-card-read-time[data-path]")?.dataset.path || null;
-
-  const reset = () => {
-    if (card) {
-      card.style.transition = "transform 180ms ease";
-      card.style.transform = "";
-      card.classList.remove("card-swiping", "swipe-right", "swipe-left");
-      const c = card;
-      setTimeout(() => {
-        c.style.transition = "";
-      }, 200);
-    }
-    card = null;
-    axis = null;
-    // Deferred: this touchend is still bubbling up to the document-level edge-swipe
-    // listener, which reads this flag to stand down. Clearing it synchronously here
-    // would race that read (container's listener fires before document's in bubble
-    // order) and re-arm back-nav before the document handler ever sees it was active.
-    setTimeout(() => {
-      state._cardSwipeActive = false;
-    }, 0);
-  };
-
-  container.addEventListener(
-    "touchstart",
-    (e) => {
-      if (e.touches.length !== 1) return;
-      const el = e.target.closest(".index-card");
-      if (!el || el.classList.contains("index-card--unavailable")) return;
-      card = el;
-      sx = e.touches[0].clientX;
-      sy = e.touches[0].clientY;
-      axis = null;
-      card.style.transition = "";
-    },
-    { passive: true },
-  );
-
-  container.addEventListener(
-    "touchmove",
-    (e) => {
-      if (!card || e.touches.length !== 1) return;
-      const dx = e.touches[0].clientX - sx;
-      const dy = e.touches[0].clientY - sy;
-      if (!axis) {
-        if (Math.abs(dx) < CARD_SWIPE_DEADZONE && Math.abs(dy) < CARD_SWIPE_DEADZONE) return;
-        axis = Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
-        if (axis === "x") {
-          card.classList.add("card-swiping");
-          state._cardSwipeActive = true; // tell global edge-swipe (back-nav) to stand down
-        } else {
-          card = null; // vertical → let the page scroll, abandon swipe
-          return;
-        }
-      }
-      if (axis === "x") {
-        e.preventDefault(); // claim the horizontal gesture
-        card.style.transform = `translateX(${dx}px)`;
-        card.classList.toggle("swipe-right", dx > 0);
-        card.classList.toggle("swipe-left", dx < 0);
-      }
-    },
-    { passive: false },
-  );
-
-  container.addEventListener(
-    "touchend",
-    (e) => {
-      if (!card || axis !== "x") {
-        reset();
-        return;
-      }
-      const dx = (e.changedTouches[0]?.clientX ?? sx) - sx;
-      const path = pathOf(card);
-      if (path && dx > CARD_SWIPE_THRESHOLD) {
-        const now = Bookmarks.togglePath(
-          _swipeWiki.id,
-          path,
-          card.querySelector(".index-card-title")?.textContent,
-        );
-        renderBookmarksSection(_swipeWiki);
-        showToast(now ? "Bookmarked" : "Bookmark removed");
-      } else if (path && dx < -CARD_SWIPE_THRESHOLD) {
-        if (isRead(path)) {
-          markUnread(path);
-          showToast("Marked unread");
-        } else {
-          markRead(path);
-          showToast("Marked read");
-          fireStudyMilestone();
-        }
-      }
-      reset();
-    },
-    { passive: true },
-  );
-
-  container.addEventListener("touchcancel", reset, { passive: true });
-}
-
-const PULL_REFRESH_THRESHOLD = 70;
-const PULL_REFRESH_MAX = 120;
-let _pullRefreshBound = false;
-let _pullWiki = null;
-
-function bindIndexPullToRefresh(wiki) {
-  _pullWiki = wiki;
-  const container = document.getElementById("index-sections");
-  if (!container || _pullRefreshBound) return;
-  _pullRefreshBound = true;
-
-  let startY = 0;
-  let pulling = false;
-  let dy = 0;
-
-  container.addEventListener(
-    "touchstart",
-    (e) => {
-      if (container.scrollTop > 0 || e.touches.length !== 1) return;
-      startY = e.touches[0].clientY;
-      pulling = true;
-      dy = 0;
-    },
-    { passive: true },
-  );
-
-  container.addEventListener(
-    "touchmove",
-    (e) => {
-      if (!pulling || e.touches.length !== 1) return;
-      dy = e.touches[0].clientY - startY;
-      if (dy <= 0) {
-        container.classList.remove("index-pulling");
-        container.style.transform = "";
-        return;
-      }
-      e.preventDefault();
-      const clamped = Math.min(dy, PULL_REFRESH_MAX);
-      container.classList.add("index-pulling");
-      container.style.transform = `translateY(${clamped}px)`;
-    },
-    { passive: false },
-  );
-
-  const endPull = () => {
-    if (!pulling) return;
-    pulling = false;
-    container.classList.remove("index-pulling");
-    container.style.transform = "";
-    if (dy >= PULL_REFRESH_THRESHOLD) {
-      refreshIndex(_pullWiki);
-    }
-    dy = 0;
-  };
-
-  container.addEventListener("touchend", endPull, { passive: true });
-  container.addEventListener("touchcancel", endPull, { passive: true });
-}
-
-async function refreshIndex(wiki) {
-  delete indexCache[wiki.id];
-  try {
-    sessionStorage.removeItem(`wiki-index-${wiki.id}`);
-  } catch {}
-  await _refreshSearchCacheForWiki(wiki);
-  await renderIndex(wiki);
-}
-
-// Shared by search.js's loadAllSearchEntries and this file's refresh path -
-// the ⌘K search-cache row shape for one wiki, filtered to non-stub articles.
-async function buildSearchEntriesForWiki(wiki) {
-  const sections = await fetchWikiIndex(wiki);
-  const entries = [];
-  for (const section of sections) {
-    for (const card of section.cards) {
-      if (readTimeCache[normalizePath(card.path)] !== null) {
-        entries.push({ wiki, section: section.heading, ...card });
-      }
-    }
-  }
-  return entries;
-}
-
-// Stale wiki-scoped rows in the shared ⌘K search cache must go too - refreshIndex()
-// only busts this view's own indexCache, but search.js populates its own cache once
-// and never revisits it, so a refresh here silently left old entries there.
-async function _refreshSearchCacheForWiki(wiki) {
-  if (!allSearchCache.loaded) return; // never populated yet - nothing stale to fix
-  allSearchCache.entries = allSearchCache.entries.filter((e) => e.wiki.id !== wiki.id);
-  try {
-    allSearchCache.entries.push(...(await buildSearchEntriesForWiki(wiki)));
-  } catch {}
-}
-
 function animateGridHeight(section, collapsed) {
   const grid = section.querySelector(".index-card-grid");
   if (!grid) return;
@@ -854,95 +640,6 @@ async function populateIndexReadTimes() {
   });
 }
 
-/* ─── Shared index cache (used by article counts + global search) ─── */
-async function fetchWikiIndex(wiki) {
-  if (indexCache[wiki.id]) return indexCache[wiki.id];
-  const ssKey = `wiki-index-${wiki.id}`;
-  try {
-    const hit = sessionStorage.getItem(ssKey);
-    if (hit) {
-      indexCache[wiki.id] = JSON.parse(hit);
-      return indexCache[wiki.id];
-    }
-  } catch {}
-
-  const prebuilt = await fetchPrebuiltSearchIndex();
-  let sections;
-  if (prebuilt?.[wiki.id]) {
-    sections = prebuilt[wiki.id];
-  } else {
-    const md = await fetchText(wiki.indexPath);
-    const basePath = dirOf(wiki.indexPath);
-    sections = parseIndexMd(md, basePath);
-  }
-  indexCache[wiki.id] = sections;
-  try {
-    sessionStorage.setItem(ssKey, JSON.stringify(sections));
-  } catch {
-    // Quota full: evict all other wiki-index-* entries then retry once
-    for (let i = sessionStorage.length - 1; i >= 0; i--) {
-      const k = sessionStorage.key(i);
-      if (k?.startsWith("wiki-index-") && k !== ssKey) sessionStorage.removeItem(k);
-    }
-    try {
-      sessionStorage.setItem(ssKey, JSON.stringify(sections));
-    } catch {}
-  }
-  return sections;
-}
-
-async function updateArticleCounts() {
-  for (const wiki of WIKIS) {
-    try {
-      const sections = await fetchWikiIndex(wiki);
-      const count = sections.reduce((sum, s) => sum + s.cards.length, 0);
-      const el = document.querySelector(`[data-wiki-id="${wiki.id}"] .wiki-card-count`);
-      if (el) el.textContent = `${count} articles`;
-    } catch {}
-  }
-}
-
-/* ─── Index.md Parser ─── */
-function parseIndexMd(markdown, basePath) {
-  const sections = [];
-  const skipHeadings = ["how to use", "contributing"];
-
-  const normalized = markdown.replace(/\r\n/g, "\n");
-  const chunks = normalized.split(/\n(?=## )/);
-
-  for (const chunk of chunks) {
-    const lines = chunk.split("\n");
-    const firstLine = lines[0];
-    if (!firstLine.startsWith("## ")) continue;
-
-    const heading = firstLine.replace(/^## /, "").trim();
-    if (skipHeadings.some((s) => heading.toLowerCase().includes(s))) continue;
-
-    const cards = [];
-
-    for (const line of lines) {
-      if (!line.startsWith("|")) continue;
-      if (/^\|\s*[-:]+/.test(line)) continue; // separator row
-
-      const m = line.match(/^\|\s*\[([^\]]+)\]\(([^)]+\.md)\)\s*\|\s*([^|]+?)\s*\|/);
-      if (m) {
-        const title = m[1].trim();
-        const relPath = m[2].trim();
-        const description = m[3].trim();
-
-        const fullPath = `${basePath}/${relPath.replace(/^\.\//, "")}`;
-        const slug = relPath.split("/").pop().replace(/\.md$/, "");
-
-        cards.push({ title, path: fullPath, slug, description });
-      }
-    }
-
-    if (cards.length) sections.push({ heading, cards });
-  }
-
-  return sections;
-}
-
 export {
   renderHome,
   getPinnedWikis,
@@ -953,11 +650,6 @@ export {
   attachIndexCardKeyNav,
   attachIndexCardHoverPreview,
   IndexFilter,
-  bindIndexCardSwipe,
   toggleSection,
   populateIndexReadTimes,
-  fetchWikiIndex,
-  buildSearchEntriesForWiki,
-  updateArticleCounts,
-  parseIndexMd,
 };

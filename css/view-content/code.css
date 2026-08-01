@@ -182,6 +182,7 @@ pre.has-line-numbers {
 /* Tables */
 .markdown-body table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   margin: var(--s6) 0;
   font-size: var(--text-sm);
@@ -199,12 +200,16 @@ pre.has-line-numbers {
   padding: var(--s3) var(--s4);
   text-align: left;
   border-bottom: 1px solid var(--border-2);
+  overflow-wrap: normal;
+  word-break: normal;
 }
 .markdown-body td {
   padding: var(--s3) var(--s4);
   border-top: 1px solid var(--border);
   color: var(--text-body);
   vertical-align: top;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 .markdown-body tr:hover td {
   background: var(--surface-hover);

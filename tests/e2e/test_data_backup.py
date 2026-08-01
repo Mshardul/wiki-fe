@@ -126,6 +126,41 @@ def test_import_invalid_file_shows_toast(page, base_url):
         os.unlink(tmp_path)
 
 
+def test_import_rejects_malformed_wiki_read_keys(page, base_url):
+    """505: Backup with a non-array wiki-read-* value is rejected before write."""
+    import os
+    import tempfile
+
+    bad = {
+        "version": 1,
+        "bookmarks": None,
+        "recents": None,
+        "settings": None,
+        "wiki-read-system-design": "not-a-json-array",
+    }
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+        json.dump(bad, tmp)
+        tmp_path = tmp.name
+
+    try:
+        page.goto(f"{base_url}/", wait_until="domcontentloaded")
+        page.wait_for_selector("#view-home.active", timeout=8_000)
+        page.evaluate("() => localStorage.removeItem('wiki-read-system-design')")
+        _open_settings(page)
+
+        page.locator("#import-upload").set_input_files(tmp_path)
+        page.wait_for_selector("#wiki-toast.visible", timeout=3000)
+
+        toast_text = page.locator("#wiki-toast").inner_text()
+        assert "invalid" in toast_text.lower() or "failed" in toast_text.lower(), (
+            f"Expected invalid-backup toast, got: {toast_text}"
+        )
+        stored = page.evaluate("() => localStorage.getItem('wiki-read-system-design')")
+        assert stored is None, "Malformed wiki-read-* must not be written to localStorage"
+    finally:
+        os.unlink(tmp_path)
+
+
 def _seed_local_data(page):
     """Seeds one localStorage key per clearable category, across two wikis."""
     page.evaluate(

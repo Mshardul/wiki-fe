@@ -815,34 +815,13 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
 
   previewEl.innerHTML = '<div class="loading">Loading preview...</div>';
 
-  const SKIP_PREFIXES = ["prerequisites:", "prerequisites", "prerequisite", "table of contents"];
-
   try {
-    const md = await fetchText(path, signal);
+    const summaries = await _loadSummaries();
     if (gen !== _previewGeneration) return;
     if (!previewEl.classList.contains("visible")) return;
-    let extract = "";
 
-    const tldrMatch = md.match(/##\s*TL;?DR\s*\n([\s\S]*?)(?=\n##|\n#|$)/i);
-    if (tldrMatch?.[1].trim()) {
-      extract = tldrMatch[1].trim();
-    } else {
-      // Fallback: first substantive paragraph that isn't prereqs/TOC/heading
-      const withoutTitle = md.replace(/^#[^#][^\n]*\n/, "");
-      const paras = withoutTitle.split("\n\n");
-      extract =
-        paras
-          .find((p) => {
-            const t = p.trim().toLowerCase();
-            return (
-              t.length > 20 && !t.startsWith("#") && !SKIP_PREFIXES.some((s) => t.startsWith(s))
-            );
-          })
-          ?.trim() || "";
-    }
-
-    if (!extract) throw new Error("Empty");
-    if (extract.length > 350) extract = `${extract.slice(0, 350)}...`;
+    const extract = summaries[normalizePath(path)];
+    if (!extract) throw new Error("No summary");
 
     const rawHtml = getMdConverter().makeHtml(extract);
     previewEl.innerHTML = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(rawHtml) : rawHtml;
@@ -860,6 +839,16 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
     if (err.name === "AbortError") return;
     previewEl.innerHTML = '<p style="color:var(--text-muted)">Preview not available.</p>';
   }
+}
+
+let _summariesCache = null;
+function _loadSummaries() {
+  if (!_summariesCache) {
+    _summariesCache = fetch("data/summaries.json")
+      .then((r) => r.json())
+      .catch(() => ({}));
+  }
+  return _summariesCache;
 }
 
 export {

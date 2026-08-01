@@ -3,8 +3,8 @@
 ## Prerequisites
 
 - [Sorting](./sorting.md) [Must read]
-- [Dynamic Programming](./dynamic-programming.md) [Must read]
-- [Heap](../data-structures/heap.md)
+- [<abbr>Dynamic Programming</abbr>](./dynamic-programming.md) [Must read]
+- [<abbr>Heap</abbr>](../data-structures/heap.md)
 - [Merge Intervals](../patterns/merge-intervals.md)
 
 ## Table of Contents
@@ -12,7 +12,7 @@
 - [What it is](#what-it-is)
 - [Intuition](#intuition)
 - [How it works](#how-it-works)
-- [Correctness / invariant](#correctness--invariant)
+- [Correctness / <abbr>invariant</abbr>](#correctness--invariant)
 - [Complexity derivation](#complexity-derivation)
 - [Constraints & approach](#constraints--approach)
 - [When to use / when not](#when-to-use--when-not)
@@ -25,7 +25,7 @@
 
 ## What it is
 
-A greedy algorithm builds a solution **one step at a time, always taking the choice that looks best right now, and never reconsidering it.** It commits to each local optimum and moves on. This is correct _only_ when the problem has two properties: the **greedy-choice property** (a globally optimal solution can be reached by a sequence of locally optimal choices) and **optimal substructure** (an optimal solution contains optimal solutions to subproblems).
+A <abbr>greedy</abbr> algorithm builds a solution **one step at a time, always taking the choice that looks best right now, and never reconsidering it.** It commits to each local optimum and moves on. This is correct _only_ when the problem has two properties: the **greedy-choice property** (a globally optimal solution can be reached by a sequence of locally optimal choices) and **optimal substructure** (an optimal solution contains optimal solutions to subproblems).
 
 **Mental model:** filling a backpack by always grabbing the single most valuable thing that still fits, never putting anything back. Fast and obvious - and _correct only when no later item could have made an earlier swap worthwhile._ The entire skill of greedy is recognizing when "never put anything back" is safe.
 

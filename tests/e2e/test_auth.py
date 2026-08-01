@@ -169,6 +169,28 @@ def test_register_checklist_turns_green(page, base_url):
     expect(page.locator("#auth-reg-submit")).to_be_enabled()
 
 
+def test_register_checklist_resyncs_on_panel_leave_and_return(page, base_url):
+    """Regression for WIKI-476: leaving the register panel and coming back
+    with a still-valid password must re-derive the checklist/submit state
+    from the actual input value, not force it back to all-red/disabled."""
+    _stub_logged_out(page)
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-to-register").click()
+    page.locator("#auth-reg-password").fill("LongEnough1!xx")
+    expect(page.locator("#auth-reg-submit")).to_be_enabled()
+
+    page.locator("#auth-to-login").click()
+    page.locator("#auth-to-register").click()
+
+    expect(page.locator("#auth-reg-password")).to_have_value("LongEnough1!xx")
+    expect(page.locator("#auth-reg-submit")).to_be_enabled()
+    items = page.locator("#auth-pw-checklist li")
+    expect(items).to_have_count(5)
+    for i in range(5):
+        expect(items.nth(i)).to_have_class(re.compile(r"\bok\b"))
+
+
 def test_login_success_flips_button_to_logout(page, base_url):
     _stub_logged_out(page)
     page.route(
@@ -284,6 +306,49 @@ def test_migrate_modal_shown_on_login_with_local_data(page, base_url):
     expect(modal).not_to_have_class(re.compile(r"\bhidden\b"))
     page.locator("#migrate-keep").click()
     expect(modal).to_have_class(re.compile(r"\bhidden\b"))
+
+
+def test_migrate_import_failure_skips_pull_and_warns(page, base_url):
+    """Regression for WIKI-464: if 'Keep them' import fails, the local data
+    that was just chosen to keep must not be silently overwritten by the
+    following pullAll() - and the user must see a warning, not silence."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/login",
+        lambda r: r.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
+        ),
+    )
+    page.route(
+        "**/api/v1/import-all",
+        lambda r: r.fulfill(status=500, content_type="application/json", body='{"error":{"code":"SERVER_ERROR","message":"boom"}}'),
+    )
+    pull_called = {"hit": False}
+    for path in ("bookmarks", "reads", "recents"):
+        page.route(
+            f"**/api/v1/{path}",
+            lambda r: (pull_called.__setitem__("hit", True), r.fulfill(status=200, content_type="application/json", body="[]"))[1],
+        )
+    page.add_init_script(
+        "localStorage.setItem('wiki-bookmarks', JSON.stringify([{wikiId:'dsa',path:'foo.md'}]))"
+    )
+
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+    page.locator("#auth-login-submit").click()
+
+    modal = page.locator("#migrate-modal")
+    expect(modal).not_to_have_class(re.compile(r"\bhidden\b"))
+    page.locator("#migrate-keep").click()
+
+    expect(page.locator("#wiki-toast")).to_contain_text("Couldn't save your local data")
+    assert not pull_called["hit"], "pullAll() must not run after a failed import - it would overwrite the kept local data"
+    stored = page.evaluate("localStorage.getItem('wiki-bookmarks')")
+    assert "foo.md" in stored
 
 
 def test_migrate_modal_uses_bottom_sheet_layout_on_mobile(browser, base_url, cdn_cache):
@@ -509,6 +574,71 @@ def test_forgot_empty_submit_blocked_by_required_field(page, base_url):
     page.locator("#auth-forgot-submit").click()
     assert not forgot_called["hit"], "forgot-password request must not fire with empty email"
     expect(page.locator("#auth-forgot-email")).to_have_js_property("validity.valid", False)
+
+
+def test_forgot_sent_message_cleared_on_panel_swap(page, base_url):
+    """Regression for WIKI-463: '#auth-forgot-sent' must not survive a swap
+    away from and back to the forgot panel - otherwise a later, unsubmitted
+    attempt shows a stale success message before the user even resubmits."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/forgot-password",
+        lambda r: r.fulfill(status=200, content_type="application/json", body="{}"),
+    )
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-to-forgot").click()
+    page.locator("#auth-forgot-email").fill("a@example.com")
+    page.locator("#auth-forgot-submit").click()
+    expect(page.locator("#auth-forgot-sent")).to_be_visible()
+
+    page.locator("#auth-forgot-to-login").click()
+    page.locator("#auth-to-forgot").click()
+    expect(page.locator("#auth-forgot-sent")).to_be_hidden()
+
+
+def test_login_network_error_shows_fe_authored_message(page, base_url):
+    """Regression for WIKI-465/WIKI-478: a dropped connection must not leak
+    the raw browser fetch-failure string (e.g. 'Failed to fetch') into the
+    login error - it must show the FE-authored network message instead."""
+    _stub_logged_out(page)
+    page.route("**/api/v1/auth/login", lambda route: route.abort())
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+    page.locator("#auth-login-submit").click()
+
+    error = page.locator("#auth-login-error")
+    expect(error).to_be_visible()
+    expect(error).to_have_text("Couldn't reach the server. Check your connection and try again.")
+    expect(error).not_to_contain_text("Failed to fetch")
+
+
+def test_resend_network_error_does_not_claim_success(page, base_url):
+    """Regression for WIKI-465: resend's anti-enumeration 'sent' message is
+    only valid for auth-domain errors - a genuine network failure must be
+    surfaced, not swallowed into a false success toast."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/login",
+        lambda r: r.fulfill(
+            status=403,
+            content_type="application/json",
+            body='{"error":{"code":"UNVERIFIED","message":"not verified"}}',
+        ),
+    )
+    page.route("**/api/v1/auth/resend", lambda route: route.abort())
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+    page.locator("#auth-login-submit").click()
+    expect(page.locator("#auth-panel-verify.active")).to_be_visible()
+
+    page.locator("#auth-resend-btn").click()
+    expect(page.locator("#wiki-toast")).to_contain_text("Couldn't reach the server")
+    expect(page.locator("#wiki-toast")).not_to_contain_text("Verification email sent")
 
 
 def test_bad_credentials_shows_error(page, base_url):
@@ -1057,6 +1187,8 @@ def test_verify_result_failure_shows_resend_form(page, base_url):
     expect(page.locator("#auth-panel-verify-result.active")).to_be_visible()
     expect(page.locator("#auth-form-verify-result-resend")).to_be_visible()
     expect(page.locator("#auth-verify-result-copy")).to_contain_text("invalid or has expired")
+    # Regression for WIKI-463: heading must move off the static "Verifying your email".
+    expect(page.locator("#auth-verify-result-title")).to_have_text("Verification failed")
 
 
 def test_verify_result_success_hides_resend_form(page, base_url):
@@ -1069,6 +1201,8 @@ def test_verify_result_success_hides_resend_form(page, base_url):
     page.goto(f"{base_url}?mode=verify&token=goodtoken")
     expect(page.locator("#auth-panel-verify-result.active")).to_be_visible()
     expect(page.locator("#auth-form-verify-result-resend")).to_be_hidden()
+    # Regression for WIKI-463: heading must move off the static "Verifying your email".
+    expect(page.locator("#auth-verify-result-title")).to_have_text("Email verified")
 
 
 def test_verify_result_resend_submits_typed_email(page, base_url):

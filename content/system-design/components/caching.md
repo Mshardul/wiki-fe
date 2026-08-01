@@ -3,9 +3,9 @@
 ## Prerequisites
 
 - **TCP/IP & Networking Fundamentals** - understand how data moves between processes; remote cache access adds a network round-trip on every miss.
-- **[Consistent Hashing](../algorithms/consistent-hashing.md)** - distributed caches use consistent hashing for key-to-node routing; understanding virtual nodes and rebalancing impact is required before tackling distributed cache architecture.
+- **[<abbr>Consistent Hashing</abbr>](../algorithms/consistent-hashing.md)** - distributed caches use consistent hashing for key-to-node routing; understanding virtual nodes and rebalancing impact is required before tackling distributed cache architecture.
 - **[CAP Theorem](../algorithms/cap-theorem.md)** - cache consistency guarantees map directly to CAP trade-offs; distributed caches are typically AP systems with bounded staleness.
-- **[Replication Strategies](../algorithms/replication-strategies.md)** - cache replication (read replicas, active-active) shares the same trade-offs as database replication; stale read windows and write conflict surfaces depend on the replication model chosen.
+- **[<abbr>Replication</abbr> Strategies](../algorithms/replication-strategies.md)** - cache replication (read replicas, active-active) shares the same trade-offs as database replication; stale read windows and write conflict surfaces depend on the replication model chosen.
 
 ---
 
@@ -30,7 +30,7 @@
 
 ## TLDR
 
-A cache is a faster, smaller storage layer that sits between a client and a slower authoritative data store - its purpose is to absorb repeated reads at a fraction of the latency and cost of hitting the origin. The fundamental design choice is not "should we cache?" but "where, what, and for how long" - and crucially, how staleness is bounded when the underlying data changes. Write strategy (cache-aside, write-through, write-behind) determines how cache and DB stay in sync; eviction policy (LRU, LFU, ARC) determines what survives memory pressure; and invalidation strategy determines how quickly stale data is expelled. At scale, the hard problems are not hit rate optimization but the failure modes that emerge under load: cache stampedes that hammer the origin on coordinated misses, avalanches when large TTL cohorts expire simultaneously, and penetration where non-existent keys bypass the cache entirely. Most production caches accept AP semantics - eventual consistency with bounded staleness - and design consumers to tolerate stale reads rather than pay the coordination cost of strong consistency.
+A cache is a faster, smaller storage layer that sits between a client and a slower authoritative data store - its purpose is to absorb repeated reads at a fraction of the <abbr>latency</abbr> and cost of hitting the origin. The fundamental design choice is not "should we cache?" but "where, what, and for how long" - and crucially, how staleness is bounded when the underlying data changes. Write strategy (cache-aside, write-through, write-behind) determines how cache and DB stay in sync; eviction policy (<abbr>LRU</abbr>, LFU, ARC) determines what survives memory pressure; and invalidation strategy determines how quickly stale data is expelled. At scale, the hard problems are not hit rate optimization but the failure modes that emerge under load: cache stampedes that hammer the origin on coordinated misses, avalanches when large TTL cohorts expire simultaneously, and penetration where non-existent keys bypass the cache entirely. Most production caches accept AP semantics - <abbr>eventual consistency</abbr> with bounded staleness - and design consumers to tolerate stale reads rather than pay the coordination cost of <abbr>strong consistency</abbr>.
 
 ---
 
@@ -38,7 +38,7 @@ A cache is a faster, smaller storage layer that sits between a client and a slow
 
 **Interviewer TL;DR:** Before choosing any cache design, answer four questions in order: should you cache at all, which layer, what write strategy, and what eviction policy. Skipping question one is the most common mistake.
 
-**Mental model:** Caching is a bet - you trade memory and consistency complexity for latency and throughput. The bet only pays off if the data is read more than it changes and if the access pattern has enough locality for the cache to stay warm.
+**Mental model:** Caching is a bet - you trade memory and consistency complexity for latency and <abbr>throughput</abbr>. The bet only pays off if the data is read more than it changes and if the access pattern has enough locality for the cache to stay warm.
 
 ### When to Cache
 
@@ -142,7 +142,7 @@ Every write goes to the cache and DB synchronously. The cache is always consiste
 
 #### Latency Cost vs Consistency Benefit
 
-If writes are rare and reads are frequent, write-through's latency cost is amortized across many cache hits. If writes are frequent (order creation, inventory updates), the doubled write latency accumulates and write-through becomes a bottleneck. Profile the write:read ratio before choosing write-through.
+If writes are rare and reads are frequent, write-through's latency cost is <abbr>amortized</abbr> across many cache hits. If writes are frequent (order creation, inventory updates), the doubled write latency accumulates and write-through becomes a bottleneck. Profile the write:read ratio before choosing write-through.
 
 ### Write-Behind (Write-Back)
 
@@ -258,7 +258,7 @@ _The core tension: the writer knows what data changed, but not which cache keys 
 
 A `users` table row update is straightforward - invalidate `user:{id}`. But what about a leaderboard cached as `leaderboard:top100`? That key depends on every user's score. A score update must know to invalidate the leaderboard key - but the leaderboard service and the user service are often separate teams and deployments.
 
-Compounding problems: invalidation messages can be lost (network failure), reordered (cache populated after invalidation arrives due to clock skew), or duplicated (idempotent deletes are safe; idempotent updates are not). A missed invalidation silently serves stale data until TTL expiry.
+Compounding problems: invalidation messages can be lost (network failure), reordered (cache populated after invalidation arrives due to clock skew), or duplicated (<abbr>idempotent</abbr> deletes are safe; idempotent updates are not). A missed invalidation silently serves stale data until TTL expiry.
 
 ### Key-Based Invalidation
 
@@ -317,7 +317,7 @@ In a multi-node cache cluster, invalidating one logical key requires sending the
 
 ## Distributed Cache Architecture
 
-**Interviewer TL;DR:** Sharding strategy is the most consequential architectural decision - modulo hashing is fatal on resharding, consistent hashing is the production default. Hot keys are the hardest operational problem and require a different mitigation than adding nodes.
+**Interviewer TL;DR:** <abbr>Sharding</abbr> strategy is the most consequential architectural decision - modulo hashing is fatal on resharding, consistent hashing is the production default. Hot keys are the hardest operational problem and require a different mitigation than adding nodes.
 
 **Mental model:** A single cache node has a throughput ceiling and a memory limit. Distributing a cache means deciding how to route each key to a node, how to keep replicas in sync, and what happens when a node fails or the cluster grows.
 
@@ -475,7 +475,7 @@ Requests for keys that do not exist in the DB (malicious enumeration, buggy clie
 
 **Mitigation 1 - Null caching:** Cache the "not found" result with a short TTL: `cache.set(key, NULL_SENTINEL, ttl=60)`. Subsequent requests for the same non-existent key hit the cache and return immediately. Risk: an attacker enumerating a large key space fills the cache with null sentinels, evicting valid data. Limit with a maximum TTL for null entries and rate limiting on cache population.
 
-**Mitigation 2 - Bloom filter guard:** Pre-populate a Bloom filter with all valid keys. Before touching the cache or DB, check the filter. Requests for keys not in the filter are rejected immediately. False positive rate of a Bloom filter means some invalid keys pass through - acceptable. False negative rate is zero - no valid key is ever rejected.
+**Mitigation 2 - <abbr>Bloom filter</abbr> guard:** Pre-populate a Bloom filter with all valid keys. Before touching the cache or DB, check the filter. Requests for keys not in the filter are rejected immediately. False positive rate of a Bloom filter means some invalid keys pass through - acceptable. False negative rate is zero - no valid key is ever rejected.
 
 ```python
 bloom = BloomFilter(capacity=10_000_000, error_rate=0.01)
@@ -572,7 +572,7 @@ Cross-region replication lag is measured in tens to hundreds of milliseconds (RT
 
 Lives inside the application process memory. Access is sub-microsecond (no network, no syscall).
 
-**Heap-based (Caffeine, Guava Cache, Python `functools.lru_cache`):** Managed by the language runtime GC. GC pressure increases with cache size - large heap caches cause long GC pauses in Java. Suitable for small caches (< 500MB).
+**Heap-based (Caffeine, Guava Cache, Python `functools.lru_cache`):** Managed by the language runtime GC. GC pressure increases with cache size - large <abbr>heap</abbr> caches cause long GC pauses in Java. Suitable for small caches (< 500MB).
 
 **Off-heap (direct ByteBuffer, memory-mapped files, Chronicle Map):** Bypasses GC entirely. Data is stored in native memory outside the JVM heap. No GC pauses; requires manual memory management and explicit serialization/deserialization. Suitable for large L1 caches (> 1GB) in latency-sensitive Java services.
 
@@ -742,7 +742,7 @@ Practical mitigation is difficult - adding artificial response time noise is ope
 > 🎯 **Interview Lens** > **Q:** You're building a multi-tenant SaaS on a shared Redis cluster. What security controls do you implement?
 > **Ideal answer:** (1) Key namespacing: all keys prefixed with `{tenant_id}:` enforced at the data layer. (2) No wildcard key operations - use SCAN with tenant prefix pattern only. (3) Short TTL for any PII or session data; explicit invalidation on logout/revoke. (4) TLS in transit. (5) If strict isolation is required, separate Redis instances per tenant tier (dedicated instances for enterprise tenants, shared for free tier). (6) Audit key access patterns - monitor for cross-tenant key access anomalies.
 > **Common trap:** "We use separate key prefixes so tenants can't see each other's data." A Redis ACL misconfiguration or application bug can bypass prefix conventions. Enforce at the data layer with ACL rules, not just naming conventions.
-> **Next question:** "A tenant's cache entry contains a Protobuf-encoded object. Another tenant's key accidentally gets the same hash value after a refactor. How does your system handle it?" → Namespace prefix collision only occurs if two tenants happen to have the same resource ID under the same namespace - which is prevented by the `{tenant_id}:` prefix, not by hash. If the prefix is missing due to a code bug, the collision is a data leak. This is why enforcement at the data access layer (not by convention) is critical.
+> **Next question:** "A tenant's cache entry contains a Protobuf-encoded object. Another tenant's key accidentally gets the same hash value after a refactor. How does your system handle it?" → Namespace prefix <abbr>collision</abbr> only occurs if two tenants happen to have the same resource ID under the same namespace - which is prevented by the `{tenant_id}:` prefix, not by hash. If the prefix is missing due to a code bug, the collision is a data leak. This is why enforcement at the data access layer (not by convention) is critical.
 
 **Key Takeaway:** Namespace keys by tenant, use short TTLs for sensitive data, enforce TLS in transit, and encrypt at rest if persistence is enabled. Cache poisoning and side-channel timing are the less obvious but interview-worthy threat vectors.
 
