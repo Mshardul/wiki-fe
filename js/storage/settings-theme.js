@@ -514,10 +514,12 @@ const Settings = {
     if (!select || !checklist) return;
 
     if (!select.dataset.populated) {
-      select.insertAdjacentHTML(
-        "beforeend",
-        WIKIS.map((w) => `<option value="${w.id}">${escHtml(w.title)}</option>`).join(""),
-      );
+      for (const w of WIKIS) {
+        const opt = document.createElement("option");
+        opt.value = w.id;
+        opt.textContent = w.title;
+        select.appendChild(opt);
+      }
       select.dataset.populated = "1";
     }
 
