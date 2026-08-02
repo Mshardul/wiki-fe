@@ -336,6 +336,15 @@ const SEARCH_COMMANDS = [
       Settings.openTab("general");
     },
   },
+  {
+    id: "dashboard",
+    label: "Open dashboard",
+    hint: "See read/completed progress for each vertical",
+    icon: "▤",
+    run() {
+      navigate("dashboard");
+    },
+  },
 ];
 
 function availableCommands() {

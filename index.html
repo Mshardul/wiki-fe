@@ -6,11 +6,13 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <title>Knowledge Base</title>
+    <title>Wiki</title>
     <link rel="manifest" href="./manifest.json" />
     <link rel="icon" type="image/svg+xml" href="./icon.svg" />
-    <link rel="apple-touch-icon" href="./icon.svg" />
-    <meta name="theme-color" content="#4f46e5" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#6366f1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -154,6 +156,13 @@
             data-action="offline-shelf-open"
           >
             <svg class="icon"><use href="#icon-download"></use></svg>
+          </button>
+          <button
+            class="topbar-icon-btn"
+            title="Dashboard"
+            data-action="dashboard-open"
+          >
+            <svg class="icon"><use href="#icon-dashboard"></use></svg>
           </button>
           <button
             class="topbar-icon-btn"
@@ -607,6 +616,41 @@
       </div>
       <main class="offline-shelf-main">
         <div id="offline-shelf-groups" class="offline-shelf-groups"></div>
+      </main>
+    </div>
+
+    <!-- ══════════════════════════════════════
+       VIEW - DASHBOARD
+  ══════════════════════════════════════ -->
+    <div id="view-dashboard" class="view">
+      <div class="page-topbar">
+        <div class="topbar-inner">
+          <button class="back-btn" data-action="wiki-home">
+            <svg class="icon"><use href="#icon-chevron-left"></use></svg>
+            Home
+          </button>
+          <nav
+            id="dashboard-breadcrumb"
+            class="breadcrumb"
+            aria-label="Breadcrumb"
+          ></nav>
+          <button
+            class="topbar-icon-btn"
+            title="Preferences (,)"
+            data-action="settings-open"
+          >
+            <svg class="icon"><use href="#icon-settings"></use></svg>
+          </button>
+        </div>
+      </div>
+      <div class="page-hero">
+        <div class="page-hero-inner">
+          <h1 class="page-title">Dashboard</h1>
+          <p class="page-subtitle">Your progress across each vertical</p>
+        </div>
+      </div>
+      <main class="dashboard-main">
+        <div id="dashboard-cards" class="dashboard-cards"></div>
       </main>
     </div>
 

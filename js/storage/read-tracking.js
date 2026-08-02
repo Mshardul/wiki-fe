@@ -6,20 +6,20 @@ import { scheduleSyncMutation, state } from "../state.js";
    ═══════════════════════════════════════════════════════════════ */
 const READ_KEY_PREFIX = "wiki-read";
 
-function _readKey() {
-  return `${READ_KEY_PREFIX}-${state.currentWikiId || "default"}`;
+function _readKey(wikiId) {
+  return `${READ_KEY_PREFIX}-${wikiId || state.currentWikiId || "default"}`;
 }
 
-function getReadSet() {
+function getReadSet(wikiId) {
   try {
-    return new Set(JSON.parse(localStorage.getItem(_readKey()) || "[]"));
+    return new Set(JSON.parse(localStorage.getItem(_readKey(wikiId)) || "[]"));
   } catch {
     return new Set();
   }
 }
 
-function isRead(path) {
-  return getReadSet().has(path);
+function isRead(path, wikiId) {
+  return getReadSet(wikiId).has(path);
 }
 
 // Returns true only when this call actually transitioned the article to read, so callers can distinguish a real finish from a no-op.

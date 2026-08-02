@@ -1232,3 +1232,10 @@ def test_recent_chip_44px_on_coarse_pointer_tablet_width(browser, base_url, cdn_
         assert height >= 44, f"gsearch-recent-chip height too small at 800px: {height}px"
     finally:
         ctx.close()
+
+
+def test_search_query_param_opens_search_on_boot(page, base_url):
+    """?search=1 boot param (PWA shortcut target) auto-opens the search modal."""
+    page.goto(f"{base_url}/?search=1", wait_until="domcontentloaded")
+    page.wait_for_selector("#global-search-modal:not(.hidden)")
+    assert page.locator("#global-search-modal:not(.hidden)").count() == 1

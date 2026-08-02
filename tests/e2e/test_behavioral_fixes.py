@@ -15,6 +15,8 @@ from pathlib import Path
 
 import pytest
 
+from conftest import _make_cdn_fulfill_handler
+
 JS_DIR = Path(__file__).parent.parent.parent / "js"
 
 
@@ -583,6 +585,50 @@ def test_debug_overlay_close_removes_it(page, base_url):
     assert page.locator("#debug-overlay").count() == 0, (
         "#debug-overlay must be removed after close button click"
     )
+
+
+_IOS_UA = (
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 "
+    "(KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+)
+
+
+def test_ios_install_nudge_shown_on_ios_ua(page, base_url, cdn_cache):
+    """iOS Safari UA sees the manual Add-to-Home-Screen toast on boot."""
+    ctx = page.context.browser.new_context(user_agent=_IOS_UA, service_workers="block")
+    ios_page = ctx.new_page()
+    for url, (body, content_type) in cdn_cache.items():
+        ios_page.route(url, _make_cdn_fulfill_handler(body, content_type))
+    ios_page.goto(base_url, wait_until="domcontentloaded")
+
+    toast = ios_page.locator("#wiki-toast.visible")
+    toast.wait_for(state="visible", timeout=8_000)
+    assert "Add to Home Screen" in toast.text_content()
+    ctx.close()
+
+
+def test_ios_install_nudge_absent_on_desktop_ua(wiki_page):
+    """Default (non-iOS) UA never sees the iOS Add-to-Home-Screen toast."""
+    assert wiki_page.locator("#wiki-toast.visible").count() == 0
+
+
+def test_ios_install_nudge_dismiss_persists(page, base_url, cdn_cache):
+    """Dismissing the iOS nudge keeps it from reappearing on the next visit."""
+    ctx = page.context.browser.new_context(user_agent=_IOS_UA, service_workers="block")
+    ios_page = ctx.new_page()
+    for url, (body, content_type) in cdn_cache.items():
+        ios_page.route(url, _make_cdn_fulfill_handler(body, content_type))
+    ios_page.goto(base_url, wait_until="domcontentloaded")
+
+    ios_page.locator("#wiki-toast .toast-undo-btn").click()
+    ios_page.wait_for_function("() => !document.getElementById('wiki-toast').classList.contains('visible')")
+
+    ios_page.reload(wait_until="domcontentloaded")
+    ios_page.wait_for_selector("#view-home.active", timeout=8_000)
+    assert ios_page.locator("#wiki-toast.visible").count() == 0, (
+        "iOS nudge must not reappear after being dismissed once"
+    )
+    ctx.close()
 
 
 def _open_prefs(page):

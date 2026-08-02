@@ -3,6 +3,7 @@ import { WIKIS, fuzzyMatch, state } from "../state.js";
 import { renderAdminPage } from "./admin-view.js";
 import { renderChangelog } from "./changelog-view.js";
 import { renderContent } from "./content-view.js";
+import { renderDashboard } from "./dashboard-view.js";
 import { renderHome, renderIndex } from "./home-index.js";
 import { fetchWikiIndex } from "./home-parse.js";
 import { destroyIndexGraph } from "./index-graph.js";
@@ -22,6 +23,7 @@ const VIEW_DEPTH = {
   "view-changelog": 1,
   "view-offline-shelf": 1,
   "view-admin": 1,
+  "view-dashboard": 1,
 };
 let _lastViewDepth = null; // null = no prior view this session yet (boot render)
 const _reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -122,6 +124,11 @@ function _execRoute(hash) {
   if (wikiId === "offline") {
     updatePageTitle("Offline Shelf");
     renderOfflineShelf();
+    return;
+  }
+  if (wikiId === "dashboard") {
+    updatePageTitle("Dashboard");
+    renderDashboard();
     return;
   }
   if (wikiId === "admin") {

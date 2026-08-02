@@ -192,6 +192,18 @@ pre.has-line-numbers {
   overflow: hidden;
   border: 1px solid var(--border);
 }
+/* Inside the scroll wrap, let the table grow past 100% so wide content
+   overflows into the wrap's own scrollbar instead of always fitting and
+   never triggering .scroll-cue. */
+.table-scroll-wrap .markdown-body table,
+.table-scroll-wrap table {
+  width: auto;
+  table-layout: auto;
+}
+.table-scroll-wrap th,
+.table-scroll-wrap td {
+  white-space: nowrap;
+}
 .markdown-body th {
   background: var(--surface-2);
   color: var(--text-heading);

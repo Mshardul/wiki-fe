@@ -17,6 +17,7 @@ import {
   isDistractionFree,
   toggleDistractionFree,
 } from "./app/distraction-free.js";
+import { initInstallPrompt } from "./app/install-prompt.js";
 import { closeLinkGraph, isLinkGraphOpen, openLinkGraph } from "./app/link-graph.js";
 import { printArticle } from "./app/print.js";
 import { closeSectionMap, isSectionMapOpen, toggleSectionMap } from "./app/section-map.js";
@@ -179,6 +180,9 @@ document.addEventListener("click", (e) => {
       break;
     case "offline-shelf-open":
       navigate("offline");
+      break;
+    case "dashboard-open":
+      navigate("dashboard");
       break;
     case "admin-open":
       navigate("admin");
@@ -663,6 +667,7 @@ window.addEventListener("hashchange", () => {
   applySettingsToDOM(getSettings());
   syncHljsTheme();
   initOsThemeListener();
+  initInstallPrompt();
 
   // Not awaited - boot/render proceeds anonymously, re-renders on wiki:session-changed.
   Auth.init();
@@ -715,6 +720,10 @@ window.addEventListener("hashchange", () => {
 
   const hash = location.hash.slice(1);
   route(hash);
+
+  if (new URLSearchParams(location.search).has("search")) {
+    openGlobalSearch();
+  }
 })();
 
 // Re-route when restored from BFcache (e.g. history.back() from 404 page)

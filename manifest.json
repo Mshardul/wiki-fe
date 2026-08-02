@@ -1,18 +1,67 @@
 {
-  "name": "Knowledge Base",
+  "id": "/",
+  "name": "Wiki",
   "short_name": "Wiki",
-  "description": "A personal knowledge base and wiki.",
+  "description": "Fast, offline-capable reference wiki for System Design and DSA interview prep.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#4f46e5",
+  "background_color": "#06070e",
+  "theme_color": "#6366f1",
   "icons": [
     {
       "src": "./icon.svg",
       "type": "image/svg+xml",
       "sizes": "any",
-      "purpose": "any maskable"
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "System Design",
+      "url": "./#system-design",
+      "icons": [
+        {
+          "src": "./icons/shortcut-system-design.png",
+          "type": "image/png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Data Structures & Algorithms",
+      "short_name": "DSA",
+      "url": "./#dsa",
+      "icons": [
+        {
+          "src": "./icons/shortcut-dsa.png",
+          "type": "image/png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "url": "./?search=1",
+      "icons": [
+        {
+          "src": "./icons/shortcut-search.png",
+          "type": "image/png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ]
 }
