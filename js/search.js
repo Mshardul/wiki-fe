@@ -22,7 +22,7 @@ import {
   synonymCache,
   unlockBodyScroll,
 } from "./state.js";
-import { isRead, markRead, markUnread } from "./storage/read-tracking.js";
+import { isRead, markRead, markUnread, updateReadBtn } from "./storage/read-tracking.js";
 import { RecentSearches } from "./storage/scroll-collapse.js";
 import { Settings } from "./storage/settings-theme.js";
 
@@ -156,11 +156,13 @@ function _resolveSectionArg(argText, markAsRead) {
       const setRead = markAsRead ? markRead : markUnread;
       const setBack = markAsRead ? markUnread : markRead;
       changed.forEach((e) => setRead(e.path));
+      updateReadBtn();
       showToast(
         `Marked ${changed.length} ${markAsRead ? "read" : "unread"} in "${section}"`,
         4000,
         () => {
           changed.forEach((e) => setBack(e.path));
+          updateReadBtn();
           if (state.currentWikiId === wiki.id) navigate(wiki.id);
         },
       );
@@ -237,8 +239,10 @@ const SEARCH_COMMANDS = [
       const entries = _entriesForWiki(wiki.id);
       const changed = entries.filter((e) => !isRead(e.path));
       changed.forEach((e) => markRead(e.path));
+      updateReadBtn();
       showToast(`Marked ${changed.length} read in ${wiki.title}`, 4000, () => {
         changed.forEach((e) => markUnread(e.path));
+        updateReadBtn();
         if (state.currentWikiId === wiki.id) navigate(wiki.id);
       });
       if (state.currentWikiId === wiki.id) navigate(wiki.id);
@@ -256,8 +260,10 @@ const SEARCH_COMMANDS = [
       const entries = _entriesForWiki(wiki.id);
       const changed = entries.filter((e) => isRead(e.path));
       changed.forEach((e) => markUnread(e.path));
+      updateReadBtn();
       showToast(`Marked ${changed.length} unread in ${wiki.title}`, 4000, () => {
         changed.forEach((e) => markRead(e.path));
+        updateReadBtn();
         if (state.currentWikiId === wiki.id) navigate(wiki.id);
       });
       if (state.currentWikiId === wiki.id) navigate(wiki.id);

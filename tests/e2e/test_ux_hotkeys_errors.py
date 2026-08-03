@@ -150,6 +150,25 @@ def test_focus_btn_click_toggles_mode(page, base_url):
 # ── Mobile topbar overflow menu ──────────────────────────────────
 
 
+def test_overflow_trigger_hidden_on_wide_desktop(page, base_url):
+    """Regression: above 1024px the overflow items render inline, no ⋯ trigger."""
+    page.set_viewport_size({"width": 1300, "height": 800})
+    _go_to_article(page, base_url)
+    assert not page.locator("#content-overflow-btn").is_visible()
+    assert page.locator("#content-quiz-btn").is_visible()
+
+
+def test_overflow_trigger_shown_on_narrow_desktop(page, base_url):
+    """Regression: at 900-1024px (previously always inline, overflowing the topbar) the ⋯ trigger collapses items into a menu."""
+    page.set_viewport_size({"width": 950, "height": 800})
+    _go_to_article(page, base_url)
+    assert page.locator("#content-overflow-btn").is_visible()
+    assert not page.locator("#content-quiz-btn").is_visible()
+    page.locator("#content-overflow-btn").click()
+    assert page.locator("#content-overflow-menu").is_visible()
+    assert page.locator("#content-quiz-btn").is_visible()
+
+
 def test_overflow_menu_hidden_by_default_on_mobile(page, base_url):
     """Overflow dropdown is closed until the ⋯ trigger is tapped."""
     page.set_viewport_size({"width": 375, "height": 812})

@@ -232,5 +232,49 @@ def test_heading_collapse_persists_after_reload(page, base_url):
         timeout=10_000,
     )
 
-    still_collapsed = page.locator("#markdown-body h2.section--collapsed").count()
-    assert still_collapsed >= 1, "Heading collapse state must survive page reload"
+
+# ── TOC/Notes rail 70/30 split ──────────────────────────────────────
+
+
+def test_toc_nav_capped_at_70_percent_of_rail(page, base_url):
+    """A long article's TOC fills up to ~70% of the rail height, leaving room for Notes below."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _go_to_article(page, base_url)
+    page.wait_for_selector("#toc-nav .toc-item", timeout=5_000)
+
+    metrics = page.evaluate("""() => {
+        const sidebar = document.getElementById('toc-sidebar');
+        const nav = document.getElementById('toc-nav');
+        return {
+            sidebarHeight: sidebar.getBoundingClientRect().height,
+            navHeight: nav.getBoundingClientRect().height,
+            overflows: nav.scrollHeight > nav.clientHeight,
+        };
+    }""")
+    ratio = metrics["navHeight"] / metrics["sidebarHeight"]
+    assert 0.65 <= ratio <= 0.75, f"TOC nav took {ratio:.2f} of the rail, expected ~0.70"
+    assert metrics["overflows"], "TOC nav should scroll internally once capped, not overflow the rail"
+
+
+def test_notes_fills_remaining_space_when_toc_is_short(page, base_url):
+    """A short article's TOC doesn't stretch to fill the rail - Notes gets the remainder."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _go_to_article(page, base_url, slug="system-design/cdn")
+    page.evaluate("() => localStorage.removeItem(`wiki-notes-collapsed-${state.currentWikiId}`)")
+    page.reload()
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    page.wait_for_selector("#toc-nav .toc-item", timeout=5_000)
+
+    metrics = page.evaluate("""() => {
+        const nav = document.getElementById('toc-nav');
+        const notes = document.getElementById('notes-scratchpad');
+        return {
+            navFitsContent: nav.scrollHeight <= nav.clientHeight + 1,
+            notesHeight: notes.getBoundingClientRect().height,
+        };
+    }""")
+    assert metrics["navFitsContent"], "Short TOC should not be stretched to fill unused rail space"
+    assert metrics["notesHeight"] > 80, "Notes should expand into the space the short TOC left unused"

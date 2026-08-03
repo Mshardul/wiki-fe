@@ -70,6 +70,73 @@ def test_auth_btn_shows_icon_on_mobile(page, base_url):
     expect(svg).to_be_visible()
 
 
+def test_auth_btn_shows_icon_on_index_and_content_views(page, base_url):
+    """Regression: index/content topbar auth buttons were missing the user-icon SVG, rendering as an empty circle."""
+    _stub_logged_out(page)
+    page.goto(f"{base_url}/#system-design")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
+    expect(page.locator("#auth-btn-index svg")).to_be_visible()
+
+    page.goto(f"{base_url}/#system-design/caching")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    expect(page.locator("#auth-btn-content svg")).to_be_visible()
+
+
+def test_login_submit_shows_loading_state_while_pending(page, base_url):
+    """Regression: login button had no visual feedback (disabled but no spinner/label change) while pending."""
+    _stub_logged_out(page)
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.fill("#auth-login-email", "test@example.com")
+    page.fill("#auth-login-password", "wrongpassword123")
+
+    ready = threading.Event()
+
+    def slow_handler(route):
+        ready.wait(timeout=3.0)
+        route.abort()
+
+    page.route("**/api/v1/auth/login", slow_handler)
+
+    # page.locator().click() blocks until the intercepted request settles, so
+    # observe mid-flight state from inside the page rather than after click() returns.
+    snapshot = page.evaluate("""() => {
+        document.getElementById('auth-login-submit').click();
+        const btn = document.getElementById('auth-login-submit');
+        return { disabled: btn.disabled, isLoading: btn.classList.contains('is-loading'), label: btn.querySelector('.auth-submit-label')?.textContent };
+    }""")
+    ready.set()
+    assert snapshot["isLoading"], "login button should get .is-loading while the request is pending"
+    assert snapshot["disabled"], "login button should be disabled while the request is pending"
+    assert snapshot["label"] == "Logging in…", f"expected loading label, got {snapshot['label']!r}"
+
+
+def test_forgot_submit_shows_loading_state_while_pending(page, base_url):
+    """Regression: forgot-password submit had the same missing loading feedback."""
+    _stub_logged_out(page)
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-to-forgot").click()
+    page.fill("#auth-forgot-email", "test@example.com")
+
+    ready = threading.Event()
+
+    def slow_handler(route):
+        ready.wait(timeout=3.0)
+        route.abort()
+
+    page.route("**/api/v1/auth/forgot-password", slow_handler)
+
+    snapshot = page.evaluate("""() => {
+        document.getElementById('auth-forgot-submit').click();
+        const btn = document.getElementById('auth-forgot-submit');
+        return { isLoading: btn.classList.contains('is-loading'), label: btn.querySelector('.auth-submit-label')?.textContent };
+    }""")
+    ready.set()
+    assert snapshot["isLoading"], "forgot-password button should get .is-loading while the request is pending"
+    assert snapshot["label"] == "Sending…", f"expected loading label, got {snapshot['label']!r}"
+
+
 def test_auth_swap_links_meet_touch_target_on_mobile(page, base_url, cdn_cache):
     """Swap links (Forgot password?, Register) are at least 44px tall on touch devices."""
     ctx = page.context.browser.new_context(
@@ -170,7 +237,7 @@ def test_register_checklist_turns_green(page, base_url):
 
 
 def test_register_checklist_resyncs_on_panel_leave_and_return(page, base_url):
-    """Regression for WIKI-476: leaving the register panel and coming back
+    """Regression: leaving the register panel and coming back
     with a still-valid password must re-derive the checklist/submit state
     from the actual input value, not force it back to all-red/disabled."""
     _stub_logged_out(page)
@@ -309,7 +376,7 @@ def test_migrate_modal_shown_on_login_with_local_data(page, base_url):
 
 
 def test_migrate_import_failure_skips_pull_and_warns(page, base_url):
-    """Regression for WIKI-464: if 'Keep them' import fails, the local data
+    """Regression: if 'Keep them' import fails, the local data
     that was just chosen to keep must not be silently overwritten by the
     following pullAll() - and the user must see a warning, not silence."""
     _stub_logged_out(page)
@@ -433,7 +500,7 @@ def test_logout_clears_stored_session_token(page, base_url):
 
 
 def test_logout_clears_highlights_markers_notes(page, base_url):
-    """Regression for WIKI-435: logout must wipe highlights, markers, and
+    """Regression: logout must wipe highlights, markers, and
     notes, not just bookmarks/recents/read-tracking - otherwise private data
     survives on a shared/public computer."""
     page.route(
@@ -522,7 +589,7 @@ def test_login_unverified_shows_verify_panel(page, base_url):
 
 
 def test_login_unverified_verify_panel_copy_distinct_from_register(page, base_url):
-    """Regression for WIKI-420: login-triggered verify panel must not claim
+    """Regression: login-triggered verify panel must not claim
     a new email was just sent - no email is dispatched on this path."""
     _stub_logged_out(page)
     page.route(
@@ -544,7 +611,7 @@ def test_login_unverified_verify_panel_copy_distinct_from_register(page, base_ur
 
 
 def test_login_empty_submit_blocked_by_required_fields(page, base_url):
-    """Regression for WIKI-418: empty login submit must not reach the
+    """Regression: empty login submit must not reach the
     network - native required-field validation blocks it client-side."""
     _stub_logged_out(page)
     login_called = {"hit": False}
@@ -560,7 +627,7 @@ def test_login_empty_submit_blocked_by_required_fields(page, base_url):
 
 
 def test_forgot_empty_submit_blocked_by_required_field(page, base_url):
-    """Regression for WIKI-418: empty forgot-password submit is blocked
+    """Regression: empty forgot-password submit is blocked
     client-side by the required attribute."""
     _stub_logged_out(page)
     forgot_called = {"hit": False}
@@ -577,7 +644,7 @@ def test_forgot_empty_submit_blocked_by_required_field(page, base_url):
 
 
 def test_forgot_sent_message_cleared_on_panel_swap(page, base_url):
-    """Regression for WIKI-463: '#auth-forgot-sent' must not survive a swap
+    """Regression: '#auth-forgot-sent' must not survive a swap
     away from and back to the forgot panel - otherwise a later, unsubmitted
     attempt shows a stale success message before the user even resubmits."""
     _stub_logged_out(page)
@@ -598,7 +665,7 @@ def test_forgot_sent_message_cleared_on_panel_swap(page, base_url):
 
 
 def test_login_network_error_shows_fe_authored_message(page, base_url):
-    """Regression for WIKI-465/WIKI-478: a dropped connection must not leak
+    """Regression: a dropped connection must not leak
     the raw browser fetch-failure string (e.g. 'Failed to fetch') into the
     login error - it must show the FE-authored network message instead."""
     _stub_logged_out(page)
@@ -616,7 +683,7 @@ def test_login_network_error_shows_fe_authored_message(page, base_url):
 
 
 def test_resend_network_error_does_not_claim_success(page, base_url):
-    """Regression for WIKI-465: resend's anti-enumeration 'sent' message is
+    """Regression: resend's anti-enumeration 'sent' message is
     only valid for auth-domain errors - a genuine network failure must be
     surfaced, not swallowed into a false success toast."""
     _stub_logged_out(page)
@@ -663,7 +730,7 @@ def test_bad_credentials_shows_error(page, base_url):
 
 
 def test_concurrent_401s_fire_session_expired_once(page, base_url):
-    """Regression for WIKI-403: the session-expired guard used to reset on
+    """Regression: the session-expired guard used to reset on
     the next macrotask (setTimeout(...,0)), so concurrent 401s from a
     Promise.all (e.g. Sync.pullAll) could each slip past it and fire the
     global session-expired flow more than once."""
@@ -703,7 +770,7 @@ def test_concurrent_401s_fire_session_expired_once(page, base_url):
 
 
 def test_session_changed_same_article_does_not_tear_down_reading_state(page, base_url):
-    """Regression for WIKI-498: wiki:session-changed used to unconditionally
+    """Regression: wiki:session-changed used to unconditionally
     re-route, tearing down focus mode and rebuilding the article even when
     the session event fired for the same article already on screen. It must
     now only refresh session-dependent chrome when the path is unchanged."""
@@ -727,7 +794,7 @@ def test_session_changed_same_article_does_not_tear_down_reading_state(page, bas
 
 
 def test_reset_panel_has_recovery_links(page, base_url):
-    """Regression for WIKI-422: the reset-password panel must offer a way
+    """Regression: the reset-password panel must offer a way
     back to login and a way to request a fresh link, so an expired/invalid
     reset link doesn't dead-end the user."""
     _stub_logged_out(page)
@@ -744,7 +811,7 @@ def test_reset_panel_has_recovery_links(page, base_url):
 
 
 def test_reset_panel_back_to_login_link_works(page, base_url):
-    """Regression for WIKI-422: back-to-login link from the reset panel
+    """Regression: back-to-login link from the reset panel
     swaps to the login panel."""
     _stub_logged_out(page)
     page.goto(f"{base_url}?mode=reset&token=expiredtoken")
@@ -754,7 +821,7 @@ def test_reset_panel_back_to_login_link_works(page, base_url):
 
 
 def test_reset_link_boot_param_opens_panel_and_strips_url(page, base_url):
-    """Regression for WIKI-417: handleBootParams must consume mode/token
+    """Regression: handleBootParams must consume mode/token
     synchronously on boot and strip them from the URL, independent of any
     later service-worker controllerchange reload."""
     _stub_logged_out(page)
@@ -791,7 +858,7 @@ def test_reset_password_used_token_shows_actionable_error(page, base_url):
 
 
 def test_auth_modal_traps_focus_with_shift_tab(page, base_url):
-    """Regression for WIKI-423: Shift+Tab on the first focusable element in
+    """Regression: Shift+Tab on the first focusable element in
     the auth dialog must wrap to the last, instead of leaking focus to the
     hidden background page."""
     _stub_logged_out(page)
@@ -811,7 +878,7 @@ def test_auth_modal_traps_focus_with_shift_tab(page, base_url):
 
 
 def test_auth_modal_traps_focus_with_tab_forward(page, base_url):
-    """Regression for WIKI-423: Tab on the last focusable element must wrap
+    """Regression: Tab on the last focusable element must wrap
     back to the first, not leak past the dialog."""
     _stub_logged_out(page)
     page.goto(base_url)
@@ -836,7 +903,7 @@ def test_auth_modal_traps_focus_with_tab_forward(page, base_url):
 
 
 def test_auth_modal_removes_focus_trap_on_close(page, base_url):
-    """Regression for WIKI-423: closing the modal must remove the keydown
+    """Regression: closing the modal must remove the keydown
     listener so Tab behaves normally on the page again."""
     _stub_logged_out(page)
     page.goto(base_url)
@@ -847,7 +914,7 @@ def test_auth_modal_removes_focus_trap_on_close(page, base_url):
 
 
 def test_login_syncs_across_tabs(page, base_url):
-    """Regression for WIKI-421: a login in one tab must reflect in another
+    """Regression: a login in one tab must reflect in another
     open tab (same browser context) without a manual reload - via the
     wiki-session-sync localStorage key + storage-event listener.
 
@@ -903,7 +970,7 @@ def test_login_syncs_across_tabs(page, base_url):
 
 
 def test_login_error_announced_to_screen_readers(page, base_url):
-    """Regression for WIKI-419: auth error elements need role=alert (or
+    """Regression: auth error elements need role=alert (or
     aria-live) so assistive tech announces them, and the field must be
     linked via aria-describedby."""
     _stub_logged_out(page)
@@ -931,7 +998,7 @@ def test_login_error_announced_to_screen_readers(page, base_url):
 
 
 def test_forgot_error_has_alert_role(page, base_url):
-    """Regression for WIKI-419: forgot-password error is announced too."""
+    """Regression: forgot-password error is announced too."""
     _stub_logged_out(page)
     page.route(
         "**/api/v1/auth/forgot-password",
@@ -952,7 +1019,7 @@ def test_forgot_error_has_alert_role(page, base_url):
 
 
 def test_login_double_click_fires_single_request(page, base_url):
-    """Regression for WIKI-416: rapid double-click/double-submit must not
+    """Regression: rapid double-click/double-submit must not
     fire duplicate POSTs - the submit button is disabled synchronously
     before the request resolves."""
     _stub_logged_out(page)
@@ -999,7 +1066,7 @@ def test_login_double_click_fires_single_request(page, base_url):
 
 
 def test_login_submit_disabled_during_inflight_request(page, base_url):
-    """Regression for WIKI-416: submit button is disabled while the login
+    """Regression: submit button is disabled while the login
     request is in flight, and re-enabled after an error response."""
     _stub_logged_out(page)
 
@@ -1022,7 +1089,7 @@ def test_login_submit_disabled_during_inflight_request(page, base_url):
 
 
 def test_resend_button_debounced_and_shows_feedback(page, base_url):
-    """Regression for WIKI-416: resend gives visible feedback and cannot be
+    """Regression: resend gives visible feedback and cannot be
     double-fired by rapid clicks."""
     _stub_logged_out(page)
     call_count = {"n": 0}
@@ -1065,7 +1132,7 @@ def test_resend_button_debounced_and_shows_feedback(page, base_url):
 
 
 def test_resend_after_login_403_uses_login_email(page, base_url):
-    """Regression for WIKI-432: resend on the login->verify path must send
+    """Regression: resend on the login->verify path must send
     the email typed into the login form, not the (empty) register form."""
     _stub_logged_out(page)
     page.route(
@@ -1098,7 +1165,7 @@ def test_resend_after_login_403_uses_login_email(page, base_url):
 
 
 def test_verify_link_boot_param_calls_verify_and_strips_url(page, base_url):
-    """Regression for WIKI-417: ?mode=verify&token=... must trigger
+    """Regression: ?mode=verify&token=... must trigger
     verification and strip params from the URL on first load."""
     _stub_logged_out(page)
     verify_called = {"hit": False}
@@ -1187,7 +1254,7 @@ def test_verify_result_failure_shows_resend_form(page, base_url):
     expect(page.locator("#auth-panel-verify-result.active")).to_be_visible()
     expect(page.locator("#auth-form-verify-result-resend")).to_be_visible()
     expect(page.locator("#auth-verify-result-copy")).to_contain_text("invalid or has expired")
-    # Regression for WIKI-463: heading must move off the static "Verifying your email".
+    # Regression: heading must move off the static "Verifying your email".
     expect(page.locator("#auth-verify-result-title")).to_have_text("Verification failed")
 
 
@@ -1201,7 +1268,7 @@ def test_verify_result_success_hides_resend_form(page, base_url):
     page.goto(f"{base_url}?mode=verify&token=goodtoken")
     expect(page.locator("#auth-panel-verify-result.active")).to_be_visible()
     expect(page.locator("#auth-form-verify-result-resend")).to_be_hidden()
-    # Regression for WIKI-463: heading must move off the static "Verifying your email".
+    # Regression: heading must move off the static "Verifying your email".
     expect(page.locator("#auth-verify-result-title")).to_have_text("Email verified")
 
 

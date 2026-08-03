@@ -4,6 +4,8 @@ const LINK_DISTANCE = 70;
 const CHARGE = -220;
 const CENTER_STRENGTH = 0.02;
 const DAMPING = 0.85;
+const ALPHA_DECAY = 0.02;
+const ALPHA_MIN = 0.001;
 
 function seedPositions(nodes, width, height) {
   const cx = width / 2;
@@ -19,7 +21,7 @@ function seedPositions(nodes, width, height) {
 }
 
 function tick(sim) {
-  const { nodes, edges, width, height } = sim;
+  const { nodes, edges, width, height, alpha } = sim;
 
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
@@ -30,7 +32,7 @@ function tick(sim) {
       let distSq = dx * dx + dy * dy;
       if (distSq < 0.01) distSq = 0.01;
       const dist = Math.sqrt(distSq);
-      const force = CHARGE / distSq;
+      const force = (CHARGE / distSq) * alpha;
       const fx = (dx / dist) * force;
       const fy = (dy / dist) * force;
       a.vx += fx;
@@ -44,7 +46,7 @@ function tick(sim) {
     const dx = e.target.x - e.source.x;
     const dy = e.target.y - e.source.y;
     const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-    const diff = (dist - LINK_DISTANCE) / dist;
+    const diff = ((dist - LINK_DISTANCE) / dist) * alpha;
     const fx = dx * diff * 0.05;
     const fy = dy * diff * 0.05;
     e.source.vx += fx;
@@ -57,13 +59,15 @@ function tick(sim) {
   const cy = height / 2;
   for (const n of nodes) {
     if (n === sim.dragging) continue;
-    n.vx += (cx - n.x) * CENTER_STRENGTH;
-    n.vy += (cy - n.y) * CENTER_STRENGTH;
+    n.vx += (cx - n.x) * CENTER_STRENGTH * alpha;
+    n.vy += (cy - n.y) * CENTER_STRENGTH * alpha;
     n.vx *= DAMPING;
     n.vy *= DAMPING;
     n.x += n.vx;
     n.y += n.vy;
   }
+
+  sim.alpha = alpha * (1 - ALPHA_DECAY);
 }
 
 function themeColor(varName, fallback) {
@@ -116,8 +120,10 @@ function nodeAt(sim, x, y) {
 }
 
 function loop(sim) {
-  tick(sim);
-  draw(sim);
+  if (sim.alpha > ALPHA_MIN || sim.dragging) {
+    tick(sim);
+    draw(sim);
+  }
   sim.raf = requestAnimationFrame(() => loop(sim));
 }
 
@@ -156,6 +162,7 @@ function createGraphSim(canvas, nodes, edges, { onNodeClick, colorForNode } = {}
     raf: null,
     width: 0,
     height: 0,
+    alpha: 1,
     colorForNode,
   };
   resizeCanvas(sim);
@@ -178,6 +185,7 @@ function createGraphSim(canvas, nodes, edges, { onNodeClick, colorForNode } = {}
   sim._onMouseDown = (e) => {
     const p = canvasPoint(sim, e);
     sim.dragging = nodeAt(sim, p.x, p.y);
+    if (sim.dragging) sim.alpha = Math.max(sim.alpha, 0.3);
   };
   sim._onMouseUp = () => {
     sim.dragging = null;

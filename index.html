@@ -239,6 +239,7 @@
             data-action="auth-toggle"
             title="Login"
           >
+            <svg class="icon"><use href="#icon-user"></use></svg>
             <span class="auth-btn-label">Login</span>
           </button>
         </div>
@@ -426,6 +427,7 @@
             data-action="auth-toggle"
             title="Login"
           >
+            <svg class="icon"><use href="#icon-user"></use></svg>
             <span class="auth-btn-label">Login</span>
           </button>
         </div>
@@ -496,14 +498,6 @@
         <aside id="toc-sidebar" class="toc-sidebar">
           <div class="toc-header">
             <span class="toc-label">On this page</span>
-            <button
-              id="toc-sidecar-open"
-              class="toc-sidecar-btn"
-              title="Pop out TOC into companion window"
-              data-action="sidecar-toc-open"
-            >
-              <svg class="icon"><use href="#icon-maximize"></use></svg>
-            </button>
             <button id="toc-collapse" class="toc-collapse" title="Collapse">
               <svg class="icon"><use href="#icon-chevron-up"></use></svg>
             </button>
@@ -1050,7 +1044,9 @@
                 aria-describedby="auth-login-error"
             /></label>
             <p id="auth-login-error" class="auth-error" role="alert" aria-live="assertive" hidden></p>
-            <button id="auth-login-submit" class="auth-submit" type="submit">Log in</button>
+            <button id="auth-login-submit" class="auth-submit" type="submit">
+              <span class="auth-submit-label">Log in</span>
+            </button>
           </form>
           <p class="auth-swap">
             <button id="auth-to-forgot" class="auth-link" type="button">
@@ -1177,7 +1173,9 @@
             <p id="auth-forgot-sent" class="auth-verify-copy" hidden>
               If that account exists, a reset link is on its way.
             </p>
-            <button id="auth-forgot-submit" class="auth-submit" type="submit">Send reset link</button>
+            <button id="auth-forgot-submit" class="auth-submit" type="submit">
+              <span class="auth-submit-label">Send reset link</span>
+            </button>
           </form>
           <p class="auth-swap">
             <button id="auth-forgot-to-login" class="auth-link" type="button">

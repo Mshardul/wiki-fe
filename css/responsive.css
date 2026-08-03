@@ -348,11 +348,8 @@
   }
 }
 
-@media (max-width: 900px) {
-  /* Collapse low-frequency actions (read, focus, quiz, offline, print, find)
-     into a "more" dropdown so the topbar fits on narrow screens - the full
-     row of icon buttons overflows the viewport up through tablet-portrait
-     widths (641-900px), not just phones. */
+@media (max-width: 1024px) {
+  /* Overflow items collapse here too - the full icon row overflows narrow desktop widths (900-1024px), not just phones/tablets. */
   #content-overflow-btn {
     display: inline-flex;
   }

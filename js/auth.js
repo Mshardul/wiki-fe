@@ -262,6 +262,7 @@ async function _withLoadingState(formId, btnId, loadingLabel, fn) {
   inputs.forEach((el) => {
     el.disabled = true;
   });
+  btn?.classList.add("is-loading");
   if (labelEl) labelEl.textContent = loadingLabel;
   try {
     await fn();
@@ -269,6 +270,7 @@ async function _withLoadingState(formId, btnId, loadingLabel, fn) {
     inputs.forEach((el) => {
       el.disabled = false;
     });
+    btn?.classList.remove("is-loading");
     if (labelEl && originalLabel !== undefined) labelEl.textContent = originalLabel;
   }
 }
@@ -563,9 +565,11 @@ const Auth = {
     document.getElementById("auth-form-login")?.addEventListener("submit", (e) => {
       e.preventDefault();
       _withSubmitGuard("auth-login-submit", () =>
-        this.login(
-          document.getElementById("auth-login-email").value.trim(),
-          document.getElementById("auth-login-password").value,
+        _withLoadingState("auth-form-login", "auth-login-submit", "Logging in…", () =>
+          this.login(
+            document.getElementById("auth-login-email").value.trim(),
+            document.getElementById("auth-login-password").value,
+          ),
         ),
       );
     });
@@ -597,7 +601,9 @@ const Auth = {
     document.getElementById("auth-form-forgot")?.addEventListener("submit", (e) => {
       e.preventDefault();
       _withSubmitGuard("auth-forgot-submit", () =>
-        this.forgotPassword(document.getElementById("auth-forgot-email").value.trim()),
+        _withLoadingState("auth-form-forgot", "auth-forgot-submit", "Sending…", () =>
+          this.forgotPassword(document.getElementById("auth-forgot-email").value.trim()),
+        ),
       );
     });
     document

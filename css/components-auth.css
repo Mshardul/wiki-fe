@@ -135,10 +135,28 @@
   font: inherit;
   font-weight: var(--fw-semibold);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
 }
 .auth-submit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+.auth-submit.is-loading::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgb(255 255 255 / 40%);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: auth-spin 0.6s linear infinite;
+}
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .auth-swap {
   margin: 1rem 0 0;

@@ -99,6 +99,7 @@ body.distraction-free .sticky-section-header {
   flex-shrink: 0;
   position: sticky;
   top: calc(var(--topbar-h) + var(--s8));
+  height: calc(100vh - var(--topbar-h) - var(--s16));
   max-height: calc(100vh - var(--topbar-h) - var(--s16));
   display: flex;
   flex-direction: column;
@@ -120,8 +121,7 @@ body.distraction-free .sticky-section-header {
   text-transform: uppercase;
   color: var(--text-muted);
 }
-.toc-collapse,
-.toc-sidecar-btn {
+.toc-collapse {
   width: 22px;
   height: 22px;
   display: flex;
@@ -131,21 +131,13 @@ body.distraction-free .sticky-section-header {
   border-radius: var(--r-sm);
   transition: color var(--t-fast), background var(--t-fast);
 }
-.toc-collapse svg,
-.toc-sidecar-btn svg {
+.toc-collapse svg {
   width: 12px;
   height: 12px;
 }
-.toc-collapse:hover,
-.toc-sidecar-btn:hover {
+.toc-collapse:hover {
   color: var(--text-body);
   background: var(--surface-hover);
-}
-/* Sidecar companion window only makes sense with room for a second window */
-@media (max-width: 900px) {
-  .toc-sidecar-btn {
-    display: none;
-  }
 }
 .toc-sidebar.collapsed:not(.mobile-open) .toc-nav {
   display: none;
@@ -155,7 +147,8 @@ body.distraction-free .sticky-section-header {
 }
 
 .notes-scratchpad {
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
   border-top: 1px solid var(--border);
   padding-top: var(--s3);
   display: flex;
@@ -192,6 +185,9 @@ body.distraction-free .sticky-section-header {
   color: var(--text-body);
   background: var(--surface-hover);
 }
+.notes-scratchpad--collapsed {
+  flex: 0 0 auto;
+}
 .notes-scratchpad--collapsed .notes-scratchpad-input {
   display: none;
 }
@@ -200,6 +196,9 @@ body.distraction-free .sticky-section-header {
 }
 .notes-scratchpad-body {
   position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
 }
 .notes-scratchpad-body::before {
   content: "$";
@@ -213,6 +212,7 @@ body.distraction-free .sticky-section-header {
 }
 .notes-scratchpad-input {
   width: 100%;
+  height: 100%;
   min-height: 100px;
   resize: vertical;
   background: var(--surface-2);
@@ -238,12 +238,17 @@ body.distraction-free .sticky-section-header {
 }
 
 .toc-nav {
+  flex: 0 1 70%;
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+}
+/* Notes collapsed - TOC absorbs the freed space instead of leaving a gap. */
+.toc-sidebar:has(.notes-scratchpad--collapsed) .toc-nav {
+  flex-grow: 1;
 }
 .toc-item {
   display: block;

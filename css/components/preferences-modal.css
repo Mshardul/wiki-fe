@@ -280,19 +280,22 @@
 }
 .prefs-body {
   flex: 1;
+  display: flex;
   overflow: hidden;
   background: var(--surface-2);
 }
 .prefs-panel {
   display: none;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   padding: var(--s6);
 }
 .prefs-panel.active {
-  display: block;
+  display: flex;
+  flex-direction: column;
 }
 .prefs-general-grid {
   display: grid;
@@ -379,6 +382,7 @@
   .prefs-dialog {
     inset: auto 0 0;
     width: 100%;
+    height: 70vh;
     max-height: 70vh;
     border-radius: 12px 12px 0 0;
     animation: slideUpSheet 0.2s ease forwards;

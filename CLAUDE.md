@@ -122,7 +122,6 @@ Do this before any file reads or skill invocations - every session:
 | `link-graph.js`       | `g` link-graph overlay: cross-wiki node graph from backlinks, click-to-navigate |
 | `section-map.js`      | `Shift+G` / pinch section-map overlay: zoomed-out node map of current wiki section, read-state colored |
 | `complexity-compare.js` | Complexity comparator modal: picker, merged Big-O matrix from Data Structures tables |
-| `sidecar-toc.js`      | Sidecar TOC companion window opener: BroadcastChannel publisher, window handle tracking |
 
 #### `js/content/`
 
@@ -241,7 +240,6 @@ Do this before any file reads or skill invocations - every session:
 | `e2e/test_behavioral_fixes.py`          | Regression / behavioural fixes                                     |
 | `e2e/test_complexity_comparator.py`     | Complexity comparator modal, picker, merged Big-O matrix           |
 | `e2e/test_section_map.py`               | Section map overlay (Shift+G / pinch), node click nav              |
-| `e2e/test_sidecar_toc.py`               | Sidecar TOC companion window, BroadcastChannel sync, click-to-scroll |
 
 ### Docs
 

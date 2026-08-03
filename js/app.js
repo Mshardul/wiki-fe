@@ -21,7 +21,6 @@ import { initInstallPrompt } from "./app/install-prompt.js";
 import { closeLinkGraph, isLinkGraphOpen, openLinkGraph } from "./app/link-graph.js";
 import { printArticle } from "./app/print.js";
 import { closeSectionMap, isSectionMapOpen, toggleSectionMap } from "./app/section-map.js";
-import { openSidecarToc } from "./app/sidecar-toc.js";
 import { fireStudyMilestone } from "./app/study-feedback.js";
 import { closeWikiSwitcher, isWikiSwitcherOpen, openWikiSwitcher } from "./app/wiki-switcher.js";
 import { syncHljsTheme, writeToClipboard } from "./content/code-blocks.js";
@@ -220,10 +219,6 @@ document.addEventListener("click", (e) => {
       break;
     case "section-map-toggle":
       toggleSectionMap();
-      break;
-    case "sidecar-toc-open":
-      if (!openSidecarToc())
-        showToast("Couldn't open companion window - check popup blocker", 4000);
       break;
     case "bookmarks-modal-open":
       openBookmarksModal();

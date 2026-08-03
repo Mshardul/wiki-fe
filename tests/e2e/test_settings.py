@@ -905,13 +905,13 @@ def test_haptic_feedback_toggle_persists(wiki_page):
     assert btn.inner_text() == ("On" if after else "Off")
 
 
-# ── Topbar declutter (WIKI-240) ─────────────────────────────────────────────────
+# ── Topbar declutter ─────────────────────────────────────────────────
 
 
 def test_topbar_has_no_theme_toggle_button(wiki_page):
     """Home/index/content topbars have no standalone quick dark/light toggle -
     theme is chosen only via the background swatches in preferences. (Search
-    was reintroduced into home/content topbars by WIKI-412 - see
+    was reintroduced into home/content topbars - see
     test_home_topbar_search_button_opens_search / test_content_topbar_search_button_opens_search
     in test_search.py.)"""
     for selector in (".home-topbar", ".page-topbar .topbar-inner", ".content-topbar .topbar-inner"):
@@ -941,8 +941,30 @@ def test_search_entry_is_first_in_preferences_panel(wiki_page):
     assert first_control, "Search entry is not the first control in the General tab"
 
 
+def test_advanced_panel_scrolls_to_reveal_clipped_content(wiki_page):
+    """Regression: Advanced tab content overflowed its panel with no way to reach clipped rows."""
+    _open_settings(wiki_page)
+    wiki_page.locator("[data-tab='advanced']").click()
+    wiki_page.wait_for_function(
+        "() => document.getElementById('prefs-panel-advanced').getAttribute('aria-hidden') === 'false'"
+    )
+    can_scroll = wiki_page.evaluate("""() => {
+        const panel = document.getElementById('prefs-panel-advanced');
+        return panel.scrollHeight > panel.clientHeight;
+    }""")
+    assert can_scroll, "Advanced panel has no scrollable overflow - content is clipped with no way to reach it"
+
+    wiki_page.evaluate(
+        "() => document.getElementById('prefs-panel-advanced').scrollBy(0, 9999)"
+    )
+    scroll_top = wiki_page.evaluate(
+        "() => document.getElementById('prefs-panel-advanced').scrollTop"
+    )
+    assert scroll_top > 0, "Advanced panel did not scroll"
+
+
 def test_accent_swatch_44px_on_coarse_pointer(browser, base_url, cdn_cache):
-    """Regression for WIKI-406: .settings-accent-swatch is 30x30px with no
+    """Regression: .settings-accent-swatch is 30x30px with no
     pointer:coarse fallback, under the 44px touch-target minimum."""
     ctx = browser.new_context(
         has_touch=True,

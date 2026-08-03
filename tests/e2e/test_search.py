@@ -616,7 +616,7 @@ def test_mark_all_read_command_marks_articles(page, base_url):
     assert visible_dots > 0, "Mark-all-read must mark at least one article read"
 
 
-# ── ⌘K argument-taking verb commands (WIKI-249) ──────────────────────
+# ── ⌘K argument-taking verb commands ──────────────────────
 
 
 def test_verb_command_shown_in_base_list(page, base_url):
@@ -1161,7 +1161,7 @@ def test_scope_custom_dropdown(wiki_page):
 
 
 def test_scope_btn_44px_on_coarse_pointer(browser, base_url, cdn_cache):
-    """Regression for WIKI-406: .gsearch-scope-btn is ~20px tall with no
+    """Regression: .gsearch-scope-btn is ~20px tall with no
     pointer:coarse fallback, well under the 44px touch-target minimum."""
     ctx = browser.new_context(
         has_touch=True,
