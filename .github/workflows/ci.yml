@@ -26,6 +26,28 @@ jobs:
 
   tests-light:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          # File-based, hand-balanced (~255-258 tests each), each its own job so -n 2 never oversubscribes the 2 vCPU/7GB runner - see docs/_meta/plans/e2e-ci-resource-hardening.md Decision #1.
+          - name: shard-1
+            files: >-
+              tests/e2e/test_content_enhancements.py tests/e2e/test_behavioral_fixes.py tests/e2e/test_home.py
+              tests/e2e/test_read_toggle.py tests/e2e/test_toc_overhaul.py tests/e2e/test_bookmarks.py
+              tests/e2e/test_changelog.py tests/e2e/test_structure_viz.py tests/e2e/test_keyboard_scroll.py tests/e2e/test_security.py
+          - name: shard-2
+            files: >-
+              tests/e2e/test_settings.py tests/e2e/test_ux_hotkeys_errors.py tests/e2e/test_index_ux.py
+              tests/e2e/test_scroll_toc.py tests/e2e/test_line_numbers_pathing_help.py tests/e2e/test_touch_gestures.py
+              tests/e2e/test_data_backup.py tests/e2e/test_navigation.py tests/e2e/test_offline_shelf.py
+              tests/e2e/test_content_width.py tests/e2e/test_admin.py tests/e2e/test_complexity_comparator.py
+          - name: shard-3
+            files: >-
+              tests/e2e/test_search.py tests/e2e/test_auth.py tests/e2e/test_navigation_polish.py tests/e2e/test_content.py
+              tests/e2e/test_routing_pathing.py tests/e2e/test_html_markup.py tests/e2e/test_a11y_hotkeys.py
+              tests/e2e/test_links.py tests/e2e/test_recents.py tests/e2e/test_notes_scratchpad.py
+              tests/e2e/test_section_map.py tests/e2e/test_dashboard.py
     steps:
       - uses: actions/checkout@v4
 
@@ -57,8 +79,8 @@ jobs:
           path: tests/.cdn-cache
           key: cdn-assets-${{ hashFiles('tests/conftest.py') }}
 
-      - name: Tests (e2e, light lane)
-        run: pytest tests/ -q -n 2 -m "not heavy"
+      - name: Tests (e2e, light lane, ${{ matrix.shard.name }})
+        run: pytest ${{ matrix.shard.files }} -q -n 2 -m "not heavy"
 
   tests-heavy:
     runs-on: ubuntu-latest

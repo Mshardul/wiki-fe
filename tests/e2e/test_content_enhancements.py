@@ -2969,12 +2969,13 @@ def test_selecting_text_shows_highlight_toolbar(page, base_url):
     assert page.locator(".highlight-toolbar-btn--emoji").count() == 6
 
 
-def test_creating_highlight_wraps_text_and_persists(page, base_url):
-    """Clicking the highlight button wraps the selection in .wiki-highlight and saves it."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-create")
+def test_highlight_create_remove_and_keyboard_remove_lifecycle(page, base_url):
+    """Chained: create a highlight, remove it via the popover, re-create, then remove via keyboard Enter."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-lifecycle")
+
+    # Phase 1: create, verify DOM wrap + localStorage persistence.
     _select_word(page, "selectable")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
-
     page.locator(".highlight-toolbar-btn--highlight").click()
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
@@ -2993,6 +2994,38 @@ def test_creating_highlight_wraps_text_and_persists(page, base_url):
     )
     assert stored[0]["snippet"] == "selectable"
 
+    # Phase 2: remove via the popover, verify DOM + storage both clear.
+    page.locator("#markdown-body .wiki-highlight").first.click()
+    page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-remove-btn").click()
+    page.wait_for_function(
+        "() => document.querySelectorAll('#markdown-body .wiki-highlight').length === 0",
+        timeout=3_000,
+    )
+    remaining = page.evaluate(
+        """() => {
+            const key = Object.keys(localStorage).find(k => k.startsWith('wiki-highlights-'));
+            if (!key) return 0;
+            return JSON.parse(localStorage.getItem(key)).length;
+        }"""
+    )
+    assert remaining == 0, "Highlight entry still present in localStorage after popover removal"
+
+    # Phase 3: re-create, then remove via keyboard Enter + Remove instead of a click.
+    _select_word(page, "selectable")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-toolbar-btn--highlight").click()
+    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
+
+    page.locator("#markdown-body .wiki-highlight").first.focus()
+    page.keyboard.press("Enter")
+    page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-remove-btn").click()
+    page.wait_for_function(
+        "() => document.querySelectorAll('#markdown-body .wiki-highlight').length === 0",
+        timeout=3_000,
+    )
+
 
 def test_highlight_persists_and_reapplies_on_reload(page, base_url):
     """A highlight created in one render re-appears after reloading the same article."""
@@ -3007,12 +3040,13 @@ def test_highlight_persists_and_reapplies_on_reload(page, base_url):
     assert page.locator("#markdown-body .wiki-highlight").first.inner_text() == "selectable"
 
 
-def test_creating_emoji_marker_inserts_badge_and_persists(page, base_url):
-    """Clicking an emoji option in the toolbar inserts a .wiki-marker badge and saves it."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-create")
+def test_marker_create_and_remove_lifecycle(page, base_url):
+    """Chained: create an emoji marker and verify persistence, then remove it via the popover."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-lifecycle")
+
+    # Phase 1: create, verify DOM badge + localStorage persistence.
     _select_word(page, "testing")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
-
     page.locator(".highlight-toolbar-btn--emoji").first.click()
     page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
 
@@ -3020,6 +3054,23 @@ def test_creating_emoji_marker_inserts_badge_and_persists(page, base_url):
         """() => Object.keys(localStorage).find(k => k.startsWith('wiki-markers-'))"""
     )
     assert stored is not None, "No wiki-markers-* key written to localStorage"
+
+    # Phase 2: remove via the popover, verify DOM + storage both clear.
+    page.locator("#markdown-body .wiki-marker").first.click()
+    page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-remove-btn").click()
+    page.wait_for_function(
+        "() => document.querySelectorAll('#markdown-body .wiki-marker').length === 0",
+        timeout=3_000,
+    )
+    remaining = page.evaluate(
+        """() => {
+            const key = Object.keys(localStorage).find(k => k.startsWith('wiki-markers-'));
+            if (!key) return 0;
+            return JSON.parse(localStorage.getItem(key)).length;
+        }"""
+    )
+    assert remaining == 0, "Marker entry still present in localStorage after removal"
 
 
 def test_emoji_marker_persists_and_reapplies_on_reload(page, base_url):
@@ -3037,89 +3088,28 @@ def test_emoji_marker_persists_and_reapplies_on_reload(page, base_url):
     assert page.locator("#markdown-body .wiki-marker").first.text_content() == marker_emoji
 
 
-def test_removing_highlight_via_popover(page, base_url):
-    """Clicking an existing highlight shows a remove popover; Remove strips the wrap and storage entry."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-remove")
+def test_highlight_reanchor_and_drop_on_upstream_edit(page, base_url):
+    """Chained: an upstream edit that shifts offsets re-anchors the highlight via snippet match; a second edit that removes the snippet entirely drops the stale entry with a toast instead."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reanchor-drop")
     _select_word(page, "selectable")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     page.locator(".highlight-toolbar-btn--highlight").click()
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
-    page.locator("#markdown-body .wiki-highlight").first.click()
-    page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
-    page.locator(".highlight-remove-btn").click()
-
-    page.wait_for_function(
-        "() => document.querySelectorAll('#markdown-body .wiki-highlight').length === 0",
-        timeout=3_000,
-    )
-    remaining = page.evaluate(
-        """() => {
-            const key = Object.keys(localStorage).find(k => k.startsWith('wiki-highlights-'));
-            if (!key) return 0;
-            return JSON.parse(localStorage.getItem(key)).length;
-        }"""
-    )
-    assert remaining == 0, "Highlight entry still present in localStorage after removal"
-
-
-def test_removing_marker_via_popover(page, base_url):
-    """Clicking an existing marker shows a remove popover; Remove strips the badge and storage entry."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-remove")
-    _select_word(page, "testing")
-    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
-    page.locator(".highlight-toolbar-btn--emoji").first.click()
-    page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
-
-    page.locator("#markdown-body .wiki-marker").first.click()
-    page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
-    page.locator(".highlight-remove-btn").click()
-
-    page.wait_for_function(
-        "() => document.querySelectorAll('#markdown-body .wiki-marker').length === 0",
-        timeout=3_000,
-    )
-    remaining = page.evaluate(
-        """() => {
-            const key = Object.keys(localStorage).find(k => k.startsWith('wiki-markers-'));
-            if (!key) return 0;
-            return JSON.parse(localStorage.getItem(key)).length;
-        }"""
-    )
-    assert remaining == 0, "Marker entry still present in localStorage after removal"
-
-
-def test_highlight_reanchors_after_upstream_edit_shifts_offsets(page, base_url):
-    """An upstream edit shifts a highlight's stored offset; reload re-anchors via snippet match."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reanchor")
-    _select_word(page, "selectable")
-    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
-    page.locator(".highlight-toolbar-btn--highlight").click()
-    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
-
-    edited = ARTICLE_FOR_HIGHLIGHTS.replace(
+    # Phase 1: shift offsets without touching the highlighted text - it re-anchors via snippet match.
+    shifted = ARTICLE_FOR_HIGHLIGHTS.replace(
         "This is a paragraph",
         "This is now a much longer edited paragraph",
     )
     page.evaluate("() => sessionStorage.clear()")
-    _load_mock_article(page, base_url, edited, slug="hl-reanchor")
+    _load_mock_article(page, base_url, shifted, slug="hl-reanchor-drop")
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
     assert page.locator("#markdown-body .wiki-highlight").first.inner_text() == "selectable"
 
-
-def test_highlight_dropped_with_toast_when_snippet_no_longer_found(page, base_url):
-    """When highlighted text is removed entirely, the stale entry is dropped (not misplaced) and toasted."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-drop")
-    _select_word(page, "selectable")
-    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
-    page.locator(".highlight-toolbar-btn--highlight").click()
-    page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
-
-    edited = ARTICLE_FOR_HIGHLIGHTS.replace(
-        "some selectable text", "completely different words"
-    )
+    # Phase 2: remove the highlighted snippet entirely - the stale entry is dropped, not misplaced.
+    removed = shifted.replace("some selectable text", "completely different words")
     page.evaluate("() => sessionStorage.clear()")
-    _load_mock_article(page, base_url, edited, slug="hl-drop")
+    _load_mock_article(page, base_url, removed, slug="hl-reanchor-drop")
     page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
     assert page.locator("#markdown-body .wiki-highlight").count() == 0
 
@@ -3190,24 +3180,19 @@ def test_keyboard_enter_removes_focused_highlight(page, base_url):
 
 # ── Freeze-frame: save selection as themed image card ────────────────────────────
 
-def test_save_as_card_button_appears_on_selection(page, base_url):
-    """Selecting text reveals a save-as-card button alongside the highlight/marker actions."""
+def test_save_as_card_button_visible_and_labeled(page, base_url):
+    """Chained: selecting text reveals the save-as-card button, which also has a discernible aria-label - both are static toolbar-presence checks on the same selection, no highlight created by either."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="card-toolbar-show")
     _select_word(page, "selectable")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+
     assert page.locator(".highlight-toolbar-btn--card").is_visible()
-
-
-def test_save_as_card_button_has_aria_label(page, base_url):
-    """The save-as-card button has a discernible aria-label for keyboard/screen-reader users."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="card-a11y")
-    _select_word(page, "selectable")
-    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     label = page.locator(".highlight-toolbar-btn--card").get_attribute("aria-label")
     assert label and label.strip()
 
 
 @pytest.mark.heavy
+@pytest.mark.timeout(60)
 def test_save_as_card_triggers_png_download(page, base_url):
     """Clicking save-as-card downloads a PNG file without clearing the toolbar/selection."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="card-download")
@@ -3225,6 +3210,7 @@ def test_save_as_card_triggers_png_download(page, base_url):
 
 
 @pytest.mark.heavy
+@pytest.mark.timeout(60)
 def test_save_as_card_does_not_create_highlight_or_marker(page, base_url):
     """Save-as-card is a stateless export - it must not write a highlight or marker entry."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="card-no-persist")
