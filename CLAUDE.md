@@ -28,7 +28,7 @@ Do this before any file reads or skill invocations - every session:
 1. Classify the task using the table below.
 2. MEMORY.md is already in context - no need to fetch it.
 3. If task type is **Ticket**: read `docs/tickets-backlog.md` for the backlog list (active tickets only - Done/Dropped history lives separately in `docs/tickets-archive.md`).
-4. If task type is **Content backlog**: read `docs/_meta/ai-instructions/content-backlog.md`, then the matching vertical file (`docs/content-backlog-dsa.md` or `docs/content-backlog-system-design.md`). These are not app tickets — never use `WIKI-xxx` for them.
+4. If task type is **Content backlog**: read `docs/_meta/ai-instructions/content-backlog.md`, then `docs/content-backlog.md`. These are not app tickets — never use `WIKI-xxx` for them.
 5. If task type is anything else: go directly to the FILE MAP section and route.
 
 ---
@@ -251,10 +251,8 @@ Do this before any file reads or skill invocations - every session:
 | `docs/tickets-backlog.md`                          | WIKI-xxx mentioned OR any ticket intent detected - active tickets                        |
 | `docs/tickets-archive.md`                          | Need Done/Dropped ticket history (e.g. checking for duplicates, superseded-by refs)      |
 | `docs/_meta/ai-instructions/tickets.md`            | Ticket intent - read alongside tickets-backlog.md                                        |
-| `docs/content-backlog-dsa.md`                       | DSA-xxx / DSA content-backlog intent - active DSA content rows                           |
-| `docs/content-archive-dsa.md`                       | DSA content-backlog Done/Dropped history                                                 |
-| `docs/content-backlog-system-design.md`             | SD-xxx / SD content-backlog intent - active System Design content rows                   |
-| `docs/content-archive-system-design.md`             | SD content-backlog Done/Dropped history                                                  |
+| `docs/content-backlog.md`                           | DSA-xxx / SD-xxx / content-backlog intent - active content rows                          |
+| `docs/content-archive.md`                           | Content-backlog Done/Dropped history                                                     |
 | `docs/_meta/ai-instructions/content-backlog.md`     | Content-backlog intent - schema + rules (not tickets)                                    |
 | `docs/_meta/ai-instructions/_base.md`              | **Every content task** (components / algorithms / HLD / devops-tools) - read this first |
 | `docs/_meta/ai-instructions/components.md`         | Writing system design component article (after \_base.md)                               |
@@ -289,7 +287,7 @@ Do this before any file reads or skill invocations - every session:
 | Service worker issue      | `wiki-sw.js` only                                                                               |
 | Write tests for feature X | Relevant `tests/e2e/test_*.py` + `tests/conftest.py`                                            |
 | Content article           | `docs/_meta/ai-instructions/_base.md` + relevant type file (except cheatsheets: type file only) |
-| Content backlog row       | `docs/_meta/ai-instructions/content-backlog.md` + matching `content-backlog-*.md` + writer/rater for that vertical |
+| Content backlog row       | `docs/_meta/ai-instructions/content-backlog.md` + `docs/content-backlog.md` + writer/rater for that vertical |
 
 ---
 
@@ -315,7 +313,7 @@ After finishing any coding task:
 
 1. **Tests** - decide if new behaviour needs coverage. Add tests if: a new user-visible interaction was added, a bug was fixed (regression test), or a new code path exists that existing tests don't reach. Use the test file map below to pick the right file. May run the specific new/changed test to confirm it passes; never run the full suite unprompted.
 2. **Ticket closure** - if the task came from a ticket (`WIKI-xxx`), move its row from `docs/tickets-backlog.md` to `docs/tickets-archive.md`: set Status = `Done` and Impl. Date = today's date (YYYY-MM-DD).
-3. **Content-backlog closure** - if the task came from a content-backlog row (`DSA-xxx` / `SD-xxx`), move it to the matching `content-archive-*.md`: set Status = `Done` and Done Date = today's date. Never put these in tickets-archive.
+3. **Content-backlog closure** - if the task came from a content-backlog row (`DSA-xxx` / `SD-xxx`), move it to `docs/content-archive.md`: set Status = `Done` and Done Date = today's date. Never put these in tickets-archive.
 
 After finishing any **content task**:
 

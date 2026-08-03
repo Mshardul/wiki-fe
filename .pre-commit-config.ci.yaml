@@ -17,7 +17,8 @@ repos:
         # pres = plural of <pre> elements; couldn = "couldn't" w/ escaped apostrophe.
         # ths = table-headers variable (Array.from querySelectorAll th)
         # atmost = atMost(k) sliding-window helper name in plan docs
-        args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths,atmost"]
+        # allone = AllOne LeetCode data structure name
+        args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths,atmost,allone"]
 
   - repo: https://github.com/biomejs/pre-commit
     rev: v0.6.1

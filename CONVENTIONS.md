@@ -236,7 +236,7 @@ For the full model and the *why*, see the decisions docs:
 
 ## Content backlog
 
-- Content work is tracked in `docs/content-backlog-dsa.md` / `docs/content-backlog-system-design.md` (archives alongside). Schema: `docs/_meta/ai-instructions/content-backlog.md`.
+- Content work is tracked in `docs/content-backlog.md` (Done/Dropped in `docs/content-archive.md`). Schema: `docs/_meta/ai-instructions/content-backlog.md`.
 - These are **not** app tickets. IDs are `DSA-xxx` / `SD-xxx`. Never file content findings as `WIKI-xxx`.
 - Path column omits the `content/` prefix. Description: ≤30 words; short sentences separated by semicolons.
 - Group by article or by shared change across articles when the work ships together.

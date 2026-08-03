@@ -89,6 +89,12 @@ def browser_context_args(browser_context_args):
     return {**browser_context_args, "service_workers": "block"}
 
 
+@pytest.fixture(scope="session")
+def browser_type_launch_args(browser_type_launch_args):
+    # GH Actions' default /dev/shm (64MB) is too small for chromium under xdist parallelism, causing silent worker crashes.
+    return {**browser_type_launch_args, "args": ["--disable-dev-shm-usage"]}
+
+
 _MERMAID_STUB = """
 if (typeof window.mermaid === 'undefined') {
     var _mermaidConfig = {};

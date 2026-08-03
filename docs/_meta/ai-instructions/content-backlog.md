@@ -4,28 +4,28 @@
 >
 > These are **not tickets**. Never call them tickets. Never file them in `docs/tickets-backlog.md`. App work stays on `WIKI-xxx`; content work stays here.
 
-## Files (split by vertical)
+## Files
 
-| Vertical | Active backlog | Archive (Done / Dropped) |
-| --- | --- | --- |
-| DSA | `docs/content-backlog-dsa.md` | `docs/content-archive-dsa.md` |
-| System Design | `docs/content-backlog-system-design.md` | `docs/content-archive-system-design.md` |
+| File | Role |
+| --- | --- |
+| `docs/content-backlog.md` | Active rows (`Backlog` / `In Progress`) |
+| `docs/content-archive.md` | `Done` / `Dropped` history |
 
-IDs are unique across a vertical's backlog + archive pair. Do not reuse an ID.
+One backlog for all content verticals (DSA, System Design, etc.). Path column shows where the work lives. IDs are unique across backlog + archive — check both when assigning a new one.
 
 ## Schema
 
-Same columns in backlog and archive files:
+Same columns in backlog and archive:
 
 | Column | Values / Notes |
 | --- | --- |
-| ID | `DSA-xxx` or `SD-xxx` — sequential within that vertical; never reuse across that vertical's backlog+archive |
+| ID | `DSA-xxx` or `SD-xxx` — prefix by vertical for readability; sequential within that prefix; never reuse across backlog+archive |
 | Entry Date | ISO date added to backlog |
 | Summary | ≤7 words |
 | Kind | `fill-stub` / `fix-gate` / `add-section` / `restructure` / `hygiene` / `new-article` / `portfolio` — see below |
 | Path | Path(s) under `content/`, **without** the `content/` prefix (e.g. `dsa/data-structures/heap.md`). Multiple paths: `path1.md; path2.md` |
 | Description | ≤30 words. Short sentences separated by semicolons. No padding. |
-| Status | `Backlog` / `In Progress` (active files); `Done` / `Dropped` (archive files) |
+| Status | `Backlog` / `In Progress` (active file); `Done` / `Dropped` (archive) |
 | Done Date | ISO date completed; `-` if not done |
 | Source | Provenance, e.g. `dsa-data-structures-content-audit 2026-08-03` |
 | Priority | `p0` → `p3` |
@@ -35,7 +35,7 @@ Same columns in backlog and archive files:
 | Kind | When to use |
 | --- | --- |
 | `fill-stub` | Unpublished skeleton / empty template still listed as an article |
-| `fix-gate` | Make an existing article clear `dsa-rater` publish gate (gated param blockers) |
+| `fix-gate` | Make an existing article clear the publish gate (gated param blockers) |
 | `add-section` | Add a missing section shape (e.g. DS9 probes) across one or many articles |
 | `restructure` | Wrong spine/headings for the article kind (e.g. Algorithm headings in a DS file) |
 | `hygiene` | Stale comments, bad links, wording-only cleanup |
@@ -64,6 +64,6 @@ Bad: long multi-clause paragraphs, restated audit prose, or a laundry list of ev
 
 ## Completing a row
 
-1. Do the content work (follow `dsa-writer.md` / `dsa-rater.md` or the SD writer rules for that vertical).
+1. Do the content work (follow the writer/rater rules for that vertical).
 2. Update `content/CHANGELOG.md` per CONVENTIONS.
-3. Move the row to the matching archive file: `Status = Done`, `Done Date = <today>`, keep Source. Remove it from the active backlog file.
+3. Move the row to `docs/content-archive.md`: `Status = Done`, `Done Date = <today>`, keep Source. Remove it from `docs/content-backlog.md`.
