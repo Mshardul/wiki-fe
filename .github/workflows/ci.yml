@@ -24,7 +24,7 @@ jobs:
         with:
           extra_args: --all-files --config .pre-commit-config.ci.yaml
 
-  tests:
+  tests-light:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +38,14 @@ jobs:
       - name: Install test deps
         run: pip install -r requirements-dev.txt
 
+      # Keyed on requirements-dev.txt so a pytest-playwright bump invalidates it - browser download is skipped on cache hit, apt-level --with-deps still runs every time.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('requirements-dev.txt') }}
+
       - name: Install Chromium
         run: python -m playwright install --with-deps chromium
 
@@ -49,8 +57,42 @@ jobs:
           path: tests/.cdn-cache
           key: cdn-assets-${{ hashFiles('tests/conftest.py') }}
 
-      - name: Tests (e2e)
-        run: pytest tests/ -q -n auto
+      - name: Tests (e2e, light lane)
+        run: pytest tests/ -q -n 2 -m "not heavy"
+
+  tests-heavy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install test deps
+        run: pip install -r requirements-dev.txt
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('requirements-dev.txt') }}
+
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - name: Cache CDN assets
+        uses: actions/cache@v4
+        with:
+          path: tests/.cdn-cache
+          key: cdn-assets-${{ hashFiles('tests/conftest.py') }}
+
+      # Canvas/PNG/download tests only, isolated from tests-light so they never compete for the same runner.
+      - name: Tests (e2e, heavy lane)
+        run: pytest tests/ -q -n 1 -m heavy
 
   search-index:
     runs-on: ubuntu-latest

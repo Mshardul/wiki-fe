@@ -3207,6 +3207,7 @@ def test_save_as_card_button_has_aria_label(page, base_url):
     assert label and label.strip()
 
 
+@pytest.mark.heavy
 def test_save_as_card_triggers_png_download(page, base_url):
     """Clicking save-as-card downloads a PNG file without clearing the toolbar/selection."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="card-download")
@@ -3223,6 +3224,7 @@ def test_save_as_card_triggers_png_download(page, base_url):
     assert page.locator(".highlight-toolbar-btn--highlight").is_visible()
 
 
+@pytest.mark.heavy
 def test_save_as_card_does_not_create_highlight_or_marker(page, base_url):
     """Save-as-card is a stateless export - it must not write a highlight or marker entry."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="card-no-persist")

@@ -4,6 +4,8 @@
 
 import json
 
+import pytest
+
 from conftest import _make_cdn_fulfill_handler
 
 
@@ -19,6 +21,7 @@ def _open_settings(page):
 # ── Export ─────────────────────────────────────────────────────────────────────
 
 
+@pytest.mark.heavy
 def test_export_button_triggers_download(page, base_url):
     """Clicking 'Export Backup' triggers a file download."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
@@ -33,6 +36,7 @@ def test_export_button_triggers_download(page, base_url):
     assert download.suggested_filename.endswith(".json")
 
 
+@pytest.mark.heavy
 def test_export_json_contains_expected_keys(page, base_url):
     """Exported JSON contains version, bookmarks, recents, settings keys."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")

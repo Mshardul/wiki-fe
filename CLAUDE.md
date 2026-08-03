@@ -28,7 +28,8 @@ Do this before any file reads or skill invocations - every session:
 1. Classify the task using the table below.
 2. MEMORY.md is already in context - no need to fetch it.
 3. If task type is **Ticket**: read `docs/tickets-backlog.md` for the backlog list (active tickets only - Done/Dropped history lives separately in `docs/tickets-archive.md`).
-4. If task type is anything else: go directly to the FILE MAP section and route.
+4. If task type is **Content backlog**: read `docs/_meta/ai-instructions/content-backlog.md`, then the matching vertical file (`docs/content-backlog-dsa.md` or `docs/content-backlog-system-design.md`). These are not app tickets — never use `WIKI-xxx` for them.
+5. If task type is anything else: go directly to the FILE MAP section and route.
 
 ---
 
@@ -37,6 +38,7 @@ Do this before any file reads or skill invocations - every session:
 | Signal in user message                                                                    | Task type                                     |
 | ----------------------------------------------------------------------------------------- | --------------------------------------------- |
 | `WIKI-xxx` / "work on tickets" / "which ticket" / "decide ticket" / "let's pick a ticket" | **Ticket**                                    |
+| `DSA-xxx` / `SD-xxx` / "content backlog" / "work content backlog" / content-audit → backlog | **Content backlog**                         |
 | Explicit filename or component named                                                      | **Direct** - skip exploration, read that file |
 | "bug" / "broken" / "not working" / "doesn't" / "wrong"                                    | **Debugging**                                 |
 | "add" / "implement" / "build" + vague or no spec                                          | **Feature**                                   |
@@ -54,6 +56,7 @@ Do this before any file reads or skill invocations - every session:
 | New feature, design unclear                         | `brainstorming` (scope only, not full feature-dev pipeline) | `systematic-debugging`, `TDD`                |
 | New feature, spec clear                             | none                                                        | all skills                                   |
 | Ticket with clear spec                              | none - or `executing-plans` if multi-step                   | `brainstorming`, `feature-dev`, `TDD`        |
+| Content backlog row with clear spec                 | none - follow `docs/_meta/ai-instructions/content-backlog.md` | `brainstorming`, `feature-dev`, `TDD`      |
 | Commit                                              | `caveman-commit`                                            | -                                            |
 | Inline diff / code review                           | `caveman-review`                                            | -                                            |
 | Content article                                     | `brainstorming` (outline/scope only), then write            | `TDD`, `systematic-debugging`, `feature-dev` |
@@ -248,12 +251,19 @@ Do this before any file reads or skill invocations - every session:
 | `docs/tickets-backlog.md`                          | WIKI-xxx mentioned OR any ticket intent detected - active tickets                        |
 | `docs/tickets-archive.md`                          | Need Done/Dropped ticket history (e.g. checking for duplicates, superseded-by refs)      |
 | `docs/_meta/ai-instructions/tickets.md`            | Ticket intent - read alongside tickets-backlog.md                                        |
+| `docs/content-backlog-dsa.md`                       | DSA-xxx / DSA content-backlog intent - active DSA content rows                           |
+| `docs/content-archive-dsa.md`                       | DSA content-backlog Done/Dropped history                                                 |
+| `docs/content-backlog-system-design.md`             | SD-xxx / SD content-backlog intent - active System Design content rows                   |
+| `docs/content-archive-system-design.md`             | SD content-backlog Done/Dropped history                                                  |
+| `docs/_meta/ai-instructions/content-backlog.md`     | Content-backlog intent - schema + rules (not tickets)                                    |
 | `docs/_meta/ai-instructions/_base.md`              | **Every content task** (components / algorithms / HLD / devops-tools) - read this first |
 | `docs/_meta/ai-instructions/components.md`         | Writing system design component article (after \_base.md)                               |
 | `docs/_meta/ai-instructions/algorithms.md`         | Writing algorithm / concept article (after \_base.md)                                   |
 | `docs/_meta/ai-instructions/hld.md`                | Writing HLD / system design article (after \_base.md)                                   |
 | `docs/_meta/ai-instructions/devops-tools.md`       | Writing DevOps tool article (after \_base.md)                                           |
 | `docs/_meta/ai-instructions/devops-cheatsheets.md` | Writing DevOps cheatsheet - self-contained, skip \_base.md                              |
+| `docs/_meta/ai-instructions/dsa-writer.md`         | Writing / fixing DSA articles (after content-backlog or Content task)                    |
+| `docs/_meta/ai-instructions/dsa-rater.md`          | Rating / publish-gate for DSA articles                                                   |
 | `docs/_meta/decisions/ui-ux.md`                    | UI / UX decision needed                                                                 |
 | `docs/_meta/decisions/auth.md`                     | Auth/personal-layer decisions - product model, tech, DB schema, password/session/error contracts |
 | `docs/_meta/decisions/auth-integration.md`         | [Archive] How auth wires into the FE SPA - reference only; superseded by implemented code |
@@ -279,6 +289,7 @@ Do this before any file reads or skill invocations - every session:
 | Service worker issue      | `wiki-sw.js` only                                                                               |
 | Write tests for feature X | Relevant `tests/e2e/test_*.py` + `tests/conftest.py`                                            |
 | Content article           | `docs/_meta/ai-instructions/_base.md` + relevant type file (except cheatsheets: type file only) |
+| Content backlog row       | `docs/_meta/ai-instructions/content-backlog.md` + matching `content-backlog-*.md` + writer/rater for that vertical |
 
 ---
 
@@ -304,16 +315,17 @@ After finishing any coding task:
 
 1. **Tests** - decide if new behaviour needs coverage. Add tests if: a new user-visible interaction was added, a bug was fixed (regression test), or a new code path exists that existing tests don't reach. Use the test file map below to pick the right file. May run the specific new/changed test to confirm it passes; never run the full suite unprompted.
 2. **Ticket closure** - if the task came from a ticket (`WIKI-xxx`), move its row from `docs/tickets-backlog.md` to `docs/tickets-archive.md`: set Status = `Done` and Impl. Date = today's date (YYYY-MM-DD).
+3. **Content-backlog closure** - if the task came from a content-backlog row (`DSA-xxx` / `SD-xxx`), move it to the matching `content-archive-*.md`: set Status = `Done` and Done Date = today's date. Never put these in tickets-archive.
 
 After finishing any **content task**:
 
-3. **Content changelog** - update `content/CHANGELOG.md` with an entry under today's date. Log: new article, new section, expanded/rewritten section, new stub. Skip: typo fixes, grammar, cross-reference links. Format:
+4. **Content changelog** - update `content/CHANGELOG.md` with an entry under today's date. Log: new article, new section, expanded/rewritten section, new stub. Skip: typo fixes, grammar, cross-reference links. Format:
    ```
    ## YYYY-MM-DD
    - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
    ```
-4. **Search index** - after adding, renaming, or removing an article, regenerate `content/search-index.json`: run `python3 scripts/build_search_index.py` and commit the result alongside the content change. CI's `search-index` job runs the same generator and fails the build (`git diff --exit-code`) if the committed file is stale.
-5. **Backlinks** - after adding, renaming, removing, or changing internal links in an article, regenerate `content/backlinks.json`: run `python3 scripts/build_backlinks.py` (reads `search-index.json`, so regenerate that first) and commit the result. CI's `backlinks` job does the same and fails the build if the committed file is stale.
+5. **Search index** - after adding, renaming, or removing an article, regenerate `content/search-index.json`: run `python3 scripts/build_search_index.py` and commit the result alongside the content change. CI's `search-index` job runs the same generator and fails the build (`git diff --exit-code`) if the committed file is stale.
+6. **Backlinks** - after adding, renaming, removing, or changing internal links in an article, regenerate `content/backlinks.json`: run `python3 scripts/build_backlinks.py` (reads `search-index.json`, so regenerate that first) and commit the result. CI's `backlinks` job does the same and fails the build if the committed file is stale.
 
 ---
 
@@ -335,13 +347,15 @@ Prescriptive test rules live in **[CONVENTIONS.md](./CONVENTIONS.md) → Testing
 
 - Never read `js/` or `css/` files
 - Never write or run tests
+- Never file content findings as `WIKI-xxx` tickets — use the content backlog (`DSA-xxx` / `SD-xxx`) per `docs/_meta/ai-instructions/content-backlog.md`
+- Never call content-backlog rows "tickets"
 
 **All tasks:**
 
 - Never `git add` / `git commit` / `git push` unless explicitly asked
 - Never add `Co-Authored-By` to commit messages
 - Never put WIKI-xxx ticket IDs in code comments or CSS section headers
-- Never hard-wrap prose in Markdown files (manually inserting a newline mid-paragraph at some column width). Write each paragraph/list-item as one single line, no matter how long - let the editor soft-wrap for display. Applies to every `.md` file: audit reports, CLAUDE.md/CONVENTIONS.md, decisions, changelogs, tickets. Manual line breaks are fine only inside code fences, tables, and where Markdown requires them (e.g. two-space hard break).
+- Never hard-wrap prose in Markdown files (manually inserting a newline mid-paragraph at some column width). Write each paragraph/list-item as one single line, no matter how long - let the editor soft-wrap for display. Applies to every `.md` file: audit reports, CLAUDE.md/CONVENTIONS.md, decisions, changelogs, tickets, content-backlog files. Manual line breaks are fine only inside code fences, tables, and where Markdown requires them (e.g. two-space hard break).
 
 ---
 

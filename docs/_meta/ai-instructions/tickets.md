@@ -2,6 +2,8 @@
 
 > Reference this file whenever ticket intent is detected: WIKI-xxx ID mentioned, or phrases like "work on tickets", "which ticket", "decide ticket", "let's pick a ticket".
 > Read `docs/tickets-backlog.md` for active tickets; `docs/tickets-archive.md` for Done/Dropped history.
+>
+> **Not for content articles.** Content quality work uses `docs/_meta/ai-instructions/content-backlog.md` (`DSA-xxx` / `SD-xxx`). Never call those tickets; never file them here.
 
 ---
 

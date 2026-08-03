@@ -5,6 +5,7 @@ HTML markup integrity tests:
 - No inline onclick/onchange on static buttons; data-action delegation works
 """
 
+import pytest
 
 # ── Skip-to-content ────────────────────────────────────────────────
 
@@ -158,6 +159,7 @@ def test_data_action_settings_close_works(wiki_page):
     assert is_hidden, "Settings panel did not close via data-action=prefs-close"
 
 
+@pytest.mark.heavy
 def test_data_action_settings_export_works(wiki_page):
     """Clicking [data-action=settings-export] triggers a file download."""
     wiki_page.locator("[data-action='settings-open']").first.click()

@@ -234,11 +234,22 @@ For the full model and the *why*, see the decisions docs:
 
 ---
 
+## Content backlog
+
+- Content work is tracked in `docs/content-backlog-dsa.md` / `docs/content-backlog-system-design.md` (archives alongside). Schema: `docs/_meta/ai-instructions/content-backlog.md`.
+- These are **not** app tickets. IDs are `DSA-xxx` / `SD-xxx`. Never file content findings as `WIKI-xxx`.
+- Path column omits the `content/` prefix. Description: ≤30 words; short sentences separated by semicolons.
+- Group by article or by shared change across articles when the work ships together.
+- Pending `*-content-audit*` reports become backlog rows via `.prompts/fe-audit-reports-to-content-backlog.md`, not via the tickets prompt.
+
+---
+
 ## Workflow
 
 - Keep diffs focused - one concern per commit (mirrors the SRP rule for code).
 - Never `git add` / `commit` / `push` unless explicitly asked. Never add `Co-Authored-By`.
 - Never put `WIKI-xxx` ticket IDs in code comments or CSS section headers.
+- Never put content-backlog IDs (`DSA-xxx` / `SD-xxx`) in app code/CSS either; they belong only in content-backlog docs and related content commits/changelog notes when useful.
 - When reviewing, treat each section of this file as a checklist. If a repeated violation isn't covered by an existing rule, add the rule here.
 - **Enforcement tooling:** Biome runs in pre-commit and CI (formatting + lint mechanics). Semantic rules (module boundaries, no `console.*`, etc.) remain on author + reviewer until custom lint rules are added.
 
