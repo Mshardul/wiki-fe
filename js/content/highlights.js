@@ -144,8 +144,8 @@ function _showToolbar(range) {
   const emojiDivider = bar.querySelector(".highlight-toolbar-divider");
   if (emojiDivider) emojiDivider.hidden = inCode;
   const rect = range.getBoundingClientRect();
-  bar.classList.remove("hidden");
   _positionToolbar(bar, rect);
+  bar.classList.remove("hidden");
 }
 
 function _hideToolbar() {

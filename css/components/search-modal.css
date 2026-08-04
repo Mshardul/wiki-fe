@@ -1,7 +1,6 @@
 /* ═══════════════════════════════════════════════
    GLOBAL SEARCH MODAL (⌘K)
    ═══════════════════════════════════════════════ */
-
 .gsearch-modal {
   position: fixed;
   inset: 0;
@@ -178,7 +177,7 @@
   padding: 1px 5px;
 }
 
-/* ─── Command palette rows ─── */
+/* Command palette rows */
 .gsearch-command {
   display: grid;
   grid-template-columns: 1.5rem 1fr;
@@ -198,7 +197,7 @@
   grid-column: 2;
 }
 
-/* ─── Scope dropdown ─── */
+/* Scope dropdown */
 .gsearch-filter-group {
   display: flex;
   align-items: center;
@@ -224,7 +223,7 @@
   border-color: var(--accent);
 }
 
-/* ─── Custom scope picker (mobile) ─── */
+/* Custom scope picker (mobile) */
 .gsearch-scope-custom {
   display: none;
   position: relative;
@@ -312,7 +311,7 @@
   font-weight: var(--fw-semibold);
 }
 
-/* ─── Snippet ─── */
+/* Snippet */
 .gsearch-result-snippet {
   font-size: var(--text-xs);
   color: var(--text-muted);
@@ -320,7 +319,7 @@
   margin-top: 1px;
 }
 
-/* ─── Recent searches ─── */
+/* Recent searches */
 .gsearch-recents {
   padding-bottom: var(--s2);
   border-bottom: 1px solid var(--border);
@@ -366,7 +365,7 @@
   color: var(--text-muted);
 }
 
-/* ─── No-results fallback ─── */
+/* No-results fallback */
 .gsearch-did-you-mean {
   text-align: center;
   font-size: var(--text-sm);

@@ -131,6 +131,13 @@ def disable_animations(page):
     """)
 
 
+def force_paint(page):
+    """Force a real compositor frame via CDP - Playwright's actionability check can pass on stale hit-test geometry for a JS-positioned element without this."""
+    cdp = page.context.new_cdp_session(page)
+    cdp.send("Page.captureScreenshot", {"format": "png"})
+    cdp.detach()
+
+
 @pytest.fixture(scope="session")
 def base_url():
     class Handler(SimpleHTTPRequestHandler):

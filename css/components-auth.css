@@ -206,7 +206,9 @@
   flex-shrink: 0;
 }
 
-/* ─── Data-migrate modal (anon -> login prompt) ─── */
+/* ═══════════════════════════════════════════════
+   DATA-MIGRATE MODAL (anon -> login prompt)
+   ═══════════════════════════════════════════════ */
 .migrate-modal.hidden {
   display: none;
 }

@@ -49,7 +49,6 @@
   border-color: var(--accent);
 }
 
-/* ─── Type variants ─── */
 .wiki-toast--success {
   border-color: var(--color-success);
   color: var(--color-success);

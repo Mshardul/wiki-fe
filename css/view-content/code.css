@@ -1,4 +1,6 @@
-/* Code blocks */
+/* ═══════════════════════════════════════════════
+   CODE BLOCKS
+   ═══════════════════════════════════════════════ */
 .markdown-body pre {
   position: relative;
   background: var(--code-bg, #1a1d2e);
@@ -26,11 +28,11 @@
     padding-top: var(--s5);
   }
 }
-/* right-edge scroll fade - only when no header to show overflow */
+/* Right-edge scroll fade - only when no header to show overflow */
 .markdown-body pre.pre--overflowing:not(.pre--collapsible)::after {
   content: "";
   position: absolute;
-  top: 32px; /* below code-header */
+  top: 32px;
   right: 0;
   bottom: 0;
   width: 32px;
@@ -48,7 +50,9 @@
   font-feature-settings: "liga" 0, "calt" 0;
 }
 
-/* Line numbers */
+/* ═══════════════════════════════════════════════
+   LINE NUMBERS
+   ═══════════════════════════════════════════════ */
 pre.has-line-numbers {
   counter-reset: line-number;
 }
@@ -68,7 +72,9 @@ pre.has-line-numbers {
   vertical-align: top;
 }
 
-/* Code block header */
+/* ═══════════════════════════════════════════════
+   CODE BLOCK HEADER
+   ═══════════════════════════════════════════════ */
 .code-header {
   display: flex;
   align-items: center;
@@ -181,7 +187,9 @@ pre.has-line-numbers {
   border-radius: 0 var(--r) var(--r) 0;
 }
 
-/* Tables */
+/* ═══════════════════════════════════════════════
+   TABLES
+   ═══════════════════════════════════════════════ */
 .markdown-body table {
   width: 100%;
   table-layout: fixed;
@@ -192,9 +200,7 @@ pre.has-line-numbers {
   overflow: hidden;
   border: 1px solid var(--border);
 }
-/* Inside the scroll wrap, let the table grow past 100% so wide content
-   overflows into the wrap's own scrollbar instead of always fitting and
-   never triggering .scroll-cue. */
+/* Let table grow past 100% inside scroll-wrap so wide content overflows into its own scrollbar, else .scroll-cue never triggers. */
 .table-scroll-wrap .markdown-body table,
 .table-scroll-wrap table {
   width: auto;
@@ -253,7 +259,9 @@ pre.has-line-numbers {
   background: var(--surface-hover);
 }
 
-/* Quiz-me mode - blanked complexity cells, tap to reveal */
+/* ═══════════════════════════════════════════════
+   QUIZ-ME MODE - blanked complexity cells, tap to reveal
+   ═══════════════════════════════════════════════ */
 .markdown-body .quiz-cell.quiz-blurred {
   color: transparent;
   background: var(--surface-2);
@@ -339,9 +347,9 @@ pre.has-line-numbers {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    TABBED CODE BLOCKS
-   ═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════ */
 .code-tabs {
   margin: var(--s6) 0;
 }
@@ -392,9 +400,6 @@ pre.has-line-numbers {
 .code-tab.active {
   color: var(--accent-light);
   border-bottom-color: var(--accent);
-}
-.code-tabs-panels .code-tab-panel {
-  /* panels inherit pre/code styles from markdown-body */
 }
 .code-tabs-panels pre {
   margin-top: 0;

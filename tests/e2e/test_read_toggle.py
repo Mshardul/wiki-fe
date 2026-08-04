@@ -186,6 +186,7 @@ navigator.vibrate = function(pattern) {
 
 def test_read_toggle_calls_vibrate_when_setting_on(page, base_url):
     """Marking an article read fires navigator.vibrate when hapticFeedback is on."""
+    page.emulate_media(reduced_motion="no-preference")  # _vibrate() early-returns under reduced motion
     page.add_init_script(_VIBRATE_SPY)
     _go_to_article(page, base_url)
     page.evaluate("""() => {
@@ -213,6 +214,7 @@ def test_read_toggle_skips_vibrate_when_setting_off(page, base_url):
 
 def test_unmarking_read_does_not_call_vibrate(page, base_url):
     """Marking an article back to unread is not a milestone - no vibrate call."""
+    page.emulate_media(reduced_motion="no-preference")  # _vibrate() early-returns under reduced motion
     page.add_init_script(_VIBRATE_SPY)
     _go_to_article(page, base_url)
     page.evaluate("""() => {

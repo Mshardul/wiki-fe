@@ -7,10 +7,9 @@
   min-height: 100vh;
 }
 #view-home.active {
-  display: flex; /* override .view.active { display:block } so home uses flex layout */
+  display: flex;
 }
 
-/* Background grid pattern */
 .home-bg-grid {
   position: fixed;
   inset: 0;
@@ -21,7 +20,6 @@
   z-index: 0;
 }
 
-/* Radial glow behind hero */
 .home-glow {
   position: absolute;
   top: 0;
@@ -85,7 +83,6 @@
   padding: 0 var(--s6) var(--s20);
 }
 
-/* Wiki card grid */
 .wiki-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 260px));
@@ -100,7 +97,6 @@
   }
 }
 
-/* Wiki card */
 .wiki-card {
   position: relative;
   background: var(--surface);

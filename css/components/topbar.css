@@ -238,10 +238,7 @@
   font-size: var(--text-xs);
   color: var(--text-subtle);
   margin-top: var(--s1);
-  /* Reserve the line's height before the async read-time/stub text populates,
-     so filling it in doesn't change card height and shift the page (which
-     the browser's scroll anchoring would otherwise silently compensate for -
-     see the index-scroll-persistence guard in app.js). */
+  /* Reserve line height before async text populates, else height change shifts the page via scroll anchoring - see app.js. */
   min-height: calc(var(--text-xs) * 1.4);
 }
 
@@ -371,5 +368,5 @@
 @media (max-width: 640px) {
   .topbar-title {
     display: none;
-  } /* Hide on mobile to save topbar space */
+  }
 }

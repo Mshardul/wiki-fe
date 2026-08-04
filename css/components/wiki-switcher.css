@@ -186,7 +186,6 @@
   text-overflow: ellipsis;
 }
 
-/* Mobile: bottom sheet */
 @media (max-width: 640px) {
   .wiki-switcher-modal {
     align-items: flex-end;

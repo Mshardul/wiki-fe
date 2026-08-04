@@ -16,6 +16,7 @@ Content view enhancements:
 import json
 
 import pytest
+from conftest import force_paint
 
 ARTICLE_WITH_TABLE = """\
 # Table Test
@@ -111,6 +112,7 @@ def _load_mock_article(page, base_url, content, slug="mock"):
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
         timeout=8_000,
     )
+    force_paint(page)
 
 
 # ── Video embed ───────────────────────────────────────────────────
@@ -2976,6 +2978,7 @@ def test_highlight_create_remove_and_keyboard_remove_lifecycle(page, base_url):
     # Phase 1: create, verify DOM wrap + localStorage persistence.
     _select_word(page, "selectable")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
@@ -2997,6 +3000,7 @@ def test_highlight_create_remove_and_keyboard_remove_lifecycle(page, base_url):
     # Phase 2: remove via the popover, verify DOM + storage both clear.
     page.locator("#markdown-body .wiki-highlight").first.click()
     page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
+    force_paint(page)
     page.locator(".highlight-remove-btn").click()
     page.wait_for_function(
         "() => document.querySelectorAll('#markdown-body .wiki-highlight').length === 0",
@@ -3014,12 +3018,14 @@ def test_highlight_create_remove_and_keyboard_remove_lifecycle(page, base_url):
     # Phase 3: re-create, then remove via keyboard Enter + Remove instead of a click.
     _select_word(page, "selectable")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
     page.locator("#markdown-body .wiki-highlight").first.focus()
     page.keyboard.press("Enter")
     page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
+    force_paint(page)
     page.locator(".highlight-remove-btn").click()
     page.wait_for_function(
         "() => document.querySelectorAll('#markdown-body .wiki-highlight').length === 0",
@@ -3032,6 +3038,7 @@ def test_highlight_persists_and_reapplies_on_reload(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reload")
     _select_word(page, "selectable")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
@@ -3047,6 +3054,7 @@ def test_marker_create_and_remove_lifecycle(page, base_url):
     # Phase 1: create, verify DOM badge + localStorage persistence.
     _select_word(page, "testing")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    force_paint(page)
     page.locator(".highlight-toolbar-btn--emoji").first.click()
     page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
 
@@ -3058,6 +3066,7 @@ def test_marker_create_and_remove_lifecycle(page, base_url):
     # Phase 2: remove via the popover, verify DOM + storage both clear.
     page.locator("#markdown-body .wiki-marker").first.click()
     page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
+    force_paint(page)
     page.locator(".highlight-remove-btn").click()
     page.wait_for_function(
         "() => document.querySelectorAll('#markdown-body .wiki-marker').length === 0",
@@ -3078,6 +3087,7 @@ def test_emoji_marker_persists_and_reapplies_on_reload(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-reload")
     _select_word(page, "testing")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    force_paint(page)
     page.locator(".highlight-toolbar-btn--emoji").first.click()
     page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
 
@@ -3093,6 +3103,7 @@ def test_highlight_reanchor_and_drop_on_upstream_edit(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reanchor-drop")
     _select_word(page, "selectable")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
@@ -3146,6 +3157,7 @@ def test_highlight_mark_is_keyboard_focusable(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-focusable")
     _select_word(page, "selectable")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
@@ -3164,12 +3176,14 @@ def test_keyboard_enter_removes_focused_highlight(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-kbd-remove")
     _select_word(page, "selectable")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
     page.locator("#markdown-body .wiki-highlight").first.focus()
     page.keyboard.press("Enter")
     page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
+    force_paint(page)
 
     page.locator(".highlight-remove-btn").click()
     page.wait_for_function(
@@ -3198,6 +3212,7 @@ def test_save_as_card_triggers_png_download(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="card-download")
     _select_word(page, "selectable")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    force_paint(page)
 
     with page.expect_download() as download_info:
         page.locator(".highlight-toolbar-btn--card").click()
@@ -3216,6 +3231,7 @@ def test_save_as_card_does_not_create_highlight_or_marker(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="card-no-persist")
     _select_word(page, "selectable")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    force_paint(page)
 
     with page.expect_download():
         page.locator(".highlight-toolbar-btn--card").click()
@@ -3269,6 +3285,7 @@ def test_emoji_marker_is_narrow_accent_tick(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-accent-tick")
     _select_word(page, "testing")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    force_paint(page)
     page.locator(".highlight-toolbar-btn--emoji").first.click()
     page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
 

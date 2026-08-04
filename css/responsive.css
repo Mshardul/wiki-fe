@@ -12,15 +12,14 @@
     position: static;
     width: 100%;
     max-height: none;
-    display: none; /* hidden by default, shown via mobile btn */
+    display: none;
   }
   .toc-mobile-btn {
     display: flex;
   }
 }
 
-/* Wide content-width (5% padding) leaves almost no side margin on tablet
-   portrait widths - floor the padding so Wide stays readable. */
+/* Wide content-width (5% padding) leaves almost no side margin on tablet portrait - floor it so Wide stays readable. */
 @media (min-width: 641px) and (max-width: 900px) {
   .content-layout {
     padding-left: max(var(--layout-padding, 10%), var(--s10));
@@ -106,13 +105,11 @@
     padding: var(--s2) var(--s3);
   }
 
-  /* expand tappable area to 44px minimum */
   .topbar-icon-btn {
     min-width: 44px;
     min-height: 44px;
   }
 
-  /* fix remaining undersized touch targets */
   .scroll-top-btn,
   .toc-mobile-btn {
     min-width: 44px;
@@ -128,7 +125,6 @@
     min-height: 44px;
   }
 
-  /* breadcrumb truncation on mobile */
   .breadcrumb {
     flex-wrap: nowrap;
     min-width: 0;
@@ -162,9 +158,7 @@
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 
-  /* collapsible code blocks skip the right-fade in code.css (their ::after
-     is used for the bottom collapse fade) - give them one via ::before so
-     the scroll cue is consistent across all overflowing code blocks */
+  /* ::after is used for bottom fade here, so give right-edge scroll cue via ::before instead, matching code.css */
   .markdown-body pre.pre--overflowing.pre--collapsible::before {
     content: "";
     position: absolute;
@@ -327,9 +321,7 @@
   .home-header {
     padding-top: var(--s16);
   }
-  /* content-topbar row (back + breadcrumb + read-time + 4 icon btns) overflows
-     390px viewports (iPhone 13) once breadcrumb hits min-width:0 - shed the
-     read-time badge and back-btn label same as the 375px tier below. */
+  /* Overflows 390px (iPhone 13) once breadcrumb hits min-width:0 - shed read-time badge and back-btn label, same as 375px tier below. */
   #content-read-time {
     display: none;
   }

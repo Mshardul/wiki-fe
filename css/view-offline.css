@@ -92,8 +92,7 @@
   font-size: var(--text-sm);
 }
 
-/* Uncached-while-offline dimming on wiki index cards - distinct from
-   .index-card--unavailable (stub/not-written), which this must not collide with. */
+/* Uncached-while-offline dimming on index cards - distinct from .index-card--unavailable (stub/not-written); must not collide with it. */
 .index-card--offline-uncached {
   opacity: 0.45;
 }

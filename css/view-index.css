@@ -39,7 +39,6 @@
   line-height: 1.6;
 }
 
-/* Collapse-all / Expand-all controls */
 .index-controls {
   display: flex;
   gap: 6px;
@@ -82,13 +81,11 @@
   height: 100%;
 }
 
-/* Index sections */
 .index-main {
   max-width: 1100px;
   margin: 0 auto;
   padding: var(--s8) var(--s6) var(--s20);
 }
-/* ─── Inline index filter bar ─── */
 .index-filter-bar {
   display: flex;
   align-items: center;
@@ -202,7 +199,6 @@
   height: 0;
 }
 
-/* Index card grid */
 .index-card-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -221,7 +217,6 @@
   }
 }
 
-/* Index card */
 .index-card {
   position: relative;
   background: var(--surface);
@@ -259,12 +254,7 @@
 }
 #index-sections .index-card,
 #index-sections .index-section {
-  /* Read-time/stub badges populate async and change card/section height.
-     The viewport is the scrolling box, so scroll anchoring must be disabled
-     on the elements that actually resize, not on their non-scrolling
-     ancestor - otherwise Chromium still silently shifts window.scrollY to
-     compensate, and that shift gets mistaken for a real user scroll by the
-     scroll-position-persistence listeners in app.js. */
+  /* Disable scroll anchoring on the resizing elements, not their ancestor, else scrollY shift fools app.js's persistence listeners. */
   overflow-anchor: none;
 }
 #index-sections.index-pulling {
@@ -485,7 +475,6 @@
   font-size: inherit;
 }
 
-/* Chip strip row limit + expand */
 .recent-chip.chip--hidden {
   display: none;
 }
@@ -509,7 +498,6 @@
   color: var(--accent-light);
 }
 
-/* Empty section state */
 .index-section-empty {
   display: none;
   grid-column: 1 / -1;

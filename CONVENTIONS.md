@@ -102,7 +102,7 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 - **Naming:** `camelCase` for vars/functions, `UPPER_SNAKE` for module-level constants with a one-line reason if non-obvious.
 - **Leading underscore (`_name`) marks "not part of this file's public contract"** - applies the same way at both granularities: a top-level function not in the module's exports (`_collectLocalReads` in `auth.js`), or a method on an exported object literal not meant for outside callers (`AuthModal._trapFocus`, `._renderChecklist`). No prefix = part of the public export or the object's intended external API.
 - **No new runtime dependencies** without a deliberate decision - the no-build, offline-first model depends on staying lean.
-- **Comments are sparse and short.** A comment earns its place only when the code can't say it itself - the *why*, a non-obvious constraint, a gotcha. Default to none. When you do comment, **one line**, not a paragraph. Never narrate *what* the next lines do (the code shows that), never restate the function name, never write multi-line block comments explaining mechanics. Section-divider banners (`/* ─── X ─── */`) are fine; prose explanations of straightforward code are not.
+- **Comments are sparse and short.** A comment earns its place only when the code can't say it itself - the *why*, a non-obvious constraint, a gotcha. Default to none. When you do comment, **one line**, not a paragraph. Never narrate *what* the next lines do (the code shows that), never restate the function name, never write multi-line block comments explaining mechanics.
 - **Comments are project-level, never ticket- or task-level.** Never reference a ticket number (`WIKI-xxx`), task number, PR number, or branch name in a code comment or CSS section header. Those belong in the commit message or PR description - not in the source file, where they rot.
 
 ---
@@ -118,6 +118,13 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 - **`components/` and `view-content/` are split by sub-concern** (see the module map above for the JS equivalent). `components/topbar.css`, `search-modal.css`, `preferences-modal.css`, `toast.css`, `wiki-switcher.css`; `view-content/layout.css`, `code.css`, `mermaid.css`, `callouts-prereqs.css`, `interactive.css`, `glossary-related.css`. A new component/view rule set crossing ~400 lines gets its own file in the matching subfolder, imported from `wiki.css` in the same position.
 - **Responsive:** mobile-first. All new CSS must work at 320px. Breakpoints live in `responsive.css` - not `tokens.css`, not scattered in view files. No new breakpoints outside `responsive.css` without a deliberate decision.
 - **No fixed px for layout dimensions that must adapt.** Use fluid units for layout-level sizing: `min()`, `max()`, `clamp()`, `vw`, `vh`, `%`. Fixed `px` is correct for: borders, outlines, icon sizes, touch targets (44px min), blur radii, `transform` nudges. Fixed `px` is wrong for: panel widths, drawer widths, overlay heights, `top`/`scroll-margin-top` offsets tied to a layout measurement. For topbar-relative offsets use `var(--topbar-h)` or `calc(var(--topbar-h) + ...)` - never a raw px value.
+- **Section-divider banners are a two-level hierarchy, nothing more.** A file has at most: one implicit "root" (the file itself - its content/filename already say what it's about) and, within it, section banners for genuinely distinct rule groups. No third tier - don't nest a lighter-weight label inside a section for a sub-group; either that sub-group is its own section or it isn't called out at all. Judge sections by what the file actually contains, not a line-count formula: a small single-purpose file may need zero section banners, a large file with several real groups may need several. If a file is accumulating enough distinct groups that it feels like it's covering more than one concern, that's a signal to split it into multiple files (see the ~400-line guidance above), not to invent a deeper comment hierarchy. Section banners use the full box form:
+  ```css
+  /* ═══════════════════════════════════════════════
+     SECTION NAME
+     ═══════════════════════════════════════════════ */
+  ```
+  Never a ticket ID in the banner text (see the JS rule above - applies here too). A one-line non-obvious "why" comment nested inside a section (e.g. explaining a specific rule's browser quirk) is a different thing entirely - keep those as ordinary one-line comments, not banners.
 
 ---
 

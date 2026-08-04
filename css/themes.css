@@ -1,8 +1,4 @@
-/* ═══════════════════════════════════════════════
-   LIGHT THEME OVERRIDES
-   bg / surface / border / text-heading / text-body / accent are all set by JS.
-   Only shadows and code-block styles differ by light vs dark.
-   ═══════════════════════════════════════════════ */
+/* bg/surface/border/text-heading/text-body/accent are set by JS - only shadows and code-block styles differ light vs dark here. */
 [data-theme="light"] {
   --surface-hover: rgba(0, 0, 0, 0.04);
 
@@ -38,12 +34,7 @@
   box-shadow: 0 0 0 1px var(--accent-glow), 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
-/* ═══════════════════════════════════════════════
-   FOCUS-VISIBLE RING - PER THEME
-   base.css sets the global default. Override here
-   so each theme has an accessible contrast ratio.
-   ═══════════════════════════════════════════════ */
-
+/* base.css sets the global focus-visible default; override here so each theme keeps an accessible contrast ratio. */
 [data-theme="light"] :focus-visible {
   outline-color: var(--accent);
   outline-width: 2px;

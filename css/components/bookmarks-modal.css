@@ -133,7 +133,6 @@
   outline: none;
 }
 
-/* Mobile: bottom sheet, matches wiki-switcher/prefs pattern */
 @media (max-width: 640px) {
   .bookmarks-modal {
     align-items: flex-end;

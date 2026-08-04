@@ -160,7 +160,6 @@ kbd {
   padding: 1px 5px;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -188,10 +187,7 @@ kbd {
   animation: viewEnter 0.25s ease forwards;
 }
 
-/* Directional slide fallback for browsers without the View Transitions API
-   (or reduced-motion, where router.js skips startViewTransition entirely and
-   toggles these classes on <html> instead). Depth increases → forward/slide
-   left; depth decreases → back/slide right. */
+/* Fallback for no View Transitions API/reduced-motion; depth increase = forward/slide left, decrease = back/slide right. */
 html.nav-forward .view.active {
   animation: viewEnterForward 0.25s ease forwards;
 }
@@ -215,9 +211,7 @@ html.nav-back .view.active {
   }
 }
 
-/* View Transitions API: real cross-document-style slide when supported.
-   router.js sets data-nav-direction on <html> right before calling
-   document.startViewTransition(). */
+/* Real cross-document-style slide when supported; router.js sets data-nav-direction before startViewTransition(). */
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
