@@ -1,6 +1,8 @@
 import { writeToClipboard } from "./code-blocks.js";
 
-/* ─── Callout Styling ─── */
+/* ═══════════════════════════════════════════════════════════════
+   CALLOUT STYLING
+   ═══════════════════════════════════════════════════════════════ */
 function styleCallouts(contentEl) {
   contentEl.querySelectorAll("blockquote").forEach((bq) => {
     const text = bq.textContent.trim();
@@ -57,9 +59,10 @@ function addCollapsibleCallouts(contentEl) {
   });
 }
 
-/* ─── Prerequisites Chips ─── */
-// Matches the "[Must read]" / "[Should read]" marker Showdown leaves as plain
-// text (square brackets with no following "(" aren't a markdown link).
+/* ═══════════════════════════════════════════════════════════════
+   PREREQUISITES CHIPS
+   ═══════════════════════════════════════════════════════════════ */
+// Matches the "[Must read]"/"[Should read]" marker Showdown leaves as plain text (brackets without a following "(" aren't a markdown link).
 const PREREQ_LEVEL_RE = /\[(Must|Should) read\]/;
 
 function renderPrerequisites(contentEl) {
@@ -121,7 +124,9 @@ function renderPrerequisites(contentEl) {
   }
 }
 
-/* ─── Heading Anchor Links ─── */
+/* ═══════════════════════════════════════════════════════════════
+   HEADING ANCHOR LINKS
+   ═══════════════════════════════════════════════════════════════ */
 function addAnchorLinks(contentEl, onCopyError = () => {}, onCopySuccess = () => {}) {
   contentEl.querySelectorAll("h2, h3, h4").forEach((h) => {
     if (!h.id) return;
@@ -202,7 +207,7 @@ function addFormulaToggle(contentEl) {
     if (!annotation) return;
     const originalLatex = annotation.textContent.trim();
     const substituted = _substituteLatex(originalLatex);
-    if (substituted === originalLatex) return; // nothing to swap - skip
+    if (substituted === originalLatex) return;
 
     let expanded = false;
     const btn = document.createElement("button");
@@ -240,7 +245,9 @@ function addFormulaToggle(contentEl) {
   });
 }
 
-/* ─── LaTeX Copy Buttons ─── */
+/* ═══════════════════════════════════════════════════════════════
+   LATEX COPY BUTTONS
+   ═══════════════════════════════════════════════════════════════ */
 function addLatexCopyButtons(contentEl, onCopyError = () => {}) {
   contentEl.querySelectorAll(".katex-display").forEach((block) => {
     const annotation = block.querySelector("annotation[encoding='application/x-tex']");

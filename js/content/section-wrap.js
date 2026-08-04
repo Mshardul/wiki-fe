@@ -1,7 +1,4 @@
-// Wraps flat markdown-derived siblings into real nested containers so
-// downstream features (collapse, study mode, per-problem toggles, ...) can
-// target "everything under this heading" by element instead of re-deriving
-// section boundaries with a heading.nextElementSibling walk every time.
+// Wraps flat markdown-derived siblings into nested containers so downstream features can target "everything under this heading" by element instead of re-walking siblings each time.
 function _collectUntil(startEl, stopTagRe) {
   const collected = [];
   let el = startEl;

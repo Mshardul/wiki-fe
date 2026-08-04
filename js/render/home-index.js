@@ -125,9 +125,7 @@ async function renderIndex(wiki) {
   document.getElementById("index-subtitle").textContent = wiki.description;
 
   showView("view-index");
-  // view-index is exempt from _applyView's scroll reset (it restores a saved
-  // position below), so a fresh visit with nothing saved must reset here -
-  // otherwise the previous view's scroll position leaks in until content loads.
+  // view-index is exempt from _applyView's scroll reset (restores saved position below), so a fresh visit with nothing saved must reset here to avoid leaking the previous view's scroll.
   if (!localStorage.getItem(`wiki-index-scroll-${wiki.id}`)) {
     window.scrollTo({ top: 0, behavior: "instant" });
   }
@@ -161,9 +159,7 @@ async function renderIndex(wiki) {
     scheduleIdle(() =>
       populateIndexReadTimes().finally(() => {
         sectionsEl.classList.remove("index-sections--loading");
-        // Read-time/stub badges can change section height, so only restore scroll
-        // once that layout-affecting work is done - restoring earlier (e.g. on
-        // fonts.ready) risks the browser clamping targetY to a still-short page.
+        // Restore scroll only after read-time/stub badges settle - restoring earlier risks the browser clamping targetY to a still-short page.
         if (targetY !== null) window.scrollTo({ top: targetY, behavior: "instant" });
       }),
     );
@@ -232,8 +228,7 @@ function renderIndexSections(sections, wiki) {
     .join("");
 }
 
-// Dims index cards whose article isn't cached for offline reading - only meaningful
-// while offline, so it's a no-op (and clears any prior dimming) when online.
+// Dims index cards not cached for offline reading; no-op (and clears prior dimming) when online.
 async function applyOfflineDimming(wiki) {
   const container = document.getElementById("index-sections");
   if (!container) return;
@@ -256,8 +251,7 @@ async function applyOfflineDimming(wiki) {
   }
 }
 
-// Re-resolves the wiki from state.currentWikiId at fire time (not closed over) so
-// switching between wiki indexes doesn't leave a stale listener dimming the wrong wiki.
+// Re-resolves wiki from state.currentWikiId at fire time (not closed over) so switching indexes doesn't dim the wrong wiki.
 let _offlineDimWired = false;
 function _wireOfflineDimming() {
   if (_offlineDimWired) return;
@@ -468,8 +462,7 @@ const IndexFilter = {
     return !!this._query || this._readStatus !== "all";
   },
 
-  // Full clear for the reset-view escape hatch - unlike reset(), this also drops
-  // the read-status filter rather than honouring a pending request.
+  // Full clear for the reset-view escape hatch - unlike reset(), also drops the read-status filter instead of honouring a pending request.
   clearAll() {
     this._query = "";
     this._readStatus = "all";

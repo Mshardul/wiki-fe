@@ -6,11 +6,13 @@ import { renderIndex } from "./home-index.js";
 import { buildSearchEntriesForWiki } from "./home-parse.js";
 import { showToast } from "./toast.js";
 
-/* ─── Index-card swipe: right = bookmark, left = read toggle ─── */
+/* ═══════════════════════════════════════════════════════════════
+   INDEX-CARD SWIPE (right = bookmark, left = read toggle)
+   ═══════════════════════════════════════════════════════════════ */
 const CARD_SWIPE_THRESHOLD = 50;
 const CARD_SWIPE_DEADZONE = 8;
 let _cardSwipeBound = false;
-let _swipeWiki = null; // current wiki for the delegated index-card swipe
+let _swipeWiki = null;
 
 function bindIndexCardSwipe(wiki) {
   _swipeWiki = wiki;
@@ -37,10 +39,7 @@ function bindIndexCardSwipe(wiki) {
     }
     card = null;
     axis = null;
-    // Deferred: this touchend is still bubbling up to the document-level edge-swipe
-    // listener, which reads this flag to stand down. Clearing it synchronously here
-    // would race that read (container's listener fires before document's in bubble
-    // order) and re-arm back-nav before the document handler ever sees it was active.
+    // Deferred to a macrotask: clearing synchronously would race the document-level edge-swipe listener still reading this flag during the same bubble phase.
     setTimeout(() => {
       state._cardSwipeActive = false;
     }, 0);
@@ -191,9 +190,7 @@ async function refreshIndex(wiki) {
   await renderIndex(wiki);
 }
 
-// Stale wiki-scoped rows in the shared ⌘K search cache must go too - refreshIndex()
-// only busts this view's own indexCache, but search.js populates its own cache once
-// and never revisits it, so a refresh here silently left old entries there.
+// refreshIndex() only busts this view's indexCache; search.js's own ⌘K cache never revisits, so stale wiki rows there must be purged here too.
 async function _refreshSearchCacheForWiki(wiki) {
   if (!allSearchCache.loaded) return; // never populated yet - nothing stale to fix
   allSearchCache.entries = allSearchCache.entries.filter((e) => e.wiki.id !== wiki.id);

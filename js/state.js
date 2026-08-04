@@ -41,7 +41,7 @@ const mathExtension = () => {
   return [
     {
       type: "lang",
-      regex: /\$\$([\s\S]+?)\$\$/g, // Block math
+      regex: /\$\$([\s\S]+?)\$\$/g,
       replace: (match, content) => `¨D${btoa(unescape(encodeURIComponent(content)))}¨D`,
     },
     {
@@ -131,7 +131,9 @@ const state = {
   session: { user: null, status: "loading" },
 };
 
-/* ─── Shared caches (mutated by render.js and search.js - must live here) ─── */
+/* ═══════════════════════════════════════════════════════════════
+   SHARED CACHES (mutated by render.js and search.js - must live here)
+   ═══════════════════════════════════════════════════════════════ */
 const readTimeCache = {};
 const updatedDateCache = {};
 const indexCache = {};
@@ -180,7 +182,9 @@ function markStubPath(normalizedPath) {
 for (const p of loadStubPaths()) readTimeCache[p] = null;
 const STUB_THRESHOLD = 5000; // bytes - stubs are template skeletons (~3k of HTML-comment scaffolding); real articles are 8k+
 
-/* ─── Article shape fingerprints (heading/code-block counts) ─── */
+/* ═══════════════════════════════════════════════════════════════
+   ARTICLE SHAPE FINGERPRINTS (heading/code-block counts)
+   ═══════════════════════════════════════════════════════════════ */
 const SHAPE_FINGERPRINTS_KEY = "wiki-shape-fingerprints";
 function loadShapeFingerprints() {
   try {
@@ -200,7 +204,9 @@ function saveShapeFingerprint(normalizedPath, fingerprint) {
   } catch {}
 }
 
-/* ─── Pure utilities (placed here to avoid circular deps between storage/render) ─── */
+/* ═══════════════════════════════════════════════════════════════
+   PURE UTILITIES (placed here to avoid circular deps between storage/render)
+   ═══════════════════════════════════════════════════════════════ */
 function escHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -221,11 +227,9 @@ function fuzzyMatch(query, text) {
   return qi === q.length;
 }
 
-/* ─── Stale-knowledge fade curve ───
-   Linear decay from 1.0 (just read) to FADE_FLOOR over FADE_PERIOD_DAYS,
-   then held at the floor - an ambient "fading memory" cue, not a hard cutoff. */
+/* Linear decay from 1.0 to FADE_FLOOR over FADE_PERIOD_DAYS, then held - an ambient "fading memory" cue, not a hard cutoff. */
 const FADE_FLOOR = 0.4;
-const FADE_PERIOD_DAYS = 70; // ~10 weeks to reach the floor
+const FADE_PERIOD_DAYS = 70;
 
 function fadeFactorForDaysSinceRead(days) {
   if (!Number.isFinite(days) || days <= 0) return 1;
@@ -243,9 +247,7 @@ function removeLocalStorageByPrefix(prefix) {
   toRemove.forEach((key) => localStorage.removeItem(key));
 }
 
-// Chains async mutations sharing the same key onto one another so a rapid double-fire (double-click,
-// or click + hotkey landing together) can't dispatch two requests for the same key out of order -
-// each call waits for the previous one on that key to settle before it fires.
+// Chains async mutations sharing a key so a rapid double-fire can't dispatch two requests for the same key out of order.
 const _mutationQueues = new Map();
 function sequencedMutation(key, fn) {
   const prev = _mutationQueues.get(key) || Promise.resolve();
@@ -256,9 +258,7 @@ function sequencedMutation(key, fn) {
   return next;
 }
 
-// Boot-window write queue: Auth.init() leaves session.status as "loading" until
-// GET /auth/me resolves. Writes in that window must not silently become local-only
-// then get wiped by Sync.pullAll() - queue the API side and flush before pullAll.
+// Boot-window write queue: writes during session.status="loading" must not go local-only and get wiped by Sync.pullAll() - queue and flush before pullAll.
 const _bootMutationQueue = [];
 function scheduleSyncMutation(key, fn) {
   const status = state.session?.status;
@@ -279,8 +279,7 @@ function discardBootMutations() {
   _bootMutationQueue.length = 0;
 }
 
-// Ref-counted body scroll lock so overlapping modals (e.g. prefs opened from within search)
-// don't have the first modal's close re-enable background scroll while a second is still open.
+// Ref-counted scroll lock so overlapping modals don't have the first modal's close re-enable scroll while a second is still open.
 let _scrollLockCount = 0;
 function lockBodyScroll() {
   _scrollLockCount++;

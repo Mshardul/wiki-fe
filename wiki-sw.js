@@ -1,8 +1,7 @@
 const SHELL_CACHE = "wiki-shell-v17";
 const ARTICLE_CACHE = "wiki-articles-v98bc02b3";
 
-// Served for an uncached article request while offline, in place of a failed fetch.
-// Plain markdown (not HTML) so it renders through the normal content pipeline.
+// Served for an uncached article request while offline; plain markdown (not HTML) so it renders through the normal content pipeline.
 const OFFLINE_FALLBACK_MD = `# You're offline
 
 This article hasn't been downloaded for offline reading.
@@ -56,8 +55,7 @@ self.addEventListener("fetch", (e) => {
 
   if (request.method !== "GET" || url.origin !== location.origin) return;
 
-  // Markdown files: serve from article cache if user downloaded, else network,
-  // else (offline + uncached) a static fallback instead of a failed fetch.
+  // Markdown files: article cache if downloaded, else network, else (offline+uncached) a static fallback instead of a failed fetch.
   if (url.pathname.endsWith(".md")) {
     e.respondWith(
       caches.open(ARTICLE_CACHE).then((cache) =>
@@ -76,7 +74,6 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Shell assets: network-first, cache as fallback for offline
   e.respondWith(
     fetch(request)
       .then((res) => {

@@ -15,14 +15,18 @@ function dirOf(filePath) {
   return filePath.substring(0, filePath.lastIndexOf("/"));
 }
 
-/* ─── Reading time ─── */
+/* ═══════════════════════════════════════════════════════════════
+   READING TIME
+   ═══════════════════════════════════════════════════════════════ */
 function readingTime(text) {
   const words = text.trim().split(/\s+/).length;
   const mins = Math.max(1, Math.round(words / 200));
   return `${mins} min read`;
 }
 
-/* ─── Front-matter "updated:" date ─── */
+/* ═══════════════════════════════════════════════════════════════
+   FRONT-MATTER "updated:" DATE
+   ═══════════════════════════════════════════════════════════════ */
 function parseUpdatedDate(text) {
   const fmMatch = text.match(/^---\n([\s\S]*?)\n---/);
   if (!fmMatch) return null;
@@ -30,12 +34,16 @@ function parseUpdatedDate(text) {
   return dateMatch ? dateMatch[1] : null;
 }
 
-/* ─── Dynamic Page Title ─── */
+/* ═══════════════════════════════════════════════════════════════
+   DYNAMIC PAGE TITLE
+   ═══════════════════════════════════════════════════════════════ */
 function updatePageTitle(title) {
   document.title = `${title} | Wiki App`;
 }
 
-/* ─── Robust Relative Path Resolver ─── */
+/* ═══════════════════════════════════════════════════════════════
+   ROBUST RELATIVE PATH RESOLVER
+   ═══════════════════════════════════════════════════════════════ */
 function resolvePath(baseDir, relHref) {
   const hashIdx = relHref.indexOf("#");
   const fragment = hashIdx >= 0 ? relHref.slice(hashIdx) : "";
@@ -80,12 +88,22 @@ function setBreadcrumb(elId, items) {
   });
 }
 
+const FETCH_TEXT_TIMEOUT_MS = 15_000;
+
 async function fetchText(path, signal) {
   let res;
   try {
-    res = await fetch(new URL(path, location.href).href, signal ? { signal } : {});
+    res = await fetch(new URL(path, location.href).href, {
+      signal: signal ?? AbortSignal.timeout(FETCH_TEXT_TIMEOUT_MS),
+    });
   } catch (err) {
-    if (err.name === "AbortError") throw err;
+    // Caller-passed signal aborting (e.g. stale navigation) must stay a real
+    // AbortError so callers like content-view.js can keep silently ignoring it -
+    // only our own internal timeout signal gets rewritten into a user-facing message.
+    if (err.name === "AbortError") {
+      if (signal) throw err;
+      throw new Error("Request timed out - check your connection");
+    }
     throw new Error(`Network error - check your connection (${err.message})`);
   }
   if (res.status === 404) throw new Error("Page not found (404)");
@@ -100,7 +118,9 @@ let _prebuiltIndex;
 async function fetchPrebuiltSearchIndex() {
   if (_prebuiltIndex !== undefined) return _prebuiltIndex;
   try {
-    const res = await fetch(new URL("./content/search-index.json", location.href).href);
+    const res = await fetch(new URL("./content/search-index.json", location.href).href, {
+      signal: AbortSignal.timeout(FETCH_TEXT_TIMEOUT_MS),
+    });
     _prebuiltIndex = res.ok ? await res.json() : null;
   } catch {
     _prebuiltIndex = null;
@@ -113,7 +133,9 @@ let _prebuiltBacklinks;
 async function fetchPrebuiltBacklinks() {
   if (_prebuiltBacklinks !== undefined) return _prebuiltBacklinks;
   try {
-    const res = await fetch(new URL("./content/backlinks.json", location.href).href);
+    const res = await fetch(new URL("./content/backlinks.json", location.href).href, {
+      signal: AbortSignal.timeout(FETCH_TEXT_TIMEOUT_MS),
+    });
     _prebuiltBacklinks = res.ok ? await res.json() : null;
   } catch {
     _prebuiltBacklinks = null;
@@ -126,7 +148,9 @@ let _prebuiltBrokenLinks;
 async function fetchPrebuiltBrokenLinks() {
   if (_prebuiltBrokenLinks !== undefined) return _prebuiltBrokenLinks;
   try {
-    const res = await fetch(new URL("./content/broken-links.json", location.href).href);
+    const res = await fetch(new URL("./content/broken-links.json", location.href).href, {
+      signal: AbortSignal.timeout(FETCH_TEXT_TIMEOUT_MS),
+    });
     _prebuiltBrokenLinks = res.ok ? await res.json() : null;
   } catch {
     _prebuiltBrokenLinks = null;
@@ -134,13 +158,14 @@ async function fetchPrebuiltBrokenLinks() {
   return _prebuiltBrokenLinks;
 }
 
-// Hand-authored cross-wiki concept pairs (WIKI-260): [{a, b}]. One direction
-// per pair - callers expand it symmetrically.
+// Hand-authored cross-wiki concept pairs: [{a, b}], one direction per pair - callers expand it symmetrically.
 let _prebuiltBridges;
 async function fetchPrebuiltBridges() {
   if (_prebuiltBridges !== undefined) return _prebuiltBridges;
   try {
-    const res = await fetch(new URL("./content/bridges.json", location.href).href);
+    const res = await fetch(new URL("./content/bridges.json", location.href).href, {
+      signal: AbortSignal.timeout(FETCH_TEXT_TIMEOUT_MS),
+    });
     _prebuiltBridges = res.ok ? await res.json() : null;
   } catch {
     _prebuiltBridges = null;

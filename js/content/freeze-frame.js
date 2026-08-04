@@ -1,6 +1,5 @@
 import { WIKIS, state } from "../state.js";
 
-/* ─── Card layout constants ─── */
 const CARD_WIDTH = 1200;
 const CARD_MAX_HEIGHT = 1600;
 const CARD_PADDING = 72;

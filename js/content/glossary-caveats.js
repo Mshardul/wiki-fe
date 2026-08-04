@@ -70,7 +70,9 @@ function addInlineCaveats(contentEl) {
   }
 }
 
-/* ─── Glossary Term Hover Popovers ─── */
+/* ═══════════════════════════════════════════════════════════════
+   GLOSSARY TERMS (inline expand + hover popovers)
+   ═══════════════════════════════════════════════════════════════ */
 let _glossaryCache = null;
 
 function _loadGlossary() {

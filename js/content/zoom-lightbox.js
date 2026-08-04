@@ -1,4 +1,6 @@
-/* ─── Zoom Overlay (shared by image lightbox + diagram zoom) ─── */
+/* ═══════════════════════════════════════════════════════════════
+   ZOOM OVERLAY (shared by image lightbox + diagram zoom)
+   ═══════════════════════════════════════════════════════════════ */
 function getZoomOverlay() {
   let overlay = document.getElementById("zoom-overlay");
   if (!overlay) {
@@ -22,7 +24,9 @@ function getZoomOverlay() {
   return overlay;
 }
 
-/* ─── Lightbox touch gestures: pinch-zoom, zoomed-pan, swipe-down dismiss ─── */
+/* ═══════════════════════════════════════════════════════════════
+   LIGHTBOX TOUCH GESTURES (pinch-zoom, zoomed-pan, swipe-down dismiss)
+   ═══════════════════════════════════════════════════════════════ */
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 4;
 
@@ -185,7 +189,9 @@ function openZoomOverlay(node, caption = "") {
   overlay.classList.add("open");
 }
 
-/* ─── Image Lightbox ─── */
+/* ═══════════════════════════════════════════════════════════════
+   IMAGE LIGHTBOX
+   ═══════════════════════════════════════════════════════════════ */
 // Attach before any await - a fast image failure can fire before a delayed listener exists
 function wireImageErrorPlaceholders(contentEl) {
   contentEl.querySelectorAll("img").forEach((img) => {
@@ -224,7 +230,9 @@ function addImageLightbox(contentEl) {
   });
 }
 
-/* ─── Diagram Zoom ─── */
+/* ═══════════════════════════════════════════════════════════════
+   DIAGRAM ZOOM
+   ═══════════════════════════════════════════════════════════════ */
 function addDiagramZoom(contentEl) {
   contentEl.querySelectorAll(".mermaid-diagram").forEach((diagram) => {
     diagram.addEventListener("click", () => {

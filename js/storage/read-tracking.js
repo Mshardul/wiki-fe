@@ -65,7 +65,9 @@ function updateReadBtn() {
   btn.title = read ? "Mark as unread" : "Mark as read";
 }
 
-/* Quiz-mode reveal tracking - a lightweight confidence signal. */
+/* ═══════════════════════════════════════════════════════════════
+   QUIZ-MODE REVEAL TRACKING (lightweight confidence signal)
+   ═══════════════════════════════════════════════════════════════ */
 const REVEAL_KEY_PREFIX = "wiki-reveals";
 
 function _revealKey() {
@@ -107,7 +109,10 @@ const ReadToggle = {
   },
 };
 
-// Separate from read-set membership so "changed since you last read" can compare against a specific visit date.
+/* ═══════════════════════════════════════════════════════════════
+   OPENED-DATE TRACKING (separate from read-set membership so "changed
+   since you last read" can compare against a specific visit date)
+   ═══════════════════════════════════════════════════════════════ */
 const OPENED_KEY_PREFIX = "wiki-read-dates";
 
 function _openedKey() {

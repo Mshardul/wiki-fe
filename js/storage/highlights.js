@@ -1,6 +1,8 @@
 import { removeLocalStorageByPrefix } from "../state.js";
 
-/* ─── Per-Article Text Highlights + Inline Emoji Markers ─── */
+/* ═══════════════════════════════════════════════════════════════
+   PER-ARTICLE TEXT HIGHLIGHTS + INLINE EMOJI MARKERS
+   ═══════════════════════════════════════════════════════════════ */
 const HIGHLIGHTS_PREFIX = "wiki-highlights-";
 const MARKERS_PREFIX = "wiki-markers-";
 const _highlightsKeyFor = (wikiId, articlePath) =>

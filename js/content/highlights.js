@@ -12,7 +12,9 @@ const MARKER_LABELS = {
   "✅": "got-it",
 };
 
-/* ─── Text-node walking: char offsets are relative to #markdown-body's full textContent ─── */
+/* ═══════════════════════════════════════════════════════════════
+   TEXT-NODE WALKING (char offsets relative to #markdown-body's full textContent)
+   ═══════════════════════════════════════════════════════════════ */
 function _textNodes(contentEl) {
   const walker = document.createTreeWalker(contentEl, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
@@ -55,7 +57,9 @@ function _globalOffset(contentEl, node, localOffset) {
   return -1;
 }
 
-/* ─── Floating selection toolbar ─── */
+/* ═══════════════════════════════════════════════════════════════
+   FLOATING SELECTION TOOLBAR
+   ═══════════════════════════════════════════════════════════════ */
 let _toolbarEl = null;
 let _activeRange = null;
 
@@ -140,7 +144,6 @@ function _showToolbar(range) {
   bar.querySelectorAll(".highlight-toolbar-btn--emoji").forEach((btn) => {
     btn.hidden = inCode;
   });
-  // First divider sits between highlight and emoji cluster.
   const emojiDivider = bar.querySelector(".highlight-toolbar-divider");
   if (emojiDivider) emojiDivider.hidden = inCode;
   const rect = range.getBoundingClientRect();
@@ -153,7 +156,9 @@ function _hideToolbar() {
   _activeRange = null;
 }
 
-/* ─── Remove popover (click an existing highlight/marker) ─── */
+/* ═══════════════════════════════════════════════════════════════
+   REMOVE POPOVER (click an existing highlight/marker)
+   ═══════════════════════════════════════════════════════════════ */
 let _removePopoverEl = null;
 
 function _getRemovePopover() {
@@ -190,7 +195,9 @@ function _showRemovePopover(targetEl, onRemove) {
   pop.classList.remove("hidden");
 }
 
-/* ─── Highlight creation / application ─── */
+/* ═══════════════════════════════════════════════════════════════
+   HIGHLIGHT CREATION / APPLICATION
+   ═══════════════════════════════════════════════════════════════ */
 function _wrapRangeInMark(range, id) {
   const mark = document.createElement("span");
   mark.className = "wiki-highlight";
@@ -277,12 +284,10 @@ function _insertMarkerBadge(node, localOffset, entry) {
   }
 }
 
-/* ─── Stale-offset detection + re-anchoring ───
-   Markdown edits upstream of a stored offset shift every downstream index. Before
-   trusting a stored offset, verify the article's current textContent still has the
-   stored snippet at that position; if not, search a bounded window around it and
-   re-anchor there. If the snippet isn't found nearby either, the entry is dropped
-   rather than silently misplaced. */
+/* ═══════════════════════════════════════════════════════════════
+   STALE-OFFSET DETECTION + RE-ANCHORING
+   ═══════════════════════════════════════════════════════════════ */
+// Markdown edits shift stored offsets, so verify the snippet still matches at that offset before trusting it, else search nearby and re-anchor or drop.
 const REANCHOR_SEARCH_WINDOW = 2000;
 
 function _snippetMatchesAt(fullText, offset, snippet) {
@@ -299,7 +304,9 @@ function _findNearbyOffset(fullText, offset, snippet) {
   return localIdx === -1 ? -1 : from + localIdx;
 }
 
-/* ─── Re-apply persisted highlights + markers on article load ─── */
+/* ═══════════════════════════════════════════════════════════════
+   RE-APPLY PERSISTED HIGHLIGHTS + MARKERS ON ARTICLE LOAD
+   ═══════════════════════════════════════════════════════════════ */
 function applyHighlightsAndMarkers(contentEl, wikiId, articlePath) {
   const fullText = contentEl.textContent;
   let dropped = 0;

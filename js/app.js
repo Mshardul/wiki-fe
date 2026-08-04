@@ -421,11 +421,7 @@ document.getElementById("prefs-backdrop").addEventListener("click", () => Settin
 
 document.getElementById("auth-backdrop").addEventListener("click", () => AuthModal.close());
 
-// Single-letter content shortcuts must not fire through an open modal, even when focus
-// happens to sit on a non-input element inside it (e.g. a bookmarks-modal entry button).
-// isAnyModalOpen covers registered modals (auth/settings/search/bookmarks/wiki-switcher/
-// compare-picker); link-graph and section-map are canvas overlays, not registry modals,
-// so they're checked separately here.
+// isAnyModalOpen adds link-graph/section-map (canvas overlays, not registry modals) so single-letter shortcuts don't fire through any open modal.
 function isAnyModalOpen() {
   return isAnyRegisteredModalOpen() || isLinkGraphOpen() || isSectionMapOpen();
 }
@@ -492,8 +488,7 @@ document.addEventListener("keydown", (e) => {
     } else if (Settings.isOpen()) {
       Settings.close();
     } else if (hasResettableViewState()) {
-      // A reading mode is active or the view is filtered - Escape resets it
-      // in place rather than navigating away.
+      // A reading mode is active or view is filtered - Escape resets in place instead of navigating away.
       resetView();
     } else if (state.currentView === "content" && state.currentWikiId) {
       navigate(state.currentWikiId);
@@ -586,10 +581,10 @@ document.addEventListener("keydown", (e) => {
 });
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION MAP: pinch-in gesture (WIKI-256)
+   SECTION MAP: pinch-in gesture
    ═══════════════════════════════════════════════════════════════ */
 (() => {
-  const PINCH_IN_THRESHOLD = 0.6; // end/start distance ratio to count as a pinch-in
+  const PINCH_IN_THRESHOLD = 0.6;
   let startDist = 0;
 
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);

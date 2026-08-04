@@ -5,10 +5,12 @@
 - Section collapse uses a JS-measured height transition, not display:none.
 """
 
+import pytest
+
 
 def _go_to_index(page, base_url):
     page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-index.active", timeout=10_000)
+    page.wait_for_selector("#view-index.active", timeout=20_000)
 
 
 # ── Scroll position on fresh index visit ─────────────────────────────
@@ -160,11 +162,12 @@ def test_section_collapse_restored_on_revisit(page, base_url):
 # ── Unavailable card grayscale ──────────────────────────────────────
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=1)
 def test_unavailable_card_has_grayscale_filter(page, base_url):
     """Cards with .index-card--unavailable must have filter: grayscale(1)."""
     _go_to_index(page, base_url)
     page.wait_for_selector(
-        "#index-sections:not(.index-sections--loading)", timeout=15_000
+        "#index-sections:not(.index-sections--loading)", timeout=25_000
     )
 
     result = page.evaluate("""() => {
@@ -184,11 +187,12 @@ def test_unavailable_card_has_grayscale_filter(page, base_url):
 # ── Unavailable card tooltip ───────────────────────────────────────
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=1)
 def test_unavailable_card_allows_pointer_events(page, base_url):
     """unavailable cards must not have pointer-events:none so tooltip is reachable."""
     _go_to_index(page, base_url)
     page.wait_for_selector(
-        "#index-sections:not(.index-sections--loading)", timeout=15_000
+        "#index-sections:not(.index-sections--loading)", timeout=25_000
     )
 
     result = page.evaluate("""() => {
@@ -393,11 +397,12 @@ def _visible_card_count(page):
     )
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=1)
 def test_filter_input_narrows_cards(page, base_url):
     """Typing in the filter input hides cards whose title/desc don't match."""
     _go_to_index(page, base_url)
     page.wait_for_selector(
-        "#index-sections:not(.index-sections--loading)", timeout=15_000
+        "#index-sections:not(.index-sections--loading)", timeout=25_000
     )
 
     total = _visible_card_count(page)

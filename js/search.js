@@ -112,7 +112,7 @@ document.addEventListener("click", (e) => {
   }
 });
 
-/* ─── Command palette ("/" prefix) ─── */
+/* Command palette ("/" prefix) */
 function _contextWikiId() {
   return _searchScope || state.currentWikiId;
 }
@@ -126,9 +126,7 @@ function _entriesForWiki(wikiId) {
   return allSearchCache.entries.filter((e) => e.wiki.id === wikiId);
 }
 
-// Fuzzy-matches argText against section headings in the context wiki (same
-// matching rule as the ">" section-filter seam) and returns a preview + run
-// pair for the best-matching section, or null if nothing matches yet.
+// Fuzzy-matches argText against section headings (same rule as the ">" filter) and returns a preview+run pair for the best match, or null.
 function _resolveSectionArg(argText, markAsRead) {
   const wiki = _contextWiki();
   if (!wiki || !argText) return null;
@@ -171,9 +169,7 @@ function _resolveSectionArg(argText, markAsRead) {
   };
 }
 
-// Resolves argText to the best-matching article in the context wiki, then
-// navigates there and flips on quiz mode once the article has rendered.
-// QuizMode.toggle() no-ops if the article has no complexity table.
+// Resolves argText to the best-matching article, navigates there, and flips on quiz mode once rendered (no-ops if no complexity table).
 function _resolveQuizArg(argText) {
   const wiki = _contextWiki();
   if (!wiki || !argText) return null;
@@ -358,16 +354,13 @@ function availableCommands() {
   return SEARCH_COMMANDS.filter((c) => !c.needsWiki || hasWiki);
 }
 
-// Holds the resolved { run } for the argument-taking command currently
-// previewed, so runSearchCommand("__arg__") can execute exactly what's shown.
+// Holds the resolved { run } for the argument-taking command currently previewed, so runSearchCommand("__arg__") executes exactly what's shown.
 let _resolvedArgRun = null;
 
 function applyCommandFilter(commandQuery) {
   const q = commandQuery.toLowerCase();
 
-  // Verb mode: query starts with a known argument-command's verb + a space -
-  // resolve the remainder against that command's argument space and show a
-  // single live preview row instead of the command list.
+  // Verb mode: query starts with a known verb+space - resolve remainder against that command's argument space, show one live preview row.
   const verbCmd = availableCommands().find((c) => c.verb && q.startsWith(c.verb));
   if (verbCmd) {
     const argText = commandQuery.slice(verbCmd.verb.length).trim();
@@ -424,8 +417,7 @@ function applyCommandFilter(commandQuery) {
     .join("");
 }
 
-// Populates the search input with "/<verb>" and re-filters, so the user can
-// type the argument for a verb command selected from the base command list.
+// Populates the input with "/<verb>" and re-filters, so the user can type the argument for a verb command chosen from the base list.
 function armSearchVerb(verb) {
   gSearchInput.value = `/${verb}`;
   gSearchInput.focus();
@@ -808,7 +800,7 @@ gSearchResults.addEventListener("keydown", (e) => {
 
 gSearchBackdrop.addEventListener("click", closeGlobalSearch);
 
-/* ─── Search result highlight ─── */
+/* Search result highlight */
 function highlightMatch(text, query) {
   if (!query) return escHtml(text);
   const idx = text.toLowerCase().indexOf(query.toLowerCase());

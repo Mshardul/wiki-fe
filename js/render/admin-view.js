@@ -10,11 +10,8 @@ import { showToast } from "./toast.js";
 
 /* ═══════════════════════════════════════════════════════════════
    ADMIN PAGE
-   /admin route. UX-gated on session.user.role === "admin" - not a real
-   security boundary (GH Pages is static; BE independently re-checks
-   get_current_admin on every admin call). Re-checks role on every load,
-   no caching, per WIKI-440.
    ═══════════════════════════════════════════════════════════════ */
+// /admin route: UX-gated on user.role === "admin" only - not a real security boundary, BE independently re-checks admin role on every call.
 
 let _activeTab = "users";
 
@@ -64,7 +61,9 @@ async function renderAdminPage(user) {
   _renderActiveTab();
 }
 
-/* ─── Users tab ─── */
+/* ═══════════════════════════════════════════════════════════════
+   USERS TAB
+   ═══════════════════════════════════════════════════════════════ */
 
 function _roleBadge(role) {
   return `<span class="admin-badge admin-badge--${escHtml(role)}">${escHtml(role)}</span>`;
@@ -160,7 +159,9 @@ async function _handleToggleStatus(userId, currentActive) {
   }
 }
 
-/* ─── Site health tab ─── */
+/* ═══════════════════════════════════════════════════════════════
+   SITE HEALTH TAB
+   ═══════════════════════════════════════════════════════════════ */
 
 async function renderSiteHealthTab() {
   const body = document.getElementById("admin-tab-body");

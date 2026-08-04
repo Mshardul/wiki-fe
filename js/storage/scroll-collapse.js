@@ -38,7 +38,9 @@ function saveScrollPos(key, value) {
   localStorage.setItem(key, value);
 }
 
-/* ─── Collapse Helpers ─── */
+/* ═══════════════════════════════════════════════════════════════
+   COLLAPSE HELPERS
+   ═══════════════════════════════════════════════════════════════ */
 function toggleCollapse(key, el, collapsed) {
   const next = collapsed !== undefined ? collapsed : !el.classList.contains("section--collapsed");
   if (next) {
@@ -55,7 +57,9 @@ function getCollapsed(key) {
   return !!localStorage.getItem(key);
 }
 
-/* ─── TOC Scroll Persistence ─── */
+/* ═══════════════════════════════════════════════════════════════
+   TOC SCROLL PERSISTENCE
+   ═══════════════════════════════════════════════════════════════ */
 function saveTOCScroll(wikiId, articlePath, offset) {
   const key = `wiki-toc-scroll-${wikiId}-${articlePath.replace(/\//g, "-")}`;
   saveScrollPos(key, String(offset));

@@ -1,7 +1,6 @@
 import { getSettings } from "../storage/settings-theme.js";
 
-// Matches the leading "**Approach:**" / "**Complexity:**" bold label Showdown
-// leaves as a <strong> at the start of a paragraph.
+// Matches the leading "**Approach:**"/"**Complexity:**" bold label Showdown leaves as a <strong> at the start of a paragraph.
 const APPROACH_RE = /^Approach[.:]?$/;
 const COMPLEXITY_RE = /^Complexity[.:]?$/;
 

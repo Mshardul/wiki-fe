@@ -145,11 +145,7 @@ function canvasPoint(sim, e) {
   return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
-/**
- * Wires a force-directed graph sim onto a canvas. `onNodeClick(node)` fires on click-through.
- * `colorForNode(node)` optionally colors nodes (falls back to a theme neutral).
- * Returns the sim handle; call `destroyGraphSim(sim)` to tear down.
- */
+// Wires a force-directed graph sim onto canvas; onNodeClick(node) fires on click, colorForNode(node) optionally colors nodes; returns sim handle, tear down via destroyGraphSim(sim).
 function createGraphSim(canvas, nodes, edges, { onNodeClick, colorForNode } = {}) {
   const ctx = canvas.getContext("2d");
   const sim = {
@@ -216,11 +212,7 @@ function destroyGraphSim(sim) {
   window.removeEventListener("resize", sim._onResize);
 }
 
-/**
- * Builds a path->node Map from index-card entries, shared by link-graph,
- * section-map, and index-graph. `decorate(node, card)` optionally sets
- * overlay-specific fields (e.g. `isCurrent`, `read`) on each node.
- */
+// Builds a path->node Map from index-card entries shared by link-graph/section-map/index-graph; decorate(node, card) optionally sets overlay-specific fields.
 function buildNodesFromCards(cards, wikiId, decorate) {
   const nodesByPath = new Map();
   for (const card of cards || []) {

@@ -33,14 +33,10 @@ function _applyView(id) {
   document.getElementById(id).classList.add("active");
   state.currentView = id.replace("view-", "");
 
-  // Resume chip is appended to document.body, outside any .view container, so
-  // it must be cleared on every view change, not just content->content
-  // navigation - otherwise it (and its listeners) leak.
+  // Resume chip lives outside .view containers, so it must be cleared on every view change or it (and its listeners) leak.
   if (id !== "view-content") document.getElementById("resume-chip")?.remove();
 
-  // Sticky section header's scroll listener closes over the abandoned
-  // article's headings. navigateToContent() only tears this down for
-  // content->content transitions; content->home/index leaked it forever.
+  // Sticky header's scroll listener closes over abandoned headings; navigateToContent() only tears it down for content->content, so content->home/index leaked it.
   if (id !== "view-content") cleanupStickySection();
 
   if (id !== "view-index") destroyIndexGraph();
@@ -94,13 +90,9 @@ function navigate(hash, pushHistory = true) {
 let _routeTimer = null;
 function route(hash, pushHistory = false) {
   clearTimeout(_routeTimer);
-  // pushState is deferred alongside the route itself - a rapid sequence of
-  // navigate() calls (e.g. fast repeated clicks) would otherwise push one
-  // history entry per call while only the last one's route ever executes,
-  // leaving Back-button entries whose content was never rendered.
+  // pushState is deferred with the route itself so rapid navigate() calls don't push one history entry per call while only the last route ever renders.
   _routeTimer = setTimeout(() => {
     if (pushHistory) {
-      // Reconstruct URL with pathname only to strip away location.search query params
       const url = location.pathname + (hash ? `#${hash}` : "");
       history.pushState({ hash }, "", url);
     }

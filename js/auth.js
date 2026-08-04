@@ -42,10 +42,9 @@ function _authErrorMessage(e, fallback) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ANON → LOGIN MIGRATION
-   One prompt on login if local anon data exists. Never blocks login.
-   Dedicated modal, not a toast - the shared toast queue can bury/delay
-   this and silently discard local data before the user sees it.
+   ANON -> LOGIN MIGRATION
+   One prompt on login if local anon data exists; never blocks login.
+   Dedicated modal, not a toast, since the shared queue could bury it.
    ═══════════════════════════════════════════════════════════════ */
 function _collectLocalReads() {
   const out = [];
@@ -90,9 +89,7 @@ function _showMigrateModal() {
   });
 }
 
-// Returns false only when the user chose "Keep them" and the import failed - the caller
-// must then skip the following pullAll() (it would overwrite local data with server truth,
-// silently discarding what the user just asked to keep) and surface the failure.
+// Returns false only if "Keep them" was chosen and import failed - caller must skip pullAll() (would overwrite kept data) and surface the failure.
 async function maybeMigrate() {
   if (!_hasLocalData()) return true;
 
@@ -144,8 +141,7 @@ const AuthModal = {
     if (this._lastFocus?.focus) this._lastFocus.focus();
   },
 
-  // Bound as a property (not a method) so add/removeEventListener see the same reference.
-  // The dialog swaps content (`_swap`), so re-query it on every Tab press rather than caching.
+  // Bound as a property (not method) so add/removeEventListener share the same reference; re-queries the dialog each Tab press since _swap changes content.
   _trapFocus: createFocusTrap(document, () => {
     const dialog = document.querySelector(".auth-dialog");
     return dialog ? getFocusableIn(dialog) : [];
@@ -183,8 +179,7 @@ const AuthModal = {
     document.getElementById(focusId)?.focus();
   },
 
-  // Re-derives checklist + submit-disabled from the input's current value - used both on
-  // live typing and on panel re-entry, so a previously-valid password never shows stale.
+  // Re-derives checklist + submit-disabled from the current value, used on both live typing and panel re-entry so a valid password never shows stale.
   _syncPasswordChecklist(inputId, listId, submitId) {
     const pw = document.getElementById(inputId)?.value || "";
     this._renderChecklist(listId, pw);

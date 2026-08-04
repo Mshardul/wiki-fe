@@ -1,7 +1,9 @@
 import { state } from "../state.js";
 import { getCollapsed, restoreTOCScroll, saveTOCScroll, toggleCollapse } from "../storage/scroll-collapse.js";
 
-/* ─── TOC Builder ─── */
+/* ═══════════════════════════════════════════════════════════════
+   TOC BUILDER
+   ═══════════════════════════════════════════════════════════════ */
 function buildTOC(contentEl, wikiId, articlePath) {
   const tocNav = document.getElementById("toc-nav");
   const sidebar = document.getElementById("toc-sidebar");
@@ -296,7 +298,6 @@ function _syncContentH2(h2Id, collapsed) {
   _setSectionCollapsed(h2, collapsed);
 }
 
-// reset-view escape hatch
 function expandAllSections(contentEl) {
   contentEl.querySelectorAll("h2.section--collapsed").forEach((h2) => {
     const sectionId = h2.dataset.sectionId;

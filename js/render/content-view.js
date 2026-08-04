@@ -86,7 +86,9 @@ import {
 import { showView } from "./router.js";
 import { showToast } from "./toast.js";
 
-/* ─── Loading skeleton ─── */
+/* ═══════════════════════════════════════════════════════════════
+   LOADING SKELETON
+   ═══════════════════════════════════════════════════════════════ */
 function buildLoadingSkeleton(fingerprint) {
   const line = (w) => `<div class="skeleton-line" style="width:${w}"></div>`;
   const para = () =>
@@ -109,7 +111,6 @@ function buildLoadingSkeleton(fingerprint) {
       blocks += `<div class="skeleton-code"></div>`;
     }
   }
-  // Any code blocks not interleaved above, appended at the end.
   const placed = Math.floor(headings / 2);
   for (let i = placed; i < codeBlocks; i++) {
     blocks += `<div class="skeleton-code"></div>`;
@@ -122,7 +123,9 @@ function buildLoadingSkeleton(fingerprint) {
   </div>`;
 }
 
-/* ─── Inline SVG diagrams ─── */
+/* ═══════════════════════════════════════════════════════════════
+   INLINE SVG DIAGRAMS
+   ═══════════════════════════════════════════════════════════════ */
 async function inlineSvgImages(contentEl) {
   const imgs = [...contentEl.querySelectorAll('img[src$=".svg"]')];
   if (!imgs.length || typeof DOMPurify === "undefined") return;
@@ -358,8 +361,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       });
     }
 
-    // Post-processing - enhancements only. Each call is isolated so one
-    // enhancer throwing doesn't stop the ones after it.
+    // Post-processing enhancers only - each call is isolated so one throwing doesn't stop the ones after it.
     let _enhancerFailed = false;
     const run = (fn) => {
       try {
@@ -457,8 +459,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     run(() => addLatexCopyButtons(body, () => showToast("Copy failed - clipboard access denied")));
     run(() => addFormulaToggle(body));
     run(() => addFootnotes(body));
-    // Must run after every other text-node-mutating enhancer above - offsets are
-    // computed against body's final text-node structure.
+    // Must run after every other text-node-mutating enhancer above - offsets are computed against body's final text-node structure.
     run(() => applyHighlightsAndMarkers(body, wiki.id, filePath));
     run(() => wireHighlights());
     run(() => addArticleEndMarker(body));
@@ -543,7 +544,9 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
   }
 }
 
-/* ─── Internal .md link interception & Hover Previews ─── */
+/* ═══════════════════════════════════════════════════════════════
+   INTERNAL .MD LINK INTERCEPTION + HOVER PREVIEWS
+   ═══════════════════════════════════════════════════════════════ */
 let hoverPreviewTimer;
 let _previewAbortController = null;
 let _previewGeneration = 0;
@@ -571,7 +574,6 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
         e.preventDefault();
         const targetId = href.slice(1);
 
-        // CSS.escape handles IDs with special characters
         const target = document.querySelector(`[id="${CSS.escape(targetId)}"]`);
         if (target) {
           target.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -689,8 +691,7 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
     });
   });
 
-  // Unlinked prereq chips (no article yet) - same hover-preview card, showing
-  // a static placeholder instead of fetched content.
+  // Unlinked prereq chips (no article yet) reuse the hover-preview card but show a static placeholder instead of fetched content.
   contentEl.querySelectorAll("[data-unlinked-prereq]").forEach((chip) => {
     chip.addEventListener("mouseenter", () => {
       if (_lastPointerWasTouch) return;
@@ -764,7 +765,6 @@ function closePeekSheet() {
 // Swipe-down close (app.js panel registry) routes here.
 document.addEventListener("wiki:close-peek", closePeekSheet);
 
-// Tap outside an open sheet dismisses it.
 document.addEventListener(
   "touchstart",
   (e) => {

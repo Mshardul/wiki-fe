@@ -1,8 +1,9 @@
 import { writeToClipboard } from "./code-blocks.js";
 
-/* ─── Mermaid Diagrams ─── */
-// isStale (optional): called before each diagram paint; skips the paint if the
-// navigation that started this render has since been superseded.
+/* ═══════════════════════════════════════════════════════════════
+   MERMAID DIAGRAMS
+   ═══════════════════════════════════════════════════════════════ */
+// isStale (optional): called before each diagram paint, skips the paint if the render's navigation has since been superseded.
 async function renderMermaidDiagrams(contentEl, isStale) {
   if (typeof mermaid === "undefined") return;
   const blocks = contentEl.querySelectorAll("pre code.language-mermaid");
@@ -141,7 +142,9 @@ function _positionTooltip(tip, e) {
   tip.style.top = `${y}px`;
 }
 
-/* ─── Mermaid Copy Button ─── */
+/* ═══════════════════════════════════════════════════════════════
+   MERMAID COPY BUTTON
+   ═══════════════════════════════════════════════════════════════ */
 function _appendMermaidCopyBtn(diagram) {
   const copyBtn = document.createElement("button");
   copyBtn.className = "copy-btn mermaid-copy-btn";
@@ -165,7 +168,9 @@ function _appendMermaidCopyBtn(diagram) {
   diagram.appendChild(copyBtn);
 }
 
-/* ─── Mermaid Step-Through ─── */
+/* ═══════════════════════════════════════════════════════════════
+   MERMAID STEP-THROUGH
+   ═══════════════════════════════════════════════════════════════ */
 function _clearMermaidStepHighlights(diagram) {
   diagram.querySelectorAll(".step-active").forEach((el) => el.classList.remove("step-active"));
 }
@@ -286,7 +291,9 @@ function addMermaidStepThrough(contentEl) {
   });
 }
 
-/* ─── Mermaid Theme Sync ─── */
+/* ═══════════════════════════════════════════════════════════════
+   MERMAID THEME SYNC
+   ═══════════════════════════════════════════════════════════════ */
 function getMermaidThemeConfig(theme) {
   if (theme === "light") {
     return {

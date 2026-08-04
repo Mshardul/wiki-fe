@@ -23,8 +23,7 @@ function createFocusTrap(dialogEl, getFocusable) {
   };
 }
 
-// Shared default focusable-element query - reused directly by callers whose
-// dialog element is resolved dynamically (e.g. re-queried per keypress).
+// Shared default focusable-element query, reused by callers whose dialog element is resolved dynamically (e.g. re-queried per keypress).
 function getFocusableIn(containerEl) {
   const focusable = containerEl.querySelectorAll(
     "button:not([disabled]):not([hidden]), input:not([disabled]):not([hidden]), a[href]",
@@ -34,8 +33,7 @@ function getFocusableIn(containerEl) {
 
 const _modals = [];
 
-// Registers a modal's { isOpen, close } so shared consumers (Escape chain,
-// isAnyModalOpen) can route through one list instead of naming each modal.
+// Registers a modal's { isOpen, close } so shared consumers (Escape chain, isAnyModalOpen) route through one list instead of naming each modal.
 function registerModal(entry) {
   _modals.push(entry);
 }

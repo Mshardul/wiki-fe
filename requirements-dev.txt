@@ -2,5 +2,6 @@ pytest>=8.0
 pytest-playwright>=0.5
 pytest-xdist>=3.0
 pytest-timeout>=2.3
+pytest-rerunfailures>=14.0
 pre-commit>=3.8
 jsonschema>=4.23

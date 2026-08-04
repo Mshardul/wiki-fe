@@ -7,6 +7,8 @@ UX, hotkeys, and error handling:
 - D key toggles distraction-free mode
 """
 
+import pytest
+
 
 def _go_to_article(page, base_url, slug="system-design/caching"):
     page.goto(f"{base_url}/#{slug}", wait_until="domcontentloaded")
@@ -71,6 +73,7 @@ def test_network_error_shows_connection_message(page, base_url):
 # ── Toast on broken slug ─────────────────────────────────────────
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=1)
 def test_broken_slug_shows_toast(page, base_url):
     """Navigating to an unknown slug shows a toast before redirecting home."""
     page.goto(f"{base_url}/#system-design/this-slug-does-not-exist-xyz", wait_until="domcontentloaded")

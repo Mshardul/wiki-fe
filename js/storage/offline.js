@@ -5,9 +5,7 @@ import { state } from "../state.js";
    ═══════════════════════════════════════════════════════════════ */
 const CACHED_AT_KEY = "wiki-offline-cached-at";
 
-// Cache API responses carry no write timestamp, so last-cached dates for the
-// offline shelf (WIKI-298) are tracked in a parallel localStorage map,
-// keyed by the same filePath used as the cache key.
+// Cache API responses carry no write timestamp, so last-cached dates for the offline shelf are tracked in a parallel localStorage map, keyed by filePath.
 function _readCachedAtMap() {
   try {
     return JSON.parse(localStorage.getItem(CACHED_AT_KEY) || "{}");

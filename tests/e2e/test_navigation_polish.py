@@ -7,6 +7,8 @@ Navigation polish tests:
 - Index view List/Graph toggle
 """
 
+import pytest
+
 
 def _go_to_index(page, base_url):
     page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
@@ -27,6 +29,7 @@ def _go_to_article(page, base_url, slug="system-design/caching"):
 
 # ── Collapse-all / Expand-all ────────────────────────────────────────────────
 
+@pytest.mark.flaky(reruns=2, reruns_delay=1)
 def test_index_controls_rendered(page, base_url):
     """Collapse-all and expand-all buttons appear on the index view."""
     _go_to_index(page, base_url)

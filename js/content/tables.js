@@ -1,7 +1,9 @@
 import { state } from "../state.js";
 import { recordReveal } from "../storage/read-tracking.js";
 
-/* ─── Quiz-me mode for complexity tables ─── */
+/* ═══════════════════════════════════════════════════════════════
+   QUIZ-ME MODE FOR COMPLEXITY TABLES
+   ═══════════════════════════════════════════════════════════════ */
 
 const COMPLEXITY_HEADER_RE = /\b(time|space|complexity|best|worst|average)\b/i;
 const BIG_O_RE = /[OΘΩ]\s*\(/;
@@ -62,7 +64,9 @@ const QuizMode = {
   },
 };
 
-/* ─── Complexity Table Extraction (WIKI-090) ─── */
+/* ═══════════════════════════════════════════════════════════════
+   COMPLEXITY TABLE EXTRACTION
+   ═══════════════════════════════════════════════════════════════ */
 
 function extractComplexityTable(contentEl) {
   const table = [...contentEl.querySelectorAll("table")].find(isComplexityTable);
@@ -87,7 +91,9 @@ function extractComplexityTable(contentEl) {
   return rows.length ? { columns, rows } : null;
 }
 
-/* ─── Table Column Sort ─── */
+/* ═══════════════════════════════════════════════════════════════
+   TABLE COLUMN SORT
+   ═══════════════════════════════════════════════════════════════ */
 function addTableSort(contentEl) {
   contentEl.querySelectorAll("table").forEach((table) => {
     const thead = table.querySelector("thead");
@@ -125,9 +131,7 @@ function addTableSort(contentEl) {
           const bNum = Number.parseFloat(bText);
           const aIsNum = !Number.isNaN(aNum);
           const bIsNum = !Number.isNaN(bNum);
-          // Non-numeric cells (e.g. "N/A", footnote markers) always sort after every
-          // numeric cell, in both directions - keeps the order transitive across 3+
-          // rows instead of falling back to localeCompare only for mixed pairs.
+          // Non-numeric cells always sort after every numeric cell, both directions - keeps order transitive across 3+ rows instead of localeCompare per pair.
           let cmp;
           if (aIsNum && bIsNum) cmp = aNum - bNum;
           else if (aIsNum) cmp = -1;
@@ -149,7 +153,9 @@ function addTableSort(contentEl) {
   });
 }
 
-/* ─── Table Scroll Cue ─── */
+/* ═══════════════════════════════════════════════════════════════
+   TABLE SCROLL CUE
+   ═══════════════════════════════════════════════════════════════ */
 function addTableScrollCues(contentEl) {
   contentEl.querySelectorAll("table").forEach((table) => {
     const wrap = document.createElement("div");

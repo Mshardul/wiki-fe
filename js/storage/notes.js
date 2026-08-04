@@ -1,7 +1,9 @@
 import { removeLocalStorageByPrefix } from "../state.js";
 import { getCollapsed } from "./scroll-collapse.js";
 
-/* ─── Per-Article Notes Scratchpad ─── */
+/* ═══════════════════════════════════════════════════════════════
+   PER-ARTICLE NOTES SCRATCHPAD
+   ═══════════════════════════════════════════════════════════════ */
 const NOTES_PREFIX = "wiki-notes-";
 const _keyFor = (wikiId, articlePath) =>
   `${NOTES_PREFIX}${wikiId}-${articlePath.replace(/\//g, "-")}`;

@@ -65,11 +65,10 @@ function _rankRelated(current, candidates) {
   return top.length ? top : candidates.slice(0, 3);
 }
 
-/* ─── Author-curated "## Recommended" section ───
-   Authors can end an article with a `## Recommended` heading followed by a
-   list of internal markdown links. When present, this takes over the related
-   panel instead of the keyword-ranked auto-suggestions, and the raw heading +
-   list is removed from the rendered body so it isn't shown twice. */
+/* ═══════════════════════════════════════════════════════════════
+   AUTHOR-CURATED "## Recommended" SECTION
+   ═══════════════════════════════════════════════════════════════ */
+// Author "## Recommended" heading + linked list overrides keyword-ranked auto-suggestions; heading/list stripped from rendered body so it isn't shown twice.
 function extractRecommendedLinks(body, currentFilePath) {
   const heading = [...body.querySelectorAll("h2")].find(
     (h) => h.textContent.trim().toLowerCase() === "recommended",
@@ -169,7 +168,9 @@ async function renderRelatedArticles(wiki, currentPath, recommendedLinks, isStal
   } catch {}
 }
 
-/* ─── Backlink spine: "Mentioned by" reverse links ─── */
+/* ═══════════════════════════════════════════════════════════════
+   BACKLINK SPINE: "Mentioned by" reverse links
+   ═══════════════════════════════════════════════════════════════ */
 // backlinks.json is built at deploy time (build_backlinks.py); doesn't reflect same-session edits.
 function _wikiIdForPath(path) {
   const wiki = WIKIS.find((w) => path.startsWith(`./content/${w.id}/`));
@@ -184,9 +185,7 @@ async function renderBacklinks(currentPath, isStale) {
   const backlinks = await fetchPrebuiltBacklinks();
   if (!backlinks) return;
   if (isStale?.()) return;
-  // Keys/paths in backlinks.json carry the "./content/..." prefix used by
-  // search-index.json; currentPath and interceptMdLinks hrefs are normalized
-  // (no leading "./"), so both sides must go through normalizePath to compare.
+  // backlinks.json keys carry the "./content/..." prefix; currentPath is normalized, so both sides must go through normalizePath to compare.
   const entry = Object.entries(backlinks).find(([target]) => normalizePath(target) === currentPath);
   const sources = entry?.[1];
   if (!sources?.length) return;
@@ -215,12 +214,10 @@ async function renderBacklinks(currentPath, isStale) {
     </div>`;
 }
 
-/* ─── Cross-wiki concept bridges (WIKI-260) ───
-   bridges.json is a small hand-authored list of one-directional { a, b } pairs
-   between the DSA and system-design wikis. Expanded symmetrically here so
-   either side of a pair renders the block, then resolved against each wiki's
-   search index for a canonical title/slug (bridges.json itself only stores
-   paths, so article titles can't drift out of sync). */
+/* ═══════════════════════════════════════════════════════════════
+   CROSS-WIKI CONCEPT BRIDGES
+   ═══════════════════════════════════════════════════════════════ */
+// bridges.json is a hand-authored one-directional { a, b } path list, expanded symmetrically and resolved against each wiki's search index for a canonical title/slug.
 function _cardForPath(sections, path) {
   for (const section of sections) {
     const card = section.cards.find((c) => normalizePath(c.path) === normalizePath(path));

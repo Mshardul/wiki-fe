@@ -1,7 +1,9 @@
 import { WIKIS, state } from "../state.js";
 import { getSettings } from "../storage/settings-theme.js";
 
-/* ─── Clipboard helper with execCommand fallback for HTTP contexts ─── */
+/* ═══════════════════════════════════════════════════════════════
+   CLIPBOARD HELPER (execCommand fallback for HTTP contexts)
+   ═══════════════════════════════════════════════════════════════ */
 function writeToClipboard(text) {
   if (navigator.clipboard?.writeText) {
     return navigator.clipboard.writeText(text);
@@ -45,7 +47,9 @@ function buildSourceHeader(lang) {
   return `${prefix} from: ${origin}\n`;
 }
 
-/* ─── Code Block Header (traffic lights + lang label + copy button) ─── */
+/* ═══════════════════════════════════════════════════════════════
+   CODE BLOCK HEADER (traffic lights + lang label + copy button)
+   ═══════════════════════════════════════════════════════════════ */
 function addCodeBlockHeader(contentEl, onCopyError = () => {}) {
   contentEl.querySelectorAll("pre").forEach((pre) => {
     const code = pre.querySelector("code");
@@ -102,7 +106,9 @@ function addCopyButtons(contentEl, onCopyError = () => {}) {
   addCodeBlockHeader(contentEl, onCopyError);
 }
 
-/* ─── hljs Theme Sync ─── */
+/* ═══════════════════════════════════════════════════════════════
+   HLJS THEME SYNC
+   ═══════════════════════════════════════════════════════════════ */
 const HLJS_DARK =
   "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css";
 const HLJS_LIGHT =

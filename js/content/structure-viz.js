@@ -1,11 +1,4 @@
-/* ─── Inline Structure Viz ───
-   ```viz
-   bst
-   [5,3,8,1,4]
-   ```
-   First line = structure type, second line = JSON array literal.
-   Renders a small inline SVG built from the data; falls back to the raw
-   literal if the type is unknown or the literal fails to parse. */
+/* ```viz block: first line = structure type (bst/heap/linked-list/array), second line = JSON array literal; falls back to raw text if type unknown or parse fails. */
 
 const NODE_R = 16;
 const LEVEL_H = 56;

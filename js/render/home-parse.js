@@ -1,7 +1,9 @@
 import { WIKIS, indexCache, readTimeCache } from "../state.js";
 import { dirOf, fetchPrebuiltSearchIndex, fetchText, normalizePath } from "./nav-utils.js";
 
-/* ─── Index.md Parser ─── */
+/* ═══════════════════════════════════════════════════════════════
+   INDEX.MD PARSER
+   ═══════════════════════════════════════════════════════════════ */
 function parseIndexMd(markdown, basePath) {
   const sections = [];
   const skipHeadings = ["how to use", "contributing"];
@@ -21,7 +23,7 @@ function parseIndexMd(markdown, basePath) {
 
     for (const line of lines) {
       if (!line.startsWith("|")) continue;
-      if (/^\|\s*[-:]+/.test(line)) continue; // separator row
+      if (/^\|\s*[-:]+/.test(line)) continue;
 
       const m = line.match(/^\|\s*\[([^\]]+)\]\(([^)]+\.md)\)\s*\|\s*([^|]+?)\s*\|/);
       if (m) {
@@ -42,7 +44,9 @@ function parseIndexMd(markdown, basePath) {
   return sections;
 }
 
-/* ─── Shared index cache (used by article counts + global search) ─── */
+/* ═══════════════════════════════════════════════════════════════
+   SHARED INDEX CACHE (used by article counts + global search)
+   ═══════════════════════════════════════════════════════════════ */
 async function fetchWikiIndex(wiki) {
   if (indexCache[wiki.id]) return indexCache[wiki.id];
   const ssKey = `wiki-index-${wiki.id}`;
@@ -79,8 +83,7 @@ async function fetchWikiIndex(wiki) {
   return sections;
 }
 
-// Shared by search.js's loadAllSearchEntries and home-gestures.js's refresh path -
-// the ⌘K search-cache row shape for one wiki, filtered to non-stub articles.
+// Shared by search.js's loadAllSearchEntries and home-gestures.js's refresh path - builds the ⌘K search-cache row shape for one wiki, non-stub articles only.
 async function buildSearchEntriesForWiki(wiki) {
   const sections = await fetchWikiIndex(wiki);
   const entries = [];
