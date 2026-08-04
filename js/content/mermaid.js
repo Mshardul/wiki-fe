@@ -355,6 +355,8 @@ async function rerenderMermaidDiagrams() {
       wrapper.replaceChildren(errEl);
     }
   }
+
+  addMermaidNodeCaptions(contentEl);
 }
 
 export {

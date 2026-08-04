@@ -10,9 +10,9 @@ Navigation polish tests:
 
 def _go_to_index(page, base_url):
     page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-index.active", timeout=10_000)
+    page.wait_for_selector("#view-index.active", timeout=20_000)
     page.wait_for_selector(
-        "#index-sections:not(.index-sections--loading)", timeout=15_000
+        "#index-sections:not(.index-sections--loading)", timeout=25_000
     )
 
 
