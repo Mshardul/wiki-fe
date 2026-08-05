@@ -80,7 +80,17 @@ jobs:
           key: cdn-assets-${{ hashFiles('tests/conftest.py') }}
 
       - name: Tests (e2e, light lane, ${{ matrix.shard.name }})
-        run: pytest ${{ matrix.shard.files }} -q -n 2 -m "not heavy"
+        run: >-
+          pytest ${{ matrix.shard.files }} -q -n 2 -m "not heavy"
+          --screenshot=only-on-failure --video=retain-on-failure --tracing=retain-on-failure
+
+      - name: Upload failure artifacts (${{ matrix.shard.name }})
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ matrix.shard.name }}
+          path: test-results/
+          retention-days: 7
 
   tests-heavy:
     runs-on: ubuntu-latest
@@ -114,7 +124,17 @@ jobs:
 
       # Canvas/PNG/download tests only, isolated from tests-light so they never compete for the same runner.
       - name: Tests (e2e, heavy lane)
-        run: pytest tests/ -q -n 1 -m heavy
+        run: >-
+          pytest tests/ -q -n 1 -m heavy
+          --screenshot=only-on-failure --video=retain-on-failure --tracing=retain-on-failure
+
+      - name: Upload failure artifacts (heavy lane)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-heavy
+          path: test-results/
+          retention-days: 7
 
   search-index:
     runs-on: ubuntu-latest

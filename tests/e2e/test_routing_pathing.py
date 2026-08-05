@@ -8,8 +8,6 @@ Route deduplication on popstate+hashchange
 
 import re
 
-import pytest
-
 
 def _go_to_article(page, base_url):
     page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
@@ -88,12 +86,7 @@ def test_404_fallback_on_bad_article(page, base_url):
     page.goto(f"{base_url}/#system-design/this-does-not-exist", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=15_000)
 
-    if "this-does-not-exist" in page.url:
-        debug = page.evaluate(
-            "() => ({hash: location.hash, currentView: window.state?.currentView, "
-            "toast: document.getElementById('wiki-toast')?.textContent})"
-        )
-        assert False, f"URL still bad: {page.url} | debug={debug}"
+    assert "this-does-not-exist" not in page.url
 
 
 # ── 404 "did you mean" search rescue ────────────────────────────────
