@@ -83,13 +83,17 @@ def test_404_fallback_on_bad_wiki(page, base_url):
     assert "non-existent-wiki" not in page.url
 
 
-@pytest.mark.flaky(reruns=2, reruns_delay=1)
 def test_404_fallback_on_bad_article(page, base_url):
     """Valid wiki + bad article slug on fresh load redirects to Home."""
     page.goto(f"{base_url}/#system-design/this-does-not-exist", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=15_000)
 
-    assert "this-does-not-exist" not in page.url
+    if "this-does-not-exist" in page.url:
+        debug = page.evaluate(
+            "() => ({hash: location.hash, currentView: window.state?.currentView, "
+            "toast: document.getElementById('wiki-toast')?.textContent})"
+        )
+        assert False, f"URL still bad: {page.url} | debug={debug}"
 
 
 # ── 404 "did you mean" search rescue ────────────────────────────────
