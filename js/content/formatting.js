@@ -3,18 +3,24 @@ import { writeToClipboard } from "./code-blocks.js";
 /* ═══════════════════════════════════════════════════════════════
    CALLOUT STYLING
    ═══════════════════════════════════════════════════════════════ */
+const CALLOUT_ICONS = {
+  "🎯": ["callout-interview", "🎯"],
+  "⚠️": ["callout-warning", "⚠️"],
+  "⚠": ["callout-warning", "⚠️"],
+  "🧠": ["callout-thought", "🧠"],
+  "⚖️": ["callout-decision", "⚖️"],
+  "⚖": ["callout-decision", "⚖️"],
+};
+
 function styleCallouts(contentEl) {
   contentEl.querySelectorAll("blockquote").forEach((bq) => {
     const text = bq.textContent.trim();
-    let calloutClass = null;
-    if (text.startsWith("🎯")) calloutClass = "callout-interview";
-    else if (text.startsWith("⚠️") || text.startsWith("⚠")) calloutClass = "callout-warning";
-    else if (text.startsWith("🧠")) calloutClass = "callout-thought";
-    else if (text.startsWith("⚖️") || text.startsWith("⚖")) calloutClass = "callout-decision";
-    if (!calloutClass) return;
+    const match = Object.keys(CALLOUT_ICONS).find((prefix) => text.startsWith(prefix));
+    if (!match) return;
+    const [calloutClass, icon] = CALLOUT_ICONS[match];
     bq.classList.add("callout", calloutClass);
 
-    // Strip leading emoji from first paragraph so CSS ::before doesn't duplicate it
+    // Strip leading emoji from first paragraph, then pair a real icon span with the remaining first-line text so they can share a flex row (CSS ::before can't be flexed alongside real text reliably).
     const firstP = bq.querySelector("p");
     if (firstP?.firstChild?.nodeType === Node.TEXT_NODE) {
       const t = firstP.firstChild.textContent;
@@ -26,6 +32,11 @@ function styleCallouts(contentEl) {
         bq.dataset.collapsed = "true";
       }
       firstP.firstChild.textContent = rest;
+      firstP.classList.add("callout-first-line");
+      const iconSpan = document.createElement("span");
+      iconSpan.className = "callout-icon";
+      iconSpan.textContent = icon;
+      firstP.prepend(iconSpan);
     }
   });
 }
@@ -199,6 +210,17 @@ function _substituteLatex(latex) {
   );
 }
 
+function _katexToolbar(block) {
+  let toolbar = block.querySelector(".katex-toolbar");
+  if (!toolbar) {
+    toolbar = document.createElement("div");
+    toolbar.className = "katex-toolbar";
+    block.style.position = "relative";
+    block.appendChild(toolbar);
+  }
+  return toolbar;
+}
+
 function addFormulaToggle(contentEl) {
   if (typeof katex === "undefined") return;
 
@@ -240,8 +262,7 @@ function addFormulaToggle(contentEl) {
       }
     });
 
-    block.style.position = "relative";
-    block.appendChild(btn);
+    _katexToolbar(block).appendChild(btn);
   });
 }
 
@@ -272,8 +293,7 @@ function addLatexCopyButtons(contentEl, onCopyError = () => {}) {
         })
         .catch(() => onCopyError());
     });
-    block.style.position = "relative";
-    block.appendChild(btn);
+    _katexToolbar(block).appendChild(btn);
   });
 }
 

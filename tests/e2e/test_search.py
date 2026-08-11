@@ -592,6 +592,25 @@ def test_wiki_command_hidden_without_wiki_context(page, base_url):
     assert "export-bookmarks" in ids, "Global commands must remain available on home"
 
 
+def test_mark_all_read_command_includes_currently_open_article(page, base_url):
+    """Regression: bulk mark-all-read must include the article on screen, not just other index cards - the search-index-derived path used to never match state.currentFilePath's normalized shape."""
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_selector("#markdown-body h1, #markdown-body h2", timeout=8_000)
+
+    page.evaluate("() => localStorage.removeItem('wiki-read-system-design')")
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/mark all read")
+    page.wait_for_selector(".gsearch-command[data-command='mark-all-read']", timeout=8_000)
+    page.locator(".gsearch-command[data-command='mark-all-read']").first.click()
+
+    page.wait_for_function(
+        "() => JSON.parse(localStorage.getItem('wiki-read-system-design') || '[]').some(p => p.includes('caching'))",
+        timeout=8_000,
+    )
+
+
 def test_mark_all_read_command_marks_articles(page, base_url):
     """Running 'mark all read' sets read dots on the current wiki's index cards."""
     page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")

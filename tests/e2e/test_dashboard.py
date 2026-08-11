@@ -74,8 +74,8 @@ def test_dashboard_reflects_read_and_completed_counts(page, base_url):
     page.wait_for_selector("#view-home.active", timeout=8_000)
     page.evaluate(
         """() => {
-            localStorage.setItem('wiki-read-system-design', JSON.stringify(['./content/system-design/message-queues.md']));
-            localStorage.setItem('wiki-completed-system-design', JSON.stringify(['./content/system-design/message-queues.md']));
+            localStorage.setItem('wiki-read-system-design', JSON.stringify(['content/system-design/message-queues.md']));
+            localStorage.setItem('wiki-completed-system-design', JSON.stringify(['content/system-design/message-queues.md']));
         }"""
     )
 

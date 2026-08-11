@@ -229,3 +229,70 @@ def test_unmarking_read_does_not_call_vibrate(page, base_url):
     btn.click()  # mark unread - should not fire again
     calls = page.evaluate("() => window.__vibrateCalls || []")
     assert len(calls) == 1
+
+
+# ── DSA "Mark as completed" button ──────────────────────────────────────────
+
+DSA_ARTICLE_HASH = "dsa/array"
+
+
+def _go_to_dsa_article(page, base_url):
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.evaluate("() => localStorage.removeItem('wiki-completed-dsa')")
+    page.goto(f"{base_url}/#{DSA_ARTICLE_HASH}", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_selector(".completion-btn", timeout=8_000)
+
+
+def test_completion_btn_present_on_dsa_article(page, base_url):
+    """.completion-btn renders after the article-end-marker on a DSA article."""
+    _go_to_dsa_article(page, base_url)
+    assert page.locator(".completion-btn").count() == 1
+
+
+def test_completion_btn_absent_on_system_design_article(page, base_url):
+    """.completion-btn never renders on non-DSA (System Design) articles."""
+    _go_to_article(page, base_url)
+    assert page.locator(".completion-btn").count() == 0
+
+
+def test_completion_btn_initial_label(page, base_url):
+    """button reads 'Mark as completed' before any completion state."""
+    _go_to_dsa_article(page, base_url)
+    assert page.locator(".completion-btn").inner_text() == "Mark as completed"
+
+
+def test_clicking_completion_btn_marks_article_completed(page, base_url):
+    """clicking button adds article path to wiki-completed-dsa in localStorage."""
+    _go_to_dsa_article(page, base_url)
+    page.locator(".completion-btn").click()
+
+    completed = page.evaluate(
+        "() => JSON.parse(localStorage.getItem('wiki-completed-dsa') || '[]')"
+    )
+    assert any("array" in path for path in completed)
+
+
+def test_completion_btn_shows_done_state_after_click(page, base_url):
+    """button gets .completion-btn--done and updated label after marking completed."""
+    _go_to_dsa_article(page, base_url)
+    btn = page.locator(".completion-btn")
+    btn.click()
+    assert "completion-btn--done" in btn.get_attribute("class")
+    assert btn.inner_text() == "Completed - undo"
+
+
+def test_clicking_completion_btn_again_marks_uncompleted(page, base_url):
+    """clicking a second time removes the article from wiki-completed-dsa and reverts label."""
+    _go_to_dsa_article(page, base_url)
+    btn = page.locator(".completion-btn")
+    btn.click()  # mark completed
+    btn.click()  # mark uncompleted
+
+    completed = page.evaluate(
+        "() => JSON.parse(localStorage.getItem('wiki-completed-dsa') || '[]')"
+    )
+    assert not any("array" in path for path in completed)
+    assert btn.inner_text() == "Mark as completed"
+    assert "completion-btn--done" not in btn.get_attribute("class")

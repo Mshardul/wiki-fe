@@ -3,6 +3,7 @@
 - Index section headers collapse/expand card grids; state persists in localStorage.
 - Unavailable cards have tooltip title and allow pointer events.
 - Section collapse uses a JS-measured height transition, not display:none.
+- DSA index Learning Paths cards show an N/M completed progress badge.
 """
 
 import pytest
@@ -10,6 +11,11 @@ import pytest
 
 def _go_to_index(page, base_url):
     page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-index.active", timeout=20_000)
+
+
+def _go_to_dsa_index(page, base_url):
+    page.goto(f"{base_url}/#dsa", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=20_000)
 
 
@@ -303,90 +309,6 @@ def test_expanded_grid_height_cleared_after_transition(page, base_url):
     )
 
 
-# ── Index card hover preview ──────────────────────────────────────
-
-
-def test_index_card_hover_shows_preview(page, base_url):
-    """Hovering an available index card shows the hover-preview panel."""
-    _go_to_index(page, base_url)
-    page.wait_for_selector(
-        "#index-sections:not(.index-sections--loading)", timeout=15_000
-    )
-
-    card = page.locator(".index-card:not(.index-card--unavailable)").first
-    page.wait_for_function(
-        "() => !!document.querySelector('.index-card:not(.index-card--unavailable) .index-card-read-time[data-path]')",
-        timeout=10_000,
-    )
-    card.evaluate("el => { const ev = new PointerEvent('pointerover', {bubbles: true, pointerType: 'mouse' }); el.dispatchEvent(ev); }")
-
-    # Wait for the preview to gain the 'visible' class (400ms timer + fetch).
-    # Condition-based: polls until the class appears rather than a fixed sleep.
-    page.wait_for_function(
-        "() => document.getElementById('hover-preview')?.classList.contains('visible')",
-        timeout=8_000,
-    )
-    assert page.locator("#hover-preview").is_visible(), (
-        "hover-preview must become visible after hovering an index card"
-    )
-
-
-def test_index_card_hover_preview_hidden_on_leave(page, base_url):
-    """Moving pointer away from an index card hides the hover-preview panel."""
-    _go_to_index(page, base_url)
-    page.wait_for_selector(
-        "#index-sections:not(.index-sections--loading)", timeout=15_000
-    )
-
-    card = page.locator(".index-card:not(.index-card--unavailable)").first
-    page.wait_for_function(
-        "() => !!document.querySelector('.index-card:not(.index-card--unavailable) .index-card-read-time[data-path]')",
-        timeout=10_000,
-    )
-    card.evaluate("el => { const ev = new PointerEvent('pointerover', {bubbles: true, pointerType: 'mouse'}); el.dispatchEvent(ev); }")
-    page.wait_for_function(
-        "() => document.getElementById('hover-preview')?.classList.contains('visible')",
-        timeout=8_000,
-    )
-
-    # Dispatch pointerleave from the container to trigger hide
-    page.evaluate("""() => {
-        const container = document.getElementById('index-sections');
-        const ev = new PointerEvent('pointerleave', {bubbles: false, pointerType: 'mouse', relatedTarget: null});
-        container.dispatchEvent(ev);
-    }""")
-    page.wait_for_function(
-        "() => !document.getElementById('hover-preview').classList.contains('visible')",
-        timeout=3_000,
-    )
-
-    preview = page.locator("#hover-preview")
-    assert not preview.is_visible(), "hover-preview must hide after pointer leaves the index card"
-
-
-def test_unavailable_index_card_no_hover_preview(page, base_url):
-    """Hovering an unavailable index card must not show the hover-preview panel."""
-    _go_to_index(page, base_url)
-    page.wait_for_selector(
-        "#index-sections:not(.index-sections--loading)", timeout=15_000
-    )
-
-    has_stub = page.evaluate(
-        "() => !!document.querySelector('.index-card--unavailable')"
-    )
-    if not has_stub:
-        return  # no stub cards in this wiki; test is vacuously satisfied
-
-    card = page.locator(".index-card--unavailable").first
-    card.hover()
-    page.wait_for_timeout(100)
-
-    preview = page.locator("#hover-preview")
-    assert not preview.is_visible(), (
-        "hover-preview must not appear when hovering an unavailable index card"
-    )
-
-
 # ── Inline index filter ──────────────────────────────────────────────
 
 
@@ -477,7 +399,7 @@ def test_unread_toggle_filters_read_cards(page, base_url):
                 '.index-card:not(.index-card--unavailable) .index-card-read-time[data-path]'
             );
             if (!badge) return null;
-            const path = badge.dataset.path;
+            const path = badge.dataset.path.replace(/^\\.\\//, '');
             const key = 'wiki-read-system-design';
             const cur = JSON.parse(localStorage.getItem(key) || '[]');
             if (!cur.includes(path)) cur.push(path);
@@ -522,7 +444,7 @@ def test_read_only_filter_hides_unread_cards(page, base_url):
                 '.index-card:not(.index-card--unavailable) .index-card-read-time[data-path]'
             );
             if (!badge) return null;
-            const path = badge.dataset.path;
+            const path = badge.dataset.path.replace(/^\\.\\//, '');
             const key = 'wiki-read-system-design';
             const cur = JSON.parse(localStorage.getItem(key) || '[]');
             if (!cur.includes(path)) cur.push(path);
@@ -589,10 +511,10 @@ def test_index_ctrl_and_filter_44px_on_coarse_pointer(browser, base_url, cdn_cac
 # ── "Changed since you last read" index dot ──────────────────────────
 
 _CACHING_ROUTE_GLOB = "**/content/system-design/components/caching.md"
-# Index cards render data-path from the search-index entry, which is
-# "./"-prefixed - getLastOpened() is keyed on that same prefixed path, so
-# this must match exactly or the card/read-date lookup silently misses.
+# Index cards render data-path from the search-index entry, which is "./"-prefixed - use this to match DOM/data-path.
 _CACHING_PATH = "./content/system-design/components/caching.md"
+# getLastOpened()/isRead() key off the normalized (no "./") shape - use this when seeding localStorage directly.
+_CACHING_PATH_NORMALIZED = "content/system-design/components/caching.md"
 _CACHING_KEY = "wiki-read-dates-system-design"
 
 
@@ -612,7 +534,7 @@ def _seed_last_opened(page, iso_date):
     page.evaluate(
         f"""() => {{
             const map = {{}};
-            map[{_CACHING_PATH!r}] = {iso_date!r};
+            map[{_CACHING_PATH_NORMALIZED!r}] = {iso_date!r};
             localStorage.setItem({_CACHING_KEY!r}, JSON.stringify(map));
         }}"""
     )
@@ -726,7 +648,7 @@ def _mark_caching_read(page):
     page.evaluate(
         f"""() => {{
             const cur = JSON.parse(localStorage.getItem({_READ_SET_KEY!r}) || '[]');
-            if (!cur.includes({_CACHING_PATH!r})) cur.push({_CACHING_PATH!r});
+            if (!cur.includes({_CACHING_PATH_NORMALIZED!r})) cur.push({_CACHING_PATH_NORMALIZED!r});
             localStorage.setItem({_READ_SET_KEY!r}, JSON.stringify(cur));
         }}"""
     )
@@ -874,3 +796,48 @@ def test_swipe_hint_visible_on_coarse_pointer_only(browser, base_url, cdn_cache)
     finally:
         touch_ctx.close()
         mouse_ctx.close()
+
+
+# ── DSA Learning Paths progress badge ────────────────────────────────────────
+
+
+def _standard_swe_card(page):
+    return page.locator(".index-card[data-title='Standard SWE']")
+
+
+def test_learning_path_card_shows_zero_progress_with_no_completions(page, base_url):
+    """Standard SWE card shows '0/N completed' when nothing is marked completed."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.evaluate("() => localStorage.removeItem('wiki-completed-dsa')")
+    _go_to_dsa_index(page, base_url)
+
+    card = _standard_swe_card(page)
+    card.scroll_into_view_if_needed()
+    progress = card.locator(".index-card-path-progress")
+    progress.wait_for(state="visible", timeout=8_000)
+    text = progress.inner_text()
+    assert text.startswith("0/"), f"expected zero progress, got: {text!r}"
+    assert text.endswith(" completed")
+
+
+def test_learning_path_card_reflects_completed_articles(page, base_url):
+    """Standard SWE card counts completed articles that belong to that track."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.evaluate(
+        """() => {
+            localStorage.setItem('wiki-completed-dsa', JSON.stringify([
+                './content/dsa/algorithms/recursion.md',
+                './content/dsa/data-structures/array.md',
+            ]));
+        }"""
+    )
+    _go_to_dsa_index(page, base_url)
+
+    card = _standard_swe_card(page)
+    card.scroll_into_view_if_needed()
+    progress = card.locator(".index-card-path-progress")
+    progress.wait_for(state="visible", timeout=8_000)
+    text = progress.inner_text()
+    assert text.startswith("2/"), f"expected 2 completed, got: {text!r}"

@@ -20,6 +20,7 @@ function _textNodes(contentEl) {
     acceptNode(node) {
       const tag = node.parentNode?.nodeName;
       if (tag === "SCRIPT" || tag === "STYLE") return NodeFilter.FILTER_REJECT;
+      if (node.parentElement?.closest(".wiki-marker")) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     },
   });
@@ -333,9 +334,10 @@ function applyHighlightsAndMarkers(contentEl, wikiId, articlePath) {
     });
 
   const markers = Markers.getAll(wikiId, articlePath);
+  // Descending offset: each badge insert shifts later offsets in the live DOM.
   markers
     .slice()
-    .sort((a, b) => a.offset - b.offset)
+    .sort((a, b) => b.offset - a.offset)
     .forEach((m) => {
       let offset = m.offset;
       if (!_snippetMatchesAt(fullText, offset, m.snippet)) {

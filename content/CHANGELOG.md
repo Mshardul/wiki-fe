@@ -9,6 +9,9 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-08-12
+- `dsa/index.md` - new section: "Learning Paths" - links the 3 existing track pages
+
 ## 2026-08-01
 - `stack.md`, `array.md`, `linked-list.md`, `hash-table.md`, `heap.md`, `trie.md`, `recursion.md`, `dynamic-programming.md`, `greedy.md`, `two-pointers.md`, `caching.md`, `load-balancer.md`, `cap-theorem.md` - wrapped glossary terms in `<abbr>`
 

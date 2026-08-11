@@ -2,17 +2,17 @@
 
 ## Prerequisites
 
-- **TCP/IP & OSI Model** - understand the difference between L4 (transport: TCP/UDP) and L7 (application: HTTP). Load balancers operate at one of these layers, and the choice determines what they can inspect and act on.
-- **HTTP/1.1 vs HTTP/2** - connection semantics differ: HTTP/1.1 uses one request per connection (or pipelined), HTTP/2 multiplexes multiple streams over one TCP connection. This affects how LBs manage keep-alive and backend connections.
-- **[DNS](./dns.md)** - DNS-based <abbr>load balancing</abbr> is a distinct pattern; understanding TTL is critical to grasping why DNS LB has slow failover.
-- **Server Concurrency Models** - thread-per-request vs async I/O models affect how backends handle connection load, which impacts LB algorithm selection.
+- **TCP/IP & OSI Model** [Must read] - the L4 vs L7 decision this article opens with is literally "which OSI layer does the LB operate at"; without this the classification won't land. <!-- link: ./tcp-ip-osi-model.md -->
+- **HTTP/1.1 vs HTTP/2** [Should read] - connection semantics differ (one-request-per-connection vs multiplexed streams), which shapes how the LB manages keep-alive and backend connection pooling, covered in Performance & Optimization. <!-- link: ./http.md -->
+- **[DNS](./dns.md)** [Should read] - DNS-based load balancing is a distinct pattern from LB-level routing; understanding TTL is required to grasp why DNS-based GSLB has slow, unreliable failover.
+- **Server Concurrency Models** [Should read] - thread-per-request vs async I/O affects how backends absorb connection load, which is background for the algorithm-selection section. <!-- link: ./server-concurrency-models.md -->
 
 ---
 
 ## Table of Contents
 
-- [Quick Decision Guide](#quick-decision-guide)
 - [Conceptual Foundations & Mental Models](#conceptual-foundations--mental-models)
+- [Quick Decision Guide](#quick-decision-guide)
 - [Classification & Variants](#classification--variants)
 - [Traffic Distribution Algorithms](#traffic-distribution-algorithms)
 - [Health Checks & Backend Management](#health-checks--backend-management)
@@ -23,9 +23,9 @@
 - [Advanced Patterns](#advanced-patterns)
 - [Observability & Debugging](#observability--debugging)
 - [Production Failure Modes](#production-failure-modes)
-- [Common Interview Gotchas](#common-interview-gotchas)
 - [Post-mortem Reading List](#post-mortem-reading-list)
-- [Interview Scenario & Debugging Bank](#interview-scenario--debugging-bank)
+- [Interview Scenario Bank](#interview-scenario-bank)
+- [What the Interviewer Probes For](#what-the-interviewer-probes-for)
 - [Appendices](#appendices)
 
 ---
@@ -33,6 +33,49 @@
 ## TLDR
 
 A load balancer sits between clients and a pool of servers, distributing incoming requests to prevent any single server from becoming a bottleneck. At L4, it routes based on IP and TCP/UDP headers without inspecting application data; at L7, it can make routing decisions based on HTTP headers, URLs, and cookies. The core trade-off is between simplicity and control: L4 is faster with lower overhead, L7 is more powerful but adds <abbr>latency</abbr> and complexity. In production, load balancers are almost always deployed in HA pairs with floating IPs to eliminate themselves as a single point of failure.
+
+---
+
+## Conceptual Foundations & Mental Models
+
+**Interviewer TL;DR:** The L4 vs L7 decision is the first thing to establish - everything else (routing, SSL, stickiness) follows from it.
+
+**Mental model:** A load balancer is a traffic cop standing between the internet and your servers - it sees every incoming request and decides which server handles it, invisibly to the client.
+
+### Core Problem: Single Server as Bottleneck
+
+Any single server has hard limits: CPU cores, memory, open file descriptors, and network bandwidth. Beyond those limits, requests queue up, latency spikes, and eventually the server crashes. A load balancer solves this by spreading requests across many servers, making the system appear as one endpoint to clients while horizontally scaling behind the scenes.
+
+The problem isn't just capacity - it's also availability. If your single server crashes, everything goes down. A load balancer with multiple backends means one server failure doesn't equal an outage.
+
+### Abstraction: Transparent Traffic Distributor
+
+From a client's perspective, they connect to one IP and get a response. They have no visibility into which backend served them. The load balancer handles:
+
+1. Accepting the client connection
+2. Selecting a backend
+3. Forwarding the request (and response)
+4. Managing the lifecycle of both connections
+
+This transparency is what makes horizontal scaling seamless - you can add or remove backends without clients noticing.
+
+### L4 vs L7 - Where in the Stack Interception Happens
+
+This is the most important classification decision.
+
+**L4 (Transport Layer):** The LB sees TCP/UDP packets. It knows source IP, destination IP, and ports - nothing more. It cannot inspect HTTP headers, cookies, or URLs. Critically, it does **not** terminate the TCP connection - it forwards packets directly, so the client and backend share one end-to-end TCP connection. Routing is fast because no application-layer parsing is needed.
+
+**L7 (Application Layer):** The LB **terminates** the client's TCP connection entirely. It then parses the HTTP request, makes a routing decision based on headers/URL/cookies, and opens a brand-new TCP connection to the chosen backend. Two separate TCP connections exist: client → LB, and LB → backend. The client never communicates directly with the backend. This adds latency (two TCP handshakes) but enables powerful routing: send `/api/*` to one pool, `/static/*` to another, route based on `User-Agent`, implement sticky sessions via cookies, etc.
+
+```
+L4 Flow:  Client ──TCP──▶ LB ──TCP──▶ Backend  (packet forwarding, no parsing)
+L7 Flow:  Client ──TCP──▶ LB (parses HTTP) ──TCP──▶ Backend  (two connections)
+```
+
+> 🧠 **Thought Process**
+> When an interviewer asks "how would you design a load balancer for this system?", the first question to ask yourself: _do I need to make routing decisions based on request content?_ If yes → L7. If you just need to distribute TCP connections cheaply → L4. Most modern web systems need L7 for SSL termination and URL-based routing alone.
+
+**Key Takeaway:** The L4 vs L7 decision is the foundation - it determines what the LB can route on, whether it can terminate SSL, and whether sticky sessions are possible. Everything else follows from it.
 
 ---
 
@@ -98,55 +141,6 @@ Traffic criticality?
                 ├─ YES ──▶ Add conntrack state sync (conntrackd)
                 └─ NO  ──▶ Stateless failover is sufficient; ensure clients retry
 ```
-
----
-
-## Conceptual Foundations & Mental Models
-
-**Interviewer TL;DR:** The L4 vs L7 decision is the first thing to establish - everything else (routing, SSL, stickiness) follows from it.
-
-**Mental model:** A load balancer is a traffic cop standing between the internet and your servers - it sees every incoming request and decides which server handles it, invisibly to the client.
-
-### Core Problem: Single Server as Bottleneck
-
-Any single server has hard limits: CPU cores, memory, open file descriptors, and network bandwidth. Beyond those limits, requests queue up, latency spikes, and eventually the server crashes. A load balancer solves this by spreading requests across many servers, making the system appear as one endpoint to clients while horizontally scaling behind the scenes.
-
-The problem isn't just capacity - it's also availability. If your single server crashes, everything goes down. A load balancer with multiple backends means one server failure doesn't equal an outage.
-
-### Abstraction: Transparent Traffic Distributor
-
-From a client's perspective, they connect to one IP and get a response. They have no visibility into which backend served them. The load balancer handles:
-
-1. Accepting the client connection
-2. Selecting a backend
-3. Forwarding the request (and response)
-4. Managing the lifecycle of both connections
-
-This transparency is what makes horizontal scaling seamless - you can add or remove backends without clients noticing.
-
-### L4 vs L7 - Where in the Stack Interception Happens
-
-This is the most important classification decision.
-
-**L4 (Transport Layer):** The LB sees TCP/UDP packets. It knows source IP, destination IP, and ports - nothing more. It cannot inspect HTTP headers, cookies, or URLs. Critically, it does **not** terminate the TCP connection - it forwards packets directly, so the client and backend share one end-to-end TCP connection. Routing is fast because no application-layer parsing is needed.
-
-**L7 (Application Layer):** The LB **terminates** the client's TCP connection entirely. It then parses the HTTP request, makes a routing decision based on headers/URL/cookies, and opens a brand-new TCP connection to the chosen backend. Two separate TCP connections exist: client → LB, and LB → backend. The client never communicates directly with the backend. This adds latency (two TCP handshakes) but enables powerful routing: send `/api/*` to one pool, `/static/*` to another, route based on `User-Agent`, implement sticky sessions via cookies, etc.
-
-```
-L4 Flow:  Client ──TCP──▶ LB ──TCP──▶ Backend  (packet forwarding, no parsing)
-L7 Flow:  Client ──TCP──▶ LB (parses HTTP) ──TCP──▶ Backend  (two connections)
-```
-
-> 🧠 **Thought Process**
-> When an interviewer asks "how would you design a load balancer for this system?", the first question to ask yourself: _do I need to make routing decisions based on request content?_ If yes → L7. If you just need to distribute TCP connections cheaply → L4. Most modern web systems need L7 for SSL termination and URL-based routing alone.
-
-> 🎯 **Interview Lens** > **Q:** When would you choose L4 over L7?
-> **Ideal answer:** L4 when you need raw <abbr>throughput</abbr> and low latency (gaming servers, financial tick data, large file transfers), when you cannot or don't need to inspect application payload, or when you want to avoid the overhead of terminating SSL at the LB. L7 for any HTTP-based routing, SSL offload, or content-based decisions.
-> **Common trap:** Candidates say "L7 is always better because it's smarter." The right answer acknowledges the latency and complexity cost of two TCP handshakes per request.
-> **Follow-up pivot:** "What if the traffic is gRPC?" → gRPC runs over HTTP/2, so you need an L7 LB that understands HTTP/2 framing to properly load balance individual RPC calls, not just TCP connections.
-> **Next question:** "Your system has both gRPC microservices and HTTP/1.1 REST APIs - one LB or two?" → One L7 LB that routes by protocol/path: gRPC traffic (Content-Type: application/grpc) goes to one backend pool, REST to another. Avoids operational complexity of two separate LBs.
-
-**Key Takeaway:** The L4 vs L7 decision is the foundation - it determines what the LB can route on, whether it can terminate SSL, and whether sticky sessions are possible. Everything else follows from it.
 
 ---
 
@@ -238,11 +232,6 @@ Routes each new request to the backend with the fewest active connections at tha
 
 **Weighted Least Connections:** Normalizes by backend capacity: `score = active_connections / weight`. Prevents a weaker backend from being treated as equivalent to a stronger one.
 
-> 🎯 **Interview Lens** > **Q:** When does least connections outperform round robin?
-> **Ideal answer:** When request processing time varies significantly (e.g., some DB queries take 1ms, others take 500ms). Round robin ignores in-flight load; least connections is load-aware.
-> **Follow-up:** "What's the overhead of least connections?" → The LB must track active connection counts per backend using atomic counters, adding a small coordination cost at high RPS.
-> **Next question:** "What if a backend has only 1 active connection but that connection is a slow 30-second query - least connections would still route new requests to it?" → Correct. Least connections counts connections, not actual load. The fix is least response time, which factors in observed latency per backend and would penalize the slow backend appropriately.
-
 ### Deterministic IP Hashing
 
 Routes requests from the same client IP to the same backend every time using a hash of the source IP.
@@ -294,7 +283,7 @@ Ring (simplified):
 
 **In load balancing context:** The key is typically a session ID, user ID, or request attribute - not the source IP (which collapses behind NAT). Consistent hashing is the right choice when you need backend affinity _and_ your pool changes frequently (autoscaling, rolling deploys).
 
-🔗 Deep-Dive: [load-balancer-consistent-hashing.md](./load-balancer-consistent-hashing.md) - Ring math, virtual node tuning, rebalancing impact, and bounded load extensions. (→ [Consistent Hashing](../algorithms/consistent-hashing.md))
+🔗 Deep-Dive: [Consistent Hashing](../algorithms/consistent-hashing.md) - Ring math, virtual node tuning, rebalancing impact, and bounded load extensions.
 
 ### Resource-Based / Adaptive Routing
 
@@ -354,10 +343,6 @@ timeout check 2s
 default-server inter 5s fall 3 rise 2
 ```
 
-> 🎯 **Interview Lens** > **Q:** How do you prevent a thundering herd when a backend recovers after failure?
-> **Ideal answer:** Use [slow-start](#slow-start--warmup-after-backend-recovery). When a backend is marked healthy, ramp its traffic weight gradually rather than immediately sending full load. This lets the backend warm caches and stabilize before receiving production traffic.
-> **Next question:** "Your health check returns 200 but the service is still slow for the first 10 seconds - how do you handle that?" → This is the liveness vs readiness distinction. Liveness = the process is running. Readiness = the process is ready to serve traffic. Your `/health` endpoint should fail until the service is fully initialized (connection pool warmed, caches loaded). Kubernetes formalizes this with separate liveness and readiness probes.
-
 ### Graceful Connection Drain vs Abrupt Removal
 
 When a backend needs to be removed (deploy, scale-down), abruptly cutting connections breaks in-flight requests. Graceful drain:
@@ -393,10 +378,6 @@ GET /health → 200 OK   (process is alive, nothing else verified)
 - **Liveness** (`/healthz`): Is the process running? Shallow. Used to decide if the process should be restarted.
 - **Readiness** (`/readyz`): Is the process ready to serve traffic? Checks local state (connection pools initialized, caches warmed). Does **not** query external dependencies.
 - **Dependency health**: Monitor separately via metrics/alerting - do not couple it to the LB health check.
-
-> 🎯 **Interview Lens** > **Q:** Your health check queries the database. The DB becomes slow but doesn't fail. What happens?
-> **Ideal answer:** All backends fail their health checks simultaneously and get removed from the pool - a complete outage caused by the health check, not the actual failure. Fix: decouple dependency health from the LB health check. Use readiness (local state only) for LB decisions; monitor DB health separately.
-> **Next question:** "Then how does the LB know if a backend can't reach the DB?" → It doesn't need to know directly. Passive health checks (observing real traffic 5xx responses) catch this organically. If the backend is returning errors due to DB issues, the LB will detect the error rate spike and pull it without a deep check being needed.
 
 **Key Takeaway:** Active probes + readiness semantics + graceful drain + slow-start - omit any one and you will cause cascading failures or thundering herds on every deploy. Deep health checks that query dependencies are more dangerous than shallow ones.
 
@@ -448,11 +429,6 @@ When the LB terminates the client connection and opens a new one to the backend,
 ```
 PROXY TCP4 192.168.1.1 10.0.0.1 56324 443\r\n
 ```
-
-> 🎯 **Interview Lens** > **Q:** How do you rate-limit by client IP when all traffic comes through a load balancer?
-> **Ideal answer:** Use X-Forwarded-For or Proxy Protocol to pass the original client IP to the backend or rate-limiter. Trust only the _last_ XFF value added by your own LB - earlier values can be spoofed. Alternatively, implement rate limiting at the LB itself before the IP is obscured.
-> **Follow-up:** "What if the LB is behind another LB?" → Chain of XFF headers. You need to know how many trusted hops exist and read the correct position in the chain.
-> **Next question:** "How do you prevent a malicious client from injecting a fake IP into X-Forwarded-For to bypass your rate limiter?" → Strip all incoming XFF headers at your outermost LB and let only your own infrastructure append to it. Never trust client-supplied XFF values. Proxy Protocol is harder to spoof since it operates at the TCP layer before any application data.
 
 **Key Takeaway:** Sticky sessions are a band-aid for stateful backends - the correct fix is externalizing session state. The exception is WebSocket and SSE, where stickiness is a protocol requirement, not an architectural choice.
 
@@ -525,11 +501,6 @@ In standard TLS, only the server presents a certificate - the client is anonymou
 
 **Certificate management burden:** Every client needs a cert, and rotation must be coordinated across all services. Service meshes solve this with automatically-rotated short-lived certificates (typically 24-hour TTL), so a compromised cert is self-healing.
 
-> 🎯 **Interview Lens** > **Q:** How do you secure service-to-service communication in a microservices architecture?
-> **Ideal answer:** mTLS at the service mesh layer. Each service has a short-lived SPIFFE identity. The sidecar proxy enforces that the caller is authenticated before forwarding. This is identity-based trust at every hop, not perimeter-based trust.
-> **Common trap:** "Use a private network / VPC." This is perimeter security - once inside, any service can call any other. mTLS prevents lateral movement even from a compromised internal service.
-> **Next question:** "mTLS adds certificate management overhead - is it worth it for all services?" → Not always. Low-risk internal read-only services (metrics, config) may not justify the overhead. Apply mTLS proportionally: enforce it on data-plane services, auth services, and anything handling PII. Use a service mesh to automate the cert lifecycle so the overhead is minimal.
-
 **Key Takeaway:** Terminate at LB for simplicity; re-encrypt when compliance demands E2E; passthrough loses all L7 capability. mTLS shifts trust from network perimeter to per-connection identity - essential in zero-trust architectures, where VPC membership proves nothing.
 
 ---
@@ -547,11 +518,6 @@ In standard TLS, only the server presents a certificate - the client is anonymou
 **Active-Active:** Both LBs handle traffic simultaneously, typically via DNS round robin or Anycast. Better utilization. One LB going down reduces capacity rather than causing a full outage.
 
 **Trade-off:** Active-active requires stateless LBs (or synchronized state), which complicates sticky sessions and connection tracking.
-
-> 🎯 **Interview Lens** > **Q:** How do you make a load balancer itself highly available?
-> **Ideal answer:** Deploy two LBs sharing a floating VIP. Use Active-Passive for simplicity (VRRP on-prem, Elastic IP reassignment on AWS) or Active-Active for better utilization. DNS points to the VIP - clients are unaware of the failover.
-> **Common trap:** Candidates design HA for backends but leave a single LB in front. Always ask: "what fails if this component goes down?"
-> **Next question:** "In active-active, both LBs are handling traffic - how do you ensure a client with sticky sessions always hits the same LB?" → You either synchronize session state between LBs (complex), or use a consistent hashing strategy at the DNS/Anycast layer so the same client always routes to the same LB. Alternatively, move to stateless backends and eliminate sticky sessions entirely.
 
 ### Floating IPs & VRRP
 
@@ -696,15 +662,6 @@ Rate limiting at the LB is a first line of defence - it stops abuse and traffic 
 
 🔗 Deep-Dive: [Rate Limiter](../components/rate-limiter.md) - Token bucket, leaky bucket, sliding window algorithms, distributed rate limiting, and Redis-based shared state.
 
-> 🎯 **Interview Lens** > **Q:** Where in your architecture would you implement rate limiting?
-> **Ideal answer:** Two layers - coarse-grained at the LB (per-IP connection limits, global RPS cap) as a fast cheap filter; fine-grained in a dedicated rate limiter service (per-user token bucket with shared Redis state) for business-logic limits. The LB layer stops obvious abuse; the dedicated layer handles nuanced per-user policies.
-> **Next question:** "Your rate limiter is a single Redis instance - what happens if it goes down?" → Rate limiting fails open (allow all traffic) rather than fail closed (block all traffic). Availability of the application is more important than perfect rate limiting. Alert on Redis unavailability and restore quickly.
-
-> 🎯 **Interview Lens** > **Q:** Why might a load balancer fail to forward connections even with healthy backends?
-> **Ideal answer:** SNAT port exhaustion or conntrack table overflow. Symptoms: LB and backends report healthy, but new connections fail. Debug with `ss -s` for TIME_WAIT counts and `nf_conntrack_count` vs `nf_conntrack_max`.
-> **Follow-up:** "How would you fix it in production right now?" → Short-term: tune port range and conntrack max. Long-term: DSR mode or spread connections across multiple LB IPs.
-> **Next question:** "If you use DSR, the backend responds directly to the client - but the backend's source IP is its own, not the VIP. Won't the client reject the response?" → Good catch. In DSR, the backend must have the VIP configured as a loopback alias (e.g., `lo:0`) so it accepts packets addressed to the VIP, but it responds using its own IP as source - which the client accepts because it tracks the TCP connection by port tuple, not source IP.
-
 **Key Takeaway:** SNAT port exhaustion and conntrack limits are the non-obvious production gotchas - backends and LB both appear healthy but new connections silently fail. Connection pooling and backpressure are table stakes; never queue indefinitely under overload.
 
 ---
@@ -736,11 +693,6 @@ Stage 4:  100% → v2              (complete cutover)
 ```
 
 Implemented via weighted backend pools. The LB shifts weights based on operator input or automated signals (error rate below threshold → increase v2 weight automatically).
-
-> 🎯 **Interview Lens** > **Q:** How would you roll out a risky backend change to production safely?
-> **Ideal answer:** Canary deploy - route 1-5% of traffic to the new version, monitor error rate and latency, and automate the ramp-up if metrics stay within SLO. The LB is the control plane; the metrics pipeline is the safety gate.
-> **Common trap:** Candidates say "deploy to staging and test." Staging traffic is synthetic - it doesn't catch issues that only appear under real user behaviour (specific query patterns, edge case data, geographic latency).
-> **Next question:** "How do you ensure the canary gets a representative sample of traffic, not just a random 5%?" → Use consistent hashing on user ID to route the same users consistently to v2. This prevents a user from seeing different behaviour on each request and makes the canary results more representative.
 
 ### Traffic Mirroring (Shadow Mode)
 
@@ -946,33 +898,6 @@ LB access logs are the ground truth. Key fields:
 
 ---
 
-## Common Interview Gotchas
-
-Statements that sound reasonable but are wrong - or right in one context and dangerously wrong in another.
-
-**"Sticky sessions are always an anti-pattern"**
-Wrong. For HTTP sessions backed by local server state, yes - externalize the state. But for WebSocket and SSE connections, stickiness is _architecturally required_ - the connection itself is the session, and no amount of externalizing state fixes a broken TCP connection. Saying "sticky sessions are always wrong" in an interview fails the WebSocket case.
-
-**"L7 is always better than L4"**
-Wrong. L7 adds two TCP handshakes, TLS parsing overhead, and application-layer processing per request. For raw TCP workloads (financial market data, game servers, database proxies), L4 is faster and correct. L7 is better only when you need what it provides: content-based routing, SSL offload, sticky sessions.
-
-**"Low DNS TTL means fast failover"**
-Wrong. Clients - browsers, JVMs (`InetAddress` caches indefinitely by default), OS resolvers, intermediate DNS caches - ignore TTL independently. After a DNS-based GSLB failover, expect a long tail of clients hitting the old IP for 10–20 minutes regardless of a 30-second TTL.
-
-**"Health check passes = backend is healthy"**
-Wrong. A 200 from `/health` only means the process is alive. If the health check is shallow (liveness only), the backend may be unable to reach its DB or cache and returning errors on every real request. A deep health check that queries dependencies introduces a worse failure mode: a slow DB causes all backends to fail health checks simultaneously, taking down the whole fleet.
-
-**"Adding more backends will fix the performance problem"**
-Not if the LB is the bottleneck. At high scale, the LB itself saturates - SNAT port exhaustion, conntrack table limits, SSL handshake CPU, connection pool exhaustion. Adding backends doesn't help if traffic can't reach them. Profile the LB before scaling backends.
-
-**"Active-Active HA means zero downtime"**
-Not quite. Even in active-active, individual connection state (conntrack entries, in-flight requests) is not automatically synchronized between LB nodes. When one node goes down, in-flight connections to that node drop. Clients must retry. Zero-downtime requires conntrack sync (conntrackd) or stateless protocol design with client-side retry.
-
-**"mTLS is only for external traffic"**
-Wrong. The whole point of mTLS in a zero-trust architecture is east-west (service-to-service) traffic. Attackers who breach the perimeter and gain internal network access are stopped by mTLS because they can't forge a valid service certificate. Using mTLS only on external traffic leaves internal lateral movement unrestricted.
-
----
-
 ## Post-mortem Reading List
 
 Real outages that map directly to the failure modes above. Read these to understand how they manifest in production at scale - and how teams recovered.
@@ -990,9 +915,86 @@ Real outages that map directly to the failure modes above. Read these to underst
 
 ---
 
-## Interview Scenario & Debugging Bank
+## Interview Scenario Bank
 
-🔗 Deep-Dive: [load-balancer-interview-scenarios.md](./load-balancer-interview-scenarios.md) - Full scenario bank: whiteboard walkthroughs, debugging exercises, scaling curveballs, and follow-up question trees.
+### L4 vs L7 Trade-off
+
+> 🎯 **Interview Lens**
+> **Q:** When would you choose L4 over L7?
+> **Ideal answer:** L4 for raw throughput and low latency (gaming servers, financial tick data, large file transfers), when you don't need to inspect application payload, or to avoid SSL termination overhead at the LB. L7 for any HTTP-based routing, SSL offload, or content-based decisions.
+> **Common trap:** "L7 is always better because it's smarter" - ignores the latency and complexity cost of two TCP handshakes per request.
+> **Next question:** "Your system has both gRPC and HTTP/1.1 REST - one LB or two?" → One L7 LB routing by protocol/path (Content-Type: application/grpc → one pool, REST → another) avoids the operational cost of two separate LBs.
+
+### Algorithm Selection Under Variable Load
+
+> 🎯 **Interview Lens**
+> **Q:** When does least connections outperform round robin?
+> **Ideal answer:** When request processing time varies significantly (some queries take 1ms, others 500ms) - round robin ignores in-flight load, least connections is load-aware.
+> **Common trap:** Assuming least connections is always correct - a backend with 1 connection that's a slow 30-second query still gets new requests routed to it, since it counts connections, not actual load. Least response time fixes this by factoring in observed latency.
+
+### Health Check Design
+
+> 🎯 **Interview Lens**
+> **Q:** Your health check queries the database. The DB becomes slow but doesn't fail. What happens?
+> **Ideal answer:** All backends fail their health checks simultaneously and get removed from the pool - a complete outage caused by the health check itself. Fix: decouple dependency health from the LB health check; use readiness (local state only) for LB decisions, monitor DB health separately via passive checks (real-traffic 5xx observation) instead.
+> **Next question:** "How do you prevent a thundering herd when a backend recovers?" → Slow-start: ramp a recovered backend's traffic weight gradually so it can warm caches before taking full load.
+
+### IP-Based Rate Limiting Through a Load Balancer
+
+> 🎯 **Interview Lens**
+> **Q:** How do you rate-limit by client IP when all traffic comes through a load balancer?
+> **Ideal answer:** Use X-Forwarded-For or Proxy Protocol to pass the real client IP through. Trust only the last XFF value your own LB appended - earlier values can be client-spoofed. Strip any incoming XFF header at your outermost LB before appending the real IP.
+> **Common trap:** Trusting the first or any client-supplied XFF value without stripping - lets an attacker inject a fake IP to bypass rate limiting entirely.
+
+### Securing Service-to-Service Traffic
+
+> 🎯 **Interview Lens**
+> **Q:** How do you secure service-to-service communication in a microservices architecture?
+> **Ideal answer:** mTLS at the service mesh layer - each service has a short-lived identity (e.g. SPIFFE), the sidecar enforces caller authentication before forwarding. Identity-based trust at every hop, not perimeter-based.
+> **Common trap:** "Use a private network / VPC" - perimeter security only; once inside, any compromised service can call any other. mTLS stops that lateral movement.
+
+### Making the LB Itself Highly Available
+
+> 🎯 **Interview Lens**
+> **Q:** How do you make a load balancer itself highly available?
+> **Ideal answer:** Two LBs sharing a floating VIP - Active-Passive (VRRP on-prem, Elastic IP reassignment on AWS) for simplicity, or Active-Active for better utilization. DNS points to the VIP; clients never see the failover.
+> **Common trap:** Designing HA for backends but leaving a single LB in front - always ask "what fails if this component goes down?"
+> **Next question:** "In active-active, how does a sticky-session client always hit the same LB?" → Either synchronize session state between LBs (complex), use consistent hashing at the DNS/Anycast layer, or eliminate sticky sessions by moving to stateless backends.
+
+### Diagnosing Silent Connection Failures
+
+> 🎯 **Interview Lens**
+> **Q:** Why might a load balancer fail to forward connections even with healthy backends?
+> **Ideal answer:** SNAT port exhaustion or conntrack table overflow - LB and backends both report healthy, but new connections fail. Debug with `ss -s` for TIME_WAIT counts and `nf_conntrack_count` vs `nf_conntrack_max`.
+> **Next question:** "With DSR, the backend's source IP is its own, not the VIP - won't the client reject the response?" → No - the backend has the VIP as a loopback alias so it accepts packets addressed to it, and the client tracks the TCP connection by port tuple, not source IP.
+
+### Safe Production Rollout
+
+> 🎯 **Interview Lens**
+> **Q:** How would you roll out a risky backend change to production safely?
+> **Ideal answer:** Canary deploy - route 1-5% of traffic to the new version, monitor error rate and latency, automate ramp-up if metrics stay within SLO. The LB is the control plane; the metrics pipeline is the safety gate.
+> **Common trap:** "Deploy to staging and test" - staging traffic is synthetic, it won't catch issues specific to real user behavior or geography.
+> **Next question:** "How do you ensure the canary gets a representative sample, not just a random 5%?" → Consistent-hash on user ID so the same users consistently land on v2 - avoids a user seeing different behavior request-to-request and makes canary results representative.
+
+### Common Gotchas (rapid-fire)
+
+Statements that sound reasonable but are wrong, or right only in one context:
+
+- **"Sticky sessions are always an anti-pattern"** - wrong for WebSocket/SSE, where the connection itself *is* the session; stickiness there is architecturally required, not a crutch.
+- **"Low DNS TTL means fast failover"** - browsers, JVM `InetAddress` (caches indefinitely by default), OS resolvers, and intermediate caches all ignore TTL independently; expect a 10-20 minute long tail on old IPs regardless of a 30s TTL.
+- **"Adding more backends fixes the performance problem"** - not if the LB itself is the bottleneck (SNAT exhaustion, conntrack limits, SSL CPU). Profile the LB before scaling backends.
+- **"Active-Active HA means zero downtime"** - conntrack state isn't automatically synced between nodes; in-flight connections to a failed node still drop and must be retried client-side.
+- **"mTLS is only for external traffic"** - the actual point of mTLS in zero-trust is east-west traffic; external-only mTLS leaves internal lateral movement wide open.
+
+---
+
+## What the Interviewer Probes For
+
+**"Your system has both gRPC microservices and HTTP/1.1 REST APIs - one LB or two?"** (see [L4 vs L7 Trade-off](#l4-vs-l7-trade-off)) - Probes whether the candidate defaults to operational complexity (two LBs) when a single L7 LB can route by protocol/path instead. Answer: one L7 LB routing on `Content-Type: application/grpc` vs everything else avoids running and coordinating two separate load-balancing tiers.
+
+**"In active-active HA, how does a sticky-session client always hit the same LB?"** (see [Making the LB Itself Highly Available](#making-the-lb-itself-highly-available)) - Probes whether the candidate sees the second-order problem active-active HA creates for stickiness. Answer: either synchronize session state between LB nodes (real complexity), consistent-hash at the DNS/Anycast layer so a client always lands on the same LB, or remove the need entirely by making backends stateless.
+
+**"With DSR, the backend's source IP is its own, not the VIP - won't the client reject the response?"** (see [Diagnosing Silent Connection Failures](#diagnosing-silent-connection-failures)) - Probes whether the candidate actually understands DSR's mechanics or just knows the name. Answer: the backend holds the VIP as a loopback alias so it accepts inbound packets addressed to it, but replies using its own source IP - the client doesn't reject this because it tracks the connection by port tuple, not source IP.
 
 ---
 
@@ -1030,10 +1032,3 @@ Real outages that map directly to the failure modes above. Read these to underst
 - **Ignoring connection drain:** Deploying without drain configuration causes in-flight request failures on every deploy.
 - **Single LB without HA:** The LB itself becomes the SPOF it was meant to eliminate.
 - **Health check endpoint doing too much:** A `/health` endpoint that queries the database causes health check failures to cascade into backend removal storms under DB load.
-
----
-
-Linked Deep-Dive Files:
-
-- load-balancer-consistent-hashing.md
-- load-balancer-interview-scenarios.md

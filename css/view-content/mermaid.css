@@ -46,10 +46,14 @@
 .katex-display:hover .latex-copy-btn {
   opacity: 1;
 }
+.katex-display:hover .katex-toolbar .latex-copy-btn {
+  opacity: 1;
+}
 @media (pointer: coarse) {
   .copy-btn,
   .mermaid-copy-btn,
-  .latex-copy-btn {
+  .latex-copy-btn,
+  .formula-toggle-btn {
     opacity: 1;
   }
 }
@@ -203,7 +207,11 @@
   pointer-events: none;
   transition: opacity var(--t);
 }
-.zoom-overlay.open {
+.zoom-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.zoom-overlay:not(.hidden) {
   opacity: 1;
   pointer-events: auto;
 }
@@ -249,7 +257,7 @@
   transform: scale(0.92);
   transition: transform var(--t);
 }
-.zoom-overlay.open .zoom-overlay-content {
+.zoom-overlay:not(.hidden) .zoom-overlay-content {
   transform: scale(1);
 }
 .zoom-overlay-content img {

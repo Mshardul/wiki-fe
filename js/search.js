@@ -1,8 +1,14 @@
 import { QuizMode } from "./content/tables.js";
-import { createFocusTrap, registerModal } from "./modal-registry.js";
+import {
+  createFocusTrap,
+  markModalClosed,
+  markModalOpened,
+  registerModal,
+} from "./modal-registry.js";
 import { getCurrentRenderGen, navigateToContent } from "./render/content-view.js";
 import { IndexFilter } from "./render/home-index.js";
 import { buildSearchEntriesForWiki } from "./render/home-parse.js";
+import { normalizePath } from "./render/nav-utils.js";
 import { navigate } from "./render/router.js";
 import { showToast } from "./render/toast.js";
 import {
@@ -122,8 +128,11 @@ function _contextWiki() {
   return WIKIS.find((w) => w.id === id) || null;
 }
 
+// Normalizes path here so isRead/markRead/markUnread compare and write the same shape as localStorage keys.
 function _entriesForWiki(wikiId) {
-  return allSearchCache.entries.filter((e) => e.wiki.id === wikiId);
+  return allSearchCache.entries
+    .filter((e) => e.wiki.id === wikiId)
+    .map((e) => ({ ...e, path: normalizePath(e.path) }));
 }
 
 // Fuzzy-matches argText against section headings (same rule as the ">" filter) and returns a preview+run pair for the best match, or null.
@@ -161,10 +170,8 @@ function _resolveSectionArg(argText, markAsRead) {
         () => {
           changed.forEach((e) => setBack(e.path));
           updateReadBtn();
-          if (state.currentWikiId === wiki.id) navigate(wiki.id);
         },
       );
-      if (state.currentWikiId === wiki.id) navigate(wiki.id);
     },
   };
 }
@@ -239,9 +246,7 @@ const SEARCH_COMMANDS = [
       showToast(`Marked ${changed.length} read in ${wiki.title}`, 4000, () => {
         changed.forEach((e) => markUnread(e.path));
         updateReadBtn();
-        if (state.currentWikiId === wiki.id) navigate(wiki.id);
       });
-      if (state.currentWikiId === wiki.id) navigate(wiki.id);
     },
   },
   {
@@ -260,9 +265,7 @@ const SEARCH_COMMANDS = [
       showToast(`Marked ${changed.length} unread in ${wiki.title}`, 4000, () => {
         changed.forEach((e) => markRead(e.path));
         updateReadBtn();
-        if (state.currentWikiId === wiki.id) navigate(wiki.id);
       });
-      if (state.currentWikiId === wiki.id) navigate(wiki.id);
     },
   },
   {
@@ -537,6 +540,7 @@ function _syncSearchViewportHeight() {
 }
 
 function openGlobalSearch(opts = {}) {
+  if (isGlobalSearchOpen()) return;
   _searchOpener = document.activeElement;
   _searchScope = opts.scope || null;
   lockBodyScroll();
@@ -567,10 +571,12 @@ function openGlobalSearch(opts = {}) {
     gSearchResults.innerHTML = '<div class="gsearch-empty">Start typing to search…</div>';
     loadAllSearchEntries();
   }
+  markModalOpened(globalSearchModal);
 }
 
 function closeGlobalSearch() {
   if (gSearchModal.classList.contains("hidden")) return;
+  markModalClosed(globalSearchModal);
   _closeScopeListbox();
   unlockBodyScroll();
   gSearchModal.classList.add("hidden");
@@ -821,7 +827,8 @@ function isGlobalSearchOpen() {
   return !gSearchModal.classList.contains("hidden");
 }
 
-registerModal({ isOpen: isGlobalSearchOpen, close: closeGlobalSearch });
+const globalSearchModal = { isOpen: isGlobalSearchOpen, close: closeGlobalSearch };
+registerModal(globalSearchModal);
 
 export {
   openGlobalSearch,

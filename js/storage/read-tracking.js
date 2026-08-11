@@ -1,4 +1,5 @@
 import { api } from "../api.js";
+import { normalizePath } from "../render/nav-utils.js";
 import { scheduleSyncMutation, state } from "../state.js";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -35,7 +36,9 @@ function markRead(path) {
   document.querySelectorAll(".index-card-read-dot").forEach((dot) => {
     const card = dot.closest(".index-card");
     const timeBadge = card?.querySelector(".index-card-read-time");
-    if (timeBadge?.dataset.path === path) dot.classList.add("visible");
+    if (timeBadge?.dataset.path && normalizePath(timeBadge.dataset.path) === path) {
+      dot.classList.add("visible");
+    }
   });
   return true;
 }
@@ -52,7 +55,9 @@ function markUnread(path) {
   document.querySelectorAll(".index-card-read-dot").forEach((dot) => {
     const card = dot.closest(".index-card");
     const timeBadge = card?.querySelector(".index-card-read-time");
-    if (timeBadge?.dataset.path === path) dot.classList.remove("visible");
+    if (timeBadge?.dataset.path && normalizePath(timeBadge.dataset.path) === path) {
+      dot.classList.remove("visible");
+    }
   });
 }
 

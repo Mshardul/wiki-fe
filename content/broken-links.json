@@ -59,6 +59,24 @@
       "title": "Union-Find (DSU)"
     }
   ],
+  "./content/dsa/paths/cp-weighted.md": [
+    {
+      "target": "./content/dsa/index.md",
+      "title": "CP-weighted"
+    }
+  ],
+  "./content/dsa/paths/senior-depth.md": [
+    {
+      "target": "./content/dsa/index.md",
+      "title": "Senior-depth"
+    }
+  ],
+  "./content/dsa/paths/standard-swe.md": [
+    {
+      "target": "./content/dsa/index.md",
+      "title": "Standard SWE"
+    }
+  ],
   "./content/dsa/patterns/cyclic-sort.md": [
     {
       "target": "./content/dsa/patterns/path.md",
@@ -85,28 +103,32 @@
   ],
   "./content/system-design/components/authentication.md": [
     {
+      "target": "./content/system-design/components/session-auth.md",
+      "title": "Authentication"
+    },
+    {
       "target": "./content/system-design/components/jwt.md",
       "title": "Authentication"
     },
     {
-      "target": "./content/system-design/components/mtls.md",
+      "target": "./content/system-design/components/oauth-oidc.md",
       "title": "Authentication"
-    }
-  ],
-  "./content/system-design/components/load-balancer.md": [
-    {
-      "target": "./content/system-design/components/load-balancer-consistent-hashing.md",
-      "title": "Load Balancer"
     },
     {
-      "target": "./content/system-design/components/load-balancer-interview-scenarios.md",
-      "title": "Load Balancer"
-    }
-  ],
-  "./content/system-design/components/message-queues.md": [
+      "target": "./content/system-design/components/mfa.md",
+      "title": "Authentication"
+    },
     {
-      "target": "./content/system-design/components/message-queues-interview-scenarios.md",
-      "title": "Message Queues"
+      "target": "./content/system-design/components/service-to-service-auth.md",
+      "title": "Authentication"
+    },
+    {
+      "target": "./content/system-design/components/tls.md",
+      "title": "Authentication"
+    },
+    {
+      "target": "./content/system-design/components/http.md",
+      "title": "Authentication"
     }
   ],
   "./content/system-design/components/rate-limiter.md": [

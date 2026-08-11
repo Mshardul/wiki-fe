@@ -185,6 +185,8 @@ function addInlineGlossaryExpand(contentEl) {
         abbr.setAttribute("aria-expanded", String(!open));
         expand.setAttribute("aria-hidden", String(open));
         expand.classList.toggle("glossary-inline-def--open", !open);
+        // Hide immediately — delayed mouseleave hide can leave the popover stacked.
+        if (!open) abbr._glossaryHideNow?.();
       };
 
       abbr.addEventListener("click", (e) => {
@@ -213,6 +215,7 @@ function addGlossaryTerms(contentEl) {
     let hideTimer = null;
 
     const show = (el) => {
+      if (el.getAttribute("aria-expanded") === "true") return;
       clearTimeout(hideTimer);
       const def = glossary[el.textContent.trim().toLowerCase()];
       if (!def) return;
@@ -221,8 +224,13 @@ function addGlossaryTerms(contentEl) {
       pop.classList.add("glossary-popover--visible");
     };
 
+    const hideNow = () => {
+      clearTimeout(hideTimer);
+      pop.classList.remove("glossary-popover--visible");
+    };
+
     const hide = () => {
-      hideTimer = setTimeout(() => pop.classList.remove("glossary-popover--visible"), 120);
+      hideTimer = setTimeout(hideNow, 120);
     };
 
     state.glossaryObserver?.disconnect();
@@ -250,6 +258,7 @@ function addGlossaryTerms(contentEl) {
     matched.forEach((el) => {
       el.classList.add("glossary-term");
       el._glossaryShow = () => show(el);
+      el._glossaryHideNow = hideNow;
       observer.observe(el);
     });
   });

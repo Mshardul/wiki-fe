@@ -16,10 +16,11 @@ def _go_to_article(page, base_url, slug="dsa/array"):
 
 
 def _open_comparator(page):
-    # overflow-toggle is display:none above 900px (responsive.css) - only the
-    # "more actions" trigger is hidden on desktop, items render inline instead.
-    page.set_viewport_size({"width": 390, "height": 844})
-    page.locator('[data-action="overflow-toggle"]').click()
+    page.keyboard.press(",")
+    page.wait_for_function(
+        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    page.locator('[data-action="prefs-tab"][data-tab="actions"]').click()
     page.locator('[data-action="complexity-compare-open"]').click()
     page.wait_for_selector("#compare-modal:not(.hidden)", timeout=3_000)
 
@@ -101,3 +102,22 @@ def test_picker_search_filters_structures(page, base_url):
         arg=total,
         timeout=3_000,
     )
+
+
+def test_comparator_picks_reset_between_sessions(page, base_url):
+    """Reopening the comparator clears prior checkbox selections."""
+    _go_to_article(page, base_url)
+    _open_comparator(page)
+    page.wait_for_function(
+        "() => document.querySelectorAll('#compare-picker-list .compare-picker-item').length > 0",
+        timeout=5_000,
+    )
+    page.locator("#compare-picker-list input[type=checkbox]").first.check()
+    page.locator("#compare-close").click()
+    page.wait_for_selector("#compare-modal.hidden", state="attached", timeout=2_000)
+
+    _open_comparator(page)
+    checked = page.evaluate(
+        "() => document.querySelectorAll('#compare-picker-list input[type=checkbox]:checked').length"
+    )
+    assert checked == 0, f"expected no checked picks after reopen, got {checked}"

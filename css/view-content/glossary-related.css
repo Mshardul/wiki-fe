@@ -24,52 +24,50 @@
   color: var(--text-muted);
 }
 .related-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: var(--s3);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .related-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: var(--s4) var(--s5);
-  cursor: pointer;
-  display: flex;
+  flex-shrink: 0;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s3);
-  transition: border-color var(--t-fast), background var(--t-fast);
+  gap: var(--s2);
+  font-size: var(--text-xs);
+  color: var(--text-body);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  padding: 3px 12px;
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
 }
 .related-card:hover {
+  background: var(--accent-dim);
   border-color: var(--accent);
-  background: var(--surface-2);
+  color: var(--accent-light);
 }
 .related-card-title {
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   font-weight: var(--fw-medium);
-  color: var(--text-heading);
+  color: inherit;
   line-height: 1.35;
-}
-.related-card-arrow {
-  color: var(--text-subtle);
-  font-size: var(--text-base);
-  flex-shrink: 0;
-  transition: color var(--t-fast), transform var(--t-fast);
-}
-.related-card:hover .related-card-arrow {
-  color: var(--accent-light);
-  transform: translateX(3px);
+  white-space: nowrap;
 }
 .related-card-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 .bridge-card-wiki {
-  font-size: var(--text-xs);
+  font-size: 10px;
   color: var(--accent-light);
   font-weight: var(--fw-medium);
+  white-space: nowrap;
 }
 
 /* ═══════════════════════════════════════════════
@@ -296,4 +294,26 @@ abbr.glossary-term {
   font-size: var(--text-lg);
   letter-spacing: 0.1em;
   user-select: none;
+}
+
+.completion-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--s6);
+  padding: var(--s3);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-lg);
+  background: transparent;
+  color: var(--accent-light);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.completion-btn:hover {
+  background: var(--accent-dim);
+}
+.completion-btn--done {
+  border-color: var(--color-success);
+  color: var(--color-success);
 }

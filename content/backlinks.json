@@ -13,6 +13,10 @@
       "title": "Rabin-Karp"
     },
     {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
       "title": "String Algorithm Decision"
     }
@@ -33,12 +37,28 @@
     {
       "path": "./content/dsa/patterns/meet-in-the-middle.md",
       "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     }
   ],
   "./content/dsa/algorithms/bellman-ford.md": [
     {
       "path": "./content/dsa/algorithms/dijkstra.md",
       "title": "Dijkstra"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     },
     {
       "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
@@ -85,6 +105,18 @@
     {
       "path": "./content/dsa/patterns/graph-coloring.md",
       "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
@@ -135,6 +167,14 @@
     {
       "path": "./content/dsa/patterns/meet-in-the-middle.md",
       "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     }
   ],
   "./content/dsa/algorithms/bipartite-matching.md": [
@@ -179,6 +219,10 @@
     {
       "path": "./content/dsa/patterns/bitmask-dp.md",
       "title": "Bitmask DP"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/bit-manipulation-tricks.md",
@@ -259,6 +303,18 @@
       "title": "Graph Coloring"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
       "title": "Graph Algorithms Decision"
     }
@@ -279,6 +335,18 @@
     {
       "path": "./content/dsa/patterns/matrix-traversal.md",
       "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
@@ -363,6 +431,18 @@
       "title": "Meet in the Middle"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/dp-recognition.md",
       "title": "DP Recognition"
     },
@@ -407,11 +487,19 @@
       "title": "String Hashing"
     },
     {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/number-theory-reference.md",
       "title": "Number Theory Reference"
     }
   ],
   "./content/dsa/algorithms/floyd-warshall.md": [
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
     {
       "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
       "title": "Graph Algorithms Decision"
@@ -443,6 +531,10 @@
     {
       "path": "./content/dsa/patterns/binary-search-on-answer.md",
       "title": "Binary Search on Answer"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     },
     {
       "path": "./content/dsa/cheatsheets/greedy-vs-dp-disambiguator.md",
@@ -479,11 +571,31 @@
       "title": "Longest Increasing Subsequence"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
       "path": "./content/dsa/cheatsheets/dp-recognition.md",
       "title": "DP Recognition"
     }
   ],
   "./content/dsa/algorithms/longest-common-subsequence.md": [
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
     {
       "path": "./content/dsa/cheatsheets/dp-recognition.md",
       "title": "DP Recognition"
@@ -495,11 +607,27 @@
       "title": "Longest Common Subsequence"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/dp-recognition.md",
       "title": "DP Recognition"
     }
   ],
   "./content/dsa/algorithms/manacher-algorithm.md": [
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
     {
       "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
       "title": "String Algorithm Decision"
@@ -553,6 +681,14 @@
       "title": "K-Way Merge"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
       "path": "./content/dsa/cheatsheets/sorting-comparison.md",
       "title": "Sorting Comparison"
     }
@@ -561,6 +697,10 @@
     {
       "path": "./content/dsa/algorithms/greedy.md",
       "title": "Greedy"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     },
     {
       "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
@@ -575,6 +715,10 @@
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/number-theory-reference.md",
@@ -599,6 +743,10 @@
       "title": "String Hashing"
     },
     {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/number-theory-reference.md",
       "title": "Number Theory Reference"
     }
@@ -619,6 +767,10 @@
     {
       "path": "./content/dsa/algorithms/sieve-of-eratosthenes.md",
       "title": "Sieve of Eratosthenes"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/number-theory-reference.md",
@@ -657,6 +809,14 @@
       "title": "Heapsort"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
       "path": "./content/dsa/cheatsheets/sorting-comparison.md",
       "title": "Sorting Comparison"
     }
@@ -677,6 +837,10 @@
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
@@ -733,6 +897,18 @@
     {
       "path": "./content/dsa/patterns/interval-dp.md",
       "title": "Interval DP"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     }
   ],
   "./content/dsa/algorithms/selection-sort.md": [
@@ -745,6 +921,10 @@
     {
       "path": "./content/dsa/algorithms/number-theory.md",
       "title": "Number Theory"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/number-theory-reference.md",
@@ -807,6 +987,10 @@
   ],
   "./content/dsa/algorithms/string-hashing.md": [
     {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
       "title": "String Algorithm Decision"
     }
@@ -833,6 +1017,14 @@
       "title": "String Hashing"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
       "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
       "title": "String Algorithm Decision"
     }
@@ -841,6 +1033,10 @@
     {
       "path": "./content/dsa/algorithms/dfs.md",
       "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     },
     {
       "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
@@ -861,6 +1057,18 @@
       "title": "Tree & Graph Traversal"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
       "title": "Graph Algorithms Decision"
     }
@@ -873,6 +1081,10 @@
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
@@ -1075,6 +1287,18 @@
       "title": "Meet in the Middle"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
@@ -1101,11 +1325,19 @@
       "title": "B-Tree"
     },
     {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/b-plus-tree.md": [
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
     {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
@@ -1127,6 +1359,10 @@
     {
       "path": "./content/dsa/data-structures/b-plus-tree.md",
       "title": "B-Plus Tree"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     },
     {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
@@ -1179,6 +1415,14 @@
       "title": "Interval Tree"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
@@ -1215,6 +1459,18 @@
     {
       "path": "./content/dsa/data-structures/interval-tree.md",
       "title": "Interval Tree"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
@@ -1255,11 +1511,27 @@
       "title": "Lowest Common Ancestor (LCA)"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/bloom-filter.md": [
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
     {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
@@ -1287,6 +1559,10 @@
       "title": "Deque"
     },
     {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
@@ -1303,6 +1579,18 @@
     {
       "path": "./content/dsa/patterns/monotonic-queue.md",
       "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
@@ -1363,6 +1651,14 @@
       "title": "Z-Algorithm"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
@@ -1371,6 +1667,14 @@
     {
       "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
       "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
@@ -1419,6 +1723,18 @@
       "title": "Graph Coloring"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
@@ -1439,6 +1755,18 @@
     {
       "path": "./content/dsa/data-structures/bloom-filter.md",
       "title": "Bloom Filter"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     }
   ],
   "./content/dsa/data-structures/hash-table.md": [
@@ -1507,6 +1835,18 @@
       "title": "Frequency Array"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
@@ -1573,6 +1913,18 @@
       "title": "K-Way Merge"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
@@ -1583,11 +1935,23 @@
       "title": "Merge Intervals"
     },
     {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/lfu-cache.md": [
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
     {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
@@ -1647,6 +2011,14 @@
       "title": "In-place Reversal of a Linked List"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
@@ -1659,6 +2031,14 @@
     {
       "path": "./content/dsa/data-structures/lfu-cache.md",
       "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     },
     {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
@@ -1699,6 +2079,18 @@
       "title": "Tree & Graph Traversal"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
@@ -1725,6 +2117,14 @@
       "title": "B-Tree"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
@@ -1745,6 +2145,10 @@
     {
       "path": "./content/dsa/patterns/difference-array.md",
       "title": "Difference Array"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     }
   ],
   "./content/dsa/data-structures/skip-list.md": [
@@ -1759,6 +2163,10 @@
     {
       "path": "./content/dsa/data-structures/b-plus-tree.md",
       "title": "B-Plus Tree"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
@@ -1799,6 +2207,18 @@
       "title": "Tree & Graph Traversal"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
@@ -1833,6 +2253,18 @@
       "title": "String Hashing"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
@@ -1845,6 +2277,10 @@
     {
       "path": "./content/dsa/algorithms/string-hashing.md",
       "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
@@ -1873,14 +2309,68 @@
       "title": "Aho-Corasick"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
     }
   ],
   "./content/dsa/data-structures/union-find.md": [
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/data-structure-selection.md",
       "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/paths/cp-weighted.md": [
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    }
+  ],
+  "./content/dsa/paths/senior-depth.md": [
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    }
+  ],
+  "./content/dsa/paths/standard-swe.md": [
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     }
   ],
   "./content/dsa/patterns/backtracking.md": [
@@ -1941,6 +2431,14 @@
     {
       "path": "./content/dsa/patterns/meet-in-the-middle.md",
       "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     }
   ],
   "./content/dsa/patterns/bitmask-dp.md": [
@@ -1963,6 +2461,14 @@
     {
       "path": "./content/dsa/patterns/meet-in-the-middle.md",
       "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/dp-recognition.md",
@@ -1991,6 +2497,10 @@
     {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
       "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     }
   ],
   "./content/dsa/patterns/dp-patterns.md": [
@@ -2031,6 +2541,18 @@
       "title": "Bitmask DP"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/dp-recognition.md",
       "title": "DP Recognition"
     }
@@ -2055,6 +2577,14 @@
     {
       "path": "./content/dsa/patterns/in-place-reversal.md",
       "title": "In-place Reversal of a Linked List"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     }
   ],
   "./content/dsa/patterns/frequency-array.md": [
@@ -2065,6 +2595,14 @@
     {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
       "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     }
   ],
   "./content/dsa/patterns/graph-coloring.md": [
@@ -2085,6 +2623,14 @@
     {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
       "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     }
   ],
   "./content/dsa/patterns/interval-dp.md": [
@@ -2095,6 +2641,14 @@
     {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
       "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     },
     {
       "path": "./content/dsa/cheatsheets/dp-recognition.md",
@@ -2135,6 +2689,10 @@
       "title": "Pattern Selection Cheat Sheet"
     },
     {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
       "title": "Input Size → Complexity Lookup"
     }
@@ -2151,6 +2709,10 @@
     {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
       "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     }
   ],
   "./content/dsa/patterns/modified-binary-search.md": [
@@ -2161,6 +2723,14 @@
     {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
       "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     }
   ],
   "./content/dsa/patterns/monotonic-queue.md": [
@@ -2175,6 +2745,10 @@
     {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
       "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     }
   ],
   "./content/dsa/patterns/monotonic-stack.md": [
@@ -2197,6 +2771,18 @@
     {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
       "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     }
   ],
   "./content/dsa/patterns/prefix-sum.md": [
@@ -2249,6 +2835,18 @@
       "title": "Frequency Array"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/two-pointers-vs-window-vs-prefix-sum.md",
       "title": "Two Pointers vs Sliding Window vs Prefix Sum"
     }
@@ -2295,6 +2893,14 @@
       "title": "Frequency Array"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
       "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
       "title": "Input Size → Complexity Lookup"
     },
@@ -2307,6 +2913,10 @@
     {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
       "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     },
     {
       "path": "./content/dsa/cheatsheets/dp-recognition.md",
@@ -2339,6 +2949,18 @@
       "title": "Meet in the Middle"
     },
     {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
       "path": "./content/dsa/cheatsheets/backtracking-shapes.md",
       "title": "Backtracking Shapes"
     }
@@ -2359,6 +2981,14 @@
     {
       "path": "./content/dsa/patterns/k-way-merge.md",
       "title": "K-Way Merge"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     }
   ],
   "./content/dsa/patterns/tree-graph-traversal.md": [
@@ -2397,6 +3027,14 @@
     {
       "path": "./content/dsa/patterns/graph-coloring.md",
       "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     }
   ],
   "./content/dsa/patterns/two-heaps.md": [
@@ -2415,6 +3053,18 @@
     {
       "path": "./content/dsa/patterns/in-place-reversal.md",
       "title": "In-place Reversal of a Linked List"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
     }
   ],
   "./content/dsa/patterns/two-pointers.md": [
@@ -2469,6 +3119,14 @@
     {
       "path": "./content/dsa/patterns/meet-in-the-middle.md",
       "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
     },
     {
       "path": "./content/dsa/cheatsheets/two-pointers-vs-window-vs-prefix-sum.md",
@@ -2571,6 +3229,10 @@
     {
       "path": "./content/system-design/components/rate-limiter.md",
       "title": "Rate Limiter"
+    },
+    {
+      "path": "./content/system-design/algorithms/consistent-hashing.md",
+      "title": "Consistent Hashing"
     }
   ],
   "./content/system-design/components/message-queues.md": [

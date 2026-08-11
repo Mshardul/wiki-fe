@@ -32,18 +32,37 @@ function getFocusableIn(containerEl) {
 }
 
 const _modals = [];
+const _openStack = [];
 
 // Registers a modal's { isOpen, close } so shared consumers (Escape chain, isAnyModalOpen) route through one list instead of naming each modal.
 function registerModal(entry) {
   _modals.push(entry);
 }
 
+function markModalOpened(entry) {
+  const idx = _openStack.indexOf(entry);
+  if (idx >= 0) _openStack.splice(idx, 1);
+  _openStack.push(entry);
+}
+
+function markModalClosed(entry) {
+  const idx = _openStack.indexOf(entry);
+  if (idx >= 0) _openStack.splice(idx, 1);
+}
+
 function isAnyModalOpen() {
   return _modals.some((m) => m.isOpen());
 }
 
-// Closes the topmost open modal (registration order); returns true if one closed.
+// Closes the most recently opened registered modal; returns true if one closed.
 function closeTopModal() {
+  for (let i = _openStack.length - 1; i >= 0; i--) {
+    const m = _openStack[i];
+    if (m.isOpen()) {
+      m.close();
+      return true;
+    }
+  }
   for (const m of _modals) {
     if (m.isOpen()) {
       m.close();
@@ -53,4 +72,12 @@ function closeTopModal() {
   return false;
 }
 
-export { createFocusTrap, getFocusableIn, registerModal, isAnyModalOpen, closeTopModal };
+export {
+  createFocusTrap,
+  getFocusableIn,
+  registerModal,
+  markModalOpened,
+  markModalClosed,
+  isAnyModalOpen,
+  closeTopModal,
+};

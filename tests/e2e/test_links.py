@@ -217,12 +217,9 @@ def test_recommended_section_feeds_related_panel(page, base_url):
     assert "Target One" in page.locator("#topbar-title").inner_text()
 
 
-def test_related_grid_narrower_min_column_on_mobile(page, base_url):
-    """Regression for WIKI-389: .related-grid used minmax(220px, 1fr), which
-    rendered a single (oversized) column on 390px mobile screens. Under
-    max-width: 640px the min column width drops to 160px so a 2-column
-    layout fits."""
-    page.set_viewport_size({"width": 390, "height": 844})
+def test_related_strip_scrolls_horizontally_not_grid(page, base_url):
+    """Related / Mentioned-by strips use a nowrap flex row with overflow-x scroll
+    (shared pill-chip language with Prerequisites), not a wrapping CSS grid."""
     _load_mock_article(
         page,
         base_url,
@@ -230,26 +227,36 @@ def test_related_grid_narrower_min_column_on_mobile(page, base_url):
         "Some intro text.\n\n"
         "## Recommended\n\n"
         "- [Target One](target-one.md)\n"
-        "- [Target Two](target-two.md)\n",
-        slug="rec-source-mobile",
+        "- [Target Two](target-two.md)\n"
+        "- [Target Three](target-three.md)\n"
+        "- [Target Four](target-four.md)\n",
+        slug="rec-source-scroll",
         extra_routes=[
             ("**/target-one.md", lambda r: r.fulfill(body="# Target One\n\nBody.")),
             ("**/target-two.md", lambda r: r.fulfill(body="# Target Two\n\nBody.")),
+            ("**/target-three.md", lambda r: r.fulfill(body="# Target Three\n\nBody.")),
+            ("**/target-four.md", lambda r: r.fulfill(body="# Target Four\n\nBody.")),
         ],
     )
     page.wait_for_selector("#related-articles .related-card", timeout=5_000)
 
-    min_col = page.evaluate("""() => {
+    style = page.evaluate("""() => {
         const grid = document.querySelector('.related-grid');
-        return getComputedStyle(grid).gridTemplateColumns;
+        const s = getComputedStyle(grid);
+        return {
+            display: s.display,
+            flexWrap: s.flexWrap,
+            overflowX: s.overflowX,
+            gridTemplateColumns: s.gridTemplateColumns,
+        };
     }""")
-    # computed value resolves to concrete pixel tracks; each should be >= ~160px
-    # and well under the old 220px floor for a 390px viewport to fit 2 columns.
-    widths = [float(w.replace("px", "")) for w in min_col.split()]
-    assert len(widths) >= 2, f"Expected at least 2 grid columns, got: {min_col}"
-    assert all(w < 220 for w in widths), (
-        f"Expected narrower columns than the old 220px floor, got: {min_col}"
+    assert style["display"] == "flex", f"expected flex strip, got: {style}"
+    assert style["flexWrap"] == "nowrap", f"expected nowrap, got: {style}"
+    assert style["overflowX"] in ("auto", "scroll"), f"expected overflow-x scroll, got: {style}"
+    assert style["gridTemplateColumns"] in ("none", ""), (
+        f"expected no grid tracks, got: {style}"
     )
+    assert page.locator("#related-articles .related-card").count() == 4
 
 
 def test_article_without_recommended_section_uses_auto_related(page, base_url):

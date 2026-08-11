@@ -278,3 +278,45 @@ def test_notes_fills_remaining_space_when_toc_is_short(page, base_url):
     }""")
     assert metrics["navFitsContent"], "Short TOC should not be stretched to fill unused rail space"
     assert metrics["notesHeight"] > 80, "Notes should expand into the space the short TOC left unused"
+
+
+def test_empty_heading_id_gets_stable_id_for_toc_sync(page, base_url):
+    """Headings that arrive without an id still sync TOC chevron ↔ content collapse."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
+    content = "# Empty Id\n\n<h2>Raw heading without id</h2>\n\nBody under heading.\n"
+    page.route("**/empty-id-sync.md", lambda r: r.fulfill(body=content))
+    page.evaluate("""() => navigateToContent(
+        'system-design',
+        encodeURIComponent('../content/system-design/empty-id-sync.md'),
+        encodeURIComponent('Empty Id'),
+        'empty-id-sync'
+    )""")
+    page.wait_for_selector("#markdown-body[data-render-done]", timeout=8_000)
+    page.wait_for_selector(".toc-group-chevron", timeout=5_000)
+
+    ids = page.evaluate("""() => {
+        const h2 = [...document.querySelectorAll('#markdown-body h2')]
+            .find(h => h.textContent.includes('Raw heading'));
+        const group = document.querySelector(`.toc-h2-group[data-h2-id="${h2?.id}"]`);
+        return {
+            h2Id: h2?.id || '',
+            sectionId: h2?.dataset.sectionId || '',
+            hasGroup: !!group,
+        };
+    }""")
+    assert ids["h2Id"], f"expected stable id assigned to raw h2, got {ids!r}"
+    assert ids["h2Id"] == ids["sectionId"], f"sectionId must match id, got {ids!r}"
+    assert ids["hasGroup"], f"TOC group missing for assigned id, got {ids!r}"
+
+    page.locator(f'.toc-h2-group[data-h2-id="{ids["h2Id"]}"] .toc-group-chevron').click()
+    synced = page.evaluate(
+        """(id) => {
+            const h2 = document.querySelector(`#markdown-body h2[data-section-id="${id}"]`);
+            return !!(h2 && h2.classList.contains('section--collapsed'));
+        }""",
+        ids["h2Id"],
+    )
+    assert synced, "TOC chevron must collapse the matching content h2"

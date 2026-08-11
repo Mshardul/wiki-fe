@@ -6,7 +6,7 @@ function getZoomOverlay() {
   if (!overlay) {
     overlay = document.createElement("div");
     overlay.id = "zoom-overlay";
-    overlay.className = "zoom-overlay";
+    overlay.className = "zoom-overlay hidden";
     overlay.setAttribute("role", "dialog");
     overlay.setAttribute("aria-label", "Zoomed view");
     overlay.innerHTML = `
@@ -126,6 +126,17 @@ function bindZoomGestures(overlay) {
     (e) => {
       if (scale <= 1.02 && scale !== 1) reset();
 
+      // Remaining finger after pinch must not inherit swipe-dismiss coords from the pinch.
+      if (pinchOccurred && e.touches.length === 1) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        startTx = tx;
+        startTy = ty;
+        singleTouchStart = false;
+        panning = scale > 1;
+        return;
+      }
+
       if (e.changedTouches.length === 1 && !panning) {
         const now = Date.now();
         if (now - lastTap < 300) {
@@ -162,7 +173,7 @@ function bindZoomGestures(overlay) {
 
 function closeZoomOverlay() {
   const overlay = document.getElementById("zoom-overlay");
-  overlay?.classList.remove("open");
+  overlay?.classList.add("hidden");
   overlay?._resetZoom?.();
 }
 
@@ -186,7 +197,7 @@ function openZoomOverlay(node, caption = "") {
     cap.hidden = true;
   }
 
-  overlay.classList.add("open");
+  overlay.classList.remove("hidden");
 }
 
 /* ═══════════════════════════════════════════════════════════════

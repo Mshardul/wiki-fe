@@ -47,18 +47,27 @@ function onNodeClick(node) {
   );
 }
 
+let _opening = false;
+
 async function openLinkGraph() {
-  const modal = document.getElementById("link-graph-modal");
-  const canvas = document.getElementById("link-graph-canvas");
-  const status = document.getElementById("link-graph-status");
-  modal.classList.remove("hidden");
-  modal.setAttribute("aria-hidden", "false");
-  status.textContent = "Loading graph…";
+  if (isLinkGraphOpen() || _opening) return;
 
-  const { nodes, edges } = await buildGraph();
-  status.textContent = `${nodes.length} articles · ${edges.length} links`;
+  _opening = true;
+  try {
+    const modal = document.getElementById("link-graph-modal");
+    const canvas = document.getElementById("link-graph-canvas");
+    const status = document.getElementById("link-graph-status");
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    status.textContent = "Loading graph…";
 
-  _sim = createGraphSim(canvas, nodes, edges, { onNodeClick, colorForNode });
+    const { nodes, edges } = await buildGraph();
+    status.textContent = `${nodes.length} articles · ${edges.length} links`;
+
+    _sim = createGraphSim(canvas, nodes, edges, { onNodeClick, colorForNode });
+  } finally {
+    _opening = false;
+  }
 }
 
 function closeLinkGraph() {

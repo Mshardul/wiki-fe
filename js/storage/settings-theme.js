@@ -1,5 +1,11 @@
 import { api } from "../api.js";
-import { createFocusTrap, registerModal } from "../modal-registry.js";
+import {
+  createFocusTrap,
+  markModalClosed,
+  markModalOpened,
+  registerModal,
+} from "../modal-registry.js";
+import { normalizePath } from "../render/nav-utils.js";
 import { WIKIS, escHtml, lockBodyScroll, state, unlockBodyScroll } from "../state.js";
 import {
   BOOKMARKS_KEY,
@@ -368,6 +374,11 @@ const Settings = {
   _shortcutsCache: null,
 
   open(tab = "general") {
+    if (this.isOpen()) {
+      this._switchTab(tab);
+      this._render();
+      return;
+    }
     loadAllFonts(); // user may pick any font here - make all previews available
     this._lastFocus = document.activeElement;
     lockBodyScroll();
@@ -382,6 +393,7 @@ const Settings = {
 
     this._focusTrapHandler = createFocusTrap(modal, () => this._getFocusable());
     modal.addEventListener("keydown", this._focusTrapHandler);
+    markModalOpened(settingsModal);
   },
 
   openTab(name) {
@@ -394,6 +406,7 @@ const Settings = {
 
   close() {
     if (!this.isOpen()) return;
+    markModalClosed(settingsModal);
     unlockBodyScroll();
     const modal = document.getElementById("prefs-modal");
     if (this._focusTrapHandler) {
@@ -818,6 +831,13 @@ const Settings = {
    ═══════════════════════════════════════════════════════════════ */
 window.addEventListener("storage", (e) => {
   if (!e.key) return;
+
+  // Settings/theme are global (apply on every view, home included) - not gated by currentWikiId like the per-wiki branches below.
+  if (e.key === SETTINGS_KEY) {
+    applySettingsToDOM(getSettings());
+    return;
+  }
+
   const wiki = WIKIS.find((w) => w.id === state.currentWikiId);
   if (!wiki) return;
 
@@ -831,7 +851,7 @@ window.addEventListener("storage", (e) => {
       const card = dot.closest(".index-card");
       const timeBadge = card?.querySelector(".index-card-read-time");
       if (timeBadge?.dataset.path) {
-        dot.classList.toggle("visible", isRead(timeBadge.dataset.path));
+        dot.classList.toggle("visible", isRead(normalizePath(timeBadge.dataset.path)));
       }
     });
     updateReadBtn();
@@ -910,6 +930,7 @@ const Sync = {
   },
 };
 
-registerModal({ isOpen: () => Settings.isOpen(), close: () => Settings.close() });
+const settingsModal = { isOpen: () => Settings.isOpen(), close: () => Settings.close() };
+registerModal(settingsModal);
 
 export { getSettings, applySettingsToDOM, initOsThemeListener, Settings, Sync };

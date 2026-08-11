@@ -137,6 +137,18 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 
 ---
 
+## Learning Paths
+
+Structured week-by-week sequences through the vertical - pick one, work it in order, track completion per article.
+
+| Path                                                      | Description                                                                                          |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| [Standard SWE](./paths/standard-swe.md)                     | FAANG-style interview bar. Core DS, interview patterns, and the algorithms a standard loop probes. ~14-16 weeks. |
+| [Senior-depth](./paths/senior-depth.md)                     | Superset of Standard SWE - full balanced-tree internals, disk-oriented structures, network flow, harder DP. ~18-20 weeks. |
+| [CP-weighted](./paths/cp-weighted.md)                       | Competitive-programming leaning - number theory, range structures, string algorithms, combinatorial search. ~14-16 weeks. |
+
+---
+
 ## Cheatsheets
 
 Cross-cutting decision/comparison sheets - table-only, no code. Each answers one decision spanning as many topics as it genuinely needs (not forced per-topic). Format rules: `docs/_meta/ai-instructions/dsa-cheatsheets.md`.

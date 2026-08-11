@@ -20,19 +20,21 @@
 /* Callout variants */
 .markdown-body blockquote.callout {
   border-radius: var(--r);
-  padding: var(--s4) var(--s5) var(--s4) var(--s8);
+  padding: var(--s4) var(--s5);
   border: 1px solid;
   border-left-width: 3px;
   backdrop-filter: var(--glass-blur-sm);
   -webkit-backdrop-filter: var(--glass-blur-sm);
-  position: relative;
 }
-.markdown-body blockquote.callout::before {
-  position: absolute;
-  left: var(--s3);
-  top: var(--s4);
+.markdown-body blockquote.callout .callout-first-line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+}
+.markdown-body blockquote.callout .callout-icon {
+  flex-shrink: 0;
   font-size: var(--text-sm);
-  line-height: 1;
+  line-height: inherit;
 }
 .markdown-body blockquote.callout-interview {
   border-color: var(--callout-interview-border);
@@ -40,17 +42,11 @@
   background: rgba(99, 102, 241, 0.08);
   color: var(--text-body);
 }
-.markdown-body blockquote.callout-interview::before {
-  content: "💡";
-}
 .markdown-body blockquote.callout-warning {
   border-color: var(--callout-warning-border);
   border-left-width: 3px;
   background: rgba(245, 158, 11, 0.08);
   color: var(--text-body);
-}
-.markdown-body blockquote.callout-warning::before {
-  content: "⚠️";
 }
 .markdown-body blockquote.callout-thought {
   border-color: var(--callout-thought-border);
@@ -58,17 +54,11 @@
   background: rgba(168, 85, 247, 0.08);
   color: var(--text-body);
 }
-.markdown-body blockquote.callout-thought::before {
-  content: "🤔";
-}
 .markdown-body blockquote.callout-decision {
   border-color: var(--callout-decision-border);
   border-left-width: 3px;
   background: rgba(16, 185, 129, 0.08);
   color: var(--text-body);
-}
-.markdown-body blockquote.callout-decision::before {
-  content: "✅";
 }
 
 /* ═══════════════════════════════════════════════
@@ -80,7 +70,13 @@
   gap: var(--s3);
   margin-bottom: var(--s6);
   margin-top: calc(var(--s4) * -1);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.prereqs-label,
+.prereq-chip {
+  flex-shrink: 0;
 }
 .prereqs-label {
   font-size: var(--text-xs);

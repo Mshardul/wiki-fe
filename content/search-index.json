@@ -91,7 +91,7 @@
           "title": "Authentication",
           "path": "./content/system-design/components/authentication.md",
           "slug": "authentication",
-          "description": "Session vs token auth, OAuth, OIDC, MFA, service-to-service"
+          "description": "Hub: AuthN vs AuthZ, stateful vs stateless, which mechanism to use"
         }
       ]
     },
@@ -881,6 +881,29 @@
           "path": "./content/dsa/patterns/top-k-elements.md",
           "slug": "top-k-elements",
           "description": "A size-k heap over a stream. K largest/smallest/most-frequent in O(n log k) without sorting everything."
+        }
+      ]
+    },
+    {
+      "heading": "Learning Paths",
+      "cards": [
+        {
+          "title": "Standard SWE",
+          "path": "./content/dsa/paths/standard-swe.md",
+          "slug": "standard-swe",
+          "description": "FAANG-style interview bar. Core DS, interview patterns, and the algorithms a standard loop probes. ~14-16 weeks."
+        },
+        {
+          "title": "Senior-depth",
+          "path": "./content/dsa/paths/senior-depth.md",
+          "slug": "senior-depth",
+          "description": "Superset of Standard SWE - full balanced-tree internals, disk-oriented structures, network flow, harder DP. ~18-20 weeks."
+        },
+        {
+          "title": "CP-weighted",
+          "path": "./content/dsa/paths/cp-weighted.md",
+          "slug": "cp-weighted",
+          "description": "Competitive-programming leaning - number theory, range structures, string algorithms, combinatorial search. ~14-16 weeks."
         }
       ]
     },

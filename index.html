@@ -300,113 +300,6 @@
           ></nav>
           <div id="topbar-title" class="topbar-title"></div>
           <span id="content-read-time" class="read-time-badge"></span>
-          <div class="topbar-overflow">
-            <button
-              class="topbar-icon-btn"
-              id="content-overflow-btn"
-              title="More actions"
-              aria-label="More actions"
-              aria-haspopup="true"
-              aria-expanded="false"
-              data-action="overflow-toggle"
-            >
-              <svg class="icon"><use href="#icon-dots-vertical"></use></svg>
-            </button>
-            <div class="topbar-overflow-menu" id="content-overflow-menu">
-              <button
-                id="content-quiz-btn"
-                class="topbar-overflow-item"
-                title="Quiz mode"
-                aria-label="Quiz mode"
-                data-action="quiz-toggle"
-              >
-                <svg class="icon"><use href="#icon-help"></use></svg>
-                <span>Quiz mode</span>
-              </button>
-              <button
-                id="content-study-btn"
-                class="topbar-overflow-item"
-                title="Study mode"
-                aria-label="Study mode"
-                data-action="study-toggle"
-              >
-                <svg class="icon"><use href="#icon-book"></use></svg>
-                <span>Study mode (H)</span>
-              </button>
-              <button
-                class="topbar-overflow-item"
-                title="Distraction-free mode"
-                aria-label="Distraction-free mode"
-                data-action="distraction-free-toggle"
-              >
-                <svg class="icon"><use href="#icon-focus"></use></svg>
-                <span>Distraction-free (D)</span>
-              </button>
-              <button
-                class="topbar-overflow-item"
-                title="Switch wiki"
-                aria-label="Switch wiki"
-                data-action="wiki-switcher-open"
-              >
-                <svg class="icon"><use href="#icon-sitemap"></use></svg>
-                <span>Switch wiki (W)</span>
-              </button>
-              <button
-                class="topbar-overflow-item"
-                title="Link graph"
-                aria-label="Link graph"
-                data-action="link-graph-open"
-              >
-                <svg class="icon"><use href="#icon-affiliate"></use></svg>
-                <span>Link graph (G)</span>
-              </button>
-              <button
-                class="topbar-overflow-item"
-                title="Compare complexity"
-                aria-label="Compare complexity"
-                data-action="complexity-compare-open"
-              >
-                <svg class="icon"><use href="#icon-arrows-diff"></use></svg>
-                <span>Compare complexity</span>
-              </button>
-              <button
-                class="topbar-overflow-item"
-                title="Section map"
-                aria-label="Section map"
-                data-action="section-map-toggle"
-              >
-                <svg class="icon"><use href="#icon-map-2"></use></svg>
-                <span>Section map (Shift+G)</span>
-              </button>
-              <button
-                class="topbar-overflow-item"
-                title="All bookmarks"
-                aria-label="All bookmarks"
-                data-action="bookmarks-modal-open"
-              >
-                <svg class="icon"><use href="#icon-bookmark"></use></svg>
-                <span>All bookmarks (⌘B)</span>
-              </button>
-              <button
-                class="topbar-overflow-item"
-                data-action="copy-markdown"
-                title="Copy raw markdown"
-                aria-label="Copy raw markdown"
-              >
-                <svg class="icon"><use href="#icon-file-text"></use></svg>
-                <span>Copy raw markdown</span>
-              </button>
-              <button
-                class="topbar-overflow-item"
-                data-action="find-open"
-                title="Find in article"
-                aria-label="Find in article"
-              >
-                <svg class="icon"><use href="#icon-zoom-search"></use></svg>
-                <span>Find in article (/)</span>
-              </button>
-            </div>
-          </div>
           <button
             class="topbar-icon-btn"
             title="Search (⌘K)"
@@ -528,7 +421,7 @@
       >
         <svg class="icon"><use href="#icon-menu"></use></svg>
       </button>
-      <div id="toc-mobile-overlay" class="toc-mobile-overlay"></div>
+      <div id="toc-mobile-overlay" class="toc-mobile-overlay hidden"></div>
     </div>
 
     <!-- ══════════════════════════════════════
@@ -746,6 +639,16 @@
             class="prefs-tab"
             role="tab"
             aria-selected="false"
+            aria-controls="prefs-panel-actions"
+            data-action="prefs-tab"
+            data-tab="actions"
+          >
+            Actions
+          </button>
+          <button
+            class="prefs-tab"
+            role="tab"
+            aria-selected="false"
             aria-controls="prefs-panel-keyboard"
             data-action="prefs-tab"
             data-tab="keyboard"
@@ -798,6 +701,10 @@
                   <div class="prefs-section-label">Accent</div>
                   <div id="settings-accents" class="settings-accent-row"></div>
                 </div>
+                <div class="prefs-section">
+                  <div class="prefs-section-label">Width</div>
+                  <div id="settings-widths" class="settings-size-row"></div>
+                </div>
               </div>
               <div class="prefs-col">
                 <div class="prefs-section">
@@ -807,10 +714,6 @@
                 <div class="prefs-section">
                   <div class="prefs-section-label">Size</div>
                   <div id="settings-sizes" class="settings-size-row"></div>
-                </div>
-                <div class="prefs-section">
-                  <div class="prefs-section-label">Width</div>
-                  <div id="settings-widths" class="settings-size-row"></div>
                 </div>
                 <div class="prefs-section">
                   <div class="prefs-section-label">Line Height</div>
@@ -827,6 +730,114 @@
                   ></div>
                 </div>
               </div>
+            </div>
+          </div>
+          <div
+            class="prefs-panel"
+            id="prefs-panel-actions"
+            role="tabpanel"
+            aria-hidden="true"
+          >
+            <div class="prefs-actions-list">
+              <button
+                id="content-quiz-btn"
+                class="prefs-action-row"
+                data-action="quiz-toggle"
+                title="Quiz mode"
+                aria-label="Quiz mode"
+              >
+                <svg class="icon"><use href="#icon-help"></use></svg>
+                <span class="prefs-action-label">Quiz mode</span>
+                <span class="prefs-action-shortcut">Q</span>
+              </button>
+              <button
+                class="prefs-action-row"
+                data-action="study-toggle"
+                title="Study mode"
+                aria-label="Study mode"
+              >
+                <svg class="icon"><use href="#icon-book"></use></svg>
+                <span class="prefs-action-label">Study mode</span>
+                <span class="prefs-action-shortcut">H</span>
+              </button>
+              <button
+                class="prefs-action-row"
+                data-action="distraction-free-toggle"
+                title="Distraction-free mode"
+                aria-label="Distraction-free mode"
+              >
+                <svg class="icon"><use href="#icon-focus"></use></svg>
+                <span class="prefs-action-label">Distraction-free</span>
+                <span class="prefs-action-shortcut">D</span>
+              </button>
+              <button
+                class="prefs-action-row"
+                data-action="section-map-toggle"
+                title="Section map"
+                aria-label="Section map"
+              >
+                <svg class="icon"><use href="#icon-map-2"></use></svg>
+                <span class="prefs-action-label">Section map</span>
+                <span class="prefs-action-shortcut">Shift+G</span>
+              </button>
+              <button
+                class="prefs-action-row"
+                data-action="complexity-compare-open"
+                title="Compare complexity"
+                aria-label="Compare complexity"
+              >
+                <svg class="icon"><use href="#icon-arrows-diff"></use></svg>
+                <span class="prefs-action-label">Compare complexity</span>
+              </button>
+              <button
+                class="prefs-action-row"
+                data-action="link-graph-open"
+                title="Link graph"
+                aria-label="Link graph"
+              >
+                <svg class="icon"><use href="#icon-affiliate"></use></svg>
+                <span class="prefs-action-label">Link graph</span>
+                <span class="prefs-action-shortcut">G</span>
+              </button>
+              <button
+                class="prefs-action-row"
+                data-action="wiki-switcher-open"
+                title="Switch wiki"
+                aria-label="Switch wiki"
+              >
+                <svg class="icon"><use href="#icon-sitemap"></use></svg>
+                <span class="prefs-action-label">Switch wiki</span>
+                <span class="prefs-action-shortcut">W</span>
+              </button>
+              <button
+                class="prefs-action-row"
+                data-action="copy-markdown"
+                title="Copy raw markdown"
+                aria-label="Copy raw markdown"
+              >
+                <svg class="icon"><use href="#icon-file-text"></use></svg>
+                <span class="prefs-action-label">Copy raw markdown</span>
+              </button>
+              <button
+                class="prefs-action-row"
+                data-action="find-open"
+                title="Find in article"
+                aria-label="Find in article"
+              >
+                <svg class="icon"><use href="#icon-zoom-search"></use></svg>
+                <span class="prefs-action-label">Find in article</span>
+                <span class="prefs-action-shortcut">/</span>
+              </button>
+              <button
+                class="prefs-action-row"
+                data-action="bookmarks-modal-open"
+                title="All bookmarks"
+                aria-label="All bookmarks"
+              >
+                <svg class="icon"><use href="#icon-bookmark"></use></svg>
+                <span class="prefs-action-label">All bookmarks</span>
+                <span class="prefs-action-shortcut">⌘B</span>
+              </button>
             </div>
           </div>
           <div
@@ -1365,7 +1376,7 @@
   ══════════════════════════════════════ -->
     <div
       id="section-map-overlay"
-      class="section-map-overlay"
+      class="section-map-overlay hidden"
       role="dialog"
       aria-modal="true"
       aria-label="Section map"

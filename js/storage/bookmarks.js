@@ -37,14 +37,15 @@ function saveBookmarks(arr) {
   localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(arr));
 }
 
-function isBookmarked(path) {
-  return getBookmarks().some((b) => b.path === path);
+function isBookmarked(wikiId, path) {
+  const id = wikiId || state.currentWikiId;
+  return getBookmarks().some((b) => b.wikiId === id && b.path === path);
 }
 
 function updateBookmarkBtn() {
   const btn = document.getElementById("prefs-bookmark-toggle");
   if (!btn) return;
-  const bookmarked = isBookmarked(state.currentFilePath);
+  const bookmarked = isBookmarked(state.currentWikiId, state.currentFilePath);
   btn.classList.toggle("active", bookmarked);
   btn.setAttribute("aria-pressed", String(bookmarked));
   btn.title = bookmarked ? "Remove bookmark" : "Bookmark";
@@ -101,7 +102,7 @@ const Bookmarks = {
   togglePath(wikiId, path, title) {
     if (!path) return false;
     const bookmarks = getBookmarks();
-    const idx = bookmarks.findIndex((b) => b.path === path);
+    const idx = bookmarks.findIndex((b) => b.wikiId === wikiId && b.path === path);
     let bookmarked;
     if (idx >= 0) {
       bookmarks.splice(idx, 1);

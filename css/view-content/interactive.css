@@ -281,8 +281,8 @@ body.sticky-header-visible .article-find {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border: 1px solid var(--glass-border);
   border-radius: var(--r-xs);
   background: var(--glass-bg);
@@ -298,8 +298,8 @@ body.sticky-header-visible .article-find {
   color: var(--accent);
 }
 .heading-collapse-btn svg {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   transition: transform var(--t-fast);
 }
 .markdown-body h2.section--collapsed .heading-collapse-btn svg {
@@ -359,9 +359,6 @@ body.sticky-header-visible .article-find {
    FORMULA VARIABLE-SUBSTITUTION TOGGLE
    ═══════════════════════════════════════════════ */
 .formula-toggle-btn {
-  position: absolute;
-  top: var(--s2);
-  right: var(--s2);
   width: 24px;
   height: 24px;
   display: flex;
@@ -377,6 +374,24 @@ body.sticky-header-visible .article-find {
   opacity: 0;
   transition: opacity var(--t-fast), color var(--t-fast), border-color var(--t-fast), background
     var(--t-fast);
+}
+.katex-toolbar {
+  position: absolute;
+  top: var(--s2);
+  right: var(--s2);
+  display: flex;
+  gap: var(--s2);
+  z-index: 1;
+}
+.katex-toolbar .latex-copy-btn {
+  position: static;
+  bottom: auto;
+  right: auto;
+  opacity: 0;
+}
+.katex-display:hover .katex-toolbar .formula-toggle-btn,
+.katex-display:hover .katex-toolbar .latex-copy-btn {
+  opacity: 1;
 }
 .katex-display:hover .formula-toggle-btn {
   opacity: 1;

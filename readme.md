@@ -88,7 +88,7 @@ Format conventions shared by both verticals:
 
 ## System Design
 
-The original vertical. Articles split across `components/`, `algorithms/`, `distributed-systems/`, and `hld/` (high-level designs). Writing rules: read `docs/_meta/ai-instructions/_base.md` first, then the file matching the article type. DevOps cheatsheets are self-contained and skip `_base.md`.
+The original vertical. Articles split across `components/`, `algorithms/`, `distributed-systems/`, and `hld/` (high-level designs). Writing rules: `docs/_meta/ai-instructions/sd-writer.md`. Rating / publish-gate: `docs/_meta/ai-instructions/sd-rater.md`.
 
 ---
 

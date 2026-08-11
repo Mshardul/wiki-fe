@@ -27,15 +27,20 @@ function initInstallPrompt() {
       8000,
       promptInstall,
       "Install",
+      null,
+      -1,
     );
   });
 
   if (_isIos() && !isIosNudgeDismissed()) {
+    // Low priority: this nudge is informational, not time-sensitive - a SW-update or session toast queued shortly after should overtake it rather than wait out its full 8s.
     showToast(
       "Add to Home Screen: tap Share, then “Add to Home Screen”.",
       8000,
       dismissIosNudge,
       "Got it",
+      null,
+      -1,
     );
   }
 }

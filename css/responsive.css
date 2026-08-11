@@ -91,15 +91,6 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-  .prereqs-container {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .prereqs-label,
-  .prereq-chip {
-    flex-shrink: 0;
-  }
   .markdown-body th,
   .markdown-body td {
     padding: var(--s2) var(--s3);
@@ -115,7 +106,8 @@
     min-width: 44px;
     min-height: 44px;
   }
-  .prereq-chip {
+  .prereq-chip,
+  .related-card {
     min-height: 44px;
     padding-top: var(--s3);
     padding-bottom: var(--s3);
@@ -151,11 +143,6 @@
   .index-filter-input,
   .index-filter-read-select {
     min-height: 44px;
-  }
-
-  .related-grid {
-    /* 160px didn't leave room for 2 columns once real content-layout padding is subtracted */
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 
   /* ::after is used for bottom fade here, so give right-edge scroll cue via ::before instead, matching code.css */

@@ -4,6 +4,7 @@ import { Bookmarks, renderBookmarksSection } from "../storage/bookmarks.js";
 import { isRead, markRead, markUnread } from "../storage/read-tracking.js";
 import { renderIndex } from "./home-index.js";
 import { buildSearchEntriesForWiki } from "./home-parse.js";
+import { normalizePath } from "./nav-utils.js";
 import { showToast } from "./toast.js";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -25,7 +26,10 @@ function bindIndexCardSwipe(wiki) {
   let sy = 0;
   let axis = null; // null | "x" | "y"
 
-  const pathOf = (c) => c.querySelector(".index-card-read-time[data-path]")?.dataset.path || null;
+  const pathOf = (c) => {
+    const raw = c.querySelector(".index-card-read-time[data-path]")?.dataset.path;
+    return raw ? normalizePath(raw) : null;
+  };
 
   const reset = () => {
     if (card) {

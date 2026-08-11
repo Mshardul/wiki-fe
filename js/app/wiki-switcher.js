@@ -1,4 +1,10 @@
-import { createFocusTrap, getFocusableIn, registerModal } from "../modal-registry.js";
+import {
+  createFocusTrap,
+  getFocusableIn,
+  markModalClosed,
+  markModalOpened,
+  registerModal,
+} from "../modal-registry.js";
 import { navigate } from "../render/router.js";
 import { WIKIS, escHtml, state } from "../state.js";
 
@@ -7,6 +13,7 @@ let _focusTrapHandler = null;
 document.getElementById("wiki-switcher-overlay").addEventListener("click", closeWikiSwitcher);
 
 function openWikiSwitcher() {
+  if (isWikiSwitcherOpen()) return;
   const modal = document.getElementById("wiki-switcher-modal");
   const list = document.getElementById("wiki-switcher-list");
   list.innerHTML = WIKIS.map(
@@ -34,11 +41,13 @@ function openWikiSwitcher() {
 
   _focusTrapHandler = createFocusTrap(modal, () => getFocusableIn(modal));
   modal.addEventListener("keydown", _focusTrapHandler);
+  markModalOpened(wikiSwitcherModal);
 }
 
 function closeWikiSwitcher() {
   const modal = document.getElementById("wiki-switcher-modal");
   if (modal.classList.contains("hidden")) return;
+  markModalClosed(wikiSwitcherModal);
   if (_focusTrapHandler) {
     modal.removeEventListener("keydown", _focusTrapHandler);
     _focusTrapHandler = null;
@@ -51,6 +60,7 @@ function isWikiSwitcherOpen() {
   return !document.getElementById("wiki-switcher-modal").classList.contains("hidden");
 }
 
-registerModal({ isOpen: isWikiSwitcherOpen, close: closeWikiSwitcher });
+const wikiSwitcherModal = { isOpen: isWikiSwitcherOpen, close: closeWikiSwitcher };
+registerModal(wikiSwitcherModal);
 
 export { openWikiSwitcher, closeWikiSwitcher, isWikiSwitcherOpen };

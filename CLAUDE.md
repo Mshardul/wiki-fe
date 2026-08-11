@@ -121,6 +121,8 @@ Do this before any file reads or skill invocations - every session:
 | `distraction-free.js` | Distraction-free mode toggle                                              |
 | `study-feedback.js`   | Haptic + tone feedback on study milestones, gated by settings flag         |
 | `bookmarks-modal.js`  | Bookmarks modal open/close/render, focus trap, entry click → navigate     |
+| `install-prompt.js`   | PWA `beforeinstallprompt` banner + iOS Add-to-Home-Screen nudge toast     |
+| `icon-tooltip.js`     | Custom short-delay tooltips for topbar/overflow icon buttons (keeps native `title` as fallback) |
 | `graph-engine.js`     | Shared force-directed sim primitives (node/edge builder, tick/damping) used by link-graph, section-map, index-graph |
 | `link-graph.js`       | `g` link-graph overlay: cross-wiki node graph from backlinks, click-to-navigate |
 | `section-map.js`      | `Shift+G` / pinch section-map overlay: zoomed-out node map of current wiki section, read-state colored |
@@ -254,12 +256,8 @@ Do this before any file reads or skill invocations - every session:
 | `docs/content-backlog.md`                           | DSA-xxx / SD-xxx / content-backlog intent - active content rows                          |
 | `docs/content-archive.md`                           | Content-backlog Done/Dropped history                                                     |
 | `docs/_meta/ai-instructions/content-backlog.md`     | Content-backlog intent - schema + rules (not tickets)                                    |
-| `docs/_meta/ai-instructions/_base.md`              | **Every content task** (components / algorithms / HLD / devops-tools) - read this first |
-| `docs/_meta/ai-instructions/components.md`         | Writing system design component article (after \_base.md)                               |
-| `docs/_meta/ai-instructions/algorithms.md`         | Writing algorithm / concept article (after \_base.md)                                   |
-| `docs/_meta/ai-instructions/hld.md`                | Writing HLD / system design article (after \_base.md)                                   |
-| `docs/_meta/ai-instructions/devops-tools.md`       | Writing DevOps tool article (after \_base.md)                                           |
-| `docs/_meta/ai-instructions/devops-cheatsheets.md` | Writing DevOps cheatsheet - self-contained, skip \_base.md                              |
+| `docs/_meta/ai-instructions/sd-writer.md`          | Writing / fixing system design articles (components / algorithms / HLD / devops-tools / cheatsheets) |
+| `docs/_meta/ai-instructions/sd-rater.md`           | Rating / publish-gate for system design articles                                        |
 | `docs/_meta/ai-instructions/dsa-writer.md`         | Writing / fixing DSA articles (after content-backlog or Content task)                    |
 | `docs/_meta/ai-instructions/dsa-rater.md`          | Rating / publish-gate for DSA articles                                                   |
 | `docs/_meta/decisions/ui-ux.md`                    | UI / UX decision needed                                                                 |
@@ -286,7 +284,7 @@ Do this before any file reads or skill invocations - every session:
 | Mobile gesture / TOC drawer bug | `js/app/mobile-panels.js`                                                                  |
 | Service worker issue      | `wiki-sw.js` only                                                                               |
 | Write tests for feature X | Relevant `tests/e2e/test_*.py` + `tests/conftest.py`                                            |
-| Content article           | `docs/_meta/ai-instructions/_base.md` + relevant type file (except cheatsheets: type file only) |
+| Content article           | `docs/_meta/ai-instructions/sd-writer.md` (system design) or `dsa-writer.md` (DSA)              |
 | Content backlog row       | `docs/_meta/ai-instructions/content-backlog.md` + `docs/content-backlog.md` + writer/rater for that vertical |
 
 ---

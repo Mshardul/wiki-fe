@@ -24,19 +24,37 @@ const Notes = {
 };
 
 let _saveTimer = null;
+let _pendingSave = null;
+
+function _flushPendingNotesSave() {
+  if (_saveTimer) {
+    clearTimeout(_saveTimer);
+    _saveTimer = null;
+  }
+  if (_pendingSave) {
+    const { wikiId, articlePath, text } = _pendingSave;
+    _pendingSave = null;
+    Notes.set(wikiId, articlePath, text);
+  }
+}
 
 function renderNotesScratchpad(wikiId, articlePath) {
   const panel = document.getElementById("notes-scratchpad");
   const textarea = document.getElementById("notes-scratchpad-input");
   if (!panel || !textarea) return;
 
+  _flushPendingNotesSave();
+
   textarea.value = Notes.get(wikiId, articlePath);
 
   textarea.oninput = () => {
     clearTimeout(_saveTimer);
     const text = textarea.value;
+    _pendingSave = { wikiId, articlePath, text };
     _saveTimer = setTimeout(() => {
       Notes.set(wikiId, articlePath, text);
+      _pendingSave = null;
+      _saveTimer = null;
     }, 300);
   };
 

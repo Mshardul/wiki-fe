@@ -616,6 +616,42 @@ def test_os_dark_preference_sets_dark_theme(page, base_url):
     assert theme == "dark", f"Expected dark theme from OS preference, got {theme}"
 
 
+# ── Cross-tab settings sync ───────────────────────────────────────────────────
+
+
+def test_settings_change_in_other_tab_updates_this_tab(page, base_url):
+    """Regression: the storage-event listener never applied a wiki-settings change from another tab, only bookmarks/recents/read."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+
+    tab2 = page.context.new_page()
+    tab2.goto(f"{base_url}/", wait_until="domcontentloaded")
+    tab2.wait_for_selector("#view-home.active", timeout=8_000)
+
+    font_before = tab2.evaluate(
+        "() => document.documentElement.style.getPropertyValue('--font')"
+    )
+
+    page.evaluate(
+        """() => {
+            const s = JSON.parse(localStorage.getItem('wiki-settings') || '{}');
+            s.backgroundId = s.backgroundId || 'dark-void';
+            s.font = 'Lora';
+            localStorage.setItem('wiki-settings', JSON.stringify(s));
+        }"""
+    )
+
+    tab2.wait_for_function(
+        "(before) => document.documentElement.style.getPropertyValue('--font') !== before",
+        arg=font_before,
+    )
+    font_after = tab2.evaluate(
+        "() => document.documentElement.style.getPropertyValue('--font')"
+    )
+    assert "Lora" in font_after
+    tab2.close()
+
+
 def test_saved_settings_override_os_preference(page, base_url):
     """saved localStorage settings take priority over OS color scheme."""
     page.emulate_media(color_scheme="light")

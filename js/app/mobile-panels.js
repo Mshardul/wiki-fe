@@ -6,7 +6,10 @@ import { closeGlobalSearch } from "../search.js";
 import { state } from "../state.js";
 import { Settings } from "../storage/settings-theme.js";
 import { closeBookmarksModal, isBookmarksModalOpen } from "./bookmarks-modal.js";
+import { closeComparePicker, isComparePickerOpen } from "./complexity-compare.js";
 import { toggleDistractionFree } from "./distraction-free.js";
+import { closeLinkGraph, isLinkGraphOpen } from "./link-graph.js";
+import { closeSectionMap, isSectionMapOpen } from "./section-map.js";
 import { closeWikiSwitcher, isWikiSwitcherOpen } from "./wiki-switcher.js";
 
 const tocMobileBtn = document.getElementById("toc-mobile-btn");
@@ -31,13 +34,13 @@ function openMobileToc() {
   if (document.getElementById("toc-sidebar").style.display === "none") return;
   if (!document.querySelector("#toc-nav .toc-item")) return;
   tocSidebar.classList.add("mobile-open");
-  tocMobileOverlay.classList.add("open");
+  tocMobileOverlay.classList.remove("hidden");
   document.body.classList.add("toc-open");
 }
 
 function closeMobileToc() {
   tocSidebar.classList.remove("mobile-open");
-  tocMobileOverlay.classList.remove("open");
+  tocMobileOverlay.classList.add("hidden");
   document.body.classList.remove("toc-open");
 }
 
@@ -46,8 +49,20 @@ function closeTopPanel() {
     toggleDistractionFree();
     return true;
   }
-  if (document.getElementById("zoom-overlay")?.classList.contains("open")) {
+  if (document.getElementById("zoom-overlay")?.classList.contains("hidden") === false) {
     closeZoomOverlay();
+    return true;
+  }
+  if (isLinkGraphOpen()) {
+    closeLinkGraph();
+    return true;
+  }
+  if (isSectionMapOpen()) {
+    closeSectionMap();
+    return true;
+  }
+  if (isComparePickerOpen()) {
+    closeComparePicker();
     return true;
   }
   if (Settings.isOpen()) {

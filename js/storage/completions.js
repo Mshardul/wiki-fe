@@ -49,6 +49,42 @@ function clearCompletions(wikiId) {
   localStorage.removeItem(_completedKey(wikiId));
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   COMPLETION BUTTON - full-width toggle after the article-end-marker
+   ═══════════════════════════════════════════════════════════════ */
+function _setCompletionBtnState(btn, done) {
+  btn.classList.toggle("completion-btn--done", done);
+  btn.textContent = done ? "Completed - undo" : "Mark as completed";
+  btn.setAttribute("aria-pressed", String(done));
+}
+
+function renderCompletionButton(contentEl, wikiId, filePath) {
+  contentEl.querySelector(".completion-btn")?.remove();
+  if (wikiId !== "dsa") return;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "completion-btn";
+  _setCompletionBtnState(btn, isCompleted(filePath, wikiId));
+
+  btn.addEventListener("click", () => {
+    const done = isCompleted(filePath, wikiId);
+    if (done) {
+      markUncompleted(filePath, wikiId);
+    } else {
+      markCompleted(filePath, wikiId);
+    }
+    _setCompletionBtnState(btn, !done);
+  });
+
+  const marker = contentEl.querySelector(".article-end-marker");
+  if (marker) {
+    marker.insertAdjacentElement("afterend", btn);
+  } else {
+    contentEl.appendChild(btn);
+  }
+}
+
 export {
   _completedKey,
   getCompletedSet,
@@ -56,4 +92,5 @@ export {
   markCompleted,
   markUncompleted,
   clearCompletions,
+  renderCompletionButton,
 };

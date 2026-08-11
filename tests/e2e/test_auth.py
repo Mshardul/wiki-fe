@@ -375,6 +375,39 @@ def test_migrate_modal_shown_on_login_with_local_data(page, base_url):
     expect(modal).to_have_class(re.compile(r"\bhidden\b"))
 
 
+def test_toast_renders_above_migrate_modal(page, base_url):
+    """Toasts must stay visible above the migrate modal backdrop."""
+    _stub_logged_out(page)
+    page.route(
+        "**/api/v1/auth/login",
+        lambda r: r.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
+        ),
+    )
+    page.add_init_script(
+        "localStorage.setItem('wiki-bookmarks', JSON.stringify([{wikiId:'dsa',path:'foo.md'}]))"
+    )
+
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+    page.locator("#auth-login-submit").click()
+
+    modal = page.locator("#migrate-modal")
+    expect(modal).not_to_have_class(re.compile(r"\bhidden\b"))
+    page.evaluate(
+        "() => document.dispatchEvent(new CustomEvent('wiki:toast', { detail: { message: 'Layer check', durationMs: 8000 } }))"
+    )
+    page.wait_for_selector(".wiki-toast.visible", timeout=3_000)
+    toast_z = page.evaluate("() => getComputedStyle(document.querySelector('.wiki-toast')).zIndex")
+    modal_z = page.evaluate("() => getComputedStyle(document.getElementById('migrate-modal')).zIndex")
+    assert int(toast_z) > int(modal_z)
+    expect(page.locator(".wiki-toast")).to_contain_text("Layer check")
+
+
 def test_migrate_import_failure_skips_pull_and_warns(page, base_url):
     """Regression: if 'Keep them' import fails, the local data
     that was just chosen to keep must not be silently overwritten by the
@@ -966,6 +999,124 @@ def test_login_syncs_across_tabs(page, base_url):
     expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
 
     expect(tab2.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
+    tab2.close()
+
+
+def test_login_in_other_tab_pulls_server_data_into_this_tab(page, base_url):
+    """Regression: cross-tab session-sync listener must call Sync.pullAll() on login, not just flip UI chrome."""
+    session = {"logged_in": False}
+
+    def _route_common(pg):
+        pg.route(
+            "**/api/v1/auth/me",
+            lambda r: r.fulfill(
+                status=200 if session["logged_in"] else 401,
+                content_type="application/json",
+                body='{"user":{"id":1,"email":"a@example.com"}}' if session["logged_in"] else _UNAUTH,
+            ),
+        )
+        pg.route(
+            "**/api/v1/auth/login",
+            lambda r: (
+                session.__setitem__("logged_in", True),
+                r.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
+                ),
+            )[1],
+        )
+        pg.route(
+            "**/api/v1/bookmarks",
+            lambda r: r.fulfill(
+                status=200,
+                content_type="application/json",
+                body='[{"wiki_id":"system-design","path":"./content/system-design/caching.md"}]',
+            ),
+        )
+        for path in ("reads", "recents", "completions"):
+            pg.route(
+                f"**/api/v1/{path}",
+                lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
+            )
+
+    _route_common(page)
+    page.goto(base_url)
+
+    tab2 = page.context.new_page()
+    _route_common(tab2)
+    tab2.goto(base_url)
+    expect(tab2.locator("#auth-btn-home .auth-btn-label")).to_have_text("Login")
+
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-login-email").fill("a@example.com")
+    page.locator("#auth-login-password").fill("LongEnough1!xx")
+    page.locator("#auth-login-submit").click()
+    expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
+
+    expect(tab2.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
+    tab2.wait_for_function(
+        "() => JSON.parse(localStorage.getItem('wiki-bookmarks') || '[]').length > 0"
+    )
+    bookmarks = tab2.evaluate("() => JSON.parse(localStorage.getItem('wiki-bookmarks'))")
+    assert any("caching" in b["path"] for b in bookmarks)
+    tab2.close()
+
+
+def test_logout_in_other_tab_clears_user_data_cache_in_this_tab(page, base_url):
+    """Regression: cross-tab session-sync listener must call Sync.clearUserDataCache() on logout, not just flip UI chrome."""
+    session = {"logged_in": True}
+
+    def _route_common(pg):
+        pg.route(
+            "**/api/v1/auth/me",
+            lambda r: r.fulfill(
+                status=200 if session["logged_in"] else 401,
+                content_type="application/json",
+                body='{"user":{"id":1,"email":"a@example.com"}}' if session["logged_in"] else _UNAUTH,
+            ),
+        )
+        pg.route(
+            "**/api/v1/auth/logout",
+            lambda r: (
+                session.__setitem__("logged_in", False),
+                r.fulfill(status=204, body=""),
+            )[1],
+        )
+        pg.route(
+            "**/api/v1/bookmarks",
+            lambda r: r.fulfill(
+                status=200,
+                content_type="application/json",
+                body='[{"wiki_id":"system-design","path":"./content/system-design/caching.md"}]',
+            ),
+        )
+        for path in ("reads", "recents", "completions"):
+            pg.route(
+                f"**/api/v1/{path}",
+                lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
+            )
+
+    _seed_token = "localStorage.setItem('wiki-session-token', 'test-session-token')"
+
+    _route_common(page)
+    page.add_init_script(_seed_token)
+    page.goto(base_url, wait_until="domcontentloaded")
+    expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
+
+    tab2 = page.context.new_page()
+    _route_common(tab2)
+    tab2.add_init_script(_seed_token)
+    tab2.goto(base_url, wait_until="domcontentloaded")
+    expect(tab2.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
+
+    page.locator("#auth-btn-home").click()
+    expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Login")
+
+    expect(tab2.locator("#auth-btn-home .auth-btn-label")).to_have_text("Login")
+    tab2.wait_for_function(
+        "() => JSON.parse(localStorage.getItem('wiki-bookmarks') || '[]').length === 0"
+    )
     tab2.close()
 
 

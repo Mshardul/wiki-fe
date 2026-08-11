@@ -1,5 +1,11 @@
 import { extractComplexityTable } from "../content/tables.js";
-import { createFocusTrap, getFocusableIn, registerModal } from "../modal-registry.js";
+import {
+  createFocusTrap,
+  getFocusableIn,
+  markModalClosed,
+  markModalOpened,
+  registerModal,
+} from "../modal-registry.js";
 import { fetchPrebuiltSearchIndex, fetchText } from "../render/nav-utils.js";
 import { escHtml, getMdConverter } from "../state.js";
 
@@ -115,12 +121,14 @@ async function runCompare() {
 }
 
 async function openComparePicker() {
+  if (isComparePickerOpen()) return;
   const modal = document.getElementById("compare-modal");
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
   document.getElementById("compare-matrix-wrap").innerHTML = "";
   document.getElementById("compare-status").textContent = "";
   document.getElementById("compare-search-input").value = "";
+  _picked.clear();
 
   await loadStructures();
   renderPickerList();
@@ -129,11 +137,13 @@ async function openComparePicker() {
 
   _focusTrapHandler = createFocusTrap(modal, () => getFocusableIn(modal));
   modal.addEventListener("keydown", _focusTrapHandler);
+  markModalOpened(comparePickerModal);
 }
 
 function closeComparePicker() {
   const modal = document.getElementById("compare-modal");
   if (modal.classList.contains("hidden")) return;
+  markModalClosed(comparePickerModal);
   if (_focusTrapHandler) {
     modal.removeEventListener("keydown", _focusTrapHandler);
     _focusTrapHandler = null;
@@ -146,7 +156,8 @@ function isComparePickerOpen() {
   return !document.getElementById("compare-modal").classList.contains("hidden");
 }
 
-registerModal({ isOpen: isComparePickerOpen, close: closeComparePicker });
+const comparePickerModal = { isOpen: isComparePickerOpen, close: closeComparePicker };
+registerModal(comparePickerModal);
 
 document.getElementById("compare-overlay").addEventListener("click", closeComparePicker);
 document.getElementById("compare-close").addEventListener("click", closeComparePicker);

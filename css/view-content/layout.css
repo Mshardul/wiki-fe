@@ -293,14 +293,17 @@ body.distraction-free .sticky-section-header {
 }
 .toc-group-chevron {
   flex-shrink: 0;
+  width: 22px;
+  height: 22px;
   background: none;
   border: none;
-  padding: 2px 4px;
+  padding: 0;
   cursor: pointer;
   color: var(--text-muted);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  border-radius: 3px;
+  justify-content: center;
+  border-radius: var(--r-sm);
   transition: color var(--t-fast), background var(--t-fast);
 }
 .toc-group-chevron:hover {
@@ -308,6 +311,8 @@ body.distraction-free .sticky-section-header {
   background: var(--glass-bg);
 }
 .toc-group-chevron svg {
+  width: 12px;
+  height: 12px;
   transition: transform var(--t);
 }
 .toc-h2-group.section--collapsed .toc-group-chevron svg {
@@ -397,15 +402,14 @@ body.distraction-free .sticky-section-header {
 }
 
 .toc-mobile-overlay {
-  display: none;
   position: fixed;
   inset: 0;
   background: var(--overlay-dark);
   z-index: var(--z-overlay);
   backdrop-filter: blur(2px);
 }
-.toc-mobile-overlay.open {
-  display: block;
+.toc-mobile-overlay.hidden {
+  display: none;
 }
 
 /* TOC in mobile overlay */

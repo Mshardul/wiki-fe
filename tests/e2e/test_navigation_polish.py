@@ -257,6 +257,31 @@ def test_link_graph_renders_canvas_with_status(page, base_url):
     assert page.locator("#link-graph-canvas").is_visible()
 
 
+def test_link_graph_concurrent_open_while_loading(page, base_url):
+    """Rapid re-open while the graph is still loading must not leak a second simulation."""
+    _go_to_article(page, base_url)
+    page.evaluate(
+        """async () => {
+            const m = await import('/js/app/link-graph.js');
+            await Promise.all([m.openLinkGraph(), m.openLinkGraph()]);
+        }"""
+    )
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=5_000)
+    page.wait_for_function(
+        "() => document.querySelector('#link-graph-status').textContent.includes('articles')",
+        timeout=15_000,
+    )
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#link-graph-modal.hidden", state="attached", timeout=5_000)
+
+    page.evaluate("() => import('/js/app/link-graph.js').then((m) => m.openLinkGraph())")
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=5_000)
+    page.wait_for_function(
+        "() => document.querySelector('#link-graph-status').textContent.includes('articles')",
+        timeout=15_000,
+    )
+
+
 def test_overlay_click_closes_link_graph(page, base_url):
     """Clicking the backdrop closes the link graph modal."""
     _go_to_article(page, base_url)

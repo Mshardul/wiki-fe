@@ -103,6 +103,30 @@ def test_prerequisites_original_paragraph_removed(page, base_url):
     assert not remaining, "Original Prerequisites heading was not removed"
 
 
+def test_prerequisites_strip_scrolls_horizontally(page, base_url):
+    """Prerequisites chips stay on one nowrap row with overflow-x scroll (same strip language as related)."""
+    _load_mock_article(
+        page,
+        base_url,
+        "# Mock Content\n\n## Prerequisites\n\n"
+        "- [Alpha](./a.md) [Must read] - a\n"
+        "- [Beta](./b.md) [Should read] - b\n"
+        "- [Gamma](./c.md) [Must read] - c\n"
+        "- [Delta](./d.md) [Should read] - d\n\n"
+        "## Body\n\ncontent\n",
+    )
+    page.wait_for_selector(".prereqs-container", timeout=5_000)
+
+    style = page.evaluate("""() => {
+        const el = document.querySelector('.prereqs-container');
+        const s = getComputedStyle(el);
+        return { display: s.display, flexWrap: s.flexWrap, overflowX: s.overflowX };
+    }""")
+    assert style["display"] == "flex", f"expected flex, got: {style}"
+    assert style["flexWrap"] == "nowrap", f"expected nowrap, got: {style}"
+    assert style["overflowX"] in ("auto", "scroll"), f"expected overflow-x scroll, got: {style}"
+
+
 # ── Topbar title ────────────────────────────────────────────────────────────────
 
 
@@ -348,7 +372,7 @@ def _open_zoom_overlay(page, base_url):
     )
     page.wait_for_selector(".zoomable-img", timeout=8_000)
     page.locator(".zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=5_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=5_000)
 
 
 def test_swipe_down_closes_zoom_overlay(page, base_url):
@@ -366,7 +390,7 @@ def test_swipe_down_closes_zoom_overlay(page, base_url):
         overlay.dispatchEvent(new TouchEvent('touchend', {
             bubbles: true, touches: [], changedTouches: [touch(300)],
         }));
-        return !overlay.classList.contains('open');
+        return overlay.classList.contains('hidden');
     }""")
     assert closed, "Downward swipe >80px should close the zoom overlay"
 
@@ -385,7 +409,7 @@ def test_small_swipe_does_not_close_zoom_overlay(page, base_url):
         overlay.dispatchEvent(new TouchEvent('touchend', {
             bubbles: true, touches: [], changedTouches: [touch(130)],
         }));
-        return overlay.classList.contains('open');
+        return !overlay.classList.contains('hidden');
     }""")
     assert still_open, "A <80px swipe must not close the overlay"
 
@@ -432,7 +456,7 @@ def test_pinch_release_does_not_swipe_dismiss_with_stale_coords(page, base_url):
             touches: [t(1, 100, 200)],
             changedTouches: [t(2, 140, 200)],
         }));
-        return overlay.classList.contains('open');
+        return !overlay.classList.contains('hidden');
     }""")
     assert still_open, "Pinch release must not swipe-dismiss via stale single-finger coords"
 

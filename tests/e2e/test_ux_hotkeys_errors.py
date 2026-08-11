@@ -150,75 +150,49 @@ def test_focus_btn_click_toggles_mode(page, base_url):
     )
 
 
-# ── Mobile topbar overflow menu ──────────────────────────────────
+# ── Preferences Actions tab ──────────────────────────────────────
 
 
-def test_overflow_trigger_hidden_on_wide_desktop(page, base_url):
-    """Regression: above 1024px the overflow items render inline, no ⋯ trigger."""
-    page.set_viewport_size({"width": 1300, "height": 800})
-    _go_to_article(page, base_url)
-    assert not page.locator("#content-overflow-btn").is_visible()
-    assert page.locator("#content-quiz-btn").is_visible()
+def _open_actions_prefs(page):
+    page.keyboard.press(",")
+    page.wait_for_function(
+        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    page.locator('[data-action="prefs-tab"][data-tab="actions"]').click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-panel-actions').getAttribute('aria-hidden') === 'false'"
+    )
 
 
-def test_overflow_trigger_shown_on_narrow_desktop(page, base_url):
-    """Regression: at 900-1024px (previously always inline, overflowing the topbar) the ⋯ trigger collapses items into a menu."""
+def test_content_overflow_removed_from_topbar(page, base_url):
+    """Content actions moved to Preferences Actions tab — no overflow menu in topbar."""
     page.set_viewport_size({"width": 950, "height": 800})
     _go_to_article(page, base_url)
-    assert page.locator("#content-overflow-btn").is_visible()
-    assert not page.locator("#content-quiz-btn").is_visible()
-    page.locator("#content-overflow-btn").click()
-    assert page.locator("#content-overflow-menu").is_visible()
-    assert page.locator("#content-quiz-btn").is_visible()
+    assert page.locator("#content-overflow-btn").count() == 0
 
 
-def test_overflow_menu_hidden_by_default_on_mobile(page, base_url):
-    """Overflow dropdown is closed until the ⋯ trigger is tapped."""
+def test_prefs_actions_tab_lists_content_actions(page, base_url):
+    """Actions tab exposes relocated content actions with shortcut hints."""
+    _go_to_article(page, base_url)
+    _open_actions_prefs(page)
+    actions = page.locator("#prefs-panel-actions .prefs-action-row")
+    assert actions.count() >= 9
+    labels = actions.locator(".prefs-action-label").all_inner_texts()
+    assert "Quiz mode" in labels
+    assert "Find in article" in labels
+    assert page.locator('#prefs-panel-actions [data-action="section-map-toggle"] .prefs-action-shortcut').inner_text() == "Shift+G"
+
+
+def test_prefs_action_closes_panel_after_click(page, base_url):
+    """Choosing an action from the Actions tab closes preferences."""
     page.set_viewport_size({"width": 375, "height": 812})
     _go_to_article(page, base_url)
-    assert not page.locator("#content-overflow-menu").is_visible()
-
-
-def test_overflow_trigger_opens_menu_on_mobile(page, base_url):
-    """Tapping the ⋯ button reveals the low-frequency actions."""
-    page.set_viewport_size({"width": 375, "height": 812})
-    _go_to_article(page, base_url)
-    page.locator("#content-overflow-btn").click()
-    assert page.locator("#content-overflow-menu").is_visible()
-    assert page.locator("#content-overflow-btn").get_attribute("aria-expanded") == "true"
-
-
-def test_overflow_menu_action_closes_menu_after_click(page, base_url):
-    """Clicking an action inside the overflow menu (e.g. quiz mode) closes the dropdown."""
-    page.set_viewport_size({"width": 375, "height": 812})
-    _go_to_article(page, base_url)
-    page.locator("#content-overflow-btn").click()
-    page.wait_for_selector("#content-overflow-menu.open")
-    page.locator("#content-quiz-btn").click()
-    assert not page.locator("#content-overflow-menu").is_visible()
-
-
-def test_overflow_menu_closes_on_outside_click(page, base_url):
-    """Clicking outside the overflow menu dismisses it without triggering an action."""
-    page.set_viewport_size({"width": 375, "height": 812})
-    _go_to_article(page, base_url)
-    page.locator("#content-overflow-btn").click()
-    page.wait_for_selector("#content-overflow-menu.open")
-    page.locator("#content-breadcrumb").click()
-    assert not page.locator("#content-overflow-menu").is_visible()
-
-
-def test_overflow_menu_closes_on_escape(page, base_url):
-    """Pressing Escape closes the overflow menu without navigating back."""
-    page.set_viewport_size({"width": 375, "height": 812})
-    _go_to_article(page, base_url)
-    page.locator("#content-overflow-btn").click()
-    page.wait_for_selector("#content-overflow-menu.open")
-    page.keyboard.press("Escape")
-    assert not page.locator("#content-overflow-menu").is_visible()
-    assert page.locator("#view-content").get_attribute("class").__contains__("active"), (
-        "Escape should only close the overflow menu, not navigate back from content"
+    _open_actions_prefs(page)
+    page.locator('#prefs-panel-actions [data-action="find-open"]').click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-modal').classList.contains('hidden')"
     )
+    page.wait_for_selector("#article-find:not(.hidden)", timeout=3_000)
 
 
 # ── Font size hotkeys ────────────────────────────────────────────
@@ -400,6 +374,40 @@ def test_body_scroll_locked_while_search_modal_open(page, base_url):
     page.keyboard.press("Escape")
     page.wait_for_selector("#global-search-modal.hidden", state="hidden", timeout=5_000)
     assert not page.evaluate("document.body.classList.contains('modal-open')")
+
+
+def test_double_open_search_unlocks_after_single_close(page, base_url):
+    """Calling openGlobalSearch twice must not strand body scroll-lock past one close."""
+    _go_to_article(page, base_url)
+    is_mac = "Mac" in page.evaluate("navigator.platform")
+    shortcut = "Meta+k" if is_mac else "Control+k"
+    page.keyboard.press(shortcut)
+    page.keyboard.press(shortcut)
+    page.wait_for_selector("#global-search-modal:not(.hidden)", timeout=5_000)
+    assert page.evaluate("document.body.classList.contains('modal-open')")
+
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#global-search-modal.hidden", state="hidden", timeout=5_000)
+    assert not page.evaluate("document.body.classList.contains('modal-open')")
+
+
+def test_escape_closes_topmost_modal_when_prefs_stacked_on_search(page, base_url):
+    """Escape must close the most recently opened registered modal, not registration order."""
+    _go_to_article(page, base_url)
+    is_mac = "Mac" in page.evaluate("navigator.platform")
+    page.keyboard.press("Meta+k" if is_mac else "Control+k")
+    page.wait_for_selector("#global-search-modal:not(.hidden)", timeout=5_000)
+    page.evaluate("() => Settings.open()")
+    page.wait_for_selector("#prefs-modal:not(.hidden)", timeout=5_000)
+
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        "() => document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    assert page.locator("#global-search-modal:not(.hidden)").count() == 1
+
+    page.keyboard.press("Escape")
+    page.wait_for_selector("#global-search-modal.hidden", state="hidden", timeout=5_000)
 
 
 def test_toast_renders_above_open_modal(page, base_url):
@@ -596,4 +604,78 @@ def test_escape_confirmed_clears_index_filter(page, base_url):
     )
     assert page.locator("#view-index.active").count() == 1, (
         "Resetting the index filter must not navigate away"
+    )
+
+
+# ── Icon tooltip (topbar/overflow buttons) ────────────────────────
+
+
+def _hover_topbar_btn(page, action):
+    page.mouse.move(400, 300)
+    btn = page.locator(f".topbar-icon-btn[data-action='{action}']").first
+    box = btn.bounding_box()
+    page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2, steps=5)
+    return btn
+
+
+def test_icon_tooltip_shows_after_delay_and_hides_native_title(page, base_url):
+    """Hovering a topbar icon button shows the custom tooltip after the delay and strips the native title so both don't render at once."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+
+    btn = _hover_topbar_btn(page, "search-open")
+    page.wait_for_selector("#icon-tooltip.visible", timeout=3_000)
+    assert page.locator("#icon-tooltip").inner_text() == "Search (⌘K)"
+    assert btn.get_attribute("title") is None
+
+
+def test_icon_tooltip_hides_and_restores_title_on_leave(page, base_url):
+    """Moving the mouse off the button hides the tooltip and restores the native title fallback."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+
+    btn = _hover_topbar_btn(page, "search-open")
+    page.wait_for_selector("#icon-tooltip.visible", timeout=3_000)
+
+    page.mouse.move(400, 700, steps=10)
+    page.wait_for_function(
+        "() => !document.getElementById('icon-tooltip')?.classList.contains('visible')",
+        timeout=3_000,
+    )
+    assert btn.get_attribute("title") == "Search (⌘K)"
+
+
+def test_icon_tooltip_never_shown_on_quick_pass_still_restores_title(page, base_url):
+    """A hover that leaves before the show-delay elapses must never leave the native title stripped, even though the tooltip itself never appeared."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+
+    btn = _hover_topbar_btn(page, "search-open")
+    page.wait_for_timeout(50)  # well under the show delay
+    page.mouse.move(400, 700, steps=5)
+    page.wait_for_function(
+        "() => document.querySelector(\"[data-action='search-open']\")?.hasAttribute('title')",
+        timeout=1_000,
+    )
+    assert btn.get_attribute("title") == "Search (⌘K)"
+    assert page.locator("#icon-tooltip.visible").count() == 0
+
+
+def test_icon_tooltip_shows_on_keyboard_focus(page, base_url):
+    """Tabbing to a topbar icon button shows the tooltip via focus, matching hover behavior for keyboard users."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+
+    page.evaluate("() => document.querySelector(\"[data-action='search-open']\").focus()")
+    page.wait_for_selector("#icon-tooltip.visible", timeout=2_000)
+    assert page.locator("#icon-tooltip").inner_text() == "Search (⌘K)"
+
+    page.evaluate("() => document.querySelector(\"[data-action='search-open']\").blur()")
+    page.wait_for_function(
+        "() => !document.getElementById('icon-tooltip')?.classList.contains('visible')",
+        timeout=2_000,
+    )
+    assert (
+        page.locator(".topbar-icon-btn[data-action='search-open']").first.get_attribute("title")
+        == "Search (⌘K)"
     )

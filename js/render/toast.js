@@ -51,8 +51,19 @@ function _showToastNow(message, durationMs, onUndo, actionLabel = "Undo", type =
   toast._timer = setTimeout(advance, durationMs);
 }
 
-function showToast(message, durationMs = 3000, onUndo = null, actionLabel = "Undo", type = null) {
-  _toastQueue.push({ message, durationMs, onUndo, actionLabel, type });
+// Higher priority jumps ahead of already-queued lower-priority toasts (stable among equal priority) - lets a time-sensitive toast (e.g. SW update) overtake a long-running low-priority one (e.g. install nudge) still sitting in the queue.
+function showToast(
+  message,
+  durationMs = 3000,
+  onUndo = null,
+  actionLabel = "Undo",
+  type = null,
+  priority = 0,
+) {
+  const entry = { message, durationMs, onUndo, actionLabel, type, priority };
+  const insertAt = _toastQueue.findIndex((t) => t.priority < priority);
+  if (insertAt === -1) _toastQueue.push(entry);
+  else _toastQueue.splice(insertAt, 0, entry);
   _drainToastQueue();
 }
 

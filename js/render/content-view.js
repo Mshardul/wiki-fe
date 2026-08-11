@@ -64,6 +64,7 @@ import {
   state,
 } from "../state.js";
 import { updateBookmarkBtn } from "../storage/bookmarks.js";
+import { renderCompletionButton } from "../storage/completions.js";
 import { renderNotesScratchpad } from "../storage/notes.js";
 import { updateOfflineBtn } from "../storage/offline.js";
 import { recordOpened, updateReadBtn } from "../storage/read-tracking.js";
@@ -463,6 +464,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     run(() => applyHighlightsAndMarkers(body, wiki.id, filePath));
     run(() => wireHighlights());
     run(() => addArticleEndMarker(body));
+    run(() => renderCompletionButton(body, wiki.id, filePath));
 
     const isStale = () => gen !== _renderGen;
     run(() => renderRelatedArticles(wiki, filePath, recommendedLinks, isStale));

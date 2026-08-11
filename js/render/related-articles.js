@@ -65,6 +65,36 @@ function _rankRelated(current, candidates) {
   return top.length ? top : candidates.slice(0, 3);
 }
 
+function _cardHtml({ wikiId, path, title, slug, wikiTitle, extraClass = "" }) {
+  const slugArg = slug != null && slug !== "" ? `,'${slug}'` : "";
+  const classes = ["related-card", extraClass].filter(Boolean).join(" ");
+  const inner = wikiTitle
+    ? `<span class="related-card-body">
+            <span class="bridge-card-wiki">${escHtml(wikiTitle)}</span>
+            <span class="related-card-title">${escHtml(title)}</span>
+          </span>`
+    : `<span class="related-card-title">${escHtml(title)}</span>`;
+  return `
+          <div class="${classes}"
+               onclick="navigateToContent('${wikiId}','${encodeURIComponent(
+                 path,
+               )}','${encodeURIComponent(title)}'${slugArg})"
+               role="button" tabindex="0"
+               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+            ${inner}
+          </div>`;
+}
+
+function _stripHtml(labelHtml, cards) {
+  return `
+    <div class="related-header">
+      <span class="related-label">${labelHtml}</span>
+    </div>
+    <div class="related-grid">
+      ${cards.map(_cardHtml).join("")}
+    </div>`;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    AUTHOR-CURATED "## Recommended" SECTION
    ═══════════════════════════════════════════════════════════════ */
@@ -103,26 +133,14 @@ async function renderRelatedArticles(wiki, currentPath, recommendedLinks, isStal
   try {
     if (recommendedLinks?.length) {
       if (isStale?.()) return;
-      container.innerHTML = `
-        <div class="related-header">
-          <span class="related-label">Recommended</span>
-        </div>
-        <div class="related-grid">
-          ${recommendedLinks
-            .map(
-              (link) => `
-            <div class="related-card"
-                 onclick="navigateToContent('${wiki.id}','${encodeURIComponent(
-                   link.path,
-                 )}','${encodeURIComponent(link.title)}')"
-                 role="button" tabindex="0"
-                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
-              <span class="related-card-title">${escHtml(link.title)}</span>
-              <span class="related-card-arrow">→</span>
-            </div>`,
-            )
-            .join("")}
-        </div>`;
+      container.innerHTML = _stripHtml(
+        "Recommended",
+        recommendedLinks.map((link) => ({
+          wikiId: wiki.id,
+          path: link.path,
+          title: link.title,
+        })),
+      );
       return;
     }
 
@@ -145,26 +163,15 @@ async function renderRelatedArticles(wiki, currentPath, recommendedLinks, isStal
     if (!related.length) return;
     if (isStale?.()) return;
 
-    container.innerHTML = `
-      <div class="related-header">
-        <span class="related-label">More in ${escHtml(sectionName)}</span>
-      </div>
-      <div class="related-grid">
-        ${related
-          .map(
-            (card) => `
-          <div class="related-card"
-               onclick="navigateToContent('${wiki.id}','${encodeURIComponent(
-                 card.path,
-               )}','${encodeURIComponent(card.title)}','${card.slug}')"
-               role="button" tabindex="0"
-               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
-            <span class="related-card-title">${escHtml(card.title)}</span>
-            <span class="related-card-arrow">→</span>
-          </div>`,
-          )
-          .join("")}
-      </div>`;
+    container.innerHTML = _stripHtml(
+      `More in ${escHtml(sectionName)}`,
+      related.map((card) => ({
+        wikiId: wiki.id,
+        path: card.path,
+        title: card.title,
+        slug: card.slug,
+      })),
+    );
   } catch {}
 }
 
@@ -190,28 +197,14 @@ async function renderBacklinks(currentPath, isStale) {
   const sources = entry?.[1];
   if (!sources?.length) return;
 
-  container.innerHTML = `
-    <div class="related-header">
-      <span class="related-label">Mentioned by</span>
-    </div>
-    <div class="related-grid">
-      ${sources
-        .map((src) => {
-          const wikiId = _wikiIdForPath(src.path);
-          if (!wikiId) return "";
-          return `
-          <div class="related-card"
-               onclick="navigateToContent('${wikiId}','${encodeURIComponent(
-                 src.path,
-               )}','${encodeURIComponent(src.title)}')"
-               role="button" tabindex="0"
-               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
-            <span class="related-card-title">${escHtml(src.title)}</span>
-            <span class="related-card-arrow">→</span>
-          </div>`;
-        })
-        .join("")}
-    </div>`;
+  const cards = sources.flatMap((src) => {
+    const wikiId = _wikiIdForPath(src.path);
+    if (!wikiId) return [];
+    return [{ wikiId, path: src.path, title: src.title }];
+  });
+  if (!cards.length) return;
+
+  container.innerHTML = _stripHtml("Mentioned by", cards);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -250,34 +243,19 @@ async function renderBridges(currentPath, isStale) {
       const wiki = WIKIS[wikiIdx];
       const card = _cardForPath(prebuiltIndex[wikiIdx], path);
       if (!card) return null;
-      return { wikiId: wiki.id, wikiTitle: wiki.title, card };
+      return {
+        wikiId: wiki.id,
+        wikiTitle: wiki.title,
+        path: card.path,
+        title: card.title,
+        slug: card.slug,
+        extraClass: "bridge-card",
+      };
     })
     .filter(Boolean);
   if (!resolved.length) return;
 
-  container.innerHTML = `
-    <div class="related-header">
-      <span class="related-label">Cross-wiki bridge</span>
-    </div>
-    <div class="related-grid">
-      ${resolved
-        .map(
-          ({ wikiId, wikiTitle, card }) => `
-        <div class="related-card bridge-card"
-             onclick="navigateToContent('${wikiId}','${encodeURIComponent(
-               card.path,
-             )}','${encodeURIComponent(card.title)}','${card.slug}')"
-             role="button" tabindex="0"
-             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
-          <span class="related-card-body">
-            <span class="bridge-card-wiki">${escHtml(wikiTitle)}</span>
-            <span class="related-card-title">${escHtml(card.title)}</span>
-          </span>
-          <span class="related-card-arrow">→</span>
-        </div>`,
-        )
-        .join("")}
-    </div>`;
+  container.innerHTML = _stripHtml("Cross-wiki bridge", resolved);
 }
 
 export { extractRecommendedLinks, renderRelatedArticles, renderBacklinks, renderBridges };

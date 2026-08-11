@@ -85,10 +85,8 @@ def test_notes_input_uses_monospace_font(content_page, base_url):
 
 
 def test_notes_not_wiped_by_fast_navigation(content_page, base_url):
-    """Regression for WIKI-430: navigating to a new article before the
-    debounced save timer fires must not wipe the previous article's note.
-    The save must capture the textarea value at input time, not read it
-    live from the (now different) DOM inside the timeout callback."""
+    """Navigating away before the debounce fires must keep the previous note.
+    The save captures textarea value at input time, not from the later DOM."""
     page = content_page
     page.locator("#notes-scratchpad-input").fill("first article note")
     # Navigate away immediately, well before the 300ms debounce fires.
@@ -104,6 +102,27 @@ def test_notes_not_wiped_by_fast_navigation(content_page, base_url):
     }""")
     assert saved == "first article note", (
         f"expected the caching article's note to survive fast navigation, got: {saved!r}"
+    )
+
+
+def test_notes_flush_survives_navigate_and_retype(content_page, base_url):
+    """Typing on the next article before the prior debounce fires must not
+    clearTimeout-away the previous article's pending save."""
+    page = content_page
+    page.locator("#notes-scratchpad-input").fill("keep this on caching")
+    page.goto(f"{base_url}/#system-design/load-balancer", wait_until="domcontentloaded")
+    page.wait_for_selector("#notes-scratchpad-input", timeout=10_000)
+    page.locator("#notes-scratchpad-input").fill("lb note")
+    page.wait_for_timeout(400)
+
+    caching = page.evaluate("""() => {
+        const key = Object.keys(localStorage).find(
+            k => k.startsWith('wiki-notes-') && k.includes('caching')
+        );
+        return key ? localStorage.getItem(key) : null;
+    }""")
+    assert caching == "keep this on caching", (
+        f"prior article note lost after navigate+retype, got: {caching!r}"
     )
 
 

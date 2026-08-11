@@ -17,6 +17,8 @@
 - [When This Applies](#when-this-applies)
 - [Real-World Applications](#real-world-applications)
 - [Common Misapplications & Gotchas](#common-misapplications--gotchas)
+- [Interview Scenario Bank](#interview-scenario-bank)
+- [What the Interviewer Probes For](#what-the-interviewer-probes-for)
 - [Appendices](#appendices)
 
 ## TLDR
@@ -66,11 +68,6 @@ To tolerate a partition, nodes must operate independently. But independent opera
 
 > 🧠 **Thought Process**
 > A senior engineer doesn't ask "which two do we pick?" The moment you're building a distributed system, P is not a choice - it's a given. Networks fail, switches reboot, packets drop. The real question is: _when a partition happens, do we return an error or stale data?_ That answer is what CP and AP actually mean.
-
-> 🎯 **Interview Lens** > **Q:** "Explain the CAP theorem."
-> **Ideal answer:** "CAP says you can't have consistency, availability, and partition tolerance simultaneously. Since partitions are unavoidable, the real trade-off is C vs A during a partition - reject requests to stay consistent, or serve stale data to stay available."
-> **Common trap:** Treating it as a free "pick any two" - candidates say "we'd choose CA" without realising that claims their network never partitions.
-> **Next question:** "Can a single system be both CP and AP depending on the operation?"
 
 **Key Takeaway:** CAP's value isn't the three-way trade-off - it's the forced question: "what does your system do during a partition?" Every distributed system answers this whether it intends to or not.
 
@@ -123,11 +120,6 @@ This is why "CA" is a theoretical category, not a real design choice. Claiming C
 
 > 🧠 **Thought Process**
 > When a candidate says "we'll pick CA for our database", the right follow-up is: "what happens when a network switch between your two nodes fails for 30 seconds?" If the answer is "we block all writes" - that's CP. If the answer is "we serve stale reads" - that's AP. There is no third answer.
-
-> 🎯 **Interview Lens** > **Q:** "What does consistency mean in CAP?"
-> **Ideal answer:** "In CAP, consistency means linearizability - after any write, every subsequent read from any node returns that value. It's not the same as ACID consistency, which is about constraint satisfaction."
-> **Common trap:** Conflating CAP's C with ACID's C, or describing it vaguely as "all nodes have the same data" without specifying the timing guarantee.
-> **Next question:** "If consistency in CAP means linearizability, what weaker consistency model do AP systems typically offer instead?"
 
 **Key Takeaway:** P is always chosen by default in any real distributed system - the meaningful decision is C vs A. Understanding what CAP's C actually means (linearizability) is what separates a precise answer from a vague one.
 
@@ -271,13 +263,7 @@ In practice: nodes accept writes locally and propagate them asynchronously; read
 
 **When AP is the right choice:** domains where availability matters more than precision - shopping carts, social feeds, analytics counters, DNS. A stale answer is better than no answer.
 
-| Criteria               | CP                             | AP                           |
-| ---------------------- | ------------------------------ | ---------------------------- |
-| During partition       | Returns error or blocks        | Returns stale data           |
-| After partition heals  | Already consistent             | Requires conflict resolution |
-| Write latency (normal) | Higher - quorum required       | Lower - local write          |
-| Read latency (normal)  | Higher - quorum or leader read | Lower - nearest replica      |
-| Failure mode           | Unavailable under partition    | Inconsistent under partition |
+Full CP-vs-AP comparison table, including conflict handling and example systems: see [Appendices → Selection Matrix](#selection-matrix).
 
 ### Why CA Doesn't Exist at Scale
 
@@ -295,11 +281,6 @@ What architects sometimes mean when they say "CA" is a single-node system, or a 
 > - Operations that mutate shared critical state (payments, reservations, locks) → CP
 > - Operations where staleness is tolerable and availability is user-visible (feeds, caches, counters) → AP
 > - Many production systems run CP for writes and AP for reads, with explicit consistency level configuration per query (e.g., Cassandra's `QUORUM` vs `ONE`).
-
-> 🎯 **Interview Lens** > **Q:** "Your database is a CP system. What happens to write requests during a network partition?"
-> **Ideal answer:** "Writes that can't reach quorum are rejected with an error. The client must retry. The trade-off is explicit: we return errors rather than risk inconsistent state."
-> **Common trap:** Saying "writes queue up and retry automatically" - that describes an AP system with client-side buffering, not CP behaviour.
-> **Next question:** "How does a CP system know when the partition has healed and it's safe to resume writes?"
 
 **Key Takeaway:** CP and AP describe what a system does when it must choose - reject or respond. The choice should be made per-operation based on whether a wrong answer is worse than no answer.
 
@@ -465,11 +446,6 @@ The most important insight for production system design: a single system can app
 >
 > If both answers are "something bad," that is a signal to redesign the operation or accept a specific trade-off explicitly rather than implicitly.
 
-> 🎯 **Interview Lens** > **Q:** "You're designing a ride-sharing app. Should your system be CP or AP?"
-> **Ideal answer:** "Neither globally. Driver location updates are AP - slightly stale positions are fine, and availability matters. Ride assignment is CP - two drivers cannot be assigned to the same rider. Payment is CP - consistency failures have direct financial consequences."
-> **Common trap:** Labelling the whole system CP or AP instead of reasoning per-operation.
-> **Next question:** "How would you implement per-operation consistency levels in practice?"
-
 **Key Takeaway:** CP vs AP is an operation-level decision, not a system-level label. Correctly identifying which operations require CP and which tolerate AP is the practical skill CAP is testing.
 
 ---
@@ -593,12 +569,61 @@ These are all weaker than linearizability (CAP's C) but significantly stronger t
 
 **What to do instead:** Choose the weakest consistency model that your application correctness requires - not the weakest available. Read-your-writes is often sufficient and much cheaper than quorum consistency.
 
-> 🎯 **Interview Lens** > **Q:** "Walk me through the most common CAP misconceptions."
-> **Ideal answer:** "Three main ones: CA is not a real option at scale since partitions always happen; CP/AP labels belong to operations, not systems; and CAP only covers partition behaviour - PACELC is the right framework for reasoning about normal-operation latency/consistency trade-offs."
-> **Common trap:** Only naming one misconception - usually the CA myth - without the PACELC gap or the per-operation nuance.
-> **Next question:** "Given those misconceptions, how would you actually document the consistency guarantees of a new system you're designing?"
-
 **Key Takeaway:** The most dangerous CAP mistake is treating it as a complete framework for distributed system design - it is a narrow impossibility result. Combine it with PACELC for latency reasoning, per-operation consistency classification for design, and explicit partition behaviour documentation for production.
+
+---
+
+## Interview Scenario Bank
+
+### Explaining CAP Cold
+
+> 🎯 **Interview Lens**
+> **Q:** Explain the CAP theorem.
+> **Ideal answer:** You can't have consistency, availability, and partition tolerance simultaneously. Since partitions are unavoidable, the real trade-off is C vs A during a partition - reject requests to stay consistent, or serve stale data to stay available.
+> **Common trap:** Treating it as a free "pick any two" - claiming "we'd choose CA" without realizing that means claiming the network never partitions.
+> **Next question:** "Can a single system be both CP and AP depending on the operation?" → Yes - Cassandra at `QUORUM` behaves CP-like, at `ONE` behaves AP-like, same cluster, different operations.
+
+### CAP's C, Precisely
+
+> 🎯 **Interview Lens**
+> **Q:** What does consistency mean in CAP?
+> **Ideal answer:** Linearizability - after any write, every subsequent read from any node returns that value. Not the same as ACID consistency, which is about constraint satisfaction.
+> **Common trap:** Conflating CAP's C with ACID's C, or describing it vaguely as "all nodes have the same data" without the timing guarantee.
+> **Next question:** "What weaker consistency model do AP systems typically offer instead?" → Read-your-writes, monotonic reads, or causal consistency - weaker than linearizability but stronger than pure eventual consistency.
+
+### CP Behavior Under Partition
+
+> 🎯 **Interview Lens**
+> **Q:** Your database is a CP system. What happens to write requests during a network partition?
+> **Ideal answer:** Writes that can't reach quorum are rejected with an error; the client must retry. The trade-off is explicit - errors rather than risking inconsistent state.
+> **Common trap:** "Writes queue up and retry automatically" - that's an AP system with client-side buffering, not CP behavior.
+> **Next question:** "How does a CP system know when the partition has healed and it's safe to resume writes?" → Typically via the consensus protocol's own heartbeat/quorum re-establishment (e.g. Raft leader re-election succeeding) - the system doesn't need an external partition-healed signal, it just resumes once quorum is reachable again.
+
+### Per-Operation CP/AP Design
+
+> 🎯 **Interview Lens**
+> **Q:** You're designing a ride-sharing app. Should your system be CP or AP?
+> **Ideal answer:** Neither globally. Driver location updates are AP - slightly stale positions are fine, availability matters. Ride assignment is CP - two drivers cannot be assigned to the same rider. Payment is CP - consistency failures have direct financial consequences.
+> **Common trap:** Labeling the whole system CP or AP instead of reasoning per-operation.
+> **Next question:** "How would you implement per-operation consistency levels in practice?" → Expose it as a per-query knob like Cassandra's consistency levels (`QUORUM` vs `ONE`), rather than a single global database-wide setting.
+
+### Naming the Common Misconceptions
+
+> 🎯 **Interview Lens**
+> **Q:** Walk me through the most common CAP misconceptions.
+> **Ideal answer:** Three main ones - CA isn't a real option at scale since partitions always happen; CP/AP labels belong to operations, not whole systems; and CAP only covers partition behavior, PACELC is the right framework for normal-operation latency/consistency trade-offs.
+> **Common trap:** Naming only the CA myth and stopping there, missing the PACELC gap and the per-operation nuance.
+> **Next question:** "Given those misconceptions, how would you document the consistency guarantees of a system you're designing?" → Per-operation: for each operation, state its partition behavior (CP/AP) and its normal-operation trade-off (PACELC's L vs C) explicitly, rather than one system-wide label.
+
+---
+
+## What the Interviewer Probes For
+
+**"How does a CP system know it's safe to resume writes after a partition heals?"** (see [CP Behavior Under Partition](#cp-behavior-under-partition)) - Probes whether the candidate understands partition detection isn't a separate signal bolted on top. Answer: it's typically implicit in the consensus protocol's own mechanics - a Raft leader re-election succeeding, or quorum becoming reachable again - not an external "partition healed" event the system waits for.
+
+**"How would you implement per-operation consistency levels in practice?"** (see [Per-Operation CP/AP Design](#per-operation-cpap-design)) - Probes whether the candidate can move from the CP/AP concept to a concrete API surface. Answer: expose it as a per-query knob (Cassandra's `QUORUM` vs `ONE` consistency levels), not a single database-wide setting - the same cluster serves both CP-like and AP-like operations depending on what's asked of it.
+
+**"You said CAP only covers partition behavior - what governs your system's design the other 99.9% of the time?"** (see [CAP vs PACELC](#cap-vs-pacelc)) - Probes whether the candidate conflates "we chose CP" with "we must maximize consistency always." Answer: PACELC's ELC branch (latency vs consistency during normal operation) is a separate, independent decision from the partition-time CAP choice - a system can be PC (blocks on partition) and still be EL (low latency normally) by relaxing quorum requirements outside partition events.
 
 ---
 

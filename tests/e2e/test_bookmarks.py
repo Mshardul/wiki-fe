@@ -79,6 +79,42 @@ def test_clear_bookmarks_removes_all(page, base_url):
     assert "hidden" in (section.get_attribute("class") or "")
 
 
+def test_bookmark_toggle_scoped_by_wiki_id(page, base_url):
+    """Toggling a bookmark on one wiki must not remove the same path bookmarked in another wiki."""
+    shared_path = "content/system-design/components/caching.md"
+    _go_to_article(page, base_url)
+    page.evaluate(
+        f"""() => {{
+            localStorage.setItem('wiki-bookmarks', JSON.stringify([
+                {{wikiId:'system-design', path:{shared_path!r}, slug:'caching', title:'Caching', wikiTitle:'System Design'}},
+                {{wikiId:'dsa', path:{shared_path!r}, slug:'caching', title:'Caching', wikiTitle:'Data Structures & Algorithms'}},
+            ]));
+        }}"""
+    )
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.locator("[title='Preferences (,)']:visible").first.click()
+    page.wait_for_function(
+        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    page.locator("[data-tab='advanced']").click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-panel-advanced').getAttribute('aria-hidden') === 'false'"
+    )
+    btn = page.locator("#prefs-bookmark-toggle")
+    assert "active" in (btn.get_attribute("class") or ""), "System Design bookmark must show active"
+    btn.click()
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        "() => document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+
+    _open_bookmarks_modal(page)
+    wiki_labels = page.locator("#bookmarks-modal-list .bookmarks-modal-entry-wiki").all_inner_texts()
+    assert "Data Structures & Algorithms" in wiki_labels
+    assert wiki_labels.count("System Design") == 0
+
+
 def test_anon_bookmark_makes_no_api_call(page, base_url):
     """logged-out users hit zero sync endpoints when bookmarking."""
     calls = []

@@ -107,6 +107,27 @@ def test_card_swipe_left_marks_read(mobile_page, base_url):
     )
 
 
+def test_card_swipe_left_writes_normalized_path(mobile_page, base_url):
+    """Regression: swipe-to-mark-read used to write the raw ./-prefixed card path into wiki-read, a shape isRead() (keyed off state.currentFilePath, never ./-prefixed) could never match on revisit."""
+    page = mobile_page
+    _go_to_index(page, base_url)
+    card, box = _first_card_box(page)
+
+    cy = box["y"] + box["height"] / 2
+    _swipe(page, box["x"] + box["width"] - 20, cy, box["x"] + 10, cy)
+
+    page.wait_for_function(
+        "() => JSON.parse(localStorage.getItem('wiki-read-system-design') || '[]').length > 0",
+        timeout=5_000,
+    )
+    read_set = page.evaluate(
+        "() => JSON.parse(localStorage.getItem('wiki-read-system-design') || '[]')"
+    )
+    assert all(not p.startswith("./") for p in read_set), (
+        f"wiki-read-system-design must not contain ./-prefixed paths, got {read_set}"
+    )
+
+
 def test_card_swipe_near_left_edge_still_bookmarks(mobile_page, base_url):
     """right-swipe starting inside the global edge zone on an index card
     still bookmarks the card (card gesture wins; no stray back-nav)."""
@@ -364,10 +385,20 @@ def test_swipe_down_from_mid_sheet_closes_prefs(mobile_page, base_url):
     page.wait_for_function("() => !Settings.isOpen()", timeout=5_000)
 
 
+def test_swipe_down_closes_link_graph(mobile_page, base_url):
+    """swipe-down close cascade includes the link-graph overlay."""
+    page = mobile_page
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.keyboard.press("g")
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=5_000)
+    _swipe(page, 195, 40, 200, 200)
+    page.wait_for_selector("#link-graph-modal.hidden", state="attached", timeout=5_000)
+
+
 def test_mobile_toc_survives_small_resize(mobile_page, base_url):
-    """Regression for WIKI-436: a small viewport-height change (like a mobile
-    browser's address bar showing/hiding during ordinary scrolling) must not
-    close the mobile TOC drawer - only a significant width change should."""
+    """A small viewport-height change (address bar) must not close the TOC
+    drawer - only a significant width change should."""
     page = mobile_page
     page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)

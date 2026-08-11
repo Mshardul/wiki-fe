@@ -1,5 +1,6 @@
 import { navigateToContent } from "../render/content-view.js";
 import { fetchPrebuiltBacklinks, fetchPrebuiltSearchIndex } from "../render/nav-utils.js";
+import { showToast } from "../render/toast.js";
 import { state } from "../state.js";
 import { isRead } from "../storage/read-tracking.js";
 import {
@@ -52,12 +53,15 @@ function getOverlay() {
 async function _openSectionMap() {
   if (isSectionMapOpen()) return;
   const section = await currentSectionNodes();
-  if (!section) return;
+  if (!section) {
+    showToast("Section map unavailable — this article isn't in the index.");
+    return;
+  }
 
   const overlay = getOverlay();
   const canvas = document.getElementById("section-map-canvas");
   const status = document.getElementById("section-map-status");
-  overlay.classList.add("open");
+  overlay.classList.remove("hidden");
   overlay.setAttribute("aria-hidden", "false");
   status.textContent = section.heading;
 
@@ -76,14 +80,14 @@ async function _openSectionMap() {
 
 function closeSectionMap() {
   const overlay = getOverlay();
-  overlay.classList.remove("open");
+  overlay.classList.add("hidden");
   overlay.setAttribute("aria-hidden", "true");
   destroyGraphSim(_sim);
   _sim = null;
 }
 
 function isSectionMapOpen() {
-  return getOverlay().classList.contains("open");
+  return !getOverlay().classList.contains("hidden");
 }
 
 function toggleSectionMap() {

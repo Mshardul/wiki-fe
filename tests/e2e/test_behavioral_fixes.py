@@ -502,6 +502,32 @@ def test_toast_queue_second_message_appears_after_first(page, base_url):
     assert "Copy failed" in page.locator("#wiki-toast").inner_text()
 
 
+def test_toast_higher_priority_overtakes_queued_lower_priority(page, base_url):
+    """A higher-priority toast queued after 2 low-priority ones (e.g. install nudge) jumps the queue ahead of them, matching how the SW-update/session-expired toasts must overtake the install nudge."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+
+    page.evaluate("""async () => {
+        const { showToast } = await import('./js/render/toast.js');
+        showToast("first low priority", 300, null, undefined, null, -1);
+        showToast("second low priority", 300, null, undefined, null, -1);
+        showToast("urgent high priority", 300, null, undefined, null, 1);
+    }""")
+
+    page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
+    assert "first low priority" in page.locator("#wiki-toast").inner_text()
+
+    # First toast's own 300ms timer expires and advances the queue - the
+    # high-priority toast queued last must be the one that appears next,
+    # ahead of "second low priority" which was enqueued before it.
+    page.wait_for_function(
+        "() => document.getElementById('wiki-toast')?.querySelector('.wiki-toast-msg')"
+        ".textContent !== 'first low priority'",
+        timeout=3_000,
+    )
+    assert "urgent high priority" in page.locator("#wiki-toast").inner_text()
+
+
 # ── parseIndexMd CRLF + malformed row guards ──────────────────────
 
 
@@ -658,3 +684,12 @@ def test_offline_toggle_visible_on_desktop(page, base_url):
     toggles = page.locator("[data-action='offline-toggle']")
     assert toggles.count() == 1
     assert toggles.first.is_visible()
+
+
+def test_icon_sprite_fetch_failure_shows_toast(page, base_url):
+    """A failed sprite.svg fetch surfaces an error toast instead of silent blanks."""
+    page.route("**/sprite.svg", lambda route: route.abort())
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#wiki-toast.visible", timeout=8_000)
+    text = page.locator("#wiki-toast .wiki-toast-msg").inner_text()
+    assert "Icons failed to load" in text

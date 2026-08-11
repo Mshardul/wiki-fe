@@ -13,10 +13,10 @@ import { listCachedArticlePaths } from "../storage/offline.js";
 import { getLastOpened, isRead } from "../storage/read-tracking.js";
 import { renderRecentsSection } from "../storage/recents.js";
 import { toggleCollapse } from "../storage/scroll-collapse.js";
-import { showHoverPreview } from "./content-view.js";
 import { bindIndexCardSwipe, bindIndexPullToRefresh } from "./home-gestures.js";
 import { parseIndexMd, updateArticleCounts } from "./home-parse.js";
 import { destroyIndexGraph, renderIndexGraph } from "./index-graph.js";
+import { renderLearningPathProgress } from "./learning-paths.js";
 import {
   dirOf,
   fetchText,
@@ -144,9 +144,9 @@ async function renderIndex(wiki) {
     const basePath = dirOf(wiki.indexPath);
     state.indexSections = parseIndexMd(md, basePath);
     renderIndexSections(state.indexSections, wiki);
+    for (const section of state.indexSections) renderLearningPathProgress(section, wiki);
     renderIndexControls(wiki);
     attachIndexCardKeyNav();
-    attachIndexCardHoverPreview();
     IndexFilter.apply();
     _wireOfflineDimming();
     applyOfflineDimming(wiki);
@@ -212,7 +212,7 @@ function renderIndexSections(sections, wiki) {
             <div class="index-card-meta">
               <span class="index-card-read-time" data-path="${escHtml(card.path)}">…</span>
               <span class="index-card-read-dot ${
-                isRead(card.path) ? "visible" : ""
+                isRead(normalizePath(card.path)) ? "visible" : ""
               }" title="Read"></span>
               <span class="index-card-updated-dot" title="Updated since you last read it"></span>
             </div>
@@ -386,55 +386,6 @@ function attachIndexCardKeyNav() {
   document.addEventListener("keydown", document._indexCardKeyNav);
 }
 
-let _indexCardHoverTimer;
-let _lastPointerWasTouch = false;
-window.addEventListener(
-  "pointerdown",
-  (e) => {
-    _lastPointerWasTouch = e.pointerType !== "mouse";
-  },
-  { capture: true },
-);
-
-function attachIndexCardHoverPreview() {
-  const container = document.getElementById("index-sections");
-  if (!container) return;
-
-  if (container._cardHoverPreview) {
-    container.removeEventListener("pointerover", container._cardHoverPreview);
-    container.removeEventListener("pointerleave", container._cardHoverLeave);
-  }
-
-  let _activeCard = null;
-
-  container._cardHoverPreview = (e) => {
-    if (_lastPointerWasTouch) return;
-    const card = e.target.closest(".index-card:not(.index-card--unavailable)");
-    if (card === _activeCard) return;
-    _activeCard = card;
-    clearTimeout(_indexCardHoverTimer);
-    if (!card) return;
-    const path = card.querySelector(".index-card-read-time[data-path]")?.dataset.path;
-    if (!path) return;
-    _indexCardHoverTimer = setTimeout(() => showHoverPreview(card, path), 400);
-  };
-
-  container._cardHoverLeave = (e) => {
-    const relTarget = e.relatedTarget;
-    if (relTarget && container.contains(relTarget)) return;
-    _activeCard = null;
-    clearTimeout(_indexCardHoverTimer);
-    const previewEl = document.getElementById("hover-preview");
-    if (!previewEl) return;
-    previewEl.classList.remove("visible");
-    previewEl.classList.add("hidden");
-    previewEl.textContent = "";
-  };
-
-  container.addEventListener("pointerover", container._cardHoverPreview);
-  container.addEventListener("pointerleave", container._cardHoverLeave);
-}
-
 /* ═══════════════════════════════════════════════════════════════
    INDEX FILTER - live text filter + unread-only toggle
    ═══════════════════════════════════════════════════════════════ */
@@ -495,7 +446,8 @@ const IndexFilter = {
       sectionEl.querySelectorAll(".index-card").forEach((card) => {
         const title = (card.dataset.title || "").toLowerCase();
         const desc = (card.dataset.desc || "").toLowerCase();
-        const path = card.querySelector(".index-card-read-time[data-path]")?.dataset.path;
+        const rawPath = card.querySelector(".index-card-read-time[data-path]")?.dataset.path;
+        const path = rawPath ? normalizePath(rawPath) : null;
         const matchesText =
           !this._query || title.includes(this._query) || desc.includes(this._query);
         const read = path ? isRead(path) : false;
@@ -609,8 +561,8 @@ async function populateIndexReadTimes() {
           const updatedDot = card.querySelector(".index-card-updated-dot");
           if (updatedDot) updatedDot.remove();
         } else if (card) {
-          _applyUpdatedDot(card, rawPath, updatedDateCache[path]);
-          _applyFade(card, rawPath);
+          _applyUpdatedDot(card, path, updatedDateCache[path]);
+          _applyFade(card, path);
         }
         badge.textContent = isStub ? "Coming soon" : readTimeCache[path];
       } catch {
@@ -641,7 +593,6 @@ export {
   renderIndexSections,
   renderIndexControls,
   attachIndexCardKeyNav,
-  attachIndexCardHoverPreview,
   IndexFilter,
   toggleSection,
   populateIndexReadTimes,

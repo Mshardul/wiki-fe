@@ -17,6 +17,7 @@ import {
   isDistractionFree,
   toggleDistractionFree,
 } from "./app/distraction-free.js";
+import { initIconTooltips } from "./app/icon-tooltip.js";
 import { initInstallPrompt } from "./app/install-prompt.js";
 import { closeLinkGraph, isLinkGraphOpen, openLinkGraph } from "./app/link-graph.js";
 import { printArticle } from "./app/print.js";
@@ -38,7 +39,7 @@ import { QuizMode } from "./content/tables.js";
 import { expandAllSections, initProgressRingScrollTop, updateProgressRing } from "./content/toc.js";
 import { closeZoomOverlay } from "./content/zoom-lightbox.js";
 import { loadIconSprite } from "./icon-sprite.js";
-import { isAnyModalOpen as isAnyRegisteredModalOpen } from "./modal-registry.js";
+import { closeTopModal, isAnyModalOpen as isAnyRegisteredModalOpen } from "./modal-registry.js";
 import { renderChangelog } from "./render/changelog-view.js";
 import { getCurrentMarkdown, navigateToContent } from "./render/content-view.js";
 import { IndexFilter, toggleSection } from "./render/home-index.js";
@@ -104,7 +105,7 @@ document.addEventListener("wiki:toast", (e) => {
 
 document.addEventListener("wiki:session-expired", () => {
   Auth.refreshButtons();
-  showToast("Session expired, please log in", 5000, null, undefined, "warning");
+  showToast("Session expired, please log in", 5000, null, undefined, "warning", 1);
   AuthModal.open("login");
 });
 
@@ -240,9 +241,6 @@ document.addEventListener("click", (e) => {
     case "find-open":
       ArticleFind.open();
       break;
-    case "overflow-toggle":
-      toggleTopbarOverflow();
-      break;
     case "copy-source-toggle":
       Settings._toggleCopySourceHeader();
       break;
@@ -274,28 +272,12 @@ document.addEventListener("click", (e) => {
       AuthModal.close();
       break;
   }
-  if (btn.dataset.action !== "overflow-toggle" && btn.closest("#content-overflow-menu")) {
-    closeTopbarOverflow();
+  if (btn.closest("#prefs-panel-actions") && btn.dataset.action && Settings.isOpen()) {
+    Settings.close();
   }
 });
 
 document.getElementById("import-upload").addEventListener("change", (e) => Settings.importData(e));
-
-/* ═══════════════════════════════════════════════════════════════
-   TOPBAR OVERFLOW MENU (mobile)
-   ═══════════════════════════════════════════════════════════════ */
-function toggleTopbarOverflow() {
-  const menu = document.getElementById("content-overflow-menu");
-  const btn = document.getElementById("content-overflow-btn");
-  const isOpen = menu.classList.toggle("open");
-  btn.setAttribute("aria-expanded", String(isOpen));
-}
-function closeTopbarOverflow() {
-  const menu = document.getElementById("content-overflow-menu");
-  const btn = document.getElementById("content-overflow-btn");
-  menu.classList.remove("open");
-  btn.setAttribute("aria-expanded", "false");
-}
 
 /* ═══════════════════════════════════════════════════════════════
    RESET-VIEW ESCAPE HATCH
@@ -335,12 +317,6 @@ function resetView() {
   window.scrollTo({ left: scrollX, top: scrollY, behavior: "instant" });
   showToast("View reset");
 }
-document.addEventListener("click", (e) => {
-  const menu = document.getElementById("content-overflow-menu");
-  if (!menu.classList.contains("open")) return;
-  if (e.target.closest(".topbar-overflow")) return;
-  closeTopbarOverflow();
-});
 
 /* ═══════════════════════════════════════════════════════════════
    SCROLL TO TOP
@@ -465,9 +441,7 @@ document.addEventListener("keydown", (e) => {
 
   // Escape: Close modals or navigate back from content
   if (e.key === "Escape") {
-    if (document.getElementById("content-overflow-menu").classList.contains("open")) {
-      closeTopbarOverflow();
-    } else if (!document.getElementById("wiki-switcher-modal").classList.contains("hidden")) {
+    if (!document.getElementById("wiki-switcher-modal").classList.contains("hidden")) {
       closeWikiSwitcher();
     } else if (isLinkGraphOpen()) {
       closeLinkGraph();
@@ -479,14 +453,10 @@ document.addEventListener("keydown", (e) => {
       closeBookmarksModal();
     } else if (ArticleFind.isOpen()) {
       ArticleFind.close();
-    } else if (document.getElementById("zoom-overlay")?.classList.contains("open")) {
+    } else if (document.getElementById("zoom-overlay")?.classList.contains("hidden") === false) {
       closeZoomOverlay();
-    } else if (AuthModal.isOpen()) {
-      AuthModal.close();
-    } else if (!document.getElementById("global-search-modal").classList.contains("hidden")) {
-      closeGlobalSearch();
-    } else if (Settings.isOpen()) {
-      Settings.close();
+    } else if (closeTopModal()) {
+      // Topmost registered modal (auth, search, prefs, bookmarks, …)
     } else if (hasResettableViewState()) {
       // A reading mode is active or view is filtered - Escape resets in place instead of navigating away.
       resetView();
@@ -631,7 +601,7 @@ document.addEventListener("wiki:themechange", () => {
   syncHljsTheme();
   // The zoom overlay holds a cloned, detached SVG - a theme change never
   // touches it, so an already-open diagram zoom would show stale colors.
-  if (document.getElementById("zoom-overlay")?.classList.contains("open")) {
+  if (document.getElementById("zoom-overlay")?.classList.contains("hidden") === false) {
     closeZoomOverlay();
   }
 });
@@ -658,6 +628,7 @@ window.addEventListener("hashchange", () => {
   syncHljsTheme();
   initOsThemeListener();
   initInstallPrompt();
+  initIconTooltips();
 
   // Not awaited - boot/render proceeds anonymously, re-renders on wiki:session-changed.
   Auth.init();
@@ -672,6 +643,7 @@ window.addEventListener("hashchange", () => {
       .register("./wiki-sw.js")
       .then((reg) => {
         const promptUpdate = (worker) => {
+          // Higher priority: overtakes a low-priority install nudge already queued ahead of it.
           showToast(
             "A new version is available.",
             8000,
@@ -679,6 +651,8 @@ window.addEventListener("hashchange", () => {
               worker.postMessage("SKIP_WAITING");
             },
             "Refresh",
+            null,
+            1,
           );
         };
 

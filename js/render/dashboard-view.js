@@ -2,7 +2,7 @@ import { WIKIS, escHtml } from "../state.js";
 import { getCompletedSet } from "../storage/completions.js";
 import { getReadSet } from "../storage/read-tracking.js";
 import { fetchWikiIndex } from "./home-parse.js";
-import { setBreadcrumb } from "./nav-utils.js";
+import { normalizePath, setBreadcrumb } from "./nav-utils.js";
 import { showView } from "./router.js";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -52,7 +52,7 @@ async function renderDashboard() {
     const cards = [];
     for (const wiki of WIKIS) {
       const sections = await fetchWikiIndex(wiki);
-      const paths = sections.flatMap((s) => s.cards.map((c) => c.path));
+      const paths = sections.flatMap((s) => s.cards.map((c) => normalizePath(c.path)));
       if (!paths.length) continue;
 
       const readSet = getReadSet(wiki.id);

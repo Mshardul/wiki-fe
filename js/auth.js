@@ -1,5 +1,11 @@
 import { ApiError, api, getSessionToken, setSessionToken } from "./api.js";
-import { createFocusTrap, getFocusableIn, registerModal } from "./modal-registry.js";
+import {
+  createFocusTrap,
+  getFocusableIn,
+  markModalClosed,
+  markModalOpened,
+  registerModal,
+} from "./modal-registry.js";
 import { showToast } from "./render/toast.js";
 import {
   WIKIS,
@@ -127,11 +133,15 @@ const AuthModal = {
     m.classList.remove("hidden");
     m.setAttribute("aria-hidden", "false");
     this._swap(panel);
-    if (!wasOpen) document.addEventListener("keydown", this._trapFocus);
+    if (!wasOpen) {
+      document.addEventListener("keydown", this._trapFocus);
+      markModalOpened(authModal);
+    }
   },
 
   close() {
     if (!this.isOpen()) return;
+    markModalClosed(authModal);
     unlockBodyScroll();
     const m = document.getElementById("auth-modal");
     m.classList.add("hidden");
@@ -234,7 +244,8 @@ const AuthModal = {
   },
 };
 
-registerModal({ isOpen: () => AuthModal.isOpen(), close: () => AuthModal.close() });
+const authModal = { isOpen: () => AuthModal.isOpen(), close: () => AuthModal.close() };
+registerModal(authModal);
 
 // Disables btnId during fn(), re-enabling after unless fn() started a longer-lived disable (e.g. resend cooldown).
 async function _withSubmitGuard(btnId, fn) {
@@ -652,13 +663,16 @@ const Auth = {
 // Another tab logged in/out - re-probe /auth/me and re-render so this tab catches up.
 window.addEventListener("storage", (e) => {
   if (e.key !== SESSION_SYNC_KEY) return;
+  const wasIn = state.session.status === "in";
   api.auth
     .me()
-    .then((data) => {
+    .then(async (data) => {
       state.session = { user: data.user, status: "in" };
+      if (!wasIn) await Sync.pullAll();
     })
     .catch(() => {
       state.session = { user: null, status: "out" };
+      if (wasIn) Sync.clearUserDataCache();
     })
     .finally(() => {
       Auth.refreshButtons();

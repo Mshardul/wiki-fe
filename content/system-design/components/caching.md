@@ -23,7 +23,8 @@
 - [Security & Hardening](#security--hardening)
 - [Observability](#observability)
 - [Production Issues & Debugging](#production-issues--debugging)
-- [Common Interview Gotchas](#common-interview-gotchas)
+- [Interview Scenario Bank](#interview-scenario-bank)
+- [What the Interviewer Probes For](#what-the-interviewer-probes-for)
 - [Appendices](#appendices)
 
 ---
@@ -168,11 +169,6 @@ The cache proactively refreshes a key before its TTL expires, based on access fr
 | Write-Behind  | On every write        | Cache (async DB)  | Eventual               | Risk (pre-flush loss) | Write-heavy, latency-sensitive |
 | Refresh-Ahead | Background refresh    | DB only           | Near-fresh             | Full                  | Predictable hot keys           |
 
-> 🎯 **Interview Lens** > **Q:** Walk me through the cache-aside pattern and what can go wrong.
-> **Ideal answer:** Read: check cache → miss → DB read → cache populate → return. Write: DB write → cache invalidate. The race condition: concurrent misses both query DB; a write + invalidation interleaves; the slower reader overwrites cache with stale data. Mitigated with CAS or short TTL as correction window.
-> **Common trap:** "Just update the cache on write instead of invalidating." This is write-through, not cache-aside, and requires both writes to succeed atomically - which isn't guaranteed without a transaction spanning both the DB and cache.
-> **Next question:** "Why invalidate instead of update on write?" → Invalidation is safer: a failed cache update still leaves DB as source of truth. A stale cache update with a failed DB write creates a divergence that TTL must correct. Invalidation fails safe; update fails dangerous.
-
 **Key Takeaway:** Cache-aside is the right default - it fails gracefully and keeps the DB authoritative. Write-through and write-behind are performance trade-offs with real consistency and durability costs; choose them only when profiling justifies it.
 
 ---
@@ -237,11 +233,6 @@ S3-FIFO (2023): Three-queue variant - a small queue (S), a main queue (M), and a
 
 An eviction rate of 0 with high memory utilization means the working set fits in cache - memory may be over-provisioned. A sustained eviction rate above ~1% of total operations means the working set exceeds capacity. Before adding cache capacity, check the eviction pattern: if a handful of large objects are causing many small object evictions, the problem is object size distribution, not total capacity.
 
-> 🎯 **Interview Lens** > **Q:** Why would you choose LFU over LRU for a product catalog cache?
-> **Ideal answer:** Product catalogs have a stable hot set - top 1000 products account for 80% of views regardless of recency. LRU would demote a hot product if it wasn't accessed in the last N minutes (e.g., overnight). LFU retains it based on long-term access frequency. The risk is new product starvation - a newly launched product starts at frequency=1 and is immediately evictable, even during a launch spike. Mitigate with a minimum TTL before any new key becomes eviction-eligible.
-> **Common trap:** "Always use LRU because it's simpler." LRU is a good default but the wrong choice for frequency-dominated workloads.
-> **Next question:** "What about ARC?" → ARC adapts between recency and frequency automatically. The downside is implementation complexity - it's not available in Redis natively. For a product catalog, LFU with decay is usually sufficient and simpler to operate.
-
 **Key Takeaway:** LRU is the right default for temporal locality workloads. LFU outperforms it for stable hot-key workloads but requires decay to handle cold key buildup. ARC self-tunes but adds implementation complexity. Eviction rate is the metric that tells you when the policy choice matters less than the capacity.
 
 ---
@@ -305,11 +296,6 @@ Embed a version or content hash in the cache key: `user:123:v7`, `static:main.js
 In a multi-node cache cluster, invalidating one logical key requires sending the delete to every node that may hold a replica of that key. At 100 cache nodes with full replication, one logical invalidation becomes 100 network messages. At high write rates, invalidation fan-out can saturate the network.
 
 **Mitigation:** For high-write keys, accept TTL-based eventual consistency instead of synchronous invalidation - the invalidation cost exceeds the staleness cost. For low-write keys with freshness requirements, explicit invalidation is acceptable. Shard keys such that a given key lives on a small, known subset of nodes.
-
-> 🎯 **Interview Lens** > **Q:** How would you handle cache invalidation for a search results page that aggregates data from three tables?
-> **Ideal answer:** Exact-key invalidation doesn't scale - the search result key depends on the query parameters and aggregation across three tables. Two options: (1) short TTL (30-60s) as the primary freshness mechanism - acceptable staleness for search; (2) event-driven invalidation via CDC - any mutation on the three tables emits an event; the consumer invalidates all search cache keys tagged with the affected entity. Tag-based invalidation is the right structure here. The tag `product:category:electronics` invalidates all search pages for that category on any product update.
-> **Common trap:** "Invalidate the cache on every write to the DB." This works for simple key:value caches but not for aggregated or query-result caches where the key is computed from input parameters.
-> **Next question:** "What if the CDC pipeline falls behind by 5 minutes?" → The cache serves stale search results for 5 minutes. Acceptable for search; unacceptable for pricing. The TTL becomes the fallback safety net - set it to a staleness window you're willing to tolerate if CDC lags.
 
 **Key Takeaway:** TTL is the safety net; explicit invalidation or CDC is the fast path. The choice of invalidation strategy depends on whether the writer can enumerate affected cache keys - if not, CDC fan-out or tag-based invalidation is the right architecture.
 
@@ -384,11 +370,6 @@ Distributes load across N nodes. Partially breaks per-key ordering (reads may ge
 **Connection pooling:** Each cache request without a pool creates a new TCP connection (~1ms overhead on top of the ~0.3ms cache operation). A pool keeps connections open and reuses them. Pool size formula: `pool_size = ceil(rps × avg_latency_sec / instances)`. A service handling 10k rps per instance with 1ms average cache latency needs a pool of at least 10 connections per instance.
 
 **Pipelining:** Batches multiple Redis commands into a single TCP round-trip. Instead of 10 GET commands × 0.3ms = 3ms, pipelining sends all 10 in one round-trip for ~0.3ms total. Effective for bulk reads or multi-key operations. Not applicable when the result of one command determines the next (sequential dependency).
-
-> 🎯 **Interview Lens** > **Q:** A single Redis node in your cluster is consistently at 100% CPU while others are idle. What do you do?
-> **Ideal answer:** Classic hot key problem. First, identify the key(s) causing it - use Redis's `MONITOR` (sparingly) or `OBJECT FREQ` in LFU mode, or a Count-Min Sketch at the application layer. Then choose a mitigation based on access pattern: if read-heavy, add an in-process L1 shadow with a short TTL; if the key is large and frequently updated, consider key splitting with random suffix. Adding nodes doesn't help because consistent hashing routes the hot key to the same node.
-> **Common trap:** "Add more Redis nodes." Adding nodes reshards the cluster but the hot key still hashes to one node - the new nodes sit idle.
-> **Next question:** "The hot key is a global rate-limit counter that receives 50k writes/sec. Key splitting won't work because you need an accurate total. What now?" → Redis cluster can't give you atomic global aggregation at 50k writes/sec from one node. Options: approximate counting with lossy aggregation across shards; use a purpose-built rate limiter (Envoy rate limit service, Redis Cell module); or accept a short time window of overcounting by summing shards and accepting the error margin.
 
 **Key Takeaway:** Consistent hashing is the production default for sharding - modulo hashing is a resharding disaster. Hot keys require a different solution than adding nodes: in-process L1 shadow for read-heavy keys, key splitting for write-distributed keys.
 
@@ -506,11 +487,6 @@ After a cache restart, full deployment, or scaling event that adds nodes, the ca
 
 **Lazy warming + origin protection:** Accept the cold-start period; protect the origin with rate limiting or a circuit breaker that caps the miss-to-DB rate. Gradual traffic shift (10% → 25% → 50% → 100%) gives the cache time to warm before full load is applied.
 
-> 🎯 **Interview Lens** > **Q:** Explain the difference between cache stampede, cache avalanche, and cache penetration.
-> **Ideal answer:** Stampede: one popular key expires, many concurrent requests simultaneously miss and flood the origin for that one key. Avalanche: many keys expire at the same time (uniform TTL), flooding the origin across many keys simultaneously. Penetration: requests for keys that don't exist in the DB, bypassing the cache entirely and hitting the origin on every request. Different causes, different mitigations: stampede → single-flight mutex or PER; avalanche → TTL jitter and circuit breaker; penetration → null caching or Bloom filter guard.
-> **Common trap:** Treating all three as the same "cache miss" problem with the same solution. They have different root causes and different fixes.
-> **Next question:** "Your Bloom filter says a key exists, but the DB returns empty. What happened?" → The key was deleted from the DB after the Bloom filter was built. Bloom filters do not support deletion (standard variants). The stale positive in the filter causes a DB lookup that returns empty - this is acceptable behavior (one extra DB query). If key deletions are frequent, use a Counting Bloom filter (supports deletions) or rebuild the filter periodically.
-
 **Key Takeaway:** Stampede is about concurrency on a single key; avalanche is about coordinated expiry across many keys; penetration is about non-existent keys. Single-flight coalescing or PER handles stampede and breakdown; TTL jitter and circuit breakers handle avalanche; null caching or Bloom filter handles penetration.
 
 ---
@@ -552,11 +528,6 @@ Cross-region replication lag is measured in tens to hundreds of milliseconds (RT
 **TTL floor:** Do not cache cross-region reads with TTL shorter than the expected replication lag. A TTL of 10ms on a key with 80ms replication lag means the cache expires before the replication even completes - every request will miss and be forwarded cross-region.
 
 **Design for regional staleness:** For most data (product catalogs, user preferences, content), regional staleness of 100–500ms is acceptable. Design the application to tolerate it rather than trying to eliminate it through synchronous cross-region consistency - which would require cross-region coordination on every write and is prohibitively expensive.
-
-> 🎯 **Interview Lens** > **Q:** A user updates their profile and immediately reloads the page - they see the old data. What's happening and how do you fix it?
-> **Ideal answer:** Read-your-writes violation. The write invalidated the cache, but the subsequent read was served by a replica that hadn't received the invalidation yet (replication lag). Fix: (1) after a write, route the user's next read to the primary for a short window; (2) use a version token - the write returns version=7, the subsequent read checks if the cache version is >=7, otherwise falls through to the primary; (3) short TTL on user profile cache (1–5s) as a fallback safety net.
-> **Common trap:** "Just always read from the primary." This eliminates replication benefits and defeats the purpose of having replicas.
-> **Next question:** "How does your token approach work if the user has multiple browser tabs open?" → Each tab's read carries the token from that tab's last write. Tab B (which didn't write) carries an old token and may still see stale data from its replica - which is acceptable. Only the writing session requires read-your-writes consistency.
 
 **Key Takeaway:** Most cache deployments accept eventual consistency. Read-your-writes and monotonic reads are the two guarantees worth implementing for user-facing data. Multi-region caches should be designed around regional staleness acceptance, not cross-region synchronous consistency.
 
@@ -619,11 +590,6 @@ When writing through an L1 + L2 cache hierarchy, the invalidation order matters.
 **Why:** If L1 is invalidated first, a concurrent read between the two invalidations misses L1 and reads from L2 - which is still stale. It then re-populates L1 with stale data from L2. Then L2 is invalidated, but L1 now holds stale data with whatever TTL was set.
 
 Invalidating L2 first means any miss during the window reads from DB (authoritative) and populates both layers correctly.
-
-> 🎯 **Interview Lens** > **Q:** When would you add an in-process cache on top of Redis?
-> **Ideal answer:** When even 0.5ms Redis latency is too high - typically for extremely hot reference data (feature flags, rate limit configs, active A/B experiment configs) accessed on every request. L1 reduces per-request cache cost from ~0.5ms to ~1µs. The trade-off: each instance has its own copy; invalidation must reach all instances via Redis pub/sub or a short L1 TTL. If the data changes rarely and eventual consistency within a few seconds is acceptable, L1 is the right optimization.
-> **Common trap:** Adding L1 for all cached data - this multiplies memory usage across every application instance and makes invalidation a distributed fan-out problem.
-> **Next question:** "Your service has 200 instances each with a 500MB L1 cache. A config change needs to propagate to all instances within 1 second. How?" → Redis pub/sub broadcast: the config writer publishes to a channel, all 200 instances subscribe and invalidate on receive. Delivery is best-effort (no persistence); a restarting instance will miss the invalidation message. Mitigate with a short L1 TTL (5–10s) as a fallback.
 
 **Key Takeaway:** L1 (in-process) for sub-millisecond access to the hottest few keys; L2 (Redis) as the shared authoritative cache; CDN (L3) for HTTP response caching. Invalidate outer layers before inner layers on write.
 
@@ -690,11 +656,6 @@ A single Redis node handles ~100k–500k operations/sec depending on command typ
 
 Redis command execution is single-threaded (I/O threads were added in Redis 6 but command processing remains serial). Shard before hitting the ceiling - adding a second node doubles throughput. Pipelining and Lua scripts (which run atomically in the command thread) are the levers for maximizing single-node throughput.
 
-> 🎯 **Interview Lens** > **Q:** How would you size a Redis cache for a user profile service with 50M users, 500k rps, and a 95% hit rate target?
-> **Ideal answer:** (1) Working set: access follows power law - estimate top 5M users (10%) account for 90% of reads; at 1KB average profile size, that's ~5GB of data. Add 25% for fragmentation = ~6.25GB. (2) Hit rate check: 95% hit rate = 475k rps served by cache, 25k rps to DB. Verify DB can handle 25k rps. (3) Throughput: 500k rps on a single Redis node is at the ceiling for small objects - plan for 2 shards with consistent hashing. (4) Replication: add one read replica per shard for availability. Total: 4 Redis nodes (2 primary, 2 replica), ~8GB memory per primary.
-> **Common trap:** Sizing for 100% of 50M users × 1KB = 50GB. The working set is far smaller - most users are inactive. Size for the working set, not the total data set.
-> **Next question:** "Hit rate drops to 80% on Monday mornings. Why?" → Weekly traffic spike - users who weren't active over the weekend return, accessing profiles that were evicted from the cache. The working set expands on Monday morning. Either pre-warm on Sunday night or increase cache size to hold the Monday working set year-round.
-
 **Key Takeaway:** Size for the working set, not the full dataset. The diminishing returns curve means going from 95% to 99% hit rate rarely justifies the cost. Model throughput ceilings per node and shard before hitting them.
 
 ---
@@ -739,11 +700,6 @@ Example: an attacker queries `GET /profile/{user_id}` for a large number of user
 
 Practical mitigation is difficult - adding artificial response time noise is operationally impractical. Prefer architectural mitigation: avoid caching data whose mere existence (not just its value) is sensitive. Don't cache "is user X online" in a way that leaks presence to unauthenticated callers.
 
-> 🎯 **Interview Lens** > **Q:** You're building a multi-tenant SaaS on a shared Redis cluster. What security controls do you implement?
-> **Ideal answer:** (1) Key namespacing: all keys prefixed with `{tenant_id}:` enforced at the data layer. (2) No wildcard key operations - use SCAN with tenant prefix pattern only. (3) Short TTL for any PII or session data; explicit invalidation on logout/revoke. (4) TLS in transit. (5) If strict isolation is required, separate Redis instances per tenant tier (dedicated instances for enterprise tenants, shared for free tier). (6) Audit key access patterns - monitor for cross-tenant key access anomalies.
-> **Common trap:** "We use separate key prefixes so tenants can't see each other's data." A Redis ACL misconfiguration or application bug can bypass prefix conventions. Enforce at the data layer with ACL rules, not just naming conventions.
-> **Next question:** "A tenant's cache entry contains a Protobuf-encoded object. Another tenant's key accidentally gets the same hash value after a refactor. How does your system handle it?" → Namespace prefix <abbr>collision</abbr> only occurs if two tenants happen to have the same resource ID under the same namespace - which is prevented by the `{tenant_id}:` prefix, not by hash. If the prefix is missing due to a code bug, the collision is a data leak. This is why enforcement at the data access layer (not by convention) is critical.
-
 **Key Takeaway:** Namespace keys by tenant, use short TTLs for sensitive data, enforce TLS in transit, and encrypt at rest if persistence is enabled. Cache poisoning and side-channel timing are the less obvious but interview-worthy threat vectors.
 
 ---
@@ -783,11 +739,6 @@ Alert when any single key accounts for >1% of total cache operations - this is t
 A cache miss that triggers a slow DB query appears in monitoring as a DB latency spike with no visible upstream cause - the trace is broken at the cache boundary. Inject the originating request's trace ID into all cache-miss DB queries via a request-scoped context.
 
 The complete trace should span: `HTTP request → cache key lookup → cache miss → DB query (with trace_id) → cache populate → HTTP response`. Without this, you cannot correlate a DB slow query with the upstream feature or user action that caused it.
-
-> 🎯 **Interview Lens** > **Q:** Your cache hit rate dropped from 95% to 70% overnight. Walk me through your investigation.
-> **Ideal answer:** (1) Was there a deploy? New code may use different cache key format - all old keys now miss; new keys haven't warmed yet. (2) Did eviction rate spike? If yes, working set grew beyond capacity - check for new data volume or larger object sizes. (3) Did traffic pattern change? New user segment or new feature accessing uncached data. (4) Did a cache node fail? Check cluster health - a failed node in a consistent-hashing cluster routes its keys to the next node; those keys are cold. (5) Check TTL distribution - did a mass expiry event coincide with the drop?
-> **Common trap:** Going straight to "add more cache memory." The root cause could be a code change that invalidates all existing keys, which adding memory won't fix.
-> **Next question:** "Hit rate is fine but P99 latency on cache hits increased from 0.5ms to 5ms. What's happening?" → The cache node is under load - CPU saturation (too many large commands, Lua scripts, or KEYS scans blocking the command thread), memory pressure causing frequent allocations, or network saturation. Check `redis-cli INFO` for `used_cpu_sys`, `mem_fragmentation_ratio`, `instantaneous_ops_per_sec`, and `connected_clients`.
 
 **Key Takeaway:** Hit rate is the SLO; eviction rate and key distribution are the leading indicators. Trace context through cache misses is non-negotiable for debugging - without it, a cache miss and its downstream DB impact are invisible in your traces.
 
@@ -855,37 +806,113 @@ When Redis approaches `maxmemory`, it evicts aggressively under the configured p
 
 **Fix:** Increase pool size: `pool_size = ceil(rps_per_instance × avg_latency_sec)`. Audit exception handling paths for connection release. Add pool exhaustion as an alert metric - before it causes user-visible errors.
 
-> 🎯 **Interview Lens** > **Q:** Your service is throwing Redis timeout errors under load, but Redis CPU and memory look fine. What do you investigate?
-> **Ideal answer:** Connection pool exhaustion. The cache is healthy but the application can't get a connection from the pool fast enough. Check: pool size configuration vs current rps and latency; `connected_clients` on Redis vs expected pool capacity; slow command log (`SLOWLOG GET`) for commands holding connections longer than expected. Fix: tune pool size, fix connection leaks, break up slow commands.
-> **Common trap:** "Redis is fine, must be a network issue." Redis metrics (CPU, memory, ops/sec) can look healthy while the application is queueing for pool connections - these are application-side metrics, not Redis-side metrics.
-> **Next question:** "After fixing the pool size, timeouts stop but P99 latency increases. Why?" → Larger pool means more concurrent commands - Redis's single command thread now processes more commands per second, increasing queue depth. Check `redis-cli INFO stats instantaneous_ops_per_sec` - if near the node's throughput ceiling, add a shard.
-
 **Key Takeaway:** The four production failure modes - hit rate drop, eviction cascade, replication lag, pool exhaustion - each have a specific detection signal and a specific fix. Diagnosing by signal rather than symptom is the senior engineer response.
 
 ---
 
-## Common Interview Gotchas
+## Interview Scenario Bank
 
-**"A short TTL solves cache consistency"**
-TTL bounds staleness but does not guarantee correctness. A 1-second TTL on a payment status field can still return "pending" for up to 1 second after it transitions to "failed" - long enough to allow a race condition in a payment flow. For correctness-critical data, explicit invalidation or a DB fallback is required. TTL is the safety net, not the mechanism.
+### Cache-Aside Race Condition
 
-**"Cache-aside is safe under concurrent writes"**
-Cache-aside has a race condition: two concurrent writers both update the DB, then both write to the cache. The second cache write may carry an older DB value than the first if the DB reads were interleaved. This produces a stale cache entry that survives until the next TTL expiry. Mitigate with CAS, or accept last-write-wins with a short TTL as the correction window - but name this explicitly in the design.
+> 🎯 **Interview Lens**
+> **Q:** Walk me through the cache-aside pattern and what can go wrong.
+> **Ideal answer:** Read: check cache → miss → DB read → cache populate → return. Write: DB write → cache invalidate. The race: concurrent misses both query DB; a write + invalidation interleaves; the slower reader overwrites cache with stale data. Mitigated with CAS or a short TTL as correction window.
+> **Common trap:** "Just update the cache on write instead of invalidating" - that's write-through, and requires both writes to succeed atomically, which isn't guaranteed without a transaction spanning DB and cache.
+> **Next question:** "Why invalidate instead of update on write?" → Invalidation fails safe (a failed cache update still leaves DB authoritative); a stale cache update paired with a failed DB write creates a divergence only TTL corrects.
 
-**"More cache nodes solves any throughput problem"**
-Adding nodes helps when the bottleneck is distributed across keys. A hot key bottlenecked on a single node gets no benefit from adding nodes - consistent hashing routes it to the same node regardless of cluster size. Hot key mitigation (L1 shadow, key splitting) is a different solution entirely.
+### Eviction Policy Choice
 
-**"LRU is always the right eviction policy"**
-LRU works well for temporal locality. For stable hot-key workloads (top products, top users), LFU outperforms LRU significantly - LRU may evict a product that wasn't accessed in the last hour even though it is accessed 1000 times per day. Worse, LRU is vulnerable to scan eviction: a full-table read evicts all hot keys from the LRU head.
+> 🎯 **Interview Lens**
+> **Q:** Why would you choose LFU over LRU for a product catalog cache?
+> **Ideal answer:** Product catalogs have a stable hot set - top products account for most views regardless of recency. LRU would demote a hot product simply for going unaccessed overnight; LFU retains it based on long-term frequency. The risk is new-entry starvation - a newly launched product starts at frequency=1 and is immediately evictable during its own launch spike.
+> **Next question:** "What about ARC?" → Adapts between recency and frequency automatically, but isn't native to Redis and adds implementation complexity. LFU with decay is usually sufficient and simpler to operate.
 
-**"Cache stampede only happens at high traffic"**
-Stampedes happen whenever multiple concurrent requests hit a cold key simultaneously. At low traffic, fewer requests race; at high traffic, hundreds race. The fix (single-flight coalescing or PER) should be in place before traffic grows, not added reactively after an incident.
+### Invalidating Aggregated Data
 
-**"Redis exactly-once writes solve cache consistency"**
-Redis `SET` is atomic, but cache-aside (read-DB → write-cache) is not. Between the DB read and cache write, another process may write a newer value to the DB. The first process overwrites the cache with a stale value. Redis atomicity guarantees the SET itself; it does not make the read-modify-write cycle atomic. Use `SET NX` (set if not exists) to prevent overwriting a value that was set by a concurrent process.
+> 🎯 **Interview Lens**
+> **Q:** How would you handle cache invalidation for a search results page that aggregates data from three tables?
+> **Ideal answer:** Exact-key invalidation doesn't scale when the key is computed from query parameters across tables. Either a short TTL (30-60s) as the primary freshness mechanism, or event-driven invalidation via CDC where any mutation on the three tables emits an event and the consumer invalidates all cache keys tagged with the affected entity - tag-based invalidation is the right structure here.
+> **Common trap:** "Invalidate the cache on every write" - works for simple key:value caches, not for aggregated/query-result caches where the key is computed from input parameters.
+> **Next question:** "What if the CDC pipeline falls behind by 5 minutes?" → The cache serves 5-minute-stale results. Acceptable for search, unacceptable for pricing - TTL becomes the fallback safety net, set to the staleness window you're willing to tolerate.
 
-**"Invalidating the cache on write is always better than TTL"**
-Invalidation requires the writer to know all cache keys affected by the change. For simple key-value relationships this is trivial. For aggregated data (leaderboards, search results, counts), the writer cannot enumerate all dependent keys without coupling to the cache key structure of every downstream service. TTL-based eventual consistency is often the correct architectural choice for aggregated data.
+### Diagnosing a Single Hot Node
+
+> 🎯 **Interview Lens**
+> **Q:** A single Redis node in your cluster is consistently at 100% CPU while others are idle. What do you do?
+> **Ideal answer:** Classic hot key problem. Identify the key(s) via `MONITOR` (sparingly), `OBJECT FREQ` in LFU mode, or an application-layer Count-Min Sketch. Mitigate by access pattern: read-heavy → in-process L1 shadow; large and frequently updated → key splitting with random suffix. Adding nodes doesn't help - consistent hashing routes the hot key to the same node regardless of cluster size.
+> **Next question:** "The hot key is a global rate-limit counter at 50k writes/sec - key splitting won't work, you need an accurate total. What now?" → No single Redis node gives atomic global aggregation at that rate. Options: approximate/lossy aggregation across shards, a purpose-built rate limiter (Envoy rate limit service, Redis Cell), or accept a bounded overcounting error margin.
+
+### Stampede vs Avalanche vs Penetration
+
+> 🎯 **Interview Lens**
+> **Q:** Explain the difference between cache stampede, cache avalanche, and cache penetration.
+> **Ideal answer:** Stampede - one popular key expires, many concurrent requests flood the origin for that one key. Avalanche - many keys expire simultaneously (uniform TTL), flooding the origin across many keys at once. Penetration - requests for keys that don't exist in the DB, bypassing the cache on every request. Different causes, different fixes: stampede → single-flight mutex or PER; avalanche → TTL jitter + circuit breaker; penetration → null caching or Bloom filter guard.
+> **Next question:** "Your Bloom filter says a key exists, but the DB returns empty - what happened?" → The key was deleted from the DB after the filter was built; standard Bloom filters don't support deletion. One extra DB query is the acceptable cost. Use a Counting Bloom filter, or rebuild periodically, if deletions are frequent.
+
+### Read-Your-Writes Violation
+
+> 🎯 **Interview Lens**
+> **Q:** A user updates their profile and immediately reloads the page - they see the old data. What's happening and how do you fix it?
+> **Ideal answer:** Read-your-writes violation - the write invalidated the cache, but the read was served by a replica that hadn't received the invalidation yet. Fix: route the user's next read to the primary for a short window; or use a version token (write returns version=7, subsequent reads require cache version ≥7, else fall through); short TTL on the affected cache as a fallback.
+> **Common trap:** "Just always read from the primary" - eliminates the point of having replicas.
+> **Next question:** "How does the token approach behave with multiple open tabs?" → Each tab carries the token from its own last write. A tab that didn't write carries an old token and may still see stale data from its replica - acceptable, since only the writing session needs read-your-writes.
+
+### Adding an L1 Layer
+
+> 🎯 **Interview Lens**
+> **Q:** When would you add an in-process cache on top of Redis?
+> **Ideal answer:** When even Redis's ~0.5ms is too high - extremely hot reference data (feature flags, rate-limit configs) accessed on every request. L1 drops per-request cache cost to ~1µs. Trade-off: each instance holds its own copy; invalidation must reach every instance via pub/sub or a short L1 TTL.
+> **Common trap:** Adding L1 for all cached data - multiplies memory usage across every instance and turns invalidation into a distributed fan-out problem.
+> **Next question:** "200 instances, 500MB L1 each, a config change needs to propagate within 1 second - how?" → Redis pub/sub broadcast: writer publishes, all instances subscribe and invalidate on receive. Delivery is best-effort (a restarting instance misses it) - mitigate with a short L1 TTL as fallback.
+
+### Sizing a Cache
+
+> 🎯 **Interview Lens**
+> **Q:** How would you size a Redis cache for a user profile service with 50M users, 500k rps, and a 95% hit rate target?
+> **Ideal answer:** Working set follows a power law - estimate the top 10% of users account for most reads; size for that, not the full 50M. Verify the resulting DB miss rate (5% of 500k = 25k rps) is within DB capacity. Check single-node throughput ceiling for the object size - shard if needed. Add replicas for availability.
+> **Common trap:** Sizing for 100% of users × average object size - the working set is far smaller than the total dataset.
+> **Next question:** "Hit rate drops to 80% every Monday morning - why?" → Weekly traffic pattern: users inactive over the weekend return and access profiles that were evicted. Pre-warm on Sunday night, or size the cache for the Monday working set year-round.
+
+### Multi-Tenant Security
+
+> 🎯 **Interview Lens**
+> **Q:** You're building a multi-tenant SaaS on a shared Redis cluster. What security controls do you implement?
+> **Ideal answer:** Key namespacing (`{tenant_id}:` prefix, enforced at the data layer, not just convention). No wildcard key ops - `SCAN` with a tenant-prefix pattern only, never `KEYS *`. Short TTL + explicit invalidation for PII/session data. TLS in transit. Dedicated instances for tenants requiring strict isolation.
+> **Common trap:** "Key prefixes are enough" - a bug or ACL misconfiguration can bypass a naming convention; enforce at the data access layer with real ACL rules.
+
+### Diagnosing a Hit Rate Drop
+
+> 🎯 **Interview Lens**
+> **Q:** Your cache hit rate dropped from 95% to 70% overnight. Walk me through your investigation.
+> **Ideal answer:** Recent deploy? A cache-key format change makes old keys miss entirely. Eviction rate spike? Working set outgrew capacity. Traffic pattern shift? New feature or segment hitting uncached data. Node failure? Its keys are now cold on the consistent-hashing successor. Mass TTL expiry coinciding with the drop?
+> **Common trap:** Jumping straight to "add more cache memory" - a code change invalidating existing keys won't be fixed by more memory.
+> **Next question:** "Hit rate is fine but P99 hit latency rose from 0.5ms to 5ms - what's happening?" → The node itself is under load: CPU saturation from large commands/Lua scripts/`KEYS` scans, memory pressure, or network saturation. Check `redis-cli INFO` for CPU, fragmentation ratio, ops/sec, and connected clients.
+
+### Diagnosing Timeouts With a Healthy Cache
+
+> 🎯 **Interview Lens**
+> **Q:** Your service throws Redis timeout errors under load, but Redis CPU and memory look fine. What do you investigate?
+> **Ideal answer:** Connection pool exhaustion - the cache is healthy but the application can't get a connection fast enough. Check pool size against current rps/latency, `connected_clients` on Redis vs expected pool capacity, and the slow command log for commands holding connections longer than expected.
+> **Common trap:** "Redis is fine, must be network" - Redis-side metrics look healthy while the application queues for pool connections; these are application-side metrics, not Redis-side.
+> **Next question:** "After fixing pool size, timeouts stop but P99 latency rises - why?" → A larger pool means more concurrent commands hitting Redis's single command thread, increasing queue depth. Check ops/sec against the node's throughput ceiling; shard if near it.
+
+### Rapid-Fire Misconceptions
+
+- **"A short TTL solves cache consistency"** - TTL bounds staleness, it doesn't guarantee correctness. A 1s TTL on a payment status can still return stale "pending" long enough to enable a race in the payment flow. Correctness-critical data needs explicit invalidation or a DB fallback.
+- **"Cache-aside is safe under concurrent writes"** - it has a real race: two concurrent writers update the DB then both write cache, and the second cache write can carry an older DB value if reads interleaved. Mitigate with CAS or a short TTL correction window, named explicitly in the design.
+- **"More cache nodes solves any throughput problem"** - not for a hot key bottlenecked on one node; consistent hashing routes it there regardless of cluster size. That needs L1 shadow or key splitting, a different fix entirely.
+- **"Cache stampede only happens at high traffic"** - it happens whenever concurrent requests race a cold key; the fix (single-flight or PER) should exist before traffic grows, not reactively.
+- **"Redis atomic writes solve cache consistency"** - `SET` is atomic, but cache-aside's read-DB-then-write-cache cycle is not; a concurrent write can still leave a stale value in place. Use `SET NX` to avoid overwriting a concurrently-set value.
+
+---
+
+## What the Interviewer Probes For
+
+**"Why invalidate instead of update on write?"** (see [Cache-Aside Race Condition](#cache-aside-race-condition)) - Probes whether the candidate understands invalidate-vs-update isn't a style choice. Answer: invalidation fails safe - a failed cache write still leaves the DB authoritative, since the cache entry is simply absent. A failed cache *update* paired with a DB write can leave a stale value silently serving as if current, a divergence only TTL corrects.
+
+**"The hot key is a global rate-limit counter at 50k writes/sec - key splitting won't work, you need an accurate total. What now?"** (see [Diagnosing a Single Hot Node](#diagnosing-a-single-hot-node)) - Probes whether the candidate's hot-key toolkit is limited to "split the key" or goes deeper. Answer: no single Redis node gives atomic global aggregation at that rate - the real options are approximate/lossy aggregation across shards, a purpose-built rate limiter (Envoy's rate limit service, Redis Cell), or accepting a bounded overcounting error margin.
+
+**"200 instances, 500MB L1 each - a config change needs to propagate within 1 second. How?"** (see [Adding an L1 Layer](#adding-an-l1-layer)) - Probes whether the candidate has thought through L1 invalidation fan-out at real scale, not just the happy path of adding a cache layer. Answer: Redis pub/sub broadcast - the writer publishes once, all 200 instances subscribe and invalidate on receipt. Delivery is best-effort (a restarting instance can miss it), so a short L1 TTL is still needed as a fallback.
 
 ---
 
@@ -912,16 +939,6 @@ Invalidation requires the writer to know all cache keys affected by the change. 
 | RDB     | Redis Database (Redis snapshot persistence mode) |
 | NTP     | Network Time Protocol                            |
 
-### Write Strategy Selection Matrix
-
-| Strategy      | Read Latency        | Write Latency     | Consistency | Durability Risk  | Best For                       |
-| ------------- | ------------------- | ----------------- | ----------- | ---------------- | ------------------------------ |
-| Cache-Aside   | Miss: DB + write    | DB only           | Eventual    | None             | Default; read-heavy            |
-| Read-Through  | Same as cache-aside | DB only           | Eventual    | None             | Simpler app code               |
-| Write-Through | Hit: cache only     | DB + cache (sync) | Strong      | None             | Fresh reads required           |
-| Write-Behind  | Hit: cache only     | Cache (async DB)  | Eventual    | High (pre-flush) | Write-heavy, latency-sensitive |
-| Refresh-Ahead | Always cache        | DB (background)   | Near-fresh  | None             | Predictable hot keys           |
-
 ### Eviction Policy Selection Matrix
 
 | Policy  | Best For                                 | Key Weakness                                     |
@@ -942,9 +959,3 @@ Invalidation requires the writer to know all cache keys affected by the change. 
 - **Single large cache for all data** - mixing hot/cold objects and large/small objects in one cache degrades eviction efficiency. Segment by access pattern and object size; use separate cache instances for data with different eviction policy requirements.
 - **Ignoring eviction rate** - a non-zero sustained eviction rate is a silent signal that capacity planning is wrong. It will eventually cause hit rate degradation; address it before it does.
 - **Caching without trace context propagation** - cache misses and their downstream DB queries become invisible in distributed traces. Always propagate trace IDs through cache-miss DB calls.
-
----
-
-Linked Deep-Dive Files:
-
-- caching-interview-scenarios.md

@@ -7,6 +7,7 @@ import { recordReveal } from "../storage/read-tracking.js";
 
 const COMPLEXITY_HEADER_RE = /\b(time|space|complexity|best|worst|average)\b/i;
 const BIG_O_RE = /[OΘΩ]\s*\(/;
+const WHOLE_CELL_NUM_RE = /^-?\d+(\.\d+)?$/;
 
 function isComplexityTable(table) {
   const headText = table.querySelector("thead, tr")?.textContent || "";
@@ -127,11 +128,11 @@ function addTableSort(contentEl) {
         rows.sort((a, b) => {
           const aText = a.cells[colIdx]?.textContent.trim() ?? "";
           const bText = b.cells[colIdx]?.textContent.trim() ?? "";
-          const aNum = Number.parseFloat(aText);
-          const bNum = Number.parseFloat(bText);
-          const aIsNum = !Number.isNaN(aNum);
-          const bIsNum = !Number.isNaN(bNum);
-          // Non-numeric cells always sort after every numeric cell, both directions - keeps order transitive across 3+ rows instead of localeCompare per pair.
+          const aIsNum = WHOLE_CELL_NUM_RE.test(aText);
+          const bIsNum = WHOLE_CELL_NUM_RE.test(bText);
+          const aNum = aIsNum ? Number(aText) : NaN;
+          const bNum = bIsNum ? Number(bText) : NaN;
+          // Non-numeric after numeric keeps 3+ row order transitive vs pairwise localeCompare.
           let cmp;
           if (aIsNum && bIsNum) cmp = aNum - bNum;
           else if (aIsNum) cmp = -1;

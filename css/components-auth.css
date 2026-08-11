@@ -74,6 +74,10 @@
   outline: none;
   border-color: var(--accent);
 }
+.auth-field input:-webkit-autofill {
+  box-shadow: 0 0 0 1000px var(--surface-2) inset;
+  -webkit-text-fill-color: var(--text-heading);
+}
 .auth-pw-field {
   position: relative;
   display: block;

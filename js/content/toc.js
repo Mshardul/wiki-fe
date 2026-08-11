@@ -36,13 +36,14 @@ function buildTOC(contentEl, wikiId, articlePath) {
     });
 
     if (tag === "H2") {
+      const h2Id = h.id || h.dataset.sectionId || "";
       const group = document.createElement("div");
       group.className = "toc-h2-group";
-      group.dataset.h2Id = h.id;
+      group.dataset.h2Id = h2Id;
       currentGroup = group;
 
       const slugBase = (articlePath || "").replace(/\//g, "-");
-      const collapseKey = `wiki-heading-collapsed-${wikiId}-${slugBase}-${h.id}`;
+      const collapseKey = `wiki-heading-collapsed-${wikiId}-${slugBase}-${h2Id}`;
       if (getCollapsed(collapseKey)) {
         group.classList.add("section--collapsed");
       }
@@ -55,7 +56,7 @@ function buildTOC(contentEl, wikiId, articlePath) {
         e.preventDefault();
         e.stopPropagation();
         const nowCollapsed = toggleCollapse(collapseKey, group);
-        _syncContentH2(h.id, nowCollapsed);
+        _syncContentH2(h2Id, nowCollapsed);
       });
 
       const h2Row = document.createElement("div");
@@ -162,14 +163,34 @@ function _setSectionCollapsed(h2, collapsed) {
   if (sectionBody) sectionBody.hidden = collapsed;
 }
 
+// Missing heading ids would desync TOC chevron keys from content collapse keys.
+function _ensureHeadingId(h, index) {
+  if (h.id) return h.id;
+  const base =
+    (h.textContent || "section")
+      .replace(/[#]+$/g, "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "section";
+  let id = `${base}-${index}`;
+  let n = 0;
+  while (document.getElementById(id)) {
+    n += 1;
+    id = `${base}-${index}-${n}`;
+  }
+  h.id = id;
+  return id;
+}
+
 function injectHeadingCollapseToggles(contentEl, wikiId, articlePath) {
   const slugBase = articlePath.replace(/\//g, "-");
-  contentEl.querySelectorAll("h2").forEach((h2) => {
+  contentEl.querySelectorAll("h2").forEach((h2, index) => {
     if (h2.querySelector(".heading-collapse-btn")) return;
 
-    const key = `wiki-heading-collapsed-${wikiId}-${slugBase}-${h2.id}`;
-    const sectionId = h2.id || `h2-${Math.random().toString(36).slice(2)}`;
+    const sectionId = _ensureHeadingId(h2, index);
     h2.dataset.sectionId = sectionId;
+    const key = `wiki-heading-collapsed-${wikiId}-${slugBase}-${sectionId}`;
 
     const btn = document.createElement("button");
     btn.className = "heading-collapse-btn";

@@ -1,4 +1,9 @@
-import { createFocusTrap, registerModal } from "../modal-registry.js";
+import {
+  createFocusTrap,
+  markModalClosed,
+  markModalOpened,
+  registerModal,
+} from "../modal-registry.js";
 import { navigateToContent } from "../render/content-view.js";
 import { escHtml } from "../state.js";
 import { Bookmarks, getBookmarks } from "../storage/bookmarks.js";
@@ -57,11 +62,13 @@ function openBookmarksModal() {
 
   _focusTrapHandler = createFocusTrap(modal, _getFocusable);
   modal.addEventListener("keydown", _focusTrapHandler);
+  markModalOpened(bookmarksModal);
 }
 
 function closeBookmarksModal() {
   const modal = _modal();
   if (modal.classList.contains("hidden")) return;
+  markModalClosed(bookmarksModal);
   if (_focusTrapHandler) {
     modal.removeEventListener("keydown", _focusTrapHandler);
     _focusTrapHandler = null;
@@ -99,6 +106,7 @@ _list().addEventListener("click", (e) => {
 
 document.getElementById("bookmarks-modal-backdrop").addEventListener("click", closeBookmarksModal);
 
-registerModal({ isOpen: isBookmarksModalOpen, close: closeBookmarksModal });
+const bookmarksModal = { isOpen: isBookmarksModalOpen, close: closeBookmarksModal };
+registerModal(bookmarksModal);
 
 export { openBookmarksModal, closeBookmarksModal, isBookmarksModalOpen };

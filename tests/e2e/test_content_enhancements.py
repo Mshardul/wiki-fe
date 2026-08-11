@@ -368,7 +368,7 @@ def test_pinch_zoom_scales_image_in_lightbox(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_WITH_IMAGE, slug="pinch-image")
     page.wait_for_selector(".zoomable-img", timeout=8_000)
     page.click(".zoomable-img")
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     transform = _pinch(page, ".zoom-overlay-content > *", "#zoom-overlay", 20, 100)
     assert "matrix(4" in transform, f"Expected scale to clamp at ZOOM_MAX (4), got: {transform}"
@@ -379,7 +379,7 @@ def test_pinch_zoom_scales_mermaid_diagram_in_lightbox(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="pinch-diagram")
     page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
     page.click(".mermaid-diagram")
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     transform = _pinch(page, ".zoom-overlay-content > *", "#zoom-overlay", 20, 100)
     assert "matrix(4" in transform, f"Expected scale to clamp at ZOOM_MAX (4), got: {transform}"
@@ -403,10 +403,10 @@ def test_image_click_opens_zoom_overlay(page, base_url):
     page.wait_for_selector("#markdown-body img.zoomable-img", timeout=5_000)
 
     page.locator("#markdown-body img.zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     is_open = page.evaluate(
-        "() => document.getElementById('zoom-overlay')?.classList.contains('open')"
+        "() => !document.getElementById('zoom-overlay')?.classList.contains('hidden')"
     )
     assert is_open, "Zoom overlay did not open after clicking image"
 
@@ -417,7 +417,7 @@ def test_zoom_overlay_contains_image(page, base_url):
     page.wait_for_selector("#markdown-body img.zoomable-img", timeout=5_000)
 
     page.locator("#markdown-body img.zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     img_in_overlay = page.evaluate("""() => {
         const overlay = document.getElementById('zoom-overlay');
@@ -432,15 +432,15 @@ def test_zoom_overlay_closes_on_escape(page, base_url):
     page.wait_for_selector("#markdown-body img.zoomable-img", timeout=5_000)
 
     page.locator("#markdown-body img.zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     page.keyboard.press("Escape")
     page.wait_for_function(
-        "() => !document.getElementById('zoom-overlay')?.classList.contains('open')",
+        "() => document.getElementById('zoom-overlay')?.classList.contains('hidden')",
         timeout=3_000,
     )
     is_open = page.evaluate(
-        "() => document.getElementById('zoom-overlay')?.classList.contains('open')"
+        "() => !document.getElementById('zoom-overlay')?.classList.contains('hidden')"
     )
     assert not is_open, "Zoom overlay should be closed after pressing Escape"
 
@@ -451,17 +451,17 @@ def test_zoom_overlay_closes_on_backdrop_click(page, base_url):
     page.wait_for_selector("#markdown-body img.zoomable-img", timeout=5_000)
 
     page.locator("#markdown-body img.zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     # The image is centered in the overlay and intercepts pointer events at center.
     # Click at the top-left corner of the viewport - always on the backdrop, never on content.
     page.mouse.click(5, 5)
     page.wait_for_function(
-        "() => !document.getElementById('zoom-overlay')?.classList.contains('open')",
+        "() => document.getElementById('zoom-overlay')?.classList.contains('hidden')",
         timeout=3_000,
     )
     is_open = page.evaluate(
-        "() => document.getElementById('zoom-overlay')?.classList.contains('open')"
+        "() => !document.getElementById('zoom-overlay')?.classList.contains('hidden')"
     )
     assert not is_open, "Zoom overlay should be closed after clicking backdrop"
 
@@ -472,15 +472,15 @@ def test_zoom_overlay_closes_on_close_button(page, base_url):
     page.wait_for_selector("#markdown-body img.zoomable-img", timeout=5_000)
 
     page.locator("#markdown-body img.zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     page.locator(".zoom-overlay-close").click()
     page.wait_for_function(
-        "() => !document.getElementById('zoom-overlay')?.classList.contains('open')",
+        "() => document.getElementById('zoom-overlay')?.classList.contains('hidden')",
         timeout=3_000,
     )
     is_open = page.evaluate(
-        "() => document.getElementById('zoom-overlay')?.classList.contains('open')"
+        "() => !document.getElementById('zoom-overlay')?.classList.contains('hidden')"
     )
     assert not is_open, "Zoom overlay should be closed after clicking close button"
 
@@ -491,11 +491,11 @@ def test_escape_after_zoom_stays_in_content_view(page, base_url):
     page.wait_for_selector("#markdown-body img.zoomable-img", timeout=5_000)
 
     page.locator("#markdown-body img.zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     page.keyboard.press("Escape")
     page.wait_for_function(
-        "() => !document.getElementById('zoom-overlay')?.classList.contains('open')",
+        "() => document.getElementById('zoom-overlay')?.classList.contains('hidden')",
         timeout=3_000,
     )
 
@@ -528,10 +528,10 @@ def test_diagram_click_opens_zoom_overlay(page, base_url):
     page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
 
     page.locator(".mermaid-diagram").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     is_open = page.evaluate(
-        "() => document.getElementById('zoom-overlay')?.classList.contains('open')"
+        "() => !document.getElementById('zoom-overlay')?.classList.contains('hidden')"
     )
     assert is_open, "Zoom overlay did not open after clicking mermaid diagram"
 
@@ -542,12 +542,12 @@ def test_diagram_zoom_overlay_closes_on_theme_change(page, base_url):
     page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
 
     page.locator(".mermaid-diagram").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     page.evaluate("() => Settings._setBackground('light-white')")
 
     page.wait_for_function(
-        "() => !document.getElementById('zoom-overlay')?.classList.contains('open')",
+        "() => document.getElementById('zoom-overlay')?.classList.contains('hidden')",
         timeout=3_000,
     )
 
@@ -558,7 +558,7 @@ def test_diagram_zoom_overlay_contains_svg(page, base_url):
     page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
 
     page.locator(".mermaid-diagram").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     svg_in_overlay = page.evaluate("""() => {
         const overlay = document.getElementById('zoom-overlay');
@@ -573,7 +573,7 @@ def test_diagram_zoom_overlay_svg_has_nonzero_size(page, base_url):
     page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
 
     page.locator(".mermaid-diagram").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     box = page.locator(".zoom-diagram-svg").bounding_box()
     assert box is not None
@@ -1141,6 +1141,34 @@ def test_callout_expand_btn_toggles_expanded(page, base_url):
     )
 
 
+def _callout_article(emoji, label):
+    return f"# Callout Icon Test\n\n## Section\n\n> {emoji} **{label}** Callout body.\n"
+
+
+@pytest.mark.parametrize(
+    ("emoji", "css_class"),
+    [
+        ("🎯", "callout-interview"),
+        ("⚠️", "callout-warning"),
+        ("🧠", "callout-thought"),
+        ("⚖️", "callout-decision"),
+    ],
+)
+def test_callout_icon_matches_its_class(page, base_url, emoji, css_class):
+    """Each callout variant's rendered .callout-icon matches the emoji its class implies, not a mismatched hardcoded one."""
+    _load_mock_article(
+        page, base_url, _callout_article(emoji, css_class), slug=f"callout-icon-{css_class}"
+    )
+    page.wait_for_selector(".callout", timeout=5_000)
+
+    result = page.evaluate("""() => {
+        const bq = document.querySelector('.callout');
+        return { classList: [...bq.classList], icon: bq.querySelector('.callout-icon')?.textContent };
+    }""")
+    assert css_class in result["classList"], f"expected {css_class}, got {result['classList']}"
+    assert result["icon"] == emoji, f"callout icon mismatch: expected {emoji}, got {result['icon']}"
+
+
 # ── Broken image placeholder ─────────────────────────────────────
 
 ARTICLE_WITH_BROKEN_IMAGE = """\
@@ -1337,11 +1365,12 @@ def test_tap_reveals_cell_and_records(page, base_url):
 
 
 def test_quiz_topbar_button_toggles_blur(page, base_url):
-    """Tapping the content-topbar quiz button is a touch-accessible equivalent of the q hotkey."""
+    """Tapping the prefs Actions quiz button is a touch-accessible equivalent of the q hotkey."""
     _load_mock_article(page, base_url, ARTICLE_WITH_COMPLEXITY_TABLE, slug="quiz-btn-toggle")
     page.wait_for_selector("#markdown-body .quiz-cell", timeout=5_000)
 
-    page.click('[data-action="quiz-toggle"]')
+    _open_actions_prefs(page)
+    page.locator('#prefs-panel-actions [data-action="quiz-toggle"]').click()
     page.wait_for_selector("#markdown-body .quiz-cell.quiz-blurred", timeout=2_000)
     blurred = page.evaluate(
         "() => document.querySelectorAll('#markdown-body .quiz-cell.quiz-blurred').length"
@@ -1353,7 +1382,8 @@ def test_quiz_topbar_button_toggles_blur(page, base_url):
     )
     assert is_active, "Quiz button should show active state while quiz mode is on"
 
-    page.click('[data-action="quiz-toggle"]')
+    _open_actions_prefs(page)
+    page.locator('#prefs-panel-actions [data-action="quiz-toggle"]').click()
     blurred_after = page.evaluate(
         "() => document.querySelectorAll('#markdown-body .quiz-cell.quiz-blurred').length"
     )
@@ -1376,14 +1406,16 @@ Content two.
 
 
 def test_study_topbar_button_toggles_study_mode(page, base_url):
-    """Tapping the content-topbar study button is a touch-accessible equivalent of the H hotkey."""
+    """Tapping the prefs Actions study button is a touch-accessible equivalent of the H hotkey."""
     _load_mock_article(page, base_url, ARTICLE_WITH_TOPBAR_H3_SECTIONS, slug="study-btn-toggle")
     page.wait_for_selector("#markdown-body h3", timeout=5_000)
 
-    page.click('[data-action="study-toggle"]')
+    _open_actions_prefs(page)
+    page.locator('#prefs-panel-actions [data-action="study-toggle"]').click()
     page.wait_for_selector("#markdown-body.study-mode", timeout=2_000)
 
-    page.click('[data-action="study-toggle"]')
+    _open_actions_prefs(page)
+    page.locator('#prefs-panel-actions [data-action="study-toggle"]').click()
     is_study_mode = page.evaluate(
         "() => document.getElementById('markdown-body').classList.contains('study-mode')"
     )
@@ -1391,11 +1423,12 @@ def test_study_topbar_button_toggles_study_mode(page, base_url):
 
 
 def test_distraction_free_topbar_button_toggles(page, base_url):
-    """Tapping the content-topbar distraction-free button is a touch-accessible equivalent of the D hotkey."""
+    """Tapping the prefs Actions distraction-free button is a touch-accessible equivalent of the D hotkey."""
     _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="df-btn-toggle")
     page.wait_for_selector("#markdown-body", timeout=5_000)
 
-    page.click('[data-action="distraction-free-toggle"]')
+    _open_actions_prefs(page)
+    page.locator('#prefs-panel-actions [data-action="distraction-free-toggle"]').click()
     page.wait_for_selector("body.distraction-free", timeout=2_000)
 
     page.click('[data-action="distraction-free-exit"]')
@@ -1406,11 +1439,12 @@ def test_distraction_free_topbar_button_toggles(page, base_url):
 
 
 def test_wiki_switcher_topbar_button_opens_modal(page, base_url):
-    """Tapping the content-topbar wiki-switcher button is a touch-accessible equivalent of the W hotkey."""
+    """Tapping the prefs Actions wiki-switcher button is a touch-accessible equivalent of the W hotkey."""
     _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="switcher-btn-open")
     page.wait_for_selector("#markdown-body", timeout=5_000)
 
-    page.click('[data-action="wiki-switcher-open"]')
+    _open_actions_prefs(page)
+    page.locator('#prefs-panel-actions [data-action="wiki-switcher-open"]').click()
     page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=2_000)
 
 
@@ -1462,6 +1496,17 @@ def _open_advanced_prefs(page):
     )
 
 
+def _open_actions_prefs(page):
+    page.locator("[title='Preferences (,)']:visible").first.click()
+    page.wait_for_function(
+        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
+    )
+    page.locator('[data-action="prefs-tab"][data-tab="actions"]').click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-panel-actions').getAttribute('aria-hidden') === 'false'"
+    )
+
+
 def test_print_button_present_in_advanced_prefs(page, base_url):
     """Advanced prefs tab exposes a print action button."""
     _load_mock_article(page, base_url, ARTICLE_WITH_CODE, slug="print-btn")
@@ -1484,17 +1529,19 @@ def test_print_button_stamps_source_url(page, base_url):
 
 
 def test_copy_markdown_button_present_in_content_topbar(page, base_url):
-    """Content topbar exposes a copy-raw-markdown action button."""
+    """Preferences Actions tab exposes a copy-raw-markdown action button."""
     _load_mock_article(page, base_url, ARTICLE_WITH_CODE, slug="copy-md-btn")
-    btn = page.locator(".content-topbar [data-action='copy-markdown']")
-    assert btn.count() == 1, "Copy markdown button missing from content topbar"
+    _open_actions_prefs(page)
+    btn = page.locator('#prefs-panel-actions [data-action="copy-markdown"]')
+    assert btn.count() == 1, "Copy markdown button missing from prefs Actions tab"
 
 
 def test_copy_markdown_copies_raw_source(page, base_url):
     """Clicking the copy-markdown button writes the fetched raw .md source to the clipboard."""
     _load_mock_article(page, base_url, ARTICLE_WITH_CODE, slug="copy-md-source")
     page.evaluate(_CLIPBOARD_SPY)
-    page.click(".content-topbar [data-action='copy-markdown']")
+    _open_actions_prefs(page)
+    page.locator('#prefs-panel-actions [data-action="copy-markdown"]').click()
     page.wait_for_function("() => window.__copied !== null", timeout=3_000)
     copied = page.evaluate("() => window.__copied")
     assert copied == ARTICLE_WITH_CODE, f"Copied text does not match raw markdown source: {copied!r}"
@@ -1615,6 +1662,33 @@ def test_table_sort_mixed_numeric_is_transitive(page, base_url):
     assert names == ["Charlie", "Erin", "Alice", "Bob", "Dan"], (
         f"Expected numeric rows sorted ascending before N/A rows, got {names!r}"
     )
+
+
+ARTICLE_WITH_UNIT_AND_COMMA_TABLE = """\
+# Unit Sort Test
+
+## Section
+
+| Name | Size |
+| ---- | ---- |
+| Alpha | 1,024 |
+| Beta | 2 GB |
+| Gamma | 10 |
+"""
+
+
+def test_table_sort_requires_whole_cell_numeric(page, base_url):
+    """Cells like '1,024' or with units must not be treated as truncated floats."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_UNIT_AND_COMMA_TABLE, slug="sort-units")
+    page.wait_for_selector("#markdown-body th.sortable-th", timeout=5_000)
+    page.locator("#markdown-body th.sortable-th").nth(1).click()
+    names = page.evaluate(
+        "() => [...document.querySelectorAll('#markdown-body tbody tr')]"
+        ".map(r => r.cells[0].textContent.trim())"
+    )
+    # Only "10" is a whole-cell number; comma/unit-like values sort as strings after it.
+    assert names[0] == "Gamma", f"Expected pure numeric Gamma first, got {names!r}"
+    assert "Alpha" in names[1:], f"1,024 must not sort as float 1 ahead of 2, got {names!r}"
 
 
 # ── Mermaid copy as SVG ─────────────────────────────────────────────────────────
@@ -1750,6 +1824,25 @@ def test_formula_toggle_btn_added_for_known_vars(page, base_url):
         "() => document.querySelectorAll('.katex-display .formula-toggle-btn').length"
     )
     assert count >= 1, "No .formula-toggle-btn found in .katex-display with known vars"
+
+
+def test_katex_toolbar_groups_formula_and_latex_copy(page, base_url):
+    """Formula toggle and LaTeX copy share one .katex-toolbar on the block."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MATH, slug="katex-toolbar")
+    page.wait_for_selector(".katex-display .katex-toolbar", timeout=5_000)
+    counts = page.evaluate(
+        """() => {
+            const tb = document.querySelector('.katex-display .katex-toolbar');
+            if (!tb) return null;
+            return {
+                formula: tb.querySelectorAll('.formula-toggle-btn').length,
+                copy: tb.querySelectorAll('.latex-copy-btn').length,
+            };
+        }"""
+    )
+    assert counts and counts["formula"] >= 1 and counts["copy"] >= 1, (
+        f"Expected both controls inside .katex-toolbar, got {counts!r}"
+    )
 
 
 def test_formula_toggle_btn_absent_when_no_mapped_vars(page, base_url):
@@ -2005,7 +2098,7 @@ def test_zoom_overlay_shows_caption_when_alt_present(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_WITH_CAPTIONED_IMAGE, slug="caption-img")
     page.wait_for_selector(".zoomable-img", timeout=5_000)
     page.locator(".zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     caption = page.locator(".zoom-caption")
     assert caption.count() == 1, ".zoom-caption not found in overlay"
@@ -2018,7 +2111,7 @@ def test_zoom_overlay_no_caption_when_alt_empty(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_WITH_UNCAPTIONED_IMAGE, slug="no-caption-img")
     page.wait_for_selector(".zoomable-img", timeout=5_000)
     page.locator(".zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay.open", timeout=3_000)
+    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
 
     caption = page.locator(".zoom-caption")
     assert caption.count() == 0 or not caption.is_visible(), (
@@ -2283,6 +2376,27 @@ def test_inline_glossary_expand_second_click_collapses(page, base_url):
         "() => document.querySelectorAll('.glossary-inline-def--open').length"
     )
     assert open_count == 0, "Inline def still open after second click"
+
+
+def test_glossary_popover_hidden_while_inline_expand_open(page, base_url):
+    """Hover popover stays hidden while the same abbr's inline expand is open."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-no-stack")
+    page.wait_for_function(
+        "() => document.querySelector('abbr.glossary-term--expandable') !== null",
+        timeout=5_000,
+    )
+    abbr = page.locator("abbr.glossary-term--expandable").first
+    abbr.click()
+    page.wait_for_function(
+        "() => document.querySelector('.glossary-inline-def--open') !== null",
+        timeout=3_000,
+    )
+    abbr.hover()
+    visible = page.evaluate(
+        "() => document.getElementById('glossary-popover')"
+        "?.classList.contains('glossary-popover--visible') === true"
+    )
+    assert not visible, "Hover popover must not stack on an open inline expand"
 
 
 # ── Inline caveat reveals ────────────────────────────────────
@@ -2620,11 +2734,12 @@ def test_glossary_expand_toggles_after_repeated_navigation(page, base_url):
 
 
 def test_find_button_opens_article_find(page, base_url):
-    """The content-topbar find button must open the in-article find bar via
+    """The prefs Actions find button must open the in-article find bar via
     ArticleFind.open() - regression for ArticleFind only being reachable via
     the '/' keyboard shortcut, with no touch-accessible trigger."""
     _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="find-btn-touch")
-    page.click('[data-action="find-open"]')
+    _open_actions_prefs(page)
+    page.locator('#prefs-panel-actions [data-action="find-open"]').click()
     page.wait_for_selector("#article-find:not(.hidden)", timeout=5_000)
 
 
@@ -2934,6 +3049,12 @@ ARTICLE_FOR_HIGHLIGHTS = """\
 This is a paragraph with some selectable text in it for testing highlights and markers.
 """
 
+ARTICLE_FOR_MULTI_MARKERS = """\
+# Multi-marker Test
+
+Alpha word here and Beta word there for two marker offsets.
+"""
+
 
 def _select_word(page, word):
     """Selects the first occurrence of `word` inside #markdown-body via a real Range,
@@ -3045,6 +3166,28 @@ def test_highlight_persists_and_reapplies_on_reload(page, base_url):
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reload")
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
     assert page.locator("#markdown-body .wiki-highlight").first.inner_text() == "selectable"
+
+
+def test_multiple_markers_reapply_on_reload(page, base_url):
+    """Two markers at different offsets must both re-apply after reload without corrupting offsets."""
+    _load_mock_article(page, base_url, ARTICLE_FOR_MULTI_MARKERS, slug="multi-marker")
+    _select_word(page, "Alpha")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-toolbar-btn--emoji").first.click()
+    _select_word(page, "Beta")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    page.locator(".highlight-toolbar-btn--emoji").nth(1).click()
+    page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
+    assert page.locator("#markdown-body .wiki-marker").count() == 2
+
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
+    assert page.locator("#markdown-body .wiki-marker").count() == 2
 
 
 def test_marker_create_and_remove_lifecycle(page, base_url):
@@ -3414,12 +3557,18 @@ def test_code_block_disables_ligatures(page, base_url):
     assert "none" in lig or lig == "noligatures", f"expected ligatures none, got {style}"
 
 
-def test_overflow_menu_items_have_titles_and_distinct_icons(page, base_url):
-    """Overflow actions expose title tooltips and no longer share one icon."""
+def test_prefs_actions_rows_have_titles_and_distinct_icons(page, base_url):
+    """Actions tab rows expose title tooltips and distinct icons."""
     page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#content-overflow-menu", timeout=10_000)
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.keyboard.press(",")
+    page.wait_for_selector("#prefs-modal:not(.hidden)", timeout=5_000)
+    page.locator('[data-action="prefs-tab"][data-tab="actions"]').click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-panel-actions').getAttribute('aria-hidden') === 'false'"
+    )
     info = page.evaluate("""() => {
-        const items = [...document.querySelectorAll('.topbar-overflow-item')];
+        const items = [...document.querySelectorAll('#prefs-panel-actions .prefs-action-row')];
         return items.map((btn) => ({
             action: btn.getAttribute('data-action'),
             title: btn.getAttribute('title'),
@@ -3427,7 +3576,7 @@ def test_overflow_menu_items_have_titles_and_distinct_icons(page, base_url):
             icon: btn.querySelector('use')?.getAttribute('href') || null,
         }));
     }""")
-    assert info, "expected overflow items"
+    assert info, "expected action rows"
     for item in info:
         assert item["title"], f"missing title on {item['action']}"
         assert item["title"] == item["aria"], f"title/aria mismatch on {item['action']}: {item}"
@@ -3439,7 +3588,7 @@ def test_overflow_menu_items_have_titles_and_distinct_icons(page, base_url):
         "complexity-compare-open",
         "section-map-toggle",
     ):
-        assert action in by_action, f"missing overflow action {action}"
+        assert action in by_action, f"missing action row {action}"
     icons = [
         by_action["wiki-switcher-open"],
         by_action["link-graph-open"],
