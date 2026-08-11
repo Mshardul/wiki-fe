@@ -10,12 +10,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).parent.parent
 
-# index.html loads these from live CDNs. page.goto(..., wait_until="load") (Playwright's
-# default) blocks until every one of them resolves, so any CDN slowness times out whichever
-# test happens to be navigating at that moment - a different test each run. Fetch each real
-# asset once per test session and serve it from memory for every page after that, removing
-# the live-network dependency without changing what code actually runs (real showdown/hljs/
-# DOMPurify/katex - not stubs, since tests assert on their real output).
+# CDN assets served from memory per session — goto(wait_until="load") otherwise blocks on live CDN latency.
 _CDN_ASSETS = [
     "https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js",
     "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js",
@@ -25,18 +20,10 @@ _CDN_ASSETS = [
     "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css",
 ]
 
-# mermaid.min.js is deliberately NOT fetched for real: disable_animations below stubs
-# window.mermaid before any page script runs, and existing tests assert on that stub's
-# fake SVG output. The live <script src="...mermaid..."> tag still fires a real request
-# though (it's what was hanging goto), so it needs a route too. index.html pins this
-# script's `integrity="sha384-..."` attribute, and any fulfilled body that doesn't hash
-# to that exact value gets blocked by the browser's own SRI check - so the route aborts
-# the request instead of fulfilling it, skipping SRI hashing entirely.
+# Mermaid stubbed in disable_animations; abort the CDN request to dodge index.html SRI on the script tag.
 _MERMAID_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/mermaid@10.9.5/dist/mermaid.min.js"
 
-# On-disk cache so re-running tests (and every xdist worker) doesn't re-hit live CDNs.
-# Every URL above is version-pinned, so a cached response is valid forever - the only way
-# it goes stale is a version bump, which changes the URL (and therefore the cache path).
+# Version-pinned URLs — disk cache survives re-runs and xdist workers.
 _DISK_CACHE_DIR = REPO_ROOT / "tests" / ".cdn-cache"
 
 
@@ -76,16 +63,12 @@ def _make_cdn_fulfill_handler(body, content_type):
 def mock_cdn_assets(page, cdn_cache):
     for url, (body, content_type) in cdn_cache.items():
         page.route(url, _make_cdn_fulfill_handler(body, content_type))
-    # window.mermaid is already provided by the stub init script (see disable_animations,
-    # runs before any page script). Abort rather than fulfill so the browser never hashes
-    # a body against the page's pinned `integrity` attribute for this script.
     page.route(_MERMAID_SCRIPT_URL, lambda route: route.abort())
 
 
 @pytest.fixture
 def browser_context_args(browser_context_args):
-    # Block service workers so page.route() mock intercepts work correctly.
-    # The SW intercepts all .md fetches before Playwright sees them otherwise.
+    # Block SW so page.route() intercepts .md fetches.
     return {**browser_context_args, "service_workers": "block"}
 
 
@@ -96,8 +79,7 @@ if (typeof window.mermaid === 'undefined') {
         initialize: function(cfg) { _mermaidConfig = cfg || {}; },
         render: function(id, src) {
             var theme = _mermaidConfig.theme || 'default';
-            // Fake a <g> per node id (e.g. "A", "B") so tests asserting on
-            // hover-captions / step-through highlighting have real elements to match.
+            // One <g> per parsed node id for hover/step-through assertions.
             var nodeIds = {};
             var re = /\\b([A-Za-z0-9_]+)[\\[\\(]/g;
             var m;
@@ -120,8 +102,7 @@ def disable_animations(page):
         (() => {
             const s = document.createElement('style');
             s.textContent = '*, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; transition-delay: 0s !important; animation-delay: 0s !important; }';
-            // Init scripts also fire on the initial about:blank document, where
-            // <head> may not exist yet - wait for it rather than assuming it's there.
+            // about:blank has no <head> yet when init scripts run.
             if (document.head) {
                 document.head.appendChild(s);
             } else {
@@ -141,14 +122,7 @@ def force_paint(page):
 @pytest.fixture(scope="session")
 def base_url():
     class Handler(SimpleHTTPRequestHandler):
-        # Default is HTTP/1.0, which closes the TCP connection after every
-        # response - app.js alone has 40+ static ES module imports, so a
-        # single page load was opening 40+ fresh connections (handshake +
-        # thread-pool dispatch each) instead of reusing the browser's ~6
-        # keep-alive connections per origin. Harmless most of the time, but
-        # under full-parallel-suite CPU contention (6 xdist workers x
-        # chromium) the extra connection churn was enough to occasionally
-        # push a single page's module-load past the fixture's wait timeout.
+        # HTTP/1.1 keep-alive — HTTP/1.0 closes after every response; ~40 ES module imports per page load.
         protocol_version = "HTTP/1.1"
 
         def __init__(self, *args, **kwargs):
@@ -158,14 +132,7 @@ def base_url():
             pass
 
         def handle_one_request(self):
-            # The client (Playwright) can abort a request at any point - not
-            # just mid-body (copyfile), but before headers are even fully
-            # written (send_response/send_header/send_error all write to
-            # the same socket). An abort during send_error specifically
-            # happens on every 404 for a stray/incorrect asset path the app
-            # requests, which happens often enough over a long run to matter.
-            # Wrapping the whole request here, rather than just copyfile,
-            # is the only place that covers every write path at once.
+            # Swallow client aborts on any write path (including 404 send_error).
             try:
                 super().handle_one_request()
             except (BrokenPipeError, ConnectionResetError):
@@ -179,29 +146,10 @@ def base_url():
 
     class Server(ThreadingHTTPServer):
         daemon_threads = True
-        # Default backlog is 5 - a browser resolving app.js's ~30-module import
-        # graph fires that many requests near-simultaneously, and anything past
-        # the backlog queues (or drops) until a thread frees up. Over a
-        # multi-hundred-test session that's enough contention to occasionally
-        # stall a single request past an 8s test timeout.
+        # Default backlog 5; app.js import graph can burst ~30 simultaneous requests.
         request_queue_size = 128
 
-        # ThreadingMixIn.process_request spawns a brand-new, unbounded thread
-        # per request. Across a full session (45 JS modules x every test that
-        # navigates) that's tens of thousands of thread creations, and thread-
-        # spawn churn under contention is itself a source of per-request
-        # latency spikes. A bounded pool reuses worker threads instead.
-        #
-        # Sized at 12, not higher: with keep-alive (protocol_version =
-        # "HTTP/1.1" above) a single browser holds at most ~6 concurrent
-        # connections to this server, so one worker's pool never needs to
-        # cover more than that plus headroom. Each xdist worker runs its own
-        # Server instance, so under `-n 6` this pool count multiplies by 6 -
-        # oversizing it here (the old value was 32, sized for the pre-
-        # keep-alive per-request connection churn) means 6 servers together
-        # contend for far more OS thread-scheduling slots than the 8 physical
-        # cores can serve, which was itself contributing to the occasional
-        # single-test timeout under full-suite parallel runs.
+        # Bounded pool — unbounded per-request threads multiply across xdist workers.
         _pool = ThreadPoolExecutor(max_workers=12, thread_name_prefix="wiki-test-http")
 
         def process_request(self, request, client_address):

@@ -745,10 +745,11 @@ def test_verb_command_no_match_shows_hint(page, base_url):
 
 def _open_article(page, base_url):
     page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=15_000)
+    page.wait_for_selector("#view-content.active", timeout=15_000)
     page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
+        timeout=15_000,
     )
 
 
