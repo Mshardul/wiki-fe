@@ -121,20 +121,6 @@
     {
       "target": "./content/system-design/components/service-to-service-auth.md",
       "title": "Authentication"
-    },
-    {
-      "target": "./content/system-design/components/tls.md",
-      "title": "Authentication"
-    },
-    {
-      "target": "./content/system-design/components/http.md",
-      "title": "Authentication"
-    }
-  ],
-  "./content/system-design/components/rate-limiter.md": [
-    {
-      "target": "./content/system-design/distributed-systems/distributed-rate-limiting.md",
-      "title": "Rate Limiter"
     }
   ],
   "./content/system-design/paths/components-foundation.md": [

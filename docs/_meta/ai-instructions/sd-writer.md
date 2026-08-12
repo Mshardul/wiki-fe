@@ -42,6 +42,21 @@ Before anything else, decide which **kind** of article you're writing. The kind 
     - Max 3 sections before the most-used commands appear. No prose paragraph longer than one line per command. No duplicate commands across sections unless context materially changes the meaning. Every command copy-paste ready with safe placeholders (see [Placeholder conventions](#placeholder-conventions)).
     - **Rater treatment:** run only filename convention + working-links + the cheatsheet self-check below. All conceptual params are n/a with justification "cheatsheet article". Gate = SHIP if the self-check passes and every command is copy-paste ready.
 
+- **Path article** - a curated, ordered learning sequence across multiple existing articles (e.g. `paths/hld-interview-loop.md`), not a topic in itself. Lives in `content/system-design/paths/`. It teaches nothing directly - it routes, in order, with a stated reason for the sequence. It is **not scored against CO/AL/HL/DV section params** and has no mental model, no mechanics, no interview scenario bank of its own - all of that lives on the linked articles.
+
+    **No marker blockquote needed** - detection is by path (`system-design/paths/**`).
+
+    **A path owns:** its own self-contained format (below) and, from the universal params, only U8 (filename convention) and U9 (working links - every row's link must resolve to a real file; a not-yet-written target stays plain text, never a broken `.md` link).
+
+    **Path format (fixed):**
+    1. **Title** - `# Learning Path: [Track Name]`
+    2. **One-paragraph scope line** - what the track covers, its target bar (standard-loop vs senior-depth etc.), and a rough duration estimate (e.g. "~6-8 weeks at a steady pace"). No TLDR, no Prerequisites section, no TOC.
+    3. **Cross-link to sibling tracks** - `See [SD Learning Paths](../index.md#learning-paths) for the other tracks.`
+    4. **`## Path`** - a single table, columns `Stage | Topic | Type (optional) | Notes`. `Stage` groups topics studied together (repeatable across rows, ascending order). `Topic` is a working link to the real article. `Type` names the source folder (Algorithm/Component/HLD) when the track mixes folders - omit the column if every row is the same type. `Notes` is optional, one short phrase (warm-up, capstone, "revisited at depth") - empty is better than padding.
+    5. **`## Explicitly skipped in this track`** - one short paragraph naming what's deliberately out of scope and, where relevant, which sibling track covers it instead.
+    - No callouts, no diagrams, no code blocks - a path is a route, not content.
+    - **Rater treatment:** run only U8 (filename), U9 (links resolve - every `Topic` cell), and the path self-check below. All conceptual/section-block params are n/a with justification "path article - routes to member content, teaches nothing directly". Gate = SHIP if every linked topic resolves (or is plain-text pending), stages are in ascending order, and the skipped-scope section names a real reason or sibling track.
+
 ---
 
 ## How to write one
@@ -52,6 +67,7 @@ Before anything else, decide which **kind** of article you're writing. The kind 
    - `content/system-design/hld/…` → **HLD**
    - `content/system-design/devops-tools/…` (not `cheatsheets/`) → **DevOps tool**
    - `content/system-design/devops-tools/cheatsheets/…` → **Cheatsheet** (self-contained format above, skip the rest of this file)
+   - `content/system-design/paths/…` → **Path** (self-contained format above, skip the rest of this file)
 2. **Create the file.** Create a new `.md` file at the target path (lowercase, hyphen-separated slug). Write from scratch using the **Headings list** for your section (at the bottom of this file) as a starting menu, not a mandatory fixed order - see [Structure guidelines](#structure-guidelines).
 3. **PHASE 0 (HLD only).** Before writing the index, complete this sentence internally: _"The core architectural challenge of [System] is ___."_ Let that thesis drive which section gets the deepest nesting, and ensure it appears explicitly in the TLDR.
 4. **PHASE 1 - index only.** Generate ONLY the index (plain text, hierarchical dashes, no markdown code blocks - see [Index format rules](#index-format-rules)). Stop. Wait for user confirmation.
@@ -71,6 +87,8 @@ Before anything else, decide which **kind** of article you're writing. The kind 
 - Repeat the Interviewer TL;DR verbatim in the Key Takeaway
 - Open with history or evolution of the topic
 - State unverified facts, statistics, or attributions - when uncertain, qualify with "typically" or "commonly" rather than asserting as fact
+- Include a "Post-mortem Reading List", "Further Reading", or any external-links-as-homework section - not interview-actionable, not part of the mandatory spine, and not in any Suggested section starting points list. If it exists in an article being edited, cut it.
+- Write a separate `## What the Interviewer Probes For` section - follow-up probes live inside `## Interview Scenario Bank` as `Next question:` fields (see U16 below). A standalone probes section outside the bank is a structure violation.
 - Include full function or class implementations in code blocks - pseudocode or prose only; full implementations belong in dedicated pages
 - Use standards-body URNs, IANA identifiers, or proprietary strings in examples - use simple readable placeholders instead
 - **Restate the same comparison, table, or trade-off in more than one section** - see U14 below. If two sections both want to explain stateful-vs-stateless (or any X-vs-Y), one states it in full and the other links back to it.
@@ -84,9 +102,9 @@ Before anything else, decide which **kind** of article you're writing. The kind 
 - Open `# Title` → `## Prerequisites` → `## Table of Contents` → `## TLDR` → body → (HLD only: `## Trade-off Summary`) → `## Appendices`. **No YAML front matter.**
 - Filenames: lowercase, hyphen-separated, `.md`.
 - H1 title conventions per type: Component/Algorithm/DevOps-tool → `# [Name]`; HLD → `# Design: [System Name]`.
-- Prerequisites: `**[Name](relative-link)** [Must read]` or `**[Name](relative-link)** [Should read]` + one sentence on why it matters **for this specific article** (not a generic "understanding of X"). For a not-yet-written target, use `<!-- link: file.md -->` immediately after. Tier is exactly one of these two values - never invent a third (`[Recommended]`, `[Nice to have]`).
-  - ✅ `**[Caching](../components/caching.md)** [Must read] - CDN edge nodes are caching layers; TTL mechanics directly determine the staleness behaviour covered throughout this page.`
-  - ❌ `**[Caching](../components/caching.md)** - Understanding of caching concepts.`
+- Prerequisites: `**[Name](relative-link)** [Must read]` or `**[Name](relative-link)** [Should read]` - name and tier only, no description sentence. For a not-yet-written target, use `<!-- link: file.md -->` immediately after. Tier is exactly one of these two values - never invent a third (`[Recommended]`, `[Nice to have]`).
+  - ✅ `**[Caching](../components/caching.md)** [Must read]`
+  - ❌ `**[Caching](../components/caching.md)** [Must read] - CDN edge nodes are caching layers; TTL mechanics directly determine the staleness behaviour covered throughout this page.`
 - Cross-vertical links allowed and encouraged (e.g. an HLD page → a DSA data-structure page). Every live `.md` link must resolve to a real file.
 - **Diagrams are real, never placeholders.** Plain ASCII or mermaid. Mandatory wherever spatial relationships or state transitions are core to understanding (a hashing ring, a request pipeline, a control-plane topology). A `<!-- diagram -->` TODO does not count.
 - **TLDR:** up to 5 sentences (≤50 words for Component/Algorithm/HLD, ≤60 for DevOps), plain prose, no bullets. What it is, the core decision/insight it enables, and the key trade-off. Self-contained - never "this page covers…".
@@ -149,14 +167,13 @@ Never use real hostnames, IPs, credentials, tokens, or standards-body identifier
 | U8  | Filename convention                 | Lowercase, hyphen-separated, `.md`, matching the naming convention for its type. |
 | U9  | Links resolve                       | Every `[text](./path.md)` link points to a real file, cross-vertical included. |
 | U10 | Interview soundbite                 | One memorable sentence a candidate can say out loud to compress the whole article (e.g. "A load balancer's real decision isn't L4-vs-L7, it's how fast you can detect and route around a dead backend."). Place at the end of the TLDR or as the article's Key Takeaway equivalent. |
-| U11 | Callouts used correctly             | Per [Callouts](#callouts). Warning/Gotcha capped at 1-3 per page - genuinely non-obvious only. Thought Process only where reasoning is non-obvious. Decision Framework only for real X-vs-Y trade-offs. |
+| U11 | Callouts used correctly             | Per [Callouts](#callouts). No numeric cap on any callout type - use as many as genuinely serve clarity. Warning/Gotcha: genuinely non-obvious only, not a inserted for count. Thought Process only where reasoning is non-obvious. Decision Framework only for real X-vs-Y trade-offs. |
 | U12 | Failure modes - two-level pattern   | Failure modes appear inline as H3s within their relevant parent H2 **and** are consolidated in one dedicated summary H2 (`## Production Failure Modes & Gotchas`). Always present. Primary interview revision target. |
 | U13 | Vendor examples                     | Core explanation stays generic. Mention 1-2 well-known real implementations as examples, no deep comparison, no proprietary internals. |
 | U14 | No duplicate content across sections (gated) | Every comparison, table, or trade-off explanation appears **fully stated exactly once** in the article. If a second section needs it, it links back (`see [Stateful vs Stateless](#stateful-vs-stateless)`) rather than re-explaining. This is the single highest-leverage anti-bloat rule - **check it explicitly before publishing**: list every X-vs-Y comparison in the draft and confirm each appears in exactly one place. |
 | U15 | Section length proportionality (gated) | Depth follows conceptual complexity, not a desire for completeness. See [Length ceiling](#length-ceiling--when-to-split) - if a single sub-concept is consuming more space than the rest of the article combined, it has exceeded scope and belongs on its own page (see Scope management), not in a longer section here. |
-| U16 | One consolidated Interview Lens section (gated) | Interview Lens (Q/Ideal answer/Common trap/Next question format) appears **once per article**, as a dedicated `## Interview Scenario Bank` (or equivalent) section near the end, covering the article's 3-6 highest-value questions - **not once per H2 section**. Individual H2 sections may reference "see Interview Scenario Bank" but must not embed their own Q&A block. |
+| U16 | One consolidated Interview Lens section (gated) | Interview Lens (Q/Ideal answer/Common trap/Next question format) appears **once per article**, as a single dedicated `## Interview Scenario Bank` section near the end, covering the article's 3-6 highest-value opening questions - **not once per H2 section, and not as a second standalone section**. Individual H2 sections may reference "see Interview Scenario Bank" but must not embed their own Q&A block. Each entry's `**Next question:**` field(s) carry the follow-up-probe content - a genuine **follow-up after a design choice is made**, probing the choice not the topic ("you chose consistent hashing - what happens when node count doubles overnight?"), distinct in kind from the opening Q&A. Use multiple `**Next question:**` lines per entry when there's more than one genuine follow-up (never cram two questions into one field). If a probe doesn't map cleanly onto any single entry, add a short trailing subgroup inside the same section (e.g. `### Additional Probes`) rather than a new top-level H2 - there is no separate `## What the Interviewer Probes For` section. See [NEVER](#never-all-article-types). |
 | U17 | Real-world usage + at-scale failure (advisory) | **2-3 sentences**, folded into an existing section (Quick Decision Guide / When to use / vendor-examples area) - no new heading. Name a real system where this is a workhorse (may reuse U13's vendor example), **then go past U13**: one sentence on what actually breaks at scale - the failure mode that only shows up past a real threshold or under production load (consistent hashing's ring imbalance past thousands of nodes; a cache's thundering herd at high QPS on a hot key). This is the bridge a senior candidate walks when asked "how does this hold up 10x bigger?" |
-| U18 | Interviewer probes - consolidated (gated) | A dedicated `## What the Interviewer Probes For` section, placed after Interview Scenario Bank, near Appendices. **2-4 follow-up questions**, each a bolded question + 2-3 sentence answer sketch, distinct in kind from Interview Scenario Bank: Scenario Bank is the opening questions a candidate should expect; this is the **follow-up an interviewer asks after a design choice is made** - it probes the choice, not the topic ("you chose consistent hashing - what happens when node count doubles overnight?"). Write it once, consolidated - do not scatter probes per-H2. **Satisfied by promotion, not just fresh writing:** if Interview Scenario Bank entries already carry substantive `**Next question:**` fields (per the format in [Callouts](#callouts)), U18 is satisfied by **promoting the 2-4 strongest into the dedicated section** (lightly expanded to a full answer sketch where the original is one clause) with a one-line back-link from the Scenario Bank entry (`see What the Interviewer Probes For`) - do not require a from-scratch rewrite of content that already exists, and do not duplicate the full sketch in both places (see U14). |
 | U19 | Common misconceptions (advisory) | **1-3 bullets**, folded into Production Failure Modes & Gotchas (or a `### Common Misconceptions` sub-heading within it) - no new top-level H2. Each corrects a **wrong mental model**, not an implementation bug: "eventual consistency means data is wrong for a while" (no - it means no staleness bound is guaranteed, could resolve immediately or never under partition), "sharding and partitioning are the same thing" (partitioning is the general concept, sharding is horizontal partitioning across servers specifically), "a load balancer makes a system infinitely scalable" (it distributes load, it doesn't remove the shared-state bottleneck behind it). Distinction from Gotchas: gotchas = "you designed it right but missed this failure mode"; misconceptions = "you reached for this tool with a false belief about what it guarantees." Skip if no genuine misconceptions exist - do not manufacture filler. |
 | U20 | First 30 seconds - interview framing script (HLD gated, Component/DevOps advisory) | **2-4 sentences**, placed as the opening of `## Interview Scenario Bank` or immediately before it, marked as a distinct callout/blockquote. The literal script a candidate says out loud in the first 1-2 minutes to frame scope before diving in - not a summary of the article, the actual opening move (e.g. "I'd clarify read/write ratio and consistency requirements first, since that decides SQL vs NoSQL here. Assuming read-heavy and eventual consistency is acceptable, the core challenge becomes..."). For HLD this maps naturally onto scoping the requirements-gathering opening; for Component/DevOps it's the opening framing when the topic comes up as a sub-question inside a larger design. **Gated for HLD** (the framing opener is make-or-break for HLD interviews); **advisory for Component/Algorithm/DevOps**. |
 
@@ -168,7 +185,7 @@ Never use real hostnames, IPs, credentials, tokens, or standards-body identifier
 | ----- | ---- | ----------- | --------- |
 | 🧠 | **Thought Process** | Show how a senior engineer reasons from requirements to a design decision | Where the section involves non-obvious reasoning - not mandatory |
 | ⚖️ | **Decision Framework** | X vs Y constraints, trade-off justification, "when would you NOT use this?" | ≥1 per section comparing ≥2 design options |
-| ⚠️ | **Warning / Gotcha** | Pitfalls, non-obvious failure modes, assumptions that silently break at scale | 1-3 per page max - genuinely non-obvious only |
+| ⚠️ | **Warning / Gotcha** | Pitfalls, non-obvious failure modes, assumptions that silently break at scale | No cap - genuinely non-obvious only, never inserted to hit a count |
 | 🔧 | **Practical Example** (DevOps only) | Minimal config snippet or command sequence showing the concept in action | 1-2 per H2 where a concrete example materially aids understanding |
 
 **No per-section Interview Lens** (see U16). The consolidated `## Interview Scenario Bank` uses this exact format per entry:
@@ -180,6 +197,10 @@ Never use real hostnames, IPs, credentials, tokens, or standards-body identifier
 > **Common trap:** [The most frequent wrong answer or framing]
 > **Next question:** [The follow-up if the candidate answers well]
 ```
+
+**Multiple follow-ups:** an entry isn't limited to one `**Next question:**` field. If a design choice genuinely opens up 2-3 distinct follow-up directions, write each as its own `**Next question:**` line, one per line, rather than merging them into a single field separated by prose. Never cram two questions into one field (e.g. `**Next question:** "Q1?" → A1. "Q2?" → A2.` is wrong - split into two lines). This applies equally to any "Follow-up(s):" style field elsewhere in an article (e.g. HLD scenario write-ups) - one follow-up per line, singular or plural field name matching the count.
+
+The `**Next question:**` field IS the interviewer-probe content - it is not a stub pointing elsewhere. Write it as a real follow-up ("what happens when node count doubles overnight?"), not a placeholder ("interviewer will probe further").
 
 ---
 
@@ -303,13 +324,13 @@ Always at the end (HLD: after Trade-off Summary). Include only relevant sub-sect
 
 Pick, merge, and reorder based on the topic. Omit inapplicable sections - never include empty placeholders.
 
-**Components:** Quick Decision Guide (after mechanics) · Conceptual Foundations & Mental Models · Core Mechanisms · Resilience & Failure Handling · Security & Hardening · Performance & Optimization · Deployment Contexts · Observability & Debugging · Production Failure Modes & Gotchas (U19 misconceptions fold in) · Interview Scenario Bank (U20 opening script, advisory) · What the Interviewer Probes For (U18) · Appendices
+**Components:** Quick Decision Guide (after mechanics) · Conceptual Foundations & Mental Models (optional - see NEVER on symmetric depth; skip if it would just restate the TLDR) · Core Mechanisms · Resilience & Failure Handling · Security & Hardening · Performance & Optimization · Deployment Contexts · Observability & Debugging · Production Failure Modes & Gotchas (U19 misconceptions fold in) · Interview Scenario Bank (U20 opening script, advisory) · Appendices
 
-**Algorithms/Concepts:** Mental Model & Intuition · Formal Definition · Assumptions & Preconditions · Core Mechanics · Often Confused With · Variants & Extensions · When This Applies · Real-World Applications · Performance & Complexity · Common Misapplications & Gotchas (U19 misconceptions fold in) · Interview Scenario Bank (U20 opening script, advisory) · What the Interviewer Probes For (U18) · Appendices
+**Algorithms/Concepts:** Mental Model & Intuition · Formal Definition · Assumptions & Preconditions · Core Mechanics · Often Confused With · Variants & Extensions · When This Applies · Real-World Applications · Performance & Complexity · Common Misapplications & Gotchas (U19 misconceptions fold in) · Interview Scenario Bank (U20 opening script, advisory) · Appendices
 
-**HLD:** Requirements & Scope (HL2 - NFR trade-offs resolved, not just listed) · Capacity Estimation · High-Level Architecture · Data Model & Storage · Core Service Design · Reliability & Fault Tolerance · Scalability & Performance · Deep-Dive: [Most Interview-Critical Subsystem] · Observability · Trade-off Summary · Common Interview Gotchas (U19 misconceptions fold in) · Interview Scenario Bank (U20 opening framing script - gated for HLD) · What the Interviewer Probes For (U18) · Appendices
+**HLD:** Requirements & Scope (HL2 - NFR trade-offs resolved, not just listed) · Capacity Estimation · High-Level Architecture · Data Model & Storage · Core Service Design · Reliability & Fault Tolerance · Scalability & Performance · Deep-Dive: [Most Interview-Critical Subsystem] · Observability · Trade-off Summary · Common Interview Gotchas (U19 misconceptions fold in) · Interview Scenario Bank (U20 opening framing script - gated for HLD) · Appendices
 
-**DevOps tools:** Architecture Overview & Mental Model · Core Primitives & Abstractions · Internals Deep-Dive · Configuration Model & Patterns · Networking & Communication · Storage & Persistence · Security Model & Hardening · Observability & Debugging · Integration with Other Tools · Scaling & Performance · Production Failure Modes & Gotchas (U19 misconceptions fold in) · Interview Scenario Bank (U20 opening script, advisory) · What the Interviewer Probes For (U18) · Appendices
+**DevOps tools:** Architecture Overview & Mental Model · Core Primitives & Abstractions · Internals Deep-Dive · Configuration Model & Patterns · Networking & Communication · Storage & Persistence · Security Model & Hardening · Observability & Debugging · Integration with Other Tools · Scaling & Performance · Production Failure Modes & Gotchas (U19 misconceptions fold in) · Interview Scenario Bank (U20 opening script, advisory) · Appendices
 
 ---
 
@@ -326,8 +347,7 @@ The mandatory spine each article must contain. Sections between TLDR and Failure
 ## TLDR
 ... (Core Mechanisms, Quick Decision Guide, and other chosen sections - see Suggested section starting points) ...
 ## Production Failure Modes & Gotchas   (U12 - consolidated, inline H3s elsewhere feed into this; U19 misconceptions fold in as a sub-heading)
-## Interview Scenario Bank              (U16 - consolidated Interview Lens entries, 3-6; U20 opening framing script, advisory)
-## What the Interviewer Probes For      (U18 - advisory; 2-4 follow-ups with answer sketches)
+## Interview Scenario Bank              (U16 - consolidated Interview Lens entries, 3-6, Next question fields carry follow-up probes; U20 opening framing script, advisory)
 ## Appendices
 ```
 
@@ -341,7 +361,6 @@ The mandatory spine each article must contain. Sections between TLDR and Failure
 ... (Mental Model, Formal Definition, Assumptions, Mechanics, Variants, etc. - see Suggested section starting points) ...
 ## Common Misapplications & Gotchas    (U19 misconceptions fold in as a sub-heading)
 ## Interview Scenario Bank             (U20 opening framing script, advisory)
-## What the Interviewer Probes For     (U18 - advisory)
 ## Appendices
 ```
 
@@ -356,7 +375,6 @@ The mandatory spine each article must contain. Sections between TLDR and Failure
 ## Production Failure Modes & Gotchas  (U19 misconceptions fold in as a sub-heading)
 ## Trade-off Summary               (HL6 - decision log, before Appendices)
 ## Interview Scenario Bank         (U20 opening framing script - GATED for HLD, see U20)
-## What the Interviewer Probes For (U18 - gated)
 ## Appendices
 ```
 
@@ -370,7 +388,6 @@ The mandatory spine each article must contain. Sections between TLDR and Failure
 ... (Architecture, Internals, Config Model, etc. - see Suggested section starting points) ...
 ## Production Failure Modes & Gotchas  (U19 misconceptions fold in as a sub-heading)
 ## Interview Scenario Bank             (U20 opening framing script, advisory)
-## What the Interviewer Probes For     (U18 - advisory)
 ## Appendices                       (may include Key Config Reference)
 ```
 
@@ -396,8 +413,16 @@ If all true → output index → STOP. Wait for user confirmation.
 - **Code block whiteboard test:** would you write this on a whiteboard in the interview? If not - cut it.
 - **Duplication check (U14):** does this section restate a comparison/table already fully stated elsewhere in the article? If yes - link back instead of re-explaining.
 - **Scope check (U15):** is this section's length starting to rival the rest of the article? If yes - apply [Scope management](#scope-management--stub-pages).
-- **Probe distinction check (U18):** does `## What the Interviewer Probes For` ask a genuine follow-up to a design choice already made, or does it just repeat an Interview Scenario Bank question in different words? If the latter - rewrite or cut.
+- **Probe distinction check (U16):** does each `**Next question:**` field (or trailing probes subgroup) ask a genuine follow-up to a design choice already made, or does it just repeat its own entry's `Q:` in different words? If the latter - rewrite or cut.
 - **Misconception check (U19):** is each bullet a wrong belief about what the tool/pattern guarantees, or is it secretly a gotcha (implementation bug) in disguise? If the latter - move it to Gotchas proper.
 - **Framing script check (U20):** would this actually be said out loud in the first 2 minutes of an interview, or does it read like a summary of the article? If the latter - rewrite as a spoken opening move, not a recap.
 - Algorithms only - **proof sketch test:** does the proof sketch illuminate a design insight, or is it just formalism? If the latter, cut it.
 - DevOps only - **snippet whiteboard test + cheatsheet boundary check:** would you sketch this on a whiteboard? Does this section contain command lists or step-by-step procedures that belong in the cheatsheet instead?
+
+### Path self-check (paths/ only, skip all of the above)
+
+- Every `Topic` cell links to a real file, or is plain text if the target doesn't exist yet - never a broken `.md` link?
+- `Stage` numbers are ascending, and rows sharing a stage are genuinely meant to be studied together?
+- The scope line states target bar + rough duration, not a restatement of the table?
+- `## Explicitly skipped in this track` names a real reason or points to the sibling track that covers it - not left empty or vague?
+- No mental model, mechanics, or Q&A content invented for the path itself - it routes, the linked articles teach?

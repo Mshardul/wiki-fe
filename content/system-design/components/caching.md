@@ -2,17 +2,17 @@
 
 ## Prerequisites
 
-- **TCP/IP & Networking Fundamentals** - understand how data moves between processes; remote cache access adds a network round-trip on every miss.
-- **[<abbr>Consistent Hashing</abbr>](../algorithms/consistent-hashing.md)** - distributed caches use consistent hashing for key-to-node routing; understanding virtual nodes and rebalancing impact is required before tackling distributed cache architecture.
-- **[CAP Theorem](../algorithms/cap-theorem.md)** - cache consistency guarantees map directly to CAP trade-offs; distributed caches are typically AP systems with bounded staleness.
-- **[<abbr>Replication</abbr> Strategies](../algorithms/replication-strategies.md)** - cache replication (read replicas, active-active) shares the same trade-offs as database replication; stale read windows and write conflict surfaces depend on the replication model chosen.
+- **TCP/IP & Networking Fundamentals** [Must read]
+- **[Consistent Hashing](../algorithms/consistent-hashing.md)** [Must read]
+- **[CAP Theorem](../algorithms/cap-theorem.md)** [Should read]
+- **[Replication Strategies](../algorithms/replication-strategies.md)** [Should read]
 
 ---
 
 ## Table of Contents
 
-- [Quick Decision Guide](#quick-decision-guide)
 - [Core Write & Read Strategies](#core-write--read-strategies)
+- [Quick Decision Guide](#quick-decision-guide)
 - [Eviction & Expiry](#eviction--expiry)
 - [Cache Invalidation](#cache-invalidation)
 - [Distributed Cache Architecture](#distributed-cache-architecture)
@@ -24,7 +24,6 @@
 - [Observability](#observability)
 - [Production Issues & Debugging](#production-issues--debugging)
 - [Interview Scenario Bank](#interview-scenario-bank)
-- [What the Interviewer Probes For](#what-the-interviewer-probes-for)
 - [Appendices](#appendices)
 
 ---
@@ -32,68 +31,6 @@
 ## TLDR
 
 A cache is a faster, smaller storage layer that sits between a client and a slower authoritative data store - its purpose is to absorb repeated reads at a fraction of the <abbr>latency</abbr> and cost of hitting the origin. The fundamental design choice is not "should we cache?" but "where, what, and for how long" - and crucially, how staleness is bounded when the underlying data changes. Write strategy (cache-aside, write-through, write-behind) determines how cache and DB stay in sync; eviction policy (<abbr>LRU</abbr>, LFU, ARC) determines what survives memory pressure; and invalidation strategy determines how quickly stale data is expelled. At scale, the hard problems are not hit rate optimization but the failure modes that emerge under load: cache stampedes that hammer the origin on coordinated misses, avalanches when large TTL cohorts expire simultaneously, and penetration where non-existent keys bypass the cache entirely. Most production caches accept AP semantics - <abbr>eventual consistency</abbr> with bounded staleness - and design consumers to tolerate stale reads rather than pay the coordination cost of <abbr>strong consistency</abbr>.
-
----
-
-## Quick Decision Guide
-
-**Interviewer TL;DR:** Before choosing any cache design, answer four questions in order: should you cache at all, which layer, what write strategy, and what eviction policy. Skipping question one is the most common mistake.
-
-**Mental model:** Caching is a bet - you trade memory and consistency complexity for latency and <abbr>throughput</abbr>. The bet only pays off if the data is read more than it changes and if the access pattern has enough locality for the cache to stay warm.
-
-### When to Cache
-
-- Read:write ratio is high (>10:1 is a common threshold, but the right number depends on origin cost)
-- Origin read latency is significant - DB query, external API call, or expensive computation
-- The same data is requested repeatedly by many clients (high temporal or frequency locality)
-- The data can tolerate some staleness - bounded by your SLO, not just technical preference
-- Traffic spikes need to be absorbed without scaling the origin proportionally
-
-### When NOT to Cache
-
-- Data changes on every write and freshness is a hard correctness requirement (financial ledger, inventory count with strict accuracy) - the invalidation overhead will exceed the read benefit
-- Data is unique per request (highly personalized, real-time computed) - miss rate approaches 100% and the cache just adds latency on every call
-- The origin is already fast and co-located - an in-memory DB or a co-located service adds ~0.3ms per cache hit with no meaningful saving on miss
-- Write throughput dominates - cache invalidation fan-out and consistency overhead consumes more than the read savings
-- Data volume is too large relative to cache capacity - thrashing (continuous eviction of data that is immediately needed again) destroys hit rate and adds overhead
-
-> ⚖️ **Decision Framework**
-> The quick test: "If I remove the cache, does anything break or just get slower?" If slower - quantify how much slower, and whether users or downstream systems care. Cache only when the latency saving justifies the consistency and operational complexity it introduces.
-
-### Which Layer to Cache At
-
-| Layer              | What Lives Here                                         | Access Latency | Consistency Risk                            |
-| ------------------ | ------------------------------------------------------- | -------------- | ------------------------------------------- |
-| Client / browser   | Static assets, user preferences                         | 0ms (local)    | Staleness until TTL or bust                 |
-| CDN edge           | Publicly cacheable HTTP responses                       | 1–10ms         | TTL-controlled; purge for fast invalidation |
-| In-process (L1)    | Hot config, reference data, per-request memoization     | <1µs           | Each process has its own copy               |
-| Shared remote (L2) | Session state, computed aggregates, rate-limit counters | 0.2–1ms        | Shared source of truth across instances     |
-| DB query cache     | Stable, expensive query results                         | Varies         | Invalidated on any relevant table write     |
-
-### Which Write Strategy Fits the Workload
-
-```
-Is the application responsible for managing cache population?
-  ├─ YES ──▶ Cache-Aside (default for most read-heavy workloads)
-  │
-  └─ NO (cache library handles population)
-       └──▶ Read-Through
-
-On write, must cache and DB stay in sync immediately?
-  ├─ YES ──▶ Write-Through (consistent; write latency doubles)
-  │
-  └─ NO
-       │
-       ▼
-     Can you tolerate data loss if the cache node fails before flushing?
-       ├─ YES ──▶ Write-Behind (lower write latency; durability risk)
-       └─ NO  ──▶ Write-Through or Cache-Aside with invalidation
-
-Are access patterns predictable and hot keys known in advance?
-  └─ YES ──▶ Consider Refresh-Ahead to avoid miss-on-expiry for those keys
-```
-
-**Key Takeaway:** Cache only when read:write ratio and access locality justify the consistency complexity. The layer and write strategy follow from access pattern and freshness requirements - not from what other teams are using.
 
 ---
 
@@ -170,6 +107,68 @@ The cache proactively refreshes a key before its TTL expires, based on access fr
 | Refresh-Ahead | Background refresh    | DB only           | Near-fresh             | Full                  | Predictable hot keys           |
 
 **Key Takeaway:** Cache-aside is the right default - it fails gracefully and keeps the DB authoritative. Write-through and write-behind are performance trade-offs with real consistency and durability costs; choose them only when profiling justifies it.
+
+---
+
+## Quick Decision Guide
+
+**Interviewer TL;DR:** Before choosing any cache design, answer four questions in order: should you cache at all, which layer, what write strategy, and what eviction policy. Skipping question one is the most common mistake.
+
+**Mental model:** Caching is a bet - you trade memory and consistency complexity for latency and <abbr>throughput</abbr>. The bet only pays off if the data is read more than it changes and if the access pattern has enough locality for the cache to stay warm.
+
+### When to Cache
+
+- Read:write ratio is high (>10:1 is a common threshold, but the right number depends on origin cost)
+- Origin read latency is significant - DB query, external API call, or expensive computation
+- The same data is requested repeatedly by many clients (high temporal or frequency locality)
+- The data can tolerate some staleness - bounded by your SLO, not just technical preference
+- Traffic spikes need to be absorbed without scaling the origin proportionally
+
+### When NOT to Cache
+
+- Data changes on every write and freshness is a hard correctness requirement (financial ledger, inventory count with strict accuracy) - the invalidation overhead will exceed the read benefit
+- Data is unique per request (highly personalized, real-time computed) - miss rate approaches 100% and the cache just adds latency on every call
+- The origin is already fast and co-located - an in-memory DB or a co-located service adds ~0.3ms per cache hit with no meaningful saving on miss
+- Write throughput dominates - cache invalidation fan-out and consistency overhead consumes more than the read savings
+- Data volume is too large relative to cache capacity - thrashing (continuous eviction of data that is immediately needed again) destroys hit rate and adds overhead
+
+> ⚖️ **Decision Framework**
+> The quick test: "If I remove the cache, does anything break or just get slower?" If slower - quantify how much slower, and whether users or downstream systems care. Cache only when the latency saving justifies the consistency and operational complexity it introduces.
+
+### Which Layer to Cache At
+
+| Layer              | What Lives Here                                         | Access Latency | Consistency Risk                            |
+| ------------------ | ------------------------------------------------------- | -------------- | ------------------------------------------- |
+| Client / browser   | Static assets, user preferences                         | 0ms (local)    | Staleness until TTL or bust                 |
+| CDN edge           | Publicly cacheable HTTP responses                       | 1–10ms         | TTL-controlled; purge for fast invalidation |
+| In-process (L1)    | Hot config, reference data, per-request memoization     | <1µs           | Each process has its own copy               |
+| Shared remote (L2) | Session state, computed aggregates, rate-limit counters | 0.2–1ms        | Shared source of truth across instances     |
+| DB query cache     | Stable, expensive query results                         | Varies         | Invalidated on any relevant table write     |
+
+### Which Write Strategy Fits the Workload
+
+```
+Is the application responsible for managing cache population?
+  ├─ YES ──▶ Cache-Aside (default for most read-heavy workloads)
+  │
+  └─ NO (cache library handles population)
+       └──▶ Read-Through
+
+On write, must cache and DB stay in sync immediately?
+  ├─ YES ──▶ Write-Through (consistent; write latency doubles)
+  │
+  └─ NO
+       │
+       ▼
+     Can you tolerate data loss if the cache node fails before flushing?
+       ├─ YES ──▶ Write-Behind (lower write latency; durability risk)
+       └─ NO  ──▶ Write-Through or Cache-Aside with invalidation
+
+Are access patterns predictable and hot keys known in advance?
+  └─ YES ──▶ Consider Refresh-Ahead to avoid miss-on-expiry for those keys
+```
+
+**Key Takeaway:** Cache only when read:write ratio and access locality justify the consistency complexity. The layer and write strategy follow from access pattern and freshness requirements - not from what other teams are using.
 
 ---
 
@@ -486,6 +485,14 @@ After a cache restart, full deployment, or scaling event that adds nodes, the ca
 **Shadow traffic warming:** Route a copy of production read traffic to the new cache node (without serving responses from it) before cutover. The node warms from live traffic without affecting users.
 
 **Lazy warming + origin protection:** Accept the cold-start period; protect the origin with rate limiting or a circuit breaker that caps the miss-to-DB rate. Gradual traffic shift (10% → 25% → 50% → 100%) gives the cache time to warm before full load is applied.
+
+### Common Misconceptions
+
+- **"A short TTL solves cache consistency"** - TTL bounds staleness, it doesn't guarantee correctness. A 1s TTL on a payment status can still return stale "pending" long enough to enable a race in the payment flow. Correctness-critical data needs explicit invalidation or a DB fallback.
+- **"Cache-aside is safe under concurrent writes"** - it has a real race: two concurrent writers update the DB then both write cache, and the second cache write can carry an older DB value if reads interleaved. Mitigate with CAS or a short TTL correction window, named explicitly in the design.
+- **"More cache nodes solves any throughput problem"** - not for a hot key bottlenecked on one node; consistent hashing routes it there regardless of cluster size. That needs L1 shadow or key splitting, a different fix entirely.
+- **"Cache stampede only happens at high traffic"** - it happens whenever concurrent requests race a cold key; the fix (single-flight or PER) should exist before traffic grows, not reactively.
+- **"Redis atomic writes solve cache consistency"** - `SET` is atomic, but cache-aside's read-DB-then-write-cache cycle is not; a concurrent write can still leave a stale value in place. Use `SET NX` to avoid overwriting a concurrently-set value.
 
 **Key Takeaway:** Stampede is about concurrency on a single key; avalanche is about coordinated expiry across many keys; penetration is about non-existent keys. Single-flight coalescing or PER handles stampede and breakdown; TTL jitter and circuit breakers handle avalanche; null caching or Bloom filter handles penetration.
 
@@ -818,7 +825,7 @@ When Redis approaches `maxmemory`, it evicts aggressively under the configured p
 > **Q:** Walk me through the cache-aside pattern and what can go wrong.
 > **Ideal answer:** Read: check cache → miss → DB read → cache populate → return. Write: DB write → cache invalidate. The race: concurrent misses both query DB; a write + invalidation interleaves; the slower reader overwrites cache with stale data. Mitigated with CAS or a short TTL as correction window.
 > **Common trap:** "Just update the cache on write instead of invalidating" - that's write-through, and requires both writes to succeed atomically, which isn't guaranteed without a transaction spanning DB and cache.
-> **Next question:** "Why invalidate instead of update on write?" → Invalidation fails safe (a failed cache update still leaves DB authoritative); a stale cache update paired with a failed DB write creates a divergence only TTL corrects.
+> **Next question:** "Why invalidate instead of update on write?" → invalidation fails safe - a failed cache write still leaves the DB authoritative, since the cache entry is simply absent. A failed cache *update* paired with a DB write can leave a stale value silently serving as if current, a divergence only TTL corrects.
 
 ### Eviction Policy Choice
 
@@ -840,7 +847,7 @@ When Redis approaches `maxmemory`, it evicts aggressively under the configured p
 > 🎯 **Interview Lens**
 > **Q:** A single Redis node in your cluster is consistently at 100% CPU while others are idle. What do you do?
 > **Ideal answer:** Classic hot key problem. Identify the key(s) via `MONITOR` (sparingly), `OBJECT FREQ` in LFU mode, or an application-layer Count-Min Sketch. Mitigate by access pattern: read-heavy → in-process L1 shadow; large and frequently updated → key splitting with random suffix. Adding nodes doesn't help - consistent hashing routes the hot key to the same node regardless of cluster size.
-> **Next question:** "The hot key is a global rate-limit counter at 50k writes/sec - key splitting won't work, you need an accurate total. What now?" → No single Redis node gives atomic global aggregation at that rate. Options: approximate/lossy aggregation across shards, a purpose-built rate limiter (Envoy rate limit service, Redis Cell), or accept a bounded overcounting error margin.
+> **Next question:** "The hot key is a global rate-limit counter at 50k writes/sec - key splitting won't work, you need an accurate total. What now?" → no single Redis node gives atomic global aggregation at that rate - the real options are approximate/lossy aggregation across shards, a purpose-built rate limiter (Envoy's rate limit service, Redis Cell), or accepting a bounded overcounting error margin.
 
 ### Stampede vs Avalanche vs Penetration
 
@@ -863,7 +870,7 @@ When Redis approaches `maxmemory`, it evicts aggressively under the configured p
 > **Q:** When would you add an in-process cache on top of Redis?
 > **Ideal answer:** When even Redis's ~0.5ms is too high - extremely hot reference data (feature flags, rate-limit configs) accessed on every request. L1 drops per-request cache cost to ~1µs. Trade-off: each instance holds its own copy; invalidation must reach every instance via pub/sub or a short L1 TTL.
 > **Common trap:** Adding L1 for all cached data - multiplies memory usage across every instance and turns invalidation into a distributed fan-out problem.
-> **Next question:** "200 instances, 500MB L1 each, a config change needs to propagate within 1 second - how?" → Redis pub/sub broadcast: writer publishes, all instances subscribe and invalidate on receive. Delivery is best-effort (a restarting instance misses it) - mitigate with a short L1 TTL as fallback.
+> **Next question:** "200 instances, 500MB L1 each, a config change needs to propagate within 1 second - how?" → Redis pub/sub broadcast - the writer publishes once, all 200 instances subscribe and invalidate on receipt. Delivery is best-effort (a restarting instance can miss it), so a short L1 TTL is still needed as a fallback.
 
 ### Sizing a Cache
 
@@ -895,24 +902,6 @@ When Redis approaches `maxmemory`, it evicts aggressively under the configured p
 > **Ideal answer:** Connection pool exhaustion - the cache is healthy but the application can't get a connection fast enough. Check pool size against current rps/latency, `connected_clients` on Redis vs expected pool capacity, and the slow command log for commands holding connections longer than expected.
 > **Common trap:** "Redis is fine, must be network" - Redis-side metrics look healthy while the application queues for pool connections; these are application-side metrics, not Redis-side.
 > **Next question:** "After fixing pool size, timeouts stop but P99 latency rises - why?" → A larger pool means more concurrent commands hitting Redis's single command thread, increasing queue depth. Check ops/sec against the node's throughput ceiling; shard if near it.
-
-### Rapid-Fire Misconceptions
-
-- **"A short TTL solves cache consistency"** - TTL bounds staleness, it doesn't guarantee correctness. A 1s TTL on a payment status can still return stale "pending" long enough to enable a race in the payment flow. Correctness-critical data needs explicit invalidation or a DB fallback.
-- **"Cache-aside is safe under concurrent writes"** - it has a real race: two concurrent writers update the DB then both write cache, and the second cache write can carry an older DB value if reads interleaved. Mitigate with CAS or a short TTL correction window, named explicitly in the design.
-- **"More cache nodes solves any throughput problem"** - not for a hot key bottlenecked on one node; consistent hashing routes it there regardless of cluster size. That needs L1 shadow or key splitting, a different fix entirely.
-- **"Cache stampede only happens at high traffic"** - it happens whenever concurrent requests race a cold key; the fix (single-flight or PER) should exist before traffic grows, not reactively.
-- **"Redis atomic writes solve cache consistency"** - `SET` is atomic, but cache-aside's read-DB-then-write-cache cycle is not; a concurrent write can still leave a stale value in place. Use `SET NX` to avoid overwriting a concurrently-set value.
-
----
-
-## What the Interviewer Probes For
-
-**"Why invalidate instead of update on write?"** (see [Cache-Aside Race Condition](#cache-aside-race-condition)) - Probes whether the candidate understands invalidate-vs-update isn't a style choice. Answer: invalidation fails safe - a failed cache write still leaves the DB authoritative, since the cache entry is simply absent. A failed cache *update* paired with a DB write can leave a stale value silently serving as if current, a divergence only TTL corrects.
-
-**"The hot key is a global rate-limit counter at 50k writes/sec - key splitting won't work, you need an accurate total. What now?"** (see [Diagnosing a Single Hot Node](#diagnosing-a-single-hot-node)) - Probes whether the candidate's hot-key toolkit is limited to "split the key" or goes deeper. Answer: no single Redis node gives atomic global aggregation at that rate - the real options are approximate/lossy aggregation across shards, a purpose-built rate limiter (Envoy's rate limit service, Redis Cell), or accepting a bounded overcounting error margin.
-
-**"200 instances, 500MB L1 each - a config change needs to propagate within 1 second. How?"** (see [Adding an L1 Layer](#adding-an-l1-layer)) - Probes whether the candidate has thought through L1 invalidation fan-out at real scale, not just the happy path of adding a cache layer. Answer: Redis pub/sub broadcast - the writer publishes once, all 200 instances subscribe and invalidate on receipt. Delivery is best-effort (a restarting instance can miss it), so a short L1 TTL is still needed as a fallback.
 
 ---
 

@@ -4,9 +4,9 @@
 
 ## Prerequisites
 
-- **[HTTPS & TLS](../components/tls.md)** [Must read] - all auth mechanisms transmit credentials over the wire; plaintext HTTP makes token interception trivial and invalidates every security property covered here.
-- **[HTTP Cookies & Headers](../components/http.md)** [Must read] - session IDs and auth tokens are transmitted via cookies or `Authorization` headers; cookie attributes (HttpOnly, Secure, SameSite) are a primary defence layer discussed throughout.
-- **Asymmetric Cryptography** [Should read] - JWT RS256/ES256 signatures and mTLS client certificates rely on public/private key pairs. <!-- link: ../algorithms/cryptography.md -->
+- **HTTPS & TLS** [Must read] <!-- link: ../components/tls.md -->
+- **HTTP Cookies & Headers** [Must read] <!-- link: ../components/http.md -->
+- **Asymmetric Cryptography** [Should read] <!-- link: ../algorithms/cryptography.md -->
 
 ---
 
@@ -36,7 +36,7 @@ Authentication is the process of verifying who a principal is. The core architec
 
 **Mental model:** every secured request has three steps in sequence - establish identity (authentication), determine permissions (authorization), enforce access (policy). Each builds on the previous one; none substitutes for another.
 
-Authentication answers "who are you?" It says nothing about what that identity is allowed to do - that's authorization, covered in `authorization.md`. <!-- link: ./authorization.md -->
+Authentication answers "who are you?" It says nothing about what that identity is allowed to do - that's authorization. <!-- link: ./authorization.md -->
 
 ### AuthN vs AuthZ
 
@@ -235,7 +235,8 @@ Failure modes specific to one mechanism (e.g. TOTP phishing, mTLS PKI rotation) 
 
 **Ideal approach:** Identify tenant first (subdomain, email domain, or explicit selection) before any auth decision. Enterprise tenants federate via their IdP (your platform is the Relying Party). Self-serve tenants use local auth (Argon2id + TOTP/WebAuthn). Regardless of method, issue a JWT with `sub`, `tid` (tenant ID), `roles`, `exp` - every API request enforces tenant isolation at the query layer using the validated `tid`, never a client-supplied tenant ID.
 
-**Follow-ups:** "A tenant's IdP goes down?" → existing JWTs stay valid, new logins for that tenant fail; mitigate with a per-tenant break-glass local admin. "A user belongs to multiple tenants?" → separate token per tenant context; switching requires a new token exchange, not re-authentication.
+**Follow-up:** "A tenant's IdP goes down?" → existing JWTs stay valid, new logins for that tenant fail; mitigate with a per-tenant break-glass local admin.
+**Follow-up:** "A user belongs to multiple tenants?" → separate token per tenant context; switching requires a new token exchange, not re-authentication.
 
 ### Scenario 2 - Debugging: Users Randomly Logged Out
 

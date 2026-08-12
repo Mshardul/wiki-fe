@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **[Caching](./caching.md)** [Must read] - Rate limit counters are cached state with TTL; the consistency vs availability trade-off here mirrors every distributed rate limiting decision.
-- **[Consistent Hashing](../algorithms/consistent-hashing.md)** [Recommended] - Sharding limit buckets across Redis nodes uses the same ring logic. <!-- link: consistent-hashing.md -->
-- **[Load Balancer](./load-balancer.md)** [Recommended] - API gateway placement of rate limiting sits within load balancer infrastructure; L7 context is needed to understand identifier extraction.
+- **[Caching](./caching.md)** [Must read]
+- **[Consistent Hashing](../algorithms/consistent-hashing.md)** [Should read] <!-- link: consistent-hashing.md -->
+- **[Load Balancer](./load-balancer.md)** [Should read]
 
 ## Table of Contents
 
@@ -18,12 +18,11 @@
 - [Observability & Debugging](#observability--debugging)
 - [Quick Decision Guide](#quick-decision-guide)
 - [Interview Scenario Bank](#interview-scenario-bank)
-- [What the Interviewer Probes For](#what-the-interviewer-probes-for)
 - [Appendices](#appendices)
 
 ## TLDR
 
-A rate limiter caps request volume per identity (IP, user, API key) within a time window, protecting services from abuse, cost overruns, and cascading failures. The key architectural choice is enforcement placement: API gateway (centralized, default) vs per-service (granular, no cross-service coordination). At scale, shared Redis counters trade perfect accuracy for availability - every multi-node deployment must decide how much counter drift is acceptable.
+A rate limiter caps request volume per identity (IP, user, API key) within a time window, protecting services from abuse, cost overruns, and cascading failures. The key architectural choice is enforcement placement: API gateway (centralized, default) vs per-service (granular, no cross-service coordination). At scale, shared Redis counters trade perfect accuracy for availability - every multi-node deployment must decide how much counter drift is acceptable. Stripe, GitHub, and Cloudflare all run gateway-level limiting at this scale; the failure mode that shows up past a few hundred thousand RPS is rarely the algorithm - it's a single Redis shard saturating from a hot identifier (see [Hot Partition](#hot-partition---shard-saturation)).
 
 ## Core Functions & Protection Goals
 
@@ -228,7 +227,7 @@ end
 return count
 ```
 
-This is the minimum viable distributed rate limiter. For sliding window counter implementation, Redis Cluster sharding, and multi-region patterns see [Distributed Rate Limiting](../distributed-systems/distributed-rate-limiting.md).
+This is the minimum viable distributed rate limiter. For sliding window counter implementation and multi-region patterns see [Rate Limiting Algorithms](../algorithms/rate-limiting-algorithms.md).
 
 ### Clock Skew & Redis Cluster Coordination
 
@@ -247,6 +246,8 @@ The fundamental distributed rate limiting tension: every design is a point on th
 | Synchronous Redis (blocking)        | High                     | +1–5ms per request | Redis latency = API latency        |
 | Async counter sync                  | Medium                   | Minimal            | Can exceed limit until convergence |
 | Local-only fallback when Redis down | Low (per-instance limit) | None               | Limit effectively multiplied by N  |
+
+The `+1–5ms` here is the added-latency budget under real production conditions (network hop + connection pool contention + occasional Redis-side queueing), not the raw in-memory operation cost - that baseline is closer to ~0.3ms (see [Caching](../components/caching.md)). Rate limiting's per-request round trip sits at the higher end of that range because every single request pays it, unlike a cache hit which can be skipped on a miss.
 
 > ⚖️ **Decision Framework**
 >
@@ -427,6 +428,12 @@ A university campus, corporate office, or mobile carrier NAT can funnel thousand
 
 **Mitigation:** For authenticated traffic, always prefer user ID or API key over IP as the primary identifier. Use IP as a secondary signal (composite key or separate IP-level limit set much higher than the per-user limit). Reserve aggressive IP limits for unauthenticated endpoints where user identity is unavailable.
 
+### Common Misconceptions
+
+**"Rate limiting and throttling are the same thing."** No - rate limiting hard-rejects (429, no server work); throttling degrades gracefully (delay, reduced quality, still a response). Reaching for one when the requirement calls for the other produces the wrong client-facing contract even if the underlying counting logic is identical.
+
+**"A tighter limit is always safer."** No - over-tight limits on legitimate traffic (especially NAT-shared IPs) cause real user-facing outages that look identical to a working defense. A rate limiter that blocks paying customers is a self-inflicted incident, not a security win.
+
 ## Observability & Debugging
 
 > **Interviewer TL;DR:** Three signals matter: throttled ratio per identifier (are limits calibrated?), 429 spike patterns (attack or misconfiguration?), and Redis latency (is the limiter becoming the bottleneck itself?).
@@ -505,7 +512,7 @@ When tracing a 429 complaint from a specific client: pull their identifier, quer
 > **Q:** You're designing a public API rate limiter. Where do you start?
 > **Ideal answer:** Start with the identifier (user ID for authenticated, IP for anonymous), then placement (API gateway), then algorithm based on burst tolerance (token bucket for most cases). Distributed counting comes last - it's an implementation detail, not an architectural decision.
 > **Common trap:** Jumping to algorithm selection before establishing identifier and placement - algorithms are interchangeable; the identifier and placement are architectural.
-> **Next question:** "How do you handle unauthenticated requests mixed with authenticated ones on the same endpoint?" → Apply the stricter (usually IP-based) limit to unauthenticated requests and a per-user limit once authenticated - the two limits coexist on the same endpoint rather than one replacing the other.
+> **Next question:** "How do you handle unauthenticated requests mixed with authenticated ones on the same endpoint?" → apply both - a stricter IP-based limit for unauthenticated traffic, a per-user limit once authenticated - rather than picking one identifier for the whole endpoint.
 
 ### Placement in a Microservices Architecture
 
@@ -513,7 +520,7 @@ When tracing a 429 complaint from a specific client: pull their identifier, quer
 > **Q:** Where would you place rate limiting in a microservices architecture?
 > **Ideal answer:** API gateway as the first line for all ingress traffic, per-service middleware for sensitive endpoints (auth, payments) that need application context. Both backed by shared Redis for cross-service quota.
 > **Common trap:** Saying "in each service" without addressing cross-service quota coordination - or "at the gateway" without acknowledging the app-context limitation.
-> **Next question:** "What is your fail-open vs fail-closed policy if Redis goes down?" → Fail closed for security-critical enforcement (auth, payments) since an enforcement gap is worse than temporary unavailability; fail open for cost-control/fairness limits where staying up matters more than perfect accuracy.
+> **Next question:** "What is your fail-open vs fail-closed policy if Redis goes down?" → the policy must be explicit and differ by what's being protected - fail closed for auth/payment enforcement, fail open for cost-control/fairness limits - never an implicit default.
 
 ### Preventing Retry Thundering Herds
 
@@ -538,14 +545,6 @@ When tracing a 429 complaint from a specific client: pull their identifier, quer
 > **Common trap:** Tightening the IP-based limit further - it punishes legitimate users behind shared NATs while doing nothing to slow an attacker with a large enough IP pool.
 
 ---
-
-## What the Interviewer Probes For
-
-**"How do you handle unauthenticated requests mixed with authenticated ones on the same endpoint?"** (see [Starting the Design Cold](#starting-the-design-cold)) - Probes whether the candidate's identifier choice is a single global rule or adapts per request. Answer: apply both - a stricter IP-based limit for unauthenticated traffic, a per-user limit once authenticated - rather than picking one identifier for the whole endpoint.
-
-**"What is your fail-open vs fail-closed policy if Redis goes down?"** (see [Placement in a Microservices Architecture](#placement-in-a-microservices-architecture)) - Probes whether the candidate treats the backing store's availability as a first-class design decision rather than an afterthought. Answer: the policy must be explicit and differ by what's being protected - fail closed for auth/payment enforcement, fail open for cost-control/fairness limits - never an implicit default.
-
-**"Your 429 rate suddenly drops to near-zero with no traffic change - what's your first hypothesis?"** (see [Diagnosing a Silent Enforcement Gap](#diagnosing-a-silent-enforcement-gap)) - Probes whether the candidate's mental model includes failure modes that look identical to success. Answer: a Redis failover resetting counters to zero, or a gateway bypass letting traffic skip enforcement entirely - both produce a healthy-looking metrics drop that is actually a silent outage of the rate limiter itself.
 
 ## Appendices
 

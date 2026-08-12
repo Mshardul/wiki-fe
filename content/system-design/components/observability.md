@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- **[Caching](./caching.md)** [Recommended] - cache hit rate and eviction rate are canonical metric examples used throughout this page.
-- **[Message Queues](./message-queues.md)** [Recommended] - async, decoupled systems are where distributed tracing earns its value; understanding the topology helps frame why trace propagation is hard.
-- **[Service Discovery](./service-discovery.md)** [Recommended] - observability tooling needs to discover and scrape services dynamically; the same registry patterns apply.
+- **[Caching](./caching.md)** [Should read]
+- **[Message Queues](./message-queues.md)** [Should read]
+- **[Service Discovery](./service-discovery.md)** [Should read]
 
 ## Table of Contents
 
@@ -16,12 +16,11 @@
 - [Alerting Philosophy](#alerting-philosophy)
 - [Production Failure Modes & Gotchas](#production-failure-modes--gotchas)
 - [Interview Scenario Bank](#interview-scenario-bank)
-- [What the Interviewer Probes For](#what-the-interviewer-probes-for)
 - [Appendices](#appendices)
 
 ## TLDR
 
-Observability is the ability to understand a system's internal state from its external outputs alone. Unlike monitoring - which tells you _something is wrong_ - observability tells you _why_, even for failure modes you've never seen before. It rests on three complementary pillars: logs (discrete events), metrics (aggregated time-series), and traces (request causality across service boundaries). The goal is not more data, but the right data to answer questions you haven't thought to ask yet.
+Observability is the ability to understand a system's internal state from its external outputs alone. Unlike monitoring - which tells you _something is wrong_ - observability tells you _why_, even for failure modes you've never seen before. It rests on three complementary pillars: logs (discrete events), metrics (aggregated time-series), and traces (request causality across service boundaries). The goal is not more data, but the right data to answer questions you haven't thought to ask yet. **The pillars are only as useful as what links them** - a metric spike, a trace, and a log line are three dead ends without a shared correlation ID connecting them.
 
 ---
 
@@ -99,6 +98,17 @@ Deep dive: **[Metrics](./metrics.md)**
 > _A causal record of a request's journey across service boundaries - the only pillar that captures latency attribution in a microservices system._
 
 A trace represents a single end-to-end request, composed of **spans** - one per service or operation the request touched. Each span records: service name, operation, start time, duration, status, and parent span ID. Stitched together, spans form a tree that shows exactly where time was spent and where errors originated.
+
+```
+trace_id: abc123
+└─ span: API Gateway            [0ms ──────────────── 220ms]
+   └─ span: Order Service       [10ms ──────────── 210ms]
+      ├─ span: Inventory Check  [15ms ── 60ms]
+      └─ span: Payment Service  [65ms ─────────── 205ms]  ← slow span, root cause
+         └─ span: DB Query      [70ms ────────── 200ms]   ← 130ms, the actual bottleneck
+```
+
+Each indent level is a child span nested under its parent's `parent-span-id`; horizontal position and bar length show start time and duration. The tree makes the bottleneck visually obvious - here, the DB query inside Payment Service accounts for most of the 220ms total, not the gateway or inventory check.
 
 **Where tracing shines:** diagnosing latency in multi-service call chains, identifying which service in a fan-out is the bottleneck, understanding async flows across queues.
 
@@ -249,6 +259,31 @@ Two models for getting telemetry from services into a backend:
 Deep dive on both models: **[Metrics](./metrics.md)**
 
 > **Key Takeaway:** Apply RED to every service endpoint and USE to every resource your service depends on. Instrument I/O boundaries only - internal function instrumentation adds cost and noise without improving debuggability.
+
+Companies running large multi-tenant platforms (Netflix, Uber) instrument at exactly this I/O-boundary granularity across thousands of services. What breaks past that scale isn't the instrumentation model - it's cost and cardinality: a single misconfigured high-cardinality label or a naive 100% trace-sampling default can 10x an observability vendor bill within a day, which is why sampling and cardinality limits shift from "nice to have" to load-bearing production controls well before most teams expect.
+
+---
+
+## Quick Decision Guide
+
+**Interviewer TL;DR:** Start with metrics always. Add structured logging with correlation IDs next. Add tracing once you cross 3-4 services in a call chain. Skip straight to full observability tooling only if you're already distributed - a monolith doesn't need it.
+
+### Which Pillar First?
+
+- No tracing yet, ≤3 services → metrics (RED/USE) + structured logs with correlation IDs is sufficient; tracing overhead isn't justified yet.
+- 4+ services in a call chain, or async boundaries (queues) between them → add tracing; this is where "which service was slow" stops being answerable from logs alone.
+- Debugging a specific incident right now, not designing for the future → logs first (fastest to add, highest per-event detail), metrics to confirm scope, tracing only if the incident spans services.
+
+### Which Sampling Strategy?
+
+> ⚖️ **Decision Framework**
+> Error rate > 1%, high volume → head-based sampling, cheap and simple. Error rate < 0.5%, and the errors themselves are the signal you can't afford to miss → tail-based sampling or a dedicated always-capture path for errors, despite the added collector complexity. See [Head-Based vs Tail-Based Sampling](#head-based-vs-tail-based-sampling) for the full trade-off.
+
+### Cause-Based or Symptom-Based Alerts?
+
+Default to symptom-based (error rate, latency, availability against an SLO) for anything user-facing. Reserve cause-based alerts (CPU, disk, memory) for signals with no user-facing proxy - and expect a higher false-positive rate on those. Full reasoning: [Symptom-Based vs Cause-Based Alerts](#symptom-based-vs-cause-based-alerts).
+
+**Key Takeaway:** Metrics are cheap and go first. Tracing earns its cost past 3-4 services. Sample aggressively but never miss errors. Alert on what users feel, not on what a dashboard shows.
 
 ---
 
@@ -401,6 +436,12 @@ Teams enabling full 100% trace sampling or DEBUG logging in production without c
 
 **Mitigation:** Set ingestion budgets and volume alerts before enabling new telemetry in production. Use sampling aggressively. Review cost per service in weekly ops reviews.
 
+### Common Misconceptions
+
+**"More logging means better observability."** No - volume isn't the goal, linkability and the right signal are. A service that logs everything at DEBUG but has no correlation IDs and no metrics is harder to debug than one with disciplined structured logs, RED metrics, and trace propagation. Unlinked, high-volume logs are noise with extra storage cost.
+
+**"Observability is a tooling purchase, not a design property."** No - buying Datadog or Honeycomb doesn't make a system observable if services aren't instrumented at I/O boundaries and don't propagate trace context. The tool surfaces telemetry; it can't manufacture instrumentation that was never added.
+
 ---
 
 ## Interview Scenario Bank
@@ -411,7 +452,7 @@ Teams enabling full 100% trace sampling or DEBUG logging in production without c
 > **Q:** How would you debug a p99 latency spike that only affects 0.1% of requests?
 > **Ideal answer:** Alert fires on the metric. Use an exemplar on the histogram bucket to jump to a sampled trace. Follow the trace to the slow span. Filter logs by that trace ID to get the full event context. Root cause without reproducing the issue.
 > **Common trap:** "I'd add more logging" - misses that the issue is already sampled in the trace; the bottleneck is linking pillars, not adding more data.
-> **Next question:** "What if the slow requests aren't being sampled by your tracer?" → Head-based sampling at a low rate can simply miss rare events - the fix is tail-based sampling or a dedicated error/slow-request capture path that bypasses the sampling decision entirely.
+> **Next question:** "What if the slow requests aren't being sampled by your tracer?" → Head-based sampling at a low rate can simply miss rare/slow events by chance - tail-based sampling or a dedicated always-capture path for errors/slow requests closes that gap.
 
 ### Fixing Alert Fatigue
 
@@ -419,7 +460,7 @@ Teams enabling full 100% trace sampling or DEBUG logging in production without c
 > **Q:** Your on-call engineer says they're getting paged 15 times a day and ignoring most of them. How do you fix it?
 > **Ideal answer:** Audit all alerts - delete anything without a runbook, convert non-actionable metrics to dashboards, switch from cause-based to symptom-based alerting, implement SLO-based burn rate alerts to replace arbitrary thresholds.
 > **Common trap:** "Lower the thresholds" or "add more alerts for better coverage" - both make the problem worse.
-> **Next question:** "How would you measure whether your alerting quality improved after the change?" → Track pages-per-week, the fraction of pages that led to a real action, and time-to-acknowledge - a successful cleanup drops volume while raising the action-taken ratio.
+> **Next question:** "How would you measure whether an alerting cleanup actually improved things?" → Track pages-per-week alongside the fraction of pages that led to real action and time-to-acknowledge - volume dropping alone doesn't prove quality improved if it dropped by deleting alerts that were actually catching real issues.
 
 ### Diagnosing a Broken Trace Chain
 
@@ -435,16 +476,9 @@ Teams enabling full 100% trace sampling or DEBUG logging in production without c
 > **Q:** A new metric label caused your metrics backend to OOM within hours of a deploy. What happened and how do you prevent it?
 > **Ideal answer:** A high-cardinality label (`user_id`, `request_id`, or similar) was added to a metric - each unique value creates a new time series, and at millions of users that's millions of series created almost instantly. Prevent it with label review in code review, cardinality limits enforced at the metrics backend, and alerting on time-series-count growth rate before it becomes an outage.
 > **Common trap:** Treating this as a "just scale the metrics backend" problem - unbounded cardinality growth outpaces any reasonable scaling, the label itself is the bug.
+> **Next question:** "The label review process is manual and gets skipped under deploy pressure - how do you make this fail safe, not just fail documented?" → enforce cardinality limits at the metrics backend itself (reject or drop new series past a per-metric ceiling) so a skipped review degrades gracefully instead of taking down the backend - policy alone doesn't survive a rushed deploy.
 
 ---
-
-## What the Interviewer Probes For
-
-**"What if the slow requests aren't being sampled by your tracer?"** (see [Debugging a Rare Latency Spike](#debugging-a-rare-latency-spike)) - Probes whether the candidate's exemplar-based debugging workflow has a blind spot they've considered. Answer: head-based sampling at low rates can simply miss rare/slow events by chance - tail-based sampling or a dedicated always-capture path for errors/slow requests closes that gap.
-
-**"How do you prevent a broken trace chain at scale, not just fix this one instance?"** (see [Diagnosing a Broken Trace Chain](#diagnosing-a-broken-trace-chain)) - Probes whether the candidate's fix is a one-off patch or a systemic guardrail. Answer: enforce header propagation at the middleware/framework layer so no individual handler can forget it, backed by a CI contract test - not a per-service manual checklist.
-
-**"How would you measure whether an alerting cleanup actually improved things?"** (see [Fixing Alert Fatigue](#fixing-alert-fatigue)) - Probes whether the candidate treats alert-quality work as a one-time cleanup or something that needs its own metrics. Answer: track pages-per-week alongside the fraction of pages that led to real action and time-to-acknowledge - volume dropping alone doesn't prove quality improved if it dropped by deleting alerts that were actually catching real issues.
 
 ## Appendices
 

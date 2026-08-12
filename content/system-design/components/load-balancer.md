@@ -2,30 +2,28 @@
 
 ## Prerequisites
 
-- **TCP/IP & OSI Model** [Must read] - the L4 vs L7 decision this article opens with is literally "which OSI layer does the LB operate at"; without this the classification won't land. <!-- link: ./tcp-ip-osi-model.md -->
-- **HTTP/1.1 vs HTTP/2** [Should read] - connection semantics differ (one-request-per-connection vs multiplexed streams), which shapes how the LB manages keep-alive and backend connection pooling, covered in Performance & Optimization. <!-- link: ./http.md -->
-- **[DNS](./dns.md)** [Should read] - DNS-based load balancing is a distinct pattern from LB-level routing; understanding TTL is required to grasp why DNS-based GSLB has slow, unreliable failover.
-- **Server Concurrency Models** [Should read] - thread-per-request vs async I/O affects how backends absorb connection load, which is background for the algorithm-selection section. <!-- link: ./server-concurrency-models.md -->
+- **TCP/IP & OSI Model** [Must read] <!-- link: ./tcp-ip-osi-model.md -->
+- **HTTP/1.1 vs HTTP/2** [Should read] <!-- link: ./http.md -->
+- **[DNS](./dns.md)** [Should read]
+- **Server Concurrency Models** [Should read] <!-- link: ./server-concurrency-models.md -->
 
 ---
 
 ## Table of Contents
 
 - [Conceptual Foundations & Mental Models](#conceptual-foundations--mental-models)
-- [Quick Decision Guide](#quick-decision-guide)
 - [Classification & Variants](#classification--variants)
 - [Traffic Distribution Algorithms](#traffic-distribution-algorithms)
 - [Health Checks & Backend Management](#health-checks--backend-management)
 - [Session Persistence](#session-persistence)
 - [SSL/TLS Handling](#ssltls-handling)
 - [High Availability & Resilience](#high-availability--resilience)
+- [Quick Decision Guide](#quick-decision-guide)
 - [Performance & Optimization](#performance--optimization)
 - [Advanced Patterns](#advanced-patterns)
 - [Observability & Debugging](#observability--debugging)
 - [Production Failure Modes](#production-failure-modes)
-- [Post-mortem Reading List](#post-mortem-reading-list)
 - [Interview Scenario Bank](#interview-scenario-bank)
-- [What the Interviewer Probes For](#what-the-interviewer-probes-for)
 - [Appendices](#appendices)
 
 ---
@@ -76,71 +74,6 @@ L7 Flow:  Client ──TCP──▶ LB (parses HTTP) ──TCP──▶ Backend 
 > When an interviewer asks "how would you design a load balancer for this system?", the first question to ask yourself: _do I need to make routing decisions based on request content?_ If yes → L7. If you just need to distribute TCP connections cheaply → L4. Most modern web systems need L7 for SSL termination and URL-based routing alone.
 
 **Key Takeaway:** The L4 vs L7 decision is the foundation - it determines what the LB can route on, whether it can terminate SSL, and whether sticky sessions are possible. Everything else follows from it.
-
----
-
-## Quick Decision Guide
-
-### Which LB Type?
-
-```
-Need HTTP-aware routing (URL, headers, cookies, gRPC)?
-  ├─ YES ──▶ Use L7 LB (nginx, AWS ALB, Envoy)
-  │            │
-  │            ▼
-  │          SSL strategy?
-  │            ├─ Compliance requires E2E encryption ──▶ Re-encryption mode (6.3)
-  │            ├─ Standard web traffic ──▶ Terminate at LB (6.1)
-  │            └─ Cannot decrypt (mTLS passthrough) ──▶ SSL Passthrough (6.2)
-  │
-  └─ NO ──▶ Use L4 LB (AWS NLB, HAProxy TCP mode)
-               │
-               ▼
-             Is the protocol gRPC or HTTP/2?
-               └─ YES ──▶ ⚠ Switch to L7 - L4 cannot balance individual streams
-```
-
-### Which Algorithm?
-
-```
-Are request costs uniform AND backends homogeneous?
-  ├─ YES ──▶ Round Robin (add weights if capacity differs)
-  │
-  └─ NO (variable cost or heterogeneous backends)
-               │
-               ▼
-             Need backend affinity (warm cache, local state)?
-               ├─ NO ──▶ Least Connections (or Least Response Time)
-               │
-               └─ YES
-                    │
-                    ▼
-                  Clients behind NAT or frequently changing IPs?
-                    ├─ YES ──▶ Cookie-based stickiness (5.1)
-                    │
-                    └─ NO
-                         │
-                         ▼
-                       Backend pool stable (rare adds/removes)?
-                         ├─ YES ──▶ Consistent Hashing (3.5)
-                         └─ NO  ──▶ Cookie-based stickiness (5.1)
-```
-
-### HA Strategy?
-
-```
-Traffic criticality?
-  ├─ High (any downtime is unacceptable)
-  │    └──▶ Active-Active pair + Anycast or DNS LB (9.1)
-  │
-  └─ Moderate (seconds of failover acceptable)
-       └──▶ Active-Passive pair + VRRP Floating VIP (7.2)
-                │
-                ▼
-              Need in-flight connections to survive failover?
-                ├─ YES ──▶ Add conntrack state sync (conntrackd)
-                └─ NO  ──▶ Stateless failover is sufficient; ensure clients retry
-```
 
 ---
 
@@ -555,6 +488,71 @@ Mitigations:
 
 ---
 
+## Quick Decision Guide
+
+### Which LB Type?
+
+```
+Need HTTP-aware routing (URL, headers, cookies, gRPC)?
+  ├─ YES ──▶ Use L7 LB (nginx, AWS ALB, Envoy)
+  │            │
+  │            ▼
+  │          SSL strategy?
+  │            ├─ Compliance requires E2E encryption ──▶ Re-encryption mode (→ Re-encryption)
+  │            ├─ Standard web traffic ──▶ Terminate at LB (→ Termination at LB)
+  │            └─ Cannot decrypt (mTLS passthrough) ──▶ SSL Passthrough (→ SSL Passthrough)
+  │
+  └─ NO ──▶ Use L4 LB (AWS NLB, HAProxy TCP mode)
+               │
+               ▼
+             Is the protocol gRPC or HTTP/2?
+               └─ YES ──▶ ⚠ Switch to L7 - L4 cannot balance individual streams
+```
+
+### Which Algorithm?
+
+```
+Are request costs uniform AND backends homogeneous?
+  ├─ YES ──▶ Round Robin (add weights if capacity differs)
+  │
+  └─ NO (variable cost or heterogeneous backends)
+               │
+               ▼
+             Need backend affinity (warm cache, local state)?
+               ├─ NO ──▶ Least Connections (or Least Response Time)
+               │
+               └─ YES
+                    │
+                    ▼
+                  Clients behind NAT or frequently changing IPs?
+                    ├─ YES ──▶ Cookie-based stickiness (→ Cookie-Based Persistence)
+                    │
+                    └─ NO
+                         │
+                         ▼
+                       Backend pool stable (rare adds/removes)?
+                         ├─ YES ──▶ Consistent Hashing (→ Consistent Hashing)
+                         └─ NO  ──▶ Cookie-based stickiness (→ Cookie-Based Persistence)
+```
+
+### HA Strategy?
+
+```
+Traffic criticality?
+  ├─ High (any downtime is unacceptable)
+  │    └──▶ Active-Active pair + Anycast or DNS LB (→ Active-Active vs Active-Passive LB Pairs)
+  │
+  └─ Moderate (seconds of failover acceptable)
+       └──▶ Active-Passive pair + VRRP Floating VIP (→ Floating IPs & VRRP)
+                │
+                ▼
+              Need in-flight connections to survive failover?
+                ├─ YES ──▶ Add conntrack state sync (conntrackd)
+                └─ NO  ──▶ Stateless failover is sufficient; ensure clients retry
+```
+
+---
+
 ## Performance & Optimization
 
 **Interviewer TL;DR:** Connection pooling and request buffering are table stakes; SNAT port exhaustion is the non-obvious production gotcha that trips up most candidates.
@@ -819,7 +817,7 @@ LB access logs are the ground truth. Key fields:
 
 **Detection:** Saw-tooth error rate and latency pattern correlated with deploy events.
 
-**Fix:** [Slow-start](#44-slow-start--warmup-after-backend-recovery). Rolling deploys (restart one backend at a time). Deployment health gates (don't proceed to next instance until current one passes health checks).
+**Fix:** [Slow-start](#slow-start--warmup-after-backend-recovery). Rolling deploys (restart one backend at a time). Deployment health gates (don't proceed to next instance until current one passes health checks).
 
 > **⚠️ Common Traps & How to Recover**
 >
@@ -894,24 +892,15 @@ LB access logs are the ground truth. Key fields:
 > - **Trap:** Only testing failover in staging - ARP cache TTLs and network topology differ from production. **Recovery:** Run regular failover drills in production during low-traffic windows.
 > - **Trap:** Not synchronizing conntrack state - in-flight TCP connections drop on failover even though the VIP moves cleanly. **Recovery:** Deploy conntrackd for state sync, or design clients to retry on RST (most do).
 
+### Common Misconceptions
+
+- **"Sticky sessions are always an anti-pattern"** - wrong for WebSocket/SSE, where the connection itself *is* the session; stickiness there is architecturally required, not a crutch.
+- **"Low DNS TTL means fast failover"** - browsers, JVM `InetAddress` (caches indefinitely by default), OS resolvers, and intermediate caches all ignore TTL independently; expect a 10-20 minute long tail on old IPs regardless of a 30s TTL.
+- **"Adding more backends fixes the performance problem"** - not if the LB itself is the bottleneck (SNAT exhaustion, conntrack limits, SSL CPU). Profile the LB before scaling backends.
+- **"Active-Active HA means zero downtime"** - conntrack state isn't automatically synced between nodes; in-flight connections to a failed node still drop and must be retried client-side.
+- **"mTLS is only for external traffic"** - the actual point of mTLS in zero-trust is east-west traffic; external-only mTLS leaves internal lateral movement wide open.
+
 **Key Takeaway:** Each failure mode has a distinct detection signal - thundering herd (saw-tooth errors at deploy), hot spots (severe backend imbalance), drain gaps (WebSocket disconnects at deploy), SSL CPU saturation (handshake latency spike), VIP handoff (connection failures at failover). Knowing the signal is half the fix.
-
----
-
-## Post-mortem Reading List
-
-Real outages that map directly to the failure modes above. Read these to understand how they manifest in production at scale - and how teams recovered.
-
-- Facebook 2015: Thundering Herd & Page Cache - Cold-cache cascades after fleet restarts overwhelm backends recovering from a simultaneous restart.
-- Discord 2020: Cascading Failures in Distributed Systems - A hot shard from a bad partition key overwhelmed one node while others sat idle, triggering a cascade.
-- GitHub 2018: [October 21 Post-Incident Analysis](https://github.blog/2018-10-30-oct21-post-incident-analysis/) - A 43-second network partition triggered failover; drain timeouts for long-lived connections extended the outage to 24 hours.
-- Cloudflare 2019: [Details of the July 2 Outage](https://blog.cloudflare.com/details-of-the-cloudflare-outage-on-july-2-2019/) - A misconfigured WAF rule saturated CPU on every HTTP-handling core globally, causing a full traffic drop.
-- GitHub 2012: MySQL Split-Brain - Network partition caused dual-primary state; VIP handoff gaps let writes land on both nodes simultaneously.
-
-**General postmortem repositories:**
-
-- [danluu/post-mortems](https://github.com/danluu/post-mortems) - Curated public postmortems across major companies, organized by failure type.
-- [Google SRE Book - Postmortem Culture](https://sre.google/sre-book/postmortem-culture/) - Google SRE chapter on postmortem structure and blameless analysis.
 
 ---
 
@@ -923,7 +912,7 @@ Real outages that map directly to the failure modes above. Read these to underst
 > **Q:** When would you choose L4 over L7?
 > **Ideal answer:** L4 for raw throughput and low latency (gaming servers, financial tick data, large file transfers), when you don't need to inspect application payload, or to avoid SSL termination overhead at the LB. L7 for any HTTP-based routing, SSL offload, or content-based decisions.
 > **Common trap:** "L7 is always better because it's smarter" - ignores the latency and complexity cost of two TCP handshakes per request.
-> **Next question:** "Your system has both gRPC and HTTP/1.1 REST - one LB or two?" → One L7 LB routing by protocol/path (Content-Type: application/grpc → one pool, REST → another) avoids the operational cost of two separate LBs.
+> **Next question:** "Your system has both gRPC microservices and HTTP/1.1 REST APIs - one LB or two?" → one L7 LB routing on `Content-Type: application/grpc` vs everything else avoids running and coordinating two separate load-balancing tiers.
 
 ### Algorithm Selection Under Variable Load
 
@@ -959,14 +948,14 @@ Real outages that map directly to the failure modes above. Read these to underst
 > **Q:** How do you make a load balancer itself highly available?
 > **Ideal answer:** Two LBs sharing a floating VIP - Active-Passive (VRRP on-prem, Elastic IP reassignment on AWS) for simplicity, or Active-Active for better utilization. DNS points to the VIP; clients never see the failover.
 > **Common trap:** Designing HA for backends but leaving a single LB in front - always ask "what fails if this component goes down?"
-> **Next question:** "In active-active, how does a sticky-session client always hit the same LB?" → Either synchronize session state between LBs (complex), use consistent hashing at the DNS/Anycast layer, or eliminate sticky sessions by moving to stateless backends.
+> **Next question:** "In active-active HA, how does a sticky-session client always hit the same LB?" → either synchronize session state between LB nodes (real complexity), consistent-hash at the DNS/Anycast layer so a client always lands on the same LB, or remove the need entirely by making backends stateless.
 
 ### Diagnosing Silent Connection Failures
 
 > 🎯 **Interview Lens**
 > **Q:** Why might a load balancer fail to forward connections even with healthy backends?
 > **Ideal answer:** SNAT port exhaustion or conntrack table overflow - LB and backends both report healthy, but new connections fail. Debug with `ss -s` for TIME_WAIT counts and `nf_conntrack_count` vs `nf_conntrack_max`.
-> **Next question:** "With DSR, the backend's source IP is its own, not the VIP - won't the client reject the response?" → No - the backend has the VIP as a loopback alias so it accepts packets addressed to it, and the client tracks the TCP connection by port tuple, not source IP.
+> **Next question:** "With DSR, the backend's source IP is its own, not the VIP - won't the client reject the response?" → the backend holds the VIP as a loopback alias so it accepts inbound packets addressed to it, but replies using its own source IP - the client doesn't reject this because it tracks the connection by port tuple, not source IP.
 
 ### Safe Production Rollout
 
@@ -975,26 +964,6 @@ Real outages that map directly to the failure modes above. Read these to underst
 > **Ideal answer:** Canary deploy - route 1-5% of traffic to the new version, monitor error rate and latency, automate ramp-up if metrics stay within SLO. The LB is the control plane; the metrics pipeline is the safety gate.
 > **Common trap:** "Deploy to staging and test" - staging traffic is synthetic, it won't catch issues specific to real user behavior or geography.
 > **Next question:** "How do you ensure the canary gets a representative sample, not just a random 5%?" → Consistent-hash on user ID so the same users consistently land on v2 - avoids a user seeing different behavior request-to-request and makes canary results representative.
-
-### Common Gotchas (rapid-fire)
-
-Statements that sound reasonable but are wrong, or right only in one context:
-
-- **"Sticky sessions are always an anti-pattern"** - wrong for WebSocket/SSE, where the connection itself *is* the session; stickiness there is architecturally required, not a crutch.
-- **"Low DNS TTL means fast failover"** - browsers, JVM `InetAddress` (caches indefinitely by default), OS resolvers, and intermediate caches all ignore TTL independently; expect a 10-20 minute long tail on old IPs regardless of a 30s TTL.
-- **"Adding more backends fixes the performance problem"** - not if the LB itself is the bottleneck (SNAT exhaustion, conntrack limits, SSL CPU). Profile the LB before scaling backends.
-- **"Active-Active HA means zero downtime"** - conntrack state isn't automatically synced between nodes; in-flight connections to a failed node still drop and must be retried client-side.
-- **"mTLS is only for external traffic"** - the actual point of mTLS in zero-trust is east-west traffic; external-only mTLS leaves internal lateral movement wide open.
-
----
-
-## What the Interviewer Probes For
-
-**"Your system has both gRPC microservices and HTTP/1.1 REST APIs - one LB or two?"** (see [L4 vs L7 Trade-off](#l4-vs-l7-trade-off)) - Probes whether the candidate defaults to operational complexity (two LBs) when a single L7 LB can route by protocol/path instead. Answer: one L7 LB routing on `Content-Type: application/grpc` vs everything else avoids running and coordinating two separate load-balancing tiers.
-
-**"In active-active HA, how does a sticky-session client always hit the same LB?"** (see [Making the LB Itself Highly Available](#making-the-lb-itself-highly-available)) - Probes whether the candidate sees the second-order problem active-active HA creates for stickiness. Answer: either synchronize session state between LB nodes (real complexity), consistent-hash at the DNS/Anycast layer so a client always lands on the same LB, or remove the need entirely by making backends stateless.
-
-**"With DSR, the backend's source IP is its own, not the VIP - won't the client reject the response?"** (see [Diagnosing Silent Connection Failures](#diagnosing-silent-connection-failures)) - Probes whether the candidate actually understands DSR's mechanics or just knows the name. Answer: the backend holds the VIP as a loopback alias so it accepts inbound packets addressed to it, but replies using its own source IP - the client doesn't reject this because it tracks the connection by port tuple, not source IP.
 
 ---
 

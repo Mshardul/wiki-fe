@@ -2,19 +2,19 @@
 
 ## Prerequisites
 
-- **TCP/IP & Networking Fundamentals** - understand how data moves between processes over a network; socket-based IPC underpins all broker communication.
-- **[Consensus (Raft / Paxos)](../algorithms/consensus-raft-paxos.md)** - brokers use distributed consensus for cluster metadata, leader election, and partition ownership transfers.
-- **[CAP Theorem](../algorithms/cap-theorem.md)** - delivery guarantees map directly to CAP trade-offs; this prevents confusing "consistency" in the DB sense with message ordering guarantees.
-- **[Replication Strategies](../algorithms/replication-strategies.md)** - message durability depends on replication; understanding ISR (in-sync replicas) requires knowing leader-follower replication.
-- **Data Serialization Basics** - Avro, Protobuf, JSON: schema evolution and backward compatibility matter when producers and consumers deploy independently.
+- **TCP/IP & Networking Fundamentals** [Must read]
+- **[Consensus (Raft / Paxos)](../algorithms/consensus-raft-paxos.md)** [Must read]
+- **[CAP Theorem](../algorithms/cap-theorem.md)** [Must read]
+- **[Replication Strategies](../algorithms/replication-strategies.md)** [Should read]
+- **Data Serialization Basics** [Should read]
 
 ---
 
 ## Table of Contents
 
-- [Quick Decision Guide](#quick-decision-guide)
 - [When NOT to Use a Message Queue](#when-not-to-use-a-message-queue)
 - [Core Architectural Paradigm](#core-architectural-paradigm)
+- [Quick Decision Guide](#quick-decision-guide)
 - [Message Lifecycle & State Management](#message-lifecycle--state-management)
 - [Reliability & Delivery Semantics](#reliability--delivery-semantics)
 - [Concurrency, Ordering & Partitioning](#concurrency-ordering--partitioning)
@@ -25,9 +25,7 @@
 - [Production Failure Modes & Recovery](#production-failure-modes--recovery)
 - [Performance Tuning & Capacity Planning](#performance-tuning--capacity-planning)
 - [Advanced Architectural Patterns](#advanced-architectural-patterns)
-- [Post-mortem Reading List](#post-mortem-reading-list)
 - [Interview Scenario Bank](#interview-scenario-bank)
-- [What the Interviewer Probes For](#what-the-interviewer-probes-for)
 - [Appendices](#appendices)
 
 ---
@@ -35,69 +33,6 @@
 ## TLDR
 
 A message queue decouples producers and consumers temporally (they don't need to be online simultaneously), spatially (they don't need to know each other's addresses), and by load (producers can burst without overwhelming consumers). The core choice is between a **work queue** (message consumed once, then deleted), a **log/stream** (append-only, offset-tracked, replayable by multiple independent consumers), and **pub/sub** (broadcast, no persistence). Kafka and Pulsar are logs; RabbitMQ and SQS are queues. Delivery semantics - at-most-once, at-least-once, exactly-once - are the hardest trade-off: exactly-once is achievable but expensive, and only necessary for use cases like financial ledgers where both loss and duplication are unacceptable. In production, the leading failure modes are consumer lag cascades, unclean leader elections causing data loss, and poison messages blocking partitions in infinite retry loops.
-
----
-
-## Quick Decision Guide
-
-### Queue, Log, or Pub/Sub?
-
-```
-Do multiple independent consumers need to read every message?
-  ├─ YES ──▶ Need replay / time-travel?
-  │            ├─ YES ──▶ Log (Kafka, Pulsar) - offset-based, retained
-  │            └─ NO  ──▶ Pub/Sub (SNS, Google Pub/Sub) - broadcast, no persistence
-  │
-  └─ NO (each message processed by exactly one consumer)
-       └──▶ Work Queue (RabbitMQ, SQS)
-                │
-                ▼
-              Need strict per-key ordering?
-                ├─ YES ──▶ Log with key partitioning (Kafka) or FIFO Queue (SQS FIFO)
-                └─ NO  ──▶ Standard queue (SQS standard, RabbitMQ)
-```
-
-### Which Delivery Semantics?
-
-```
-Can your consumer tolerate duplicates (idempotent processing)?
-  ├─ YES ──▶ At-Least-Once (default, simplest)
-  │
-  └─ NO
-       │
-       ▼
-     Can you tolerate message loss?
-       ├─ YES (metrics, analytics, non-critical logs) ──▶ At-Most-Once (lowest overhead)
-       │
-       └─ NO (financial, inventory, audit)
-              └──▶ Exactly-Once needed
-                     │
-                     ▼
-                   Sink is a Kafka topic (Kafka-to-Kafka)?
-                     ├─ YES ──▶ Kafka transactions (idempotent producer + transactional API)
-                     │          ⚠ ~10-20% throughput cost
-                     │
-                     └─ NO (Postgres, HTTP API, S3, etc.)
-                             └──▶ Application-level idempotency
-                                    ├─ Dedup key in DB: partition + offset as unique constraint → upsert on conflict
-                                    └─ Outbox pattern: DB write + offset commit in same DB transaction
-```
-
-### Partitioning Strategy?
-
-```
-Need global ordering across all messages?
-  ├─ YES ──▶ Single partition (severe throughput bottleneck - reconsider the requirement)
-  │
-  └─ NO
-       │
-       ▼
-     Need per-key ordering (all events for user X in sequence)?
-       ├─ YES ──▶ Key-based hash partitioning
-       │            └─ ⚠ High-cardinality keys only - low-cardinality causes hotspots
-       │
-       └─ NO ──▶ Round-robin (maximum parallelism, no ordering)
-```
 
 ---
 
@@ -196,6 +131,69 @@ Pub/Sub: Publisher ──▶ Broker ──▶ Subscriber A  (no persistence)
 > Pull is preferable for high-throughput systems - a slow consumer naturally applies backpressure by not polling. Push is appropriate for low-latency, low-volume messaging (IoT commands, notifications) where delivery speed matters and consumer load is predictable.
 
 **Key Takeaway:** Queue for task distribution (one consumer, message deleted); log for event streaming (multiple independent consumers, replay); pub/sub for broadcast (no persistence). Pull-based consumers get backpressure for free; push-based systems require explicit prefetch limits.
+
+---
+
+## Quick Decision Guide
+
+### Queue, Log, or Pub/Sub?
+
+```
+Do multiple independent consumers need to read every message?
+  ├─ YES ──▶ Need replay / time-travel?
+  │            ├─ YES ──▶ Log (Kafka, Pulsar) - offset-based, retained
+  │            └─ NO  ──▶ Pub/Sub (SNS, Google Pub/Sub) - broadcast, no persistence
+  │
+  └─ NO (each message processed by exactly one consumer)
+       └──▶ Work Queue (RabbitMQ, SQS)
+                │
+                ▼
+              Need strict per-key ordering?
+                ├─ YES ──▶ Log with key partitioning (Kafka) or FIFO Queue (SQS FIFO)
+                └─ NO  ──▶ Standard queue (SQS standard, RabbitMQ)
+```
+
+### Which Delivery Semantics?
+
+```
+Can your consumer tolerate duplicates (idempotent processing)?
+  ├─ YES ──▶ At-Least-Once (default, simplest)
+  │
+  └─ NO
+       │
+       ▼
+     Can you tolerate message loss?
+       ├─ YES (metrics, analytics, non-critical logs) ──▶ At-Most-Once (lowest overhead)
+       │
+       └─ NO (financial, inventory, audit)
+              └──▶ Exactly-Once needed
+                     │
+                     ▼
+                   Sink is a Kafka topic (Kafka-to-Kafka)?
+                     ├─ YES ──▶ Kafka transactions (idempotent producer + transactional API)
+                     │          ⚠ ~10-20% throughput cost
+                     │
+                     └─ NO (Postgres, HTTP API, S3, etc.)
+                             └──▶ Application-level idempotency
+                                    ├─ Dedup key in DB: partition + offset as unique constraint → upsert on conflict
+                                    └─ Outbox pattern: DB write + offset commit in same DB transaction
+```
+
+### Partitioning Strategy?
+
+```
+Need global ordering across all messages?
+  ├─ YES ──▶ Single partition (severe throughput bottleneck - reconsider the requirement)
+  │
+  └─ NO
+       │
+       ▼
+     Need per-key ordering (all events for user X in sequence)?
+       ├─ YES ──▶ Key-based hash partitioning
+       │            └─ ⚠ High-cardinality keys only - low-cardinality causes hotspots
+       │
+       └─ NO ──▶ Round-robin (maximum parallelism, no ordering)
+```
 
 ---
 
@@ -650,6 +648,16 @@ The `__consumer_offsets` internal topic stores committed offsets. Corruption cau
 
 **Recovery:** Stop consumers immediately to prevent duplicate side effects at scale. Determine the correct resume offset from application-side state (last successfully processed record ID in the DB, not from Kafka). Reset using `kafka-consumer-groups.sh --reset-offsets`. Restart. Document the gap or replay window.
 
+### Common Misconceptions
+
+- **"Exactly-once means no duplicates end-to-end"** - Kafka's exactly-once only covers Kafka-to-Kafka; a consumer writing to Postgres or an HTTP API needs application-level idempotency at that boundary too.
+- **"More partitions always means more throughput"** - only if the bottleneck is partition-level parallelism; if it's consumer speed, disk I/O, or network, more partitions just add rebalance and file-handle overhead.
+- **"Consumer lag means the consumer is broken"** - growing lag during a traffic spike with a healthy consumer is the queue doing its job; the real signal is lag that doesn't recover once the spike ends.
+- **"Kafka is a message queue"** - it's a distributed log; conflating it with RabbitMQ misses the defining property (retained, replayable, independently-read-by-multiple-groups).
+- **"A DLQ means you've handled the error"** - it's a parking lot, not a resolution; without monitoring and a replay process it silently fills up.
+- **"Rebalancing is just a brief pause"** - for large consumer groups under eager rebalancing it can pause consumption for 30+ seconds, a measurable outage under a real-time SLO. Cooperative rebalancing and static membership are the mitigations.
+- **"Kafka guarantees message ordering"** - only within a single partition; global ordering requires a single partition, capping throughput at ~10-50MB/s. Per-entity ordering via key-based partitioning is almost always what's actually needed.
+
 **Key Takeaway:** Unclean leader election = data loss; disk full = silent write rejection; offset corruption = mass reprocessing. Each has a specific config-level prevention and a specific recovery procedure - know all three.
 
 ---
@@ -704,25 +712,11 @@ net.ipv4.tcp_wmem = 4096 65536 67108864
 
 ### Request-Reply Over Queues
 
-Queues are one-way by default. Request-reply requires the requester to create a temporary reply queue, embed its address in the request as a `reply-to` header, and poll for the response.
-
-```
-Requester: create reply queue "replies-<UUID>"
-           send to "payments-service" with reply-to="replies-<UUID>"
-           poll "replies-<UUID>" for response (with timeout)
-
-Responder: receive request
-           process
-           send result to reply-to address
-```
-
-Useful for RPC over a message bus - but if you're blocking waiting for a reply, consider whether direct HTTP/gRPC is simpler.
+Queues are one-way by default. Request-reply requires the requester to create a temporary reply queue (embedding its address in the request as a `reply-to` header) and poll for the response - useful for RPC over a message bus, but if you're blocking waiting for a reply, direct HTTP/gRPC is usually simpler.
 
 ### Competing Consumers vs Partitioned Work Queues
 
-**Competing consumers (queue model):** Any consumer can take any message. Natural load balancing, no ordering. Good for independent parallel tasks.
-
-**Partitioned work queues (Kafka consumer groups):** Each partition assigned to exactly one consumer. Per-key ordering preserved. Adding consumers beyond partition count adds zero parallelism. Good for stateful stream processing where order matters.
+Competing consumers (any consumer takes any message, natural load balancing, no ordering) is the queue model; partitioned work queues (Kafka consumer groups, each partition owned by exactly one consumer, per-key ordering preserved) is the log model. This is the same [Queue, Log, or Pub/Sub?](#queue-log-or-pubsub) decision from the Quick Decision Guide, applied to consumer-side parallelism specifically.
 
 ### Choreography vs Orchestration (Saga Pattern)
 
@@ -776,23 +770,6 @@ Orchestration (explicit flow):
 
 ---
 
-## Post-mortem Reading List
-
-- LinkedIn 2011: The Log: What every software engineer should know about real-time data - Jay Kreps' foundational post on the log abstraction that became Kafka. Search: _"Jay Kreps The Log 2013 LinkedIn"_
-- Netflix 2016: [Kafka Inside Keystone Pipeline](https://netflixtechblog.com/kafka-inside-keystone-pipeline-dd5aeabaf6bb): Netflix's event pipeline architecture - covers multi-datacenter replication strategy and the throughput vs RPO trade-offs they made.
-- Uber 2017: Cherami - Uber's Durable and Scalable Task Queue: Why Uber built a custom task queue instead of using Kafka for task distribution, covering exactly-once semantics and durability trade-offs. Search: _"Uber Cherami task queue blog"_
-- Slack 2020: Real-time messaging infrastructure - Slack's consumer group management and partition sizing challenges at scale. Search: _"Slack Kafka real-time messaging infrastructure 2020"_
-- Cloudflare: Consumer offset reset incident - a misconfigured `auto.offset.reset=earliest` on a new consumer group caused mass reprocessing. Search: _"Cloudflare Kafka consumer offset reset incident"_
-
-**General resources:**
-
-- [danluu/post-mortems](https://github.com/danluu/post-mortems) - Curated public postmortems across major companies, includes message queue and streaming incidents.
-- [Designing Data-Intensive Applications](https://dataintensive.net/) - Chapter 11 (Stream Processing) is the canonical reference for message queue internals and delivery semantics.
-
-**Key Takeaway:** The recurring themes across these post-mortems: offset resets cause mass reprocessing, unclean leader elections cause silent data loss, and consumer lag cascades begin slowly and then become sudden. Read the Jay Kreps log post and at least one incident report before any streaming systems interview.
-
----
-
 ## Interview Scenario Bank
 
 ### Work Queue vs Log
@@ -808,7 +785,7 @@ Orchestration (explicit flow):
 > 🎯 **Interview Lens**
 > **Q:** How does Kafka achieve high write throughput on commodity hardware?
 > **Ideal answer:** Three mechanisms - sequential I/O (append-only log avoids random seeks), OS page cache (writes land in memory first, flushed async), and zero-copy reads (`sendfile()` skips the user-space copy).
-> **Next question:** "What's the risk of async flush with no replication?" → If the broker crashes between ACKing a producer and fsync, that message is permanently lost. With `acks=all` and replication ≥2, the risk is eliminated - the message is on multiple brokers before the ACK.
+> **Next question:** "What's the risk of async flush with no replication?" → if the broker crashes between ACKing the producer and performing the fsync, that message is permanently lost - `acks=all` with replication ≥2 eliminates this by ensuring the message exists on multiple brokers before the ACK is issued at all.
 
 ### Exactly-Once to an External System
 
@@ -816,7 +793,7 @@ Orchestration (explicit flow):
 > **Q:** How do you implement exactly-once processing when a Kafka consumer writes to a database?
 > **Ideal answer:** Kafka's transactional API only covers Kafka-to-Kafka. For Kafka-to-Postgres: either idempotent writes (Kafka partition+offset as a DB dedup key, reprocessing becomes a no-op upsert) or the outbox pattern (write business state and offset in the same DB transaction).
 > **Common trap:** "Enable `enable.idempotence=true`" - that only dedupes at the broker level, it does nothing for external side effects.
-> **Next question:** "A rebalance fires mid-batch on an idempotent consumer - what happens?" → Uncommitted offsets revert to last committed; the rebalanced consumer reprocesses from there. Safe, since idempotent writes make reprocessing harmless.
+> **Next question:** "A rebalance fires mid-batch on an idempotent consumer - what happens?" → uncommitted offsets revert to the last committed point, the rebalanced consumer reprocesses from there - safe specifically because idempotent writes make reprocessing a no-op rather than a duplicate side effect.
 
 ### Consumer Ejection Mid-Processing
 
@@ -845,7 +822,7 @@ Orchestration (explicit flow):
 > 🎯 **Interview Lens**
 > **Q:** Your consumers suddenly start reprocessing millions of old messages. What happened and how do you respond?
 > **Ideal answer:** An offset reset - `auto.offset.reset=earliest` on a new group, a manual CLI reset, a group rename, or `__consumer_offsets` corruption. Stop consumers immediately, determine the correct resume offset from application-side DB state (not Kafka), reset explicitly, restart, investigate root cause.
-> **Next question:** "How do you prevent this?" → Never use `earliest` in production (use `none`, which throws on a missing offset); alert on sudden lag decrease as a reset signal; require dual-approval for manual offset resets.
+> **Next question:** "How do you prevent this?" → never use `auto.offset.reset=earliest` in production - use `none`, which throws rather than silently replaying the entire backlog; alert on a sudden lag decrease as an early reset signal; require dual-approval for any manual offset reset.
 
 ### Sizing Partition Count
 
@@ -853,26 +830,6 @@ Orchestration (explicit flow):
 > **Q:** How many partitions should a topic have?
 > **Ideal answer:** Three constraints - required throughput ÷ per-partition throughput; expected consumer count (for parallelism); operational limits (file handles, metadata overhead). Start conservative; you can increase later, never decrease without recreating the topic.
 > **Next question:** "Is there a downside to too many partitions?" → Longer rebalances, more file handles, higher metadata and replication overhead, slightly higher end-to-end latency since each partition flushes and replicates independently.
-
-### Rapid-Fire Misconceptions
-
-- **"Exactly-once means no duplicates end-to-end"** - Kafka's exactly-once only covers Kafka-to-Kafka; a consumer writing to Postgres or an HTTP API needs application-level idempotency at that boundary too.
-- **"More partitions always means more throughput"** - only if the bottleneck is partition-level parallelism; if it's consumer speed, disk I/O, or network, more partitions just add rebalance and file-handle overhead.
-- **"Consumer lag means the consumer is broken"** - growing lag during a traffic spike with a healthy consumer is the queue doing its job; the real signal is lag that doesn't recover once the spike ends.
-- **"Kafka is a message queue"** - it's a distributed log; conflating it with RabbitMQ misses the defining property (retained, replayable, independently-read-by-multiple-groups).
-- **"A DLQ means you've handled the error"** - it's a parking lot, not a resolution; without monitoring and a replay process it silently fills up.
-- **"Rebalancing is just a brief pause"** - for large consumer groups under eager rebalancing it can pause consumption for 30+ seconds, a measurable outage under a real-time SLO. Cooperative rebalancing and static membership are the mitigations.
-- **"Kafka guarantees message ordering"** - only within a single partition; global ordering requires a single partition, capping throughput at ~10-50MB/s. Per-entity ordering via key-based partitioning is almost always what's actually needed.
-
----
-
-## What the Interviewer Probes For
-
-**"What's the risk of async flush with no replication?"** (see [High Write Throughput Mechanics](#high-write-throughput-mechanics)) - Probes whether the candidate connects the page-cache-write-path optimization to its actual failure mode, not just the throughput benefit. Answer: if the broker crashes between ACKing the producer and performing the fsync, that message is permanently lost - `acks=all` with replication ≥2 eliminates this by ensuring the message exists on multiple brokers before the ACK is issued at all.
-
-**"A rebalance fires mid-batch on an idempotent consumer - what happens?"** (see [Exactly-Once to an External System](#exactly-once-to-an-external-system)) - Probes whether the candidate understands why idempotency, not just careful offset management, is what makes rebalances safe. Answer: uncommitted offsets revert to the last committed point, the rebalanced consumer reprocesses from there - safe specifically because idempotent writes make reprocessing a no-op rather than a duplicate side effect.
-
-**"How do you prevent mass reprocessing from an offset reset?"** (see [Mass Reprocessing After Offset Reset](#mass-reprocessing-after-offset-reset)) - Probes whether the candidate's answer is purely reactive (how to recover) or also preventive (how to avoid it happening). Answer: never use `auto.offset.reset=earliest` in production - use `none`, which throws rather than silently replaying the entire backlog; alert on a sudden lag decrease as an early reset signal; require dual-approval for any manual offset reset.
 
 ---
 

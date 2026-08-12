@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- **[Consistency Models](./consistency-models.md)** [Must read] - CAP's "C" maps directly to <abbr>linearizability</abbr>; without this, the theorem's guarantees will be misread as weaker than they are.
-- **[<abbr>Replication</abbr> Strategies](./replication-strategies.md)** [Recommended] - CAP trade-offs play out through replication; understanding sync vs async replication clarifies why CP and AP behave the way they do.
+- **[Consistency Models](./consistency-models.md)** [Must read]
+- **[Replication Strategies](./replication-strategies.md)** [Should read]
 
 ## Table of Contents
 
@@ -18,7 +18,6 @@
 - [Real-World Applications](#real-world-applications)
 - [Common Misapplications & Gotchas](#common-misapplications--gotchas)
 - [Interview Scenario Bank](#interview-scenario-bank)
-- [What the Interviewer Probes For](#what-the-interviewer-probes-for)
 - [Appendices](#appendices)
 
 ## TLDR
@@ -177,7 +176,7 @@ This assumption is realistic. In production systems, you cannot guarantee messag
 **What breaks when the assumption is relaxed:** In a synchronous model - one with a known, finite bound on message delay - a node that receives no response within the deadline can declare a partition with certainty. This removes the ambiguity the proof exploits. In a perfectly synchronous network, CA is theoretically achievable: every node can always know whether others are reachable. But no real distributed system operates under a synchronous network model. The assumption that makes CA possible is the assumption you cannot make in practice.
 
 > 🧠 **Thought Process**
-> When a team says "our data centre network is reliable enough that we don't worry about partitions," they are implicitly claiming synchronous network behaviour. The right challenge: "what happens during a rolling restart, a switch firmware upgrade, or a 10-second GC pause on the leader?" Those events create transient partitions even in a single data centre. The asynchronous model isn't pessimistic - it's accurate.
+> When a team says "our data centre network is reliable enough that we don't worry about partitions," they are implicitly claiming synchronous network behaviour. The right challenge isn't naming causes again (see [Why P Is Non-Negotiable in Practice](#why-p-is-non-negotiable-in-practice) for those) - it's asking them to defend the claim directly: "what's your bound on message delay, and what enforces it?" Most teams have no answer, because no real network provides one.
 
 ### Binary Property Framing and Its Limits
 
@@ -521,7 +520,7 @@ _Claiming CA is a claim that your network never partitions. No production networ
 
 Teams arrive at "CA" by reasoning: "our infrastructure is reliable, we use a single data centre, partitions are edge cases." This reasoning fails at multiple levels:
 
-- Partitions within a single data centre happen routinely: NIC failures, switch reboots, GC pauses long enough to miss heartbeats, asymmetric routing after config changes, rolling restarts.
+- Single-DC partitions are routine, not an edge case (see [Why P Is Non-Negotiable in Practice](#why-p-is-non-negotiable-in-practice) for the concrete causes).
 - "Reliable infrastructure" reduces partition frequency - it does not eliminate it.
 - A system with undefined behaviour during a partition is not CA - it is a system with an unhandled failure mode.
 
@@ -582,6 +581,7 @@ These are all weaker than linearizability (CAP's C) but significantly stronger t
 > **Ideal answer:** You can't have consistency, availability, and partition tolerance simultaneously. Since partitions are unavoidable, the real trade-off is C vs A during a partition - reject requests to stay consistent, or serve stale data to stay available.
 > **Common trap:** Treating it as a free "pick any two" - claiming "we'd choose CA" without realizing that means claiming the network never partitions.
 > **Next question:** "Can a single system be both CP and AP depending on the operation?" → Yes - Cassandra at `QUORUM` behaves CP-like, at `ONE` behaves AP-like, same cluster, different operations.
+> **Next question:** "You said CAP only covers partition behavior - what governs your system's design the other 99.9% of the time?" → PACELC's ELC branch (latency vs consistency during normal operation) is a separate, independent decision from the partition-time CAP choice - a system can be PC (blocks on partition) and still be EL (low latency normally) by relaxing quorum requirements outside partition events.
 
 ### CAP's C, Precisely
 
@@ -597,7 +597,7 @@ These are all weaker than linearizability (CAP's C) but significantly stronger t
 > **Q:** Your database is a CP system. What happens to write requests during a network partition?
 > **Ideal answer:** Writes that can't reach quorum are rejected with an error; the client must retry. The trade-off is explicit - errors rather than risking inconsistent state.
 > **Common trap:** "Writes queue up and retry automatically" - that's an AP system with client-side buffering, not CP behavior.
-> **Next question:** "How does a CP system know when the partition has healed and it's safe to resume writes?" → Typically via the consensus protocol's own heartbeat/quorum re-establishment (e.g. Raft leader re-election succeeding) - the system doesn't need an external partition-healed signal, it just resumes once quorum is reachable again.
+> **Next question:** "How does a CP system know when the partition has healed and it's safe to resume writes?" → it's typically implicit in the consensus protocol's own mechanics - a Raft leader re-election succeeding, or quorum becoming reachable again - not an external "partition healed" event the system waits for.
 
 ### Per-Operation CP/AP Design
 
@@ -605,7 +605,7 @@ These are all weaker than linearizability (CAP's C) but significantly stronger t
 > **Q:** You're designing a ride-sharing app. Should your system be CP or AP?
 > **Ideal answer:** Neither globally. Driver location updates are AP - slightly stale positions are fine, availability matters. Ride assignment is CP - two drivers cannot be assigned to the same rider. Payment is CP - consistency failures have direct financial consequences.
 > **Common trap:** Labeling the whole system CP or AP instead of reasoning per-operation.
-> **Next question:** "How would you implement per-operation consistency levels in practice?" → Expose it as a per-query knob like Cassandra's consistency levels (`QUORUM` vs `ONE`), rather than a single global database-wide setting.
+> **Next question:** "How would you implement per-operation consistency levels in practice?" → expose it as a per-query knob (Cassandra's `QUORUM` vs `ONE` consistency levels), not a single database-wide setting - the same cluster serves both CP-like and AP-like operations depending on what's asked of it.
 
 ### Naming the Common Misconceptions
 
@@ -614,16 +614,6 @@ These are all weaker than linearizability (CAP's C) but significantly stronger t
 > **Ideal answer:** Three main ones - CA isn't a real option at scale since partitions always happen; CP/AP labels belong to operations, not whole systems; and CAP only covers partition behavior, PACELC is the right framework for normal-operation latency/consistency trade-offs.
 > **Common trap:** Naming only the CA myth and stopping there, missing the PACELC gap and the per-operation nuance.
 > **Next question:** "Given those misconceptions, how would you document the consistency guarantees of a system you're designing?" → Per-operation: for each operation, state its partition behavior (CP/AP) and its normal-operation trade-off (PACELC's L vs C) explicitly, rather than one system-wide label.
-
----
-
-## What the Interviewer Probes For
-
-**"How does a CP system know it's safe to resume writes after a partition heals?"** (see [CP Behavior Under Partition](#cp-behavior-under-partition)) - Probes whether the candidate understands partition detection isn't a separate signal bolted on top. Answer: it's typically implicit in the consensus protocol's own mechanics - a Raft leader re-election succeeding, or quorum becoming reachable again - not an external "partition healed" event the system waits for.
-
-**"How would you implement per-operation consistency levels in practice?"** (see [Per-Operation CP/AP Design](#per-operation-cpap-design)) - Probes whether the candidate can move from the CP/AP concept to a concrete API surface. Answer: expose it as a per-query knob (Cassandra's `QUORUM` vs `ONE` consistency levels), not a single database-wide setting - the same cluster serves both CP-like and AP-like operations depending on what's asked of it.
-
-**"You said CAP only covers partition behavior - what governs your system's design the other 99.9% of the time?"** (see [CAP vs PACELC](#cap-vs-pacelc)) - Probes whether the candidate conflates "we chose CP" with "we must maximize consistency always." Answer: PACELC's ELC branch (latency vs consistency during normal operation) is a separate, independent decision from the partition-time CAP choice - a system can be PC (blocks on partition) and still be EL (low latency normally) by relaxing quorum requirements outside partition events.
 
 ---
 

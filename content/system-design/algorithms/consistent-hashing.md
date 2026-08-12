@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- **Hash Functions** [Must read] - the technique places both keys and nodes on a ring using a hash function; understanding uniform distribution is required to see why virtual nodes are necessary. <!-- link: ./hash-functions.md -->
-- **[Load Balancer](../components/load-balancer.md)** [Should read] - one of the primary consumers of this technique; this article covers the algorithm in isolation, the LB article covers when to reach for it over other routing strategies.
+- **Hash Functions** [Must read] <!-- link: ./hash-functions.md -->
+- **[Load Balancer](../components/load-balancer.md)** [Should read]
 
 ---
 
@@ -17,6 +17,7 @@
 - [Rebalancing Impact](#rebalancing-impact)
 - [Bounded-Load Consistent Hashing](#bounded-load-consistent-hashing)
 - [When To Use](#when-to-use)
+- [Often Confused With](#often-confused-with)
 - [Common Misapplications & Gotchas](#common-misapplications--gotchas)
 - [Appendices](#appendices)
 
@@ -94,6 +95,10 @@ More virtual nodes per physical node → more even distribution, at the cost of 
 > 🧠 **Thought Process**
 > The virtual-node count is a knob, not a fixed constant - it's a direct trade-off between load-distribution smoothness and lookup-structure size. A system with only 3-4 physical nodes needs more virtual nodes per physical node to average out variance than a system with 500 physical nodes, where the law of large numbers already does most of the work.
 
+### Gotcha - Too Few Virtual Nodes
+
+Under-provisioning virtual node count is the most common misconfiguration: with a small physical node count and few virtual nodes each, load imbalance stays significant purely from hash randomness, even though the ring mechanism is implemented correctly. See [Common Misapplications & Gotchas](#common-misapplications--gotchas) for the fix.
+
 ---
 
 ## Rebalancing Impact
@@ -125,8 +130,18 @@ Used in systems where a small number of extremely popular keys (celebrity accoun
 
 Reach for consistent hashing when you need **both** backend affinity (the same key should usually land on the same node, for cache warmth or session locality) **and** a pool that changes over time (autoscaling, rolling deploys, node failures). If the pool is static, plain modulo hashing is simpler and equally correct. If you don't need affinity at all, any load-aware algorithm (least connections, round robin) is simpler and doesn't require ring maintenance.
 
+DynamoDB and Cassandra both use consistent hashing (with virtual nodes) as their core partitioning mechanism for exactly this reason - node membership changes constantly in a large cluster, and both need key-to-node affinity for read/write quorums. At scale (thousands of nodes), the failure mode is ring imbalance from token placement skew, not remap volume - a small number of physical nodes ending up responsible for disproportionate ring arcs even with virtual nodes, degrading into hot-partition problems that bounded-load extensions specifically target.
+
 > ⚖️ **Decision Framework**
 > Stable pool + need affinity → modulo hashing is fine, simpler. Changing pool + need affinity → consistent hashing. Changing pool + no affinity requirement → skip this entirely, use least connections or round robin. The key you hash matters too: hashing on client IP collapses under NAT (thousands of users, one IP); prefer a session ID, user ID, or request attribute that has genuine per-client diversity.
+
+---
+
+## Often Confused With
+
+**Rendezvous hashing (HRW - Highest Random Weight):** no ring at all. Each key is scored against every node via a combined hash `hash(key, node)`, and the key goes to the node with the highest score. Same `~1/N` remap-minimality property as consistent hashing, without virtual nodes or a sorted position structure - but every lookup is `O(N)` (score against all nodes) unless indexed, versus consistent hashing's `O(log N)`. Prefer HRW when node count is small and simplicity beats lookup speed; prefer consistent hashing when node count is large enough that `O(N)` scoring is the bottleneck.
+
+**Sharding with a remap table:** some systems avoid the `~1/N` remap cost entirely by keeping an explicit key-range-to-shard mapping table, updated by a coordinator on rebalance (not a hash function at all). This trades "moves are hash-determined and stateless" for "moves are coordinator-controlled and can be planned" - useful when rebalancing needs to be gradual and scheduled rather than immediate.
 
 ---
 
@@ -138,11 +153,31 @@ Reach for consistent hashing when you need **both** backend affinity (the same k
 
 **Assuming zero keys move on a pool change.** Consistent hashing bounds the blast radius to `~1/N`, it doesn't eliminate remapping. Systems relying on this for cache warmth still see a real, if much smaller, cold-key rate on every scaling event - size cache eviction/backfill capacity accordingly.
 
+### Common Misconceptions
+
+**"Consistent hashing guarantees even load distribution."** No - it guarantees *minimal remapping* on pool changes. Even distribution is a separate property that only virtual nodes provide, and even then only approximately (law-of-large-numbers averaging, not a hard guarantee). The two properties are independent; a ring can minimize remap and still be unevenly loaded if virtual node count is too low.
+
+---
+
+## Interview Scenario Bank
+
 > 🎯 **Interview Lens**
 > **Q:** Why not just use `hash(key) % N` and call it a day?
 > **Ideal answer:** Because `N` changing (autoscaling, node failure, rolling deploy) reshuffles roughly `(N-1)/N` of all keys - nearly everything - even though only one node changed. Consistent hashing bounds that to `~1/N` by placing nodes and keys on a shared ring instead of using the pool size as a divisor.
 > **Common trap:** Describing the ring mechanism but forgetting virtual nodes - without them, a small number of physical nodes produces visibly uneven arc sizes and real load imbalance, even though the "few keys move on resize" property still holds.
 > **Next question:** "A handful of your keys get 100x normal traffic - does consistent hashing handle that?" → Not by default; the ring balances by *key count*, not by *load per key*. Bounded-load consistent hashing caps each node's load and overflows excess to the next node clockwise, specifically for this case.
+
+> 🎯 **Interview Lens**
+> **Q:** How do virtual nodes actually improve load distribution - why not just use more physical nodes?
+> **Ideal answer:** Virtual nodes give each physical node many independently-random arcs on the ring instead of one, so by the law of large numbers the sum converges close to `1/N` of the ring. It's a statistical smoothing technique, not a capacity change - physical node count is a capacity decision, virtual node count is a distribution-smoothness knob.
+> **Common trap:** Conflating "more virtual nodes" with "more capacity." They're orthogonal - you can raise virtual node count on the same physical fleet purely to smooth load, with no added compute.
+> **Next question:** "What's the cost of raising virtual node count from 150 to 1000 per physical node?" → Larger sorted position array to binary-search over (more memory, marginally slower `O(log N)` lookups) - real but usually negligible next to network/IO cost per request.
+
+> 🎯 **Interview Lens**
+> **Q:** Does consistent hashing eliminate the "cache stampede on deploy" problem?
+> **Ideal answer:** It reduces it, doesn't eliminate it. Blast radius drops from `(N-1)/N` to `~1/N` of keys, but that `~1/N` still goes cold simultaneously on every node-pool change - rolling deploys during peak traffic still need backfill/eviction capacity sized for that fraction, not zero.
+> **Common trap:** Assuming "minimal remapping" means "no remapping" and under-provisioning cache backfill capacity as a result.
+> **Next question:** "Your ring has 200 nodes and you're doing a rolling deploy of all of them. What's the actual cold-key exposure?" → Roughly `~1/200` per single node cycled, but if the deploy cycles all 200 sequentially without pause, cumulative exposure approaches the full keyspace over the rollout window - the bound is per-change, not per-deploy.
 
 ---
 
