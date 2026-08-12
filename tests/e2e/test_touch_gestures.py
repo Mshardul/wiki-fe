@@ -87,28 +87,8 @@ def test_card_swipe_right_bookmarks(mobile_page, base_url):
     assert page.locator("#bookmarks-section .recent-chip").count() >= 1
 
 
-def test_card_swipe_left_marks_read(mobile_page, base_url):
-    """left-swipe on an index card toggles its read dot on."""
-    page = mobile_page
-    _go_to_index(page, base_url)
-    card, box = _first_card_box(page)
-
-    dot = card.locator(".index-card-read-dot")
-    assert "visible" not in (dot.get_attribute("class") or "")
-
-    cy = box["y"] + box["height"] / 2
-    _swipe(page, box["x"] + box["width"] - 20, cy, box["x"] + 10, cy)
-
-    # read dot becomes visible
-    page.wait_for_function(
-        "el => el.classList.contains('visible')",
-        arg=dot.element_handle(),
-        timeout=5_000,
-    )
-
-
-def test_card_swipe_left_writes_normalized_path(mobile_page, base_url):
-    """Regression: swipe-to-mark-read used to write the raw ./-prefixed card path into wiki-read, a shape isRead() (keyed off state.currentFilePath, never ./-prefixed) could never match on revisit."""
+def test_card_swipe_left_does_not_mark_completed(mobile_page, base_url):
+    """left-swipe on an index card no longer toggles completion state."""
     page = mobile_page
     _go_to_index(page, base_url)
     card, box = _first_card_box(page)
@@ -116,16 +96,10 @@ def test_card_swipe_left_writes_normalized_path(mobile_page, base_url):
     cy = box["y"] + box["height"] / 2
     _swipe(page, box["x"] + box["width"] - 20, cy, box["x"] + 10, cy)
 
-    page.wait_for_function(
-        "() => JSON.parse(localStorage.getItem('wiki-read-system-design') || '[]').length > 0",
-        timeout=5_000,
+    completed = page.evaluate(
+        "() => JSON.parse(localStorage.getItem('wiki-completed-system-design') || '[]')"
     )
-    read_set = page.evaluate(
-        "() => JSON.parse(localStorage.getItem('wiki-read-system-design') || '[]')"
-    )
-    assert all(not p.startswith("./") for p in read_set), (
-        f"wiki-read-system-design must not contain ./-prefixed paths, got {read_set}"
-    )
+    assert len(completed) == 0
 
 
 def test_card_swipe_near_left_edge_still_bookmarks(mobile_page, base_url):

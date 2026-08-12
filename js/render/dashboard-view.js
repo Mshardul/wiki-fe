@@ -1,33 +1,21 @@
 import { WIKIS, escHtml } from "../state.js";
 import { getCompletedSet } from "../storage/completions.js";
-import { getReadSet } from "../storage/read-tracking.js";
 import { fetchWikiIndex } from "./home-parse.js";
 import { normalizePath, setBreadcrumb } from "./nav-utils.js";
 import { showView } from "./router.js";
 
 /* ═══════════════════════════════════════════════════════════════
    PROGRESS DASHBOARD
-   One card per vertical: read % and completed % against that
-   vertical's total article count. Hidden entirely if a vertical
-   has zero articles. Pure aggregation - no new tracking state.
+   One card per vertical: completed % against that vertical's total
+   article count. Hidden entirely if a vertical has zero articles.
    ═══════════════════════════════════════════════════════════════ */
 
-function _renderCard(wiki, total, readCount, completedCount) {
-  const readPct = total ? Math.round((readCount / total) * 100) : 0;
+function _renderCard(wiki, total, completedCount) {
   const completedPct = total ? Math.round((completedCount / total) * 100) : 0;
 
   return `
     <section class="dashboard-card">
       <h2 class="dashboard-card-title">${escHtml(wiki.title)}</h2>
-      <div class="dashboard-stat">
-        <div class="dashboard-stat-label">
-          <span>Read</span>
-          <span>${readCount} / ${total} (${readPct}%)</span>
-        </div>
-        <div class="dashboard-bar-track">
-          <div class="dashboard-bar-fill" style="width: ${readPct}%"></div>
-        </div>
-      </div>
       <div class="dashboard-stat">
         <div class="dashboard-stat-label">
           <span>Completed</span>
@@ -55,11 +43,9 @@ async function renderDashboard() {
       const paths = sections.flatMap((s) => s.cards.map((c) => normalizePath(c.path)));
       if (!paths.length) continue;
 
-      const readSet = getReadSet(wiki.id);
       const completedSet = getCompletedSet(wiki.id);
-      const readCount = paths.filter((p) => readSet.has(p)).length;
       const completedCount = paths.filter((p) => completedSet.has(p)).length;
-      cards.push(_renderCard(wiki, paths.length, readCount, completedCount));
+      cards.push(_renderCard(wiki, paths.length, completedCount));
     }
 
     container.innerHTML = cards.length

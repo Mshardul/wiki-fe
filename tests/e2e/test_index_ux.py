@@ -385,14 +385,13 @@ def test_empty_section_hidden_when_no_matches(page, base_url):
     )
 
 
-def test_unread_toggle_filters_read_cards(page, base_url):
-    """Activating 'Unread only' hides cards already marked read."""
+def test_incomplete_filter_hides_completed_cards(page, base_url):
+    """Activating 'Incomplete only' hides cards already marked completed."""
     _go_to_index(page, base_url)
     page.wait_for_selector(
         "#index-sections:not(.index-sections--loading)", timeout=15_000
     )
 
-    # Seed first card's path into the read-tracking store -> re-render index for read dot
     seeded = page.evaluate(
         """() => {
             const badge = document.querySelector(
@@ -400,16 +399,15 @@ def test_unread_toggle_filters_read_cards(page, base_url):
             );
             if (!badge) return null;
             const path = badge.dataset.path.replace(/^\\.\\//, '');
-            const key = 'wiki-read-system-design';
+            const key = 'wiki-completed-system-design';
             const cur = JSON.parse(localStorage.getItem(key) || '[]');
             if (!cur.includes(path)) cur.push(path);
             localStorage.setItem(key, JSON.stringify(cur));
             return path;
         }"""
     )
-    assert seeded, "Expected at least one available card to seed as read"
+    assert seeded, "Expected at least one available card to seed as completed"
 
-    # Reload so isRead() picks up the seeded value on render.
     page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector(
         "#index-sections:not(.index-sections--loading)", timeout=15_000
@@ -417,22 +415,21 @@ def test_unread_toggle_filters_read_cards(page, base_url):
     page.wait_for_selector(".index-card-read-dot.visible", timeout=8_000)
 
     select = page.locator("#index-filter-read-select")
-    select.select_option("unread")
+    select.select_option("incomplete")
     page.wait_for_function(
-        "() => document.getElementById('index-filter-read-select').value === 'unread'",
+        "() => document.getElementById('index-filter-read-select').value === 'incomplete'",
         timeout=3_000,
     )
-    # No visible card may contain a visible read-dot.
     leaked = page.evaluate(
         """() => [...document.querySelectorAll('#index-sections .index-card')]
               .filter(c => !c.classList.contains('index-card--filtered'))
               .filter(c => c.querySelector('.index-card-read-dot.visible')).length"""
     )
-    assert leaked == 0, "Unread-only filter must hide cards marked read"
+    assert leaked == 0, "Incomplete-only filter must hide completed cards"
 
 
-def test_read_only_filter_hides_unread_cards(page, base_url):
-    """Selecting 'Read only' hides cards that are not marked read."""
+def test_completed_only_filter_hides_incomplete_cards(page, base_url):
+    """Selecting 'Completed only' hides cards that are not marked completed."""
     _go_to_index(page, base_url)
     page.wait_for_selector(
         "#index-sections:not(.index-sections--loading)", timeout=15_000
@@ -445,14 +442,14 @@ def test_read_only_filter_hides_unread_cards(page, base_url):
             );
             if (!badge) return null;
             const path = badge.dataset.path.replace(/^\\.\\//, '');
-            const key = 'wiki-read-system-design';
+            const key = 'wiki-completed-system-design';
             const cur = JSON.parse(localStorage.getItem(key) || '[]');
             if (!cur.includes(path)) cur.push(path);
             localStorage.setItem(key, JSON.stringify(cur));
             return path;
         }"""
     )
-    assert seeded, "Expected at least one available card to seed as read"
+    assert seeded, "Expected at least one available card to seed as completed"
 
     page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector(
@@ -461,18 +458,17 @@ def test_read_only_filter_hides_unread_cards(page, base_url):
     page.wait_for_selector(".index-card-read-dot.visible", timeout=8_000)
 
     select = page.locator("#index-filter-read-select")
-    select.select_option("read")
+    select.select_option("completed")
     page.wait_for_function(
-        "() => document.getElementById('index-filter-read-select').value === 'read'",
+        "() => document.getElementById('index-filter-read-select').value === 'completed'",
         timeout=3_000,
     )
-    # Every visible card must have a visible read-dot.
-    unread_visible = page.evaluate(
+    incomplete_visible = page.evaluate(
         """() => [...document.querySelectorAll('#index-sections .index-card')]
               .filter(c => !c.classList.contains('index-card--filtered'))
               .filter(c => !c.querySelector('.index-card-read-dot.visible')).length"""
     )
-    assert unread_visible == 0, "Read-only filter must hide cards not marked read"
+    assert incomplete_visible == 0, "Completed-only filter must hide incomplete cards"
 
 
 def test_index_ctrl_and_filter_44px_on_coarse_pointer(browser, base_url, cdn_cache):
@@ -641,10 +637,10 @@ def test_last_opened_date_recorded_on_article_visit(page, base_url):
 
 # ── Stale-knowledge fade on index cards ───────────────────────────────
 
-_READ_SET_KEY = "wiki-read-system-design"
+_READ_SET_KEY = "wiki-completed-system-design"
 
 
-def _mark_caching_read(page):
+def _mark_caching_completed(page):
     page.evaluate(
         f"""() => {{
             const cur = JSON.parse(localStorage.getItem({_READ_SET_KEY!r}) || '[]');
@@ -679,7 +675,7 @@ def test_recently_read_card_has_no_or_full_fade(page, base_url):
     """A card read moments ago gets --fade at/near 1, or no --fade set at all."""
     _mock_caching_article(page, "2020-01-01")
     page.goto(base_url, wait_until="domcontentloaded")
-    _mark_caching_read(page)
+    _mark_caching_completed(page)
     # _seed_last_opened takes a literal ISO string, so stamp "now" directly via JS.
     page.evaluate(
         f"""() => {{
@@ -705,7 +701,7 @@ def test_long_ago_read_card_has_reduced_fade(page, base_url):
     """A card read long ago gets a visibly reduced --fade value."""
     _mock_caching_article(page, "2020-01-01")
     page.goto(base_url, wait_until="domcontentloaded")
-    _mark_caching_read(page)
+    _mark_caching_completed(page)
     _seed_last_opened(page, "2020-01-01T00:00:00.000Z")
 
     _go_to_index(page, base_url)
@@ -723,7 +719,7 @@ def test_fade_never_drops_below_floor(page, base_url):
     """Even a very old read date is clamped to the fade floor, never fully desaturated."""
     _mock_caching_article(page, "2020-01-01")
     page.goto(base_url, wait_until="domcontentloaded")
-    _mark_caching_read(page)
+    _mark_caching_completed(page)
     _seed_last_opened(page, "2000-01-01T00:00:00.000Z")
 
     _go_to_index(page, base_url)
@@ -739,8 +735,8 @@ def test_fade_never_drops_below_floor(page, base_url):
     assert fade_val >= 0.3, f"Fade floor seems too low ({fade_val}), cards should stay legible"
 
 
-def test_unread_card_has_no_fade(page, base_url):
-    """A never-opened card gets no --fade applied - fade is only for read articles."""
+def test_incomplete_card_has_no_fade(page, base_url):
+    """A never-completed card gets no --fade applied - fade is only for completed articles."""
     _mock_caching_article(page, "2020-01-01")
     page.goto(base_url, wait_until="domcontentloaded")
     page.evaluate(f"() => localStorage.removeItem({_CACHING_KEY!r})")
@@ -753,7 +749,7 @@ def test_unread_card_has_no_fade(page, base_url):
     _wait_for_read_time_loaded(page)
 
     fade = _card_fade(page)
-    assert fade in (None, ""), f"Unread card must not have --fade set, got {fade!r}"
+    assert fade in (None, ""), f"Incomplete card must not have --fade set, got {fade!r}"
 
 
 def test_swipe_hint_visible_on_coarse_pointer_only(browser, base_url, cdn_cache):

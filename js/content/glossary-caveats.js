@@ -234,32 +234,16 @@ function addGlossaryTerms(contentEl) {
     };
 
     state.glossaryObserver?.disconnect();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const el = entry.target;
-          if (entry.isIntersecting) {
-            el.addEventListener("mouseenter", el._glossaryShow);
-            el.addEventListener("focus", el._glossaryShow);
-            el.addEventListener("mouseleave", hide);
-            el.addEventListener("blur", hide);
-          } else {
-            el.removeEventListener("mouseenter", el._glossaryShow);
-            el.removeEventListener("focus", el._glossaryShow);
-            el.removeEventListener("mouseleave", hide);
-            el.removeEventListener("blur", hide);
-          }
-        });
-      },
-      { rootMargin: "0px 0px -10% 0px" },
-    );
-    state.glossaryObserver = observer;
+    state.glossaryObserver = null;
 
     matched.forEach((el) => {
       el.classList.add("glossary-term");
       el._glossaryShow = () => show(el);
       el._glossaryHideNow = hideNow;
-      observer.observe(el);
+      el.addEventListener("mouseenter", el._glossaryShow);
+      el.addEventListener("focus", el._glossaryShow);
+      el.addEventListener("mouseleave", hide);
+      el.addEventListener("blur", hide);
     });
   });
 }

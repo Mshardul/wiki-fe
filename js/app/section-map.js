@@ -2,7 +2,7 @@ import { navigateToContent } from "../render/content-view.js";
 import { fetchPrebuiltBacklinks, fetchPrebuiltSearchIndex } from "../render/nav-utils.js";
 import { showToast } from "../render/toast.js";
 import { state } from "../state.js";
-import { isRead } from "../storage/read-tracking.js";
+import { isCompleted } from "../storage/completions.js";
 import {
   buildEdgesForNodes,
   buildNodesFromCards,
@@ -33,7 +33,7 @@ async function currentSectionNodes() {
 
 function colorForNode(n) {
   if (n.isCurrent) return "var(--accent)";
-  return n.read ? "var(--text-subtle)" : "var(--text-body)";
+  return n.completed ? "var(--text-subtle)" : "var(--text-body)";
 }
 
 function onNodeClick(node) {
@@ -68,7 +68,7 @@ async function _openSectionMap() {
   const currentPath = `./${state.currentFilePath}`;
   const nodesByPath = buildNodesFromCards(section.cards, section.wikiId, (node) => {
     node.isCurrent = node.path === currentPath;
-    node.read = isRead(node.path.replace(/^\.\//, ""));
+    node.completed = isCompleted(node.path.replace(/^\.\//, ""), section.wikiId);
   });
 
   const backlinks = await fetchPrebuiltBacklinks();

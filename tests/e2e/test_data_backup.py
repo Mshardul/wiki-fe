@@ -131,7 +131,7 @@ def test_import_invalid_file_shows_toast(page, base_url):
 
 
 def test_import_rejects_malformed_wiki_read_keys(page, base_url):
-    """505: Backup with a non-array wiki-read-* value is rejected before write."""
+    """505: Backup with a non-array wiki-completed-* value is rejected before write."""
     import os
     import tempfile
 
@@ -140,7 +140,7 @@ def test_import_rejects_malformed_wiki_read_keys(page, base_url):
         "bookmarks": None,
         "recents": None,
         "settings": None,
-        "wiki-read-system-design": "not-a-json-array",
+        "wiki-completed-system-design": "not-a-json-array",
     }
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
         json.dump(bad, tmp)
@@ -149,7 +149,7 @@ def test_import_rejects_malformed_wiki_read_keys(page, base_url):
     try:
         page.goto(f"{base_url}/", wait_until="domcontentloaded")
         page.wait_for_selector("#view-home.active", timeout=8_000)
-        page.evaluate("() => localStorage.removeItem('wiki-read-system-design')")
+        page.evaluate("() => localStorage.removeItem('wiki-completed-system-design')")
         _open_settings(page)
 
         page.locator("#import-upload").set_input_files(tmp_path)
@@ -159,8 +159,8 @@ def test_import_rejects_malformed_wiki_read_keys(page, base_url):
         assert "invalid" in toast_text.lower() or "failed" in toast_text.lower(), (
             f"Expected invalid-backup toast, got: {toast_text}"
         )
-        stored = page.evaluate("() => localStorage.getItem('wiki-read-system-design')")
-        assert stored is None, "Malformed wiki-read-* must not be written to localStorage"
+        stored = page.evaluate("() => localStorage.getItem('wiki-completed-system-design')")
+        assert stored is None, "Malformed wiki-completed-* must not be written to localStorage"
     finally:
         os.unlink(tmp_path)
 
@@ -177,8 +177,8 @@ def _seed_local_data(page):
             {wikiId: 'system-design', path: 'a.md', slug: 'a', title: 'A', visitedAt: Date.now()},
             {wikiId: 'dsa', path: 'b.md', slug: 'b', title: 'B', visitedAt: Date.now()},
         ]));
-        localStorage.setItem('wiki-read-system-design', JSON.stringify(['a.md']));
-        localStorage.setItem('wiki-read-dsa', JSON.stringify(['b.md']));
+        localStorage.setItem('wiki-completed-system-design', JSON.stringify(['a.md']));
+        localStorage.setItem('wiki-completed-dsa', JSON.stringify(['b.md']));
         localStorage.setItem('wiki-notes-system-design-a', 'note a');
         localStorage.setItem('wiki-notes-dsa-b', 'note b');
         localStorage.setItem('wiki-highlights-system-design-a', JSON.stringify([{id: 'h1'}]));
@@ -203,7 +203,7 @@ def test_data_clear_checklist_renders_expected_categories(page, base_url):
     assert expect_count >= 9, f"Expected at least 9 data categories, got {expect_count}"
 
     labels = page.locator(".data-clear-item span").all_inner_texts()
-    for expected in ["Bookmarks", "Recents", "Read history", "Recent searches", "Pinned wikis"]:
+    for expected in ["Bookmarks", "Recents", "Completions", "Recent searches", "Pinned wikis"]:
         assert expected in labels, f"Missing category label: {expected}"
 
 

@@ -88,6 +88,7 @@
 .prereq-chip {
   display: inline-flex;
   align-items: center;
+  gap: var(--s2);
   font-size: var(--text-xs);
   color: var(--text-body);
   background: var(--surface-2);
@@ -123,6 +124,18 @@
 .prereq-level--should {
   background: var(--color-warning-bg);
   color: var(--color-warning);
+}
+
+.chip-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-muted);
+  flex-shrink: 0;
+}
+.chip-status--done {
+  background: var(--color-success);
+  border-color: var(--color-success);
 }
 
 /* ═══════════════════════════════════════════════

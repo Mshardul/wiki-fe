@@ -268,7 +268,7 @@ def test_login_success_flips_button_to_logout(page, base_url):
             body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
         ),
     )
-    for path in ("bookmarks", "reads", "recents"):
+    for path in ("bookmarks", "completions", "recents"):
         page.route(
             f"**/api/v1/{path}",
             lambda r: r.fulfill(
@@ -299,7 +299,7 @@ def test_login_shows_success_toast(page, base_url):
             body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
         ),
     )
-    for path in ("bookmarks", "reads", "recents"):
+    for path in ("bookmarks", "completions", "recents"):
         page.route(
             f"**/api/v1/{path}",
             lambda r: r.fulfill(
@@ -327,7 +327,7 @@ def test_logout_shows_success_toast(page, base_url):
         ),
     )
     page.route("**/api/v1/auth/logout", lambda r: r.fulfill(status=204))
-    for path in ("bookmarks", "reads", "recents"):
+    for path in ("bookmarks", "completions", "recents"):
         page.route(
             f"**/api/v1/{path}",
             lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
@@ -426,7 +426,7 @@ def test_migrate_import_failure_skips_pull_and_warns(page, base_url):
         lambda r: r.fulfill(status=500, content_type="application/json", body='{"error":{"code":"SERVER_ERROR","message":"boom"}}'),
     )
     pull_called = {"hit": False}
-    for path in ("bookmarks", "reads", "recents"):
+    for path in ("bookmarks", "completions", "recents"):
         page.route(
             f"**/api/v1/{path}",
             lambda r: (pull_called.__setitem__("hit", True), r.fulfill(status=200, content_type="application/json", body="[]"))[1],
@@ -514,7 +514,7 @@ def test_logout_clears_stored_session_token(page, base_url):
         ),
     )
     page.route("**/api/v1/auth/logout", lambda r: r.fulfill(status=204))
-    for path in ("bookmarks", "reads", "recents"):
+    for path in ("bookmarks", "completions", "recents"):
         page.route(
             f"**/api/v1/{path}",
             lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
@@ -545,7 +545,7 @@ def test_logout_clears_highlights_markers_notes(page, base_url):
         ),
     )
     page.route("**/api/v1/auth/logout", lambda r: r.fulfill(status=204))
-    for path in ("bookmarks", "reads", "recents"):
+    for path in ("bookmarks", "completions", "recents"):
         page.route(
             f"**/api/v1/{path}",
             lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
@@ -586,7 +586,7 @@ def test_login_submits_on_enter_key(page, base_url):
             body='{"user":{"id":1,"email":"a@example.com"},"session_token":"test-session-token"}',
         ),
     )
-    for path in ("bookmarks", "reads", "recents"):
+    for path in ("bookmarks", "completions", "recents"):
         page.route(
             f"**/api/v1/{path}",
             lambda r: r.fulfill(
@@ -774,7 +774,7 @@ def test_concurrent_401s_fire_session_expired_once(page, base_url):
             body='{"user":{"id":1,"email":"a@example.com"}}',
         ),
     )
-    for path in ("bookmarks", "reads", "recents"):
+    for path in ("bookmarks", "completions", "recents"):
         page.route(
             f"**/api/v1/{path}",
             lambda r: r.fulfill(status=401, content_type="application/json", body=_UNAUTH),
@@ -792,7 +792,7 @@ def test_concurrent_401s_fire_session_expired_once(page, base_url):
         const { api } = await import('./js/api.js');
         await Promise.all([
             api.bookmarks.list().catch(() => []),
-            api.reads.list().catch(() => []),
+            api.completions.list().catch(() => []),
             api.recents.list().catch(() => []),
         ]);
     }""")
@@ -978,7 +978,7 @@ def test_login_syncs_across_tabs(page, base_url):
                 ),
             )[1],
         )
-        for path in ("bookmarks", "reads", "recents"):
+        for path in ("bookmarks", "completions", "recents"):
             pg.route(
                 f"**/api/v1/{path}",
                 lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
@@ -1034,7 +1034,7 @@ def test_login_in_other_tab_pulls_server_data_into_this_tab(page, base_url):
                 body='[{"wiki_id":"system-design","path":"./content/system-design/caching.md"}]',
             ),
         )
-        for path in ("reads", "recents", "completions"):
+        for path in ("recents", "completions"):
             pg.route(
                 f"**/api/v1/{path}",
                 lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
@@ -1091,7 +1091,7 @@ def test_logout_in_other_tab_clears_user_data_cache_in_this_tab(page, base_url):
                 body='[{"wiki_id":"system-design","path":"./content/system-design/caching.md"}]',
             ),
         )
-        for path in ("reads", "recents", "completions"):
+        for path in ("recents", "completions"):
             pg.route(
                 f"**/api/v1/{path}",
                 lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
@@ -1185,7 +1185,7 @@ def test_login_double_click_fires_single_request(page, base_url):
         )
 
     page.route("**/api/v1/auth/login", _handle_login)
-    for path in ("bookmarks", "reads", "recents"):
+    for path in ("bookmarks", "completions", "recents"):
         page.route(
             f"**/api/v1/{path}",
             lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),

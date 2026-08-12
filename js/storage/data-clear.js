@@ -1,10 +1,11 @@
 import { setPinnedWikis } from "../render/home-index.js";
 import { WIKIS } from "../state.js";
 import { Bookmarks } from "./bookmarks.js";
+import { clearCompletions } from "./completions.js";
 import { Highlights, Markers } from "./highlights.js";
 import { Notes } from "./notes.js";
 import { clearAllDownloads } from "./offline.js";
-import { clearReadHistory } from "./read-tracking.js";
+import { clearVisitHistory } from "./read-tracking.js";
 import { clearRecents } from "./recents.js";
 import { RecentSearches, clearScrollPositions } from "./scroll-collapse.js";
 
@@ -25,10 +26,13 @@ const DATA_CATEGORIES = {
     wikiScoped: true,
     clear: (wikiId) => clearRecents(wikiId),
   },
-  readHistory: {
-    label: "Read history",
+  completions: {
+    label: "Completions",
     wikiScoped: true,
-    clear: (wikiId) => clearReadHistory(wikiId),
+    clear: (wikiId) => {
+      clearCompletions(wikiId);
+      clearVisitHistory(wikiId);
+    },
   },
   offlineDownloads: {
     label: "Offline downloads",

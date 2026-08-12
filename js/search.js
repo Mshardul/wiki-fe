@@ -28,7 +28,6 @@ import {
   synonymCache,
   unlockBodyScroll,
 } from "./state.js";
-import { isRead, markRead, markUnread, updateReadBtn } from "./storage/read-tracking.js";
 import { RecentSearches } from "./storage/scroll-collapse.js";
 import { Settings } from "./storage/settings-theme.js";
 
@@ -128,60 +127,14 @@ function _contextWiki() {
   return WIKIS.find((w) => w.id === id) || null;
 }
 
-// Normalizes path here so isRead/markRead/markUnread compare and write the same shape as localStorage keys.
-function _entriesForWiki(wikiId) {
-  return allSearchCache.entries
-    .filter((e) => e.wiki.id === wikiId)
-    .map((e) => ({ ...e, path: normalizePath(e.path) }));
-}
-
 // Fuzzy-matches argText against section headings (same rule as the ">" filter) and returns a preview+run pair for the best match, or null.
-function _resolveSectionArg(argText, markAsRead) {
-  const wiki = _contextWiki();
-  if (!wiki || !argText) return null;
-
-  const ql = argText.toLowerCase();
-  const bySection = new Map();
-  for (const entry of _entriesForWiki(wiki.id)) {
-    const sectionLower = entry.section.toLowerCase();
-    if (sectionLower.includes(ql) || fuzzyMatch(ql, sectionLower)) {
-      if (!bySection.has(entry.section)) bySection.set(entry.section, []);
-      bySection.get(entry.section).push(entry);
-    }
-  }
-  if (!bySection.size) return null;
-
-  // Prefer the shortest matching heading (closest to an exact match).
-  const [section, entries] = [...bySection.entries()].sort((a, b) => a[0].length - b[0].length)[0];
-  const changed = entries.filter((e) => isRead(e.path) !== markAsRead);
-
-  return {
-    preview: markAsRead
-      ? `Mark ${entries.length} article${entries.length === 1 ? "" : "s"} in "${section}" as read`
-      : `Mark ${entries.length} article${entries.length === 1 ? "" : "s"} in "${section}" as unread`,
-    run() {
-      const setRead = markAsRead ? markRead : markUnread;
-      const setBack = markAsRead ? markUnread : markRead;
-      changed.forEach((e) => setRead(e.path));
-      updateReadBtn();
-      showToast(
-        `Marked ${changed.length} ${markAsRead ? "read" : "unread"} in "${section}"`,
-        4000,
-        () => {
-          changed.forEach((e) => setBack(e.path));
-          updateReadBtn();
-        },
-      );
-    },
-  };
-}
-
-// Resolves argText to the best-matching article, navigates there, and flips on quiz mode once rendered (no-ops if no complexity table).
 function _resolveQuizArg(argText) {
   const wiki = _contextWiki();
   if (!wiki || !argText) return null;
 
-  const entries = _entriesForWiki(wiki.id)
+  const entries = allSearchCache.entries
+    .filter((e) => e.wiki.id === wiki.id)
+    .map((e) => ({ ...e, path: normalizePath(e.path) }))
     .map((e) => ({ entry: e, score: scoreMatch(argText, e) }))
     .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score);
@@ -218,76 +171,16 @@ function _resolveQuizArg(argText) {
 
 const SEARCH_COMMANDS = [
   {
-    id: "unread",
-    label: "Show only unread",
-    hint: "Filter the index to unread articles",
+    id: "incomplete",
+    label: "Show only incomplete",
+    hint: "Filter the index to articles not yet completed",
     icon: "○",
     needsWiki: true,
     run() {
       const wiki = _contextWiki();
       if (!wiki) return;
-      IndexFilter.requestUnread();
+      IndexFilter.requestIncomplete();
       navigate(wiki.id);
-    },
-  },
-  {
-    id: "mark-all-read",
-    label: "Mark all read",
-    hint: "Mark every article in this wiki as read",
-    icon: "●",
-    needsWiki: true,
-    run() {
-      const wiki = _contextWiki();
-      if (!wiki) return;
-      const entries = _entriesForWiki(wiki.id);
-      const changed = entries.filter((e) => !isRead(e.path));
-      changed.forEach((e) => markRead(e.path));
-      updateReadBtn();
-      showToast(`Marked ${changed.length} read in ${wiki.title}`, 4000, () => {
-        changed.forEach((e) => markUnread(e.path));
-        updateReadBtn();
-      });
-    },
-  },
-  {
-    id: "mark-all-unread",
-    label: "Mark all unread",
-    hint: "Mark every article in this wiki as unread",
-    icon: "○",
-    needsWiki: true,
-    run() {
-      const wiki = _contextWiki();
-      if (!wiki) return;
-      const entries = _entriesForWiki(wiki.id);
-      const changed = entries.filter((e) => isRead(e.path));
-      changed.forEach((e) => markUnread(e.path));
-      updateReadBtn();
-      showToast(`Marked ${changed.length} unread in ${wiki.title}`, 4000, () => {
-        changed.forEach((e) => markRead(e.path));
-        updateReadBtn();
-      });
-    },
-  },
-  {
-    id: "mark-read",
-    label: "Mark read…",
-    hint: "Mark all articles in a section as read - type a section name",
-    icon: "●",
-    needsWiki: true,
-    verb: "mark read ",
-    resolveArg(argText) {
-      return _resolveSectionArg(argText, /* markAsRead */ true);
-    },
-  },
-  {
-    id: "mark-unread",
-    label: "Mark unread…",
-    hint: "Mark all articles in a section as unread - type a section name",
-    icon: "○",
-    needsWiki: true,
-    verb: "mark unread ",
-    resolveArg(argText) {
-      return _resolveSectionArg(argText, /* markAsRead */ false);
     },
   },
   {

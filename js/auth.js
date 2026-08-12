@@ -52,22 +52,20 @@ function _authErrorMessage(e, fallback) {
    One prompt on login if local anon data exists; never blocks login.
    Dedicated modal, not a toast, since the shared queue could bury it.
    ═══════════════════════════════════════════════════════════════ */
-function _collectLocalReads() {
-  const out = [];
+function _hasLocalCompletions() {
   for (const wiki of WIKIS) {
-    let arr = [];
     try {
-      arr = JSON.parse(localStorage.getItem(`wiki-read-${wiki.id}`) || "[]");
+      const arr = JSON.parse(localStorage.getItem(`wiki-completed-${wiki.id}`) || "[]");
+      if (arr.length) return true;
     } catch {
-      arr = [];
+      /* ignore */
     }
-    for (const path of arr) out.push({ wiki_id: wiki.id, path });
   }
-  return out;
+  return false;
 }
 
 function _hasLocalData() {
-  return getBookmarks().length > 0 || getRecents().length > 0 || _collectLocalReads().length > 0;
+  return getBookmarks().length > 0 || getRecents().length > 0 || _hasLocalCompletions();
 }
 
 function _showMigrateModal() {
@@ -104,7 +102,6 @@ async function maybeMigrate() {
   if (keep) {
     const payload = {
       bookmarks: getBookmarks().map((b) => ({ wiki_id: b.wikiId, path: b.path })),
-      reads: _collectLocalReads(),
       recents: getRecents().map((r) => ({ wiki_id: r.wikiId, path: r.path })),
     };
     const imported = await api.importAll(payload).then(

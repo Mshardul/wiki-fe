@@ -15,11 +15,10 @@ import {
   renderBookmarksSection,
   updateBookmarkBtn,
 } from "./bookmarks.js";
-import { clearCompletions } from "./completions.js";
+import { _completedKey, clearCompletions, isCompleted } from "./completions.js";
 import { DATA_CATEGORIES, clearSelectedData } from "./data-clear.js";
 import { Highlights, Markers } from "./highlights.js";
 import { Notes } from "./notes.js";
-import { _readKey, isRead, updateReadBtn } from "./read-tracking.js";
 import { RECENTS_KEY, RECENTS_MAX, renderRecentsSection } from "./recents.js";
 
 function _toast(message, durationMs = 3000, onUndo = null) {
@@ -359,7 +358,7 @@ const BACKUP_SCHEMA = {
   settings: (v) => v === null || typeof v === "string",
 };
 
-function _isValidReadTrackingValue(val) {
+function _isValidCompletionsValue(val) {
   if (typeof val !== "string") return false;
   try {
     const parsed = JSON.parse(val);
@@ -375,8 +374,8 @@ function _validateBackup(data) {
     if (key in data && !check(data[key])) return false;
   }
   for (const [key, val] of Object.entries(data)) {
-    if (!key.startsWith("wiki-read-")) continue;
-    if (!_isValidReadTrackingValue(val)) return false;
+    if (!key.startsWith("wiki-completed-")) continue;
+    if (!_isValidCompletionsValue(val)) return false;
   }
   return true;
 }
@@ -780,7 +779,7 @@ const Settings = {
       settings: localStorage.getItem(SETTINGS_KEY),
     };
     for (const wiki of WIKIS) {
-      const key = `wiki-read-${wiki.id}`;
+      const key = `wiki-completed-${wiki.id}`;
       const val = localStorage.getItem(key);
       if (val) data[key] = val;
     }
@@ -816,7 +815,7 @@ const Settings = {
           if (data.recents) localStorage.setItem(RECENTS_KEY, data.recents);
           if (data.settings) localStorage.setItem(SETTINGS_KEY, data.settings);
           for (const wiki of WIKIS) {
-            const key = `wiki-read-${wiki.id}`;
+            const key = `wiki-completed-${wiki.id}`;
             if (data[key]) localStorage.setItem(key, data[key]);
           }
           _toast("Data imported successfully!");
@@ -861,15 +860,21 @@ window.addEventListener("storage", (e) => {
     updateBookmarkBtn();
   } else if (e.key === RECENTS_KEY) {
     renderRecentsSection(wiki);
-  } else if (e.key === _readKey()) {
+  } else if (e.key === _completedKey()) {
     document.querySelectorAll(".index-card-read-dot").forEach((dot) => {
       const card = dot.closest(".index-card");
       const timeBadge = card?.querySelector(".index-card-read-time");
       if (timeBadge?.dataset.path) {
-        dot.classList.toggle("visible", isRead(normalizePath(timeBadge.dataset.path)));
+        dot.classList.toggle("visible", isCompleted(normalizePath(timeBadge.dataset.path)));
       }
     });
-    updateReadBtn();
+    const btn = document.querySelector(".completion-btn");
+    if (btn && state.currentFilePath) {
+      const done = isCompleted(state.currentFilePath);
+      btn.classList.toggle("completion-btn--done", done);
+      btn.textContent = done ? "Completed - undo" : "Mark as completed";
+      btn.setAttribute("aria-pressed", String(done));
+    }
   }
 });
 
@@ -879,9 +884,8 @@ window.addEventListener("storage", (e) => {
 const Sync = {
   // Pull all server lists and overwrite localStorage with server truth.
   async pullAll() {
-    const [bm, rd, rc, cp] = await Promise.all([
+    const [bm, rc, cp] = await Promise.all([
       api.bookmarks.list().catch(() => []),
-      api.reads.list().catch(() => []),
       api.recents.list().catch(() => []),
       api.completions.list().catch(() => []),
     ]);
@@ -891,20 +895,6 @@ const Sync = {
       BOOKMARKS_KEY,
       JSON.stringify((bm || []).map((r) => _deriveBookmark(r.wiki_id, r.path))),
     );
-
-    const byWiki = {};
-    for (const r of rd || []) {
-      // biome-ignore lint/suspicious/noAssignInExpressions: ||= logical-assign idiom
-      (byWiki[r.wiki_id] ||= new Set()).add(r.path);
-    }
-    for (const wiki of WIKIS) {
-      const set = byWiki[wiki.id];
-      if (set) {
-        localStorage.setItem(`wiki-read-${wiki.id}`, JSON.stringify([...set]));
-      } else {
-        localStorage.removeItem(`wiki-read-${wiki.id}`);
-      }
-    }
 
     const completedByWiki = {};
     for (const r of cp || []) {
@@ -931,7 +921,6 @@ const Sync = {
     localStorage.removeItem(BOOKMARKS_KEY);
     localStorage.removeItem(RECENTS_KEY);
     for (const wiki of WIKIS) {
-      localStorage.removeItem(`wiki-read-${wiki.id}`);
       clearCompletions(wiki.id);
     }
     Highlights.clear();

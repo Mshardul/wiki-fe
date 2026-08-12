@@ -1,74 +1,4 @@
-import { api } from "../api.js";
-import { normalizePath } from "../render/nav-utils.js";
-import { scheduleSyncMutation, state } from "../state.js";
-
-/* ═══════════════════════════════════════════════════════════════
-   MARK AS READ
-   ═══════════════════════════════════════════════════════════════ */
-const READ_KEY_PREFIX = "wiki-read";
-
-function _readKey(wikiId) {
-  return `${READ_KEY_PREFIX}-${wikiId || state.currentWikiId || "default"}`;
-}
-
-function getReadSet(wikiId) {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(_readKey(wikiId)) || "[]"));
-  } catch {
-    return new Set();
-  }
-}
-
-function isRead(path, wikiId) {
-  return getReadSet(wikiId).has(path);
-}
-
-// Returns true only when this call actually transitioned the article to read, so callers can distinguish a real finish from a no-op.
-function markRead(path) {
-  const read = getReadSet();
-  if (read.has(path)) return false;
-  read.add(path);
-  localStorage.setItem(_readKey(), JSON.stringify([...read]));
-  // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
-  scheduleSyncMutation(`${state.currentWikiId}|${path}`, () =>
-    api.reads.add(state.currentWikiId, path),
-  );
-  document.querySelectorAll(".index-card-read-dot").forEach((dot) => {
-    const card = dot.closest(".index-card");
-    const timeBadge = card?.querySelector(".index-card-read-time");
-    if (timeBadge?.dataset.path && normalizePath(timeBadge.dataset.path) === path) {
-      dot.classList.add("visible");
-    }
-  });
-  return true;
-}
-
-function markUnread(path) {
-  const read = getReadSet();
-  if (!read.has(path)) return;
-  read.delete(path);
-  localStorage.setItem(_readKey(), JSON.stringify([...read]));
-  // reads are always for the current wiki (per-wiki localStorage key); safe to use currentWikiId
-  scheduleSyncMutation(`${state.currentWikiId}|${path}`, () =>
-    api.reads.remove(state.currentWikiId, path),
-  );
-  document.querySelectorAll(".index-card-read-dot").forEach((dot) => {
-    const card = dot.closest(".index-card");
-    const timeBadge = card?.querySelector(".index-card-read-time");
-    if (timeBadge?.dataset.path && normalizePath(timeBadge.dataset.path) === path) {
-      dot.classList.remove("visible");
-    }
-  });
-}
-
-function updateReadBtn() {
-  const btn = document.getElementById("prefs-read-toggle");
-  if (!btn || !state.currentFilePath) return;
-  const read = isRead(state.currentFilePath);
-  btn.classList.toggle("active", read);
-  btn.setAttribute("aria-pressed", String(read));
-  btn.title = read ? "Mark as unread" : "Mark as read";
-}
+import { state } from "../state.js";
 
 /* ═══════════════════════════════════════════════════════════════
    QUIZ-MODE REVEAL TRACKING (lightweight confidence signal)
@@ -98,25 +28,9 @@ function getRevealCount(path) {
   return _getRevealMap()[path] || 0;
 }
 
-const ReadToggle = {
-  // Returns true only on the read transition, so callers can react to "finished" without this module owning UI-feedback concerns.
-  toggle() {
-    const path = state.currentFilePath;
-    if (!path) return false;
-    const nowRead = !isRead(path);
-    if (nowRead) {
-      markRead(path);
-    } else {
-      markUnread(path);
-    }
-    updateReadBtn();
-    return nowRead;
-  },
-};
-
 /* ═══════════════════════════════════════════════════════════════
-   OPENED-DATE TRACKING (separate from read-set membership so "changed
-   since you last read" can compare against a specific visit date)
+   OPENED-DATE TRACKING (visit timestamps for "updated since read" dots
+   and index-card fade — separate from completion state)
    ═══════════════════════════════════════════════════════════════ */
 const OPENED_KEY_PREFIX = "wiki-read-dates";
 
@@ -143,24 +57,9 @@ function getLastOpened(path) {
   return _getOpenedMap()[path] || null;
 }
 
-// No BE call: api.reads has no bulk-clear endpoint, only per-item add/remove.
-function clearReadHistory(wikiId) {
-  localStorage.removeItem(`${READ_KEY_PREFIX}-${wikiId}`);
+function clearVisitHistory(wikiId) {
   localStorage.removeItem(`${REVEAL_KEY_PREFIX}-${wikiId}`);
   localStorage.removeItem(`${OPENED_KEY_PREFIX}-${wikiId}`);
 }
 
-export {
-  _readKey,
-  getReadSet,
-  isRead,
-  markRead,
-  markUnread,
-  updateReadBtn,
-  recordReveal,
-  getRevealCount,
-  ReadToggle,
-  recordOpened,
-  getLastOpened,
-  clearReadHistory,
-};
+export { recordReveal, getRevealCount, recordOpened, getLastOpened, clearVisitHistory };

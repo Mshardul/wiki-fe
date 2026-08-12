@@ -130,11 +130,6 @@ const api = {
     remove: (wiki_id, path) => api.del("/bookmarks", { wiki_id, path }),
     clear: (wiki_id) => api.del("/bookmarks/all", wiki_id ? { wiki_id } : {}),
   },
-  reads: {
-    list: () => api.get("/reads"),
-    add: (wiki_id, path) => api.post("/reads", { wiki_id, path }),
-    remove: (wiki_id, path) => api.del("/reads", { wiki_id, path }),
-  },
   completions: {
     list: () => api.get("/completions"),
     add: (wiki_id, path) => api.post("/completions", { wiki_id, path }),

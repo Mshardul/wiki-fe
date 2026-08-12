@@ -592,54 +592,28 @@ def test_wiki_command_hidden_without_wiki_context(page, base_url):
     assert "export-bookmarks" in ids, "Global commands must remain available on home"
 
 
-def test_mark_all_read_command_includes_currently_open_article(page, base_url):
-    """Regression: bulk mark-all-read must include the article on screen, not just other index cards - the search-index-derived path used to never match state.currentFilePath's normalized shape."""
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_selector("#markdown-body h1, #markdown-body h2", timeout=8_000)
+def test_incomplete_search_command_filters_index(page, base_url):
+    """'/incomplete' command arms the incomplete-only index filter."""
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-index.active", timeout=10_000)
 
-    page.evaluate("() => localStorage.removeItem('wiki-read-system-design')")
-
-    _open_search(page)
-    page.fill("#gsearch-input", "/mark all read")
-    page.wait_for_selector(".gsearch-command[data-command='mark-all-read']", timeout=8_000)
-    page.locator(".gsearch-command[data-command='mark-all-read']").first.click()
+    page.keyboard.press("Meta+k")
+    page.wait_for_selector("#global-search-modal:not(.hidden)")
+    page.fill("#gsearch-input", "/incomplete")
+    page.wait_for_selector(".gsearch-command[data-command='incomplete']", timeout=8_000)
+    page.locator(".gsearch-command[data-command='incomplete']").click()
 
     page.wait_for_function(
-        "() => JSON.parse(localStorage.getItem('wiki-read-system-design') || '[]').some(p => p.includes('caching'))",
-        timeout=8_000,
+        "() => document.getElementById('index-filter-read-select').value === 'incomplete'",
+        timeout=5_000,
     )
-
-
-def test_mark_all_read_command_marks_articles(page, base_url):
-    """Running 'mark all read' sets read dots on the current wiki's index cards."""
-    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector(
-        "#index-sections:not(.index-sections--loading)", timeout=15_000
-    )
-
-    _open_search(page)
-    page.fill("#gsearch-input", "/mark all read")
-    page.wait_for_selector(".gsearch-command[data-command='mark-all-read']", timeout=8_000)
-    page.locator(".gsearch-command[data-command='mark-all-read']").first.click()
-
-    # Returns to the index; at least one read dot should now be visible.
-    page.wait_for_selector("#view-index.active", timeout=8_000)
-    page.wait_for_selector(
-        "#index-sections:not(.index-sections--loading)", timeout=15_000
-    )
-    page.wait_for_selector(".index-card", timeout=10_000)
-    # Wait for at least one read dot to become visible after the re-render.
-    page.wait_for_selector(".index-card-read-dot.visible", timeout=8_000)
-    visible_dots = page.locator(".index-card-read-dot.visible").count()
-    assert visible_dots > 0, "Mark-all-read must mark at least one article read"
 
 
 # ── ⌘K argument-taking verb commands ──────────────────────
 
 
 def test_verb_command_shown_in_base_list(page, base_url):
-    """'Mark read…' / 'Quiz me on…' verb commands appear in the base command list."""
+    """'Quiz me on…' verb command appears in the base command list."""
     page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
@@ -648,9 +622,9 @@ def test_verb_command_shown_in_base_list(page, base_url):
     page.wait_for_selector(".gsearch-command", timeout=8_000)
 
     ids = [c.get_attribute("data-command") for c in page.locator(".gsearch-command").all()]
-    assert "mark-read" in ids
-    assert "mark-unread" in ids
     assert "quiz" in ids
+    assert "mark-read" not in ids
+    assert "mark-all-read" not in ids
 
 
 def test_clicking_verb_command_arms_input_for_argument(page, base_url):
@@ -659,43 +633,12 @@ def test_clicking_verb_command_arms_input_for_argument(page, base_url):
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
     _open_search(page)
-    page.fill("#gsearch-input", "/mark read")
-    page.wait_for_selector(".gsearch-command[data-command='mark-read']", timeout=8_000)
-    page.locator(".gsearch-command[data-command='mark-read']").first.click()
+    page.fill("#gsearch-input", "/quiz ")
+    page.wait_for_selector(".gsearch-command[data-command='quiz']", timeout=8_000)
+    page.locator(".gsearch-command[data-command='quiz']").first.click()
 
-    assert page.locator("#gsearch-input").input_value() == "/mark read "
-    # Modal stays open - clicking a verb command must not run or navigate away.
+    assert page.locator("#gsearch-input").input_value() == "/quiz "
     assert page.locator("#global-search-modal").is_visible()
-
-
-def test_mark_read_section_argument_shows_live_preview(page, base_url):
-    """Typing a section name after 'mark read' shows a resolved preview row."""
-    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
-
-    _open_search(page)
-    page.fill("#gsearch-input", "/mark read components")
-    page.wait_for_selector(".gsearch-command[data-command='__arg__']", timeout=8_000)
-
-    preview = page.locator(".gsearch-command[data-command='__arg__'] .gsearch-result-title")
-    assert "Components" in preview.inner_text()
-    assert "read" in preview.inner_text().lower()
-
-
-def test_mark_read_section_argument_marks_only_that_section(page, base_url):
-    """Running 'mark read <section>' marks that section's articles read without touching others."""
-    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
-
-    _open_search(page)
-    page.fill("#gsearch-input", "/mark read components")
-    page.wait_for_selector(".gsearch-command[data-command='__arg__']", timeout=8_000)
-    page.locator(".gsearch-command[data-command='__arg__']").first.click()
-
-    page.wait_for_selector("#view-index.active", timeout=8_000)
-    page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
-    page.wait_for_selector(".index-card-read-dot.visible", timeout=8_000)
-    assert page.locator(".index-card-read-dot.visible").count() > 0
 
 
 def test_quiz_argument_shows_live_preview(page, base_url):
@@ -730,30 +673,30 @@ def test_quiz_argument_navigates_to_article(page, base_url):
 
 
 def test_verb_command_no_match_shows_hint(page, base_url):
-    """An argument with no matching section/article shows the command's hint, not a crash."""
-    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    """An argument with no matching article shows the command's hint, not a crash."""
+    page.goto(f"{base_url}/#dsa", wait_until="domcontentloaded")
     page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
 
     _open_search(page)
-    page.fill("#gsearch-input", "/mark read zzzznonexistentzzzz")
+    page.fill("#gsearch-input", "/quiz zzzznonexistentzzzz")
     page.wait_for_selector(".gsearch-empty", timeout=8_000)
     assert page.locator(".gsearch-command[data-command='__arg__']").count() == 0
 
 
 def test_verb_command_executes_current_input_not_stale_preview(page, base_url):
     """Running a verb command re-resolves the argument from the live input value."""
-    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.goto(f"{base_url}/#dsa", wait_until="domcontentloaded")
     page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
 
     _open_search(page)
-    page.fill("#gsearch-input", "/mark read components")
+    page.fill("#gsearch-input", "/quiz heaps")
     page.wait_for_selector(".gsearch-command[data-command='__arg__']", timeout=8_000)
-    page.fill("#gsearch-input", "/mark read zzzznonexistentzzzz")
+    page.fill("#gsearch-input", "/quiz zzzznonexistentzzzz")
     page.wait_for_selector(".gsearch-empty", timeout=8_000)
     page.evaluate("() => runSearchCommand('__arg__')")
 
     assert page.locator("#global-search-modal").is_visible()
-    assert page.locator(".index-card-read-dot.visible").count() == 0
+    assert page.locator("#view-content.active").count() == 0
 
 
 # ── In-article find bar ──────────────────────────────────────────────

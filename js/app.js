@@ -23,7 +23,6 @@ import { closeLinkGraph, isLinkGraphOpen, openLinkGraph } from "./app/link-graph
 import { printArticle } from "./app/print.js";
 import { updateContentReadingProgress } from "./app/reading-progress.js";
 import { closeSectionMap, isSectionMapOpen, toggleSectionMap } from "./app/section-map.js";
-import { fireStudyMilestone } from "./app/study-feedback.js";
 import { closeWikiSwitcher, isWikiSwitcherOpen, openWikiSwitcher } from "./app/wiki-switcher.js";
 import { syncHljsTheme, writeToClipboard } from "./content/code-blocks.js";
 import {
@@ -66,7 +65,6 @@ import {
   updateBookmarkBtn,
 } from "./storage/bookmarks.js";
 import { Offline, updateOfflineBtn } from "./storage/offline.js";
-import { ReadToggle, updateReadBtn } from "./storage/read-tracking.js";
 import { clearRecents, getRecents, renderRecentsSection, saveRecents } from "./storage/recents.js";
 import { saveScrollPos } from "./storage/scroll-collapse.js";
 import {
@@ -121,7 +119,6 @@ document.addEventListener("wiki:session-changed", () => {
     location.hash.slice(1).split("/")[0] === state.currentWikiId;
   if (samePath) {
     updateBookmarkBtn();
-    updateReadBtn();
     updateOfflineBtn();
     return;
   }
@@ -188,10 +185,6 @@ document.addEventListener("click", (e) => {
     case "admin-open":
       navigate("admin");
       break;
-    case "read-toggle": {
-      if (ReadToggle.toggle()) fireStudyMilestone();
-      break;
-    }
     case "bookmark-toggle":
       Bookmarks.toggle();
       break;

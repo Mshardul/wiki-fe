@@ -1,3 +1,6 @@
+import { dirOf, normalizePath, resolvePath } from "../render/nav-utils.js";
+import { state } from "../state.js";
+import { appendChipStatus, isCompleted } from "../storage/completions.js";
 import { writeToClipboard } from "./code-blocks.js";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -76,6 +79,13 @@ function addCollapsibleCallouts(contentEl) {
 // Matches the "[Must read]"/"[Should read]" marker Showdown leaves as plain text (brackets without a following "(" aren't a markdown link).
 const PREREQ_LEVEL_RE = /\[(Must|Should) read\]/;
 
+function _prereqSortRank(entry) {
+  if (entry.done) return 2;
+  if (entry.level === "Must") return 0;
+  if (entry.level === "Should") return 1;
+  return 1;
+}
+
 function renderPrerequisites(contentEl) {
   const heading = Array.from(contentEl.querySelectorAll("h2")).find(
     (h) => h.textContent.trim() === "Prerequisites",
@@ -96,20 +106,28 @@ function renderPrerequisites(contentEl) {
   label.textContent = "Prerequisites:";
   container.appendChild(label);
 
-  items.forEach((li) => {
+  const baseDir = dirOf(state.currentFilePath);
+  const wikiId = state.currentWikiId;
+  const chipEntries = items.map((li) => {
     const link = li.querySelector("a");
     const levelMatch = li.textContent.match(PREREQ_LEVEL_RE);
     const level = levelMatch ? levelMatch[1] : null;
+    const href = link?.getAttribute("href");
+    const path = href ? normalizePath(resolvePath(baseDir, href).split("#")[0]) : null;
+    const done = path ? isCompleted(path, wikiId) : false;
 
     const chip = document.createElement(link ? "a" : "span");
     chip.className = "prereq-chip";
     if (link) {
-      chip.href = link.getAttribute("href");
+      chip.href = href;
     } else {
       chip.classList.add("prereq-chip--unlinked");
       chip.dataset.unlinkedPrereq = "true";
     }
-    chip.textContent = (link || li.querySelector("strong"))?.textContent.trim() || "";
+    appendChipStatus(chip, done);
+    chip.append(
+      document.createTextNode((link || li.querySelector("strong"))?.textContent.trim() || ""),
+    );
 
     if (level) {
       const badge = document.createElement("span");
@@ -118,8 +136,12 @@ function renderPrerequisites(contentEl) {
       chip.appendChild(badge);
     }
 
-    container.appendChild(chip);
+    return { chip, level, done };
   });
+
+  chipEntries
+    .sort((a, b) => _prereqSortRank(a) - _prereqSortRank(b))
+    .forEach(({ chip }) => container.appendChild(chip));
 
   const h1 = contentEl.querySelector("h1");
   if (h1?.nextSibling) {

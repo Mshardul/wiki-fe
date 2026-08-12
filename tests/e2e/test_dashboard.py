@@ -1,7 +1,7 @@
 """
 - Dashboard view (#dashboard): one card per vertical showing read % and completed % against total articles
 - Zero-article verticals are hidden entirely, not shown disabled
-- Numbers reflect getReadSet/getCompletedSet state regardless of which wiki is "current"
+- Numbers reflect getCompletedSet state regardless of which wiki is "current"
 - Reachable via topbar icon and the /dashboard search command
 """
 
@@ -68,13 +68,12 @@ def test_dashboard_shows_zero_percent_with_no_progress(page, base_url):
     assert any("0 / 2 (0%)" in label for label in labels)
 
 
-def test_dashboard_reflects_read_and_completed_counts(page, base_url):
+def test_dashboard_reflects_completed_counts(page, base_url):
     _stub_search_index(page)
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
     page.evaluate(
         """() => {
-            localStorage.setItem('wiki-read-system-design', JSON.stringify(['content/system-design/message-queues.md']));
             localStorage.setItem('wiki-completed-system-design', JSON.stringify(['content/system-design/message-queues.md']));
         }"""
     )
@@ -85,6 +84,7 @@ def test_dashboard_reflects_read_and_completed_counts(page, base_url):
 
     labels = page.locator(".dashboard-stat-label").all_inner_texts()
     assert any("1 / 2 (50%)" in label for label in labels)
+    assert all("Read" not in label for label in labels)
 
 
 def test_dashboard_reachable_via_search_command(page, base_url):

@@ -1996,6 +1996,27 @@ def test_mermaid_tooltip_shows_on_touchstart(page, base_url):
     assert is_visible, "tooltip did not become visible on touchstart"
 
 
+def test_mermaid_captions_survive_theme_change(page, base_url):
+    """Node-caption wiring is re-applied after a theme-triggered Mermaid re-render."""
+    _load_mock_article(
+        page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-caption-theme"
+    )
+    page.wait_for_selector(".mermaid-diagram .has-node-caption", timeout=8_000)
+
+    svg_before = page.evaluate("() => document.querySelector('.mermaid-diagram svg')?.outerHTML")
+    page.evaluate("() => Settings._setBackground('light-white')")
+    page.wait_for_function(
+        f"""() => {{
+            const svg = document.querySelector('.mermaid-diagram svg');
+            return svg && svg.outerHTML !== {repr(svg_before)};
+        }}""",
+        timeout=5_000,
+    )
+
+    caption_count = page.locator(".mermaid-diagram .has-node-caption").count()
+    assert caption_count > 0, "Caption wiring must survive theme-change re-render"
+
+
 # ── ResizeObserver cleanup ──────────────────────────────────────────────────────
 
 
@@ -2573,16 +2594,25 @@ def test_end_marker_contains_glyph(page, base_url):
     assert "⌘" in text, f"End marker must contain ⌘, got {text!r}"
 
 
-def test_end_marker_is_last_child_of_body(page, base_url):
-    """The .article-end-marker must be the last element inside #markdown-body."""
+def test_end_marker_precedes_completion_button(page, base_url):
+    """.article-end-marker sits immediately before .completion-btn, which is last."""
     _load_mock_article(page, base_url, "# End Marker\n\nContent.\n", slug="end-last")
-    is_last = page.evaluate("""() => {
+    layout = page.evaluate("""() => {
         const body = document.getElementById('markdown-body');
-        if (!body) return false;
-        const last = body.lastElementChild;
-        return last && last.classList.contains('article-end-marker');
+        if (!body) return null;
+        const marker = body.querySelector('.article-end-marker');
+        const btn = body.querySelector('.completion-btn');
+        if (!marker || !btn) return { marker: !!marker, btn: !!btn };
+        return {
+            markerNextIsBtn: marker.nextElementSibling === btn,
+            btnIsLast: btn === body.lastElementChild,
+        };
     }""")
-    assert is_last, ".article-end-marker must be the last child of #markdown-body"
+    assert layout, "Expected end marker and completion button in #markdown-body"
+    assert layout["markerNextIsBtn"], (
+        ".completion-btn must follow .article-end-marker immediately"
+    )
+    assert layout["btnIsLast"], ".completion-btn must be the last child of #markdown-body"
 
 
 # ── TOC ↔ content collapse sync ──────────────────────────────────

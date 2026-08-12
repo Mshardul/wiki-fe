@@ -1,4 +1,5 @@
 import { WIKIS, escHtml } from "../state.js";
+import { chipStatusHtml, isCompleted } from "../storage/completions.js";
 import { fetchWikiIndex } from "./home-parse.js";
 import {
   dirOf,
@@ -65,9 +66,10 @@ function _rankRelated(current, candidates) {
   return top.length ? top : candidates.slice(0, 3);
 }
 
-function _cardHtml({ wikiId, path, title, slug, wikiTitle, extraClass = "" }) {
+function _cardHtml({ wikiId, path, title, slug, wikiTitle, extraClass = "", completed = false }) {
   const slugArg = slug != null && slug !== "" ? `,'${slug}'` : "";
   const classes = ["related-card", extraClass].filter(Boolean).join(" ");
+  const indicator = chipStatusHtml(completed);
   const inner = wikiTitle
     ? `<span class="related-card-body">
             <span class="bridge-card-wiki">${escHtml(wikiTitle)}</span>
@@ -81,6 +83,7 @@ function _cardHtml({ wikiId, path, title, slug, wikiTitle, extraClass = "" }) {
                )}','${encodeURIComponent(title)}'${slugArg})"
                role="button" tabindex="0"
                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+            ${indicator}
             ${inner}
           </div>`;
 }
@@ -134,6 +137,7 @@ async function renderRelatedArticles(wiki, currentPath, recommendedLinks, isStal
           wikiId: wiki.id,
           path: link.path,
           title: link.title,
+          completed: isCompleted(normalizePath(link.path), wiki.id),
         })),
       );
       return;
@@ -165,6 +169,7 @@ async function renderRelatedArticles(wiki, currentPath, recommendedLinks, isStal
         path: card.path,
         title: card.title,
         slug: card.slug,
+        completed: isCompleted(normalizePath(card.path), wiki.id),
       })),
     );
   } catch {}
@@ -195,7 +200,14 @@ async function renderBacklinks(currentPath, isStale) {
   const cards = sources.flatMap((src) => {
     const wikiId = _wikiIdForPath(src.path);
     if (!wikiId) return [];
-    return [{ wikiId, path: src.path, title: src.title }];
+    return [
+      {
+        wikiId,
+        path: src.path,
+        title: src.title,
+        completed: isCompleted(normalizePath(src.path), wikiId),
+      },
+    ];
   });
   if (!cards.length) return;
 
@@ -245,6 +257,7 @@ async function renderBridges(currentPath, isStale) {
         title: card.title,
         slug: card.slug,
         extraClass: "bridge-card",
+        completed: isCompleted(normalizePath(card.path), wiki.id),
       };
     })
     .filter(Boolean);

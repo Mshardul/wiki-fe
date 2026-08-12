@@ -269,11 +269,11 @@
           <select
             id="index-filter-read-select"
             class="index-filter-read-select"
-            aria-label="Filter by read status"
+            aria-label="Filter by completion status"
           >
             <option value="all">All</option>
-            <option value="read">Read only</option>
-            <option value="unread">Unread only</option>
+            <option value="completed">Completed only</option>
+            <option value="incomplete">Incomplete only</option>
           </select>
         </div>
         <div id="index-sections" class="index-sections"></div>
@@ -973,16 +973,6 @@
                   title="Save current article for offline reading"
                 >
                   <svg class="icon"><use href="#icon-download"></use></svg>
-                </button>
-                <button
-                  id="prefs-read-toggle"
-                  class="settings-size-btn settings-icon-btn"
-                  data-action="read-toggle"
-                  aria-pressed="false"
-                  aria-label="Mark as read"
-                  title="Mark the current article as read/unread"
-                >
-                  <svg class="icon"><use href="#icon-eye"></use></svg>
                 </button>
                 <button
                   id="prefs-bookmark-toggle"

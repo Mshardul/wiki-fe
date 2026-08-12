@@ -9,8 +9,9 @@ import {
   updatedDateCache,
 } from "../state.js";
 import { renderBookmarksSection } from "../storage/bookmarks.js";
+import { isCompleted } from "../storage/completions.js";
 import { listCachedArticlePaths } from "../storage/offline.js";
-import { getLastOpened, isRead } from "../storage/read-tracking.js";
+import { getLastOpened } from "../storage/read-tracking.js";
 import { renderRecentsSection } from "../storage/recents.js";
 import { toggleCollapse } from "../storage/scroll-collapse.js";
 import { bindIndexCardSwipe, bindIndexPullToRefresh } from "./home-gestures.js";
@@ -212,8 +213,8 @@ function renderIndexSections(sections, wiki) {
             <div class="index-card-meta">
               <span class="index-card-read-time" data-path="${escHtml(card.path)}">…</span>
               <span class="index-card-read-dot ${
-                isRead(normalizePath(card.path)) ? "visible" : ""
-              }" title="Read"></span>
+                isCompleted(normalizePath(card.path), wiki.id) ? "visible" : ""
+              }" title="Completed"></span>
               <span class="index-card-updated-dot" title="Updated since you last read it"></span>
             </div>
             <span class="index-card-swipe-hint" aria-hidden="true"></span>
@@ -387,46 +388,46 @@ function attachIndexCardKeyNav() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   INDEX FILTER - live text filter + unread-only toggle
+   INDEX FILTER - live text filter + completion-status toggle
    ═══════════════════════════════════════════════════════════════ */
 const IndexFilter = {
   _query: "",
-  _readStatus: "all", // "all" | "read" | "unread"
-  _pendingUnread: false,
+  _completionStatus: "all", // "all" | "completed" | "incomplete"
+  _pendingIncomplete: false,
   _debounce: null,
 
   /* applied on the next index render - lets a command arm it before navigating */
-  requestUnread() {
-    this._pendingUnread = true;
+  requestIncomplete() {
+    this._pendingIncomplete = true;
   },
 
   reset() {
     this._query = "";
-    this._readStatus = this._pendingUnread ? "unread" : "all";
-    this._pendingUnread = false;
+    this._completionStatus = this._pendingIncomplete ? "incomplete" : "all";
+    this._pendingIncomplete = false;
     const input = document.getElementById("index-filter-input");
     if (input) input.value = "";
-    this._syncReadSelect();
+    this._syncCompletionSelect();
   },
 
   hasActiveFilter() {
-    return !!this._query || this._readStatus !== "all";
+    return !!this._query || this._completionStatus !== "all";
   },
 
-  // Full clear for the reset-view escape hatch - unlike reset(), also drops the read-status filter instead of honouring a pending request.
+  // Full clear for the reset-view escape hatch - unlike reset(), also drops the completion filter instead of honouring a pending request.
   clearAll() {
     this._query = "";
-    this._readStatus = "all";
-    this._pendingUnread = false;
+    this._completionStatus = "all";
+    this._pendingIncomplete = false;
     const input = document.getElementById("index-filter-input");
     if (input) input.value = "";
-    this._syncReadSelect();
+    this._syncCompletionSelect();
     this.apply();
   },
 
-  _syncReadSelect() {
+  _syncCompletionSelect() {
     const select = document.getElementById("index-filter-read-select");
-    if (select) select.value = this._readStatus;
+    if (select) select.value = this._completionStatus;
   },
 
   setQuery(q) {
@@ -434,8 +435,8 @@ const IndexFilter = {
     this.apply();
   },
 
-  setReadStatus(status) {
-    this._readStatus = status;
+  setCompletionStatus(status) {
+    this._completionStatus = status;
     this.apply();
   },
 
@@ -450,12 +451,12 @@ const IndexFilter = {
         const path = rawPath ? normalizePath(rawPath) : null;
         const matchesText =
           !this._query || title.includes(this._query) || desc.includes(this._query);
-        const read = path ? isRead(path) : false;
-        const matchesReadStatus =
-          this._readStatus === "all" ||
-          (this._readStatus === "read" && read) ||
-          (this._readStatus === "unread" && !read);
-        const show = matchesText && matchesReadStatus;
+        const completed = path ? isCompleted(path, state.currentWikiId) : false;
+        const matchesCompletionStatus =
+          this._completionStatus === "all" ||
+          (this._completionStatus === "completed" && completed) ||
+          (this._completionStatus === "incomplete" && !completed);
+        const show = matchesText && matchesCompletionStatus;
         card.classList.toggle("index-card--filtered", !show);
         if (show) visible++;
       });
@@ -474,7 +475,7 @@ if (_indexFilterInput) {
 const _indexFilterReadSelect = document.getElementById("index-filter-read-select");
 if (_indexFilterReadSelect) {
   _indexFilterReadSelect.addEventListener("change", () => {
-    IndexFilter.setReadStatus(_indexFilterReadSelect.value);
+    IndexFilter.setCompletionStatus(_indexFilterReadSelect.value);
   });
 }
 
@@ -520,10 +521,10 @@ function _applyUpdatedDot(card, path, updatedDate) {
   dot.classList.toggle("visible", isNewer);
 }
 
-// Ambient memory-decay cue - only read articles with a recorded visit fade; unread cards stay at full opacity.
+// Ambient memory-decay cue - only completed articles with a recorded visit fade; incomplete cards stay at full opacity.
 function _applyFade(card, path) {
   const lastOpened = getLastOpened(path);
-  if (!isRead(path) || !lastOpened) {
+  if (!isCompleted(path, state.currentWikiId) || !lastOpened) {
     card.style.removeProperty("--fade");
     return;
   }

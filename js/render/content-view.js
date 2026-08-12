@@ -68,7 +68,7 @@ import { updateBookmarkBtn } from "../storage/bookmarks.js";
 import { renderCompletionButton } from "../storage/completions.js";
 import { renderNotesScratchpad } from "../storage/notes.js";
 import { updateOfflineBtn } from "../storage/offline.js";
-import { recordOpened, updateReadBtn } from "../storage/read-tracking.js";
+import { recordOpened } from "../storage/read-tracking.js";
 import { addToRecents } from "../storage/recents.js";
 import {
   dirOf,
@@ -321,7 +321,6 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       markStubPath(filePath);
       buildTOC(body, wiki.id, filePath);
       updateBookmarkBtn();
-      updateReadBtn();
       updateOfflineBtn();
       body.dataset.renderDone = "1";
       return;
@@ -473,7 +472,6 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     run(() => renderBridges(filePath, isStale));
 
     updateBookmarkBtn();
-    updateReadBtn();
     updateOfflineBtn();
 
     if (_enhancerFailed) showToast("Some content enhancements failed to load");

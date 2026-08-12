@@ -1,154 +1,94 @@
 """
-- Mark as unread toggle - button presence, state, toggle, persistence.
+Completion button - presence, toggle, persistence, haptic milestone.
 """
 
 ARTICLE_HASH = "system-design/caching"
+DSA_ARTICLE_HASH = "dsa/array"
 
 
-def _go_to_article(page, base_url):
+def _go_to_article(page, base_url, article_hash=ARTICLE_HASH, completed_key="wiki-completed-system-design"):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.evaluate("() => localStorage.removeItem('wiki-read-system-design')")
-    page.goto(f"{base_url}/#{ARTICLE_HASH}", wait_until="domcontentloaded")
+    page.evaluate(f"() => localStorage.removeItem('{completed_key}')")
+    page.goto(f"{base_url}/#{article_hash}", wait_until="domcontentloaded")
     page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_selector("#markdown-body h1, #markdown-body h2", timeout=8_000)
-
-
-def _open_advanced_prefs(page):
-    page.locator("[title='Preferences (,)']:visible").first.click()
-    page.wait_for_function(
-        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
-    )
-    page.locator("[data-tab='advanced']").click()
-    page.wait_for_function(
-        "() => document.getElementById('prefs-panel-advanced').getAttribute('aria-hidden') === 'false'"
-    )
-
-
-def _click_read_toggle(page):
-    _open_advanced_prefs(page)
-    page.locator("#prefs-read-toggle").click()
+    page.wait_for_selector(".completion-btn", timeout=8_000)
 
 
 # ── presence ───────────────────────────────────────────────────────────────────
 
 
-def test_read_btn_present_in_advanced_prefs(page, base_url):
-    """#prefs-read-toggle exists in the Advanced prefs tab."""
+def test_completion_btn_present_on_system_design_article(page, base_url):
+    """.completion-btn renders on every wiki, including System Design."""
     _go_to_article(page, base_url)
-    _open_advanced_prefs(page)
-    assert page.locator("#prefs-read-toggle").count() == 1
+    assert page.locator(".completion-btn").count() == 1
 
 
-def test_read_btn_initial_title_is_mark_as_read(page, base_url):
-    """button title is 'Mark as read' when article not yet read."""
+def test_completion_btn_present_on_dsa_article(page, base_url):
+    """.completion-btn renders on DSA articles too."""
+    _go_to_article(page, base_url, DSA_ARTICLE_HASH, "wiki-completed-dsa")
+    assert page.locator(".completion-btn").count() == 1
+
+
+def test_completion_btn_initial_label(page, base_url):
+    """button reads 'Mark as completed' before any completion state."""
     _go_to_article(page, base_url)
-    _open_advanced_prefs(page)
-    title = page.locator("#prefs-read-toggle").get_attribute("title")
-    assert title == "Mark as read"
+    assert page.locator(".completion-btn").inner_text() == "Mark as completed"
 
 
-def test_read_btn_initially_not_active(page, base_url):
-    """button does not have .active class when article is unread."""
+# ── mark completed ─────────────────────────────────────────────────────────────
+
+
+def test_clicking_completion_btn_marks_article_completed(page, base_url):
+    """clicking button adds article path to wiki-completed-* in localStorage."""
     _go_to_article(page, base_url)
-    _open_advanced_prefs(page)
-    cls = page.locator("#prefs-read-toggle").get_attribute("class")
-    assert "active" not in cls
+    page.locator(".completion-btn").click()
 
-
-# ── mark as read ───────────────────────────────────────────────────────────────
-
-
-def test_clicking_read_btn_marks_article_read(page, base_url):
-    """clicking button adds article path to wiki-read in localStorage."""
-    _go_to_article(page, base_url)
-    _click_read_toggle(page)
-
-    read_set = page.evaluate(
-        "() => JSON.parse(localStorage.getItem('wiki-read-' + state.currentWikiId) || '[]')"
+    completed = page.evaluate(
+        "() => JSON.parse(localStorage.getItem('wiki-completed-' + state.currentWikiId) || '[]')"
     )
-    assert any("caching" in path for path in read_set)
+    assert any("caching" in path for path in completed)
 
 
-def test_read_btn_becomes_active_after_click(page, base_url):
-    """button gets .active class after clicking to mark as read."""
+def test_completion_btn_shows_done_state_after_click(page, base_url):
+    """button gets .completion-btn--done and updated label after marking completed."""
     _go_to_article(page, base_url)
-    _click_read_toggle(page)
-    cls = page.locator("#prefs-read-toggle").get_attribute("class")
-    assert "active" in cls
+    btn = page.locator(".completion-btn")
+    btn.click()
+    assert "completion-btn--done" in btn.get_attribute("class")
+    assert btn.inner_text() == "Completed - undo"
 
 
-def test_read_btn_title_changes_to_mark_as_unread(page, base_url):
-    """button title becomes 'Mark as unread' after marking read."""
+def test_clicking_completion_btn_again_marks_uncompleted(page, base_url):
+    """clicking a second time removes the article from wiki-completed-* and reverts label."""
     _go_to_article(page, base_url)
-    _click_read_toggle(page)
-    title = page.locator("#prefs-read-toggle").get_attribute("title")
-    assert title == "Mark as unread"
+    btn = page.locator(".completion-btn")
+    btn.click()
+    btn.click()
 
-
-# ── mark as unread ─────────────────────────────────────────────────────────────
-
-
-def test_clicking_again_marks_article_unread(page, base_url):
-    """clicking button a second time removes article from wiki-read."""
-    _go_to_article(page, base_url)
-    _open_advanced_prefs(page)
-    btn = page.locator("#prefs-read-toggle")
-    btn.click()  # mark read
-    btn.click()  # mark unread
-
-    read_set = page.evaluate(
-        "() => JSON.parse(localStorage.getItem('wiki-read-' + state.currentWikiId) || '[]')"
+    completed = page.evaluate(
+        "() => JSON.parse(localStorage.getItem('wiki-completed-' + state.currentWikiId) || '[]')"
     )
-    assert not any("caching" in path for path in read_set)
+    assert not any("caching" in path for path in completed)
+    assert btn.inner_text() == "Mark as completed"
+    assert "completion-btn--done" not in btn.get_attribute("class")
 
 
-def test_read_btn_loses_active_after_unmark(page, base_url):
-    """button loses .active class after clicking to mark as unread."""
+def test_completion_state_persists_on_revisit(page, base_url):
+    """article stays marked completed when navigating away and back."""
     _go_to_article(page, base_url)
-    _open_advanced_prefs(page)
-    btn = page.locator("#prefs-read-toggle")
-    btn.click()  # mark read
-    btn.click()  # mark unread
-    cls = btn.get_attribute("class")
-    assert "active" not in cls
+    page.locator(".completion-btn").click()
 
-
-def test_read_btn_title_reverts_after_unmark(page, base_url):
-    """button title reverts to 'Mark as read' after unmarking."""
-    _go_to_article(page, base_url)
-    _open_advanced_prefs(page)
-    btn = page.locator("#prefs-read-toggle")
-    btn.click()  # mark read
-    btn.click()  # mark unread
-    title = btn.get_attribute("title")
-    assert title == "Mark as read"
-
-
-# ── persistence across navigation ──────────────────────────────────────────────
-
-
-def test_read_state_persists_on_revisit(page, base_url):
-    """article stays marked read when navigating away and back."""
-    _go_to_article(page, base_url)
-    _click_read_toggle(page)
-
-    # Close prefs, go back to wiki index
-    page.keyboard.press("Escape")
     page.locator("#content-back-btn").click()
     page.wait_for_selector("#view-index.active", timeout=5_000)
 
-    # Navigate back to article via hash change (goto unreliable for same-origin hash nav)
     page.evaluate(f"() => {{ location.hash = '#{ARTICLE_HASH}'; }}")
     page.wait_for_selector("#view-content.active", timeout=10_000)
-    _open_advanced_prefs(page)
-
-    cls = page.locator("#prefs-read-toggle").get_attribute("class")
-    assert "active" in cls
+    page.wait_for_selector(".completion-btn.completion-btn--done", timeout=8_000)
 
 
-def test_anon_read_makes_no_api_call(page, base_url):
-    """logged-out users hit zero sync endpoints when marking read."""
+def test_anon_completion_makes_no_reads_api_call(page, base_url):
+    """logged-out users hit zero /reads endpoints when marking completed."""
     calls = []
     page.route(
         "**/api/v1/auth/me",
@@ -162,13 +102,13 @@ def test_anon_read_makes_no_api_call(page, base_url):
         "**/api/v1/reads",
         lambda r: (calls.append(r.request.url), r.abort()),
     )
+    page.route(
+        "**/api/v1/completions",
+        lambda r: (calls.append(r.request.url), r.abort()),
+    )
 
     _go_to_article(page, base_url)
-    _open_advanced_prefs(page)
-    btn = page.locator("#prefs-read-toggle")
-    btn.wait_for(state="visible")
-    if "active" not in (btn.get_attribute("class") or ""):
-        btn.click()
+    page.locator(".completion-btn").click()
     page.wait_for_timeout(150)
     assert all("/reads" not in u for u in calls)
 
@@ -184,37 +124,34 @@ navigator.vibrate = function(pattern) {
 """
 
 
-def test_read_toggle_calls_vibrate_when_setting_on(page, base_url):
-    """Marking an article read fires navigator.vibrate when hapticFeedback is on."""
-    page.emulate_media(reduced_motion="no-preference")  # _vibrate() early-returns under reduced motion
+def test_completion_btn_calls_vibrate_when_setting_on(page, base_url):
+    """Marking an article completed fires navigator.vibrate when hapticFeedback is on."""
+    page.emulate_media(reduced_motion="no-preference")
     page.add_init_script(_VIBRATE_SPY)
     _go_to_article(page, base_url)
     page.evaluate("""() => {
-        // getSettings() only treats a stored blob as valid if it has
-        // backgroundId - otherwise it discards it and falls back to
-        // defaults (hapticFeedback: false), silently dropping this seed.
         const s = JSON.parse(localStorage.getItem('wiki-settings') || '{}');
         s.backgroundId = s.backgroundId || 'dark-void';
         s.hapticFeedback = true;
         localStorage.setItem('wiki-settings', JSON.stringify(s));
     }""")
-    _click_read_toggle(page)
+    page.locator(".completion-btn").click()
     calls = page.evaluate("() => window.__vibrateCalls || []")
     assert len(calls) == 1
 
 
-def test_read_toggle_skips_vibrate_when_setting_off(page, base_url):
-    """Marking an article read does not call navigator.vibrate by default (off)."""
+def test_completion_btn_skips_vibrate_when_setting_off(page, base_url):
+    """Marking completed does not call navigator.vibrate by default (off)."""
     page.add_init_script(_VIBRATE_SPY)
     _go_to_article(page, base_url)
-    _click_read_toggle(page)
+    page.locator(".completion-btn").click()
     calls = page.evaluate("() => window.__vibrateCalls || []")
     assert len(calls) == 0
 
 
-def test_unmarking_read_does_not_call_vibrate(page, base_url):
-    """Marking an article back to unread is not a milestone - no vibrate call."""
-    page.emulate_media(reduced_motion="no-preference")  # _vibrate() early-returns under reduced motion
+def test_uncompleting_does_not_call_vibrate(page, base_url):
+    """Undoing completion is not a milestone - no second vibrate call."""
+    page.emulate_media(reduced_motion="no-preference")
     page.add_init_script(_VIBRATE_SPY)
     _go_to_article(page, base_url)
     page.evaluate("""() => {
@@ -223,76 +160,8 @@ def test_unmarking_read_does_not_call_vibrate(page, base_url):
         s.hapticFeedback = true;
         localStorage.setItem('wiki-settings', JSON.stringify(s));
     }""")
-    _open_advanced_prefs(page)
-    btn = page.locator("#prefs-read-toggle")
-    btn.click()  # mark read - fires once
-    btn.click()  # mark unread - should not fire again
-    calls = page.evaluate("() => window.__vibrateCalls || []")
-    assert len(calls) == 1
-
-
-# ── DSA "Mark as completed" button ──────────────────────────────────────────
-
-DSA_ARTICLE_HASH = "dsa/array"
-
-
-def _go_to_dsa_article(page, base_url):
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.evaluate("() => localStorage.removeItem('wiki-completed-dsa')")
-    page.goto(f"{base_url}/#{DSA_ARTICLE_HASH}", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_selector(".completion-btn", timeout=8_000)
-
-
-def test_completion_btn_present_on_dsa_article(page, base_url):
-    """.completion-btn renders after the article-end-marker on a DSA article."""
-    _go_to_dsa_article(page, base_url)
-    assert page.locator(".completion-btn").count() == 1
-
-
-def test_completion_btn_absent_on_system_design_article(page, base_url):
-    """.completion-btn never renders on non-DSA (System Design) articles."""
-    _go_to_article(page, base_url)
-    assert page.locator(".completion-btn").count() == 0
-
-
-def test_completion_btn_initial_label(page, base_url):
-    """button reads 'Mark as completed' before any completion state."""
-    _go_to_dsa_article(page, base_url)
-    assert page.locator(".completion-btn").inner_text() == "Mark as completed"
-
-
-def test_clicking_completion_btn_marks_article_completed(page, base_url):
-    """clicking button adds article path to wiki-completed-dsa in localStorage."""
-    _go_to_dsa_article(page, base_url)
-    page.locator(".completion-btn").click()
-
-    completed = page.evaluate(
-        "() => JSON.parse(localStorage.getItem('wiki-completed-dsa') || '[]')"
-    )
-    assert any("array" in path for path in completed)
-
-
-def test_completion_btn_shows_done_state_after_click(page, base_url):
-    """button gets .completion-btn--done and updated label after marking completed."""
-    _go_to_dsa_article(page, base_url)
     btn = page.locator(".completion-btn")
     btn.click()
-    assert "completion-btn--done" in btn.get_attribute("class")
-    assert btn.inner_text() == "Completed - undo"
-
-
-def test_clicking_completion_btn_again_marks_uncompleted(page, base_url):
-    """clicking a second time removes the article from wiki-completed-dsa and reverts label."""
-    _go_to_dsa_article(page, base_url)
-    btn = page.locator(".completion-btn")
-    btn.click()  # mark completed
-    btn.click()  # mark uncompleted
-
-    completed = page.evaluate(
-        "() => JSON.parse(localStorage.getItem('wiki-completed-dsa') || '[]')"
-    )
-    assert not any("array" in path for path in completed)
-    assert btn.inner_text() == "Mark as completed"
-    assert "completion-btn--done" not in btn.get_attribute("class")
+    btn.click()
+    calls = page.evaluate("() => window.__vibrateCalls || []")
+    assert len(calls) == 1

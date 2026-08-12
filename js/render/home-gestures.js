@@ -1,14 +1,12 @@
-import { fireStudyMilestone } from "../app/study-feedback.js";
 import { allSearchCache, indexCache, state } from "../state.js";
 import { Bookmarks, renderBookmarksSection } from "../storage/bookmarks.js";
-import { isRead, markRead, markUnread } from "../storage/read-tracking.js";
 import { renderIndex } from "./home-index.js";
 import { buildSearchEntriesForWiki } from "./home-parse.js";
 import { normalizePath } from "./nav-utils.js";
 import { showToast } from "./toast.js";
 
 /* ═══════════════════════════════════════════════════════════════
-   INDEX-CARD SWIPE (right = bookmark, left = read toggle)
+   INDEX-CARD SWIPE (right = bookmark)
    ═══════════════════════════════════════════════════════════════ */
 const CARD_SWIPE_THRESHOLD = 50;
 const CARD_SWIPE_DEADZONE = 8;
@@ -108,15 +106,6 @@ function bindIndexCardSwipe(wiki) {
         );
         renderBookmarksSection(_swipeWiki);
         showToast(now ? "Bookmarked" : "Bookmark removed");
-      } else if (path && dx < -CARD_SWIPE_THRESHOLD) {
-        if (isRead(path)) {
-          markUnread(path);
-          showToast("Marked unread");
-        } else {
-          markRead(path);
-          showToast("Marked read");
-          fireStudyMilestone();
-        }
       }
       reset();
     },
