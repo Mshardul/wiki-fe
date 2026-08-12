@@ -33,11 +33,24 @@ function styleCallouts(contentEl) {
         bq.dataset.collapsed = "true";
       }
       firstP.firstChild.textContent = rest;
-      firstP.classList.add("callout-first-line");
+
+      // Multi-line callouts (icon line + several bold-label lines joined by <br>) live in one <p> - flexing the whole <p> would turn every <br>-separated run into its own shrink-to-fit flex item and letter-wrap it. Wrap only the icon + first line's nodes (up to the first <br>) so flex applies to just that row.
       const iconSpan = document.createElement("span");
       iconSpan.className = "callout-icon";
       iconSpan.textContent = icon;
-      firstP.prepend(iconSpan);
+
+      const firstLineWrap = document.createElement("span");
+      firstLineWrap.className = "callout-first-line";
+      firstLineWrap.appendChild(iconSpan);
+
+      const firstBr = firstP.querySelector("br");
+      const nodesBeforeBr = [];
+      for (const node of [...firstP.childNodes]) {
+        if (node === firstBr) break;
+        nodesBeforeBr.push(node);
+      }
+      nodesBeforeBr.forEach((node) => firstLineWrap.appendChild(node));
+      firstP.prepend(firstLineWrap);
     }
   });
 }

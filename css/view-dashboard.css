@@ -59,6 +59,15 @@
   background: var(--color-success);
 }
 
+.dashboard-card--link {
+  cursor: pointer;
+}
+
+.dashboard-card--link:hover,
+.dashboard-card--link:focus-visible {
+  background: var(--surface-hover);
+}
+
 .dashboard-empty {
   color: var(--text-muted);
   font-size: var(--text-sm);

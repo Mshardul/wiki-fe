@@ -1,10 +1,10 @@
 import { getCompletedSet } from "../storage/completions.js";
 import { dirOf, fetchText, resolvePath } from "./nav-utils.js";
 
-/* LEARNING PATHS - per-track completion progress on DSA index cards */
+/* LEARNING PATHS - per-track completion progress on index cards, any wiki */
 const TRACK_TABLE_ROW_RE = /^\|\s*[\w.]+\s*\|\s*\[[^\]]+\]\(([^)]+\.md)\)\s*\|/;
 
-function _extractTrackArticlePaths(markdown, trackDir) {
+function extractTrackArticlePaths(markdown, trackDir) {
   const paths = [];
   for (const line of markdown.split("\n")) {
     const m = line.match(TRACK_TABLE_ROW_RE);
@@ -14,7 +14,7 @@ function _extractTrackArticlePaths(markdown, trackDir) {
 }
 
 async function renderLearningPathProgress(section, wiki) {
-  if (wiki.id !== "dsa" || section.heading !== "Learning Paths") return;
+  if (section.heading !== "Learning Paths") return;
 
   const cardEls = document.querySelectorAll("#index-sections .index-card");
   for (const card of section.cards) {
@@ -26,7 +26,7 @@ async function renderLearningPathProgress(section, wiki) {
     try {
       const trackMd = await fetchText(card.path);
       const trackDir = dirOf(card.path);
-      const articlePaths = _extractTrackArticlePaths(trackMd, trackDir);
+      const articlePaths = extractTrackArticlePaths(trackMd, trackDir);
       if (!articlePaths.length) continue;
 
       const completed = getCompletedSet(wiki.id);
@@ -44,4 +44,4 @@ async function renderLearningPathProgress(section, wiki) {
   }
 }
 
-export { renderLearningPathProgress };
+export { renderLearningPathProgress, extractTrackArticlePaths };

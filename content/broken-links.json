@@ -136,5 +136,23 @@
       "target": "./content/system-design/distributed-systems/distributed-rate-limiting.md",
       "title": "Rate Limiter"
     }
+  ],
+  "./content/system-design/paths/components-foundation.md": [
+    {
+      "target": "./content/system-design/index.md",
+      "title": "Components Foundation"
+    }
+  ],
+  "./content/system-design/paths/distributed-depth.md": [
+    {
+      "target": "./content/system-design/index.md",
+      "title": "Distributed Depth"
+    }
+  ],
+  "./content/system-design/paths/hld-interview-loop.md": [
+    {
+      "target": "./content/system-design/index.md",
+      "title": "HLD Interview Loop"
+    }
   ]
 }

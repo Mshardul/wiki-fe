@@ -248,6 +248,29 @@
           "description": "LSM tree, compaction, replication, consistency"
         }
       ]
+    },
+    {
+      "heading": "Learning Paths",
+      "cards": [
+        {
+          "title": "Components Foundation",
+          "path": "./content/system-design/paths/components-foundation.md",
+          "slug": "components-foundation",
+          "description": "Every building block in build-up order - networking, storage, messaging, cross-cutting concerns. ~6-8 weeks."
+        },
+        {
+          "title": "HLD Interview Loop",
+          "path": "./content/system-design/paths/hld-interview-loop.md",
+          "slug": "hld-interview-loop",
+          "description": "Standard-bar prep - core algorithms plus a curated run of the HLDs most loops actually ask. ~8-10 weeks."
+        },
+        {
+          "title": "Distributed Depth",
+          "path": "./content/system-design/paths/distributed-depth.md",
+          "slug": "distributed-depth",
+          "description": "Senior-bar depth - consensus, replication, sharding internals, and the HLDs that demand them. ~6-8 weeks."
+        }
+      ]
     }
   ],
   "dsa": [

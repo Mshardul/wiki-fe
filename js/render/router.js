@@ -3,7 +3,7 @@ import { WIKIS, fuzzyMatch, state } from "../state.js";
 import { renderAdminPage } from "./admin-view.js";
 import { renderChangelog } from "./changelog-view.js";
 import { renderContent } from "./content-view.js";
-import { renderDashboard } from "./dashboard-view.js";
+import { renderDashboard, renderDashboardPaths, renderDashboardWiki } from "./dashboard-view.js";
 import { renderHome, renderIndex } from "./home-index.js";
 import { fetchWikiIndex } from "./home-parse.js";
 import { destroyIndexGraph } from "./index-graph.js";
@@ -114,6 +114,21 @@ function _execRoute(hash) {
     return;
   }
   if (wikiId === "dashboard") {
+    if (parts.length === 1) {
+      updatePageTitle("Dashboard");
+      renderDashboard();
+      return;
+    }
+    if (parts.length === 2) {
+      updatePageTitle("Dashboard");
+      renderDashboardWiki(parts[1]);
+      return;
+    }
+    if (parts.length === 3 && parts[2] === "paths") {
+      updatePageTitle("Dashboard");
+      renderDashboardPaths(parts[1]);
+      return;
+    }
     updatePageTitle("Dashboard");
     renderDashboard();
     return;

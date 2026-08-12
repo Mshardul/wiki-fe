@@ -3,7 +3,7 @@
 - Index section headers collapse/expand card grids; state persists in localStorage.
 - Unavailable cards have tooltip title and allow pointer events.
 - Section collapse uses a JS-measured height transition, not display:none.
-- DSA index Learning Paths cards show an N/M completed progress badge.
+- DSA and SD index Learning Paths cards show an N/M completed progress badge.
 """
 
 import pytest
@@ -837,3 +837,19 @@ def test_learning_path_card_reflects_completed_articles(page, base_url):
     progress.wait_for(state="visible", timeout=8_000)
     text = progress.inner_text()
     assert text.startswith("2/"), f"expected 2 completed, got: {text!r}"
+
+
+def test_learning_path_card_shows_progress_on_sd_index(page, base_url):
+    """SD Learning Paths cards also show a progress badge (WIKI-589 generalized the dsa-only gate)."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.evaluate("() => localStorage.removeItem('wiki-completed-system-design')")
+    _go_to_index(page, base_url)
+
+    card = page.locator(".index-card[data-title='Components Foundation']")
+    card.scroll_into_view_if_needed()
+    progress = card.locator(".index-card-path-progress")
+    progress.wait_for(state="visible", timeout=8_000)
+    text = progress.inner_text()
+    assert text.startswith("0/"), f"expected zero progress, got: {text!r}"
+    assert text.endswith(" completed")

@@ -76,6 +76,18 @@ End-to-end system design walkthroughs. Each page includes prerequisites, a TLDR,
 
 ---
 
+## Learning Paths
+
+Structured sequences through the vertical - pick one, work it in order, track completion per article.
+
+| Path                                                       | Description                                                                                            |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| [Components Foundation](./paths/components-foundation.md)    | Every building block in build-up order - networking, storage, messaging, cross-cutting concerns. ~6-8 weeks. |
+| [HLD Interview Loop](./paths/hld-interview-loop.md)           | Standard-bar prep - core algorithms plus a curated run of the HLDs most loops actually ask. ~8-10 weeks. |
+| [Distributed Depth](./paths/distributed-depth.md)             | Senior-bar depth - consensus, replication, sharding internals, and the HLDs that demand them. ~6-8 weeks. |
+
+---
+
 ## How to Use
 
 **Flow 1 - Build up:** Pick a component → read it end-to-end → follow links to related components → then tackle an HLD.
