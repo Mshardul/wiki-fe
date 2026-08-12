@@ -1,9 +1,7 @@
 import { WIKIS, state } from "../state.js";
 import { getSettings } from "../storage/settings-theme.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   CLIPBOARD HELPER (execCommand fallback for HTTP contexts)
-   ═══════════════════════════════════════════════════════════════ */
+/* CLIPBOARD HELPER (execCommand fallback for HTTP contexts) */
 function writeToClipboard(text) {
   if (navigator.clipboard?.writeText) {
     return navigator.clipboard.writeText(text);
@@ -47,9 +45,7 @@ function buildSourceHeader(lang) {
   return `${prefix} from: ${origin}\n`;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CODE BLOCK HEADER (traffic lights + lang label + copy button)
-   ═══════════════════════════════════════════════════════════════ */
+/* CODE BLOCK HEADER (traffic lights + lang label + copy button) */
 function addCodeBlockHeader(contentEl, onCopyError = () => {}) {
   contentEl.querySelectorAll("pre").forEach((pre) => {
     const code = pre.querySelector("code");
@@ -106,9 +102,7 @@ function addCopyButtons(contentEl, onCopyError = () => {}) {
   addCodeBlockHeader(contentEl, onCopyError);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   HLJS THEME SYNC
-   ═══════════════════════════════════════════════════════════════ */
+/* HLJS THEME SYNC */
 const HLJS_DARK =
   "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css";
 const HLJS_LIGHT =
@@ -121,9 +115,7 @@ function syncHljsTheme() {
   link.href = theme === "light" ? HLJS_LIGHT : HLJS_DARK;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   COLLAPSIBLE LONG CODE BLOCKS
-   ═══════════════════════════════════════════════════════════════ */
+/* COLLAPSIBLE LONG CODE BLOCKS */
 function addCollapsibleCodeBlocks(contentEl) {
   contentEl.querySelectorAll("pre").forEach((pre) => {
     const code = pre.querySelector("code");
@@ -156,9 +148,7 @@ function addPreOverflowDetection(contentEl) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CODE BLOCK LINE NUMBERS
-   ═══════════════════════════════════════════════════════════════ */
+/* CODE BLOCK LINE NUMBERS */
 function splitHighlightedLines(html) {
   const lines = [];
   let current = "";
@@ -207,15 +197,12 @@ function addLineNumbers(contentEl) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CODE LANGUAGE LABELS
-   ═══════════════════════════════════════════════════════════════ */
+/* CODE LANGUAGE LABELS */
 // no-op: label is now rendered inside code-header by addCodeBlockHeader
 function addCodeLangLabels(_contentEl) {}
 
 export {
   writeToClipboard,
-  buildSourceHeader,
   addCodeBlockHeader,
   addCopyButtons,
   syncHljsTheme,

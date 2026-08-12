@@ -1,9 +1,7 @@
 import { WIKIS, indexCache, readTimeCache } from "../state.js";
 import { dirOf, fetchPrebuiltSearchIndex, fetchText, normalizePath } from "./nav-utils.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   INDEX.MD PARSER
-   ═══════════════════════════════════════════════════════════════ */
+/* INDEX.MD PARSER */
 function parseIndexMd(markdown, basePath) {
   const sections = [];
   const skipHeadings = ["how to use", "contributing"];
@@ -44,9 +42,7 @@ function parseIndexMd(markdown, basePath) {
   return sections;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SHARED INDEX CACHE (used by article counts + global search)
-   ═══════════════════════════════════════════════════════════════ */
+/* SHARED INDEX CACHE (used by article counts + global search) */
 async function fetchWikiIndex(wiki) {
   if (indexCache[wiki.id]) return indexCache[wiki.id];
   const ssKey = `wiki-index-${wiki.id}`;

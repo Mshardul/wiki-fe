@@ -1,9 +1,7 @@
 import { getCompletedSet } from "../storage/completions.js";
 import { dirOf, fetchText, resolvePath } from "./nav-utils.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   LEARNING PATHS - per-track completion progress on DSA index cards
-   ═══════════════════════════════════════════════════════════════ */
+/* LEARNING PATHS - per-track completion progress on DSA index cards */
 const TRACK_TABLE_ROW_RE = /^\|\s*[\w.]+\s*\|\s*\[[^\]]+\]\(([^)]+\.md)\)\s*\|/;
 
 function _extractTrackArticlePaths(markdown, trackDir) {

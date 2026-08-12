@@ -19,9 +19,7 @@ import { getBookmarks } from "./storage/bookmarks.js";
 import { getRecents } from "./storage/recents.js";
 import { Sync } from "./storage/settings-theme.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   PASSWORD POLICY (§7) - mirrors wiki-be; keep in sync via auth.md
-   ═══════════════════════════════════════════════════════════════ */
+/* PASSWORD POLICY (§7) - mirrors wiki-be; keep in sync via auth.md */
 const PW_RULES = [
   { id: "len", label: "At least 12 characters", test: (p) => p.length >= 12 },
   { id: "upper", label: "An uppercase letter (A–Z)", test: (p) => /[A-Z]/.test(p) },
@@ -47,11 +45,7 @@ function _authErrorMessage(e, fallback) {
   return e.message;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ANON -> LOGIN MIGRATION
-   One prompt on login if local anon data exists; never blocks login.
-   Dedicated modal, not a toast, since the shared queue could bury it.
-   ═══════════════════════════════════════════════════════════════ */
+/* ANON -> LOGIN MIGRATION — One prompt on login if local anon data exists; never blocks login. — Dedicated modal, not a toast, since the shared queue could bury it. */
 function _hasLocalCompletions() {
   for (const wiki of WIKIS) {
     try {
@@ -114,9 +108,7 @@ async function maybeMigrate() {
   return true;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   AUTH MODAL CONTROLLER
-   ═══════════════════════════════════════════════════════════════ */
+/* AUTH MODAL CONTROLLER */
 const AuthModal = {
   _lastFocus: null,
 
@@ -329,9 +321,7 @@ function _broadcastSessionChange() {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   AUTH - boot + flows
-   ═══════════════════════════════════════════════════════════════ */
+/* AUTH - boot + flows */
 const Auth = {
   _pendingResetToken: null,
   _pendingVerifyEmail: null,
@@ -677,4 +667,4 @@ window.addEventListener("storage", (e) => {
     });
 });
 
-export { validatePassword, PW_RULES, AuthModal, Auth };
+export { AuthModal, Auth };

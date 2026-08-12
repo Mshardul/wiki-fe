@@ -1,6 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
-   WIKI DATA - add new wikis here
-   ═══════════════════════════════════════════════════════════════ */
+/* WIKI DATA - add new wikis here */
 const WIKIS = [
   {
     id: "system-design",
@@ -34,9 +32,7 @@ const WIKIS = [
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SHOWDOWN CONVERTER CONFIG
-   ═══════════════════════════════════════════════════════════════ */
+/* SHOWDOWN CONVERTER CONFIG */
 const mathExtension = () => {
   return [
     {
@@ -113,9 +109,7 @@ if (typeof mermaid !== "undefined") {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   STATE
-   ═══════════════════════════════════════════════════════════════ */
+/* STATE */
 const state = {
   currentView: "home",
   currentWikiId: null,
@@ -129,11 +123,10 @@ const state = {
   preResizeObservers: [],
   // Auth identity - in-memory only, NEVER persisted to localStorage.
   session: { user: null, status: "loading" },
+  serviceWorkerError: null,
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   SHARED CACHES (mutated by render.js and search.js - must live here)
-   ═══════════════════════════════════════════════════════════════ */
+/* SHARED CACHES (mutated by render.js and search.js - must live here) */
 const readTimeCache = {};
 const updatedDateCache = {};
 const indexCache = {};
@@ -162,7 +155,7 @@ async function loadSynonyms() {
 }
 
 const STUB_PATHS_KEY = "wiki-stub-paths";
-function loadStubPaths() {
+function getStubPaths() {
   try {
     return new Set(JSON.parse(sessionStorage.getItem(STUB_PATHS_KEY) || "[]"));
   } catch {
@@ -171,7 +164,7 @@ function loadStubPaths() {
 }
 function markStubPath(normalizedPath) {
   readTimeCache[normalizedPath] = null;
-  const set = loadStubPaths();
+  const set = getStubPaths();
   if (!set.has(normalizedPath)) {
     set.add(normalizedPath);
     try {
@@ -179,14 +172,12 @@ function markStubPath(normalizedPath) {
     } catch {}
   }
 }
-for (const p of loadStubPaths()) readTimeCache[p] = null;
+for (const p of getStubPaths()) readTimeCache[p] = null;
 const STUB_THRESHOLD = 5000; // bytes - stubs are template skeletons (~3k of HTML-comment scaffolding); real articles are 8k+
 
-/* ═══════════════════════════════════════════════════════════════
-   ARTICLE SHAPE FINGERPRINTS (heading/code-block counts)
-   ═══════════════════════════════════════════════════════════════ */
+/* ARTICLE SHAPE FINGERPRINTS (heading/code-block counts) */
 const SHAPE_FINGERPRINTS_KEY = "wiki-shape-fingerprints";
-function loadShapeFingerprints() {
+function getShapeFingerprints() {
   try {
     return JSON.parse(sessionStorage.getItem(SHAPE_FINGERPRINTS_KEY) || "{}");
   } catch {
@@ -194,19 +185,17 @@ function loadShapeFingerprints() {
   }
 }
 function getShapeFingerprint(normalizedPath) {
-  return loadShapeFingerprints()[normalizedPath] || null;
+  return getShapeFingerprints()[normalizedPath] || null;
 }
 function saveShapeFingerprint(normalizedPath, fingerprint) {
-  const all = loadShapeFingerprints();
+  const all = getShapeFingerprints();
   all[normalizedPath] = fingerprint;
   try {
     sessionStorage.setItem(SHAPE_FINGERPRINTS_KEY, JSON.stringify(all));
   } catch {}
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PURE UTILITIES (placed here to avoid circular deps between storage/render)
-   ═══════════════════════════════════════════════════════════════ */
+/* PURE UTILITIES (placed here to avoid circular deps between storage/render) */
 function escHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -307,7 +296,6 @@ export {
   escHtml,
   fuzzyMatch,
   fadeFactorForDaysSinceRead,
-  FADE_FLOOR,
   removeLocalStorageByPrefix,
   sequencedMutation,
   scheduleSyncMutation,

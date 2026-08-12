@@ -15,6 +15,8 @@
 - [Sampling & Cost Trade-offs](#sampling--cost-trade-offs)
 - [Alerting Philosophy](#alerting-philosophy)
 - [Production Failure Modes & Gotchas](#production-failure-modes--gotchas)
+- [Interview Scenario Bank](#interview-scenario-bank)
+- [What the Interviewer Probes For](#what-the-interviewer-probes-for)
 - [Appendices](#appendices)
 
 ## TLDR
@@ -172,11 +174,6 @@ http_request_duration_seconds_bucket{le="1.0"} 1234 # {trace_id="abc123"} 0.85
 ```
 
 Exemplars are supported in the OpenMetrics format and Prometheus ≥ 2.26. They require the tracing and metrics pipelines to share the same trace ID - another reason to standardise on W3C TraceContext.
-
-> 🎯 **Interview Lens** > **Q:** How would you debug a p99 latency spike that only affects 0.1% of requests?
-> **Ideal answer:** Alert fires on the metric. Use an exemplar on the histogram bucket to jump to a sampled trace. Follow the trace to the slow span. Filter logs by that trace ID to get the full event context. Root cause without reproducing the issue.
-> **Common trap:** "I'd add more logging" - misses that the issue is already sampled in the trace; the bottleneck is linking pillars, not adding more data.
-> **Next question:** What if the slow requests aren't being sampled by your tracer?
 
 > **Key Takeaway:** Correlation IDs cost almost nothing to implement and unlock cross-service log correlation. Exemplars extend this to metrics. Standardise on W3C TraceContext from the start - retrofitting ID propagation across a mature microservices system is painful.
 
@@ -356,11 +353,6 @@ SLO-based alerting fires when the **burn rate** is high enough to exhaust the er
 - **Fast burn alert** (page): error rate is so high the budget will be exhausted in ~1 hour - wake someone up
 - **Slow burn alert** (ticket): error rate is elevated but budget will last ~3 days - fix it in business hours
 
-> 🎯 **Interview Lens** > **Q:** Your on-call engineer says they're getting paged 15 times a day and ignoring most of them. How do you fix it?
-> **Ideal answer:** Audit all alerts - delete anything without a runbook, convert non-actionable metrics to dashboards, switch from cause-based to symptom-based alerting, implement SLO-based burn rate alerts to replace arbitrary thresholds.
-> **Common trap:** "Lower the thresholds" or "add more alerts for better coverage" - both make the problem worse.
-> **Next question:** How would you measure whether your alerting quality improved after the change?
-
 > **Key Takeaway:** Alert on error rate and latency SLO burn, not on CPU and disk. Every alert should have a runbook and a clear action. If an alert is routinely acknowledged without action, delete it - silence is more dangerous than absence.
 
 ---
@@ -410,6 +402,49 @@ Teams enabling full 100% trace sampling or DEBUG logging in production without c
 **Mitigation:** Set ingestion budgets and volume alerts before enabling new telemetry in production. Use sampling aggressively. Review cost per service in weekly ops reviews.
 
 ---
+
+## Interview Scenario Bank
+
+### Debugging a Rare Latency Spike
+
+> 🎯 **Interview Lens**
+> **Q:** How would you debug a p99 latency spike that only affects 0.1% of requests?
+> **Ideal answer:** Alert fires on the metric. Use an exemplar on the histogram bucket to jump to a sampled trace. Follow the trace to the slow span. Filter logs by that trace ID to get the full event context. Root cause without reproducing the issue.
+> **Common trap:** "I'd add more logging" - misses that the issue is already sampled in the trace; the bottleneck is linking pillars, not adding more data.
+> **Next question:** "What if the slow requests aren't being sampled by your tracer?" → Head-based sampling at a low rate can simply miss rare events - the fix is tail-based sampling or a dedicated error/slow-request capture path that bypasses the sampling decision entirely.
+
+### Fixing Alert Fatigue
+
+> 🎯 **Interview Lens**
+> **Q:** Your on-call engineer says they're getting paged 15 times a day and ignoring most of them. How do you fix it?
+> **Ideal answer:** Audit all alerts - delete anything without a runbook, convert non-actionable metrics to dashboards, switch from cause-based to symptom-based alerting, implement SLO-based burn rate alerts to replace arbitrary thresholds.
+> **Common trap:** "Lower the thresholds" or "add more alerts for better coverage" - both make the problem worse.
+> **Next question:** "How would you measure whether your alerting quality improved after the change?" → Track pages-per-week, the fraction of pages that led to a real action, and time-to-acknowledge - a successful cleanup drops volume while raising the action-taken ratio.
+
+### Diagnosing a Broken Trace Chain
+
+> 🎯 **Interview Lens**
+> **Q:** A trace stops mid-call - spans exist for services A and B, but nothing downstream. What's your first hypothesis?
+> **Ideal answer:** A service in the chain isn't propagating the `traceparent` header - most commonly an async boundary (queue consumer) that doesn't extract trace context from message metadata before starting its own work, or a service that doesn't forward the header on its outbound calls at all.
+> **Common trap:** Assuming the downstream service simply isn't instrumented, and adding logging there - without checking whether the header even arrived, which wastes an investigation cycle.
+> **Next question:** "How do you prevent this at scale, not just fix this one instance?" → Enforce propagation at the HTTP client / framework middleware layer so it can't be forgotten per-handler, and add a CI contract test that verifies headers survive a round-trip through each service.
+
+### Preventing a Cardinality-Driven Outage
+
+> 🎯 **Interview Lens**
+> **Q:** A new metric label caused your metrics backend to OOM within hours of a deploy. What happened and how do you prevent it?
+> **Ideal answer:** A high-cardinality label (`user_id`, `request_id`, or similar) was added to a metric - each unique value creates a new time series, and at millions of users that's millions of series created almost instantly. Prevent it with label review in code review, cardinality limits enforced at the metrics backend, and alerting on time-series-count growth rate before it becomes an outage.
+> **Common trap:** Treating this as a "just scale the metrics backend" problem - unbounded cardinality growth outpaces any reasonable scaling, the label itself is the bug.
+
+---
+
+## What the Interviewer Probes For
+
+**"What if the slow requests aren't being sampled by your tracer?"** (see [Debugging a Rare Latency Spike](#debugging-a-rare-latency-spike)) - Probes whether the candidate's exemplar-based debugging workflow has a blind spot they've considered. Answer: head-based sampling at low rates can simply miss rare/slow events by chance - tail-based sampling or a dedicated always-capture path for errors/slow requests closes that gap.
+
+**"How do you prevent a broken trace chain at scale, not just fix this one instance?"** (see [Diagnosing a Broken Trace Chain](#diagnosing-a-broken-trace-chain)) - Probes whether the candidate's fix is a one-off patch or a systemic guardrail. Answer: enforce header propagation at the middleware/framework layer so no individual handler can forget it, backed by a CI contract test - not a per-service manual checklist.
+
+**"How would you measure whether an alerting cleanup actually improved things?"** (see [Fixing Alert Fatigue](#fixing-alert-fatigue)) - Probes whether the candidate treats alert-quality work as a one-time cleanup or something that needs its own metrics. Answer: track pages-per-week alongside the fraction of pages that led to real action and time-to-acknowledge - volume dropping alone doesn't prove quality improved if it dropped by deleting alerts that were actually catching real issues.
 
 ## Appendices
 

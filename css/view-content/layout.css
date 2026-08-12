@@ -401,14 +401,14 @@ body.distraction-free .sticky-section-header {
   border-color: var(--accent);
 }
 
-.toc-mobile-overlay {
+.toc-mobile-backdrop {
   position: fixed;
   inset: 0;
   background: var(--overlay-dark);
   z-index: var(--z-overlay);
   backdrop-filter: blur(2px);
 }
-.toc-mobile-overlay.hidden {
+.toc-mobile-backdrop.hidden {
   display: none;
 }
 
@@ -687,13 +687,6 @@ body.distraction-free .sticky-section-header {
 }
 .toc-sidebar.mobile-open .toc-collapse {
   display: none;
-}
-
-/* ── Lede paragraph ── */
-.markdown-body > p:first-of-type {
-  font-size: calc(var(--text-base) * 1.125);
-  color: var(--text-heading);
-  line-height: 1.7;
 }
 
 /* ── Video embed ── */

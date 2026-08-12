@@ -1,6 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
-   UTILITIES
-   ═══════════════════════════════════════════════════════════════ */
+/* UTILITIES */
 function normalizePath(path) {
   const stack = [];
   for (const p of path.split("/")) {
@@ -15,9 +13,7 @@ function dirOf(filePath) {
   return filePath.substring(0, filePath.lastIndexOf("/"));
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   READING TIME
-   ═══════════════════════════════════════════════════════════════ */
+/* READING TIME */
 function readingTime(text) {
   const trimmed = text.trim();
   if (!trimmed) return "";
@@ -27,9 +23,7 @@ function readingTime(text) {
   return `${mins} min read`;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   FRONT-MATTER "updated:" DATE
-   ═══════════════════════════════════════════════════════════════ */
+/* FRONT-MATTER "updated:" DATE */
 function parseUpdatedDate(text) {
   const fmMatch = text.match(/^---\n([\s\S]*?)\n---/);
   if (!fmMatch) return null;
@@ -37,16 +31,12 @@ function parseUpdatedDate(text) {
   return dateMatch ? dateMatch[1] : null;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   DYNAMIC PAGE TITLE
-   ═══════════════════════════════════════════════════════════════ */
+/* DYNAMIC PAGE TITLE */
 function updatePageTitle(title) {
   document.title = `${title} | Wiki App`;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ROBUST RELATIVE PATH RESOLVER
-   ═══════════════════════════════════════════════════════════════ */
+/* ROBUST RELATIVE PATH RESOLVER */
 function resolvePath(baseDir, relHref) {
   const hashIdx = relHref.indexOf("#");
   const fragment = hashIdx >= 0 ? relHref.slice(hashIdx) : "";
@@ -62,9 +52,7 @@ function resolvePath(baseDir, relHref) {
   return stack.join("/") + fragment;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   BREADCRUMB HELPER
-   ═══════════════════════════════════════════════════════════════ */
+/* BREADCRUMB HELPER */
 function setBreadcrumb(elId, items) {
   const el = document.getElementById(elId);
   if (!el) return;

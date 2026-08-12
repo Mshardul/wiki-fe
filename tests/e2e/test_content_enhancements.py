@@ -317,11 +317,9 @@ def test_copy_btn_and_sortable_th_44px_on_coarse_pointer(browser, base_url, cdn_
         assert copy_size["width"] >= 44, f"copy-btn width too small: {copy_size['width']}px"
         assert copy_size["height"] >= 44, f"copy-btn height too small: {copy_size['height']}px"
 
-        th = page.query_selector(".sortable-th")
-        if th:
-            th_size = page.evaluate(
-                "() => document.querySelector('.sortable-th').getBoundingClientRect().height"
-            )
+        th = page.locator(".sortable-th").first
+        if th.count():
+            th_size = th.evaluate("el => el.getBoundingClientRect().height")
             assert th_size >= 44, f"sortable-th height too small: {th_size}px"
     finally:
         ctx.close()

@@ -30,7 +30,7 @@ coverage are **confirmed fixed**. Findings below are current-tree only.
 #### [POLISH] "Backdrop" vs "overlay" still interchangeable for click-outside scrims
 
 - **Concern:** naming
-- **Files:** `js/app.js:421-423` (`prefs-backdrop`, `auth-backdrop`), `js/app/bookmarks-modal.js:100` (`bookmarks-modal-backdrop`), vs `js/app/wiki-switcher.js:7` (`wiki-switcher-overlay`), `js/app/complexity-compare.js:151` (`compare-overlay`), `js/app/link-graph.js:76` (`link-graph-overlay`), `js/app/section-map.js:49` (`section-map-overlay`), `js/app/mobile-panels.js:13` (`toc-mobile-overlay`)
+- **Files:** `js/app.js:421-423` (`prefs-backdrop`, `auth-backdrop`), `js/app/bookmarks-modal.js:100` (`bookmarks-modal-backdrop`), vs `js/app/wiki-switcher.js:7` (`wiki-switcher-backdrop`), `js/app/complexity-compare.js:151` (`compare-backdrop`), `js/app/link-graph.js:76` (`link-graph-backdrop`), `js/app/section-map.js:49` (`section-map-overlay`), `js/app/mobile-panels.js:13` (`toc-mobile-backdrop`)
 - **Observation:** same UX role (dimmed click-outside-to-close layer) still splits on element-id vocabulary: registry modals tend toward `*-backdrop`, canvas/drawer layers toward `*-overlay`. Zoom even nests both (`zoom-overlay` + `zoom-overlay-backdrop` in `js/content/zoom-lightbox.js:6-11`).
 - **Impact:** search/grep for “how do I wire a new modal scrim?” returns two precedents; low runtime risk.
 - **Fix direction:** pick one term in CONVENTIONS (“scrim id suffix: `-backdrop` for registry modals, `-overlay` for full-viewport layers”) or gradually rename; no behavior change required.

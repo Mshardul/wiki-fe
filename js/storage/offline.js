@@ -1,8 +1,6 @@
 import { state } from "../state.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   OFFLINE / PWA
-   ═══════════════════════════════════════════════════════════════ */
+/* OFFLINE / PWA */
 const CACHED_AT_KEY = "wiki-offline-cached-at";
 
 // Cache API responses carry no write timestamp, so last-cached dates for the offline shelf are tracked in a parallel localStorage map, keyed by filePath.
@@ -136,9 +134,7 @@ const Offline = {
 };
 
 export {
-  downloadArticle,
   removeArticleDownload,
-  isArticleCached,
   updateOfflineBtn,
   Offline,
   clearAllDownloads,

@@ -80,7 +80,7 @@
 .wiki-switcher-modal.hidden {
   display: none;
 }
-.wiki-switcher-overlay {
+.wiki-switcher-backdrop {
   position: absolute;
   inset: 0;
   background: var(--overlay);

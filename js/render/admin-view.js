@@ -8,9 +8,7 @@ import {
 } from "./nav-utils.js";
 import { showToast } from "./toast.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   ADMIN PAGE
-   ═══════════════════════════════════════════════════════════════ */
+/* ADMIN PAGE */
 // /admin route: UX-gated on user.role === "admin" only - not a real security boundary, BE independently re-checks admin role on every call.
 
 let _activeTab = "users";
@@ -61,9 +59,7 @@ async function renderAdminPage(user) {
   _renderActiveTab();
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   USERS TAB
-   ═══════════════════════════════════════════════════════════════ */
+/* USERS TAB */
 
 function _roleBadge(role) {
   return `<span class="admin-badge admin-badge--${escHtml(role)}">${escHtml(role)}</span>`;
@@ -159,9 +155,7 @@ async function _handleToggleStatus(userId, currentActive) {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SITE HEALTH TAB
-   ═══════════════════════════════════════════════════════════════ */
+/* SITE HEALTH TAB */
 
 async function renderSiteHealthTab() {
   const body = document.getElementById("admin-tab-body");

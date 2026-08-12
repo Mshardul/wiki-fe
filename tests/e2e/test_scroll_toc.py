@@ -346,7 +346,7 @@ def test_mobile_toc_closes_on_link_tap(page, base_url):
         "() => !document.getElementById('toc-sidebar').classList.contains('mobile-open')"
     )
     assert (
-        not page.locator("#toc-mobile-overlay")
+        not page.locator("#toc-mobile-backdrop")
         .get_attribute("class")
         .__contains__("open")
     )
@@ -532,7 +532,7 @@ def test_mobile_toc_close_via_overlay_unlocks_scroll(page, base_url):
     page.wait_for_function(
         "() => document.getElementById('toc-sidebar').classList.contains('mobile-open')"
     )
-    page.locator("#toc-mobile-overlay").click(position={"x": 10, "y": 10})
+    page.locator("#toc-mobile-backdrop").click(position={"x": 10, "y": 10})
     page.wait_for_function(
         "() => !document.getElementById('toc-sidebar').classList.contains('mobile-open')"
     )

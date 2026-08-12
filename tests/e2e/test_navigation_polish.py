@@ -199,7 +199,7 @@ def test_overlay_click_closes_switcher(page, base_url):
     _go_to_article(page, base_url)
     page.keyboard.press("w")
     page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
-    page.locator("#wiki-switcher-overlay").click(position={"x": 5, "y": 5})
+    page.locator("#wiki-switcher-backdrop").click(position={"x": 5, "y": 5})
     page.wait_for_selector("#wiki-switcher-modal.hidden", state="attached", timeout=2_000)
 
 
@@ -287,7 +287,7 @@ def test_overlay_click_closes_link_graph(page, base_url):
     _go_to_article(page, base_url)
     page.keyboard.press("g")
     page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
-    page.locator("#link-graph-overlay").click(position={"x": 5, "y": 5})
+    page.locator("#link-graph-backdrop").click(position={"x": 5, "y": 5})
     page.wait_for_selector("#link-graph-modal.hidden", state="attached", timeout=2_000)
 
 

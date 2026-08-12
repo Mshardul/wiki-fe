@@ -9,9 +9,7 @@ import {
   resolvePath,
 } from "./nav-utils.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   RELATED ARTICLES
-   ═══════════════════════════════════════════════════════════════ */
+/* RELATED ARTICLES */
 function _rankRelated(current, candidates) {
   const STOP = new Set([
     "a",
@@ -98,9 +96,7 @@ function _stripHtml(labelHtml, cards) {
     </div>`;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   AUTHOR-CURATED "## Recommended" SECTION
-   ═══════════════════════════════════════════════════════════════ */
+/* AUTHOR-CURATED "## Recommended" SECTION */
 // Author "## Recommended" heading + linked list overrides keyword-ranked auto-suggestions; heading/list stripped from rendered body so it isn't shown twice.
 function extractRecommendedLinks(body, currentFilePath) {
   const section = [...body.querySelectorAll(".section")].find((s) => {
@@ -175,9 +171,7 @@ async function renderRelatedArticles(wiki, currentPath, recommendedLinks, isStal
   } catch {}
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   BACKLINK SPINE: "Mentioned by" reverse links
-   ═══════════════════════════════════════════════════════════════ */
+/* BACKLINK SPINE: "Mentioned by" reverse links */
 // backlinks.json is built at deploy time (build_backlinks.py); doesn't reflect same-session edits.
 function _wikiIdForPath(path) {
   const wiki = WIKIS.find((w) => path.startsWith(`./content/${w.id}/`));
@@ -214,9 +208,7 @@ async function renderBacklinks(currentPath, isStale) {
   container.innerHTML = _stripHtml("Mentioned by", cards);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CROSS-WIKI CONCEPT BRIDGES
-   ═══════════════════════════════════════════════════════════════ */
+/* CROSS-WIKI CONCEPT BRIDGES */
 // bridges.json is a hand-authored one-directional { a, b } path list, expanded symmetrically and resolved against each wiki's search index for a canonical title/slug.
 function _cardForPath(sections, path) {
   for (const section of sections) {

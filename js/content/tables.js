@@ -1,9 +1,7 @@
 import { state } from "../state.js";
 import { recordReveal } from "../storage/read-tracking.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   QUIZ-ME MODE FOR COMPLEXITY TABLES
-   ═══════════════════════════════════════════════════════════════ */
+/* QUIZ-ME MODE FOR COMPLEXITY TABLES */
 
 const COMPLEXITY_HEADER_RE = /\b(time|space|complexity|best|worst|average)\b/i;
 const BIG_O_RE = /[OΘΩ]\s*\(/;
@@ -65,9 +63,7 @@ const QuizMode = {
   },
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   COMPLEXITY TABLE EXTRACTION
-   ═══════════════════════════════════════════════════════════════ */
+/* COMPLEXITY TABLE EXTRACTION */
 
 function extractComplexityTable(contentEl) {
   const table = [...contentEl.querySelectorAll("table")].find(isComplexityTable);
@@ -92,9 +88,7 @@ function extractComplexityTable(contentEl) {
   return rows.length ? { columns, rows } : null;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   TABLE COLUMN SORT
-   ═══════════════════════════════════════════════════════════════ */
+/* TABLE COLUMN SORT */
 function addTableSort(contentEl) {
   contentEl.querySelectorAll("table").forEach((table) => {
     const thead = table.querySelector("thead");
@@ -154,9 +148,7 @@ function addTableSort(contentEl) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   TABLE SCROLL CUE
-   ═══════════════════════════════════════════════════════════════ */
+/* TABLE SCROLL CUE */
 function addTableScrollCues(contentEl) {
   contentEl.querySelectorAll("table").forEach((table) => {
     const wrap = document.createElement("div");
@@ -183,6 +175,5 @@ export {
   QuizMode,
   addTableSort,
   addTableScrollCues,
-  isComplexityTable,
   extractComplexityTable,
 };

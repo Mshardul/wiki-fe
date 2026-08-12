@@ -3,12 +3,7 @@ import { getCachedAt, listCachedArticlePaths, removeArticleDownload } from "../s
 import { fetchPrebuiltSearchIndex, normalizePath, setBreadcrumb } from "./nav-utils.js";
 import { showView } from "./router.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   OFFLINE SHELF
-   Lists every article currently saved for offline reading, grouped by wiki,
-   resolved against the prebuilt search index for titles. Reflects
-   online/offline status reactively via the browser's online/offline events.
-   ═══════════════════════════════════════════════════════════════ */
+/* OFFLINE SHELF — Lists every article currently saved for offline reading, grouped by wiki, — resolved against the prebuilt search index for titles. Reflects — online/offline status reactively via the browser's online/offline events. */
 
 function _renderStatusBanner() {
   const el = document.getElementById("offline-shelf-status");

@@ -1,5 +1,11 @@
 import { WIKIS, escHtml, state } from "../state.js";
 
+function _swDebugLabel() {
+  if (!("serviceWorker" in navigator)) return "none";
+  if (state.serviceWorkerError) return `failed: ${state.serviceWorkerError}`;
+  return "registered";
+}
+
 function mountDebugOverlay() {
   const el = document.createElement("div");
   el.id = "debug-overlay";
@@ -30,7 +36,7 @@ function mountDebugOverlay() {
       ["Wiki", state.currentWikiId || "-"],
       ["File", state.currentFilePath || "-"],
       ["Wikis", String(WIKIS.length)],
-      ["SW", "serviceWorker" in navigator ? "supported" : "none"],
+      ["SW", _swDebugLabel()],
       ["Cache API", "caches" in window ? "supported" : "none"],
       ["Clipboard", navigator.clipboard ? "async" : "execCommand"],
       ["Theme", document.documentElement.getAttribute("data-theme") || "dark"],

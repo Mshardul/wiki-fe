@@ -10,7 +10,7 @@ import { WIKIS, escHtml, state } from "../state.js";
 
 let _focusTrapHandler = null;
 
-document.getElementById("wiki-switcher-overlay").addEventListener("click", closeWikiSwitcher);
+document.getElementById("wiki-switcher-backdrop").addEventListener("click", closeWikiSwitcher);
 
 function openWikiSwitcher() {
   if (isWikiSwitcherOpen()) return;

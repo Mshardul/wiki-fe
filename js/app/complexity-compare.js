@@ -159,7 +159,7 @@ function isComparePickerOpen() {
 const comparePickerModal = { isOpen: isComparePickerOpen, close: closeComparePicker };
 registerModal(comparePickerModal);
 
-document.getElementById("compare-overlay").addEventListener("click", closeComparePicker);
+document.getElementById("compare-backdrop").addEventListener("click", closeComparePicker);
 document.getElementById("compare-close").addEventListener("click", closeComparePicker);
 
 document.getElementById("compare-search-input").addEventListener("input", (e) => {

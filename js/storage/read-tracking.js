@@ -1,8 +1,6 @@
 import { state } from "../state.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   QUIZ-MODE REVEAL TRACKING (lightweight confidence signal)
-   ═══════════════════════════════════════════════════════════════ */
+/* QUIZ-MODE REVEAL TRACKING (lightweight confidence signal) */
 const REVEAL_KEY_PREFIX = "wiki-reveals";
 
 function _revealKey() {
@@ -28,10 +26,7 @@ function getRevealCount(path) {
   return _getRevealMap()[path] || 0;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   OPENED-DATE TRACKING (visit timestamps for "updated since read" dots
-   and index-card fade — separate from completion state)
-   ═══════════════════════════════════════════════════════════════ */
+/* OPENED-DATE TRACKING (visit timestamps for "updated since read" dots — and index-card fade — separate from completion state) */
 const OPENED_KEY_PREFIX = "wiki-read-dates";
 
 function _openedKey() {
@@ -62,4 +57,4 @@ function clearVisitHistory(wikiId) {
   localStorage.removeItem(`${OPENED_KEY_PREFIX}-${wikiId}`);
 }
 
-export { recordReveal, getRevealCount, recordOpened, getLastOpened, clearVisitHistory };
+export { recordReveal, recordOpened, getLastOpened, clearVisitHistory };

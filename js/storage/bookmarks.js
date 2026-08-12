@@ -5,9 +5,7 @@ function _loggedIn() {
   return state.session?.status === "in";
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   BOOKMARKS
-   ═══════════════════════════════════════════════════════════════ */
+/* BOOKMARKS */
 const BOOKMARKS_KEY = "wiki-bookmarks";
 
 function getBookmarks() {
@@ -148,7 +146,6 @@ export {
   BOOKMARKS_KEY,
   getBookmarks,
   saveBookmarks,
-  isBookmarked,
   updateBookmarkBtn,
   renderBookmarksSection,
   Bookmarks,

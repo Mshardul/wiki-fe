@@ -28,9 +28,7 @@ import {
 } from "./nav-utils.js";
 import { showView } from "./router.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   PINNED WIKIS - local-only, no backend sync (home card order)
-   ═══════════════════════════════════════════════════════════════ */
+/* PINNED WIKIS - local-only, no backend sync (home card order) */
 const PINNED_WIKIS_KEY = "wiki-pinned-wikis";
 
 function getPinnedWikis() {
@@ -72,9 +70,7 @@ function _sortWikisByPin(wikis) {
   return [...pinnedWikis, ...restWikis];
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   VIEW 1 - HOME
-   ═══════════════════════════════════════════════════════════════ */
+/* VIEW 1 - HOME */
 function renderHome() {
   const grid = document.getElementById("wiki-grid");
   const pinnedSet = new Set(getPinnedWikis());
@@ -115,9 +111,7 @@ function renderHome() {
   updateArticleCounts();
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   VIEW 2 - WIKI INDEX
-   ═══════════════════════════════════════════════════════════════ */
+/* VIEW 2 - WIKI INDEX */
 async function renderIndex(wiki) {
   state.currentWikiId = wiki.id;
 
@@ -387,9 +381,7 @@ function attachIndexCardKeyNav() {
   document.addEventListener("keydown", document._indexCardKeyNav);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   INDEX FILTER - live text filter + completion-status toggle
-   ═══════════════════════════════════════════════════════════════ */
+/* INDEX FILTER - live text filter + completion-status toggle */
 const IndexFilter = {
   _query: "",
   _completionStatus: "all", // "all" | "completed" | "incomplete"
@@ -586,15 +578,4 @@ async function populateIndexReadTimes() {
   });
 }
 
-export {
-  renderHome,
-  getPinnedWikis,
-  setPinnedWikis,
-  renderIndex,
-  renderIndexSections,
-  renderIndexControls,
-  attachIndexCardKeyNav,
-  IndexFilter,
-  toggleSection,
-  populateIndexReadTimes,
-};
+export { renderHome, setPinnedWikis, renderIndex, IndexFilter, toggleSection };

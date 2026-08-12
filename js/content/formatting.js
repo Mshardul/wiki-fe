@@ -3,9 +3,7 @@ import { state } from "../state.js";
 import { appendChipStatus, isCompleted } from "../storage/completions.js";
 import { writeToClipboard } from "./code-blocks.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   CALLOUT STYLING
-   ═══════════════════════════════════════════════════════════════ */
+/* CALLOUT STYLING */
 const CALLOUT_ICONS = {
   "🎯": ["callout-interview", "🎯"],
   "⚠️": ["callout-warning", "⚠️"],
@@ -44,9 +42,7 @@ function styleCallouts(contentEl) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   COLLAPSIBLE CALLOUT BLOCKS
-   ═══════════════════════════════════════════════════════════════ */
+/* COLLAPSIBLE CALLOUT BLOCKS */
 const CALLOUT_COLLAPSE_LINES_DESKTOP = 10;
 const CALLOUT_COLLAPSE_LINES_MOBILE = 5;
 const APPROX_LINE_HEIGHT_PX = 24;
@@ -73,9 +69,7 @@ function addCollapsibleCallouts(contentEl) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PREREQUISITES CHIPS
-   ═══════════════════════════════════════════════════════════════ */
+/* PREREQUISITES CHIPS */
 // Matches the "[Must read]"/"[Should read]" marker Showdown leaves as plain text (brackets without a following "(" aren't a markdown link).
 const PREREQ_LEVEL_RE = /\[(Must|Should) read\]/;
 
@@ -157,9 +151,7 @@ function renderPrerequisites(contentEl) {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   HEADING ANCHOR LINKS
-   ═══════════════════════════════════════════════════════════════ */
+/* HEADING ANCHOR LINKS */
 function addAnchorLinks(contentEl, onCopyError = () => {}, onCopySuccess = () => {}) {
   contentEl.querySelectorAll("h2, h3, h4").forEach((h) => {
     if (!h.id) return;
@@ -188,9 +180,7 @@ function anchorIcon() {
   return `<svg class="icon"><use href="#icon-anchor"></use></svg>`;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MATH FORMULA VARIABLE-SUBSTITUTION TOGGLE
-   ═══════════════════════════════════════════════════════════════ */
+/* MATH FORMULA VARIABLE-SUBSTITUTION TOGGLE */
 
 const VAR_MAP = {
   T: "time",
@@ -288,9 +278,7 @@ function addFormulaToggle(contentEl) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   LATEX COPY BUTTONS
-   ═══════════════════════════════════════════════════════════════ */
+/* LATEX COPY BUTTONS */
 function addLatexCopyButtons(contentEl, onCopyError = () => {}) {
   contentEl.querySelectorAll(".katex-display").forEach((block) => {
     const annotation = block.querySelector("annotation[encoding='application/x-tex']");
@@ -319,9 +307,7 @@ function addLatexCopyButtons(contentEl, onCopyError = () => {}) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   TYPEWRITER FOCUS MODE
-   ═══════════════════════════════════════════════════════════════ */
+/* TYPEWRITER FOCUS MODE */
 let _focusMode = false;
 let _focusObserver = null;
 
@@ -376,9 +362,7 @@ function cleanupFocusMode() {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   HIDE-AND-REVEAL STUDY MODE
-   ═══════════════════════════════════════════════════════════════ */
+/* HIDE-AND-REVEAL STUDY MODE */
 let _studyMode = false;
 
 function _setH3Revealed(h3, revealed) {
@@ -434,9 +418,7 @@ function _cleanupFocusObserver(contentEl) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   IN-ARTICLE FIND - "/" find bar over the article body
-   ═══════════════════════════════════════════════════════════════ */
+/* IN-ARTICLE FIND - "/" find bar over the article body */
 const ArticleFind = {
   _open: false,
   _hits: [],
@@ -618,9 +600,7 @@ const ArticleFind = {
   closeBtn?.addEventListener("click", () => ArticleFind.close());
 })();
 
-/* ═══════════════════════════════════════════════════════════════
-   TABBED CODE BLOCKS
-   ═══════════════════════════════════════════════════════════════ */
+/* TABBED CODE BLOCKS */
 const TABS_LAST_LANG_KEY = "tabs-last-lang";
 
 function _parseBlockId(pre) {
@@ -727,9 +707,7 @@ function addTabbedCodeBlocks(contentEl) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   FOOTNOTES
-   ═══════════════════════════════════════════════════════════════ */
+/* FOOTNOTES */
 function addFootnotes(contentEl) {
   const defMap = {};
   const defEls = [];
@@ -802,9 +780,7 @@ function addFootnotes(contentEl) {
   contentEl.appendChild(section);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ARTICLE END-MARKER
-   ═══════════════════════════════════════════════════════════════ */
+/* ARTICLE END-MARKER */
 function addArticleEndMarker(contentEl) {
   if (contentEl.querySelector(".article-end-marker")) return;
   const marker = document.createElement("div");

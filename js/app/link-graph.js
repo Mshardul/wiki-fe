@@ -82,7 +82,7 @@ function isLinkGraphOpen() {
   return !document.getElementById("link-graph-modal").classList.contains("hidden");
 }
 
-document.getElementById("link-graph-overlay").addEventListener("click", closeLinkGraph);
+document.getElementById("link-graph-backdrop").addEventListener("click", closeLinkGraph);
 document.getElementById("link-graph-close").addEventListener("click", closeLinkGraph);
 
 export { openLinkGraph, closeLinkGraph, isLinkGraphOpen };

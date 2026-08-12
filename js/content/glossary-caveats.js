@@ -1,8 +1,6 @@
 import { state } from "../state.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   INLINE CAVEAT REVEALS  [?caveat text]
-   ═══════════════════════════════════════════════════════════════ */
+/* INLINE CAVEAT REVEALS  [?caveat text] */
 const CAVEAT_RE = /\[\\?\?([^\]]+)\]/g;
 
 function addInlineCaveats(contentEl) {
@@ -70,9 +68,7 @@ function addInlineCaveats(contentEl) {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   GLOSSARY TERMS (inline expand + hover popovers)
-   ═══════════════════════════════════════════════════════════════ */
+/* GLOSSARY TERMS (inline expand + hover popovers) */
 let _glossaryCache = null;
 
 function _loadGlossary() {
@@ -248,9 +244,7 @@ function addGlossaryTerms(contentEl) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SESSION HTML CACHE
-   ═══════════════════════════════════════════════════════════════ */
+/* SESSION HTML CACHE */
 const _HTML_CACHE_PREFIX = "wiki-html-cache-";
 
 function cacheRenderedHtml(filePath, html) {

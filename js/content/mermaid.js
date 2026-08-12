@@ -1,8 +1,6 @@
 import { writeToClipboard } from "./code-blocks.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   MERMAID DIAGRAMS
-   ═══════════════════════════════════════════════════════════════ */
+/* MERMAID DIAGRAMS */
 // isStale (optional): called before each diagram paint, skips the paint if the render's navigation has since been superseded.
 async function renderMermaidDiagrams(contentEl, isStale) {
   if (typeof mermaid === "undefined") return;
@@ -31,9 +29,7 @@ async function renderMermaidDiagrams(contentEl, isStale) {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MERMAID NODE HOVER CAPTIONS
-   ═══════════════════════════════════════════════════════════════ */
+/* MERMAID NODE HOVER CAPTIONS */
 function _parseMermaidCaptions(src) {
   const map = {};
   const re = /^\s*%%\s*node-caption:\s*(\S+)\s+"([^"]+)"/gm;
@@ -142,9 +138,7 @@ function _positionTooltip(tip, e) {
   tip.style.top = `${y}px`;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MERMAID COPY BUTTON
-   ═══════════════════════════════════════════════════════════════ */
+/* MERMAID COPY BUTTON */
 function _appendMermaidCopyBtn(diagram) {
   const copyBtn = document.createElement("button");
   copyBtn.className = "copy-btn mermaid-copy-btn";
@@ -168,9 +162,7 @@ function _appendMermaidCopyBtn(diagram) {
   diagram.appendChild(copyBtn);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MERMAID STEP-THROUGH
-   ═══════════════════════════════════════════════════════════════ */
+/* MERMAID STEP-THROUGH */
 function _clearMermaidStepHighlights(diagram) {
   diagram.querySelectorAll(".step-active").forEach((el) => el.classList.remove("step-active"));
 }
@@ -291,9 +283,7 @@ function addMermaidStepThrough(contentEl) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MERMAID THEME SYNC
-   ═══════════════════════════════════════════════════════════════ */
+/* MERMAID THEME SYNC */
 function getMermaidThemeConfig(theme) {
   if (theme === "light") {
     return {

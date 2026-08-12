@@ -1,9 +1,7 @@
 import { escHtml, synonymCache } from "./state.js";
 import { RecentSearches } from "./storage/scroll-collapse.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   SNIPPET EXTRACTION
-   ═══════════════════════════════════════════════════════════════ */
+/* SNIPPET EXTRACTION */
 
 function _sentences(text) {
   return text.match(/[^.!?]+[.!?]*/g) || [text];
@@ -30,9 +28,7 @@ function _highlightSnippet(sentence, term) {
   return `${escHtml(sentence.slice(0, idx))}<mark class="gsearch-highlight">${escHtml(sentence.slice(idx, idx + term.length))}</mark>${escHtml(sentence.slice(idx + term.length))}`;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SYNONYM EXPANSION
-   ═══════════════════════════════════════════════════════════════ */
+/* SYNONYM EXPANSION */
 
 function expandQuery(query) {
   const ql = query.toLowerCase();
@@ -41,9 +37,7 @@ function expandQuery(query) {
   return [query, ...synonyms];
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   RECENT SEARCHES UI
-   ═══════════════════════════════════════════════════════════════ */
+/* RECENT SEARCHES UI */
 
 function renderRecentSearches() {
   const recents = RecentSearches.get();
@@ -73,9 +67,7 @@ function renderRecentSearches() {
     </div>`;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   NO-RESULTS FALLBACK
-   ═══════════════════════════════════════════════════════════════ */
+/* NO-RESULTS FALLBACK */
 
 function getFallbackSuggestions(query, entries, scoreFn) {
   const expanded = expandQuery(query);

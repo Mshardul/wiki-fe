@@ -5,9 +5,7 @@ import { buildSearchEntriesForWiki } from "./home-parse.js";
 import { normalizePath } from "./nav-utils.js";
 import { showToast } from "./toast.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   INDEX-CARD SWIPE (right = bookmark)
-   ═══════════════════════════════════════════════════════════════ */
+/* INDEX-CARD SWIPE (right = bookmark) */
 const CARD_SWIPE_THRESHOLD = 50;
 const CARD_SWIPE_DEADZONE = 8;
 let _cardSwipeBound = false;
@@ -192,4 +190,4 @@ async function _refreshSearchCacheForWiki(wiki) {
   } catch {}
 }
 
-export { bindIndexCardSwipe, bindIndexPullToRefresh, refreshIndex };
+export { bindIndexCardSwipe, bindIndexPullToRefresh };

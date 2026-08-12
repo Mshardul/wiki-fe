@@ -9,10 +9,7 @@ import { clearVisitHistory } from "./read-tracking.js";
 import { clearRecents } from "./recents.js";
 import { RecentSearches, clearScrollPositions } from "./scroll-collapse.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   SELECTIVE DATA CLEAR - orchestrates each domain module's own
-   clear function; never touches localStorage/caches directly.
-   ═══════════════════════════════════════════════════════════════ */
+/* SELECTIVE DATA CLEAR - orchestrates each domain module's own — clear function; never touches localStorage/caches directly. */
 
 // category key -> { label, wikiScoped, clear(wikiId) }
 const DATA_CATEGORIES = {

@@ -1,6 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
-   HOME HERO PARALLAX
-   ═══════════════════════════════════════════════════════════════ */
+/* HOME HERO PARALLAX */
 (function bindHomeParallax() {
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
   const homeView = document.getElementById("view-home");

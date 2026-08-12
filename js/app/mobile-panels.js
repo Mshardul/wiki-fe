@@ -13,7 +13,7 @@ import { closeSectionMap, isSectionMapOpen } from "./section-map.js";
 import { closeWikiSwitcher, isWikiSwitcherOpen } from "./wiki-switcher.js";
 
 const tocMobileBtn = document.getElementById("toc-mobile-btn");
-const tocMobileOverlay = document.getElementById("toc-mobile-overlay");
+const tocMobileOverlay = document.getElementById("toc-mobile-backdrop");
 const tocSidebar = document.getElementById("toc-sidebar");
 
 document.getElementById("toc-collapse").addEventListener("click", () => {
@@ -96,11 +96,7 @@ function closeTopPanel() {
   return false;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MOBILE TOUCH GESTURES
-   Swipe navigation, panel-close, and a shared close registry.
-   All gestures are touch-only and gated to the mobile breakpoint.
-   ═══════════════════════════════════════════════════════════════ */
+/* MOBILE TOUCH GESTURES — Swipe navigation, panel-close, and a shared close registry. — All gestures are touch-only and gated to the mobile breakpoint. */
 const GESTURE_MOBILE_MAX = 900;
 const SWIPE_THRESHOLD = 50;
 const EDGE_ZONE = 44;
@@ -193,9 +189,7 @@ function axisLock(dx, dy) {
   );
 })();
 
-/* ═══════════════════════════════════════════════════════════════
-   ORIENTATION / VIEWPORT RESIZE
-   ═══════════════════════════════════════════════════════════════ */
+/* ORIENTATION / VIEWPORT RESIZE */
 let _resizeTimer = null;
 let _lastViewportWidth = window.innerWidth;
 window.addEventListener(
@@ -230,5 +224,3 @@ window.addEventListener(
   },
   { passive: true },
 );
-
-export { isMobileTocOpen, openMobileToc, closeMobileToc, closeTopPanel };

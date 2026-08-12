@@ -12,9 +12,7 @@ const MARKER_LABELS = {
   "✅": "got-it",
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   TEXT-NODE WALKING (char offsets relative to #markdown-body's full textContent)
-   ═══════════════════════════════════════════════════════════════ */
+/* TEXT-NODE WALKING (char offsets relative to #markdown-body's full textContent) */
 function _textNodes(contentEl) {
   const walker = document.createTreeWalker(contentEl, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
@@ -58,9 +56,7 @@ function _globalOffset(contentEl, node, localOffset) {
   return -1;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   FLOATING SELECTION TOOLBAR
-   ═══════════════════════════════════════════════════════════════ */
+/* FLOATING SELECTION TOOLBAR */
 let _toolbarEl = null;
 let _activeRange = null;
 
@@ -157,9 +153,7 @@ function _hideToolbar() {
   _activeRange = null;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   REMOVE POPOVER (click an existing highlight/marker)
-   ═══════════════════════════════════════════════════════════════ */
+/* REMOVE POPOVER (click an existing highlight/marker) */
 let _removePopoverEl = null;
 
 function _getRemovePopover() {
@@ -196,9 +190,7 @@ function _showRemovePopover(targetEl, onRemove) {
   pop.classList.remove("hidden");
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   HIGHLIGHT CREATION / APPLICATION
-   ═══════════════════════════════════════════════════════════════ */
+/* HIGHLIGHT CREATION / APPLICATION */
 function _wrapRangeInMark(range, id) {
   const mark = document.createElement("span");
   mark.className = "wiki-highlight";
@@ -285,9 +277,7 @@ function _insertMarkerBadge(node, localOffset, entry) {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   STALE-OFFSET DETECTION + RE-ANCHORING
-   ═══════════════════════════════════════════════════════════════ */
+/* STALE-OFFSET DETECTION + RE-ANCHORING */
 // Markdown edits shift stored offsets, so verify the snippet still matches at that offset before trusting it, else search nearby and re-anchor or drop.
 const REANCHOR_SEARCH_WINDOW = 2000;
 
@@ -305,9 +295,7 @@ function _findNearbyOffset(fullText, offset, snippet) {
   return localIdx === -1 ? -1 : from + localIdx;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   RE-APPLY PERSISTED HIGHLIGHTS + MARKERS ON ARTICLE LOAD
-   ═══════════════════════════════════════════════════════════════ */
+/* RE-APPLY PERSISTED HIGHLIGHTS + MARKERS ON ARTICLE LOAD */
 function applyHighlightsAndMarkers(contentEl, wikiId, articlePath) {
   const fullText = contentEl.textContent;
   let dropped = 0;

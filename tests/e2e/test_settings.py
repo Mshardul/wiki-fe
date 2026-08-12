@@ -770,7 +770,7 @@ def test_saved_non_default_font_loads_extras_on_boot(page, base_url):
     page.reload(wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
     assert page.locator("#font-extras").count() == 1, (
-        "Saved non-default font (Lora) should trigger loadAllFonts at boot"
+        "Saved non-default font (Lora) should trigger ensureFontExtras at boot"
     )
 
 

@@ -88,9 +88,7 @@ import {
 import { showView } from "./router.js";
 import { showToast } from "./toast.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   LOADING SKELETON
-   ═══════════════════════════════════════════════════════════════ */
+/* LOADING SKELETON */
 function buildLoadingSkeleton(fingerprint) {
   const line = (w) => `<div class="skeleton-line" style="width:${w}"></div>`;
   const para = () =>
@@ -125,9 +123,7 @@ function buildLoadingSkeleton(fingerprint) {
   </div>`;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   INLINE SVG DIAGRAMS
-   ═══════════════════════════════════════════════════════════════ */
+/* INLINE SVG DIAGRAMS */
 async function inlineSvgImages(contentEl) {
   const imgs = [...contentEl.querySelectorAll('img[src$=".svg"]')];
   if (!imgs.length || typeof DOMPurify === "undefined") return;
@@ -175,9 +171,7 @@ function getCurrentRenderGen() {
   return _renderGen;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   RESUME-BY-IDEA CHIP
-   ═══════════════════════════════════════════════════════════════ */
+/* RESUME-BY-IDEA CHIP */
 function _findNearestHeadingAbove(contentEl, targetY) {
   const headings = Array.from(contentEl.querySelectorAll("h2, h3"));
   let nearest = null;
@@ -546,9 +540,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   INTERNAL .MD LINK INTERCEPTION + HOVER PREVIEWS
-   ═══════════════════════════════════════════════════════════════ */
+/* INTERNAL .MD LINK INTERCEPTION + HOVER PREVIEWS */
 let hoverPreviewTimer;
 let _previewAbortController = null;
 let _previewGeneration = 0;
@@ -857,7 +849,6 @@ export {
   navigateToContent,
   renderContent,
   interceptMdLinks,
-  closePeekSheet,
   showHoverPreview,
   getCurrentMarkdown,
   getCurrentRenderGen,

@@ -2,12 +2,7 @@ import { escHtml } from "../state.js";
 import { fetchPrebuiltSearchIndex, fetchText, normalizePath, setBreadcrumb } from "./nav-utils.js";
 import { showView } from "./router.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   CHANGELOG VIEW
-   Parses content/CHANGELOG.md into date-grouped entries, filterable by
-   filename in real time. Filenames link to their article when resolvable
-   against the prebuilt search index; otherwise render as plain text.
-   ═══════════════════════════════════════════════════════════════ */
+/* CHANGELOG VIEW — Parses content/CHANGELOG.md into date-grouped entries, filterable by — filename in real time. Filenames link to their article when resolvable — against the prebuilt search index; otherwise render as plain text. */
 
 const DATE_HEADING_RE = /^##\s+(\d{4}-\d{2}-\d{2})\s*$/;
 const ENTRY_RE = /^-\s+(.+)$/;

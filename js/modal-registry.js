@@ -1,8 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
-   MODAL REGISTRY
-   Shared focus-trap + open-state tracking so each modal controller
-   doesn't reimplement identical Tab-cycle and isOpen() logic.
-   ═══════════════════════════════════════════════════════════════ */
+/* MODAL REGISTRY — Shared focus-trap + open-state tracking so each modal controller — doesn't reimplement identical Tab-cycle and isOpen() logic. */
 
 // Cycles Tab focus between the first/last focusable element inside `dialogEl`.
 // Returns a handler to pass to addEventListener/removeEventListener("keydown", ...).

@@ -3,9 +3,7 @@ import { fireStudyMilestone } from "../app/study-feedback.js";
 import { normalizePath } from "../render/nav-utils.js";
 import { scheduleSyncMutation, state } from "../state.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   COMPLETIONS - per-wiki-per-article progress (sole setter via button)
-   ═══════════════════════════════════════════════════════════════ */
+/* COMPLETIONS - per-wiki-per-article progress (sole setter via button) */
 const COMPLETED_KEY_PREFIX = "wiki-completed";
 
 function _completedKey(wikiId) {
@@ -73,9 +71,7 @@ function appendChipStatus(chip, done) {
   chip.prepend(indicator);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   COMPLETION BUTTON - full-width toggle after the article-end-marker
-   ═══════════════════════════════════════════════════════════════ */
+/* COMPLETION BUTTON - full-width toggle after the article-end-marker */
 function _setCompletionBtnState(btn, done) {
   btn.classList.toggle("completion-btn--done", done);
   btn.textContent = done ? "Completed - undo" : "Mark as completed";

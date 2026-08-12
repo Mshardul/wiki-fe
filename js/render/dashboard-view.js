@@ -4,11 +4,7 @@ import { fetchWikiIndex } from "./home-parse.js";
 import { normalizePath, setBreadcrumb } from "./nav-utils.js";
 import { showView } from "./router.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   PROGRESS DASHBOARD
-   One card per vertical: completed % against that vertical's total
-   article count. Hidden entirely if a vertical has zero articles.
-   ═══════════════════════════════════════════════════════════════ */
+/* PROGRESS DASHBOARD — One card per vertical: completed % against that vertical's total — article count. Hidden entirely if a vertical has zero articles. */
 
 function _renderCard(wiki, total, completedCount) {
   const completedPct = total ? Math.round((completedCount / total) * 100) : 0;

@@ -17,6 +17,8 @@
 - [Production Failure Modes & Gotchas](#production-failure-modes--gotchas)
 - [Observability & Debugging](#observability--debugging)
 - [Quick Decision Guide](#quick-decision-guide)
+- [Interview Scenario Bank](#interview-scenario-bank)
+- [What the Interviewer Probes For](#what-the-interviewer-probes-for)
 - [Appendices](#appendices)
 
 ## TLDR
@@ -71,11 +73,6 @@ What gets rate limited is as important as how. Identifier choice determines accu
 > Use **hard limits** when cost-per-request is high (LLM inference, video transcoding) or enforcement is security-critical (auth endpoints, payment flows).
 >
 > Use **soft limits** when user experience matters more than strict enforcement and the failure mode is gradual degradation, not abuse.
-
-> 🎯 **Interview Lens** > **Q:** You're designing a public API rate limiter. Where do you start?
-> **Ideal answer:** Start with the identifier (user ID for authenticated, IP for anonymous), then placement (API gateway), then algorithm based on burst tolerance (token bucket for most cases). Distributed counting comes last - it's an implementation detail, not an architectural decision.
-> **Common trap:** Jumping to algorithm selection before establishing identifier and placement - algorithms are interchangeable; the identifier and placement are architectural.
-> **Next question:** How do you handle unauthenticated requests mixed with authenticated ones on the same endpoint?
 
 **Key Takeaway:** Identifier selection determines accuracy and bypass resistance. Get it wrong and the rate limiter is trivially circumvented regardless of how sophisticated the counting algorithm is.
 
@@ -196,11 +193,6 @@ Sidecar proxies (Envoy, Linkerd) enforce limits at the network level between ser
 > | Best for            | Default first line, public APIs     | Sensitive endpoints, tier-aware logic |
 >
 > **Production default:** API gateway as first line + per-service for auth/payment endpoints. They are complementary, not alternatives.
-
-> 🎯 **Interview Lens** > **Q:** Where would you place rate limiting in a microservices architecture?
-> **Ideal answer:** API gateway as the first line for all ingress traffic, per-service middleware for sensitive endpoints (auth, payments) that need application context. Both backed by shared Redis for cross-service quota.
-> **Common trap:** Saying "in each service" without addressing cross-service quota coordination - or "at the gateway" without acknowledging the app context limitation.
-> **Next question:** What is your fail-open vs fail-closed policy if Redis goes down?
 
 **Key Takeaway:** Placement is an architectural decision, not an implementation detail - it determines what context you have and what fails when the limiter does. Start with the gateway; add per-service limits only where business logic demands it.
 
@@ -353,11 +345,6 @@ _The choice here is the user experience of the rate limiter._
 > | Security enforcement  | Strong - clear signal         | Weak - request still runs     |
 > | Best for              | Cost control, auth, API tiers | UX-sensitive read endpoints   |
 
-> 🎯 **Interview Lens** > **Q:** How do you prevent a thundering herd when rate-limited clients all retry simultaneously?
-> **Ideal answer:** Add jitter to the Retry-After value - spread suggested retries across a small window so clients desynchronise. Clients implementing exponential backoff with jitter (AWS SDK, gRPC) amplify this naturally.
-> **Common trap:** Returning a fixed Retry-After for all clients - all clients synchronise retries at the same second, reproducing the spike that triggered the limit.
-> **Next question:** What happens if clients ignore Retry-After entirely?
-
 **Key Takeaway:** Send rate limit headers on every response - not just 429s - and add jitter to Retry-After. The difference between a rate limiter that causes retry storms and one that doesn't is almost entirely in the response contract.
 
 ## Production Failure Modes & Gotchas
@@ -500,31 +487,6 @@ When tracing a 429 complaint from a specific client: pull their identifier, quer
 
 ## Quick Decision Guide
 
-### Which Algorithm?
-
-Full mechanics and complexity comparison in [Rate Limiting Algorithms](../algorithms/rate-limiting-algorithms.md). <!-- link: rate-limiting-algorithms.md -->
-
-| Requirement                                 | Algorithm              |
-| ------------------------------------------- | ---------------------- |
-| Default REST API - bursts acceptable        | Token Bucket           |
-| Smooth, uniform downstream output required  | Leaky Bucket           |
-| Simplest possible, low-traffic internal API | Fixed Window Counter   |
-| Strictest accuracy, memory not a constraint | Sliding Window Log     |
-| Production default - accuracy + O(1) memory | Sliding Window Counter |
-
-### Where to Enforce?
-
-| Scenario                                            | Placement                                      |
-| --------------------------------------------------- | ---------------------------------------------- |
-| Public API, no app context needed                   | API Gateway                                    |
-| Need user tier, account state, or business logic    | Application Middleware                         |
-| Volumetric DDoS mitigation, unauthenticated traffic | CDN / Edge                                     |
-| East-west (service-to-service) limits               | Service Mesh                                   |
-| Security-critical endpoint (auth, payment)          | API Gateway **and** App Middleware             |
-| Client SDK calling a downstream API                 | Client-side (politeness only, not enforcement) |
-
-> **Default:** API gateway first. Add per-service middleware only when you need application context or a second enforcement line for sensitive endpoints.
-
 ### Which Identifier?
 
 | Traffic type                | Primary identifier             | Caveat                                |
@@ -535,23 +497,55 @@ Full mechanics and complexity comparison in [Rate Limiting Algorithms](../algori
 | Single sensitive endpoint   | Composite (user ID + endpoint) | Higher memory; use selectively        |
 | Global DDoS defence         | Global counter                 | Coarse; last resort                   |
 
-### Hard Reject vs Soft Throttle?
+## Interview Scenario Bank
 
-| Scenario                                    | Choice                                   |
-| ------------------------------------------- | ---------------------------------------- |
-| Auth endpoints, payment flows               | Hard reject - no work done, clear signal |
-| Expensive compute (LLM, transcoding)        | Hard reject - resource cost too high     |
-| UX-sensitive read APIs (search, dashboards) | Soft throttle - transparent to client    |
-| Approaching quota (not yet over)            | Warn via `X-RateLimit-Remaining` headers |
-| Unknown risk profile                        | Hard reject - safer default              |
+### Starting the Design Cold
 
-### Fail-Open vs Fail-Closed When Redis Is Down?
+> 🎯 **Interview Lens**
+> **Q:** You're designing a public API rate limiter. Where do you start?
+> **Ideal answer:** Start with the identifier (user ID for authenticated, IP for anonymous), then placement (API gateway), then algorithm based on burst tolerance (token bucket for most cases). Distributed counting comes last - it's an implementation detail, not an architectural decision.
+> **Common trap:** Jumping to algorithm selection before establishing identifier and placement - algorithms are interchangeable; the identifier and placement are architectural.
+> **Next question:** "How do you handle unauthenticated requests mixed with authenticated ones on the same endpoint?" → Apply the stricter (usually IP-based) limit to unauthenticated requests and a per-user limit once authenticated - the two limits coexist on the same endpoint rather than one replacing the other.
 
-| What you're protecting               | Policy                                                                           |
-| ------------------------------------ | -------------------------------------------------------------------------------- |
-| Security enforcement, auth endpoints | Fail closed - return 429 for all requests                                        |
-| Cost control, fairness quotas        | Fail open - fall back to per-instance counters                                   |
-| Default if undecided                 | Fail closed - enforcement gap is harder to explain than temporary unavailability |
+### Placement in a Microservices Architecture
+
+> 🎯 **Interview Lens**
+> **Q:** Where would you place rate limiting in a microservices architecture?
+> **Ideal answer:** API gateway as the first line for all ingress traffic, per-service middleware for sensitive endpoints (auth, payments) that need application context. Both backed by shared Redis for cross-service quota.
+> **Common trap:** Saying "in each service" without addressing cross-service quota coordination - or "at the gateway" without acknowledging the app-context limitation.
+> **Next question:** "What is your fail-open vs fail-closed policy if Redis goes down?" → Fail closed for security-critical enforcement (auth, payments) since an enforcement gap is worse than temporary unavailability; fail open for cost-control/fairness limits where staying up matters more than perfect accuracy.
+
+### Preventing Retry Thundering Herds
+
+> 🎯 **Interview Lens**
+> **Q:** How do you prevent a thundering herd when rate-limited clients all retry simultaneously?
+> **Ideal answer:** Add jitter to the Retry-After value - spread suggested retries across a small window so clients desynchronise. Clients implementing exponential backoff with jitter (AWS SDK, gRPC) amplify this naturally.
+> **Common trap:** Returning a fixed Retry-After for all clients - all clients synchronise retries at the same second, reproducing the spike that triggered the limit.
+> **Next question:** "What happens if clients ignore Retry-After entirely?" → The limiter must keep rejecting on every retry regardless - Retry-After is guidance for well-behaved clients, not an enforcement mechanism; the 429 + counter check on each request is what actually protects the origin.
+
+### Diagnosing a Silent Enforcement Gap
+
+> 🎯 **Interview Lens**
+> **Q:** Your 429 rate suddenly drops to near-zero, but traffic volume hasn't changed. What do you check?
+> **Ideal answer:** First check for a Redis failover - a promoted replica starts counters at zero, so every client effectively gets a fresh window and looks "under limit" until counters rebuild. Second, check for a gateway bypass - a network path that reaches services without passing through the enforcing gateway.
+> **Common trap:** Reading a 429 drop as good news ("traffic normalized") without correlating it against Redis failover events or gateway bypass signals - enforcement can lapse silently in a way that looks identical to legitimate traffic calming down.
+
+### Handling a Motivated Adversary
+
+> 🎯 **Interview Lens**
+> **Q:** An attacker is rotating through thousands of residential IPs, one request per IP. Your rate limiter is IP-based. What now?
+> **Ideal answer:** IP-based limiting provides zero protection here - each IP individually stays under the limit. Require authentication for the targeted endpoint and rate limit by user ID or API key instead. For unauthenticated flows, combine IP with TLS fingerprint, HTTP/2 stream patterns, or behavioral signals, and add a CAPTCHA for high-value unauthenticated actions.
+> **Common trap:** Tightening the IP-based limit further - it punishes legitimate users behind shared NATs while doing nothing to slow an attacker with a large enough IP pool.
+
+---
+
+## What the Interviewer Probes For
+
+**"How do you handle unauthenticated requests mixed with authenticated ones on the same endpoint?"** (see [Starting the Design Cold](#starting-the-design-cold)) - Probes whether the candidate's identifier choice is a single global rule or adapts per request. Answer: apply both - a stricter IP-based limit for unauthenticated traffic, a per-user limit once authenticated - rather than picking one identifier for the whole endpoint.
+
+**"What is your fail-open vs fail-closed policy if Redis goes down?"** (see [Placement in a Microservices Architecture](#placement-in-a-microservices-architecture)) - Probes whether the candidate treats the backing store's availability as a first-class design decision rather than an afterthought. Answer: the policy must be explicit and differ by what's being protected - fail closed for auth/payment enforcement, fail open for cost-control/fairness limits - never an implicit default.
+
+**"Your 429 rate suddenly drops to near-zero with no traffic change - what's your first hypothesis?"** (see [Diagnosing a Silent Enforcement Gap](#diagnosing-a-silent-enforcement-gap)) - Probes whether the candidate's mental model includes failure modes that look identical to success. Answer: a Redis failover resetting counters to zero, or a gateway bypass letting traffic skip enforcement entirely - both produce a healthy-looking metrics drop that is actually a silent outage of the rate limiter itself.
 
 ## Appendices
 

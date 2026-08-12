@@ -74,10 +74,7 @@ import {
   initOsThemeListener,
 } from "./storage/settings-theme.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   WINDOW GLOBALS - required for onclick strings in dynamically
-   built innerHTML throughout the app (render.js, storage.js)
-   ═══════════════════════════════════════════════════════════════ */
+/* WINDOW GLOBALS - required for onclick strings in dynamically — built innerHTML throughout the app (render.js, storage.js) */
 window.state = state;
 window.Settings = Settings;
 window.Bookmarks = Bookmarks;
@@ -145,10 +142,7 @@ window.confirmClearBookmarks = (wikiId) => {
   });
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   DATA-ACTION DELEGATION
-   Handles all static button actions from index.html
-   ═══════════════════════════════════════════════════════════════ */
+/* DATA-ACTION DELEGATION — Handles all static button actions from index.html */
 document.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-action]");
   if (!btn) return;
@@ -273,9 +267,7 @@ document.addEventListener("click", (e) => {
 
 document.getElementById("import-upload").addEventListener("change", (e) => Settings.importData(e));
 
-/* ═══════════════════════════════════════════════════════════════
-   RESET-VIEW ESCAPE HATCH
-   ═══════════════════════════════════════════════════════════════ */
+/* RESET-VIEW ESCAPE HATCH */
 // Escape resets an active reading mode/filter in place instead of navigating away; falls through to the normal Escape chain otherwise.
 function hasResettableViewState() {
   if (isFocusMode() || isStudyMode() || isDistractionFree()) return true;
@@ -312,9 +304,7 @@ function resetView() {
   showToast("View reset");
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SCROLL TO TOP
-   ═══════════════════════════════════════════════════════════════ */
+/* SCROLL TO TOP */
 const scrollTopBtn = document.getElementById("scroll-top");
 const _topbars = document.querySelectorAll(".page-topbar, .content-topbar");
 let _scrollSaveTimer;
@@ -374,9 +364,7 @@ if ("onscrollend" in window) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MODAL BACKDROP & GLOBAL KEYDOWN
-   ═══════════════════════════════════════════════════════════════ */
+/* MODAL BACKDROP & GLOBAL KEYDOWN */
 document.getElementById("prefs-backdrop").addEventListener("click", () => Settings.close());
 
 document.getElementById("auth-backdrop").addEventListener("click", () => AuthModal.close());
@@ -534,9 +522,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-/* ═══════════════════════════════════════════════════════════════
-   SECTION MAP: pinch-in gesture
-   ═══════════════════════════════════════════════════════════════ */
+/* SECTION MAP: pinch-in gesture */
 (() => {
   const PINCH_IN_THRESHOLD = 0.6;
   let startDist = 0;
@@ -575,9 +561,7 @@ document.addEventListener("keydown", (e) => {
   );
 })();
 
-/* ═══════════════════════════════════════════════════════════════
-   DIAGRAM THEME SYNC
-   ═══════════════════════════════════════════════════════════════ */
+/* DIAGRAM THEME SYNC */
 let _mermaidRerenderTimer = null;
 document.addEventListener("wiki:themechange", () => {
   clearTimeout(_mermaidRerenderTimer);
@@ -590,9 +574,7 @@ document.addEventListener("wiki:themechange", () => {
   }
 });
 
-/* ═══════════════════════════════════════════════════════════════
-   HASH ROUTER EVENT WIRING
-   ═══════════════════════════════════════════════════════════════ */
+/* HASH ROUTER EVENT WIRING */
 window.addEventListener("popstate", (e) => {
   const hash = e.state?.hash ?? location.hash.slice(1);
   route(hash);
@@ -602,9 +584,7 @@ window.addEventListener("hashchange", () => {
   route(location.hash.slice(1));
 });
 
-/* ═══════════════════════════════════════════════════════════════
-   INIT - parse hash on load
-   ═══════════════════════════════════════════════════════════════ */
+/* INIT - parse hash on load */
 (function init() {
   history.scrollRestoration = "manual";
   loadIconSprite();
@@ -652,7 +632,12 @@ window.addEventListener("hashchange", () => {
           });
         });
       })
-      .catch(() => {});
+      .then(() => {
+        state.serviceWorkerError = null;
+      })
+      .catch((err) => {
+        state.serviceWorkerError = err?.message || "register failed";
+      });
 
     let _swRefreshing = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {

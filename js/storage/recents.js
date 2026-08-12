@@ -1,9 +1,7 @@
 import { api } from "../api.js";
 import { escHtml, scheduleSyncMutation, state } from "../state.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   RECENTLY VISITED
-   ═══════════════════════════════════════════════════════════════ */
+/* RECENTLY VISITED */
 const RECENTS_KEY = "wiki-recents";
 const RECENTS_MAX = 6;
 

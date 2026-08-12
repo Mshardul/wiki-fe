@@ -11,9 +11,7 @@ import { updatePageTitle } from "./nav-utils.js";
 import { renderOfflineShelf } from "./offline-view.js";
 import { showToast } from "./toast.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   VIEW MANAGEMENT
-   ═══════════════════════════════════════════════════════════════ */
+/* VIEW MANAGEMENT */
 const progressBar = document.getElementById("reading-progress");
 
 const VIEW_DEPTH = {
@@ -79,10 +77,7 @@ function showView(id) {
   return transition.ready.catch(() => {});
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   HASH ROUTER
-   url scheme: wiki.html  →  wiki.html#system-design  →  wiki.html#system-design/message-queues
-   ═══════════════════════════════════════════════════════════════ */
+/* HASH ROUTER — url scheme: wiki.html  →  wiki.html#system-design  →  wiki.html#system-design/message-queues */
 function navigate(hash, pushHistory = true) {
   route(hash || "", pushHistory);
 }

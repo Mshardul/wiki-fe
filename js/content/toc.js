@@ -1,9 +1,7 @@
 import { state } from "../state.js";
 import { getCollapsed, restoreTOCScroll, saveTOCScroll, toggleCollapse } from "../storage/scroll-collapse.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   TOC BUILDER
-   ═══════════════════════════════════════════════════════════════ */
+/* TOC BUILDER */
 function buildTOC(contentEl, wikiId, articlePath) {
   const tocNav = document.getElementById("toc-nav");
   const sidebar = document.getElementById("toc-sidebar");
@@ -150,9 +148,7 @@ function buildTOC(contentEl, wikiId, articlePath) {
   document.dispatchEvent(new CustomEvent("wiki:toc-updated"));
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PER-HEADING COLLAPSE TOGGLES (H2 on content page)
-   ═══════════════════════════════════════════════════════════════ */
+/* PER-HEADING COLLAPSE TOGGLES (H2 on content page) */
 function _setSectionCollapsed(h2, collapsed) {
   if (collapsed) {
     h2.classList.add("section--collapsed");
@@ -213,9 +209,7 @@ function injectHeadingCollapseToggles(contentEl, wikiId, articlePath) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   STICKY CURRENT SECTION HEADER
-   ═══════════════════════════════════════════════════════════════ */
+/* STICKY CURRENT SECTION HEADER */
 function addStickySection(contentEl) {
   const h2s = Array.from(contentEl.querySelectorAll("h2"));
   const banner = document.getElementById("sticky-section-header");
@@ -258,9 +252,7 @@ function cleanupStickySection() {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PROGRESS RING ON SCROLL-TO-TOP BUTTON
-   ═══════════════════════════════════════════════════════════════ */
+/* PROGRESS RING ON SCROLL-TO-TOP BUTTON */
 const _RING_R = 17;
 const _RING_CIRC = 2 * Math.PI * _RING_R;
 
@@ -300,9 +292,7 @@ function updateProgressRing(pct) {
   fill.setAttribute("stroke-dashoffset", String(_RING_CIRC * (1 - pct)));
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   TOC ↔ CONTENT HEADING COLLAPSE SYNC
-   ═══════════════════════════════════════════════════════════════ */
+/* TOC ↔ CONTENT HEADING COLLAPSE SYNC */
 function _syncTocGroup(h2Id, collapsed) {
   const tocGroup = document.querySelector(`.toc-h2-group[data-h2-id="${CSS.escape(h2Id)}"]`);
   if (!tocGroup) return;

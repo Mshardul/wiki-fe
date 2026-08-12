@@ -149,4 +149,4 @@ const api = {
   },
 };
 
-export { api, ApiError, BACKEND_URL, getSessionToken, setSessionToken };
+export { api, ApiError, getSessionToken, setSessionToken };

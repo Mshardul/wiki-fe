@@ -47,9 +47,7 @@ function _deriveRecent(wikiId, path) {
   return { wikiId, path, slug: name, title: name, wikiTitle: wiki?.title || "" };
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SETTINGS
-   ═══════════════════════════════════════════════════════════════ */
+/* SETTINGS */
 const SETTINGS_KEY = "wiki-settings";
 
 const FONT_OPTIONS = [
@@ -67,7 +65,7 @@ const _NON_DEFAULT_FONTS_HREF =
   "&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400" +
   "&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap";
 
-function loadAllFonts() {
+function ensureFontExtras() {
   if (document.getElementById("font-extras")) return;
   const link = document.createElement("link");
   link.id = "font-extras";
@@ -314,7 +312,7 @@ function applySettingsToDOM(s) {
   root.setProperty("--accent-glow", accent.glow);
 
   const font = s.font || "Inter";
-  if (font !== "Inter") loadAllFonts(); // non-default font must actually render
+  if (font !== "Inter") ensureFontExtras(); // non-default font must actually render
   const isSerif = font === "Lora" || font === "Source Serif 4";
   const isMono = font === "JetBrains Mono";
   const fallback = isSerif
@@ -391,7 +389,7 @@ const Settings = {
       this._render();
       return;
     }
-    loadAllFonts(); // user may pick any font here - make all previews available
+    ensureFontExtras(); // user may pick any font here - make all previews available
     this._lastFocus = document.activeElement;
     lockBodyScroll();
     const modal = document.getElementById("prefs-modal");
@@ -840,9 +838,7 @@ const Settings = {
   },
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   MULTI-TAB SYNC
-   ═══════════════════════════════════════════════════════════════ */
+/* MULTI-TAB SYNC */
 window.addEventListener("storage", (e) => {
   if (!e.key) return;
 
@@ -878,9 +874,7 @@ window.addEventListener("storage", (e) => {
   }
 });
 
-/* ═══════════════════════════════════════════════════════════════
-   SYNC - pull/merge on login & boot; cache clear on logout
-   ═══════════════════════════════════════════════════════════════ */
+/* SYNC - pull/merge on login & boot; cache clear on logout */
 const Sync = {
   // Pull all server lists and overwrite localStorage with server truth.
   async pullAll() {

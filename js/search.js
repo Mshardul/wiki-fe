@@ -31,9 +31,7 @@ import {
 import { RecentSearches } from "./storage/scroll-collapse.js";
 import { Settings } from "./storage/settings-theme.js";
 
-/* ═══════════════════════════════════════════════════════════════
-   GLOBAL SEARCH (⌘K)
-   ═══════════════════════════════════════════════════════════════ */
+/* GLOBAL SEARCH (⌘K) */
 const gSearchModal = document.getElementById("global-search-modal");
 const gSearchInput = document.getElementById("gsearch-input");
 const gSearchResults = document.getElementById("gsearch-results");
@@ -739,7 +737,6 @@ registerModal(globalSearchModal);
 export {
   openGlobalSearch,
   closeGlobalSearch,
-  isGlobalSearchOpen,
   retryGlobalSearch,
   runSearchCommand,
   armSearchVerb,

@@ -47,7 +47,7 @@ def test_overlay_click_closes_comparator(page, base_url):
     """Clicking the backdrop closes the comparator modal."""
     _go_to_article(page, base_url)
     _open_comparator(page)
-    page.locator("#compare-overlay").click(position={"x": 5, "y": 5})
+    page.locator("#compare-backdrop").click(position={"x": 5, "y": 5})
     page.wait_for_selector("#compare-modal.hidden", state="attached", timeout=2_000)
 
 
