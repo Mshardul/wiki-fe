@@ -100,28 +100,23 @@ function _stripHtml(labelHtml, cards) {
    ═══════════════════════════════════════════════════════════════ */
 // Author "## Recommended" heading + linked list overrides keyword-ranked auto-suggestions; heading/list stripped from rendered body so it isn't shown twice.
 function extractRecommendedLinks(body, currentFilePath) {
-  const heading = [...body.querySelectorAll("h2")].find(
-    (h) => h.textContent.trim().toLowerCase() === "recommended",
-  );
-  if (!heading) return null;
+  const section = [...body.querySelectorAll(".section")].find((s) => {
+    const h2 = s.querySelector(":scope > .section-title > h2");
+    return h2?.textContent.trim().toLowerCase() === "recommended";
+  });
+  if (!section) return null;
 
   const baseDir = dirOf(currentFilePath);
   const links = [];
-  const toRemove = [heading];
-  let node = heading.nextElementSibling;
-  while (node && node.tagName !== "H2") {
-    toRemove.push(node);
-    node.querySelectorAll("a[href]").forEach((a) => {
-      const href = a.getAttribute("href");
-      if (!href || !href.split("#")[0].endsWith(".md")) return;
-      const path = normalizePath(resolvePath(baseDir, href).split("#")[0]);
-      const title = a.textContent.trim();
-      if (path && title) links.push({ path, title });
-    });
-    node = node.nextElementSibling;
-  }
+  section.querySelectorAll("a[href]").forEach((a) => {
+    const href = a.getAttribute("href");
+    if (!href || !href.split("#")[0].endsWith(".md")) return;
+    const path = normalizePath(resolvePath(baseDir, href).split("#")[0]);
+    const title = a.textContent.trim();
+    if (path && title) links.push({ path, title });
+  });
 
-  toRemove.forEach((el) => el.remove());
+  section.remove();
   return links;
 }
 

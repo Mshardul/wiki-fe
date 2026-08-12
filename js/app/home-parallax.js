@@ -3,8 +3,6 @@
    ═══════════════════════════════════════════════════════════════ */
 (function bindHomeParallax() {
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-  if (reduced.matches) return;
-
   const homeView = document.getElementById("view-home");
   if (!homeView) return;
 
@@ -36,4 +34,11 @@
     },
     { passive: true },
   );
+
+  reduced.addEventListener("change", () => {
+    if (reduced.matches) {
+      const grid = homeView.querySelector(".home-bg-grid");
+      if (grid) grid.style.transform = "";
+    }
+  });
 })();

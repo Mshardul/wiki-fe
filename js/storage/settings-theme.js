@@ -1,4 +1,5 @@
 import { api } from "../api.js";
+import { syncPracticeAnswersVisibility } from "../content/practice-toggle.js";
 import {
   createFocusTrap,
   markModalClosed,
@@ -251,11 +252,22 @@ function _hasStoredSettings() {
   }
 }
 
+let _settingsCorruptNotified = false;
+
 function getSettings() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
-    if (stored?.backgroundId) return { ...DEFAULT_SETTINGS, ...stored };
-  } catch {}
+  const raw = localStorage.getItem(SETTINGS_KEY);
+  if (raw && raw !== "null") {
+    try {
+      const stored = JSON.parse(raw);
+      if (stored?.backgroundId) return { ...DEFAULT_SETTINGS, ...stored };
+    } catch {
+      localStorage.removeItem(SETTINGS_KEY);
+      if (!_settingsCorruptNotified) {
+        _settingsCorruptNotified = true;
+        _toast("Settings were reset (saved preferences could not be read)", 5000);
+      }
+    }
+  }
 
   const prefersLight = window.matchMedia?.("(prefers-color-scheme: light)").matches;
   return prefersLight
@@ -329,6 +341,7 @@ function applySettingsToDOM(s) {
   };
   root.setProperty("--para-spacing", paraSpacings[s.paraSpacing] || "0.75rem");
 
+  syncPracticeAnswersVisibility(Boolean(s.practiceAnswersHidden));
   document.dispatchEvent(new CustomEvent("wiki:themechange", { detail: { theme } }));
 }
 
@@ -753,7 +766,9 @@ const Settings = {
 
   _togglePracticeAnswersHidden() {
     const s = getSettings();
-    _saveSettings({ ...s, practiceAnswersHidden: !s.practiceAnswersHidden });
+    const updated = { ...s, practiceAnswersHidden: !s.practiceAnswersHidden };
+    _saveSettings(updated);
+    syncPracticeAnswersVisibility(Boolean(updated.practiceAnswersHidden));
     this._render();
   },
 

@@ -145,3 +145,23 @@ def test_bad_literal_viz_falls_back_to_raw_block(page, base_url):
     )
     assert not has_viz, "Bad literal should not produce a .structure-viz element"
     assert has_raw, "Bad literal should fall back to the raw code block"
+
+
+ARTICLE_WITH_LARGE_ARRAY_VIZ = """\
+# Large Array Viz
+
+```viz
+array
+[""" + ",".join(str(i) for i in range(100)) + """]
+```
+"""
+
+
+def test_structure_viz_caps_large_arrays(page, base_url):
+    """Very large structure-viz literals are capped instead of rendering unboundedly."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_LARGE_ARRAY_VIZ, slug="viz-large-array")
+    page.wait_for_selector(".structure-viz svg", timeout=8_000)
+    cell_count = page.evaluate(
+        "() => document.querySelectorAll('.structure-viz .structure-viz-cell').length"
+    )
+    assert cell_count <= 64, f"Expected capped viz render, got {cell_count} cells"

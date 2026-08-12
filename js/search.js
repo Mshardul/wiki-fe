@@ -387,6 +387,8 @@ function applyCommandFilter(commandQuery) {
     return;
   }
 
+  _resolvedArgRun = null;
+
   const cmds = availableCommands().filter(
     (c) => !q || c.label.toLowerCase().includes(q) || fuzzyMatch(q, c.label.toLowerCase()),
   );
@@ -429,9 +431,17 @@ function armSearchVerb(verb) {
 
 function runSearchCommand(id) {
   if (id === "__arg__") {
-    if (!_resolvedArgRun) return;
+    const raw = gSearchInput.value.trim();
+    if (!raw.startsWith("/")) return;
+    const commandQuery = raw.slice(1).trimStart();
+    const q = commandQuery.toLowerCase();
+    const verbCmd = availableCommands().find((c) => c.verb && q.startsWith(c.verb));
+    if (!verbCmd) return;
+    const argText = commandQuery.slice(verbCmd.verb.length).trim();
+    const resolved = verbCmd.resolveArg(argText);
+    if (!resolved) return;
     closeGlobalSearch();
-    _resolvedArgRun();
+    resolved.run();
     _resolvedArgRun = null;
     return;
   }
@@ -576,6 +586,7 @@ function openGlobalSearch(opts = {}) {
 
 function closeGlobalSearch() {
   if (gSearchModal.classList.contains("hidden")) return;
+  _resolvedArgRun = null;
   markModalClosed(globalSearchModal);
   _closeScopeListbox();
   unlockBodyScroll();
@@ -710,6 +721,8 @@ function applyGlobalSearch(query) {
     applyCommandFilter(raw.slice(1).trimStart());
     return;
   }
+
+  _resolvedArgRun = null;
 
   if (raw.startsWith(">")) {
     applySectionFilter(raw.slice(1).trimStart());

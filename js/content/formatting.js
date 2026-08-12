@@ -474,6 +474,43 @@ const ArticleFind = {
   },
 
   // wraps matches in-place (no innerHTML rebuild) so handlers/widgets survive
+  _offsetToPoint(root, targetOffset) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+        const tag = node.parentNode?.nodeName;
+        if (tag === "SCRIPT" || tag === "STYLE") return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    let offset = 0;
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const len = n.nodeValue.length;
+      if (offset + len > targetOffset) return { node: n, offset: targetOffset - offset };
+      offset += len;
+    }
+    return null;
+  },
+
+  _wrapMatchAt(body, start, end) {
+    const startPt = this._offsetToPoint(body, start);
+    const endPt = this._offsetToPoint(body, end);
+    if (!startPt || !endPt) return null;
+    const range = document.createRange();
+    range.setStart(startPt.node, startPt.offset);
+    range.setEnd(endPt.node, endPt.offset);
+    const mark = document.createElement("mark");
+    mark.className = "article-find-hit";
+    try {
+      range.surroundContents(mark);
+    } catch {
+      const frag = range.extractContents();
+      mark.appendChild(frag);
+      range.insertNode(mark);
+    }
+    return mark;
+  },
+
   _highlightAll(query) {
     const body = document.getElementById("markdown-body");
     if (!body) return;
@@ -481,38 +518,27 @@ const ArticleFind = {
 
     const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
-        if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
         const tag = node.parentNode?.nodeName;
         if (tag === "SCRIPT" || tag === "STYLE") return NodeFilter.FILTER_REJECT;
-        return node.nodeValue.toLowerCase().includes(ql)
-          ? NodeFilter.FILTER_ACCEPT
-          : NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
       },
     });
+    let fullText = "";
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) fullText += n.nodeValue;
 
-    const targets = [];
-    for (let n = walker.nextNode(); n; n = walker.nextNode()) targets.push(n);
-
-    for (const textNode of targets) {
-      this._wrapMatches(textNode, ql);
-    }
-  },
-
-  _wrapMatches(textNode, ql) {
-    let node = textNode;
-    let lower = node.nodeValue.toLowerCase();
-    let pos = lower.indexOf(ql);
+    const fullLower = fullText.toLowerCase();
+    const matchStarts = [];
+    let pos = fullLower.indexOf(ql);
     while (pos !== -1) {
-      const after = node.splitText(pos);
-      const matchNode = after.splitText(ql.length);
-      const mark = document.createElement("mark");
-      mark.className = "article-find-hit";
-      mark.textContent = after.nodeValue;
-      after.parentNode.replaceChild(mark, after);
-      this._hits.push(mark);
-      node = matchNode;
-      lower = node.nodeValue.toLowerCase();
-      pos = lower.indexOf(ql);
+      matchStarts.push(pos);
+      pos = fullLower.indexOf(ql, pos + 1);
+    }
+
+    for (let i = matchStarts.length - 1; i >= 0; i--) {
+      const start = matchStarts[i];
+      const mark = this._wrapMatchAt(body, start, start + ql.length);
+      if (mark) this._hits.unshift(mark);
     }
   },
 

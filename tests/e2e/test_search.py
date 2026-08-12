@@ -740,6 +740,22 @@ def test_verb_command_no_match_shows_hint(page, base_url):
     assert page.locator(".gsearch-command[data-command='__arg__']").count() == 0
 
 
+def test_verb_command_executes_current_input_not_stale_preview(page, base_url):
+    """Running a verb command re-resolves the argument from the live input value."""
+    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
+    page.wait_for_selector("#index-sections:not(.index-sections--loading)", timeout=15_000)
+
+    _open_search(page)
+    page.fill("#gsearch-input", "/mark read components")
+    page.wait_for_selector(".gsearch-command[data-command='__arg__']", timeout=8_000)
+    page.fill("#gsearch-input", "/mark read zzzznonexistentzzzz")
+    page.wait_for_selector(".gsearch-empty", timeout=8_000)
+    page.evaluate("() => runSearchCommand('__arg__')")
+
+    assert page.locator("#global-search-modal").is_visible()
+    assert page.locator(".index-card-read-dot.visible").count() == 0
+
+
 # ── In-article find bar ──────────────────────────────────────────────
 
 

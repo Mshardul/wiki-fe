@@ -1025,3 +1025,14 @@ def test_accent_swatch_44px_on_coarse_pointer(browser, base_url, cdn_cache):
         assert size["height"] >= 44, f"accent-swatch height too small: {size['height']}px"
     finally:
         ctx.close()
+
+
+def test_corrupt_settings_json_resets_with_toast(page, base_url):
+    """Invalid wiki-settings JSON is cleared and surfaces a reset toast."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.evaluate("() => localStorage.setItem('wiki-settings', '{not-json')")
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector("#wiki-toast.visible", timeout=5_000)
+    toast_text = page.evaluate("() => document.getElementById('wiki-toast')?.textContent || ''")
+    assert "reset" in toast_text.lower()
+    assert page.evaluate("() => localStorage.getItem('wiki-settings')") is None

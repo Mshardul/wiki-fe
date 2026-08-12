@@ -3,6 +3,8 @@
 const NODE_R = 16;
 const LEVEL_H = 56;
 const SVG_PAD = 20;
+const MAX_VIZ_NODES = 64;
+const MAX_VIZ_WIDTH = 2400;
 
 function _parseVizBlock(code) {
   const lines = code
@@ -19,7 +21,7 @@ function _parseVizBlock(code) {
     return null;
   }
   if (!Array.isArray(data)) return null;
-  return { type, data };
+  return { type, data: data.length > MAX_VIZ_NODES ? data.slice(0, MAX_VIZ_NODES) : data };
 }
 
 function _svgEl(tag, attrs) {
@@ -32,7 +34,7 @@ function _renderTree(data, { heap = false } = {}) {
   // BST and heap are both level-order arrays, so rendered identically here
   const n = data.length;
   const depth = Math.floor(Math.log2(n || 1)) + 1;
-  const width = Math.max(2 ** (depth - 1) * NODE_R * 2.5, 120);
+  const width = Math.min(Math.max(2 ** (depth - 1) * NODE_R * 2.5, 120), MAX_VIZ_WIDTH);
   const height = depth * LEVEL_H;
 
   const svg = _svgEl("svg", {
@@ -91,7 +93,7 @@ function _renderTree(data, { heap = false } = {}) {
 
 function _renderLinkedList(data) {
   const n = data.length;
-  const width = n * 60 + SVG_PAD * 2;
+  const width = Math.min(n * 60 + SVG_PAD * 2, MAX_VIZ_WIDTH);
   const height = NODE_R * 2 + SVG_PAD * 2;
   const svg = _svgEl("svg", {
     viewBox: `0 0 ${width} ${height}`,
@@ -141,7 +143,7 @@ function _renderLinkedList(data) {
 function _renderArray(data) {
   const n = data.length;
   const cellW = 44;
-  const width = n * cellW + SVG_PAD * 2;
+  const width = Math.min(n * cellW + SVG_PAD * 2, MAX_VIZ_WIDTH);
   const height = cellW + SVG_PAD * 2;
   const svg = _svgEl("svg", {
     viewBox: `0 0 ${width} ${height}`,

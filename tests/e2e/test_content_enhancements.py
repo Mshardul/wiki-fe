@@ -2261,9 +2261,25 @@ def test_glossary_popover_survives_scroll_out_and_back(page, base_url):
         }
         """
     )
-    page.wait_for_timeout(300)
-    page.evaluate("() => document.querySelector('abbr.glossary-term').scrollIntoView({block: 'center', behavior: 'instant'})")
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        """() => {
+          const r = document.querySelector('abbr.glossary-term').getBoundingClientRect();
+          return r.top > window.innerHeight || r.bottom < 0;
+        }""",
+        timeout=5_000,
+    )
+    page.evaluate(
+        "() => document.querySelector('abbr.glossary-term').scrollIntoView({block: 'center', behavior: 'instant'})"
+    )
+    page.wait_for_function(
+        """() => {
+          const r = document.querySelector('abbr.glossary-term').getBoundingClientRect();
+          return r.top < window.innerHeight && r.bottom > 0;
+        }""",
+        timeout=5_000,
+    )
+    # IntersectionObserver callbacks run after layout; two rAFs beat a fixed sleep under load.
+    page.evaluate("() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))")
     page.locator("abbr.glossary-term").first.hover()
     page.wait_for_function(
         "() => document.getElementById('glossary-popover')?.classList.contains('glossary-popover--visible')",
@@ -3037,6 +3053,119 @@ def test_practice_answer_hidden_survives_toc_section_collapse_and_expand(page, b
     second_hidden = page.evaluate("() => document.querySelectorAll('.problem-answer')[1].hidden")
     assert not first_hidden, "Section collapse/expand must not re-hide an answer the user revealed"
     assert second_hidden, "Section collapse/expand must not reveal an answer the user never opened"
+
+
+ARTICLE_WITH_MISSING_COMPLEXITY = """\
+# Practice Missing Complexity
+
+## Practice problems
+
+### 1. Broken boundary
+
+**Problem.** Given input, do something.
+
+**Approach.** Do the obvious thing.
+
+```python
+def solve():
+    return True
+```
+
+This trailing paragraph must stay visible outside the answer block.
+
+### 2. Good problem
+
+**Problem.** Another task.
+
+**Approach.** Another approach.
+
+**Complexity.** O(1) time.
+"""
+
+
+def test_practice_answer_stops_without_complexity_label(page, base_url):
+    """Without a Complexity label, only the Approach paragraph is wrapped."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_MISSING_COMPLEXITY, slug="practice-no-complexity")
+    page.wait_for_selector(".problem-answer", state="attached", timeout=5_000)
+
+    first_answer_child = page.evaluate(
+        """() => document.querySelectorAll('.problem-answer')[0]?.firstElementChild?.textContent || ''"""
+    )
+    assert "Approach" in first_answer_child
+    assert "def solve" not in page.evaluate(
+        "() => document.querySelectorAll('.problem-answer')[0]?.textContent || ''"
+    )
+
+    trailing_visible = page.evaluate(
+        "() => Array.from(document.querySelectorAll('#markdown-body p'))"
+        ".some(p => p.textContent.includes('trailing paragraph') && !p.closest('.problem-answer'))"
+    )
+    assert trailing_visible, "Content after a missing Complexity label must stay outside .problem-answer"
+
+
+def test_practice_answers_sync_when_preference_toggled_mid_view(page, base_url):
+    """Toggling practiceAnswersHidden in Preferences updates open article answers live."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-live-pref")
+    page.wait_for_selector(".practice-eye-btn", timeout=5_000)
+
+    page.locator("[title='Preferences (,)']:visible").first.click()
+    page.wait_for_selector("#prefs-modal:not(.hidden)", timeout=5_000)
+    page.locator("[data-action='prefs-tab'][data-tab='advanced']").click()
+    page.wait_for_function(
+        "() => document.getElementById('prefs-panel-advanced').getAttribute('aria-hidden') === 'false'",
+        timeout=5_000,
+    )
+    page.locator("#settings-practice-answers").click()
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        "() => document.getElementById('prefs-modal').classList.contains('hidden')",
+        timeout=5_000,
+    )
+
+    all_visible = page.evaluate(
+        "() => Array.from(document.querySelectorAll('.problem-answer')).every(el => !el.hidden)"
+    )
+    assert all_visible, "Answers must become visible when the preference is toggled to Shown"
+
+
+ARTICLE_SHORT_FOR_PROGRESS = """\
+# Short Article
+
+One brief paragraph that fits inside the viewport without scrolling.
+"""
+
+
+def test_short_article_shows_full_reading_progress(page, base_url):
+    """Articles shorter than the viewport should show a full progress bar."""
+    _load_mock_article(page, base_url, ARTICLE_SHORT_FOR_PROGRESS, slug="short-progress")
+    width = page.evaluate(
+        "() => document.getElementById('reading-progress')?.style.width || ''"
+    )
+    assert width == "100%", f"Expected full progress bar for short article, got {width!r}"
+
+
+def test_empty_body_article_hides_read_time_badge(page, base_url):
+    """Stub articles with no body must not show a misleading read-time badge."""
+    _load_mock_article(page, base_url, "# Stub Only\n\n", slug="empty-read-time")
+    badge = page.locator("#content-read-time").inner_text()
+    assert badge == "", f"Empty article should hide read-time badge, got {badge!r}"
+
+
+ARTICLE_FIND_MARKUP_BOUNDARY = """\
+# Find Boundary
+
+Alpha <strong>bravo</strong> charlie delta.
+"""
+
+
+def test_article_find_matches_across_inline_markup(page, base_url):
+    """In-article find can match a query split across inline markup."""
+    _load_mock_article(page, base_url, ARTICLE_FIND_MARKUP_BOUNDARY, slug="find-boundary")
+    page.keyboard.press("/")
+    page.wait_for_selector("#article-find:not(.hidden)", timeout=3_000)
+    page.fill("#article-find-input", "a bravo")
+    page.wait_for_selector("#markdown-body mark.article-find-hit", timeout=3_000)
+    assert page.locator("#markdown-body mark.article-find-hit").count() > 0
 
 
 # ── Text highlights + inline emoji markers ───────────────────────────────────────

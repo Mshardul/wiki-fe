@@ -153,6 +153,27 @@ def test_parallax_mouseleave_resets_grid(page, base_url):
     )
 
 
+def test_parallax_works_after_reduced_motion_turned_off(page, base_url):
+    """Parallax can enable mid-session when prefers-reduced-motion turns off."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=5_000)
+    page.emulate_media(reduced_motion="reduce")
+    page.mouse.move(400, 300)
+    page.wait_for_timeout(200)
+    transform_reduced = page.evaluate(
+        "() => document.querySelector('.home-bg-grid')?.style.transform || ''"
+    )
+    assert "translate" not in transform_reduced
+
+    page.emulate_media(reduced_motion="no-preference")
+    page.mouse.move(200, 200)
+    page.mouse.move(500, 350)
+    page.wait_for_function(
+        "() => (document.querySelector('.home-bg-grid')?.style.transform || '').includes('translate')",
+        timeout=3_000,
+    )
+
+
 # ── PWA manifest  ────────────────────────────────────────────────
 
 

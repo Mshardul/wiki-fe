@@ -21,6 +21,7 @@ import { initIconTooltips } from "./app/icon-tooltip.js";
 import { initInstallPrompt } from "./app/install-prompt.js";
 import { closeLinkGraph, isLinkGraphOpen, openLinkGraph } from "./app/link-graph.js";
 import { printArticle } from "./app/print.js";
+import { updateContentReadingProgress } from "./app/reading-progress.js";
 import { closeSectionMap, isSectionMapOpen, toggleSectionMap } from "./app/section-map.js";
 import { fireStudyMilestone } from "./app/study-feedback.js";
 import { closeWikiSwitcher, isWikiSwitcherOpen, openWikiSwitcher } from "./app/wiki-switcher.js";
@@ -36,7 +37,7 @@ import {
 } from "./content/formatting.js";
 import { rerenderMermaidDiagrams } from "./content/mermaid.js";
 import { QuizMode } from "./content/tables.js";
-import { expandAllSections, initProgressRingScrollTop, updateProgressRing } from "./content/toc.js";
+import { expandAllSections, initProgressRingScrollTop } from "./content/toc.js";
 import { closeZoomOverlay } from "./content/zoom-lightbox.js";
 import { loadIconSprite } from "./icon-sprite.js";
 import { closeTopModal, isAnyModalOpen as isAnyRegisteredModalOpen } from "./modal-registry.js";
@@ -44,7 +45,7 @@ import { renderChangelog } from "./render/changelog-view.js";
 import { getCurrentMarkdown, navigateToContent } from "./render/content-view.js";
 import { IndexFilter, toggleSection } from "./render/home-index.js";
 import { evictOfflineArticle } from "./render/offline-view.js";
-import { navigate, progressBar, route } from "./render/router.js";
+import { navigate, route } from "./render/router.js";
 import { showToast } from "./render/toast.js";
 import {
   applyGlobalSearch,
@@ -65,7 +66,7 @@ import {
   updateBookmarkBtn,
 } from "./storage/bookmarks.js";
 import { Offline, updateOfflineBtn } from "./storage/offline.js";
-import { ReadToggle, markRead, updateReadBtn } from "./storage/read-tracking.js";
+import { ReadToggle, updateReadBtn } from "./storage/read-tracking.js";
 import { clearRecents, getRecents, renderRecentsSection, saveRecents } from "./storage/recents.js";
 import { saveScrollPos } from "./storage/scroll-collapse.js";
 import {
@@ -334,17 +335,7 @@ window.addEventListener(
     scrollTopBtn.classList.toggle("visible", window.scrollY > 300);
 
     if (state.currentView === "content") {
-      const doc = document.documentElement;
-      const scrolled = doc.scrollTop || document.body.scrollTop;
-      const total = doc.scrollHeight - doc.clientHeight;
-      const pct = total > 0 ? scrolled / total : 0;
-      progressBar.style.width = `${pct * 100}%`;
-      updateProgressRing(pct);
-
-      if (pct > 0.85 && state.currentFilePath) {
-        if (markRead(state.currentFilePath)) fireStudyMilestone();
-        updateReadBtn();
-      }
+      updateContentReadingProgress();
 
       // Capture path + scrollY now, not at fire time - state may have moved on by then.
       clearTimeout(_scrollSaveTimer);

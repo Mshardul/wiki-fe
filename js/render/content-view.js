@@ -1,6 +1,7 @@
 /* Content rendering pipeline: fetch -> parse -> post-process -> wire links/preview.
    Kept as a single file - splitting further would only fragment one linear flow. */
 import { exitDistractionFree } from "../app/distraction-free.js";
+import { updateContentReadingProgress } from "../app/reading-progress.js";
 import {
   addCodeBlockHeader,
   addCodeLangLabels,
@@ -373,10 +374,10 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     };
 
     let recommendedLinks = [];
+    run(() => wrapSectionsAndSubsections(body));
     run(() => {
       recommendedLinks = extractRecommendedLinks(body, filePath);
     });
-    run(() => wrapSectionsAndSubsections(body));
 
     run(() => addVideoEmbeds(body));
     run(() => addTabbedCodeBlocks(body));
@@ -540,6 +541,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     }
 
     body.dataset.renderDone = "1";
+    requestAnimationFrame(() => updateContentReadingProgress());
   } catch (err) {
     body.innerHTML = `<p class="error">Failed to load content. (${escHtml(err.message)})</p>`;
     body.dataset.renderDone = "1";

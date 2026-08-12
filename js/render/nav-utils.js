@@ -19,7 +19,10 @@ function dirOf(filePath) {
    READING TIME
    ═══════════════════════════════════════════════════════════════ */
 function readingTime(text) {
-  const words = text.trim().split(/\s+/).length;
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+  const words = trimmed.split(/\s+/).filter(Boolean).length;
+  if (words === 0) return "";
   const mins = Math.max(1, Math.round(words / 200));
   return `${mins} min read`;
 }

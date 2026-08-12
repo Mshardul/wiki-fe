@@ -14,10 +14,15 @@ function _wrapAnswer(subsectionBody) {
   if (start === -1) return null;
 
   let end = start;
+  let foundComplexity = false;
   for (let i = start; i < children.length; i++) {
-    end = i;
-    if (COMPLEXITY_RE.test(_labelText(children[i]) || "")) break;
+    if (COMPLEXITY_RE.test(_labelText(children[i]) || "")) {
+      end = i;
+      foundComplexity = true;
+      break;
+    }
   }
+  if (!foundComplexity) end = start;
 
   const wrapper = document.createElement("div");
   wrapper.className = "problem-answer";
@@ -57,6 +62,14 @@ function _setAnswerHidden(h3, answer, hidden) {
   btn.setAttribute("aria-pressed", String(!hidden));
 }
 
+function syncPracticeAnswersVisibility(hidden) {
+  document.querySelectorAll(".subsection-title > h3").forEach((h3) => {
+    const answer = h3.closest(".subsection")?.querySelector(".problem-answer");
+    if (!answer) return;
+    _setAnswerHidden(h3, answer, hidden);
+  });
+}
+
 function addPracticeAnswerToggles(contentEl) {
   const heading = Array.from(contentEl.querySelectorAll("h2")).find(
     (h2) => h2.textContent.replace(/#+\s*$/, "").trim() === "Practice problems",
@@ -72,4 +85,4 @@ function addPracticeAnswerToggles(contentEl) {
   });
 }
 
-export { addPracticeAnswerToggles };
+export { addPracticeAnswerToggles, syncPracticeAnswersVisibility };
