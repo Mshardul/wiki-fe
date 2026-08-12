@@ -7,7 +7,7 @@
 @import "./components/wiki-switcher.css";
 @import "./components/link-graph.css";
 @import "./components/bookmarks-modal.css";
-@import "./components-auth.css";
+@import "./components/auth.css";
 @import "./view-home.css";
 @import "./view-index.css";
 @import "./view-changelog.css";
@@ -15,6 +15,8 @@
 @import "./view-dashboard.css";
 @import "./view-admin.css";
 @import "./view-content/layout.css";
+@import "./view-content/toc-sidebar.css";
+@import "./view-content/notes-scratchpad.css";
 @import "./view-content/code.css";
 @import "./view-content/mermaid.css";
 @import "./view-content/callouts-prereqs.css";

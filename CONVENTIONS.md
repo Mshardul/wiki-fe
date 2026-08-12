@@ -115,7 +115,7 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 - **BEM-adjacent naming** (block-element pattern).
 - **`wiki.css` is the aggregator** - it `@import`s the modules and **holds no rules of its own.**
 - **Theming via `data-theme`** - per-theme overrides live in `themes.css`, never scattered.
-- View-specific rules live in `view-*.css` or a `view-*/` subfolder; shared components in `components/` / `components-auth.css`. Don't put view styles in the shared files or vice versa.
+- View-specific rules live in `view-*.css` or a `view-*/` subfolder; shared components in `components/` (e.g. `components/auth.css`). Don't put view styles in the shared files or vice versa.
 - **`components/` and `view-content/` are split by sub-concern** (see the module map above for the JS equivalent). `components/topbar.css`, `search-modal.css`, `preferences-modal.css`, `toast.css`, `wiki-switcher.css`; `view-content/layout.css`, `code.css`, `mermaid.css`, `callouts-prereqs.css`, `interactive.css`, `glossary-related.css`. A new component/view rule set crossing ~400 lines gets its own file in the matching subfolder, imported from `wiki.css` in the same position.
 - **Responsive:** mobile-first. All new CSS must work at 320px. Breakpoints live in `responsive.css` - not `tokens.css`, not scattered in view files. No new breakpoints outside `responsive.css` without a deliberate decision.
 - **Modal scrim naming:** click-outside dismiss layers use the `-backdrop` suffix (`auth-backdrop`, `link-graph-backdrop`, `toc-mobile-backdrop`). Full-viewport layer containers that own their own chrome (zoom lightbox, section map) keep `-overlay` on the root element; nested scrims inside those may still use `-backdrop` (e.g. `zoom-overlay-backdrop`).

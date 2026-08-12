@@ -173,9 +173,12 @@ async function renderRelatedArticles(wiki, currentPath, recommendedLinks, isStal
 
 /* BACKLINK SPINE: "Mentioned by" reverse links */
 // backlinks.json is built at deploy time (build_backlinks.py); doesn't reflect same-session edits.
+function _wikiForPath(path) {
+  return WIKIS.find((w) => path.startsWith(`./content/${w.id}/`));
+}
+
 function _wikiIdForPath(path) {
-  const wiki = WIKIS.find((w) => path.startsWith(`./content/${w.id}/`));
-  return wiki?.id;
+  return _wikiForPath(path)?.id;
 }
 
 async function renderBacklinks(currentPath, isStale) {
@@ -237,9 +240,9 @@ async function renderBridges(currentPath, isStale) {
   if (isStale?.()) return;
   const resolved = otherPaths
     .map((path) => {
-      const wikiIdx = WIKIS.findIndex((w) => path.startsWith(`./content/${w.id}/`));
-      if (wikiIdx === -1) return null;
-      const wiki = WIKIS[wikiIdx];
+      const wiki = _wikiForPath(path);
+      if (!wiki) return null;
+      const wikiIdx = WIKIS.indexOf(wiki);
       const card = _cardForPath(prebuiltIndex[wikiIdx], path);
       if (!card) return null;
       return {

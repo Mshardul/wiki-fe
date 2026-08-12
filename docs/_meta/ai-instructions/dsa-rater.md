@@ -23,7 +23,7 @@ Input: one article path (or a glob to batch-rate several, one report each).
     - `content/dsa/patterns/…` → **Pattern**
 4. **Detect the family** (DS and Algorithm only - Pattern has none) using the family tables in the writer. **Tie-breaker:** family = the article's _primary subject_, not techniques touched in passing (Backtracking = Recursive/build even though it recurses). When genuinely split, pick the family whose must-cover block the article covers at most depth, and name the runner-up in the report. _(Hubs have no family - skip this step.)_
 5. **Apply params in four tiers:** universal (every article) + the matching section block + the matching family block + the [content verification checks](#content-verification-pass-v-checks) (V1–V14) - all scored in the same pass, same table. Params that don't apply (e.g. recognition-signals on an algorithm) are marked **n/a** and dropped from the total.
-6. **Resolve filesystem checks via the pre-check script - facts supplied, not guessed.** U8, U11, U12 are deterministic and must not vary run-to-run. Run `./scripts/dsa-check.sh <article.md>` (Bash wrapper over `dsa_check.py`) and paste its PASS/FAIL lines into the U8/U11/U12 rows. Do **not** judge these three from reading alone. If the script can't run, say so in the report and fall back to a manual tree check - never silently guess.
+6. **Resolve filesystem checks via the pre-check script - facts supplied, not guessed.** U8, U11, U12 are deterministic and must not vary run-to-run. Run `../../../scripts/dsa-check.sh <article.md>` (Bash wrapper over `dsa_check.py`) and paste its PASS/FAIL lines into the U8/U11/U12 rows. Do **not** judge these three from reading alone. If the script can't run, say so in the report and fall back to a manual tree check - never silently guess.
 7. **Score, gate, and report** in the output format at the bottom - one table, structural params and V-checks together.
 
 ---
@@ -247,7 +247,7 @@ grep -rL 'Constraints & approach' content/dsa/algorithms/*.md
 grep -rL 'First 30 seconds' content/dsa/patterns/*.md
 
 # Articles with broken .md links (run from wiki-fe/)
-./docs/_meta/ai-instructions/scripts/dsa-check.sh content/dsa/**/*.md
+./scripts/dsa-check.sh content/dsa/**/*.md
 ```
 
 These don't gate any article individually - they help prioritize which advisory sections to add next across the board.

@@ -186,7 +186,7 @@ Do this before any file reads or skill invocations - every session:
 | `base.css`              | Global reset and base styles: body, headings, inline code, scrollbar, text selection                                                                  |
 | `themes.css`            | Per-theme CSS token overrides for dark, light, matrix, terminal, amber-term via `data-theme` attribute                                                |
 | `components/`           | Shared UI components - see subtable below                                                                                                              |
-| `components-auth.css`   | Auth modal + topbar auth button styles (tokens only)                                                                                              |
+| `components/auth.css`   | Auth modal + topbar auth button styles (tokens only)                                                                                              |
 | `view-home.css`         | Home view: background grid/glow, wiki card grid, home topbar, hero section                                                                            |
 | `view-index.css`        | Index view: hero, section headers, index card grid, recents strip, bookmarks strip                                                                    |
 | `view-changelog.css`    | Changelog view: date groups, entry list, filename-link chips                                                                                          |
@@ -265,7 +265,7 @@ Do this before any file reads or skill invocations - every session:
 | `docs/_meta/decisions/auth-integration.md`         | [Archive] How auth wires into the FE SPA - reference only; superseded by implemented code |
 | `docs/_meta/plans/fe-be-integration.md` | Step-by-step plan for the FE auth+sync integration work                          |
 | `docs/tasks.md`                                    | Context on recently completed work or implementation notes                              |
-| `docs/changelog.md`                                | Context on recent feature history or what changed                                       |
+| `docs/changelog.md`                                | [removed — use `content/CHANGELOG.md` and `docs/tickets-archive.md`]                    |
 
 ---
 

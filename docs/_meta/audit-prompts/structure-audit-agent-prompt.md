@@ -48,7 +48,7 @@ This is the concern most prone to false positives — a stale reference is only 
 
 **Live (staleness is a real finding):**
 - `docs/_meta/ai-instructions/**` — actively read every time content is written; must route to real files/paths.
-- `docs/_meta/audit prompts/**` — instructions handed to a *future* agent; a stale file/feature reference sends that agent chasing something that no longer exists (this class of bug already happened once — two prompts kept referencing a removed feature's files after the feature was deleted).
+- `docs/_meta/audit-prompts/**` — instructions handed to a *future* agent; a stale file/feature reference sends that agent chasing something that no longer exists (this class of bug already happened once — two prompts kept referencing a removed feature's files after the feature was deleted).
 - Flat `docs/_meta/*.md` files (decisions/reference docs) — describe ongoing product/tech decisions expected to stay accurate as the thing they describe evolves.
 - `docs/tickets-backlog.md`, `docs/content-backlog.md` — active work lists.
 - Root `CLAUDE.md`, `CONVENTIONS.md`, `readme.md` — the project's living, continuously-read documentation.

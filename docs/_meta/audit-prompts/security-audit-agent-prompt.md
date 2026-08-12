@@ -12,7 +12,7 @@ This audit is **not**: a general code-quality/consistency pass (`codebase-qualit
 
 ## Goal
 
-Sweep four specific trust-boundary concerns. Each one is scoped to where this app's actual attack surface is — not a generic OWASP checklist.
+Sweep three specific trust-boundary concerns. Each one is scoped to where this app's actual attack surface is — not a generic OWASP checklist.
 
 ### Concern 1 — XSS via unsanitized markdown/Showdown output reaching `innerHTML`
 
@@ -28,14 +28,7 @@ Sweep four specific trust-boundary concerns. Each one is scoped to where this ap
 - Check `settings-theme.js`'s backup import/export path (`_validateBackup` and the restore flow) — an imported backup JSON is fully attacker-controlled if a user imports a file from an untrusted source. Confirm restored values are validated/sanitized before being written back into live settings and localStorage, not just shape-checked.
 - Cross-tab `storage` event listeners (`settings-theme.js`, `auth.js`) that react to `localStorage` changes from another tab/origin-adjacent context — confirm they validate the incoming value shape before applying it, not just checking the key name.
 
-### Concern 3 — BroadcastChannel / postMessage origin checks (sidecar TOC)
-
-- The sidecar TOC feature (`js/app/sidecar-toc.js` publisher, `js/toc-companion.js` receiver, `toc-companion.html`) uses `BroadcastChannel` to pass nav/TOC data between the main window and a popup window it opens.
-- `BroadcastChannel` is same-origin-only by browser design (unlike `postMessage`, which requires an explicit origin check), so confirm the implementation actually relies on that guarantee and doesn't also accept a cross-origin `postMessage` fallback or listener anywhere in this feature's code path that would reintroduce the risk `BroadcastChannel` is supposed to avoid.
-- If any `postMessage`/`onmessage` usage exists anywhere in `js/` (grep the whole tree, not just sidecar-toc), confirm every listener validates `event.origin` against an expected value before trusting `event.data` — an unchecked listener accepting messages from any origin is the specific bug shape to hunt for.
-- Confirm the popup window (`toc-companion.html`) doesn't expose any capability back to the opener beyond the intended nav-click messages (e.g. no `window.opener` reference left unguarded that a malicious popup replacement could exploit — check whether the window is opened with `noopener` where appropriate, weighed against whether the feature actually needs the opener reference to function).
-
-### Concern 4 — Service-worker cache-poisoning risk
+### Concern 3 — Service-worker cache-poisoning risk
 
 - `wiki-sw.js` caches static assets and (per its fetch handler) responses for offline use. Trace what the SW's fetch handler caches: does it cache *any* response regardless of status code/origin, or does it validate `response.ok`/same-origin before writing to cache? An SW that caches a non-2xx response (e.g. a captured error page, or a response from a redirect to an unexpected origin) can serve that poisoned response to every future offline visit until the cache version bumps.
 - Confirm the SW's cache-key strategy doesn't let query-string or fragment variance cause cache confusion (e.g. two different logical resources colliding on the same cache key, or a cache-key normalization that strips something security-relevant).
@@ -46,12 +39,11 @@ Sweep four specific trust-boundary concerns. Each one is scoped to where this ap
 
 **Single pass, concern by concern**, not file by file:
 
-1. Use `ctx_batch_execute`/`ctx_execute_file` (not `Read`) for all file reads and greps — this audit spans `js/render/`, `js/content/`, `js/storage/`, `js/app/sidecar-toc.js`, `js/toc-companion.js`, `toc-companion.html`, and `wiki-sw.js`.
+1. Use `ctx_batch_execute`/`ctx_execute_file` (not `Read`) for all file reads and greps — this audit spans `js/render/`, `js/content/`, `js/storage/`, and `wiki-sw.js`.
 2. Read `tests/e2e/test_security.py` first so existing regression-guarded invariants aren't re-reported as new findings — only report gaps, not what's already covered.
 3. For **Concern 1**, grep every `.innerHTML =` in `js/render/` and `js/content/`, trace each RHS's data source, and classify: sanitized, escaped, static/safe, or gap.
 4. For **Concern 2**, read every `js/storage/*.js` file's read path (not just write path) for each user-writable data type, and check `settings-theme.js`'s backup-restore flow specifically.
-5. For **Concern 3**, grep the whole `js/` tree for `postMessage`, `onmessage`, and `BroadcastChannel`, and trace the sidecar-TOC message flow end to end.
-6. For **Concern 4**, read `wiki-sw.js`'s fetch event handler and cache-write logic in full.
+5. For **Concern 3**, read `wiki-sw.js`'s fetch event handler and cache-write logic in full.
 
 ## Output file
 
@@ -65,7 +57,7 @@ Log to **`docs/_meta/audit-reports/security-audit - YYYYMMDD.md`** (today's date
 ```markdown
 ### [SEVERITY] Short title
 
-- **Concern:** xss-sanitization | localstorage-trust | postmessage-origin | sw-cache-poisoning
+- **Concern:** xss-sanitization | localstorage-trust | sw-cache-poisoning
 - **Files:** `js/render/content-view.js:848`
 - **Observation:** conditional sanitize falls back to unsanitized `rawHtml` when `DOMPurify` is undefined
 - **Impact:** if the DOMPurify CDN script fails to load (network failure, ad-blocker, CDN outage), markdown-derived HTML renders unsanitized, reopening XSS via any malicious content that reached this render path
@@ -87,7 +79,6 @@ existing invariants.
 
 ### XSS via unsanitized markdown output
 ### localStorage trust boundaries
-### BroadcastChannel/postMessage origin checks
 ### Service-worker cache-poisoning risk
 
 ## Raw log

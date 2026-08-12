@@ -9,7 +9,7 @@ This file **owns the rules**. The rater scores against the param IDs defined her
 Companion files:
 
 - [dsa-rater.md](./dsa-rater.md) - scores a finished draft against these params and gates ship / no-ship.
-- [scripts/dsa-check.sh](./scripts/dsa-check.sh) - deterministic check for U8 / U11 / U12.
+- [scripts/dsa-check.sh](../../../scripts/dsa-check.sh) - deterministic check for U8 / U11 / U12.
 
 ---
 
@@ -50,7 +50,7 @@ Before anything else, decide which **kind** of article you're writing. The kind 
 2. **Create the file.** Create a new `.md` file at the target path (lowercase, hyphen-separated slug). No skeleton to copy - write from scratch using the **Headings list** for your section (at the bottom of this file) as the structural spine, and fill every param in that order.
 3. **Fill every section.** Apply three tiers of params: universal (every article) + the section block + the one family block. Each param below says exactly what "present at interview depth" means. **Advisory params must still be written** - they don't gate publish but they still belong in the article. Write them. The rater scores them; missing advisory content lowers the /100 score and shows up in FIXES.
 4. **Write, then self-rate.** Run the article through [dsa-rater.md](./dsa-rater.md) yourself. Fix every **blocker** (gated param scoring ≤5) and re-rate. Do not hand off a draft that reads NO-SHIP. Iterate writer → rater until SHIP.
-5. **Run the filesystem check** before declaring done: `./scripts/dsa-check.sh <article.md>` - fix any U8/U11/U12 FAIL.
+5. **Run the filesystem check** before declaring done: `../../../scripts/dsa-check.sh <article.md>` - fix any U8/U11/U12 FAIL.
 6. **Register in the index - first draft only.** A new article is **invisible to the app until it's listed** in `content/dsa/index.md` (the app loads only files reachable from there - nothing globs the directory). So, the **first time** an article passes the checks above, add one row to the matching table in `index.md` (`## Data Structures` / `## Algorithms` / `## Patterns`): `| [Title](./<folder>/<slug>.md) | one-line description |`. **This step runs once, at first publish only** - on every later revision of an existing article, **skip it** (the row already exists; don't add a duplicate, and don't touch the row unless the title or one-liner genuinely changed). Quick check: is this slug already in `index.md`? If yes → revision, skip. If no → first draft, add the row.
 
 ---

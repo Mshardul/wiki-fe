@@ -108,13 +108,13 @@ Across in-memory `state.js` caches and `localStorage` key families:
 
 ### Concern 11 — HTML ↔ JS ↔ CSS contract
 
-Static structure sync across `index.html` (and any other root HTML such as `toc-companion.html`), `js/`, and `css/` — not a UX review:
+Static structure sync across `index.html`, `js/`, and `css/` — not a UX review:
 
 - **JS → HTML**: IDs, `data-action` values, and class names queried/selected in JS that have no matching element/attribute in HTML (orphaned selectors — feature broken or dead).
 - **HTML → JS**: `data-action` / inline handlers / IDs in HTML with no listener or handler wiring in JS.
 - **`window.*` vs `data-action`**: CONVENTIONS prefers `data-action` delegation for new static buttons. Flag new `window.*` globals added for inline `onclick` when a `data-action` path would fit; cross-check the WINDOW GLOBALS block in `app.js` against actual inline handlers still present in HTML.
 - **CSS ↔ markup/JS**: class names constructed or toggled in JS / present in HTML with no CSS rules; CSS selectors for classes/IDs that nothing in HTML/JS ever applies (dead styles). Prefer exact-string matches; don't flag dynamic BEM variants you can't prove unused.
-- Scope includes `index.html`, `toc-companion.html` if present, and class/ID string literals in `js/` + selectors in `css/`.
+- Scope includes `index.html` and class/ID string literals in `js/` + selectors in `css/`.
 
 ### Concern 12 — Service-worker asset inventory (quality, not security)
 

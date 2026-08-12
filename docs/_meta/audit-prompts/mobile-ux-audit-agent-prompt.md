@@ -62,7 +62,7 @@ Work through these in order. Use `CLAUDE.md`'s file map to find the CSS/JS pair 
 - **Glossary/related** — `js/content/glossary-caveats.js`, `js/render/related-articles.js`, `css/view-content/glossary-related.css`. Popover positioning on small screens.
 4. **Global search modal (⌘K)** — `js/search.js`, `css/components/search-modal.css`. On mobile there's no ⌘K — check what triggers it, whether the modal fits small viewports, whether the on-screen keyboard would cover results.
 5. **Preferences/settings modal** — `js/storage/settings-theme.js`, `css/components/preferences-modal.css`. Swatches, keyboard-shortcuts tab (irrelevant on mobile — check it's hidden/adapted, not just broken).
-6. **Auth modal** — `js/auth.js`, `css/components-auth.css`. Login/register/verify panels, password checklist readability on narrow width, error states.
+6. **Auth modal** — `js/auth.js`, `css/components/auth.css`. Login/register/verify panels, password checklist readability on narrow width, error states.
 7. **Topbar/nav** — `css/components/topbar.css`, `js/render/nav-utils.js`. Breadcrumb, back button, scroll-to-top, reading-time badge, reading progress bar — check for overflow/truncation with long article titles at 360px.
 8. **Wiki switcher** — `js/app/wiki-switcher.js`, `css/components/wiki-switcher.css`.
 9. **Mobile-specific code** — `js/app/mobile-panels.js` (this is presumably the TOC drawer / gesture layer — audit it directly and thoroughly, it's the file most likely to contain mobile-only bugs), `js/app/distraction-free.js`.
