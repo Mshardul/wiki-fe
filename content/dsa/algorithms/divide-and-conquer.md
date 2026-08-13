@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] <!-- not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists -->
+- [Big-O Notation](./big-o-notation.md) [Must read]
 - [Recursion](./recursion.md) [Must read]
 - [Array](../data-structures/array.md) [Should read]
 

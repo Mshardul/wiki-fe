@@ -123,6 +123,120 @@
       "title": "Graph Algorithms Decision"
     }
   ],
+  "./content/dsa/algorithms/big-o-notation.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/dynamic-array.md",
+      "title": "Dynamic Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/heap.md",
+      "title": "Heap"
+    },
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/algorithms/binary-search.md",
+      "title": "Binary Search"
+    },
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/merge-sort.md",
+      "title": "Merge Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/quicksort.md",
+      "title": "Quicksort"
+    },
+    {
+      "path": "./content/dsa/algorithms/insertion-sort.md",
+      "title": "Insertion Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/counting-sort.md",
+      "title": "Counting Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/radix-sort.md",
+      "title": "Radix Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/algorithms/divide-and-conquer.md",
+      "title": "Divide and Conquer"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-matching.md",
+      "title": "String Matching (KMP)"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    }
+  ],
   "./content/dsa/algorithms/binary-search.md": [
     {
       "path": "./content/dsa/data-structures/binary-search-tree.md",
@@ -623,6 +737,12 @@
       "title": "DP Recognition"
     }
   ],
+  "./content/dsa/algorithms/lowest-common-ancestor.md": [
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    }
+  ],
   "./content/dsa/algorithms/manacher-algorithm.md": [
     {
       "path": "./content/dsa/paths/cp-weighted.md",
@@ -862,6 +982,10 @@
     }
   ],
   "./content/dsa/algorithms/recursion.md": [
+    {
+      "path": "./content/dsa/algorithms/big-o-notation.md",
+      "title": "Big-O Notation"
+    },
     {
       "path": "./content/dsa/algorithms/dfs.md",
       "title": "Depth-First Search (DFS)"
@@ -1335,6 +1459,10 @@
   ],
   "./content/dsa/data-structures/b-plus-tree.md": [
     {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    },
+    {
       "path": "./content/dsa/paths/senior-depth.md",
       "title": "Senior-depth"
     },
@@ -1641,6 +1769,10 @@
     {
       "path": "./content/dsa/data-structures/skip-list.md",
       "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/algorithms/big-o-notation.md",
+      "title": "Big-O Notation"
     },
     {
       "path": "./content/dsa/algorithms/string-matching.md",
@@ -2326,6 +2458,10 @@
     }
   ],
   "./content/dsa/data-structures/union-find.md": [
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
     {
       "path": "./content/dsa/paths/standard-swe.md",
       "title": "Standard SWE"

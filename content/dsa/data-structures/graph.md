@@ -17,6 +17,7 @@
 - [Variants](#variants)
 - [Representations](#representations)
 - [Implementation](#implementation)
+- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [Practice problems](#practice-problems)
 
@@ -113,12 +114,12 @@ Real-world workhorse: operating system kernels use directed graphs (DAGs) for pa
 
 ## Comparison
 
-| Structure | Space | Edge lookup | Neighbor iter | Ordered? | Best for |
+| Structure | Space | Edge lookup | Neighbor iter | Ordered? | Pick it when… |
 | --------- | ----- | ----------- | ------------- | -------- | -------- |
-| Adjacency list | O(V+E) | O(deg) | O(deg) | No | Sparse graphs, traversal |
-| Adjacency matrix | O(V²) | O(1) | O(V) | No | Dense graphs, O(1) edge check |
-| Edge list | O(E) | O(E) | O(E) | No | Kruskal's MST (sort edges) |
-| Incidence matrix | O(V·E) | O(E) | O(E) | No | Hypergraph theory |
+| Adjacency list | O(V+E) | O(deg) | O(deg) | No | **Crossover:** wins whenever E ≪ V² (sparse). Traversal-heavy algorithms (BFS/DFS/Dijkstra) are always O(V+E) here vs O(V²) on a matrix - the crossover only flips once E approaches V², at which point list storage cost converges to matrix cost anyway. |
+| Adjacency matrix | O(V²) | O(1) | O(V) | No | **Crossover:** wins once E > V·log V in practice, or whenever O(1) edge-existence sits in an algorithm's hot loop (Floyd-Warshall) regardless of density - the O(V²) memory is already paid by a near-complete graph's edge list, so the O(1) lookup becomes pure upside. |
+| Edge list | O(E) | O(E) | O(E) | No | **Crossover:** wins specifically when the algorithm needs a **global** view of all edges at once (Kruskal's MST sorts every edge) rather than per-node access - no per-node index means it never wins on lookup or iteration, only on whole-graph operations. |
+| Incidence matrix | O(V·E) | O(E) | O(E) | No | **Crossover:** essentially never for standard graphs (dominated by both list and matrix on every column here) - only relevant once edges themselves need first-class identity, e.g. hypergraphs where one edge connects >2 vertices. |
 
 ## Variants
 
@@ -277,6 +278,8 @@ def dfs(
     return visited
 ```
 
+**Recursion stack space.** `dfs` above is recursive, so its space complexity is not just the O(V) `visited` set - it also carries an O(V) call-stack term in the worst case (a graph shaped like a single long chain recurses V deep before returning). Total DFS space is therefore **O(V)** for `visited` **+ O(V)** for the call stack = O(V) overall, but state both terms explicitly rather than collapsing to a single O(V) that hides the recursion-depth risk - a chain-shaped input (e.g. a linked-list-like graph) can hit Python's default recursion limit (~1000) well before V gets large, which iterative DFS (an explicit stack) avoids.
+
 ### Python - adjacency matrix graph
 
 ```python
@@ -295,6 +298,35 @@ def build_matrix(
             matrix[v][u] = w
     return matrix
 ```
+
+## CP-primitives
+
+Gated for the Graph family - graph representation choice and augmentation are contest staples, distinct from the traversal-algorithm CP coverage on the algorithm pages themselves.
+
+**Adjacency-list-with-index trick (fast contest I/O).** Rather than a `dict`-of-lists, contest code typically pre-sizes a `list[list[int]]` of length n (0-indexed or 1-indexed by convention) and appends directly - avoiding the hash overhead of a `defaultdict` when n is known upfront and vertices are small dense integers:
+
+```python
+n, m = map(int, input().split())
+graph: list[list[int]] = [[] for _ in range(n + 1)]   # 1-indexed
+for _ in range(m):
+    u, v = map(int, input().split())
+    graph[u].append(v)
+    graph[v].append(u)                                  # omit for directed
+```
+
+**Why for CP:** shaves the hash-table constant off every neighbor access - measurable when V, E are large (10⁶+) and the time limit is tight; the standard fast-I/O adjacency-list pattern for competitive judges.
+
+**Union-Find (DSU) on graphs.** For connectivity queries that don't need full traversal (is u connected to v? how many components?), [Union-Find](./union-find.md) answers in near-O(1) amortized per query without building an explicit adjacency structure at all - just union each edge's endpoints. The standard alternative to BFS/DFS-based component counting when queries are online (edges arrive interleaved with connectivity questions) rather than batch.
+
+```python
+# dsu.union(u, v) for each edge; dsu.find(u) == dsu.find(v) answers connectivity in O(α(n))
+```
+
+**Why for CP:** turns "is X connected to Y" from an O(V+E) traversal into an O(α(n)) ≈ O(1) query, and generalizes to Kruskal's MST (see [Union-Find](./union-find.md#cp-primitives)) and offline dynamic-connectivity problems.
+
+**Euler tour for subtree/LCA queries.** Flattening a tree (a graph with no cycles) via a DFS pre/post-order timestamp turns "is u an ancestor of v?" and subtree-range queries into O(1) interval-containment checks over the flattened array - the technique behind [Lowest Common Ancestor](../algorithms/lowest-common-ancestor.md)'s binary-lifting alternative and offline subtree-sum queries with a Fenwick/segment tree over the tour array.
+
+**Why for CP:** converts tree-shaped graph queries into array-range queries, unlocking the entire toolkit of range data structures (segment tree, Fenwick tree) for problems that are structurally about a graph.
 
 ## Gotchas / edge cases
 

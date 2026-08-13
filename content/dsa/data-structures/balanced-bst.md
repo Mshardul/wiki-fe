@@ -4,7 +4,7 @@
 
 - [Binary Search Tree](./binary-search-tree.md) [Must read]
 - [Binary Tree](./binary-tree.md) [Should read]
-- **Big-O Notation** [Should read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Big-O Notation](../algorithms/big-o-notation.md) [Should read]
 
 ## Table of Contents
 

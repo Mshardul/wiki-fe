@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Big-O Notation](../algorithms/big-o-notation.md) [Must read]
 - [Binary Tree](./binary-tree.md) [Must read]
 - [Binary Search](../algorithms/binary-search.md) [Should read]
 

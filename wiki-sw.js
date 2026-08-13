@@ -1,5 +1,5 @@
 const SHELL_CACHE = "wiki-shell-v17";
-const ARTICLE_CACHE = "wiki-articles-vb0b494aa";
+const ARTICLE_CACHE = "wiki-articles-v07f88bb3";
 
 // Served for an uncached article request while offline; plain markdown (not HTML) so it renders through the normal content pipeline.
 const OFFLINE_FALLBACK_MD = `# You're offline

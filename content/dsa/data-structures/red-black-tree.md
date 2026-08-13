@@ -11,18 +11,19 @@
 - [Prerequisites](#prerequisites)
 - [Table of Contents](#table-of-contents)
 - [What it is](#what-it-is)
-- [Intuition](#intuition)
 - [How it works](#how-it-works)
   - [The five color rules](#the-five-color-rules)
   - [Insert fixup: three cases](#insert-fixup-three-cases)
   - [Delete fixup: the double-black](#delete-fixup-the-double-black)
-- [Correctness / invariant](#correctness--invariant)
-- [Complexity derivation](#complexity-derivation)
+- [Operations](#operations)
+- [Complexity summary](#complexity-summary)
 - [When to use / when not](#when-to-use--when-not)
 - [Comparison](#comparison)
+- [Variants](#variants)
 - [Traversal & invariant](#traversal--invariant)
-- [Edge cases](#edge-cases)
 - [Implementation](#implementation)
+- [CP-primitives](#cp-primitives)
+- [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Why libraries pick red-black over AVL](#1-why-libraries-pick-red-black-over-avl--reasoning)
@@ -38,13 +39,11 @@ Mental model: **the pragmatic [balanced BST](./balanced-bst.md) - looser than [A
 
 > **Takeaway (say this out loud):** "A red-black tree balances loosely with color rules - recolor first, rotate rarely - so writes are cheaper than AVL. It's what `std::map`, `TreeMap`, and the Linux kernel all use."
 
-## Intuition
+## How it works
 
 The deep idea: a red-black tree is **a B-tree (specifically a 2-3-4 tree) encoded as a binary tree**. A black node and its red children together represent one fat B-tree node holding 2–4 keys. The color rules are just the binary-tree shadow of "all B-tree leaves are at the same depth" - which is why every root-to-null path has the same number of black nodes (the **black-height**).
 
 Why "≤ 2× the shortest path"? Red nodes can't have red children (no two reds in a row), and every path has equal black-height, so the longest possible path alternates red-black-red-black… (at most 2× the all-black shortest path). That bound is looser than AVL's 1.44× - the tree can be taller - but the looser rule means a violation is usually fixable by flipping colors, no structural rotation needed. **Fewer rotations is the whole point**, and the slightly taller tree barely costs lookups.
-
-## How it works
 
 Each node carries a **color** (red/black). The leaves are conceptually black "nil" sentinels. Insert/delete proceed as a normal [BST](./binary-search-tree.md), then a **fixup** restores the color rules using recoloring and rotations.
 
@@ -107,25 +106,23 @@ D4 - s BLACK, s's far child RED:  rotate parent, recolor, far child → BLACK. D
 
 There are four delete-fixup cases (each with a mirror image), and the double-black can propagate up the tree - but the **total** rotations per delete are still **≤ 3**, all O(log n). Delete is notoriously fiddly; in practice you use the library, but understanding "removed-black breaks black-height, fix via the sibling" is the interview-level insight.
 
-## Correctness / invariant
-
-**Invariant:** the [five color rules](#the-five-color-rules) hold after every operation - in particular **rule 4** (no two consecutive reds) and **rule 5** (equal black-height on all paths). Together they bound the height.
-
-**Why the bound holds:** by rule 5 every path has the same black-height `b`, so the shortest possible path is all-black (length `b`). By rule 4, reds can't be adjacent, so the longest path alternates and has length ≤ `2b`. Hence longest ≤ 2 × shortest → height ≤ 2 log₂(n+1).
-
-**Why fixup terminates:** insert Case 1 moves the violation strictly **up** the tree (toward the root), and the root is always recolored black at the end - so the process climbs at most O(log n) levels. Delete's double-black similarly propagates up and resolves within O(log n). Rotations preserve BST order (in-order sequence unchanged, see [Balanced BST › Rotations](./balanced-bst.md#rotations-the-shared-mechanic)), so ordering is never broken.
-
-## Complexity derivation
-
-**Height ≤ 2 log₂(n+1).** A subtree with black-height `b` contains at least `2^b − 1` internal nodes (proof by induction: each subtree of black-height `b−1` has ≥ `2^(b−1) − 1`, and the node combines two of them). With height `h`, at least half the nodes on any path are black (rule 4), so `b ≥ h/2`. Combining: `n ≥ 2^(h/2) − 1` → `h ≤ 2 log₂(n+1)`. Hence **O(log n)**.
+## Operations
 
 | Operation | Time     | Rotations (worst) | Space    |
-| --------- | -------- | ----------------- | -------- |
-| Search    | O(log n) | -                 | O(log n) |
-| Insert    | O(log n) | **≤ 2**           | O(log n) |
-| Delete    | O(log n) | **≤ 3**           | O(log n) |
+| --------- | -------- | ------------------- | -------- |
+| Search    | O(log n) | -                    | O(log n) |
+| Insert    | O(log n) | ≤ 2                | O(log n) |
+| Delete    | O(log n) | ≤ 3                | O(log n) |
 
 The bounded rotation count is the practical win: **O(1) rotations per write** (recoloring does the O(log n) work, and recoloring is cheap - no pointer rewiring). [AVL](./avl-tree.md) also does O(1) rotations per insert but more per delete and rebalances more eagerly overall.
+
+## Complexity summary
+
+**Height ≤ 2 log₂(n+1).** A subtree with black-height `b` contains at least `2^b − 1` internal nodes (proof by induction: each subtree of black-height `b−1` has ≥ `2^(b−1) − 1`, and the node combines two of them). With height `h`, at least half the nodes on any path are black (rule 4), so `b ≥ h/2`. Combining: `n ≥ 2^(h/2) − 1` → `h ≤ 2 log₂(n+1)`. Hence **O(log n)** for every operation, best/average/worst alike.
+
+| Time (best/avg/worst)          | Space (total / per-op recursion) |
+| --------------------------------- | ----------------------------------- |
+| O(log n) / O(log n) / O(log n) | O(n) total, O(log n) per op        |
 
 ## When to use / when not
 
@@ -155,6 +152,13 @@ Real-world: the C++ STL `map`/`set`/`multimap`, Java's `TreeMap`/`TreeSet`, the 
 
 Red-black and AVL are asymptotically identical; red-black trades a slightly taller tree for cheaper writes - the trade that makes it the standard-library choice.
 
+## Variants
+
+- **Left-leaning red-black (LLRB)** - Sedgewick's variant that restricts red links to always lean left, collapsing the insert-fixup case count and making the implementation noticeably shorter to hand-roll. The variant most textbooks/courses teach for exactly that reason.
+- **2-3-4 tree** - the direct B-tree ancestor a red-black tree encodes (see [How it works](#how-it-works)); a black node + its red children is one 2-3-4 node. Rarely implemented directly - red-black is its practical binary encoding.
+- **[AVL tree](./avl-tree.md)** - the stricter balanced-BST sibling; same "self-balancing BST" family, tighter height invariant instead of color rules, see [Comparison](#comparison) for the trade.
+- **Weight-balanced / persistent red-black variants** - functional-language implementations (e.g. Haskell, Clojure's persistent maps) use red-black trees with structural sharing so old versions remain valid after an update - a common systems adaptation of the same color-rule core.
+
 ## Traversal & invariant
 
 Traversals are the [binary tree](./binary-tree.md)'s; in-order yields **sorted** keys (it's a valid [BST](./binary-search-tree.md)). The red-black-specific invariant is the **color rules**, whose load-bearing pair is:
@@ -168,14 +172,13 @@ Rule 5: equal black-height on every path     → bounds path-length spread
 
 The **black-height** (count of black nodes on any root-to-leaf path, identical for all paths by rule 5) is the quantity to reason about - it's what insert/delete fixups protect. The balance is "approximate" compared to [AVL](./avl-tree.md)'s exact height-difference rule, but the asymptotic guarantee is the same.
 
-## Edge cases
+**Invariant, stated precisely:** the [five color rules](#the-five-color-rules) hold after every operation - in particular **rule 4** (no two consecutive reds) and **rule 5** (equal black-height on all paths). Together they bound the height: by rule 5 every path has the same black-height `b`, so the shortest possible path is all-black (length `b`); by rule 4, reds can't be adjacent, so the longest path alternates and has length ≤ `2b`. Hence longest ≤ 2 × shortest → height ≤ 2 log₂(n+1).
 
-- **Inserting the root.** The first node, and any node recolored up to the root, must end **black** (rule 2). The standard fix: unconditionally color the root black at the end of every insert fixup.
-- **Red parent + red uncle vs red parent + black uncle.** The entire insert fixup hinges on the **uncle's color**: red uncle → recolor and recurse up (Case 1); black uncle → rotate (Cases 2/3). Misreading the uncle is the #1 insert bug.
-- **Delete of a black node - the double-black.** Removing a black node breaks black-height; you _must_ run the delete fixup (resolving via the sibling's color and its children's colors). Skipping it silently corrupts rule 5. This is the hardest part to get right.
-- **Nil sentinels are black.** Treating null children as black leaves (rule 3) keeps black-height counting consistent; an implementation that special-cases `None` instead of using a shared black sentinel is bug-prone in the fixups.
-- **Mirror cases.** Every insert/delete case has a left/right mirror; hand-rolling means writing both. Forgetting a mirror leaves one side unbalanced - a subtle, data-dependent bug.
-- **Recursion / loop depth.** Height is O(log n), so fixups climb O(log n) levels - safe from stack overflow, unlike a plain BST.
+**Base case:** an empty tree (nil root, conceptually black) trivially satisfies all five rules - no red-red pair exists, and the single (empty) path has black-height 0 by definition.
+
+**Inductive step (why fixup preserves it):** assume all five rules hold before an insert. The new node is inserted red; if its parent is black, no rule breaks (rule 5 is preserved since a red node contributes 0 to black-height, and rule 4 isn't violated by a red child of a black parent) - fixup is a no-op. If the parent is red, Case 1 (red uncle) recolors parent and uncle to black and grandparent to red, which preserves every path's black-height through that subtree exactly (one black added on two sides, one black removed on the way through grandparent) while pushing the potential rule-4 violation strictly one level closer to the root - so by induction on tree height, this process terminates in at most O(log n) steps, ending at the root, which is unconditionally recolored black (restoring rule 2). Cases 2/3 (black uncle) recolor and rotate in a way that's verified case-by-case to preserve both the black-height (rotations move subtrees but the recount after recoloring restores rule 5) and rule 4 (the new coloring never places two reds adjacent) - and this terminates the fixup immediately, no further climbing. Delete's double-black argument is the mirror: the temporary double-black marker represents "this subtree is missing one black" and each of the four D-cases either resolves it locally or pushes it up exactly one level, terminating within O(log n) by the same height-bound induction.
+
+**Why fixup terminates:** insert Case 1 moves the violation strictly **up** the tree (toward the root), and the root is always recolored black at the end - so the process climbs at most O(log n) levels. Delete's double-black similarly propagates up and resolves within O(log n). Rotations preserve BST order (in-order sequence unchanged, see [Balanced BST › Rotations](./balanced-bst.md#rotations-the-shared-mechanic)), so ordering is never broken.
 
 ## Implementation
 
@@ -303,6 +306,26 @@ class RedBlackTree:
 ```
 
 **Contest velocity.** Never hand-roll this in a contest - `std::map`/`std::set` (C++), `TreeMap`/`TreeSet` (Java), or `sortedcontainers.SortedList` (Python) give you the same O(log n) ordered operations for free. Write the fixup only when an interviewer asks for it.
+
+## CP-primitives
+
+Tree/heap family - advisory; contests reach for the library map/set (backed by red-black internally) rather than hand-rolling, but the augmentation trick transfers:
+
+- **Order-statistics augmentation.** Store a `size` (subtree node count) per node, updated on insert/delete/rotation the same way colors are. Turns `rank(x)` and `select(k)` into O(log n) tree walks instead of an O(n) scan - the standard red-black augmentation, and the technique behind [Practice problem 4](#4-order-statistics-with-a-red-black-tree--augmentation).
+- **Interval augmentation.** Store the max endpoint of each subtree's intervals per node, turning the tree into an interval tree supporting O(log n) overlap queries - the same "augment + maintain on rotation" recipe applied to a different payload.
+
+**Why for CP:** both lean on the fact that a rotation only touches O(1) nodes, so any per-node aggregate that can be recomputed from its two children in O(1) stays correct and cheap to maintain through rebalancing - a general trick, not red-black-specific, but red-black is where it's most commonly taught.
+
+## Gotchas / edge cases
+
+- **Inserting the root.** The first node, and any node recolored up to the root, must end **black** (rule 2). The standard fix: unconditionally color the root black at the end of every insert fixup.
+- **Red parent + red uncle vs red parent + black uncle.** The entire insert fixup hinges on the **uncle's color**: red uncle → recolor and recurse up (Case 1); black uncle → rotate (Cases 2/3). Misreading the uncle is the #1 insert bug.
+- **Delete of a black node - the double-black.** Removing a black node breaks black-height; you _must_ run the delete fixup (resolving via the sibling's color and its children's colors). Skipping it silently corrupts rule 5. This is the hardest part to get right.
+- **Nil sentinels are black.** Treating null children as black leaves (rule 3) keeps black-height counting consistent; an implementation that special-cases `None` instead of using a shared black sentinel is bug-prone in the fixups.
+- **Mirror cases.** Every insert/delete case has a left/right mirror; hand-rolling means writing both. Forgetting a mirror leaves one side unbalanced - a subtle, data-dependent bug.
+- **Recursion / loop depth.** Height is O(log n), so fixups climb O(log n) levels - safe from stack overflow, unlike a plain BST.
+- **At-scale trap (n > 10⁷): pointer-chasing depth under concurrent load.** Same structural failure mode as AVL: every op is ~2 log₂ n pointer hops through scattered heap allocations, and root-adjacent nodes become write hotspots under concurrent insert/delete (every fixup potentially touches the path to the root). At large n and high write concurrency, a single global red-black tree becomes a lock-contention bottleneck before the O(log n) time bound itself matters - production systems (e.g. database buffer-pool structures) shard, use lock-free variants, or fall back to a coarser structure at this scale.
+- **Cache behavior.** Like AVL, red-black nodes are heap-allocated and pointer-linked - each hop is a likely cache miss (vs a heap's flat-array layout). Red-black's specific trade here: it does fewer rotations than AVL per write, but the same number of pointer-chased hops per read (height is only ~1.4× taller), so the cache-miss cost per operation is comparable to AVL - the rotation-count difference matters for write cost, not read cache behavior.
 
 ## What the interviewer probes for
 

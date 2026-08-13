@@ -9,6 +9,16 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-08-14
+- `dsa/algorithms/big-o-notation.md` - new article
+- `dsa/data-structures/avl-tree.md` - restructured: DS spine (Operations, Complexity summary, Variants, CP-primitives added; Algo-shaped headings folded into family section)
+- `dsa/data-structures/b-tree.md` - restructured: DS spine (Operations, Complexity summary, Variants, CP-primitives added; Algo-shaped headings folded into family section)
+- `dsa/data-structures/red-black-tree.md` - restructured: DS spine (Operations, Complexity summary, Variants, CP-primitives added; Algo-shaped headings folded into family section)
+- `dsa/data-structures/graph.md` - new section: "CP-primitives"; expanded: "Comparison" - crossover conditions per row; expanded: "Implementation" - explicit DFS recursion stack space
+- `dsa/data-structures/union-find.md` - expanded: "Traversal & invariant" - array-vs-explicit-node representation note
+- `dsa/index.md` - new row: Big-O Notation
+- 28 files across `dsa/data-structures/` and `dsa/algorithms/` - fixed dangling Big-O Notation prerequisite links now that the target article exists
+
 ## 2026-08-12
 - `dsa/index.md` - new section: "Learning Paths" - links the 3 existing track pages
 

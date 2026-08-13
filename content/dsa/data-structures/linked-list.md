@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **<abbr>Big-O</abbr> Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Big-O Notation](../algorithms/big-o-notation.md) [Must read]
 - [Array](./array.md) [Must read]
 - **Computer memory model** [Should read]
 

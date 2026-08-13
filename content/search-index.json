@@ -463,6 +463,12 @@
       "heading": "Algorithms",
       "cards": [
         {
+          "title": "Big-O Notation",
+          "path": "./content/dsa/algorithms/big-o-notation.md",
+          "slug": "big-o-notation",
+          "description": "Growth-rate analysis: count operations, keep the dominant term, drop constants - Master theorem for recurrences, arithmetic series for loops."
+        },
+        {
           "title": "Binary Search",
           "path": "./content/dsa/algorithms/binary-search.md",
           "slug": "binary-search",

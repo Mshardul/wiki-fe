@@ -51,6 +51,7 @@ Procedures with correctness intuition. Each page covers the worked example, the 
 
 | Algorithm                                                                       | Description                                                                                                                                                 |
 | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Big-O Notation](./algorithms/big-o-notation.md)                                | Growth-rate analysis: count operations, keep the dominant term, drop constants - Master theorem for recurrences, arithmetic series for loops.               |
 | [Binary Search](./algorithms/binary-search.md)                                  | Halve a sorted search space each step - O(log n). Generalizes to any monotonic predicate, the basis of "binary search on the answer".                       |
 | [Sorting](./algorithms/sorting.md)                                              | Comparison sorts bottom out at O(n log n) (merge/quick/heap); counting & radix break it to O(n) on bounded keys. Stability, the lower bound.                |
 | [Merge Sort](./algorithms/merge-sort.md)                                        | Divide in half, sort each, merge. Guaranteed O(n log n) in all cases and stable, at O(n) space - the safe choice and the basis of external sort.            |

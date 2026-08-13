@@ -11,18 +11,19 @@
 - [Prerequisites](#prerequisites)
 - [Table of Contents](#table-of-contents)
 - [What it is](#what-it-is)
-- [Intuition](#intuition)
 - [How it works](#how-it-works)
   - [Search](#search)
   - [Insert: split a full node](#insert-split-a-full-node)
   - [Delete: merge / borrow](#delete-merge--borrow)
-- [Correctness / invariant](#correctness--invariant)
-- [Complexity derivation](#complexity-derivation)
+- [Operations](#operations)
+- [Complexity summary](#complexity-summary)
 - [When to use / when not](#when-to-use--when-not)
 - [Comparison](#comparison)
+- [Variants](#variants)
 - [Traversal & invariant](#traversal--invariant)
-- [Edge cases](#edge-cases)
 - [Implementation](#implementation)
+- [CP-primitives](#cp-primitives)
+- [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Why B-trees for databases](#1-why-b-trees-for-databases--reasoning)
@@ -39,13 +40,11 @@ Mental model: **a multi-level index in a reference book.** Instead of a binary y
 
 > **Takeaway (say this out loud):** "A B-tree is a balanced tree with hundreds of keys per node, so it stays only a few levels deep - minimizing disk seeks, which is why every database and filesystem indexes with it."
 
-## Intuition
+## How it works
 
 The driving fact: **a disk/SSD seek is roughly 100,000–1,000,000× slower than a RAM access.** So the cost of a search isn't comparisons (cheap, in-RAM once a node is loaded) - it's the **number of nodes you must fetch from disk**, i.e. the tree's height. A binary tree of a billion keys is ~30 levels deep → ~30 seeks. Disaster.
 
 The fix: make each node as **wide** as one disk block (say 4–16 KB), holding hundreds of keys. Now the **fan-out** is hundreds, so a billion keys fit in `log₄₀₀(10⁹) ≈ 3–4` levels → 3–4 seeks. The B-tree trades "many shallow binary decisions" for "few wide multi-way decisions," aligning the structure to the hardware: **one node = one block = one seek.** Everything else (split, merge) is bookkeeping to keep it balanced and the nodes block-sized.
-
-## How it works
 
 A B-tree of **order m** (minimum degree `t`, where each node holds between `t−1` and `2t−1` keys) obeys: every node has between ⌈m/2⌉ and m children (except the root), keys within a node are sorted, and **all leaves sit at the same depth** (perfect balance). A node with `k` keys has `k+1` children, and the keys partition the child key-ranges.
 
@@ -83,27 +82,23 @@ Splitting **top-down** (split any full node you pass through on the way down) is
 
 Delete from a leaf directly; delete from an internal node by replacing the key with its in-order predecessor/successor (in a leaf) and deleting that. If a node drops below the minimum `t−1` keys (**underflow**), restore the invariant by either **borrowing** a key from a sibling (rotate through the parent) or **merging** with a sibling (pull a key down from the parent). Merging can underflow the parent, propagating up - and if the root loses its last key, the tree shrinks by a level. Symmetric to insert's split.
 
-## Correctness / invariant
+## Operations
 
-**Invariants (order m, min degree t):**
+| Operation | Time (CPU)         | Disk reads (the metric that matters) |
+| --------- | ------------------ | ------------------------------------- |
+| Search    | O(log_t n · log t) | **O(log_t n)** block reads            |
+| Insert    | O(log_t n · t)     | O(log_t n) reads + O(log_t n) writes   |
+| Delete    | O(log_t n · t)     | O(log_t n) reads + O(log_t n) writes   |
 
-1. Keys within each node are **sorted**; a node with `k` keys has exactly `k+1` children whose key-ranges the keys partition (the BST ordering, generalized).
-2. Every node except the root has between `t−1` and `2t−1` keys (⌈m/2⌉ to m children) - the **fill invariant** that bounds height.
-3. **All leaves are at the same depth** - perfect balance, maintained because growth happens only by splitting the root upward.
+The `log t` / `t` factors are **in-RAM** work (binary-search or shift within a loaded node) and are effectively free next to a disk seek. The headline cost is **block reads = O(log_t n)** - a handful. This is why the B-tree's win over a binary balanced tree is practical, not asymptotic: both are O(log n) in comparisons, but the B-tree is O(log n / log t) in _seeks_.
 
-**Why it stays balanced:** the tree never adds a level at a leaf; it only grows when the root splits (adding a level at the _top_, uniformly) and only shrinks when the root empties. So every leaf is always equidistant from the root - balance is structural, not restored after the fact like [AVL](./avl-tree.md) rotations.
-
-## Complexity derivation
+## Complexity summary
 
 **Height = O(log_t n).** With minimum degree `t`, every node (bar the root) has ≥ `t` children, so a tree of height `h` has at least `2·t^(h−1)` leaves → `n ≥ 2 t^(h−1) − 1`, giving `h ≤ 1 + log_t((n+1)/2) = O(log_t n)`. Because `t` is large (hundreds), `log_t n` is tiny - that's the point.
 
-| Operation | Time (CPU)         | Disk reads (the metric that matters) |
-| --------- | ------------------ | ------------------------------------ |
-| Search    | O(log_t n · log t) | **O(log_t n)** block reads           |
-| Insert    | O(log_t n · t)     | O(log_t n) reads + O(log_t n) writes |
-| Delete    | O(log_t n · t)     | O(log_t n) reads + O(log_t n) writes |
-
-The `log t` / `t` factors are **in-RAM** work (binary-search or shift within a loaded node) and are effectively free next to a disk seek. The headline cost is **block reads = O(log_t n)** - a handful. This is why the B-tree's win over a binary balanced tree is practical, not asymptotic: both are O(log n) in comparisons, but the B-tree is O(log n / log t) in _seeks_.
+| Time (comparisons, best/avg/worst) | Space (per node / total)               |
+| ------------------------------------ | ---------------------------------------- |
+| O(log_t n · log t) all cases         | O(t) per node, O(n) total, O(log_t n) recursion |
 
 ## When to use / when not
 
@@ -133,6 +128,13 @@ Real-world: **every relational database** indexes with B-trees or **B+-trees** (
 
 The B-tree's distinguishing column is **keys-per-node = many**, which collapses height and so disk seeks. The binary balanced trees win in RAM (no seeks to amortize); the B-tree wins the moment a node fetch is expensive.
 
+## Variants
+
+- **[B+-Tree](./b-plus-tree.md)** - values live only at leaves, leaves are linked in a sorted list, internal nodes hold pure routing keys. The variant almost every real database actually uses (see [Comparison](#comparison) and [Gotchas](#gotchas--edge-cases)).
+- **B\*-Tree** - delays splitting by redistributing keys between siblings first (2-to-3 split instead of 1-to-2), keeping nodes fuller (~2/3 vs ~1/2 minimum) at the cost of more complex insert logic. Used in some filesystems (HFS+, some NTFS variants).
+- **Counted B-Tree** - each node also tracks subtree size, enabling O(log_t n) "find the k-th element" / rank queries - the B-tree analogue of an order-statistics tree.
+- **Copy-on-write / persistent B-Tree** - writes create new nodes instead of mutating in place, so old versions stay readable (used in LMDB, some snapshot-capable filesystems like Btrfs/ZFS) - trades write amplification for cheap, safe point-in-time snapshots.
+
 ## Traversal & invariant
 
 Traversal generalizes the [BST](./binary-search-tree.md) in-order walk: within a node, interleave **children and keys** - child₀, key₀, child₁, key₁, …, key\_{k−1}, child_k - recursing into each child. This visits all keys in **sorted order**, same as a BST in-order traversal.
@@ -147,14 +149,17 @@ fill invariant (min degree t):
   underfull (t−2 keys after delete) → BORROW from sibling, or MERGE
 ```
 
-## Edge cases
+**Invariants, stated precisely (order m, min degree t):**
 
-- **Root special-cases.** The root may have as few as 1 key (every other node needs ≥ `t−1`). The tree gains height only when the root splits, and loses height only when the root underflows to empty - handle these two events separately from ordinary split/merge.
-- **Choosing the order `m`.** Pick `m` so a node fills one disk/page block (`m ≈ block_size / (key_size + pointer_size)`). Too small → too many levels (more seeks); too large → wasted partial reads. This sizing is the practical design decision (see practice problem 3).
-- **Split median selection.** On split, the **median** key moves up; off-by-one in picking the median (left-vs-right bias for even counts) leaves nodes unbalanced or violating the fill bound. Be consistent.
-- **Delete from an internal node.** You can't just remove an internal key (it separates children); replace it with its in-order predecessor/successor from a leaf, then delete that leaf key - analogous to BST two-child delete, but with borrow/merge afterward.
-- **Underflow cascade.** A merge pulls a key down from the parent, which can underflow the parent, propagating to the root. Forgetting to continue the fixup upward corrupts the fill invariant.
-- **B-tree vs B+-tree confusion.** In a **B+-tree**, all values live in the leaves and leaves are linked in a list (great for range scans); internal nodes hold only routing keys. Plain B-trees store values in internal nodes too. Databases usually use **B+-trees** - know the distinction.
+1. Keys within each node are **sorted**; a node with `k` keys has exactly `k+1` children whose key-ranges the keys partition (the BST ordering, generalized).
+2. Every node except the root has between `t−1` and `2t−1` keys (⌈m/2⌉ to m children) - the **fill invariant** that bounds height.
+3. **All leaves are at the same depth** - perfect balance, maintained because growth happens only by splitting the root upward.
+
+**Base case:** a freshly created tree is a single leaf node (the root) with 0 keys - trivially satisfies all three invariants (no children to partition, root's relaxed fill bound of `1..2t-1` permits 0 initially, and the sole node is vacuously "all leaves at equal depth 0").
+
+**Inductive step (why split/merge preserve it):** assume all three invariants hold before an insert. A leaf insert either fits (no structural change, invariants trivially preserved) or overflows the leaf to `2t` keys; splitting moves the median up and produces two nodes with `t-1` keys each - both within `[t-1, 2t-1]`, and if the parent absorbs the pushed-up median without itself overflowing, no further change happens and every leaf is still at the same depth (only the two split nodes changed, both still leaves at the same depth as before). If the split cascades to the root, a new root is created **once**, uniformly adding one level to every leaf simultaneously - so equal-depth is preserved by construction, not by chance. Delete's merge/borrow is the mirror argument: borrowing moves one key through the parent (both sibling and parent stay within fill bounds by construction of the borrow amount), and merging combines two `t-1`-key nodes plus one parent key into one `2t-1`-key node (exactly at the max, never violating it), propagating underflow-fixup upward the same uniform way. So the invariants hold inductively after every operation.
+
+**Why it stays balanced:** the tree never adds a level at a leaf; it only grows when the root splits (adding a level at the _top_, uniformly) and only shrinks when the root empties. So every leaf is always equidistant from the root - balance is structural, not restored after the fact like [AVL](./avl-tree.md) rotations.
 
 ## Implementation
 
@@ -252,6 +257,26 @@ class BTree:
 
 **Contest velocity.** B-trees almost never appear in contests (they're a systems structure, not an algorithmic one) - and you'd never hand-roll one. Know the _concept_ (wide nodes, few seeks, DB indexes) for system-design and DB interviews; reach for the binary [balanced BST](./balanced-bst.md) or a library structure for in-memory contest needs.
 
+## CP-primitives
+
+Tree/heap family - advisory; B-trees are a systems structure, not a contest one, but two ideas transfer:
+
+- **Block/chunk decomposition.** The B-tree's core trick - group elements into fixed-size blocks to amortize a per-access cost - shows up directly as **sqrt decomposition**: split an array into `√n`-sized blocks so range queries/updates cost O(√n) instead of O(n), the same "wide-node, few-hops" trade-off in array form.
+- **Multiway merge / k-way search.** A B-tree node's "binary-search within, then descend" pattern generalizes the same way a k-way merge does - useful framing when a contest problem partitions work into k sorted buckets and needs the next-smallest across all of them.
+
+**Why for CP:** the B-tree's defining idea (amortize a per-access cost by batching into wide chunks) is the same idea behind sqrt decomposition and block-based CP data structures, even though nobody implements an actual B-tree in a contest.
+
+## Gotchas / edge cases
+
+- **Root special-cases.** The root may have as few as 1 key (every other node needs ≥ `t−1`). The tree gains height only when the root splits, and loses height only when the root underflows to empty - handle these two events separately from ordinary split/merge.
+- **Choosing the order `m`.** Pick `m` so a node fills one disk/page block (`m ≈ block_size / (key_size + pointer_size)`). Too small → too many levels (more seeks); too large → wasted partial reads. This sizing is the practical design decision (see practice problem 3).
+- **Split median selection.** On split, the **median** key moves up; off-by-one in picking the median (left-vs-right bias for even counts) leaves nodes unbalanced or violating the fill bound. Be consistent.
+- **Delete from an internal node.** You can't just remove an internal key (it separates children); replace it with its in-order predecessor/successor from a leaf, then delete that leaf key - analogous to BST two-child delete, but with borrow/merge afterward.
+- **Underflow cascade.** A merge pulls a key down from the parent, which can underflow the parent, propagating to the root. Forgetting to continue the fixup upward corrupts the fill invariant.
+- **B-tree vs B+-tree confusion.** In a **B+-tree**, all values live in the leaves and leaves are linked in a list (great for range scans); internal nodes hold only routing keys. Plain B-trees store values in internal nodes too. Databases usually use **B+-trees** - know the distinction.
+- **At-scale trap (n > 10⁷): pointer-chasing depth growth per representation.** As a table grows past what one level of caching can hold, more of the tree's non-leaf levels fall out of the buffer-pool cache, so each additional level costs a real disk seek rather than a RAM hit - a 100M-row table might stay 3 levels deep, but the *effective* seek cost per lookup climbs as fewer of those levels stay warm in cache, not because the height formula changes but because the "in-RAM" assumption for upper levels erodes. Real databases mitigate by pinning the top 1-2 levels in memory permanently.
+- **Cache behavior.** A B-tree node is deliberately sized to one disk block (4-16 KB) so that a "node fetch" is exactly one sequential-read seek, not a scattered pointer chase - the opposite failure mode from AVL/red-black, where node fetches are individually tiny but numerous and pointer-chased. This is why a B-tree wins on disk (few, block-sized seeks) even though it's asymptotically no better than a binary balanced tree in comparison count.
+
 ## What the interviewer probes for
 
 - **"Why a B-tree instead of a red-black tree for a database index?"** - Because data is on disk and a seek dwarfs a comparison. High fan-out makes the tree 3–4 levels deep instead of ~30, so a lookup is 3–4 seeks instead of 30. In RAM (no seeks) you'd use red-black instead.
@@ -306,6 +331,9 @@ print(bt.search(12) is not None)          # True
 ```
 
 **Complexity:** O(log_t n) node reads, O(log_t n · log t) CPU.
+
+**Duplicate problems:**
+- Search in a Binary Search Tree (LC 700) - identical descend-by-comparison logic, collapsed to the 2-child case (t=1 conceptually).
 
 ### 3. Choose the order for a disk block - _sizing_
 

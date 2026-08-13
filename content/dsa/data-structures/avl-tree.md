@@ -11,17 +11,18 @@
 - [Prerequisites](#prerequisites)
 - [Table of Contents](#table-of-contents)
 - [What it is](#what-it-is)
-- [Intuition](#intuition)
 - [How it works](#how-it-works)
   - [Insert: the four rotation cases](#insert-the-four-rotation-cases)
   - [Delete](#delete)
-- [Correctness / invariant](#correctness--invariant)
-- [Complexity derivation](#complexity-derivation)
+- [Operations](#operations)
+- [Complexity summary](#complexity-summary)
 - [When to use / when not](#when-to-use--when-not)
 - [Comparison](#comparison)
+- [Variants](#variants)
 - [Traversal & invariant](#traversal--invariant)
-- [Edge cases](#edge-cases)
 - [Implementation](#implementation)
+- [CP-primitives](#cp-primitives)
+- [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Insert into an AVL tree](#1-insert-into-an-avl-tree--rebalance-on-the-way-up)
@@ -37,13 +38,11 @@ Mental model: **the strictest building inspector among the [balanced BSTs](./bal
 
 > **Takeaway (say this out loud):** "An AVL tree is a BST where every node's subtree heights differ by at most 1, enforced by rotations - strictest balance, so the fastest lookups, at the cost of more rotations per write."
 
-## Intuition
+## How it works
 
 The named inventors (Adelson-Velsky and Landis) added one number to each BST node: a **balance factor** = `height(left) − height(right)`. The invariant is simply "every balance factor is −1, 0, or +1." When an insert or delete pushes some node to ±2, the tree has leaned too far there, and a rotation pulls the tall side up to flatten it.
 
 Why does fixing it _locally_ work globally? An insert changes heights only along the **single path** from the new leaf up to the root. So only nodes on that path can become unbalanced, and rebalancing the **lowest** unbalanced node restores the whole tree's height to what it was before the insert - which is why an AVL insert needs at most **one** rotation (single or double). That "one path, one fix" property is the whole elegance.
-
-## How it works
 
 Each node stores its **height** (or balance factor). Insert/delete proceeds as a normal [BST](./binary-search-tree.md) operation, then you **retrace the path to the root**, updating heights and rotating wherever a node's balance factor reaches ±2.
 
@@ -88,15 +87,17 @@ RR and RL are the mirror images (single left, and double right-then-left). The d
 
 Delete as a normal BST (leaf → remove; one child → splice; two children → replace with in-order successor, then delete it). Then retrace to the root, rebalancing. **The key difference from insert:** a delete can require rebalancing at **multiple** nodes along the path - fixing one can shorten its subtree and unbalance an ancestor - so you don't stop after the first rotation; you continue to the root. (Insert needs at most one rotation; delete can need O(log n).)
 
-## Correctness / invariant
+## Operations
 
-**Invariant:** for every node `v`, `|height(v.left) − height(v.right)| ≤ 1`.
+| Operation | Time     | Space (recursion) | Notes                                         |
+| --------- | -------- | ------------------ | ---------------------------------------------- |
+| Search    | O(log n) | O(log n)           | plain BST descent, height-bounded              |
+| Insert    | O(log n) | O(log n)           | BST insert + retrace, ≤ 1 rotation             |
+| Delete    | O(log n) | O(log n)           | BST delete + retrace, up to O(log n) rotations |
 
-**Why rotations preserve BST order:** a rotation only re-parents nodes; the in-order sequence is identical before and after (see [Balanced BST › Rotations](./balanced-bst.md#rotations-the-shared-mechanic)). So the BST ordering invariant is never violated - rotations are "order-safe height surgery."
+All bounds are **worst-case**, not just average - that's the guarantee a plain [BST](./binary-search-tree.md) can't make. Insert does ≤ 1 rotation; delete does O(log n) in the worst case; both are O(log n) overall (the retrace dominates, not the rotation count).
 
-**Why one rotation suffices on insert:** before the insert, every node was balanced. The insert lengthened exactly one root-to-leaf path by 1, so the only nodes that can violate the invariant lie on that path, and the **lowest** such node `z` has balance factor ±2 with the opposite subtree unchanged. Rotating at `z` reduces its subtree height back to the pre-insert value, which propagates "no change" up the rest of the path - so no ancestor is affected. One rotation, done.
-
-## Complexity derivation
+## Complexity summary
 
 **Height bound - why ≤ 1.44 log₂ n.** Let `N(h)` be the _minimum_ number of nodes in an AVL tree of height `h`. The most-unbalanced legal AVL tree has, at the root, one subtree of height `h−1` and the other of height `h−2` (differing by exactly 1). So:
 
@@ -104,15 +105,11 @@ Delete as a normal BST (leaf → remove; one child → splice; two children → 
 N(h) = 1 + N(h−1) + N(h−2),   N(0) = 1, N(1) = 2
 ```
 
-This is the **Fibonacci recurrence** (shifted): `N(h) ≈ φ^h` where `φ = (1+√5)/2 ≈ 1.618`. Inverting, `h ≈ log_φ(n) = log₂(n) / log₂(φ) ≈ 1.44 log₂ n`. So the height is at most ~1.44× the perfect-tree height - tightly bounded, hence **O(log n)**.
+This is the **Fibonacci recurrence** (shifted): `N(h) ≈ φ^h` where `φ = (1+√5)/2 ≈ 1.618`. Inverting, `h ≈ log_φ(n) = log₂(n) / log₂(φ) ≈ 1.44 log₂ n`. So the height is at most ~1.44× the perfect-tree height - tightly bounded, hence **O(log n)** for every operation, best/average/worst alike (no degenerate case can arise once the invariant holds).
 
-| Operation | Time     | Space (recursion) |
-| --------- | -------- | ----------------- |
-| Search    | O(log n) | O(log n)          |
-| Insert    | O(log n) | O(log n)          |
-| Delete    | O(log n) | O(log n)          |
-
-All bounds are **worst-case**, not just average - that's the guarantee a plain [BST](./binary-search-tree.md) can't make. Insert does ≤ 1 rotation; delete does O(log n) in the worst case; both are O(log n) overall (the retrace dominates).
+| Time (best/avg/worst)          | Space (total / per-op recursion) |
+| -------------------------------- | ---------------------------------- |
+| O(log n) / O(log n) / O(log n) | O(n) total, O(log n) per op       |
 
 ## When to use / when not
 
@@ -141,6 +138,13 @@ Real-world: AVL trees show up in read-heavy in-memory indexes and some database 
 
 AVL and red-black are the same asymptotics; AVL trades more write-work for a shorter tree (faster reads). Pick on your read/write ratio.
 
+## Variants
+
+- **Weight-balanced tree** - balances on subtree *size* instead of height (a subtree's size stays within a constant factor of its sibling's). Different invariant, same goal (O(log n) ops); rarer in practice than AVL/red-black.
+- **AVL with parent pointers** - stores an explicit `parent` link per node so retrace-to-root doesn't need recursion or an explicit stack - common in iterative/production implementations, trades a pointer per node for simpler retrace code.
+- **Relaxed-balance AVL** - some concurrent/lock-free AVL variants allow temporary balance-factor violations (bf up to ±2 briefly) to reduce rotation contention under concurrent writes, fixing up lazily. A CP-irrelevant, systems-flavored variant.
+- **[Red-Black tree](./red-black-tree.md)** - the loosely-balanced sibling; same "self-balancing BST" family, different invariant (color rules vs strict height), see [Comparison](#comparison) above for the trade.
+
 ## Traversal & invariant
 
 The traversals are the [binary tree](./binary-tree.md)'s - and because an AVL is a valid [BST](./binary-search-tree.md), **in-order traversal yields sorted keys**. The AVL-specific invariant is the **height-balance** condition, maintained by tracking a height (or balance factor) per node and rotating on violation.
@@ -155,14 +159,13 @@ bf = −2           → right-heavy → RR or RL rotation
 
 The discipline: every structural change retraces the path to the root, recomputes heights bottom-up, and rotates the first node it finds at ±2. The **balanced** shape invariant from the [binary tree](./binary-tree.md#the-shape-invariants-full-complete-balanced) page is exactly AVL's enforced rule - AVL is the structure that _guarantees_ it.
 
-## Edge cases
+**Invariant, stated precisely:** for every node `v`, `|height(v.left) − height(v.right)| ≤ 1`.
 
-- **Empty tree / single node.** Insert into empty creates the root (height 0/1 per convention); no rotation possible with < 3 nodes. Handle `root is None` as the base case in every recursive op.
-- **Rotation choosing the wrong case (LL vs LR).** The classic AVL bug: deciding single vs double rotation from the _grandparent's_ balance factor alone. You must inspect the **child's** balance factor too - `bf(z)=+2` is LL if `bf(z.left) ≥ 0`, but LR if `bf(z.left) < 0`. Getting this wrong leaves the tree unbalanced or unsorted.
-- **Forgetting to update heights after a rotation.** Rotations change the heights of the two rotated nodes; if you don't recompute them (in the right order - children before parents) the balance factors go stale and later rebalancing misfires.
-- **Delete stopping after one rotation.** Unlike insert, a delete may unbalance multiple ancestors - you must continue rebalancing all the way to the root, not return early. A frequent correctness bug.
-- **Recursion depth.** Height is O(log n), so the recursion stack is safe even for large n - one of AVL's quiet advantages over a plain BST (which can recurse O(n) deep and overflow).
-- **Duplicate keys.** Decide a policy (reject, or store a count per node); inserting duplicates as real nodes complicates the balance bookkeeping and the in-order order.
+**Base case:** an empty tree (or single node) trivially satisfies the invariant - no subtree pair to compare, or both heights are 0.
+
+**Inductive step (why rotations preserve it):** assume every node was balanced before the insert. The insert lengthens exactly one root-to-leaf path by 1, so the only node that can newly violate the invariant is on that path - and the **lowest** such node `z` has balance factor exactly ±2, because it was ±1 before the insert and children are only 1 level from their parent. Rotating at `z` restores its subtree height to the pre-insert value (verified case-by-case for LL/LR/RR/RL - each rotation reduces the taller side's height by exactly 1 and raises the shorter side's by 1), which means no ancestor above `z` sees a height change either - so the invariant holds inductively all the way to the root after exactly one fix.
+
+**Why rotations preserve BST order:** a rotation only re-parents nodes; the in-order sequence is identical before and after (see [Balanced BST › Rotations](./balanced-bst.md#rotations-the-shared-mechanic)). So the BST ordering invariant and the height-balance invariant are maintained independently - rotations are "order-safe height surgery."
 
 ## Implementation
 
@@ -248,6 +251,26 @@ def insert(node: Optional[Node], key: int) -> Node:
 ```
 
 **Contest velocity.** You almost never hand-roll AVL in a contest - reach for the language's balanced structure ([Red-Black-backed](./red-black-tree.md) `std::map`/`TreeMap`, or Python `sortedcontainers.SortedList`). Code AVL only when an interviewer explicitly asks for the rotation logic.
+
+## CP-primitives
+
+Tree/heap family - advisory, but AVL's height guarantee unlocks two contest-relevant tricks:
+
+- **Order-statistics augmentation.** Store a `size` (subtree node count) per node alongside `height`, updated the same way during rotations. This turns the tree into an order-statistics tree: "find the k-th smallest" and "count elements less than x" both become O(log n) tree walks instead of an O(n) scan - the classic augmentation for offline rank queries.
+- **Guaranteed-height recursion bound.** Because AVL height is provably ≤ 1.44 log₂ n, any recursive tree algorithm run on an AVL (not a plain BST) has a *guaranteed* O(log n) stack depth - useful in contest problems that build a balanced tree specifically to bound recursion depth for a follow-up computation, rather than risking a degenerate O(n)-deep plain BST.
+
+**Why for CP:** both tricks lean on the property a plain BST can't offer - a *provable* height bound - to turn otherwise-linear operations logarithmic.
+
+## Gotchas / edge cases
+
+- **Empty tree / single node.** Insert into empty creates the root (height 0/1 per convention); no rotation possible with < 3 nodes. Handle `root is None` as the base case in every recursive op.
+- **Rotation choosing the wrong case (LL vs LR).** The classic AVL bug: deciding single vs double rotation from the _grandparent's_ balance factor alone. You must inspect the **child's** balance factor too - `bf(z)=+2` is LL if `bf(z.left) ≥ 0`, but LR if `bf(z.left) < 0`. Getting this wrong leaves the tree unbalanced or unsorted.
+- **Forgetting to update heights after a rotation.** Rotations change the heights of the two rotated nodes; if you don't recompute them (in the right order - children before parents) the balance factors go stale and later rebalancing misfires.
+- **Delete stopping after one rotation.** Unlike insert, a delete may unbalance multiple ancestors - you must continue rebalancing all the way to the root, not return early. A frequent correctness bug.
+- **Recursion depth.** Height is O(log n), so the recursion stack is safe even for large n - one of AVL's quiet advantages over a plain BST (which can recurse O(n) deep and overflow).
+- **Duplicate keys.** Decide a policy (reject, or store a count per node); inserting duplicates as real nodes complicates the balance bookkeeping and the in-order order.
+- **At-scale trap (n > 10⁷): pointer-chasing depth under concurrent load.** Every AVL op walks ~1.44 log₂ n pointer hops, each a potential cache miss (unlike a heap's flat array). At n = 10⁸, that's ~40 hops of scattered heap allocations per lookup - and under high-write concurrency, the retrace-to-root on every insert/delete means writes serialize around overlapping root-to-leaf paths, so a single global AVL becomes a lock-contention bottleneck long before the O(log n) time bound itself is the problem. Real systems shard or use a lock-free/relaxed-balance variant at this scale rather than a single AVL instance.
+- **Cache behavior.** AVL nodes are heap-allocated and pointer-linked, not contiguous - each hop down the tree is a likely cache miss, unlike a heap's flat-array layout (sequential, cache-friendly). This is the structural reason a red-black tree (fewer rotations, same pointer-chasing cost) rather than an AVL is the typical library default: the cache-miss cost per hop dwarfs the difference between 1.44 log n and 2 log n hops.
 
 ## What the interviewer probes for
 

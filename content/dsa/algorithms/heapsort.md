@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` (bracket-link form) once that page exists. -->
+- [Big-O Notation](./big-o-notation.md) [Must read]
 - [Heap](../data-structures/heap.md) [Must read]
 - [Array](../data-structures/array.md) [Must read]
 - [Sorting](./sorting.md) [Should read]

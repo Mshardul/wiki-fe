@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Big-O Notation** [Must read] <!-- U9: not-yet-written target - wire to `algorithms/big-o-notation.md` once that page exists. -->
+- [Big-O Notation](../algorithms/big-o-notation.md) [Must read]
 - [Queue](./queue.md) [Must read]
 - [Stack](./stack.md) [Should read]
 - [Circular Buffer](./circular-buffer.md) [Should read]
