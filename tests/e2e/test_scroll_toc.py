@@ -118,6 +118,19 @@ def test_toc_scroll_position_tracked_in_eviction_manifest(page, base_url):
     )
 
 
+def test_toc_nav_reserves_scrollbar_gutter(page, base_url):
+    """Regression: native (non-Firefox) scrollbar rendered directly over
+    .toc-group-chevron's hit-zone with no gutter reserved, blocking clicks
+    near the scroll edge. #toc-nav should reserve a stable gutter."""
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#toc-nav .toc-item", timeout=10_000)
+
+    gutter = page.evaluate(
+        "() => getComputedStyle(document.getElementById('toc-nav')).scrollbarGutter"
+    )
+    assert gutter == "stable", f"Expected scrollbar-gutter: stable on #toc-nav, got: {gutter}"
+
+
 def test_scroll_position_not_restored_with_anchor(page, base_url):
     """?a= anchor param takes priority over saved scroll position."""
     # First visit and scroll to persist a position.

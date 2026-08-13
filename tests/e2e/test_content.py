@@ -120,11 +120,14 @@ def test_prerequisites_strip_scrolls_horizontally(page, base_url):
     style = page.evaluate("""() => {
         const el = document.querySelector('.prereqs-container');
         const s = getComputedStyle(el);
-        return { display: s.display, flexWrap: s.flexWrap, overflowX: s.overflowX };
+        return { display: s.display, flexWrap: s.flexWrap, overflowX: s.overflowX, paddingBottom: s.paddingBottom };
     }""")
     assert style["display"] == "flex", f"expected flex, got: {style}"
     assert style["flexWrap"] == "nowrap", f"expected nowrap, got: {style}"
     assert style["overflowX"] in ("auto", "scroll"), f"expected overflow-x scroll, got: {style}"
+    assert style["paddingBottom"] != "0px", (
+        f"expected padding-bottom gap above the scrollbar, got: {style}"
+    )
 
 
 # ── Topbar title ────────────────────────────────────────────────────────────────

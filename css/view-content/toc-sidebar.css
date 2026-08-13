@@ -59,6 +59,7 @@
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+  scrollbar-gutter: stable;
 }
 /* Notes collapsed - TOC absorbs the freed space instead of leaving a gap. */
 .toc-sidebar:has(.notes-scratchpad--collapsed) .toc-nav {

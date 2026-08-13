@@ -213,6 +213,27 @@ def test_table_scroll_cue_absent_on_wide_viewport(page, base_url):
     )
 
 
+def test_table_scroll_wrap_owns_radius_not_table(page, base_url):
+    """Regression: border-radius+overflow:hidden lived on the table itself,
+    causing a compositing ghost band when scrolled inside .table-scroll-wrap.
+    The wrap now owns the radius; the table clips nothing."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_TABLE, slug="table-radius")
+    page.wait_for_selector(".table-scroll-wrap", timeout=5_000)
+
+    result = page.evaluate("""() => {
+        const wrap = document.querySelector('.table-scroll-wrap');
+        const table = wrap.querySelector('table');
+        return {
+            wrapRadius: getComputedStyle(wrap).borderRadius,
+            tableOverflow: getComputedStyle(table).overflow,
+        };
+    }""")
+    assert result["wrapRadius"] != "0px", "Expected .table-scroll-wrap to own the border-radius"
+    assert result["tableOverflow"] == "visible", (
+        f"Expected table overflow:visible (no clip), got: {result['tableOverflow']}"
+    )
+
+
 # ── Code block right-fade scroll cue ──────────────────────────────
 
 
@@ -1165,6 +1186,30 @@ def test_callout_icon_matches_its_class(page, base_url, emoji, css_class):
     }""")
     assert css_class in result["classList"], f"expected {css_class}, got {result['classList']}"
     assert result["icon"] == emoji, f"callout icon mismatch: expected {emoji}, got {result['icon']}"
+
+
+def test_multiline_callout_only_flexes_first_line(page, base_url):
+    """Regression: flexing the whole multi-line callout <p> turned every br-separated run into its own shrink-to-fit flex item and letter-wrapped it. Only .callout-first-line (icon + first line) should be a flex child."""
+    article = (
+        "# Callout Multiline Test\n\n## Section\n\n"
+        "> 🎯 **Interview tip**  \n> Second line of the callout.  \n> Third line of the callout.\n"
+    )
+    _load_mock_article(page, base_url, article, slug="callout-multiline")
+    page.wait_for_selector(".callout", timeout=5_000)
+
+    result = page.evaluate("""() => {
+        const bq = document.querySelector('.callout');
+        const p = bq.querySelector('p');
+        const firstLine = p.querySelector('.callout-first-line');
+        return {
+            pDisplay: getComputedStyle(p).display,
+            hasFirstLineWrap: !!firstLine,
+            firstLineDisplay: firstLine ? getComputedStyle(firstLine).display : null,
+        };
+    }""")
+    assert result["pDisplay"] != "flex", "The whole callout <p> should not be flexed"
+    assert result["hasFirstLineWrap"], "Expected a .callout-first-line wrapper around icon + first line"
+    assert result["firstLineDisplay"] == "flex", "Expected .callout-first-line to be the flex container"
 
 
 # ── Broken image placeholder ─────────────────────────────────────

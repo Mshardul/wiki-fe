@@ -73,6 +73,7 @@
   flex-wrap: nowrap;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--s2);
 }
 .prereqs-label,
 .prereq-chip {

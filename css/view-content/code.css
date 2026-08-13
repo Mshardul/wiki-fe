@@ -171,6 +171,7 @@ pre.has-line-numbers {
   overflow-x: auto;
   position: relative;
   margin: var(--s6) 0;
+  border-radius: var(--r);
 }
 .table-scroll-wrap table {
   margin: 0;
@@ -205,6 +206,8 @@ pre.has-line-numbers {
 .table-scroll-wrap table {
   width: auto;
   table-layout: auto;
+  border-radius: 0;
+  overflow: visible;
 }
 .table-scroll-wrap th,
 .table-scroll-wrap td {
