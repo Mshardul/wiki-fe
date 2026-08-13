@@ -43,7 +43,7 @@ import { closeTopModal, isAnyModalOpen as isAnyRegisteredModalOpen } from "./mod
 import { renderChangelog } from "./render/changelog-view.js";
 import { getCurrentMarkdown, navigateToContent } from "./render/content-view.js";
 import { IndexFilter, toggleSection } from "./render/home-index.js";
-import { evictOfflineArticle } from "./render/offline-view.js";
+import { downloadAllOfflineForWiki, evictOfflineArticle } from "./render/offline-view.js";
 import { navigate, route } from "./render/router.js";
 import { showToast } from "./render/toast.js";
 import {
@@ -65,7 +65,7 @@ import {
   updateBookmarkBtn,
 } from "./storage/bookmarks.js";
 import { Offline, updateOfflineBtn } from "./storage/offline.js";
-import { clearRecents, getRecents, renderRecentsSection, saveRecents } from "./storage/recents.js";
+import { addToRecents, clearRecents, getRecents, renderRecentsSection } from "./storage/recents.js";
 import { saveScrollPos } from "./storage/scroll-collapse.js";
 import {
   Settings,
@@ -82,6 +82,7 @@ window.navigate = navigate;
 window.navigateHome = () => navigate("");
 window.navigateToContent = navigateToContent;
 window.evictOfflineArticle = evictOfflineArticle;
+window.downloadAllOfflineForWiki = downloadAllOfflineForWiki;
 window.toggleSection = toggleSection;
 window.clearRecents = clearRecents;
 window.closeGlobalSearch = closeGlobalSearch;
@@ -126,7 +127,7 @@ window.confirmClearRecents = (wikiId) => {
   const snapshot = getRecents().filter((r) => r.wikiId === wikiId);
   clearRecents(wikiId);
   showToast("Recents cleared", 4000, () => {
-    saveRecents([...snapshot, ...getRecents()]);
+    for (const entry of [...snapshot].reverse()) addToRecents(entry);
     const wiki = WIKIS.find((w) => w.id === wikiId);
     if (wiki) renderRecentsSection(wiki);
   });

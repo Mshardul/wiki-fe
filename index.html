@@ -289,40 +289,44 @@
     <div id="view-content" class="view">
       <div class="content-topbar">
         <div class="topbar-inner">
-          <button class="back-btn" id="content-back-btn">
-            <svg class="icon"><use href="#icon-chevron-left"></use></svg>
-            <span class="back-btn-label">Back</span>
-          </button>
-          <nav
-            id="content-breadcrumb"
-            class="breadcrumb"
-            aria-label="Breadcrumb"
-          ></nav>
+          <div class="topbar-side">
+            <button class="back-btn" id="content-back-btn">
+              <svg class="icon"><use href="#icon-chevron-left"></use></svg>
+              <span class="back-btn-label">Back</span>
+            </button>
+            <nav
+              id="content-breadcrumb"
+              class="breadcrumb"
+              aria-label="Breadcrumb"
+            ></nav>
+          </div>
           <div id="topbar-title" class="topbar-title"></div>
-          <span id="content-read-time" class="read-time-badge"></span>
-          <button
-            class="topbar-icon-btn"
-            title="Search (⌘K)"
-            data-action="search-open"
-          >
-            <svg class="icon"><use href="#icon-search"></use></svg>
-          </button>
-          <button
-            class="topbar-icon-btn"
-            title="Preferences (,)"
-            data-action="settings-open"
-          >
-            <svg class="icon"><use href="#icon-settings"></use></svg>
-          </button>
-          <button
-            class="topbar-icon-btn topbar-auth-btn"
-            id="auth-btn-content"
-            data-action="auth-toggle"
-            title="Login"
-          >
-            <svg class="icon"><use href="#icon-user"></use></svg>
-            <span class="auth-btn-label">Login</span>
-          </button>
+          <div class="topbar-side topbar-side--end">
+            <span id="content-read-time" class="read-time-badge"></span>
+            <button
+              class="topbar-icon-btn"
+              title="Search (⌘K)"
+              data-action="search-open"
+            >
+              <svg class="icon"><use href="#icon-search"></use></svg>
+            </button>
+            <button
+              class="topbar-icon-btn"
+              title="Preferences (,)"
+              data-action="settings-open"
+            >
+              <svg class="icon"><use href="#icon-settings"></use></svg>
+            </button>
+            <button
+              class="topbar-icon-btn topbar-auth-btn"
+              id="auth-btn-content"
+              data-action="auth-toggle"
+              title="Login"
+            >
+              <svg class="icon"><use href="#icon-user"></use></svg>
+              <span class="auth-btn-label">Login</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1100,6 +1104,26 @@
               class="auth-pw-checklist"
               aria-live="polite"
             ></ul>
+            <label class="auth-field"
+              ><span>Confirm password</span>
+              <span class="auth-pw-field">
+                <input
+                  id="auth-reg-password-confirm"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  aria-describedby="auth-reg-error"
+                />
+                <button
+                  id="auth-reg-pw-confirm-toggle"
+                  class="auth-pw-toggle"
+                  type="button"
+                  aria-pressed="false"
+                  aria-label="Show password"
+                >
+                  <svg class="icon"><use href="#icon-eye"></use></svg>
+                </button>
+              </span></label>
             <p id="auth-reg-error" class="auth-error" role="alert" aria-live="assertive" hidden></p>
             <button id="auth-reg-submit" class="auth-submit" type="submit" disabled>
               <span class="auth-submit-label">Create account</span>
@@ -1214,6 +1238,26 @@
               class="auth-pw-checklist"
               aria-live="polite"
             ></ul>
+            <label class="auth-field"
+              ><span>Confirm new password</span>
+              <span class="auth-pw-field">
+                <input
+                  id="auth-reset-password-confirm"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  aria-describedby="auth-reset-error"
+                />
+                <button
+                  id="auth-reset-pw-confirm-toggle"
+                  class="auth-pw-toggle"
+                  type="button"
+                  aria-pressed="false"
+                  aria-label="Show password"
+                >
+                  <svg class="icon"><use href="#icon-eye"></use></svg>
+                </button>
+              </span></label>
             <p id="auth-reset-error" class="auth-error" role="alert" aria-live="assertive" hidden></p>
             <button id="auth-reset-submit" class="auth-submit" type="submit" disabled>
               <span class="auth-submit-label">Update password</span>

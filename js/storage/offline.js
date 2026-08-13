@@ -2,6 +2,14 @@ import { state } from "../state.js";
 
 /* OFFLINE / PWA */
 const CACHED_AT_KEY = "wiki-offline-cached-at";
+const ARTICLE_CACHE_PREFIX = "wiki-articles-";
+
+// wiki-sw.js owns the versioned cache name; look it up instead of hardcoding it here, so a SW cache-version bump can't silently orphan downloads.
+async function _getArticleCache() {
+  const names = await caches.keys();
+  const name = names.find((n) => n.startsWith(ARTICLE_CACHE_PREFIX)) || `${ARTICLE_CACHE_PREFIX}v1`;
+  return caches.open(name);
+}
 
 // Cache API responses carry no write timestamp, so last-cached dates for the offline shelf are tracked in a parallel localStorage map, keyed by filePath.
 function _readCachedAtMap() {
@@ -30,7 +38,7 @@ function getCachedAt(filePath) {
 
 async function downloadArticle(filePath) {
   if (!("caches" in window)) return false;
-  const cache = await caches.open("wiki-articles-v1");
+  const cache = await _getArticleCache();
   const res = await fetch(filePath);
   if (res.ok) {
     await cache.put(filePath, res);
@@ -42,14 +50,14 @@ async function downloadArticle(filePath) {
 
 async function removeArticleDownload(filePath) {
   if (!("caches" in window)) return;
-  const cache = await caches.open("wiki-articles-v1");
+  const cache = await _getArticleCache();
   await cache.delete(filePath);
   _clearCachedAt(filePath);
 }
 
 async function isArticleCached(filePath) {
   if (!("caches" in window)) return false;
-  const cache = await caches.open("wiki-articles-v1");
+  const cache = await _getArticleCache();
   return !!(await cache.match(filePath));
 }
 
@@ -63,7 +71,7 @@ function _cacheKeyFromUrl(url) {
 // wikiId omitted clears every offline download; passed, scopes to that wiki's content path.
 async function clearAllDownloads(wikiId) {
   if (!("caches" in window)) return;
-  const cache = await caches.open("wiki-articles-v1");
+  const cache = await _getArticleCache();
   const requests = await cache.keys();
   for (const req of requests) {
     if (!wikiId || req.url.includes(`/content/${wikiId}/`)) {
@@ -77,7 +85,7 @@ async function clearAllDownloads(wikiId) {
 // Returns cached article paths as { [wikiId]: filePath[] }, matching state.currentFilePath's format.
 async function listCachedArticlePaths() {
   if (!("caches" in window)) return {};
-  const cache = await caches.open("wiki-articles-v1");
+  const cache = await _getArticleCache();
   const requests = await cache.keys();
   const byWiki = {};
   for (const req of requests) {
@@ -89,6 +97,18 @@ async function listCachedArticlePaths() {
     byWiki[wikiId].push(`content/${wikiId}/${rest}`);
   }
   return byWiki;
+}
+
+// Best-effort: downloads every path not already cached, skips failures individually so one bad fetch doesn't abort the batch.
+async function downloadAllForWiki(paths) {
+  let downloaded = 0;
+  for (const path of paths) {
+    if (await isArticleCached(path)) continue;
+    try {
+      if (await downloadArticle(path)) downloaded++;
+    } catch {}
+  }
+  return downloaded;
 }
 
 async function updateOfflineBtn() {
@@ -140,4 +160,5 @@ export {
   clearAllDownloads,
   listCachedArticlePaths,
   getCachedAt,
+  downloadAllForWiki,
 };

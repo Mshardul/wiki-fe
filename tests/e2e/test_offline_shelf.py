@@ -4,6 +4,7 @@
 - Online/offline status banner reflects navigator.onLine reactively
 - Uncached index cards dim while offline
 - Per-article last-cached date and evict button (WIKI-298)
+- Bulk "Download all" per wiki group
 """
 
 import json
@@ -177,6 +178,66 @@ def test_offline_shelf_evict_removes_from_cache(page, base_url):
         }"""
     )
     assert not still_cached, "Evict must remove the article from the SW article cache"
+
+
+def _stub_article_fetches(page):
+    page.route(
+        "**/content/system-design/*.md",
+        lambda r: r.fulfill(body="# stub"),
+    )
+
+
+def test_offline_shelf_shows_download_all_when_articles_uncached(page, base_url):
+    _stub_search_index(page)
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    _seed_cache(page, base_url, ["content/system-design/message-queues.md"])
+
+    page.locator('[data-action="offline-shelf-open"]').click()
+    page.wait_for_selector("#view-offline-shelf.active", timeout=8_000)
+    page.wait_for_selector(".offline-shelf-download-all-btn", timeout=5_000)
+    assert page.locator(".offline-shelf-download-all-btn").count() == 1
+
+
+def test_offline_shelf_download_all_caches_every_article(page, base_url):
+    _stub_search_index(page)
+    _stub_article_fetches(page)
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    _seed_cache(page, base_url, ["content/system-design/message-queues.md"])
+
+    page.locator('[data-action="offline-shelf-open"]').click()
+    page.wait_for_selector("#view-offline-shelf.active", timeout=8_000)
+    page.wait_for_selector(".offline-shelf-download-all-btn", timeout=5_000)
+
+    page.locator(".offline-shelf-download-all-btn").click()
+    page.wait_for_function(
+        "() => document.querySelectorAll('.offline-shelf-entry').length === 2",
+        timeout=5_000,
+    )
+
+    entry_titles = page.locator(".offline-shelf-entry-title").all_inner_texts()
+    assert set(entry_titles) == {"Message Queues", "Load Balancers"}
+
+
+def test_offline_shelf_download_all_hidden_once_everything_cached(page, base_url):
+    _stub_search_index(page)
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    _seed_cache(
+        page,
+        base_url,
+        [
+            "content/system-design/message-queues.md",
+            "content/system-design/load-balancers.md",
+        ],
+    )
+
+    page.locator('[data-action="offline-shelf-open"]').click()
+    page.wait_for_selector("#view-offline-shelf.active", timeout=8_000)
+    page.wait_for_selector(".offline-shelf-entry", timeout=5_000)
+
+    assert page.locator(".offline-shelf-download-all-btn").count() == 0
 
 
 def test_index_card_dims_when_offline_and_uncached(page, base_url, context):

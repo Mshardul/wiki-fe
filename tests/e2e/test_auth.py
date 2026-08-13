@@ -98,8 +98,7 @@ def test_login_submit_shows_loading_state_while_pending(page, base_url):
 
     page.route("**/api/v1/auth/login", slow_handler)
 
-    # page.locator().click() blocks until the intercepted request settles, so
-    # observe mid-flight state from inside the page rather than after click() returns.
+    # Locator.click() blocks until the intercepted request settles; observe mid-flight state via JS instead.
     snapshot = page.evaluate("""() => {
         document.getElementById('auth-login-submit').click();
         const btn = document.getElementById('auth-login-submit');
@@ -229,6 +228,7 @@ def test_register_checklist_turns_green(page, base_url):
     expect(page.locator("#auth-reg-submit")).to_be_disabled()
 
     pw.fill("LongEnough1!xx")
+    page.locator("#auth-reg-password-confirm").fill("LongEnough1!xx")
     items = page.locator("#auth-pw-checklist li")
     expect(items).to_have_count(5)
     for i in range(5):
@@ -245,6 +245,7 @@ def test_register_checklist_resyncs_on_panel_leave_and_return(page, base_url):
     page.locator("#auth-btn-home").click()
     page.locator("#auth-to-register").click()
     page.locator("#auth-reg-password").fill("LongEnough1!xx")
+    page.locator("#auth-reg-password-confirm").fill("LongEnough1!xx")
     expect(page.locator("#auth-reg-submit")).to_be_enabled()
 
     page.locator("#auth-to-login").click()
@@ -256,6 +257,33 @@ def test_register_checklist_resyncs_on_panel_leave_and_return(page, base_url):
     expect(items).to_have_count(5)
     for i in range(5):
         expect(items.nth(i)).to_have_class(re.compile(r"\bok\b"))
+
+
+def test_register_submit_disabled_when_passwords_mismatch(page, base_url):
+    _stub_logged_out(page)
+    page.goto(base_url)
+    page.locator("#auth-btn-home").click()
+    page.locator("#auth-to-register").click()
+
+    page.locator("#auth-reg-password").fill("LongEnough1!xx")
+    page.locator("#auth-reg-password-confirm").fill("Different1!xx")
+    expect(page.locator("#auth-reg-submit")).to_be_disabled()
+
+    page.locator("#auth-reg-password-confirm").fill("LongEnough1!xx")
+    expect(page.locator("#auth-reg-submit")).to_be_enabled()
+
+
+def test_reset_submit_disabled_when_passwords_mismatch(page, base_url):
+    _stub_logged_out(page)
+    page.goto(f"{base_url}?mode=reset&token=abc123")
+    expect(page.locator("#auth-panel-reset.active")).to_be_visible()
+
+    page.locator("#auth-reset-password").fill("Correct-Horse9!")
+    page.locator("#auth-reset-password-confirm").fill("Different-Horse9!")
+    expect(page.locator("#auth-reset-submit")).to_be_disabled()
+
+    page.locator("#auth-reset-password-confirm").fill("Correct-Horse9!")
+    expect(page.locator("#auth-reset-submit")).to_be_enabled()
 
 
 def test_login_success_flips_button_to_logout(page, base_url):
@@ -283,8 +311,7 @@ def test_login_success_flips_button_to_logout(page, base_url):
     page.locator("#auth-login-submit").click()
     expect(page.locator("#auth-btn-home .auth-btn-label")).to_have_text("Logout")
 
-    # bearer token from the login response body must be persisted, since it's
-    # what every subsequent request authenticates with (no cookie anymore).
+    # Bearer token from the login response body must be persisted - it authenticates every subsequent request (no cookie anymore).
     stored = page.evaluate("localStorage.getItem('wiki-session-token')")
     assert stored == "test-session-token"
 
@@ -882,6 +909,7 @@ def test_reset_password_used_token_shows_actionable_error(page, base_url):
     expect(page.locator("#auth-panel-reset.active")).to_be_visible()
 
     page.locator("#auth-reset-password").fill("Correct-Horse9!")
+    page.locator("#auth-reset-password-confirm").fill("Correct-Horse9!")
     page.locator("#auth-reset-submit").click()
 
     error = page.locator("#auth-reset-error")
@@ -1196,16 +1224,7 @@ def test_login_double_click_fires_single_request(page, base_url):
     page.locator("#auth-login-email").fill("a@example.com")
     page.locator("#auth-login-password").fill("LongEnough1!xx")
 
-    # Dispatch both clicks synchronously from within the page instead of two
-    # separate Playwright Locator.click() calls. A real Locator.click() on a
-    # type="submit" button waits on Playwright's own actionability/navigation
-    # heuristics, which can take long enough for the whole login+modal-close
-    # chain to finish between the two Python-side calls - making "rapid
-    # double-click" impossible to land reliably from the test-runner side.
-    # Dispatching both click events in one JS pass guarantees the second
-    # click's guard check happens the instant after the first, which is what
-    # this test is actually meant to verify (the JS-side guard, not click
-    # timing).
+    # Two Locator.click() calls can't land back-to-back reliably (submit-button actionability heuristics); dispatch both from one JS pass to test the guard itself, not click timing.
     page.evaluate("""() => {
         const btn = document.getElementById('auth-login-submit');
         btn.click();
@@ -1263,16 +1282,10 @@ def test_resend_button_debounced_and_shows_feedback(page, base_url):
     page.locator("#auth-btn-home").click()
     page.locator("#auth-login-email").fill("a@example.com")
     page.locator("#auth-login-password").fill("LongEnough1!xx")
-    # #auth-login-submit is type="submit" inside a <form> - a real
-    # Locator.click() waits on Playwright's navigation-related actionability
-    # heuristics for submit buttons, which can take several seconds even
-    # though the app calls preventDefault(). Dispatch via JS to skip that.
-    page.evaluate("() => document.getElementById('auth-login-submit').click()")
+    page.locator("#auth-login-submit").click()
     expect(page.locator("#auth-panel-verify.active")).to_be_visible()
 
-    # Same reasoning as test_login_double_click_fires_single_request: dispatch
-    # both clicks in one JS pass so they land back-to-back, verifying the
-    # debounce guard itself rather than racing Playwright's click timing.
+    # Same reasoning as test_login_double_click_fires_single_request - dispatch both clicks from one JS pass to verify the debounce guard, not click timing.
     page.evaluate("""() => {
         const btn = document.getElementById('auth-resend-btn');
         btn.click();
@@ -1307,10 +1320,10 @@ def test_resend_after_login_403_uses_login_email(page, base_url):
     page.locator("#auth-btn-home").click()
     page.locator("#auth-login-email").fill("login-user@example.com")
     page.locator("#auth-login-password").fill("LongEnough1!xx")
-    page.evaluate("() => document.getElementById('auth-login-submit').click()")
+    page.locator("#auth-login-submit").click()
     expect(page.locator("#auth-panel-verify.active")).to_be_visible()
 
-    page.evaluate("() => document.getElementById('auth-resend-btn').click()")
+    page.locator("#auth-resend-btn").click()
     expect(page.locator(".wiki-toast")).to_be_visible()
     assert sent.get("email") == "login-user@example.com"
 
@@ -1371,7 +1384,9 @@ def test_register_submit_shows_loading_label_and_locks_inputs(page, base_url):
     page.locator("#auth-to-register").click()
     page.locator("#auth-reg-email").fill("new-user@example.com")
     page.locator("#auth-reg-password").fill("LongEnough1!xx")
+    page.locator("#auth-reg-password-confirm").fill("LongEnough1!xx")
 
+    # Locator.click() blocks until the request settles; observe mid-flight state via JS instead.
     in_flight = page.evaluate("""() => {
         document.getElementById('auth-reg-submit').click();
         return {
@@ -1470,10 +1485,10 @@ def test_resend_button_shows_cooldown_after_send(page, base_url):
     page.locator("#auth-btn-home").click()
     page.locator("#auth-login-email").fill("a@example.com")
     page.locator("#auth-login-password").fill("LongEnough1!xx")
-    page.evaluate("() => document.getElementById('auth-login-submit').click()")
+    page.locator("#auth-login-submit").click()
     expect(page.locator("#auth-panel-verify.active")).to_be_visible()
 
-    page.evaluate("() => document.getElementById('auth-resend-btn').click()")
+    page.locator("#auth-resend-btn").click()
     resend_btn = page.locator("#auth-resend-btn")
     expect(resend_btn).to_be_disabled()
     expect(resend_btn.locator(".auth-submit-label")).to_have_text(re.compile(r"Resend in \d+s"))

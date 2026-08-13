@@ -2,10 +2,31 @@
 - recently visited chips on wiki index (scoped per wiki)
 - clear button removes all recents for the wiki
 - chip strip show-more button for overflow
+- undo after clear re-syncs restored entries to the backend (WIKI-573)
 """
 
 
 _MOCK_ARTICLE = "# Caching\n\nA simple article for recents testing.\n"
+
+
+def _stub_logged_in(page):
+    """GET /auth/me → 200 + a stored session token, so boot resolves to logged-in."""
+    page.add_init_script(
+        "localStorage.setItem('wiki-session-token', 'test-session-token')"
+    )
+    page.route(
+        "**/api/v1/auth/me",
+        lambda r: r.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"user":{"id":1,"email":"a@example.com"}}',
+        ),
+    )
+    for path in ("bookmarks", "completions"):
+        page.route(
+            f"**/api/v1/{path}",
+            lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
+        )
 
 
 def _visit_article(page, base_url, slug="recents-mock"):
@@ -72,6 +93,38 @@ def test_clear_recents_removes_all_chips(page, base_url):
     clear_btn.click()
 
     assert "hidden" in (section.get_attribute("class") or "")
+
+
+def test_undo_clear_recents_resyncs_to_backend(page, base_url):
+    """Regression for WIKI-573: undoing a recents clear must re-schedule
+    a sync POST for each restored entry, not just write localStorage."""
+    _stub_logged_in(page)
+    add_calls = []
+
+    def _handle_recents(route):
+        if route.request.method == "POST":
+            add_calls.append(route.request.url)
+            route.fulfill(status=200, content_type="application/json", body="{}")
+        else:
+            route.fulfill(status=200, content_type="application/json", body="[]")
+
+    page.route("**/api/v1/recents", _handle_recents)
+
+    _visit_article(page, base_url)
+    _go_to_index(page, base_url)
+
+    section = page.locator("#recents-section")
+    section.wait_for(state="visible")
+    add_calls.clear()
+
+    section.locator(".recents-clear-btn").click()
+    page.locator(".toast-undo-btn").click()
+
+    page.wait_for_function(
+        "() => !document.getElementById('recents-section').classList.contains('hidden')",
+        timeout=3_000,
+    )
+    assert add_calls, "undo must re-POST the restored recent(s) to the backend"
 
 
 # ── Chip strip row limit ───────────────────────────────────────────

@@ -347,10 +347,28 @@
   align-items: center;
   gap: var(--s3);
 }
+.topbar-side {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex: 1 1 0;
+  min-width: 0;
+}
+.topbar-side--end {
+  justify-content: flex-end;
+}
+.content-topbar .breadcrumb {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.content-topbar .breadcrumb span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .topbar-title {
-  flex: 1; /* Pushes outer elements to the edges and claims remaining space */
+  flex: 0 1 auto;
   text-align: center;
-  margin: 0 var(--s4);
   font-size: var(--text-sm);
   font-weight: var(--fw-semibold);
   color: var(--text-body);

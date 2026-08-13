@@ -29,10 +29,33 @@
   gap: var(--s3);
 }
 
+.offline-shelf-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
 .offline-shelf-wiki-title {
   font-size: var(--text-lg);
   font-weight: var(--fw-semibold);
   color: var(--text-heading);
+}
+
+.offline-shelf-download-all-btn {
+  flex-shrink: 0;
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-sm);
+  font-size: var(--text-sm);
+  color: var(--accent-light);
+  background: var(--surface-2);
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.offline-shelf-download-all-btn:hover,
+.offline-shelf-download-all-btn:focus-visible {
+  color: var(--text-body);
+  background: var(--surface-hover);
+  outline: none;
 }
 
 .offline-shelf-list {

@@ -156,12 +156,18 @@ const AuthModal = {
     });
     this._clearErrors();
     if (panel === "register")
-      this._syncPasswordChecklist("auth-reg-password", "auth-pw-checklist", "auth-reg-submit");
+      this._syncPasswordChecklist(
+        "auth-reg-password",
+        "auth-pw-checklist",
+        "auth-reg-submit",
+        "auth-reg-password-confirm",
+      );
     if (panel === "reset")
       this._syncPasswordChecklist(
         "auth-reset-password",
         "auth-reset-pw-checklist",
         "auth-reset-submit",
+        "auth-reset-password-confirm",
       );
     const focusId =
       panel === "login"
@@ -179,11 +185,12 @@ const AuthModal = {
   },
 
   // Re-derives checklist + submit-disabled from the current value, used on both live typing and panel re-entry so a valid password never shows stale.
-  _syncPasswordChecklist(inputId, listId, submitId) {
+  _syncPasswordChecklist(inputId, listId, submitId, confirmId) {
     const pw = document.getElementById(inputId)?.value || "";
     this._renderChecklist(listId, pw);
+    const confirmPw = confirmId ? document.getElementById(confirmId)?.value || "" : pw;
     const submit = document.getElementById(submitId);
-    if (submit) submit.disabled = !validatePassword(pw).valid;
+    if (submit) submit.disabled = !validatePassword(pw).valid || pw !== confirmPw;
   },
 
   _renderChecklist(listId, pw) {
@@ -201,9 +208,9 @@ const AuthModal = {
   // Inputs whose aria-describedby points at each error id - kept in sync with index.html.
   _ERROR_INPUT_IDS: {
     "auth-login-error": ["auth-login-email", "auth-login-password"],
-    "auth-reg-error": ["auth-reg-email", "auth-reg-password"],
+    "auth-reg-error": ["auth-reg-email", "auth-reg-password", "auth-reg-password-confirm"],
     "auth-forgot-error": ["auth-forgot-email"],
-    "auth-reset-error": ["auth-reset-password"],
+    "auth-reset-error": ["auth-reset-password", "auth-reset-password-confirm"],
   },
 
   _clearErrors() {
@@ -409,10 +416,14 @@ const Auth = {
     }
   },
 
-  async register(email, password) {
+  async register(email, password, passwordConfirm) {
     const { valid } = validatePassword(password);
     if (!valid) {
       AuthModal._showError("auth-reg-error", "Password does not meet all rules.");
+      return;
+    }
+    if (password !== passwordConfirm) {
+      AuthModal._showError("auth-reg-error", "Passwords do not match.");
       return;
     }
     try {
@@ -488,10 +499,14 @@ const Auth = {
     }
   },
 
-  async resetPassword(token, password) {
+  async resetPassword(token, password, passwordConfirm) {
     const { valid } = validatePassword(password);
     if (!valid) {
       AuthModal._showError("auth-reset-error", "Password does not meet all rules.");
+      return;
+    }
+    if (password !== passwordConfirm) {
+      AuthModal._showError("auth-reset-error", "Passwords do not match.");
       return;
     }
     try {
@@ -552,9 +567,16 @@ const Auth = {
 
   _wireModalInputs() {
     const pw = document.getElementById("auth-reg-password");
-    pw?.addEventListener("input", () =>
-      AuthModal._syncPasswordChecklist("auth-reg-password", "auth-pw-checklist", "auth-reg-submit"),
-    );
+    const pwConfirm = document.getElementById("auth-reg-password-confirm");
+    const syncRegChecklist = () =>
+      AuthModal._syncPasswordChecklist(
+        "auth-reg-password",
+        "auth-pw-checklist",
+        "auth-reg-submit",
+        "auth-reg-password-confirm",
+      );
+    pw?.addEventListener("input", syncRegChecklist);
+    pwConfirm?.addEventListener("input", syncRegChecklist);
     document.getElementById("auth-form-login")?.addEventListener("submit", (e) => {
       e.preventDefault();
       _withSubmitGuard("auth-login-submit", () =>
@@ -573,11 +595,13 @@ const Auth = {
           this.register(
             document.getElementById("auth-reg-email").value.trim(),
             document.getElementById("auth-reg-password").value,
+            document.getElementById("auth-reg-password-confirm").value,
           ),
         ),
       );
     });
     _wirePasswordToggle("auth-reg-pw-toggle", "auth-reg-password");
+    _wirePasswordToggle("auth-reg-pw-confirm-toggle", "auth-reg-password-confirm");
     document
       .getElementById("auth-resend-btn")
       ?.addEventListener("click", () =>
@@ -613,22 +637,26 @@ const Auth = {
     });
 
     const resetPw = document.getElementById("auth-reset-password");
-    resetPw?.addEventListener("input", () =>
+    const resetPwConfirm = document.getElementById("auth-reset-password-confirm");
+    const syncResetChecklist = () =>
       AuthModal._syncPasswordChecklist(
         "auth-reset-password",
         "auth-reset-pw-checklist",
         "auth-reset-submit",
-      ),
-    );
+        "auth-reset-password-confirm",
+      );
+    resetPw?.addEventListener("input", syncResetChecklist);
+    resetPwConfirm?.addEventListener("input", syncResetChecklist);
     document.getElementById("auth-form-reset")?.addEventListener("submit", (e) => {
       e.preventDefault();
       _withSubmitGuard("auth-reset-submit", () =>
         _withLoadingState("auth-form-reset", "auth-reset-submit", "Updating…", () =>
-          this.resetPassword(this._pendingResetToken, resetPw.value),
+          this.resetPassword(this._pendingResetToken, resetPw.value, resetPwConfirm.value),
         ),
       );
     });
     _wirePasswordToggle("auth-reset-pw-toggle", "auth-reset-password");
+    _wirePasswordToggle("auth-reset-pw-confirm-toggle", "auth-reset-password-confirm");
     document
       .getElementById("auth-to-register")
       ?.addEventListener("click", () => AuthModal._swap("register"));

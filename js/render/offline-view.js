@@ -1,5 +1,10 @@
 import { WIKIS, escHtml } from "../state.js";
-import { getCachedAt, listCachedArticlePaths, removeArticleDownload } from "../storage/offline.js";
+import {
+  downloadAllForWiki,
+  getCachedAt,
+  listCachedArticlePaths,
+  removeArticleDownload,
+} from "../storage/offline.js";
 import { fetchPrebuiltSearchIndex, normalizePath, setBreadcrumb } from "./nav-utils.js";
 import { showView } from "./router.js";
 
@@ -43,10 +48,17 @@ function _renderGroups(byWiki, prebuiltIndex) {
       }
 
       const paths = byWiki[wikiId].slice().sort();
-      return `
-    <section class="offline-shelf-group">
-      <h2 class="offline-shelf-wiki-title">${escHtml(title)}</h2>
-      <ul class="offline-shelf-list">
+      const allWikiPaths = [...titleByPath.keys()];
+      const hasUncached = allWikiPaths.some((path) => !paths.includes(path));
+
+      const downloadAllBtn = hasUncached
+        ? `<button type="button" class="offline-shelf-download-all-btn"
+                    onclick="downloadAllOfflineForWiki('${wikiId}')">
+                Download all
+              </button>`
+        : "";
+
+      const list = `<ul class="offline-shelf-list">
         ${paths
           .map((path) => {
             const cardTitle = titleByPath.get(path) || path.split("/").pop();
@@ -72,7 +84,15 @@ function _renderGroups(byWiki, prebuiltIndex) {
           </li>`;
           })
           .join("")}
-      </ul>
+      </ul>`;
+
+      return `
+    <section class="offline-shelf-group">
+      <div class="offline-shelf-group-header">
+        <h2 class="offline-shelf-wiki-title">${escHtml(title)}</h2>
+        ${downloadAllBtn}
+      </div>
+      ${list}
     </section>`;
     })
     .join("");
@@ -116,4 +136,22 @@ async function evictOfflineArticle(encodedPath) {
   renderOfflineShelf();
 }
 
-export { renderOfflineShelf, evictOfflineArticle };
+async function downloadAllOfflineForWiki(wikiId) {
+  const prebuiltIndex = await fetchPrebuiltSearchIndex();
+  const sections = prebuiltIndex?.[wikiId] || [];
+  const paths = new Set();
+  for (const section of sections) {
+    for (const card of section.cards) paths.add(normalizePath(card.path));
+  }
+  const downloaded = await downloadAllForWiki([...paths]);
+  if (!downloaded) {
+    document.dispatchEvent(
+      new CustomEvent("wiki:toast", {
+        detail: { message: "Couldn't download articles for offline reading" },
+      }),
+    );
+  }
+  renderOfflineShelf();
+}
+
+export { renderOfflineShelf, evictOfflineArticle, downloadAllOfflineForWiki };
