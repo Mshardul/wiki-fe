@@ -132,9 +132,9 @@ function renderPrerequisites(contentEl) {
       chip.dataset.unlinkedPrereq = "true";
     }
     appendChipStatus(chip, done);
-    chip.append(
-      document.createTextNode((link || li.querySelector("strong"))?.textContent.trim() || ""),
-    );
+    const cleanTitle = (link || li.querySelector("strong"))?.textContent.trim() || "";
+    chip.dataset.title = cleanTitle;
+    chip.append(document.createTextNode(cleanTitle));
 
     if (level) {
       const badge = document.createElement("span");

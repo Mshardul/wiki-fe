@@ -597,7 +597,7 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
 
       link.addEventListener("click", (e) => {
         e.preventDefault();
-        const title = link.textContent.trim();
+        const title = link.dataset.title || link.textContent.trim();
         renderContent(targetWiki, targetPath, title);
       });
       return;
@@ -610,7 +610,7 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
 
     link.addEventListener("click", (e) => {
       e.preventDefault();
-      const title = link.textContent.trim();
+      const title = link.dataset.title || link.textContent.trim();
       renderContent(wiki, resolvedPath, title);
       if (previewEl) {
         previewEl.classList.remove("visible");

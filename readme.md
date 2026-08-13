@@ -62,7 +62,7 @@ Single-page app, vanilla JS ES modules, no TypeScript, no framework.
 - **Content:** each vertical's `index.md` lists its articles in markdown tables (`parseIndexMd`). The app loads only files reachable from there - nothing globs the directory. Articles are markdown → HTML via Showdown, with Mermaid diagrams, highlight.js, hover link-previews, and a generated TOC.
 - **Persistence:** `localStorage` only (settings, bookmarks, recents, read-tracking). No server, no database.
 
-`js/`: `app.js` (entry/router) · `state.js` (WIKIS registry, config, caches) · `content.js` (post-processing) · `render.js` (views + index parser) · `search.js` (⌘K) · `storage.js` (localStorage).
+`js/`: `app.js` + `app/` (entry/router/bootstrap) · `state.js` (WIKIS registry, config, caches) · `content/` (post-processing) · `render/` (views + index parser) · `search.js` (⌘K) · `storage/` (localStorage) · `auth.js` (auth domain) · `api.js` (backend wrapper). Full file-by-file map: [CLAUDE.md](./CLAUDE.md) FILE MAP.
 `css/`: tokens-first - all design tokens in `tokens.css`, then base / themes / components / per-view modules, aggregated by `wiki.css`.
 
 **Deeper detail for working on the code lives in [CLAUDE.md](./CLAUDE.md)** - file map, task→file routing, conventions.

@@ -124,6 +124,7 @@ Do this before any file reads or skill invocations - every session:
 | `install-prompt.js`   | PWA `beforeinstallprompt` banner + iOS Add-to-Home-Screen nudge toast     |
 | `icon-tooltip.js`     | Custom short-delay tooltips for topbar/overflow icon buttons (keeps native `title` as fallback) |
 | `graph-engine.js`     | Shared force-directed sim primitives (node/edge builder, tick/damping) used by link-graph, section-map, index-graph |
+| `reading-progress.js` | Content-view reading-progress bar scroll handler, drives `toc.js` progress ring |
 | `link-graph.js`       | `g` link-graph overlay: cross-wiki node graph from backlinks, click-to-navigate |
 | `section-map.js`      | `Shift+G` / pinch section-map overlay: zoomed-out node map of current wiki section, read-state colored |
 | `complexity-compare.js` | Complexity comparator modal: picker, merged Big-O matrix from Data Structures tables |
@@ -162,6 +163,8 @@ Do this before any file reads or skill invocations - every session:
 | `admin-view.js`        | Admin panel view: broken-links/backlinks/search-index reports for admin-role users    |
 | `index-graph.js`       | Home/index-view node graph overlay (per-wiki), built on `app/graph-engine.js`         |
 | `offline-view.js`      | `#offline` view: lists cached articles, last-cached date, per-article evict button    |
+| `dashboard-view.js`    | Progress dashboard view: wiki cards → per-section bars → per-learning-path bars, hash-nav drill-down |
+| `learning-paths.js`    | Parses learning-track tables from index markdown, per-track completion counts for dashboard/index cards |
 
 #### `js/storage/`
 
@@ -177,6 +180,7 @@ Do this before any file reads or skill invocations - every session:
 | `highlights.js`      | Per-article highlight/marker CRUD, keyed by wiki+article path                 |
 | `notes.js`           | Per-article notes scratchpad CRUD                                             |
 | `data-clear.js`      | "Clear my data" settings action - wipes bookmarks/highlights/notes/pinned-wikis |
+| `install-prompt.js`  | PWA iOS install-nudge dismissal state (localStorage flag read/write)          |
 
 ### CSS (`css/`)
 
@@ -190,8 +194,12 @@ Do this before any file reads or skill invocations - every session:
 | `view-home.css`         | Home view: background grid/glow, wiki card grid, home topbar, hero section                                                                            |
 | `view-index.css`        | Index view: hero, section headers, index card grid, recents strip, bookmarks strip                                                                    |
 | `view-changelog.css`    | Changelog view: date groups, entry list, filename-link chips                                                                                          |
+| `view-admin.css`        | Admin view: admin-nav visibility, report layout                                                                                                        |
+| `view-dashboard.css`    | Progress dashboard view: wiki/section/track card layout                                                                                                |
+| `view-offline.css`      | Offline-shelf view: cached-article list, status, evict button                                                                                          |
 | `view-content/`         | Content view - see subtable below                                                                                                                      |
 | `responsive.css`        | Mobile/tablet media queries - overrides layout, TOC visibility, topbar density for narrow viewports                                                   |
+| `print.css`             | Print stylesheet - study-sheet output, strips chrome, expands collapsed regions, footers source URL                                                    |
 | `wiki.css`              | CSS aggregator - imports all CSS modules via @import; never add rules here                                                                            |
 
 #### `css/components/`
@@ -203,6 +211,8 @@ Do this before any file reads or skill invocations - every session:
 | `preferences-modal.css` | Settings swatches, preferences modal, keyboard-shortcuts tab                        |
 | `toast.css`             | Toast notification                                                                  |
 | `wiki-switcher.css`     | Wiki switcher modal, debug overlay                                                  |
+| `bookmarks-modal.css`   | Global bookmarks modal (⌘B)                                                          |
+| `link-graph.css`        | Link-graph overlay modal                                                            |
 
 #### `css/view-content/`
 
@@ -214,6 +224,9 @@ Do this before any file reads or skill invocations - every session:
 | `callouts-prereqs.css`   | Callout variants, prerequisites chips, collapsible callouts                          |
 | `interactive.css`        | Focus mode, details/summary, distraction-free mode, in-article find bar, per-heading collapse, formula toggle |
 | `glossary-related.css`  | Related articles, hover previews, inline caveats/glossary, footnotes, article-end marker |
+| `highlights.css`        | Per-article text highlight marks + inline emoji markers                              |
+| `notes-scratchpad.css`  | Notes scratchpad widget in content-view right rail                                   |
+| `toc-sidebar.css`       | TOC sidebar widget in content-view right rail                                        |
 
 ### Tests (`tests/`)
 

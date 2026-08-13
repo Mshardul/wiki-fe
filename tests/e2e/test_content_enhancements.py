@@ -3645,6 +3645,21 @@ def test_prerequisite_chip_link_navigates_and_has_no_title(page, base_url):
     assert not chip.get_attribute("title")
 
 
+def test_prerequisite_chip_navigation_uses_clean_title(page, base_url):
+    """Clicking a prereq chip navigates with the clean prereq title, not concatenated sibling-node text."""
+    page.route("**/array.md", lambda r: r.fulfill(body="# Array\n\nSome content.\n"))
+    _load_mock_article(page, base_url, ARTICLE_WITH_PREREQUISITES, slug="prereqs-clean-title")
+
+    chip = page.locator(".prereq-chip", has_text="Array").first
+    chip.click()
+    page.wait_for_selector("#view-content.active", timeout=8_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=8_000,
+    )
+    assert page.locator("#topbar-title").inner_text().strip() == "Array"
+
+
 def test_prerequisite_chip_link_shows_hover_preview_card(page, base_url):
     """Hovering a linked prereq chip reuses the same hover-preview card as normal
     in-article links, showing the target's data/summaries.json entry."""

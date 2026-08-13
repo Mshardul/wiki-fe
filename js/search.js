@@ -53,10 +53,6 @@ function scopedEntries() {
   return allSearchCache.entries.filter((e) => e.wiki.id === _searchScope);
 }
 
-function scopedWiki() {
-  return WIKIS.find((w) => w.id === _searchScope) || null;
-}
-
 function _populateScopeDropdown() {
   if (gSearchScopeSelect) {
     gSearchScopeSelect.innerHTML = `<option value="">All wikis</option>${WIKIS.map((w) => `<option value="${escHtml(w.id)}">${escHtml(w.title)}</option>`).join("")}`;
@@ -595,9 +591,6 @@ function _syncModeBadge(raw) {
     gSearchModeBadge.textContent = verbCmd ? verbCmd.label.replace("…", "") : "Commands";
   } else if (sectionMode) {
     gSearchModeBadge.textContent = "Filtering sections";
-  } else if (_searchScope) {
-    const w = scopedWiki();
-    gSearchModeBadge.textContent = w ? `${w.title} only` : "Scoped";
   }
 }
 

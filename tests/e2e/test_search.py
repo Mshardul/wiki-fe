@@ -465,8 +465,8 @@ def _open_scoped_search(page):
     page.wait_for_selector("#gsearch-input")
 
 
-def test_cmd_f_opens_scoped_search_with_badge(page, base_url):
-    """⌘F on a wiki index opens search in scope mode and shows the wiki badge."""
+def test_cmd_f_opens_scoped_search_with_wiki_selected(page, base_url):
+    """⌘F opens scoped search with that wiki selected in the scope control."""
     page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
@@ -480,8 +480,8 @@ def test_cmd_f_opens_scoped_search_with_badge(page, base_url):
     assert "scope-mode" in (dialog.get_attribute("class") or ""), (
         "Dialog must carry .scope-mode class when opened via ⌘F"
     )
-    assert page.locator(".gsearch-mode-badge").is_visible(), (
-        "Scope badge must be visible in scoped search"
+    assert page.locator("#gsearch-scope-select").input_value() != "", (
+        "Scope select must show the active wiki, not 'All wikis'"
     )
 
 

@@ -88,8 +88,7 @@
   white-space: nowrap;
 }
 .gsearch-dialog.section-mode .gsearch-mode-badge,
-.gsearch-dialog.command-mode .gsearch-mode-badge,
-.gsearch-dialog.scope-mode .gsearch-mode-badge {
+.gsearch-dialog.command-mode .gsearch-mode-badge {
   display: inline-block;
 }
 .gsearch-results {
