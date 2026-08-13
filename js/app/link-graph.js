@@ -6,6 +6,7 @@ import {
   buildNodesFromSections,
   createGraphSim,
   destroyGraphSim,
+  locateNode,
 } from "./graph-engine.js";
 
 let _graph = null; // { nodes, edges } once built, across all wikis
@@ -76,6 +77,7 @@ function closeLinkGraph() {
   modal.setAttribute("aria-hidden", "true");
   destroyGraphSim(_sim);
   _sim = null;
+  document.getElementById("link-graph-search").value = "";
 }
 
 function isLinkGraphOpen() {
@@ -84,5 +86,12 @@ function isLinkGraphOpen() {
 
 document.getElementById("link-graph-backdrop").addEventListener("click", closeLinkGraph);
 document.getElementById("link-graph-close").addEventListener("click", closeLinkGraph);
+
+document.getElementById("link-graph-search").addEventListener("input", (e) => {
+  if (!_sim) return;
+  const q = e.target.value.trim().toLowerCase();
+  const match = q ? _sim.nodes.find((n) => n.title.toLowerCase().includes(q)) : null;
+  if (match) locateNode(_sim, match);
+});
 
 export { openLinkGraph, closeLinkGraph, isLinkGraphOpen };

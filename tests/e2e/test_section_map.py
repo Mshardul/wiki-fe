@@ -67,6 +67,22 @@ def test_section_map_renders_canvas_with_status(page, base_url):
     assert page.locator("#section-map-canvas").is_visible()
 
 
+def test_section_map_search_locates_node(page, base_url):
+    """Typing a matching title in the section-map search box locates that node."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("Shift+G")
+    page.wait_for_selector("#section-map-overlay:not(.hidden)", timeout=3_000)
+    page.wait_for_function(
+        "() => document.querySelector('#section-map-status').textContent.length > 0",
+        timeout=5_000,
+    )
+    page.locator("#section-map-search").fill("a")
+    page.wait_for_function(
+        "() => (document.getElementById('section-map-canvas').dataset.locatedTitle || '').length > 0",
+        timeout=3_000,
+    )
+
+
 def _open_actions_prefs(page):
     page.keyboard.press(",")
     page.wait_for_function(

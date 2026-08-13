@@ -108,15 +108,17 @@ async function fetchText(path, signal) {
 let _prebuiltIndex;
 async function fetchPrebuiltSearchIndex() {
   if (_prebuiltIndex !== undefined) return _prebuiltIndex;
+  let result = null;
   try {
     const res = await fetch(new URL("./content/search-index.json", location.href).href, {
       signal: AbortSignal.timeout(FETCH_TEXT_TIMEOUT_MS),
     });
-    _prebuiltIndex = res.ok ? await res.json() : null;
+    result = res.ok ? await res.json() : null;
   } catch {
-    _prebuiltIndex = null;
+    result = null;
   }
-  return _prebuiltIndex;
+  if (result !== null) _prebuiltIndex = result;
+  return result;
 }
 
 // Pre-built at deploy time (build_backlinks.py): { [articlePath]: {title, path}[] }

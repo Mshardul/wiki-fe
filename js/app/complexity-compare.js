@@ -21,12 +21,13 @@ async function loadStructures() {
   if (_structures) return _structures;
   const allIndexes = await fetchPrebuiltSearchIndex();
   const section = (allIndexes?.dsa || []).find((s) => s.heading === DS_SECTION_HEADING);
-  _structures = (section?.cards || []).map((card) => ({
+  const structures = (section?.cards || []).map((card) => ({
     title: card.title,
     slug: card.slug,
     path: card.path.startsWith("./") ? card.path : `./${card.path}`,
   }));
-  return _structures;
+  if (structures.length) _structures = structures;
+  return structures;
 }
 
 async function fetchComplexityTable(path) {
@@ -48,7 +49,7 @@ async function fetchComplexityTable(path) {
 function renderPickerList(filter = "") {
   const list = document.getElementById("compare-picker-list");
   const q = filter.trim().toLowerCase();
-  const items = _structures.filter((s) => !q || s.title.toLowerCase().includes(q));
+  const items = (_structures || []).filter((s) => !q || s.title.toLowerCase().includes(q));
 
   list.innerHTML = items
     .map((s) => {

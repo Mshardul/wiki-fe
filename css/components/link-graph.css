@@ -48,6 +48,16 @@
   color: var(--text-heading);
   letter-spacing: 0.02em;
 }
+.link-graph-search {
+  width: min(220px, 30vw);
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-body);
+  font-size: var(--text-xs);
+  margin-left: var(--s3);
+}
 .link-graph-status {
   font-size: var(--text-xs);
   color: var(--text-subtle);
@@ -105,6 +115,19 @@
   left: var(--s5);
   font-size: var(--text-sm);
   color: var(--text-subtle);
+  z-index: var(--z-raised);
+}
+.section-map-search {
+  position: absolute;
+  top: var(--s5);
+  right: var(--s5);
+  width: min(220px, 40vw);
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-body);
+  font-size: var(--text-sm);
   z-index: var(--z-raised);
 }
 #section-map-canvas {

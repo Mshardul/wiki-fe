@@ -282,6 +282,22 @@ def test_link_graph_concurrent_open_while_loading(page, base_url):
     )
 
 
+def test_link_graph_search_locates_node(page, base_url):
+    """Typing a matching title in the graph search box locates that node."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("g")
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
+    page.wait_for_function(
+        "() => document.querySelector('#link-graph-status').textContent.includes('articles')",
+        timeout=5_000,
+    )
+    page.locator("#link-graph-search").fill("Caching")
+    page.wait_for_function(
+        "() => (document.getElementById('link-graph-canvas').dataset.locatedTitle || '').length > 0",
+        timeout=3_000,
+    )
+
+
 def test_overlay_click_closes_link_graph(page, base_url):
     """Clicking the backdrop closes the link graph modal."""
     _go_to_article(page, base_url)

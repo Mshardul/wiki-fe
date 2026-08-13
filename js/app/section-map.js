@@ -8,6 +8,7 @@ import {
   buildNodesFromCards,
   createGraphSim,
   destroyGraphSim,
+  locateNode,
 } from "./graph-engine.js";
 
 let _sim = null;
@@ -84,6 +85,7 @@ function closeSectionMap() {
   overlay.setAttribute("aria-hidden", "true");
   destroyGraphSim(_sim);
   _sim = null;
+  document.getElementById("section-map-search").value = "";
 }
 
 function isSectionMapOpen() {
@@ -97,6 +99,13 @@ function toggleSectionMap() {
 
 document.getElementById("section-map-overlay").addEventListener("click", (e) => {
   if (e.target.id === "section-map-overlay") closeSectionMap();
+});
+
+document.getElementById("section-map-search").addEventListener("input", (e) => {
+  if (!_sim) return;
+  const q = e.target.value.trim().toLowerCase();
+  const match = q ? _sim.nodes.find((n) => n.title.toLowerCase().includes(q)) : null;
+  if (match) locateNode(_sim, match);
 });
 
 export { closeSectionMap, toggleSectionMap, isSectionMapOpen };

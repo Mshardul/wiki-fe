@@ -12,9 +12,14 @@ Walk through **every page/view and every interactive component** as if you were 
 
 ## Method: code read first, then browser verification
 
-**Phase 1 — static read-through (per component):** For each view/component (see checklist below), read its CSS + JS pair and reason about mobile behavior: fixed px widths, missing media query coverage, `:hover`-only affordances, min-width touch targets under 44x44px, absolute positioning that could overflow small viewports, z-index conflicts between modals/topbar/TOC drawer, missing `touch-action`, scroll-locking issues, etc. Note anything suspicious as a **hypothesis** — don't log it as confirmed yet.
+**Phase 1 — static read-through (per component):** For each view/component (see checklist below), read its CSS + JS pair and reason about mobile behavior: fixed px widths, missing media query coverage, `:hover`-only affordances, min-width touch targets under 44x44px, absolute positioning that could overflow small viewports, z-index conflicts between modals/topbar/TOC drawer, missing `touch-action`, scroll-locking issues, etc. Sort each suspicion into one of two buckets:
 
-**Phase 2 — live browser verification:** Serve the site locally. Run `python3 -m http.server` in the background (check if the port is already in use first, or choose a free port) from the `wiki-fe` root, or reuse an existing active test server.
+- **Code-confirmed** — the code alone settles it with no ambiguity (e.g. a hardcoded fixed px width with zero matching media query anywhere in the file, a `:hover`-only handler with provably no touch/click/tap fallback in the JS, a computed dimension `<44px` from CSS values alone, missing `touch-action` on a documented gesture element). Log these directly as findings — do **not** spend a Playwright round-trip re-proving something the source already proves. Mark them "not live-verified" in the entry (same convention item 13 already uses for safe-area findings).
+- **Hypothesis** — genuinely ambiguous from static reading: actual rendered overflow/clipping, anything interaction-dependent (drawer close, gesture handlers, focus trap, modal open/close/backdrop behavior), or anywhere CSS cascade/specificity makes the real computed result unclear. These carry into Phase 2.
+
+Default to code-confirmed only when truly unambiguous — when in doubt, treat it as a hypothesis and verify live rather than risk a false finding.
+
+**Phase 2 — live browser verification (hypotheses only):** Serve the site locally. Run `python3 -m http.server` in the background from the `wiki-fe` root, or reuse an existing active test server. **Use a random free port, not the codebase's default (8000)** — that port may already be in use by the user's own dev server; pick an arbitrary high port (e.g. `python3 -m http.server 0` to let the OS assign one, or any unused port) and check it's free first.
 
 When invoking Playwright MCP tools, ensure the browser context is configured to emulate a mobile device if possible (specifically set/ensure `isMobile: true` and `hasTouch: true`). This is crucial because standard mouse clicks won't trigger touch-specific event listeners and might keep CSS `:hover` states active, which behaves differently from actual touch screen releases.
 
@@ -24,7 +29,7 @@ Use the Playwright MCP tools (`browser_navigate`, `browser_resize`, `browser_sna
 2. Resize to each viewport in the matrix below.
 3. Take a screenshot + accessibility snapshot at each size.
 4. Interact with every interactive element (open modals, expand TOC, trigger swipe/gesture code paths, tap buttons) to catch bugs that only show up on interaction, not just static layout.
-5. Confirm or discard each Phase-1 hypothesis, and capture new issues you only see live (actual overflow, actual clipped text, actual unreachable button behind a fixed topbar, etc).
+5. Confirm or discard each Phase-1 **hypothesis** (skip re-verifying code-confirmed findings — they're already logged), and capture new issues you only see live (actual overflow, actual clipped text, actual unreachable button behind a fixed topbar, etc).
 
 No network throttling — Playwright MCP here has no reliable built-in throttle control. Skip it; just flag network/perf smells you notice in code (unlazy `<img>`, blocking `<link>` fonts, heavy sync `mermaid.js`/`katex` loads) as findings instead.
 

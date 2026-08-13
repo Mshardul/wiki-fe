@@ -104,6 +104,27 @@ def test_picker_search_filters_structures(page, base_url):
     )
 
 
+def test_transient_load_failure_does_not_stick(page, base_url):
+    """A transient search-index fetch failure on first open doesn't permanently cache an empty list."""
+    page.route(
+        "**/content/search-index.json",
+        lambda route: route.fulfill(status=500, body="fail"),
+        times=2,
+    )
+    _go_to_article(page, base_url)
+    _open_comparator(page)
+    page.wait_for_timeout(300)
+    assert page.locator("#compare-picker-list .compare-picker-item").count() == 0
+    page.locator("#compare-close").click()
+    page.wait_for_selector("#compare-modal.hidden", state="attached", timeout=2_000)
+
+    _open_comparator(page)
+    page.wait_for_function(
+        "() => document.querySelectorAll('#compare-picker-list .compare-picker-item').length > 0",
+        timeout=5_000,
+    )
+
+
 def test_comparator_picks_reset_between_sessions(page, base_url):
     """Reopening the comparator clears prior checkbox selections."""
     _go_to_article(page, base_url)
