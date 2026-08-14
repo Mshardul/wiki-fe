@@ -90,7 +90,7 @@ Worst case is O(n) when every key collides into one bucket (a degenerate hash or
 
 **Reach for something else when:**
 
-- **You need sorted order or range queries** ("all keys between a and b", "the smallest key") → a **balanced BST** / sorted structure gives O(log n) ordered ops; a hash table has no order at all. <!-- balanced-bst not yet written -->
+- **You need sorted order or range queries** ("all keys between a and b", "the smallest key") → a [balanced BST](./balanced-bst.md) / sorted structure gives O(log n) ordered ops; a hash table has no order at all.
 - **You need guaranteed worst-case <abbr>latency</abbr>** → the O(n) resize/collision tail makes hash tables unsuitable for hard-real-time; a balanced tree's O(log n) is a firm ceiling.
 - **Keys are small bounded integers** → a plain [array](./array.md) indexed directly (`freq[v]`) beats a hash table on constant factor with zero hashing overhead.
 - **You need prefix lookups on string keys** → a [<abbr>trie</abbr>](./trie.md) gives prefix/autocomplete queries a hash table can't.

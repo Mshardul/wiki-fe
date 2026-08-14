@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Modular arithmetic** [Must read] <!-- U9: not-yet-written target - wire to a future `algorithms/modular-arithmetic.md` once it exists. -->
+- [Modular Arithmetic](./modular-arithmetic.md) [Must read]
 - [Bit Manipulation](./bit-manipulation.md) [Should read]
 - [Recursion](./recursion.md) [Should read]
 

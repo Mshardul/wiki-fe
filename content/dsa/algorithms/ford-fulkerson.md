@@ -4,7 +4,7 @@
 
 [Graph](../data-structures/graph.md) [Must read]
 [Depth-First Search (DFS)](./dfs.md) [Must read]
-<!-- [Edmonds-Karp](./edmonds-karp.md) [Should read] -->
+[Edmonds-Karp](./edmonds-karp.md) [Should read]
 
 ## Table of Contents
 

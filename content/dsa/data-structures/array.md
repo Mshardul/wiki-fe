@@ -109,9 +109,9 @@ That same O(1) address arithmetic is what makes **binary search** possible on a 
 
 **Reach for something else when:**
 
-- **Frequent insert/delete in the middle or front** → a **linked list** does these in O(1) once you hold the node (no shifting), trading away O(1) random access. <!-- linked-list.md not yet written -->
-- **Key-based lookup** ("is `x` present?", "value for key `k`?") → a **hash table** is O(1) average; linear search in an array is O(n). But note the tradeoff: if you can keep the array **sorted**, **binary search** gives O(log n) lookup with zero extra memory and cache-friendly access - often the right call for static, read-mostly data where a hash table's overhead and lack of ordering aren't worth it. <!-- hash-table.md not yet written -->
-- **Ordered data with frequent insert + range queries** → a **balanced BST** keeps O(log n) insert and in-order traversal. <!-- bst.md not yet written -->
+- **Frequent insert/delete in the middle or front** → a [linked list](./linked-list.md) does these in O(1) once you hold the node (no shifting), trading away O(1) random access.
+- **Key-based lookup** ("is `x` present?", "value for key `k`?") → a [hash table](./hash-table.md) is O(1) average; linear search in an array is O(n). But note the tradeoff: if you can keep the array **sorted**, **binary search** gives O(log n) lookup with zero extra memory and cache-friendly access - often the right call for static, read-mostly data where a hash table's overhead and lack of ordering aren't worth it.
+- **Ordered data with frequent insert + range queries** → a [balanced BST](./balanced-bst.md) keeps O(log n) insert and in-order traversal.
 
 Rule of thumb: **arrays win on access, lose on structural change.** If your hot path is "jump to position i", use an array; if it's "splice in the middle", don't.
 
@@ -145,7 +145,7 @@ See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-sele
 - **Prefix-sum array** - store cumulative sums instead of values; turns range-sum queries into O(1) subtractions.
 - **Difference array** - store deltas (`diff[l] += x; diff[r+1] -= x`); turns range _updates_ into O(1), recovered by a prefix-sum pass.
 - **Counter / bucket array** - index _by value_ (`freq[v]`) rather than by position; an O(1) direct-address map when the value range is bounded.
-- **Implicit tree (array-as-<abbr>heap</abbr>)** - a flat array read as a complete binary tree via index math (`children of i = 2i+1, 2i+2`); no pointers. The structural trick the heap article builds on. <!-- bst/heap.md not yet written -->
+- **Implicit tree (array-as-[heap](./heap.md))** - a flat array read as a complete binary tree via index math (`children of i = 2i+1, 2i+2`); no pointers. The structural trick the heap article builds on.
 
 ## Memory layout
 

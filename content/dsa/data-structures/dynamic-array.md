@@ -4,6 +4,7 @@
 
 - [Array](./array.md) [Must read]
 - [Big-O Notation](../algorithms/big-o-notation.md) [Must read]
+
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
@@ -92,7 +93,7 @@ The next 3 appends are O(1) (room to spare). The 8th append triggers another dou
 **Reach for something else when:**
 
 - **Worst-case <abbr>latency</abbr> matters** (real-time, low-latency systems) → the occasional O(n) resize is a latency spike. A [Circular Buffer](./circular-buffer.md) with fixed capacity gives true O(1) with no resize, or pre-size the array to a known bound.
-- **Heavy front/middle insertion** → still O(n) here, same as a plain array; a **linked list** does O(1) splices once you hold the node. <!-- linked-list.md not yet written -->
+- **Heavy front/middle insertion** → still O(n) here, same as a plain array; a [linked list](./linked-list.md) does O(1) splices once you hold the node.
 - **Memory is tight** → the up-to-2× over-allocation can hurt; a fixed array or pre-sized block avoids the slack.
 
 Rule of thumb: **dynamic array is the right default; reach past it only when you need worst-case O(1) appends or can't afford the over-allocation.**

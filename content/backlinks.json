@@ -835,6 +835,10 @@
   ],
   "./content/dsa/algorithms/modular-arithmetic.md": [
     {
+      "path": "./content/dsa/algorithms/number-theory.md",
+      "title": "Number Theory"
+    },
+    {
       "path": "./content/dsa/algorithms/modular-exponentiation.md",
       "title": "Modular Exponentiation"
     },
@@ -1637,8 +1641,16 @@
   ],
   "./content/dsa/data-structures/balanced-bst.md": [
     {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
       "path": "./content/dsa/data-structures/linked-list.md",
       "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
     },
     {
       "path": "./content/dsa/data-structures/lru-cache.md",
@@ -2069,6 +2081,10 @@
   ],
   "./content/dsa/data-structures/hash-table.md": [
     {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
       "path": "./content/dsa/data-structures/hash-set.md",
       "title": "Hash Set"
     },
@@ -2150,6 +2166,10 @@
     }
   ],
   "./content/dsa/data-structures/heap.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
     {
       "path": "./content/dsa/data-structures/stack.md",
       "title": "Stack"
@@ -2260,6 +2280,14 @@
     }
   ],
   "./content/dsa/data-structures/linked-list.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/dynamic-array.md",
+      "title": "Dynamic Array"
+    },
     {
       "path": "./content/dsa/data-structures/circular-buffer.md",
       "title": "Circular Buffer"
@@ -2575,6 +2603,10 @@
     {
       "path": "./content/dsa/data-structures/string.md",
       "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
     },
     {
       "path": "./content/dsa/algorithms/string-hashing.md",

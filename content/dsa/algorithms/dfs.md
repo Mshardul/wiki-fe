@@ -4,7 +4,7 @@
 
 [Stack](../data-structures/stack.md) [Must read]
 [Graph](../data-structures/graph.md) [Must read]
-<!-- [Recursion](./recursion.md) [Must read] -->
+[Recursion](./recursion.md) [Must read]
 
 ## Table of Contents
 

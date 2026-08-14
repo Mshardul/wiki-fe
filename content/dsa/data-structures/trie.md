@@ -127,7 +127,7 @@ See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-sele
 - **Compressed trie / radix tree (Patricia trie)** - collapses chains of single-child nodes into one edge labeled with a substring, drastically cutting node count and memory while keeping O(L)/O(p) operations. The variant used in IP routing and many real systems.
 - **Ternary search trie** - each node has low/equal/high children (a BST of characters per level), trading some speed for far less memory than an array-node trie. A middle ground.
 - **Bitwise trie (binary trie)** - keys are the **bits** of integers (alphabet = {0,1}, depth = bit-width), enabling max-XOR and longest-prefix-match queries. A structural specialization; the technique lives in [Practice problem 4](#4-maximum-xor-of-two-numbers-lc-421).
-- **Suffix trie / suffix tree** - a trie of all suffixes of one string, for substring queries. Powerful but heavy; the compressed form (suffix tree/automaton) is the practical version. <!-- suffix-tree not yet written -->
+- **Suffix trie / suffix tree** - a trie of all suffixes of one string, for substring queries. Powerful but heavy; the compressed form ([suffix tree](./suffix-tree.md)/automaton) is the practical version.
 
 ## Traversal & invariant
 

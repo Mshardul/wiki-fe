@@ -9,6 +9,13 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-08-15
+- `dsa/data-structures/queue.md` - restructure: removed duplicate "Design Circular Queue" worked Practice entry (already canonical on circular-buffer.md); merged duplicate Variants entries for circular buffer/queue naming
+- 29 files across `dsa/data-structures/` - added cross-link to the Data Structure Selection cheatsheet at the end of each local Comparison section
+- `dsa/data-structures/dynamic-array.md` - hygiene: fixed missing blank line between Prerequisites and Table of Contents headings
+- `dsa/data-structures/interval-tree.md`, `dsa/algorithms/ford-fulkerson.md`, `dsa/algorithms/dfs.md`, `dsa/algorithms/number-theory.md` - linked prerequisite chips whose targets (Balanced BST, Edmonds-Karp, Recursion, Modular Arithmetic) now exist as written articles
+- `dsa/data-structures/hash-table.md`, `dsa/data-structures/trie.md`, `dsa/data-structures/array.md`, `dsa/data-structures/dynamic-array.md` - linked inline cross-references (Balanced BST, Suffix Tree, Linked List, Hash Table, Heap) whose targets now exist
+
 ## 2026-08-14
 - `dsa/data-structures/hash-set.md` - new article
 - `dsa/data-structures/hash-table.md` - fix-gate: added on-page amortized-accounting proof for resize; new section: "What the interviewer probes for"

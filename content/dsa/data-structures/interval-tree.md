@@ -4,7 +4,7 @@
 
 - [Binary Search Tree (BST)](./binary-search-tree.md) [Must read]
 - [Binary Tree](./binary-tree.md) [Must read]
-- <!-- [Balanced BST](./balanced-bst.md) [Should read] -->
+- [Balanced BST](./balanced-bst.md) [Should read]
 
 ## Table of Contents
 
