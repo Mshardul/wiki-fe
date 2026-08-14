@@ -16,7 +16,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -175,56 +174,6 @@ Generate all achievable sums from subsets of the left half, check if any sum equ
 **5. MITM on operations (not just include/exclude)**
 When each element has k possible operations (e.g. signs: +/−), each half has kⁿ/² states instead of 2^(n/2). The technique still applies: enumerate all kⁿ/² states per half, sort, combine.
 
-## CP-primitives
-
-**1. Two-pointer combine instead of binary search**
-
-After generating both sum lists, sort *both* lists. Run two pointers: `lo = 0` on the left list, `hi = len(right) - 1` on the right list.
-
-```python
-left_sums.sort()
-right_sums.sort()
-lo, hi = 0, len(right_sums) - 1
-while lo < len(left_sums) and hi >= 0:
-    total = left_sums[lo] + right_sums[hi]
-    if total == target:
-        return True
-    elif total < target:
-        lo += 1
-    else:
-        hi -= 1
-```
-
-**Why for CP:** the combine step becomes O(2^(n/2)) instead of O(2^(n/2) · n/2) - eliminates the log factor from binary search. In tight time limits this is the difference between AC and TLE. Use when you only need existence (not count), the target is exact, and both lists are sorted anyway.
-
-**2. MITM for 4-sum / k-sum reduction**
-
-For k-sum, split the k numbers to pick into two groups of k/2. Generate all (n choose k/2) partial sums for each group, then use binary search or a hash set on one group to find pairs.
-
-```python
-from itertools import combinations
-
-def four_sum_count(A, B, C, D, target):
-    # MITM: AB sums vs CD sums (each pair is one "half")
-    ab = {}
-    for a in A:
-        for b in B:
-            ab[a + b] = ab.get(a + b, 0) + 1
-    count = 0
-    for c in C:
-        for d in D:
-            count += ab.get(target - c - d, 0)
-    return count
-```
-
-**Why for CP:** collapses O(n⁴) 4-sum to O(n²) by treating each pair (a, b) and (c, d) as one "item" in a 2-sum MITM. The same reduction works for 6-sum → two 3-sum halves, etc. LC 454 (4Sum II) is a canonical contest problem solved this way.
-
-**3. MITM + bitmask for exact-cover / assignment**
-
-For problems where each element has a state (not just in/out), enumerate all 3^(n/2) or k^(n/2) state assignments per half, store them in a hash map keyed by the resulting "signature", then probe from the other half. Used in cryptanalysis (MITM attack on double-DES) and combinatorial puzzles.
-
-**Why for CP:** generalises MITM beyond subset-sum to any problem where the state decomposes across a split and the number of states per half is ≤ 10⁷.
-
 ## Pitfalls
 
 **1. Forgetting the empty subset (sum = 0)**
@@ -318,6 +267,7 @@ def subset_sum_large(A: list[int], T: int) -> bool:
 - Partition Equal Subset Sum (LC 416) - same MITM approach when values are large; DP is preferred when values are small enough to bound the sum space.
 - Target Sum (LC 494) - assign +/− signs to elements; each sign assignment is a "subset selection" - count assignments where the signed sum equals target. MITM applies when n is up to 40.
 - Sum of Squares (find four perfect squares summing to N) - Lagrange's 4-square theorem; MITM on two pairs cuts the search from O(N²) to O(N).
+- Subset Sum, two-pointer combine variant (contest optimization) - sort both halves' sum lists and walk two pointers inward instead of binary-searching; drops the combine step from O(2^(n/2) · n/2) to O(2^(n/2)) by eliminating the log factor, at the cost of only working for exact-existence (not count) queries.
 
 ---
 
@@ -402,3 +352,4 @@ def four_sum_count(nums1: list[int], nums2: list[int],
 
 **Duplicate problems:**
 - Two Sum (LC 1) - same hash-map lookup on a single array; MITM on pairs generalises it to 4 arrays.
+- k-sum via MITM (6-sum, 8-sum generalization) - same pair-combine reduction extended to more arrays: split k arrays into two groups of k/2, hash the sums of one group, probe from the other; turns O(n^k) brute force into O(n^(k/2)).

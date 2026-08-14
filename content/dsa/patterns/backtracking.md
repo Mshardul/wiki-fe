@@ -17,7 +17,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -28,6 +27,8 @@
   - [Restore IP Addresses](#4-restore-ip-addresses---bounded-segment-partition)
   - [Word Break II](#5-word-break-ii---backtracking--memoization)
   - [Palindrome Partitioning](#6-palindrome-partitioning---predicate-gated-cut)
+  - [Partition to K Equal Sum Subsets](#7-partition-to-k-equal-sum-subsets)
+  - [Closest Subsequence Sum](#8-closest-subsequence-sum)
 
 ## What it is
 
@@ -119,15 +120,6 @@ The senior reading: **a small `n` (≤ ~20) next to "find all / place / partitio
 - **Iterative deepening** - bound the depth and increase it, when solutions are shallow and the tree is infinite/huge (game search, word ladders).
 - **Backtracking + memoization** - when partial states recur, cache them; this is the bridge to DP (e.g. word-break with memo).
 
-## CP-primitives
-
-The contest-flavored upgrades that separate a TLE from an accepted solution - none of these appear in a basic interview, all show up in contests:
-
-- **Bitmask state for "used" sets** - represent which elements/columns/diagonals are taken as bits in an integer; `make/unmake` becomes `mask ^= (1 << k)`, and validity is a single `&`. Collapses an O(n) "is it used?" scan to O(1) and makes the state hashable for memoization. **Why for CP:** turns O(n!·n) into O(n!) constant-factor wins and enables bitmask-DP fusion (`n ≤ 20`).
-- **Forward checking / constraint propagation** - after each choice, eagerly remove now-illegal candidates from future variables and bail if any variable's domain empties. **Why for CP:** prunes orders of magnitude more than a leaf-only validity test; the difference between Sudoku in milliseconds and in minutes.
-- **Symmetry breaking** - fix a canonical first choice to skip mirror-image solutions (N-Queens: only place the first queen in the left half, double the count). **Why for CP:** divides the explored tree by the symmetry group size - a 2×–8× speedup for free.
-- **Meet-in-the-middle** - for `n ≤ ~40` subset problems too big for `2ⁿ`, split in half, enumerate each `2^(n/2)` side, and combine. **Why for CP:** turns `2⁴⁰` (infeasible) into `2²⁰` (instant) - the standard escape when `n` is just past the backtracking ceiling.
-
 ## Pitfalls
 
 - **Forgetting to un-choose (asymmetric make/unmake).** The single most common backtracking bug: you mutate shared state going down but don't restore it coming up, so sibling branches inherit a polluted state and emit garbage. Every `make_choice` needs an exactly-mirroring `unmake_choice`; verify the state is byte-for-byte restored after the recursive call returns.
@@ -161,7 +153,7 @@ The contest-flavored upgrades that separate a TLE from an accepted solution - no
 
 **Constraints:** `1 ≤ n ≤ 9`.
 
-**Approach.** Place one queen per row (forces the row constraint for free). Track occupied **columns**, **↘ diagonals** (`row - col`), and **↗ diagonals** (`row + col`) in three sets; a placement is valid iff none of the three is occupied - an O(1) prune. Recurse to the next row, undo on return. The distinct facet: **conflict-set pruning** across three simultaneous constraints, with the diagonal-indexing trick.
+**Approach.** Place one queen per row (forces the row constraint for free). Track occupied **columns**, **↘ diagonals** (`row - col`), and **↗ diagonals** (`row + col`) in three sets; a placement is valid iff none of the three is occupied - an O(1) prune. Recurse to the next row, undo on return. The distinct facet: **conflict-set pruning** across three simultaneous constraints, with the diagonal-indexing trick. A further contest-flavored speedup: fix the first queen's column to the left half of the board only (`col < n // 2`) and double the resulting count (or mirror boards for odd `n`'s center column) - this **symmetry-breaking** trick skips exploring every mirror-image solution twice, cutting the explored tree by roughly half for free.
 
 ```python
 def solve_n_queens(n: int) -> list[list[str]]:
@@ -200,7 +192,7 @@ Time O(N!) worst case (far less with pruning), space O(N). Technique: multi-cons
 
 **Constraints:** board is exactly 9×9, guaranteed to have exactly one solution.
 
-**Approach.** Find an empty cell, try each digit that doesn't already appear in its row, column, or box, recurse, undo on failure, and **return on the first complete fill** (find-one). The senior speedup is **MRV**: always fill the empty cell with the _fewest_ legal candidates next - failing fast prunes enormous subtrees. Distinct facet: **find-one short-circuit + ordering heuristic**, not collect-all.
+**Approach.** Find an empty cell, try each digit that doesn't already appear in its row, column, or box, recurse, undo on failure, and **return on the first complete fill** (find-one). The senior speedup is **MRV**: always fill the empty cell with the _fewest_ legal candidates next - failing fast prunes enormous subtrees. Recomputing each cell's legal-candidate set before choosing is itself a lightweight form of **forward checking / constraint propagation**: eagerly narrowing what's still possible for a variable instead of discovering the conflict only when a leaf is reached - the difference between Sudoku solving in milliseconds versus minutes. Distinct facet: **find-one short-circuit + ordering heuristic**, not collect-all.
 
 ```python
 def solve_sudoku(board: list[list[str]]) -> None:
@@ -405,3 +397,114 @@ def partition(s: str) -> list[list[str]]:
 
 **Duplicate problems:**
 - Palindrome Partitioning II (LC 132) - same palindrome-gated cut concept, but asks for the minimum number of cuts (an optimization, not enumeration) - solved with DP instead of backtracking once only a count is needed, illustrating the backtracking-vs-DP boundary from Recognition signals.
+
+---
+
+### 7. Partition to K Equal Sum Subsets
+
+**Problem.** Given an array `nums` and an integer `k`, determine whether it's possible to divide the array into `k` non-empty subsets with equal sums, using every element exactly once.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [4,3,2,3,5,2,1], k = 4 | **Output:** true
+  - **Explanation:** the array can be split into `[5]`, `[1,4]`, `[2,3]`, `[2,3]` - four subsets each summing to 5.
+- **Example 2**
+  - **Input:** nums = [1,2,3,4], k = 3 | **Output:** false
+  - **Explanation:** the total is 10, which doesn't divide evenly by 3, so no valid partition can exist.
+
+**Constraints:** `1 ≤ k ≤ nums.length ≤ 16`, `1 ≤ nums[i] ≤ 10⁴`.
+
+**Approach:** First reject immediately if `sum(nums) % k != 0` - the target per-subset sum must be an integer. Then backtrack, but represent "which elements have been used" as a **bitmask** over up to 16 elements instead of a set or boolean array: `used |= (1 << i)` to mark an element placed, and checking membership is a single `&`. The bound `nums.length ≤ 16` is the tell - it's small enough that the full `2¹⁶` used-mask state space is enumerable, and the bitmask makes each state hashable for memoization (`(mask, remaining_in_current_bucket)` pairs that fail don't need re-exploring). Try building one bucket to the target sum at a time; when a bucket completes, start the next one from a fresh running total.
+
+```python
+from functools import lru_cache
+
+def can_partition_k_subsets(nums: list[int], k: int) -> bool:
+    total = sum(nums)
+    if total % k != 0:
+        return False
+    target = total // k
+    nums.sort(reverse=True)              # try largest first - fails fast, prunes harder
+    if nums[0] > target:
+        return False
+    n = len(nums)
+
+    @lru_cache(maxsize=None)
+    def backtrack(mask: int, remaining: int) -> bool:
+        if mask == (1 << n) - 1:
+            return True
+        if remaining == 0:
+            remaining = target
+        for i in range(n):
+            if mask & (1 << i):
+                continue                 # already used
+            if nums[i] > remaining:
+                continue
+            if backtrack(mask | (1 << i), remaining - nums[i]):
+                return True
+            if remaining == target:
+                break                    # this element could never start a bucket - neither can any other at this depth
+        return False
+
+    return backtrack(0, target)
+```
+
+**Complexity:** O(k · 2ⁿ) time (each of the 2ⁿ masks visited once per memo, bounded by the k-bucket structure), O(2ⁿ) space for the memo. The recursion depth is O(n).
+
+**Duplicate problems:**
+- Matchsticks to Square (LC 473) - identical bitmask-used-set backtracking with `k` fixed to 4.
+- Fair Distribution of Cookies (LC 2305) - same bitmask-subset-partition shape, minimizing the maximum bucket sum instead of checking equal sums.
+
+---
+
+### 8. Closest Subsequence Sum
+
+**Problem.** Given an array `nums` and an integer `goal`, choose a subsequence (possibly empty) of `nums` whose sum is as close as possible to `goal`; return the minimum absolute difference achievable.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [5,-7,3,5], goal = 6 | **Output:** 0
+  - **Explanation:** the subsequence `{3, -7, 5, 5}` sums to exactly `3 + (-7) + 5 + 5 = 6`, matching the goal exactly, so the minimum possible difference is 0.
+- **Example 2**
+  - **Input:** nums = [7,-9,15,-2], goal = -5 | **Output:** 1
+  - **Explanation:** the closest achievable subsequence sum is -6 or -4, one unit away from -5.
+
+**Constraints:** `1 ≤ nums.length ≤ 40`, `-10⁷ ≤ nums[i] ≤ 10⁷`, `-10⁹ ≤ goal ≤ 10⁹`.
+
+**Approach:** `nums.length ≤ 40` is the exact tell for **meet-in-the-middle**: a full subset backtrack is `2⁴⁰` (infeasible), but splitting the array into two halves of ≤20 elements each and backtracking every subset sum of each half separately is `2 × 2²⁰` (instant). Backtrack (choose/skip each element) over the left half to collect all achievable sums into a sorted list; do the same for the right half. Then for every sum in the left list, binary-search the right list for the value that best complements it toward `goal`, tracking the minimum absolute difference across all combinations. The two independent backtracking passes are each a plain, unconstrained subset enumeration - what makes this meet-in-the-middle rather than two isolated Subsets problems is the O(n log n) combine step that stitches the halves back into one answer.
+
+```python
+from bisect import bisect_left
+
+def min_abs_difference(nums: list[int], goal: int) -> int:
+    def subset_sums(arr: list[int]) -> list[int]:
+        sums: list[int] = []
+        path_sum = 0
+
+        def backtrack(i: int, current: int) -> None:
+            if i == len(arr):
+                sums.append(current)
+                return
+            backtrack(i + 1, current + arr[i])   # choose arr[i]
+            backtrack(i + 1, current)             # skip arr[i]
+
+        backtrack(0, path_sum)
+        return sorted(sums)
+
+    mid = len(nums) // 2
+    left_sums = subset_sums(nums[:mid])
+    right_sums = subset_sums(nums[mid:])
+
+    best = float("inf")
+    for ls in left_sums:
+        target = goal - ls
+        idx = bisect_left(right_sums, target)
+        for j in (idx - 1, idx):
+            if 0 <= j < len(right_sums):
+                best = min(best, abs(ls + right_sums[j] - goal))
+    return best
+```
+
+**Complexity:** O(2^(n/2) log(2^(n/2))) time = O(2^(n/2) · n) for the two backtracking passes plus sorting, O(2^(n/2)) space for the sum lists.
+
+No close duplicates in this file - the 40-element meet-in-the-middle split is a distinct shape from every other backtracking problem here.

@@ -13,7 +13,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -142,66 +141,6 @@ Two binary searches: one with `bisect_left` semantics (first index where `arr[i]
 **6. Search in 2D matrix (LC 74)**
 Flatten the matrix conceptually: treat index `mid` as row `mid // cols`, col `mid % cols`. Single binary search over `rows * cols` elements, O(log(m·n)).
 
-## CP-primitives
-
-**1. `bisect` module as drop-in replacement (contest velocity)**
-
-Python's `bisect.bisect_left` / `bisect_right` implement the first/last-position variants in one line - no loop, no off-by-one. In contests where the array is globally sorted, always reach for these first:
-
-```python
-import bisect
-# First index of target (or insertion point):
-idx = bisect.bisect_left(arr, target)
-# Count of target occurrences:
-count = bisect.bisect_right(arr, target) - bisect.bisect_left(arr, target)
-```
-
-Why for CP: saves ~10 lines of loop code; bisect is implemented in C and is faster than a Python loop; eliminates the most common off-by-one bugs under contest pressure.
-
-**2. Exponential search (unbounded / infinite array)**
-
-When the array is sorted but the right boundary is unknown (stream, infinite array), double `hi` until `arr[hi] >= target`, then binary search `[hi//2, hi]`. O(log n) total - the doubling phase is also O(log n) since it reaches n in log₂(n) steps.
-
-```python
-def exponential_search(arr: list[int], target: int) -> int:
-    if arr[0] == target:
-        return 0
-    hi = 1
-    while hi < len(arr) and arr[hi] < target:
-        hi *= 2
-    lo = hi // 2
-    # standard binary search in [lo, min(hi, len-1)]
-    hi = min(hi, len(arr) - 1)
-    while lo <= hi:
-        mid = lo + (hi - lo) // 2
-        if arr[mid] == target:
-            return mid
-        elif arr[mid] < target:
-            lo = mid + 1
-        else:
-            hi = mid - 1
-    return -1
-```
-
-Why for CP: problems with "the list keeps growing" or "find the first bad version in an unknown range" require unbounded search; exponential doubling bounds the range before binary search halves it.
-
-**3. Binary search on a predicate (generalized)**
-
-Any boolean function `f(x)` that is `False...False...True...True` (monotone) supports binary search: find the first `x` where `f(x)` becomes `True`. This subsumes rotated search, peak finding, and first-position variants under one template:
-
-```python
-def first_true(lo: int, hi: int, predicate) -> int:
-    while lo < hi:
-        mid = lo + (hi - lo) // 2
-        if predicate(mid):
-            hi = mid
-        else:
-            lo = mid + 1
-    return lo  # lo == hi == first True index
-```
-
-Why for CP: "first index where condition holds" appears across problem categories - duplicates search, rotation minimum, allocation problems; one clean template handles all of them without re-deriving the loop each time.
-
 ## Pitfalls
 
 **1. Using `arr[lo] < arr[mid]` instead of `<=` in rotated search**
@@ -313,6 +252,7 @@ def findPeakElement(nums: list[int]) -> int:
 - Peak Index in a Mountain Array (LC 852) - identical peak-finding mechanic; array is guaranteed bitonic (strictly up then strictly down), so any peak-finding binary search applies directly.
 - Find in Mountain Array (LC 1095) - same peak-finding as its first phase, then two plain binary searches (one per side of the peak, one with a reversed comparator) to locate a target - no new halving mechanic beyond peak-finding and classic search.
 - Find Peak Element in 2D Matrix (LC 1901) - 2D extension; find column of global row-max, binary search columns; same "move toward the higher neighbor" rule applied to columns.
+- Generalized "first True" predicate search (contest template) - the loop above is the special case of a monotone boolean predicate `f(mid) = nums[mid] < nums[mid+1]`; any problem with a `False...False...True...True` monotone condition (rotation-minimum, allocation/capacity problems) reduces to the same `while lo < hi: hi = mid if predicate(mid) else lo = mid + 1` template.
 
 ---
 
@@ -363,6 +303,7 @@ def searchRange(nums: list[int], target: int) -> list[int]:
 - Time Based Key-Value Store (LC 981) - same `bisect_right` floor-lookup mechanic (largest key ≤ query), applied to a per-key list that grows via appends instead of a static array.
 - Find Right Interval (LC 436) - `bisect_left` on sorted start points to find the smallest start ≥ each interval's end.
 - Online Election (LC 911) - `bisect_right` on timestamps to find the leader at query time; identical temporal binary search pattern.
+- Python `bisect` module as drop-in (contest velocity) - `bisect.bisect_left`/`bisect_right` implement exactly this lower/upper-bound search in one C-implemented call each; in a contest, reach for these directly instead of hand-rolling the loop shown above.
 
 ---
 
@@ -400,3 +341,48 @@ def searchMatrix(matrix: list[list[int]], target: int) -> bool:
 
 **Duplicate problems:**
 - Search a 2D Matrix II (LC 240) - rows sorted, columns sorted, but first element of row is NOT > last of previous row; the flattening trick fails. Instead start top-right and move left (target smaller) or down (target larger). Different algorithm - O(m + n), not O(log(m·n)) - but same problem shape (search a sorted matrix).
+
+---
+
+### 5. Search in a Sorted Array of Unknown Size (LC 702)
+
+You are given an ascending sorted array of unknown size, accessible only through an `ArrayReader` interface that returns `2³¹ - 1` for any out-of-bounds index. Given `target`, return its index, or `-1` if absent.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** secret = [-1,0,3,5,9,12], target = 9 | **Output:** 4
+- **Example 2**
+  - **Input:** secret = [-1,0,3,5,9,12], target = 2 | **Output:** -1
+  - **Explanation:** 2 does not exist in the array, so -1 is returned.
+
+**Constraints:** `1 ≤ secret.length ≤ 10⁴`, `-10⁴ ≤ secret[i], target ≤ 10⁴`, `secret` sorted in ascending order.
+
+**Approach:** the array's length is unknown, so a fixed `[0, n-1]` window doesn't exist yet - the search space itself must be discovered before it can be halved. Double a `hi` bound (`1, 2, 4, 8, ...`) until `reader.get(hi)` either exceeds `target` or returns the sentinel `2³¹-1`, which bounds the array within `[hi/2, hi]` in O(log n) doublings. Then run standard binary search inside that bound - the doubling phase and the search phase are each O(log n), so the total stays O(log n) despite not knowing `n` up front.
+
+```python
+class ArrayReader:
+    def get(self, index: int) -> int: ...
+
+def search(reader: ArrayReader, target: int) -> int:
+    if reader.get(0) == target:
+        return 0
+    lo, hi = 0, 1
+    while reader.get(hi) < target:
+        lo = hi
+        hi *= 2
+    while lo <= hi:
+        mid = lo + (hi - lo) // 2
+        val = reader.get(mid)
+        if val == target:
+            return mid
+        elif val < target:
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return -1
+```
+
+**Complexity:** O(log n) time, O(1) space - both the doubling phase and the binary-search phase are logarithmic in the (unknown) array length.
+
+**Duplicate problems:**
+- First Bad Version (LC 278) - same "search space grows/unknown boundary" shape when `n` itself is not given up front and only a feasibility check (`isBadVersion`) is available; both reduce to the generalized first-True predicate template.

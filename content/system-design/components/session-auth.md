@@ -121,7 +121,7 @@ With multiple server instances, session lookup fails if the request lands on an 
 
 **Sticky sessions (session affinity):** The load balancer routes all requests from the same client to the same backend instance (by IP hash or cookie). Avoids the need for a shared store.
 
-Problems: defeats load balancing (one overloaded instance, others idle), instance failure loses all sessions pinned to it, doesn't work with auto-scaling where instances appear and disappear.
+Problems: defeats <abbr>load balancing</abbr> (one overloaded instance, others idle), instance failure loses all sessions pinned to it, doesn't work with auto-scaling where instances appear and disappear.
 
 **Shared session store (Redis):** All instances read from the same store. Stateless backends - any instance handles any request. This is the correct approach for horizontally scaled systems. The Redis read (~0.3ms) is the cost, not a scalability limit - sessions scale fine with a shared store; they just require one.
 
@@ -154,6 +154,6 @@ Mitigations in order of effectiveness:
 > **Q:** How do you handle session management in a horizontally-scaled system?
 > **Ideal answer:** Move session state out of the application process into a shared external store - Redis is the standard. All instances read from the same Redis cluster; any instance can serve any request. Sticky sessions are an anti-pattern: they defeat load balancing and cause session loss on instance failure.
 > **Common trap:** "Use sticky sessions." Interviewers follow up with "what happens when that instance goes down?" - the candidate then has no answer.
-> **Next question:** "The Redis session store goes down. What happens?" → Every user is effectively logged out on their next request. Mitigation: Redis HA (Sentinel / Cluster), circuit breaker to degrade gracefully, or a fallback to allow read-only access for cached sessions.
+> **Next question:** "The Redis session store goes down. What happens?" → Every user is effectively logged out on their next request. Mitigation: Redis HA (Sentinel / Cluster), <abbr>circuit breaker</abbr> to degrade gracefully, or a fallback to allow read-only access for cached sessions.
 
 **Key Takeaway:** Sessions are operationally simple but require a shared store to scale horizontally. Redis is the default. The two non-negotiable security rules: always regenerate session ID on login (fixation), always set `HttpOnly` + `Secure` on the cookie (hijacking).

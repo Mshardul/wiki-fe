@@ -19,9 +19,6 @@
 - [Variants](#variants)
 - [Traversal & <abbr>invariant</abbr>](#traversal--invariant)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Prefix-count augmentation](#prefix-count-augmentation)
-  - [Bitwise <abbr>trie</abbr> for max-XOR](#bitwise-trie-for-max-xor)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
@@ -30,6 +27,7 @@
   - [Replace Words](#3-replace-words--shortest-prefix-lookup)
   - [Maximum XOR of Two Numbers](#4-maximum-xor-of-two-numbers-lc-421---bitwise-trie)
   - [Design Add and Search Words](#5-design-add-and-search-words--wildcard-dfs)
+  - [Count Words With a Given Prefix](#6-count-words-with-a-given-prefix)
 
 ## What it is
 
@@ -104,7 +102,7 @@ Every core operation is **O(L)** - the word length - and crucially **independent
 
 Rule of thumb: **trie = "I need prefixes."** If the problem says "starts with", "autocomplete", "longest common prefix", or "shortest prefix", it's a trie. If it just says "is this word present", it's a hash set.
 
-Real-world: **autocomplete / type-ahead** in search boxes and IDEs, **spell-checkers** and word-game validators (Scrabble/Boggle), **IP routing tables** (longest-prefix match via bitwise tries), **T9 / predictive text**, and dictionary-compression. A bitwise trie powers max-XOR queries in competitive programming (see [CP-primitives](#bitwise-trie-for-max-xor)).
+Real-world: **autocomplete / type-ahead** in search boxes and IDEs, **spell-checkers** and word-game validators (Scrabble/Boggle), **IP routing tables** (longest-prefix match via bitwise tries), **T9 / predictive text**, and dictionary-compression. A bitwise trie powers max-XOR queries in competitive programming (see [Practice problem 4](#4-maximum-xor-of-two-numbers-lc-421)).
 
 ## Comparison
 
@@ -126,7 +124,7 @@ The trie's column is the only one with **O(p) prefix queries**. The hash table b
 - **Hash-map-node trie** - each node stores children in a [hash map](./hash-table.md) keyed by character, so only present edges cost memory. Leaner for large/sparse alphabets (Unicode), slightly slower child access.
 - **Compressed trie / radix tree (Patricia trie)** - collapses chains of single-child nodes into one edge labeled with a substring, drastically cutting node count and memory while keeping O(L)/O(p) operations. The variant used in IP routing and many real systems.
 - **Ternary search trie** - each node has low/equal/high children (a BST of characters per level), trading some speed for far less memory than an array-node trie. A middle ground.
-- **Bitwise trie (binary trie)** - keys are the **bits** of integers (alphabet = {0,1}, depth = bit-width), enabling max-XOR and longest-prefix-match queries. A structural specialization; the technique lives in [CP-primitives](#bitwise-trie-for-max-xor).
+- **Bitwise trie (binary trie)** - keys are the **bits** of integers (alphabet = {0,1}, depth = bit-width), enabling max-XOR and longest-prefix-match queries. A structural specialization; the technique lives in [Practice problem 4](#4-maximum-xor-of-two-numbers-lc-421).
 - **Suffix trie / suffix tree** - a trie of all suffixes of one string, for substring queries. Powerful but heavy; the compressed form (suffix tree/automaton) is the practical version. <!-- suffix-tree not yet written -->
 
 ## Traversal & invariant
@@ -217,47 +215,6 @@ class Trie:
 
 **Contest velocity.** A `dict`-of-children trie (above) is the fast thing to write - no fixed alphabet array, no index math. For a known small alphabet (lowercase), a 26-slot list per node is faster but more code; reach for it only when profiling demands. For pure membership with no prefixes, skip the trie and use a `set`.
 
-## CP-primitives
-
-Two trie techniques that turn up in contests beyond basic dictionary lookup.
-
-### Prefix-count augmentation
-
-Store a **counter per node** = how many inserted words pass through it. Then "how many words start with prefix p?" is O(p): walk to the prefix node and read its counter. Increment on insert, decrement on delete.
-
-```python
-# in insert(): node.count += 1 at each step along the path
-# count_prefix(p): walk to p's node, return node.count (0 if path breaks)
-```
-
-**Why for CP:** answers "number of strings with this prefix" in O(p) instead of O(n·p) re-scanning - the standard augmentation for prefix-frequency queries and many string-counting problems.
-
-### Bitwise trie for max-XOR
-
-Insert integers as **fixed-width bit strings** (most-significant bit first) into a binary trie (alphabet {0,1}). To maximize `x XOR y`, walk x's bits down the trie always choosing the **opposite** bit when available (a differing bit sets that position to 1 in the XOR) - O(bit-width) per query, e.g. 32 steps.
-
-```python
-class BitTrie:
-    def __init__(self): self.root = {}
-    def insert(self, x, bits=31):
-        node = self.root
-        for i in range(bits, -1, -1):
-            b = (x >> i) & 1
-            node = node.setdefault(b, {})
-    def max_xor(self, x, bits=31):
-        node, best = self.root, 0
-        for i in range(bits, -1, -1):
-            b = (x >> i) & 1
-            want = 1 - b
-            if want in node:
-                best |= (1 << i); node = node[want]
-            else:
-                node = node[b]
-        return best
-```
-
-**Why for CP:** "maximum XOR pair / subarray" and "XOR with a query value" drop from O(n²) to O(n · bits) - the canonical bitwise-trie trick, and a frequent hard-problem unlock.
-
 ## Gotchas / edge cases
 
 - **Confusing a prefix with a stored word - the `is_end` flag.** Inserting "card" creates the path for "car" too, but "car" is not a stored word unless separately inserted. `search("car")` must check `is_end`; `starts_with("car")` must not. Forgetting the flag (or checking it in the wrong query) is the #1 trie bug.
@@ -308,7 +265,7 @@ print(t.search("app"), t.starts_with("app"), t.search("apple"))   # False True T
 - Map Sum Pairs (LC 677) - same trie insert/walk core, augmented with a prefix-sum instead of an is_end flag.
 - Longest Word in Dictionary (LC 720) - same insert-then-walk core, checking that every prefix along the way is itself a complete word.
 
-### 2. Word Search II - _trie + DFS on a grid_
+### 2. Word Search II
 
 **Problem.** Given a grid of letters and a list of words, return all words findable by connecting 4-directionally adjacent cells (no cell reused per word). E.g. find "oath", "eat" in a board of letters.
 
@@ -348,7 +305,7 @@ def find_words(board, words):
 
 **Complexity:** O(cells · 4^L) worst, pruned hard by the trie in practice. Pattern: [Tree & Graph Traversal](../patterns/tree-graph-traversal.md) + [Backtracking](../patterns/subsets-permutations.md).
 
-### 3. Replace Words - _shortest-prefix lookup_
+### 3. Replace Words
 
 **Problem.** Given a dictionary of root words and a sentence, replace every word by the **shortest root** that is a prefix of it. E.g. roots `["cat","bat"]`, "the cattle was rattled" → "the cat was rattled".
 
@@ -379,7 +336,7 @@ def replace_words(roots, sentence):
 
 **Complexity:** O(total chars) time and space.
 
-### 4. Maximum XOR of Two Numbers (LC 421) - _bitwise trie_
+### 4. Maximum XOR of Two Numbers (LC 421)
 
 **Problem.** Given an array of integers, return the maximum `nums[i] XOR nums[j]`. E.g. `[3,10,5,25,2,8]` → `28` (`5 XOR 25`).
 
@@ -393,11 +350,34 @@ def replace_words(roots, sentence):
 
 **Constraints:** `1 ≤ nums.length ≤ 2 × 10⁵`, `0 ≤ nums[i] ≤ 2³¹ - 1`.
 
-**Approach:** Insert every number's bits (MSB-first) into a **binary trie**. For each number, greedily walk choosing the **opposite** bit at each step when possible - each differing bit contributes a 1 to the XOR at that position, maximizing it. O(n · 32) instead of the O(n²) all-pairs check. The bitwise-trie CP-primitive in its defining problem.
+**Approach:** Insert every number's bits (MSB-first) into a **binary trie** (alphabet `{0, 1}`, depth = bit-width). For each number, greedily walk choosing the **opposite** bit at each step when possible - each differing bit contributes a 1 to the XOR at that position, maximizing it. O(n · 32) instead of the O(n²) all-pairs check. This is the canonical binary-trie technique for max-XOR problems.
 
 ```python
+class BitTrie:
+    def __init__(self) -> None:
+        self.root: dict = {}
+
+    def insert(self, x: int, bits: int = 31) -> None:
+        node = self.root
+        for i in range(bits, -1, -1):
+            b = (x >> i) & 1
+            node = node.setdefault(b, {})
+
+    def max_xor(self, x: int, bits: int = 31) -> int:
+        node, best = self.root, 0
+        for i in range(bits, -1, -1):
+            b = (x >> i) & 1
+            want = 1 - b                      # prefer the opposite bit - maximizes XOR at this position
+            if want in node:
+                best |= (1 << i)
+                node = node[want]
+            else:
+                node = node[b]
+        return best
+
+
 def find_maximum_xor(nums: list[int]) -> int:
-    trie = BitTrie()                          # from CP-primitives
+    trie = BitTrie()
     best = 0
     for x in nums:
         trie.insert(x)
@@ -411,7 +391,7 @@ def find_maximum_xor(nums: list[int]) -> int:
 **Duplicate problems:**
 - Maximum XOR With an Element From Array (LC 1707) - same binary-trie greedy-opposite-bit max-XOR walk, adapted to offline queries with a value limit (sort queries by limit, insert numbers incrementally).
 
-### 5. Design Add and Search Words - _wildcard DFS_
+### 5. Design Add and Search Words
 
 **Problem.** Support `addWord(word)` and `search(word)` where `search` may contain `.` matching any single character. E.g. after adding "bad","dad", `search("b..")` → true, `search(".ad")` → true.
 
@@ -448,4 +428,60 @@ class WordDictionary:
 ```
 
 **Complexity:** O(L) for no-wildcard search; up to O(alphabet^(dots) · L) worst with many dots.
+
+### 6. Count Words With a Given Prefix
+
+**Problem.** Design a structure supporting `insert(word)`, `delete(word)`, and `countPrefix(prefix)` (how many currently-inserted words start with `prefix`), each in O(L) where L is the word/prefix length.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** `insert("apple"); insert("app"); insert("apricot"); countPrefix("ap")` | **Output:** `3`
+  - **Explanation:** all three inserted words start with `"ap"`, so the prefix node at `a→p` has been passed through 3 times.
+- **Example 2**
+  - **Input:** `insert("apple"); delete("apple"); countPrefix("apple")` | **Output:** `0`
+  - **Explanation:** deleting decrements the counter along the same path insert incremented, so the count returns to 0.
+
+**Constraints:** up to `3 × 10⁴` calls to insert/delete/countPrefix combined; word/prefix length `1 ≤ length ≤ 2000`; lowercase English letters only; `delete` is only called on words currently present.
+
+**Approach:** Augment every node with a **counter** = how many inserted words currently pass through it. `insert` increments the counter at each node along the word's path; `delete` decrements it along the same path. `countPrefix(p)` then just walks to `p`'s node and reads its counter directly - O(p), no subtree scan needed. This turns "how many words share this prefix" from an O(n·p) re-scan of every stored word into an O(p) counter read, the standard augmentation for prefix-frequency queries.
+
+```python
+from dataclasses import dataclass, field
+
+@dataclass
+class CountingTrieNode:
+    children: dict[str, "CountingTrieNode"] = field(default_factory=dict)
+    count: int = 0                      # number of inserted words passing through this node
+
+class PrefixCounter:
+    def __init__(self) -> None:
+        self.root = CountingTrieNode()
+
+    def insert(self, word: str) -> None:
+        node = self.root
+        for ch in word:
+            node = node.children.setdefault(ch, CountingTrieNode())
+            node.count += 1
+
+    def delete(self, word: str) -> None:
+        node = self.root
+        for ch in word:
+            node = node.children[ch]
+            node.count -= 1
+
+    def count_prefix(self, prefix: str) -> int:
+        node = self.root
+        for ch in prefix:
+            node = node.children.get(ch)
+            if node is None:
+                return 0
+            if node.count == 0:
+                return 0
+        return node.count
+```
+
+**Complexity:** O(L) per operation, O(total chars) space.
+
+**Duplicate problems:**
+- Map Sum Pairs (LC 677) - same per-node augmentation idea, storing a running value-sum instead of a plain count.
 

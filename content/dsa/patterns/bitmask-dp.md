@@ -13,11 +13,18 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
 - [Practice problems](#practice-problems)
+  - [Travelling Salesman Problem (classic)](#1-travelling-salesman-problem-classic)
+  - [Partition to K Equal Sum Subsets (LC 698)](#2-partition-to-k-equal-sum-subsets-lc-698)
+  - [Maximum Students Taking Exam (LC 1349)](#3-maximum-students-taking-exam-lc-1349)
+  - [Shortest Path Visiting All Nodes (LC 847)](#4-shortest-path-visiting-all-nodes-lc-847)
+  - [Optimal Assignment (LC 1947-style)](#5-optimal-assignment-lc-1947-style)
+  - [Sum Over All Subsets (SOS DP)](#6-sum-over-all-subsets-sos-dp)
+  - [Smallest Sufficient Team (LC 1125)](#7-smallest-sufficient-team-lc-1125)
+  - [Closest Subsequence Sum (LC 1755)](#8-closest-subsequence-sum-lc-1755)
 
 ## What it is
 
@@ -111,7 +118,7 @@ The dominant constant is the inner `n` or `n²` loop. At n = 20, `2²⁰ · 20 �
 | --------------- | ------------------------------ | --------------------------------------------------------------------------------- |
 | n ≤ 12          | O(2ⁿ · n²) comfortably         | Full bitmask DP; TSP, assignment - no constant-factor worry                       |
 | 12 < n ≤ 20     | O(2ⁿ · n) or O(2ⁿ · n²) tight  | Bitmask DP; profile carefully - n=20 with n² inner loop may need pruning          |
-| 20 < n ≤ 40     | O(2^(n/2) · n)                 | Meet-in-the-middle: split into two halves, enumerate each, join (see CP-primitives) |
+| 20 < n ≤ 40     | O(2^(n/2) · n)                 | Meet-in-the-middle: split into two halves, enumerate each, join (see Practice problems) |
 | n > 40          | Exponential - too slow          | Seek problem structure: greedy, flow, matching, branch-and-bound, or approximation |
 
 **The constraint tells you the algorithm:** seeing n ≤ 20 in a problem with pairwise costs or "visit all" semantics is the single strongest signal for bitmask DP. Seeing 20 < n ≤ 40 with the same shape points to meet-in-the-middle.
@@ -127,53 +134,7 @@ The dominant constant is the inner `n` or `n²` loop. At n = 20, `2²⁰ · 20 �
 - **Optimal assignment (n workers, n tasks)** - mask encodes which tasks are done; popcount(mask) gives which worker is next; dp[mask] = min cost assigning popcount(mask) tasks.
 - **Counting Hamiltonian paths** - same DP table, addition instead of min.
 - **Broken-profile DP** - for grid tiling problems (e.g. domino tiling); mask encodes the "profile" of the boundary between filled and unfilled cells, transitioning column by column.
-- **Subset-sum over subsets (SOS DP)** - compute, for every mask, the sum (or max/min) over all its subsets; O(2ⁿ · n) via the "contribution" technique (see CP-primitives).
-
-## CP-primitives
-
-### 1. SOS DP - Sum over Subsets in O(2ⁿ · n)
-
-**Why for CP:** computing `f[mask] = Σ g[sub]` for every submask `sub ⊆ mask` naively is O(3ⁿ) total (each mask has 2^popcount submasks; summed over all masks = 3ⁿ by binomial theorem). SOS DP brings it to O(2ⁿ · n) by iterating over each bit dimension independently.
-
-```python
-# g[mask] given; compute f[mask] = sum of g[sub] for all sub ⊆ mask
-f = g[:]
-for i in range(n):
-    for mask in range(1 << n):
-        if mask >> i & 1:
-            f[mask] += f[mask ^ (1 << i)]  # add contribution from sub without bit i
-```
-
-**Concrete example (n=3):** suppose `g = [0, 1, 1, 0, 1, 0, 0, 0]` (g[mask]=1 means mask is a "good" subset - items {0}, {1}, {2} are good). After SOS:
-
-```
-f[0b111] = g[111] + g[110] + g[101] + g[100] + g[011] + g[010] + g[001] + g[000]
-         = 0 + 0 + 0 + 0 + 0 + 1 + 1 + 1 = 3   (three good subsets of {0,1,2})
-f[0b011] = g[011] + g[010] + g[001] + g[000]
-         = 0 + 1 + 1 + 0 = 2               (two good subsets of {0,1})
-```
-
-**Typical use:** AND-convolution, counting pairs with AND=0, frequency aggregation over subsets in OR-convolution problems.
-
-### 2. Iterating over all submasks of a mask in O(3ⁿ) total
-
-**Why for CP:** some problems need to split a mask into two complementary subsets (e.g. partition into two teams with min cost-diff). Naively O(4ⁿ); the "submask iteration" trick is O(3ⁿ) because each mask has at most 2^popcount(mask) submasks, and Σ C(n,k)·2^k = 3ⁿ.
-
-```python
-mask = some_mask
-sub = mask
-while sub > 0:
-    sub = (sub - 1) & mask  # next submask
-# Note: sub=0 (empty set) is also a valid submask; handle separately if needed
-```
-
-**Typical use:** subset-convolution, AND/OR/XOR convolutions, partitioning problems where both halves matter.
-
-### 3. Meet-in-the-Middle for n ≤ 40
-
-**Why for CP:** when n ≤ 40, full bitmask DP is O(2⁴⁰) ≈ 10¹² - impossible. Split items into two halves of size 20 each, enumerate all 2²⁰ subsets of each half independently, then join (sort + binary search or hash map). Total O(2^(n/2) · n) ≈ 20M - feasible.
-
-**When to reach for it:** "n ≤ 40, find subset with sum closest to target" / "count pairs of subsets with XOR = k".
+- **Subset-sum over subsets (SOS DP)** - compute, for every mask, the sum (or max/min) over all its subsets; O(2ⁿ · n) via the "contribution" technique (see Practice problems).
 
 ## Pitfalls
 
@@ -447,3 +408,131 @@ def max_assignment(n: int, compatible: list[list[int]]) -> int:
 - Minimum Cost to Assign Tasks (classic) - same DP, min-cost instead of max-count.
 - Number of Ways to Wear Different Hats to Each Other (LC 1434) - same popcount-as-index assignment shape, counts valid assignments instead of maximizing/minimizing one.
 - Maximum AND Sum of Array (LC 2172) - assign n ≤ 9 nums to 3·k slots; `dp[mask]` = max AND sum; same assignment-DP shape with a different per-slot scoring function.
+
+---
+
+### 6. Sum Over All Subsets (SOS DP)
+
+Given an array `g` of size `2ⁿ` indexed by bitmask, compute `f[mask] = Σ g[sub]` for every submask `sub ⊆ mask`, for every mask from `0` to `2ⁿ - 1`. Constraints: n ≤ 21 (2²¹ ≈ 2M array entries).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 2, g = [0, 1, 1, 0] (indices are masks 00, 01, 10, 11) | **Output:** f = [0, 1, 1, 2]
+  - **Explanation:** f[11] sums g over submasks {00,01,10,11} = 0+1+1+0 = 2; f[01] sums over submasks {00,01} = 0+1 = 1.
+- **Example 2**
+  - **Input:** n = 3, g = [0, 1, 1, 0, 1, 0, 0, 0] | **Output:** f[111] = 3, f[011] = 2
+  - **Explanation:** f[111] sums all 8 submasks of the full mask (three of the eight g-values are 1); f[011] sums the 4 submasks of {0,1} (two are 1).
+
+**Constraints:** `1 ≤ n ≤ 21`, `g[mask]` given for all `0 ≤ mask < 2ⁿ`.
+
+**Approach.** Distinct from every dp[mask][i]-shaped entry above - there's no "last item" or transition-by-adding-one-bit here. Instead, iterating each of the n bit positions independently and, for every mask that has that bit set, adding in the contribution from the same mask with that bit cleared, accumulates all `2^popcount(mask)` submask sums in n passes instead of enumerating submasks directly (which costs O(3ⁿ) total - see submask-enumeration note below). Each of the n outer passes is a full O(2ⁿ) sweep, giving O(2ⁿ · n) total - the standard CP trick for AND/OR-convolution and any "aggregate over all subsets of every mask" problem.
+
+```python
+def sum_over_subsets(g: list[int], n: int) -> list[int]:
+    f = g[:]
+    for i in range(n):
+        for mask in range(1 << n):
+            if mask >> i & 1:
+                f[mask] += f[mask ^ (1 << i)]
+    return f
+```
+
+**Complexity.** O(2ⁿ · n) time, O(2ⁿ) space.
+
+**Duplicate problems:**
+- Counting pairs with AND = 0 (classic CP) - same SOS DP used to build a "how many array elements are submasks of X" table, then queried per element.
+
+---
+
+### 7. Smallest Sufficient Team (LC 1125)
+
+Given a list of `n ≤ 60` required skills and `m ≤ 60` people each with a subset of those skills, find the smallest team of people whose combined skills cover every required skill. Constraints: `1 ≤ n ≤ 16` skills (the bitmask dimension), `1 ≤ m ≤ 60` people.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** req_skills = ["java","nodejs","reactjs"], people = [["java"],["nodejs"],["nodejs","reactjs"]] | **Output:** [0,2]
+  - **Explanation:** person 0 covers "java", person 2 covers "nodejs" and "reactjs" - together they cover all 3 skills with only 2 people.
+- **Example 2**
+  - **Input:** req_skills = ["algorithms","math","java"], people = [["algorithms"],["math"],["java"]] | **Output:** [0,1,2]
+
+**Constraints:** `1 ≤ req_skills.length ≤ 16`, `1 ≤ people.length ≤ 60`, each person has ≤ 16 skills.
+
+**Approach.** Encode each required skill as a bit and each person as the bitmask of skills they cover. `dp[mask]` = the smallest team (as a list of person-indices) whose combined skill mask is at least `mask`. This is genuinely distinct from the submask-DP shape used elsewhere in this article: rather than enumerating submasks of a fixed mask, it iterates every person against every currently-reachable mask and takes the union `mask | person_skills`, keeping whichever team is smaller whenever a mask is reached two different ways. Track the actual team (not just its size) so the answer can be reconstructed.
+
+```python
+def smallest_sufficient_team(req_skills: list[str], people: list[list[str]]) -> list[int]:
+    skill_index = {s: i for i, s in enumerate(req_skills)}
+    n = len(req_skills)
+    person_masks = []
+    for skills in people:
+        mask = 0
+        for s in skills:
+            mask |= 1 << skill_index[s]
+        person_masks.append(mask)
+
+    full = (1 << n) - 1
+    dp: dict[int, list[int]] = {0: []}
+    for i, pmask in enumerate(person_masks):
+        for mask, team in list(dp.items()):
+            new_mask = mask | pmask
+            if new_mask == mask:
+                continue
+            if new_mask not in dp or len(dp[new_mask]) > len(team) + 1:
+                dp[new_mask] = team + [i]
+
+    return dp[full]
+```
+
+**Complexity.** O(m · 2ⁿ) time and space in the worst case (m people, up to 2ⁿ reachable masks).
+
+**Duplicate problems:**
+- Partition to K Equal Sum Subsets (LC 698) - shares the "union/cover masks with a DP table keyed by mask" shape, but tracks a numeric target instead of a set-cover, so treated as a separate worked entry above rather than folded here.
+
+---
+
+### 8. Closest Subsequence Sum (LC 1755)
+
+Given an array of up to 40 integers and a target `goal`, find the minimum absolute difference between `goal` and the sum of any subsequence (including the empty subsequence). Constraints: `1 ≤ n ≤ 40`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [5,-7,3,5], goal = 6 | **Output:** 0
+  - **Explanation:** the subsequence [5,-7,3,5] minus one 5 (i.e. {-7,3,5} summing to 1) isn't it - actually {5,-7,3,5} full sum is 6, matching goal exactly.
+- **Example 2**
+  - **Input:** nums = [7,-9,15,-2], goal = -5 | **Output:** 1
+  - **Explanation:** subsequence {-9,-2}+... closest achievable sum is -6, one away from -5.
+
+**Constraints:** `1 ≤ nums.length ≤ 40`, `-10⁷ ≤ nums[i] ≤ 10⁷`, `-10⁹ ≤ goal ≤ 10⁹`.
+
+**Approach.** n ≤ 40 rules out full bitmask DP (2⁴⁰ is far too large) but is exactly the meet-in-the-middle ceiling: split the array into two halves of ≤ 20 elements each, enumerate all 2²⁰ subset sums of each half independently (cheap - well within a bitmask-DP-sized budget per half), sort one half's sums, then for every sum in the other half binary-search for the complement closest to `goal`. This is the pattern's exponential-state idea (enumerate every subset) applied at double the size bitmask DP alone could reach, by trading the single 2ⁿ table for two 2^(n/2) tables joined at the end.
+
+```python
+from bisect import bisect_left
+
+def min_abs_difference(nums: list[int], goal: int) -> int:
+    n = len(nums)
+    left, right = nums[: n // 2], nums[n // 2 :]
+
+    def all_subset_sums(arr: list[int]) -> list[int]:
+        sums = [0]
+        for x in arr:
+            sums += [s + x for s in sums]
+        return sums
+
+    left_sums = sorted(all_subset_sums(left))
+    right_sums = sorted(all_subset_sums(right))
+
+    best = float("inf")
+    for ls in left_sums:
+        target = goal - ls
+        i = bisect_left(right_sums, target)
+        for j in (i - 1, i):
+            if 0 <= j < len(right_sums):
+                best = min(best, abs(ls + right_sums[j] - goal))
+    return best
+```
+
+**Complexity.** O(2^(n/2) · n) time, O(2^(n/2)) space.
+
+**Duplicate problems:**
+- Partition array into two subsets minimizing sum difference, n ≤ 40 (classic CP) - identical meet-in-the-middle split/enumerate/join shape, target is 0 instead of an arbitrary goal.

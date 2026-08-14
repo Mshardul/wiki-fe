@@ -92,6 +92,42 @@
           "path": "./content/system-design/components/authentication.md",
           "slug": "authentication",
           "description": "Hub: AuthN vs AuthZ, stateful vs stateless, which mechanism to use"
+        },
+        {
+          "title": "Session-Based Authentication",
+          "path": "./content/system-design/components/session-auth.md",
+          "slug": "session-auth",
+          "description": "Session mechanics, storage, cookies, scaling, fixation/hijacking"
+        },
+        {
+          "title": "JWT",
+          "path": "./content/system-design/components/jwt.md",
+          "slug": "jwt",
+          "description": "Structure, signing algorithms, JWKS, verification gotchas"
+        },
+        {
+          "title": "OAuth 2.0 & OIDC",
+          "path": "./content/system-design/components/oauth-oidc.md",
+          "slug": "oauth-oidc",
+          "description": "Grant types, PKCE, ID token vs access token"
+        },
+        {
+          "title": "Multi-Factor Authentication",
+          "path": "./content/system-design/components/mfa.md",
+          "slug": "mfa",
+          "description": "TOTP, WebAuthn/Passkeys, SMS OTP weaknesses, step-up auth"
+        },
+        {
+          "title": "Service-to-Service Authentication",
+          "path": "./content/system-design/components/service-to-service-auth.md",
+          "slug": "service-to-service-auth",
+          "description": "API keys, mTLS, JWT service accounts, SPIFFE/SPIRE"
+        },
+        {
+          "title": "mTLS",
+          "path": "./content/system-design/components/mtls.md",
+          "slug": "mtls",
+          "description": "Handshake, PKI management, certificate lifecycle, service mesh"
         }
       ]
     },

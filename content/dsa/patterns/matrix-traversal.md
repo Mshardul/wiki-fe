@@ -17,7 +17,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -26,6 +25,7 @@
   - [Shortest Path in Binary Matrix](#2-shortest-path-in-binary-matrix-lc-1091--bfs-shortest-path)
   - [Pacific Atlantic Water Flow](#3-pacific-atlantic-water-flow-lc-417--multi-source-bfs)
   - [Shortest Path with Obstacle Elimination](#4-shortest-path-in-a-grid-with-obstacles-elimination-lc-1293--state-augmented-bfs)
+  - [Minimum Obstacle Removal to Reach Corner](#5-minimum-obstacle-removal-to-reach-corner-lc-2290--0-1-bfs)
 
 ## What it is
 
@@ -187,68 +187,6 @@ Every cell is visited at most once; each visit does O(1) work (4 neighbor checks
 - **Iterative DFS (explicit stack):** push `(r, c)` onto a list; pop and process - same traversal order as recursive DFS but avoids Python's recursion limit. Critical for large grids.
 - **Topological traversal (peeling layers):** BFS from the boundary inward, processing cells with no unvisited neighbors first - used for "surrounded regions" and "remove invalid leaves".
 - **Dijkstra on grid:** when edge weights are arbitrary (cell cost varies per terrain type), replace the BFS queue with a min-heap keyed by distance - O(mn log mn). Completes the continuum: BFS (uniform cost) → 0-1 BFS (binary cost) → Dijkstra (arbitrary cost).
-
-## CP-primitives
-
-**1. Multi-source BFS - O(mn) simultaneous shortest distance from a set of sources**
-
-Enqueue all "source" cells at distance 0 before starting the BFS loop. The BFS then correctly computes the minimum distance from *any* source to every other cell in a single pass - no need to run BFS from each source separately (which would be O(k × mn) for k sources). Contest signal: "distance to the nearest X for every cell", "find all cells reachable from any border cell", "minimum steps to reach a 1 from any 0".
-
-```python
-def multi_source_bfs(grid: list[list[int]]) -> list[list[int]]:
-    from collections import deque
-    m, n = len(grid), len(grid[0])
-    dist = [[float('inf')] * n for _ in range(m)]
-    queue: deque[tuple[int, int]] = deque()
-    for r in range(m):
-        for c in range(n):
-            if grid[r][c] == 0:      # source cells: your logic here
-                dist[r][c] = 0
-                queue.append((r, c))
-    dirs = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-    while queue:
-        r, c = queue.popleft()
-        for dr, dc in dirs:
-            nr, nc = r + dr, c + dc
-            if 0 <= nr < m and 0 <= nc < n and dist[nr][nc] == float('inf'):
-                dist[nr][nc] = dist[r][c] + 1
-                queue.append((nr, nc))
-    return dist
-```
-
-**2. 0-1 BFS - O(mn) shortest path with edge weights in {0, 1}**
-
-When edges have weight 0 or 1 (e.g., moving to a cell of the same color costs 0, different color costs 1), replace the queue with a `deque`: push weight-0 neighbors to the *front* (`appendleft`) and weight-1 neighbors to the *back* (`append`). This gives O(1) priority ordering - no heap, no O(log mn) overhead - reducing the total complexity from O(mn log mn) to O(mn). Contest signal: "minimum number of color-changes / flips / swaps to traverse the grid", edges between cells of the same type are free.
-
-```python
-from collections import deque
-
-def zero_one_bfs(grid: list[list[int]], sr: int, sc: int) -> list[list[int]]:
-    m, n = len(grid), len(grid[0])
-    dist = [[float('inf')] * n for _ in range(m)]
-    dist[sr][sc] = 0
-    dq: deque[tuple[int, int]] = deque([(sr, sc)])
-    dirs = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-    while dq:
-        r, c = dq.popleft()
-        for dr, dc in dirs:
-            nr, nc = r + dr, c + dc
-            if 0 <= nr < m and 0 <= nc < n:
-                w = 0 if grid[nr][nc] == grid[r][c] else 1  # your logic here: cost
-                if dist[r][c] + w < dist[nr][nc]:
-                    dist[nr][nc] = dist[r][c] + w
-                    if w == 0:
-                        dq.appendleft((nr, nc))
-                    else:
-                        dq.append((nr, nc))
-    return dist
-```
-
-**3. BFS on implicit graph with state augmentation - O(mn × S)**
-
-Some grid problems require tracking extra state beyond position: "minimum steps to collect all keys" (state = position + keys collected), "minimum flips to reach target" (state = position + flip count), "knight moves in a grid" (state = position). Encode the full state as `(r, c, extra)` and treat the state space as the BFS graph. The grid is still traversed in O(mn) per state-layer; the key insight is that the BFS-shortest-path guarantee still holds when state is augmented - each `(r, c, extra)` triple is visited at most once.
-
-Contest signal: grid + side constraint that changes as you move (keys, fuel, k-flips allowed). State space size is the bottleneck - `mn × S` must fit in memory and time.
 
 ## Pitfalls
 
@@ -436,6 +374,7 @@ def pacific_atlantic(heights: list[list[int]]) -> list[list[int]]:
 **Duplicate problems:**
 - Walls and Gates (LC 286) - multi-source BFS from gates; fill room distances. No intersection step.
 - Rotting Oranges (LC 994) - multi-source BFS from rotten oranges; answer is max distance reached (time to rot all fresh oranges).
+- 01 Matrix (LC 542) - multi-source BFS from every 0-cell simultaneously; distance to nearest 0 for every cell, same enqueue-all-sources-at-once template.
 
 ---
 
@@ -488,5 +427,51 @@ def shortest_path(grid: list[list[int]], k: int) -> int:
 **Complexity:** O(mn·k) time, O(mn·k) space - visited array dominates.
 
 **Duplicate problems:**
-- Minimum Obstacle Removal to Reach Corner (LC 2290) - same grid, `k` is unlimited; use 0-1 BFS (move to empty cell costs 0, obstacle costs 1) instead of state-augmented BFS. Same augmentation insight, cleaner with deque.
 - Cut Off Trees for Golf Event (LC 675) - BFS repeated between targets with augmented ordering state; same state-extension idea applied to multi-leg pathfinding.
+
+---
+
+### 5. Minimum Obstacle Removal to Reach Corner (LC 2290) - 0-1 BFS
+
+Given an m×n grid of `0`s (empty) and `1`s (obstacles), return the minimum number of obstacles to remove to travel from `(0,0)` to `(m-1,n-1)`. `m, n ≤ 10⁵`, `m × n ≤ 10⁵`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [[0,1,1],[1,1,0],[1,1,0]] | **Output:** 2
+  - **Explanation:** remove the obstacles at (0,1) and (0,2), or an equivalent pair, to clear a path.
+- **Example 2**
+  - **Input:** grid = [[0,1,0,0,0],[0,1,0,1,0],[0,0,0,1,0]] | **Output:** 0
+  - **Explanation:** a path exists entirely through 0-cells.
+
+**Constraints:** `1 ≤ m, n ≤ 10⁵`, `2 ≤ m × n ≤ 10⁵`, `grid[i][j]` is `0` or `1`, `grid[0][0] == grid[m-1][n-1] == 0`.
+
+**Approach:** moving into an empty cell (`0`) costs 0, moving into an obstacle cell (`1`) costs 1 (the cost of removing it) - edge weights are binary, so a plain BFS queue is wrong (it doesn't respect the cost ordering) and a full Dijkstra with a heap is overkill (O(mn log mn)). Use a deque: push weight-0 moves to the front (`appendleft`) and weight-1 moves to the back (`append`). Because the deque always processes strictly-non-decreasing distances in order, popping from the front always yields the next-smallest tentative distance without any heap bookkeeping.
+
+```python
+from collections import deque
+
+def minimumObstacles(grid: list[list[int]]) -> int:
+    m, n = len(grid), len(grid[0])
+    dist = [[float('inf')] * n for _ in range(m)]
+    dist[0][0] = 0
+    dq: deque[tuple[int, int]] = deque([(0, 0)])
+    dirs = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+    while dq:
+        r, c = dq.popleft()
+        for dr, dc in dirs:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < m and 0 <= nc < n:
+                w = grid[nr][nc]
+                if dist[r][c] + w < dist[nr][nc]:
+                    dist[nr][nc] = dist[r][c] + w
+                    if w == 0:
+                        dq.appendleft((nr, nc))
+                    else:
+                        dq.append((nr, nc))
+    return dist[m - 1][n - 1]
+```
+
+**Complexity:** O(mn) time and space - every cell enters the deque a bounded number of times, no log factor.
+
+**Duplicate problems:**
+- Shortest Path in a Grid with Obstacles Elimination (LC 1293) - same grid, but `k` is bounded rather than unlimited, so the state must be augmented to `(r, c, remaining_k)` instead of using edge-weight 0-1 BFS; see the state-augmented BFS entry above.

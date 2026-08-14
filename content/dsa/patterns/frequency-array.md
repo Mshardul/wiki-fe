@@ -15,7 +15,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -24,6 +23,8 @@
   - [Group Anagrams](#2-group-anagrams-lc-49)
   - [Find All Anagrams in a String](#3-find-all-anagrams-in-a-string---sliding-window--freq-array)
   - [Sort Characters By Frequency](#4-sort-characters-by-frequency-lc-451---frequency-of-frequencies)
+  - [Sort Colors (LC 75)](#5-sort-colors-lc-75)
+  - [Single Number (LC 136)](#6-single-number-lc-136)
 
 ## What it is
 
@@ -145,61 +146,6 @@ k = key range (26 for lowercase alpha, 128 for ASCII, n for [0,n]-bounded intege
 - **Frequency of frequencies:** `freq_of_freq[c]` = how many distinct values appear exactly `c` times. Used in "one edit to make all frequencies equal" problems.
 - **Counting sort as a side-effect:** iterating the freq array left-to-right and emitting each value `freq[v]` times produces a sorted output - O(n + k), the same pass that built the array.
 - **Difference array for range increments:** a related-but-distinct structure where `diff[l] += x` and `diff[r+1] -= x` represents a range update; a prefix sum of `diff` recovers the actual values. Not a frequency array - use it for range-update, point-query problems.
-
-## CP-primitives
-
-**1. Frequency array as counting sort - O(n + k)**
-
-When the problem asks you to "sort" n integers in [0, k) and k is small, skip the comparison sort entirely: build the freq array in O(n), then emit in O(k). Total O(n + k), beating O(n log n) for small k. Contest signal: `n ≤ 10⁶` and values are bounded characters or small integers - counting sort is the expected solution.
-
-```python
-def counting_sort(nums: list[int], k: int) -> list[int]:
-    freq = [0] * k
-    for v in nums:
-        freq[v] += 1
-    return [v for v in range(k) for _ in range(freq[v])]
-```
-
-**2. Sliding-window frequency array - O(n) anagram / substring search**
-
-For "find all windows of size k with the same character distribution as pattern P", maintain a freq array for the window. On each slide: `freq[outgoing]--`, `freq[incoming]++`, then check if `freq == pattern_freq` in O(1) by tracking a mismatch counter (the number of characters where `freq[c] != pattern_freq[c]`). Comparing two 26-element arrays per slide is O(26) = O(1), giving O(n) overall instead of O(n·k).
-
-```python
-def count_anagram_windows(s: str, p: str) -> list[int]:
-    from collections import defaultdict
-    pf = [0] * 26
-    wf = [0] * 26
-    for c in p:
-        pf[ord(c) - 97] += 1
-
-    result = []
-    k = len(p)
-    mismatches = sum(1 for i in range(26) if pf[i] != wf[i])
-
-    for r in range(len(s)):
-        inc = ord(s[r]) - 97
-        if wf[inc] == pf[inc]:
-            mismatches += 1
-        wf[inc] += 1
-        if wf[inc] == pf[inc]:
-            mismatches -= 1
-
-        if r >= k:
-            out = ord(s[r - k]) - 97
-            if wf[out] == pf[out]:
-                mismatches += 1
-            wf[out] -= 1
-            if wf[out] == pf[out]:
-                mismatches -= 1
-
-        if r >= k - 1 and mismatches == 0:
-            result.append(r - k + 1)
-    return result
-```
-
-**3. XOR parity via frequency array - O(n) odd-occurrence detection**
-
-For "find the element that appears an odd number of times", XOR all elements: `reduce(xor, nums)`. This is equivalent to a frequency array mod 2 - XOR collapses the even counts to 0 and leaves the odd one. Generalization: `freq[v] % 2` tells you parity without storing full counts. Useful in bitmask-DP problems where you only care whether a value appears an even or odd number of times.
 
 ## Pitfalls
 
@@ -341,6 +287,7 @@ def find_anagrams(s: str, p: str) -> list[int]:
 **Duplicate problems:**
 - Permutation in String (LC 567) - identical mismatch-counter sliding window; returns a boolean instead of all start indices.
 - Minimum Window Substring (LC 76) - same freq-array window but variable-size: shrink from left until the coverage constraint is met.
+- Sliding-window frequency array (CP-primitive framing) - the same fixed-size window + mismatch-counter mechanic described generically; this problem is its full worked instance, not a separate technique.
 
 ### 4. Sort Characters By Frequency (LC 451) - frequency of frequencies
 
@@ -382,3 +329,66 @@ def frequency_sort(s: str) -> str:
 - Top K Frequent Elements (LC 347) - same bucket-by-frequency structure, stops early once k elements are collected instead of emitting the full sorted output.
 - Top K Frequent Words (LC 692) - same bucket-by-frequency structure; only difference is lexicographic tiebreaking within a frequency bucket.
 - Reorganize String (LC 767) - build freq array, check max freq ≤ ⌈n/2⌉, then greedily interleave using a heap over the freq array.
+
+---
+
+### 5. Sort Colors (LC 75)
+
+Given an array `nums` with `n` objects colored red, white, or blue (represented as integers `0`, `1`, `2`), sort them in place so objects of the same color are adjacent, in the order red, white, blue. `1 ≤ nums.length ≤ 300`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [2,0,2,1,1,0] | **Output:** [0,0,1,1,2,2]
+- **Example 2**
+  - **Input:** nums = [2,0,1] | **Output:** [0,1,2]
+
+**Constraints:** `n == nums.length`, `1 ≤ n ≤ 300`, `nums[i]` is `0`, `1`, or `2`.
+
+**Approach.** Distinct from the anagram-family entries above: here the frequency array is the *sorting mechanism itself*, not a comparison tool. Since every value is bounded to `k = 3`, one O(n) pass builds `freq[0..2]`, and a second O(k) pass emits each value `freq[v]` times back into the array - a comparison sort never runs. This is the frequency-array-as-counting-sort idea in its smallest, most concrete form: k is fixed at 3 regardless of n, so the whole sort is O(n).
+
+```python
+def sort_colors(nums: list[int]) -> None:
+    freq = [0, 0, 0]
+    for v in nums:
+        freq[v] += 1
+    i = 0
+    for v in range(3):
+        for _ in range(freq[v]):
+            nums[i] = v
+            i += 1
+```
+
+**Complexity.** O(n) time, O(1) space (k = 3 constant).
+
+**Duplicate problems:**
+- Frequency array as counting sort (CP-primitive, general k) - identical build-freq-then-emit mechanic generalized to any bounded integer range `[0, k)`, not just the fixed k = 3 case here.
+
+---
+
+### 6. Single Number (LC 136)
+
+Given a non-empty array of integers where every element appears exactly twice except for one, find that single element, in linear time and O(1) extra space. `1 ≤ nums.length ≤ 3 × 10⁴`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [2,2,1] | **Output:** 1
+- **Example 2**
+  - **Input:** nums = [4,1,2,1,2] | **Output:** 4
+  - **Explanation:** 1 and 2 each appear twice; 4 is the only element with odd count.
+
+**Constraints:** `1 ≤ nums.length ≤ 3×10⁴`, `-3×10⁴ ≤ nums[i] ≤ 3×10⁴`, every element appears twice except one which appears once.
+
+**Approach.** A real frequency array here would need `k` up to `6×10⁴` just to hold sign-shifted values, and only the parity of each count matters - not the count itself. XOR-ing every element together is exactly a frequency array collapsed mod 2: pairs of equal values XOR to zero and cancel, leaving only the element with odd count. This is a genuinely different technique from every counting-based entry above - no array is ever allocated, and the "index by value" idea is replaced by "fold by value" using XOR's self-canceling property.
+
+```python
+from functools import reduce
+from operator import xor
+
+def single_number(nums: list[int]) -> int:
+    return reduce(xor, nums)
+```
+
+**Complexity.** O(n) time, O(1) space.
+
+**Duplicate problems:**
+- Missing Number (LC 268) - same XOR-parity trick, XORs the array against the full index range `0..n` so only the missing value survives.

@@ -19,15 +19,12 @@
 - [Variants](#variants)
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Character-count array (bounded alphabet)](#character-count-array-bounded-alphabet)
-  - [Polynomial rolling hash](#polynomial-rolling-hash)
-  - [Two pointers / sliding window on characters](#two-pointers--sliding-window-on-characters)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [Valid Anagram](#1-valid-anagram--character-count)
-  - [Implement strStr / Find the Index](#2-implement-strstr--find-the-index--rolling-hash-rabinkarp)
+  - [Valid Anagram](#1-valid-anagram)
+  - [Implement strStr / Find the Index](#2-implement-strstr--find-the-index)
+  - [Longest Substring Without Repeating Characters](#3-longest-substring-without-repeating-characters)
 
 ## What it is
 
@@ -98,7 +95,7 @@ A string is the default for text - the question is usually _what to pair it with
 **Reach for the raw string when:**
 
 - You read text by index or scan it once - parsing, validation, pattern checks.
-- The alphabet is small and bounded (lowercase letters, ASCII) - a **count array** beats a hash map (see [CP-primitives](#character-count-array-bounded-alphabet)).
+- The alphabet is small and bounded (lowercase letters, ASCII) - a **count array** beats a hash map (see [Practice problem 1, Valid Anagram](#1-valid-anagram)).
 
 **Reach for something else / pair it when:**
 
@@ -209,66 +206,6 @@ s.startswith("He"); "lo" in s    # prefix / substring checks
 
 **Contest velocity - lean on the stdlib.** `Counter(s)` for frequencies, `s.count(sub)`, `str.translate` for bulk char mapping, and `"".join(...)` instead of `+=` are the speed-of-coding wins. For matching, Python's `in`/`find` are C-optimized (good enough for most), and `re` covers pattern needs.
 
-## CP-primitives
-
-Three string techniques that dominate contest and interview text problems.
-
-### Character-count array (bounded alphabet)
-
-When the alphabet is small and fixed (26 lowercase letters, 128 ASCII), a plain **array indexed by character** is an O(1) frequency map with zero hashing overhead - faster and simpler than a [hash table](./hash-table.md).
-
-```python
-count = [0] * 26
-for ch in s:
-    count[ord(ch) - ord("a")] += 1
-```
-
-**Why for CP:** anagram checks, frequency comparisons, and "first unique char" become O(n) with a tiny constant. A candidate who reflexively reaches for a hash map on a 26-letter alphabet is leaving speed on the table (see [Array CP-primitives](./array.md#cp-primitives)).
-
-### Polynomial rolling hash
-
-Map a string (or window) to a number: `h = (s[0]·pⁿ⁻¹ + s[1]·pⁿ⁻² + … + s[n-1]) mod M`. The magic: sliding the window one char right updates the hash in **O(1)** (subtract the leaving char's contribution, multiply by `p`, add the entering char) - so you compare an m-length pattern against every position in **O(n + m)** instead of O(n·m). This is **Rabin–Karp**.
-
-```python
-def rabin_karp(text: str, pat: str) -> int:
-    n, m = len(text), len(pat)
-    if m > n: return -1
-    p, M = 31, (1 << 61) - 1            # base + large prime modulus
-    pat_hash = win_hash = 0
-    power = 1
-    for i in range(m):                  # hash the pattern and first window
-        pat_hash = (pat_hash * p + ord(pat[i])) % M
-        win_hash = (win_hash * p + ord(text[i])) % M
-        if i: power = (power * p) % M
-    for i in range(n - m + 1):
-        if win_hash == pat_hash and text[i:i+m] == pat:   # verify on hash hit
-            return i
-        if i < n - m:                   # roll the window O(1)
-            win_hash = ((win_hash - ord(text[i]) * power) * p + ord(text[i+m])) % M
-    return -1
-```
-
-**Why for CP:** O(n) substring search and the engine for "count distinct substrings", "longest common substring" (binary-search + hash), and dup-substring detection. Use a **large prime modulus** (or double hashing) to dodge collisions - anti-hash test cases target weak moduli.
-
-### Two pointers / sliding window on characters
-
-Treat the string as a sequence and walk two indices: opposite ends (palindrome, reverse) or a same-direction expanding/contracting window (longest substring with a constraint). A char-count array tracks the window contents in O(1).
-
-```python
-# longest substring with no repeating char - expanding window
-def longest_unique(s: str) -> int:
-    last: dict[str, int] = {}
-    start = best = 0
-    for i, ch in enumerate(s):
-        if ch in last and last[ch] >= start:
-            start = last[ch] + 1        # jump past the previous occurrence
-        last[ch] = i
-        best = max(best, i - start + 1)
-    return best
-```
-
-**Why for CP:** turns "longest/shortest substring satisfying X" and palindrome checks from O(n²) to O(n). The string is the canonical home of the [two-pointers](../patterns/two-pointers.md) and [sliding-window](../patterns/sliding-window.md) patterns.
-
 ## Gotchas / edge cases
 
 - **`s += c` in a loop is O(n²) - the cardinal string sin.** Immutability means each `+=` copies the whole accumulated string. Build with a **list + `"".join`** (or `StringBuilder`/`bytearray`) for O(n). This is the single most common string performance bug; an interviewer watches for it specifically.
@@ -286,9 +223,9 @@ def longest_unique(s: str) -> int:
 
 ## Practice problems
 
-Two staples, each a **distinct**, genuinely string-native technique - no generic array/sequence technique that would solve identically over a plain array of chars.
+Three staples, each a **distinct**, genuinely string-native technique - no generic array/sequence technique that would solve identically over a plain array of chars.
 
-### 1. Valid Anagram - _character count_
+### 1. Valid Anagram
 
 **Problem.** Given two strings, decide if one is an anagram of the other (same characters, same counts). E.g. `"anagram"`, `"nagaram"` → true; `"rat"`, `"car"` → false.
 
@@ -319,8 +256,9 @@ def is_anagram(s: str, t: str) -> bool:
 
 **Duplicate problems:**
 - Ransom Note (LC 383) - one-directional variant of the same increment/decrement count-array mechanic (magazine counts must cover note counts, no length guard).
+- First Unique Character in a String (LC 387) - same bounded-alphabet count-array mechanic, scanning for the first index whose count is 1 instead of comparing two strings.
 
-### 2. Implement strStr / Find the Index - _rolling hash (Rabin–Karp)_
+### 2. Implement strStr / Find the Index
 
 **Problem.** Return the index of the first occurrence of `needle` in `haystack`, or -1. E.g. `haystack="sadbutsad", needle="sad"` → `0`.
 
@@ -359,3 +297,37 @@ def str_str(haystack: str, needle: str) -> int:
 
 **Duplicate problems:**
 - Repeated DNA Sequences (LC 187) - same rolling-hash-over-a-fixed-window technique, applied to dedupe 10-grams instead of searching for a single pattern; see [Rabin-Karp](../algorithms/rabin-karp.md#2-repeated-dna-sequences--multi-pattern-via-hash-set).
+
+### 3. Longest Substring Without Repeating Characters
+
+**Problem.** Given a string `s`, find the length of the longest substring without any repeating characters. E.g. `"abcabcbb"` → `3` (`"abc"`).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "abcabcbb" | **Output:** 3
+  - **Explanation:** `"abc"` is the longest run with no repeated character; as soon as the next `'a'` repeats, the window must contract.
+- **Example 2**
+  - **Input:** s = "bbbbb" | **Output:** 1
+  - **Explanation:** every character is the same, so the window can never grow past length 1 without a repeat.
+
+**Constraints:** `0 ≤ s.length ≤ 5·10⁴`, `s` consists of English letters, digits, symbols, and spaces.
+
+**Approach:** Expand a right pointer one character at a time; track each character's most recent index in a hashmap. If the incoming character was last seen **inside** the current window, jump the left pointer past that occurrence instead of stepping it one at a time - this is what keeps the whole scan O(n) instead of O(n²). The window's contents never need re-scanning because the hashmap already knows where the duplicate is.
+
+```python
+def longest_unique(s: str) -> int:
+    last: dict[str, int] = {}
+    start = best = 0
+    for i, ch in enumerate(s):
+        if ch in last and last[ch] >= start:
+            start = last[ch] + 1        # jump past the previous occurrence
+        last[ch] = i
+        best = max(best, i - start + 1)
+    return best
+```
+
+**Complexity:** O(n) time, O(min(n, alphabet size)) space.
+
+**Duplicate problems:**
+- Longest Substring with At Most Two Distinct Characters (LC 159) - same expanding/contracting window over a hashmap of counts, gated on distinct-character count instead of no-repeats.
+- Max Consecutive Ones III (LC 1004) - same two-pointer expand/contract shape, gated on a flip-budget count instead of a character-seen check.

@@ -19,7 +19,6 @@
 - [Variants](#variants)
 - [Traversal & invariant](#traversal--invariant)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
@@ -78,7 +77,7 @@ Heap order top→bottom reads 90,80,50,30 (max-heap, strictly decreasing down th
 | Split (key k) | O(log n) | O(n) | Partition into two treaps: all keys < k, all keys ≥ k |
 | Merge (two treaps) | O(log n) | O(n) | Combine two treaps where every key in the left < every key in the right |
 
-**Split and merge are the treap's signature operations** - no rotation-balanced scheme (AVL, Red-Black) supports them this simply, because split/merge there would require re-establishing a rigid invariant across an arbitrary cut point. A treap's randomized structure makes split/merge a natural O(log n) recursive walk (detailed under [CP-primitives](#cp-primitives)).
+**Split and merge are the treap's signature operations** - no rotation-balanced scheme (AVL, Red-Black) supports them this simply, because split/merge there would require re-establishing a rigid invariant across an arbitrary cut point. A treap's randomized structure makes split/merge a natural O(log n) recursive walk (see [Practice problems 2 and 3](#2-range-reverse-and-query-implicit-treap) for both in action).
 
 ## Complexity summary
 
@@ -227,47 +226,6 @@ def delete(root: Optional[TreapNode], key: int) -> Optional[TreapNode]:
 ```
 
 Python's `random.random()` gives a float priority - collisions are astronomically unlikely, so no tie-breaking logic is needed in practice. In C++/Java contest code, a 32-bit `rand()` is standard; with small n, prefer a wider RNG (`mt19937`) to reduce collision probability.
-
-## CP-primitives
-
-### Split and merge (the treap's signature contest tool)
-
-`split(T, key)` partitions a treap into two treaps `(L, R)` where every key in `L` is `< key` and every key in `R` is `≥ key` - O(log n), no rebalancing needed afterward because the heap property is preserved automatically on each half. `merge(L, R)` is the inverse: combine two treaps where every key in `L` is less than every key in `R`, by always attaching the lower-priority root as a child of the higher-priority one - O(log n).
-
-**Why for CP:** split/merge is the primitive behind "implicit treap" range operations (insert at position i, delete range, reverse range) that appear constantly in competitive programming as "array with fast arbitrary insert/reverse." No rotation-balanced tree offers this as simply.
-
-```python
-def split(root: Optional[TreapNode], key: int) -> Tuple[Optional[TreapNode], Optional[TreapNode]]:
-    if root is None:
-        return None, None
-    if root.key < key:
-        l, r = split(root.right, key)
-        root.right = l
-        return root, r
-    else:
-        l, r = split(root.left, key)
-        root.left = r
-        return l, root
-
-
-def merge(left: Optional[TreapNode], right: Optional[TreapNode]) -> Optional[TreapNode]:
-    if left is None:
-        return right
-    if right is None:
-        return left
-    if left.priority > right.priority:
-        left.right = merge(left.right, right)
-        return left
-    else:
-        right.left = merge(left, right.left)
-        return right
-```
-
-### Implicit treap for range operations
-
-Replace `key` with **subtree size** (position), tracked as a `size` field updated on every rotation/split/merge. `split(T, k)` then means "split off the first k elements by position" rather than by key value - this is the mechanism behind O(log n) insert-at-index, delete-range, and (with a lazy `reversed` flag propagated like a lazy segment tree) range-reverse.
-
-**Why for CP:** turns a treap into a "rope"-like structure - the standard answer to "maintain an array supporting insert/delete/reverse at arbitrary positions in O(log n)," a recurring hard-CP requirement plain arrays or linked lists can't meet.
 
 ## Gotchas / edge cases
 
@@ -492,6 +450,7 @@ def query(root: Optional[INode], i: int) -> int:
 
 **Duplicate problems:**
 - Rope data structure operations (used in text editors for large-document insert/delete/substring) - same split/merge-by-position idea applied to characters instead of integers.
+- Insert/delete at arbitrary array index in O(log n) - the general implicit-treap use case this problem specializes; any "maintain a dynamic array under fast positional insert/delete" ask reduces to the same split-by-position + merge mechanic, just without the reverse flag.
 
 ### 3. Merge Two Treaps / Union of Two Sorted Sets
 
@@ -507,7 +466,7 @@ def query(root: Optional[INode], i: int) -> int:
 
 **Constraints:** Combined size of A and B up to `10⁵` nodes; must run in O(log(|A| + |B|)) expected time, not O(|A| + |B|).
 
-**Approach:** This is the direct application of the `merge` primitive from CP-primitives: since every key in the left treap is less than every key in the right, recursively attach whichever root has the **lower** priority as a child of the higher-priority root, on the correct side to preserve BST order. The recursion depth is O(log n) expected because priorities are random - this is the "why for CP" that makes treap merge genuinely faster than rebuilding, unlike naively merging two AVL or Red-Black trees (which generally requires O(n) rebuilding or complex weight-balanced-tree join algorithms to stay within O(log n)).
+**Approach:** This is the direct application of the treap's signature `merge` primitive: since every key in the left treap is less than every key in the right, recursively attach whichever root has the **lower** priority as a child of the higher-priority root, on the correct side to preserve BST order. The recursion depth is O(log n) expected because priorities are random - this is the "why for CP" that makes treap merge genuinely faster than rebuilding, unlike naively merging two AVL or Red-Black trees (which generally requires O(n) rebuilding or complex weight-balanced-tree join algorithms to stay within O(log n)).
 
 ```python
 from typing import Optional
@@ -532,3 +491,4 @@ def merge(left: Optional[Node], right: Optional[Node]) -> Optional[Node]:
 **Duplicate problems:**
 - Union of Two Balanced BSTs (weight-balanced tree "join" algorithm) - same goal, but the classic AVL/weight-balanced approach requires careful case analysis on height difference; the treap version is the simple case for comparison.
 - Persistent Treap Version Merge - same merge primitive, applied with path-copying so both input versions remain independently queryable after the merge.
+- Split treap at key k (the inverse operation) - same recursive-attach mechanic as merge, just partitioning one treap into two by key instead of combining two into one; both are the two halves of the same split/merge primitive pair.

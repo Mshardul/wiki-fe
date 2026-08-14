@@ -18,7 +18,6 @@
 - [Variants](#variants)
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
@@ -265,32 +264,6 @@ class LRUCache:
 
 `OrderedDict` keeps a C-level doubly linked list internally, so `move_to_end` and `popitem(last=False)` are the same two O(1) splices - write the from-scratch version when asked to _prove_ you understand the design, reach for `OrderedDict` (or `functools.lru_cache`) when you just need it to work.
 
-## CP-primitives
-
-LRU rarely appears _named_ in contests, but its two engines do - both are reusable O(1) tricks worth pattern-matching.
-
-### Intrusive doubly linked list over a flat array - pointer-chasing without the heap
-
-Instead of heap-allocated nodes, keep `prev[]` / `next[]` arrays indexed by entry id. Splicing is `next[prev[i]] = next[i]; prev[next[i]] = prev[i]` - same O(1), but contiguous memory means no cache misses and no allocator calls, which is what makes it fast enough for a contest.
-
-```python
-# entries 0..n-1; prev[i], next[i] hold neighbor indices; -1 = sentinel
-def unlink(i):  next[prev[i]] = next[i];  prev[next[i]] = prev[i]
-```
-
-**Why for CP:** collapses an ordered-with-O(1)-deletion-at-known-position requirement from O(n)-shift (array) or pointer-soup (heap nodes) into flat-array O(1) - the standard way to do "remove the k-th surviving element repeatedly" (Josephus-style) in time.
-
-### Hash map → node indirection - O(1) "find and relocate this key"
-
-The map-points-at-the-node pattern generalizes: whenever a problem needs _"given a value, jump to its position in some ordering and move it"_ in O(1), store `value → position/node` alongside the ordering. It's the backbone of LFU's `count → bucket` map and of O(1) `remove(arbitrary key)` on a [queue](./queue.md).
-
-```python
-pos = {}                  # value → its node/index in the ordered structure
-# touch(v): node = pos[v]; relocate(node)   - no scan, ever
-```
-
-**Why for CP:** turns "search the ordering for this key" from O(n) into O(1), the move that makes recency/frequency caches and lazy-deletion heaps run in time.
-
 ## Gotchas / edge cases
 
 - **Update is a use.** `put` on an existing key must move it to the front, not just overwrite the value. Forgetting this means a frequently-_written_ key still ages out - a classic silent bug that passes small tests and fails on the recency sequence. The same goes for `get`: a successful read **must** reorder.
@@ -312,7 +285,7 @@ pos = {}                  # value → its node/index in the ordered structure
 
 Three problems, each exercising a **distinct** technique that the LRU design teaches - no two solved the same way, and every entry genuinely depends on the map→node + doubly-linked-list splice mechanism this article is about.
 
-### 1. LRU Cache - _map + doubly linked list, O(1)_
+### 1. LRU Cache
 
 Design a data structure for an LRU cache with `get(key)` and `put(key, value)`, both O(1), evicting the least-recently-used key when capacity is exceeded. The canonical hashmap+DLL composition - every other entry here is a variation on this splice.
 
@@ -349,7 +322,7 @@ class LRUCache:
 
 ---
 
-### 2. LFU Cache - _frequency buckets, O(1)_
+### 2. LFU Cache
 
 Same as LRU, but evict the **least-frequently-used** key; break ties by least-recently-used among that frequency. Both operations O(1). Kept here as the intentional contrast entry: same map→node backbone, but recency alone is no longer the eviction key.
 
@@ -393,7 +366,7 @@ class LFUCache:
 
 ---
 
-### 3. LRU Cache with TTL - _map + DLL splice, with expiry-on-access_
+### 3. LRU Cache with TTL
 
 Design an LRU cache where each entry also carries a **time-to-live**: `put(key, value, ttl)` and `get(key, now)`, and a `get` on an expired entry must act as a miss (and lazily evict it) even if it's still the MRU node. Genuinely distinct from entry 1: eviction is no longer purely recency-driven - a check against a wall-clock timestamp gates every access before the splice happens.
 

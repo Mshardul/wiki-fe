@@ -22,14 +22,13 @@
 - [Implementation](#implementation)
 - [Suffix array (array-based variant)](#suffix-array-array-based-variant)
   - [When the array beats the tree](#when-the-array-beats-the-tree)
-- [CP-primitives](#cp-primitives)
-  - [Longest repeated substring via deepest internal node](#longest-repeated-substring-via-deepest-internal-node)
-  - [Generalized suffix tree for k-string longest common substring](#generalized-suffix-tree-for-k-string-longest-common-substring)
-  - [Suffix links as a jump table for online matching](#suffix-links-as-a-jump-table-for-online-matching)
-  - [LCP array for faster pattern counting](#lcp-array-for-faster-pattern-counting)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
+  - [Longest Repeated Substring (via suffix tree)](#1-longest-repeated-substring-via-suffix-tree)
+  - [Count Distinct Substrings (via suffix tree)](#2-count-distinct-substrings-via-suffix-tree)
+  - [Longest Common Substring Across k Strings (Generalized Suffix Tree)](#3-longest-common-substring-across-k-strings-generalized-suffix-tree)
+  - [Count Pattern Occurrences with Many Queries (LCP + RMQ)](#4-count-pattern-occurrences-with-many-queries-lcp--rmq)
 
 ## What it is
 
@@ -388,7 +387,7 @@ if __name__ == "__main__":
     print("search 'ana':", search(text + "\x00", sa, "ana"))  # [1, 3]
 ```
 
-**Pattern search via binary search.** To find pattern `P`, binary-search `SA` twice - once for the first suffix `≥ P`, once for the first `> P` - the range `[lo, hi)` gives every occurrence. Each comparison is O(m) and O(log n) comparisons are made, so plain binary search is **O(m log n)**; layering an RMQ structure on `LCP` (so pivots can skip already-matched characters) tightens this to **O(m + log n)** - see [CP-primitives](#cp-primitives).
+**Pattern search via binary search.** To find pattern `P`, binary-search `SA` twice - once for the first suffix `≥ P`, once for the first `> P` - the range `[lo, hi)` gives every occurrence. Each comparison is O(m) and O(log n) comparisons are made, so plain binary search is **O(m log n)**; layering an RMQ structure on `LCP` (so pivots can skip already-matched characters) tightens this to **O(m + log n)** - see [Practice problem 4](#4-count-pattern-occurrences-with-many-queries-lcp--rmq).
 
 ### When the array beats the tree
 
@@ -399,32 +398,6 @@ The array isn't just "a suffix tree with extra steps" - it's the version product
 - **Simplicity.** Prefix-doubling (shown above) is maybe 30 lines and safe to hand-implement under contest pressure. Ukkonen's algorithm - suffix links, active-point tracking, three extension rules - is one of the hardest classic algorithms to get exactly right (see [Implementation](#implementation)'s "hard" rating). Unless O(m) query time is a proven bottleneck, the array's simpler build is almost always the better trade.
 
 This is why bioinformatics tools (BWA, Bowtie, samtools) build suffix arrays (or the further-compressed FM-index) over genomes, not suffix trees - see [When to use / when not](#when-to-use--when-not) for the tree's narrower home turf.
-
-## CP-primitives
-
-### Longest repeated substring via deepest internal node
-
-The longest repeated substring corresponds to the **deepest internal node** (measured by string-depth - the total length of the edge labels from root to that node), since an internal node with ≥2 children means ≥2 suffixes share that prefix, i.e. it's a repeated substring. This is the suffix-tree-native equivalent of scanning `max(LCP)` on a suffix array.
-
-**Why for CP:** avoids materializing an LCP array at all if you already have the tree - useful when the problem's other parts already require walking the explicit tree structure (e.g. combined with generalized-suffix-tree queries).
-
-### Generalized suffix tree for k-string longest common substring
-
-Build one tree over all k strings (each with a distinct sentinel), then find the deepest internal node whose leaf-subtree contains suffixes from **all k** source strings (track a bitmask of "which strings have a leaf below me" per internal node, computed bottom-up in O(n) total).
-
-**Why for CP:** generalizes the two-string longest-common-substring trick (shown in [Practice problem 3's array alternative](#3-longest-common-substring-across-k-strings-generalized-suffix-tree) via a single `#`-separator) to arbitrarily many strings without needing k-1 separator characters and a more complex scan - the tree's explicit branching makes the "which strings does this subtree touch" bitmask a natural bottom-up computation.
-
-### Suffix links as a jump table for online matching
-
-Beyond construction, suffix links double as a **fast retry mechanism** during online pattern matching against a growing text (e.g. matching against a text that's still being appended to) - when a match attempt fails partway, following the suffix link from the current position jumps to the next-best candidate match point in O(1) amortized, avoiding a full restart from the root.
-
-**Why for CP:** the same amortized-jump idea that makes Ukkonen's construction O(n) also accelerates certain streaming/online multi-match problems - recognizing the suffix-link structure saves reimplementing the equivalent bookkeeping from scratch.
-
-### LCP array for faster pattern counting
-
-This one belongs to the [array variant](#suffix-array-array-based-variant), not the tree. After building `SA` and `LCP`, counting occurrences of pattern `P` is a binary search for the range `[lo, hi)` in `SA` - the count is `hi - lo`, costing O(m log n). Layer a **sparse table for range-minimum queries (RMQ)** on top of `LCP`, and subsequent binary-search pivots can call `RMQ(LCP, lo, mid)` to skip characters already known to match instead of re-comparing all `m` characters at each step - dropping the cost to **O(m + log n)**.
-
-**Why for CP:** any "count occurrences of P in T" problem with many queries goes from O(q · m log n) to O(n log n build + q(m + log n)) - the LCP+RMQ combo is the difference between TLE and AC on large test cases, and it's the array's answer to the tree's native O(m) search when you're not willing to implement Ukkonen.
 
 ## Gotchas / edge cases
 
@@ -508,6 +481,7 @@ print(longest_repeated_substring_tree("abcde"))   # ""
 - Longest Repeated Substring via Suffix Array (LC-style, SPOJ) - identical problem, solved via `max(LCP)` instead of deepest-node; see the array alternative above.
 - Longest Repeated Non-Overlapping Substring - a harder variant requiring the additional constraint `SA[i] - SA[i-1] ≥ lcp_len` (array form) or a subtree-leaf-spread check (tree form) to rule out overlapping occurrences.
 - Longest Duplicate Substring (LC 1044) - same core problem; LeetCode's expected solution is usually binary-search-on-length + rolling hash, but the suffix-structure approach (tree or array) solves it just as validly.
+- Deepest-node-via-explicit-tree-walk variants (competitive-programming judges) - any "find the deepest node whose subtree has ≥2 leaves" restatement is the identical deepest-internal-node mechanic, just without materializing an LCP array first.
 
 ### 2. Count Distinct Substrings (via suffix tree)
 
@@ -644,3 +618,70 @@ print(longest_common_substring_k(["xyz", "abc"]))                # ""
 **Duplicate problems:**
 
 - Longest Common Substring of Two Strings (Suffix Array version) - the k=2 special case, solvable more simply via a single separator character and an LCP scan; see the array alternative above.
+- Bottom-up subtree-bitmask queries (competitive-programming judges) - any "does this subtree touch every one of k marked leaf-groups" restatement uses the identical bitmask-computed-bottom-up-in-one-DFS mechanic.
+
+### 4. Count Pattern Occurrences with Many Queries (LCP + RMQ)
+
+**Problem.** Given a fixed text `s` and `q` pattern queries, answer "how many times does pattern `P` occur in `s`?" for each query. Queries arrive after the text is fixed and preprocessing is allowed once. `|s| ≤ 10⁵`, `q ≤ 10⁵`, total query length `≤ 10⁵`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** `s = "banana"`, queries = `["an", "ana", "z"]` | **Output:** `[2, 2, 0]`
+  - **Explanation:** `"an"` occurs at indices 1 and 3; `"ana"` occurs at indices 1 and 3 (overlapping is allowed for counting); `"z"` never occurs.
+- **Example 2**
+  - **Input:** `s = "aaaa"`, queries = `["a", "aa", "aaaaa"]` | **Output:** `[4, 3, 0]`
+  - **Explanation:** `"a"` occurs at all 4 positions; `"aa"` occurs at 3 overlapping positions; `"aaaaa"` is longer than `s` so it can't occur.
+
+**Constraints:** `1 ≤ |s| ≤ 10⁵`; `1 ≤ q ≤ 10⁵`; total combined pattern length across all queries `≤ 10⁵`; lowercase English letters only.
+
+**Approach:** Build `SA` once, then answer each query by binary-searching the range `[lo, hi)` of suffixes prefixed by `P` - the count is `hi - lo`. A plain binary search costs O(m log n) per query (`m` = pattern length), which is fine for a handful of queries but adds up across `q ≤ 10⁵` queries on long patterns. Layering a **sparse table for range-minimum queries (RMQ)** on top of the `LCP` array lets each binary-search pivot call `RMQ(LCP, lo, mid)` to skip characters already known to match instead of re-comparing all `m` characters from scratch, dropping each query to **O(m + log n)**. This is the array variant's answer to "many pattern-count queries against one fixed text" - the case where the suffix tree's native O(m) search per query would also work, but building the LCP+RMQ index is simpler than implementing Ukkonen.
+
+```python
+def build_rmq_sparse_table(lcp: list[int]) -> tuple[list[list[int]], list[int]]:
+    """Sparse table over LCP for O(1) range-minimum queries after O(n log n) build."""
+    n = len(lcp)
+    log = [0] * (n + 1)
+    for i in range(2, n + 1):
+        log[i] = log[i // 2] + 1
+    table = [lcp[:]]
+    j = 1
+    while (1 << j) <= n:
+        prev = table[-1]
+        half = 1 << (j - 1)
+        table.append([min(prev[i], prev[i + half]) for i in range(n - (1 << j) + 1)])
+        j += 1
+    return table, log
+
+def rmq(table: list[list[int]], log: list[int], lo: int, hi: int) -> int:
+    """Min of lcp[lo:hi] (exclusive hi), lo < hi."""
+    j = log[hi - lo]
+    return min(table[j][lo], table[j][hi - (1 << j)])
+
+def count_occurrences(s: str, sa: list[int], lcp: list[int], pattern: str) -> int:
+    """Count occurrences of `pattern` via binary search over SA - the O(m log n) baseline.
+    The RMQ table (built above) lets each pivot compare skip already-matched characters
+    (RMQ(lcp, lo, mid) tells you how much of the prefix is already known equal), tightening
+    this to O(m + log n); that pivot-skipping step is elided here for clarity."""
+    n, m = len(sa), len(pattern)
+    lo, hi = 0, n
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if s[sa[mid]:sa[mid] + m] < pattern:
+            lo = mid + 1
+        else:
+            hi = mid
+    left = lo
+    lo, hi = 0, n
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if s[sa[mid]:sa[mid] + m] <= pattern:
+            lo = mid + 1
+        else:
+            hi = mid
+    return lo - left
+```
+
+**Complexity:** O(n log n) one-time SA + RMQ build; O(m + log n) per query with RMQ-accelerated pivots (O(m log n) shown above without the pivot-skip optimization). Space O(n log n) for the sparse table.
+
+**Duplicate problems:**
+- Number of Distinct Substrings (this article, Practice #2) - both rest on the same `SA` + `LCP` foundation, just aggregating it differently (sum vs range-count).

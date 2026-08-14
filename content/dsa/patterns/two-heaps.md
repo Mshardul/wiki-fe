@@ -15,7 +15,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -108,78 +107,6 @@ Invariant after each insert: `len(lo) == len(hi)` or `len(lo) == len(hi) + 1`. T
 - **Weighted median:** each element has a weight; the median is where cumulative weight first exceeds total/2. Two heaps with a running weight sum per heap; rebalance by weight, not count.
 - **k-th quantile (not just median):** maintain the partition point at position k rather than n/2. The lo heap has exactly k elements; hi has n − k. Works identically - just change the rebalance target.
 - **Two heaps on a fixed array (offline):** sort elements by value, assign to lo/hi by position; useful when all elements are known upfront and queries are static.
-
-## CP-primitives
-
-### Lazy deletion for sliding windows
-
-In contests, `heapq` has no `remove` operation. When an element leaves the window, add it to a `garbage` counter-map. When the top of a heap is in `garbage`, pop and discard until the top is clean. This gives O(log k) amortized per slide.
-
-**Why for CP:** eliminates the need for a balanced BST (unavailable in Python stdlib) for sliding-window median; the lazy approach runs fast enough for n ≤ 10⁵ in Python.
-
-```python
-import heapq
-
-class SlidingMedian:
-    def __init__(self) -> None:
-        self._lo: list[int] = []
-        self._hi: list[int] = []
-        self._garbage: dict[int, int] = {}
-        self._lo_size = self._hi_size = 0  # effective sizes (excluding garbage)
-
-    def _clean(self, heap: list[int], negate: bool) -> None:
-        while heap:
-            val = -heap[0] if negate else heap[0]
-            if self._garbage.get(val, 0):
-                self._garbage[val] -= 1
-                heapq.heappop(heap)
-            else:
-                break
-
-    def add(self, num: int) -> None:
-        if not self._lo or num <= -self._lo[0]:
-            heapq.heappush(self._lo, -num)
-            self._lo_size += 1
-        else:
-            heapq.heappush(self._hi, num)
-            self._hi_size += 1
-        self._rebalance()
-
-    def remove(self, num: int) -> None:
-        self._garbage[num] += 1
-        if num <= -self._lo[0]:
-            self._lo_size -= 1
-        else:
-            self._hi_size -= 1
-        self._rebalance()
-
-    def _rebalance(self) -> None:
-        self._clean(self._lo, negate=True)
-        self._clean(self._hi, negate=False)
-        if self._lo_size > self._hi_size + 1:
-            self._clean(self._lo, negate=True)
-            heapq.heappush(self._hi, -heapq.heappop(self._lo))
-            self._lo_size -= 1
-            self._hi_size += 1
-        elif self._hi_size > self._lo_size:
-            self._clean(self._hi, negate=False)
-            heapq.heappush(self._lo, -heapq.heappop(self._hi))
-            self._hi_size -= 1
-            self._lo_size += 1
-
-    def median(self) -> float:
-        self._clean(self._lo, negate=True)
-        self._clean(self._hi, negate=False)
-        if self._lo_size > self._hi_size:
-            return float(-self._lo[0])
-        return (-self._lo[0] + self._hi[0]) / 2.0
-```
-
-### Order-statistics tree as an alternative
-
-Python's `sortedcontainers.SortedList` gives O(log n) insert, delete, and index - effectively an order-statistics tree. For sliding window median it's often simpler: `sl[len(sl) // 2]` is the median directly. **Why for CP:** eliminates the lazy-deletion complexity at the cost of a slightly larger constant; useful when the problem combines median with rank queries.
-
-Use the hand-rolled implementation above rather than `SortedList` from the `sortedcontainers` third-party package.
 
 ## Pitfalls
 
@@ -326,9 +253,12 @@ def medianSlidingWindow(nums: List[int], k: int) -> List[float]:
 
 **Complexity:** O(n log k) time, O(k) space (effective heap sizes).
 
+**Note on alternatives:** `sortedcontainers.SortedList` (`O(log n)` insert/delete/index, `sl[len(sl)//2]` gives the median directly) removes the lazy-deletion bookkeeping above at the cost of a larger constant - worth it when the problem also needs rank queries, not just the median. Use the hand-rolled lazy-deletion heap solution for contest submissions where third-party packages aren't available.
+
 **Duplicate problems:**
 - Maximum of Sliding Window (LC 239) - same sliding window frame, but max not median; use a monotonic deque instead.
 - Minimum Window Substring (LC 76) - sliding window with a constraint; pattern is sliding window, not two heaps.
+- Count of Smaller Numbers After Self (LC 315) - same lazy-deletion-avoidant rank-query need; solved with an order-statistics structure (BIT or `SortedList`) instead of two heaps, illustrating the alternative-tool tradeoff.
 
 ### 3. IPO (LC 502)
 

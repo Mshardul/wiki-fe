@@ -18,7 +18,6 @@
 - [Variants](#variants)
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
@@ -245,36 +244,6 @@ class LFUCache:
 
 `OrderedDict.popitem(last=False)` pops the LRU end in O(1); appending a key puts it at the MRU end - the same two splices the hand-rolled doubly linked list does, with the pointer juggling hidden. Write the DLL from scratch only if asked to prove you understand the per-frequency LRU ordering.
 
-## CP-primitives
-
-LFU is rarely a contest problem by name, but its engine - **counted buckets with an O(1) min pointer** - is a reusable trick worth recognizing.
-
-### Value-bucketed lists with a cached extreme - O(1) min/max-by-count
-
-When you must repeatedly pull the element with the smallest (or largest) *count* and counts only move by ±1, bucket elements by count and cache the current min/max bucket index. Because counts step by one, the cached extreme updates in O(1) - no heap, no scan.
-
-```python
-buckets = defaultdict(OrderedDict)   # count -> elements at that count
-min_c = 0
-def bump(x, c):                      # move x from count c to c+1
-    del buckets[c][x]
-    if not buckets[c] and c == min_c: min_c += 1
-    buckets[c + 1][x] = None
-```
-
-**Why for CP:** collapses "repeatedly extract-min-by-frequency with frequency updates" from O(log n)/heap to O(1) - the standard way to keep a sliding extreme when the key is an integer count that changes by one. Named appearances: **LeetCode 432 "All O`one` Data Structure"** (two-sided version of this exact trick - see practice #2), **460 "LFU Cache"**, and the count-bucket step inside the linear-time **Top-K Frequent** (#3). The recognition cue: *"all operations O(1)" + "the ordering key is an integer count that only ±1"* → bucket by count, cache the extreme, never heap.
-
-### Three-map cross-index - O(1) lookup from any axis
-
-Keeping `key→value`, `key→freq`, and `freq→keys` simultaneously means you can jump in O(1) from *any* of {a key, its value, its frequency} to the others. The general move: when a problem needs O(1) access along multiple keys, **maintain one map per access axis and update all of them together** on every mutation.
-
-```python
-val, freq, buckets = {}, {}, defaultdict(OrderedDict)
-# any mutation updates ALL three so every axis stays O(1)-queryable
-```
-
-**Why for CP:** turns "search the structure along a secondary key" from O(n) into O(1), the backbone of all-O(1) design problems (LFU, "All O`one` Data Structure", insert/delete/getRandom).
-
 ## Gotchas / edge cases
 
 - **`min_freq` updates are the whole correctness story.** It increments **only** when the current min bucket empties during a touch, and resets to **1** on every new insertion. Get either rule wrong and eviction silently picks the wrong victim. The reset-to-1 is the most-missed: a fresh key is always frequency 1, so it *is* the new minimum.
@@ -297,7 +266,7 @@ val, freq, buckets = {}, {}, defaultdict(OrderedDict)
 
 Five problems, each a **distinct** technique that LFU's design teaches - no two solved the same way.
 
-### 1. LFU Cache - _frequency buckets + min_freq pointer, O(1)_
+### 1. LFU Cache
 
 Design an LFU cache with O(1) `get` and `put`, evicting the least-frequently-used key (ties broken by LRU). Capacity given at construction; up to ~10⁵ operations. The canonical bucketed-frequency design this article teaches.
 
@@ -341,7 +310,7 @@ class LFUCache:
 
 ---
 
-### 2. All O`one` Data Structure - _bucketed counts, O(1) min and max_
+### 2. All O`one` Data Structure
 
 Support `inc(key)`, `dec(key)`, `getMaxKey()`, `getMinKey()`, all O(1). Counts move by ±1. Generalizes LFU's single-ended bucket trick to both extremes at once.
 
@@ -424,7 +393,7 @@ class AllOne:
 
 ---
 
-### 3. Top K Frequent Elements - _bucket sort by frequency_
+### 3. Top K Frequent Elements
 
 Given an array, return the `k` most frequent elements. Better than O(n log n) if possible. The *static* cousin of LFU's idea - buckets built once, not maintained live.
 
@@ -462,7 +431,7 @@ def top_k_frequent(nums: list[int], k: int) -> list[int]:
 
 ---
 
-### 4. Maximum Frequency Stack (LC 895) - _live frequency-bucket eviction, LIFO within a bucket_
+### 4. Maximum Frequency Stack (LC 895)
 
 Design a stack-like structure: `push(val)` adds an element, and `pop()` removes and returns the **most frequent** element seen so far; ties broken by which was pushed most recently. Distinct from every entry above: eviction tracks the **maximum**, not the minimum, and each bucket is a plain stack (LIFO), not an LRU-ordered structure - there's no recency tie-break dimension at all, just push order within a frequency group.
 
@@ -505,5 +474,5 @@ class FreqStack:
 **Complexity:** O(1) per op, O(n) space.
 
 **Duplicate problems:**
-- LRU Cache - the recency-only sibling: no frequency dimension, no `min_freq`, no per-count buckets, just move-to-front on touch and pop-back on evict. Solving it right after LFU makes the extra machinery explicit - LFU is this plus a frequency axis and a min-pointer. See [LRU Cache](./lru-cache.md#1-lru-cache--map--doubly-linked-list-o1) for the full treatment.
+- LRU Cache - the recency-only sibling: no frequency dimension, no `min_freq`, no per-count buckets, just move-to-front on touch and pop-back on evict. Solving it right after LFU makes the extra machinery explicit - LFU is this plus a frequency axis and a min-pointer. See [LRU Cache](./lru-cache.md#1-lru-cache) for the full treatment.
 

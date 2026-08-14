@@ -19,15 +19,15 @@
 - [Variants](#variants)
 - [Traversal & <abbr>invariant</abbr>](#traversal--invariant)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [Kth Largest Element in a Stream](#1-kth-largest-element-in-a-stream--bounded-min-<abbr>heap</abbr>)
-  - [Top K Frequent Elements](#2-top-k-frequent-elements--heap-of-size-k)
-  - [Merge K Sorted Lists](#3-merge-k-sorted-lists-lc-23---k-way-merge-with-a-heap)
-  - [Find Median from Data Stream](#4-find-median-from-data-stream--two-heaps)
-  - [Swim in Rising Water](#5-swim-in-rising-water-lc-778---dijkstra-style-heap-shortest-path)
+  - [Kth Largest Element in a Stream](#1-kth-largest-element-in-a-stream)
+  - [Top K Frequent Elements](#2-top-k-frequent-elements)
+  - [Merge K Sorted Lists](#3-merge-k-sorted-lists-lc-23)
+  - [Find Median from Data Stream](#4-find-median-from-data-stream)
+  - [Swim in Rising Water](#5-swim-in-rising-water-lc-778)
+  - [Path with Maximum Probability](#6-path-with-maximum-probability-lc-1514)
 
 ## What it is
 
@@ -196,15 +196,6 @@ def sift_down(a: list[int], i: int, n: int) -> None:
         i = smallest
 ```
 
-## CP-primitives
-
-Contest tools the heap unlocks (advisory for the Tree/heap family, but heaps are CP-heavy):
-
-- **Top-K with a bounded heap.** To find the K largest of a stream, keep a **min-heap of size K**: push each element, pop the min when size exceeds K. The heap holds the K largest seen, its root is the K-th largest, in O(n log K) time and O(K) space - far better than sorting everything (O(n log n)) when K ≪ n. (Mirror with a max-heap for K smallest.)
-- **Two-heap median / streaming order statistics.** Maintain a **max-heap of the lower half** and a **min-heap of the upper half**, balanced in size. The median is the root(s); insertion is O(log n). The standard tool for "median of a data stream" and sliding-window medians.
-- **Heap-based k-way merge.** Merge `k` sorted sequences by heaping their current heads: pop the smallest, push that list's successor. O(N log k) total - the engine of external merge sort and "merge k lists".
-- **Lazy deletion.** When you can't address an element to delete it (plain `heapq`), push updates and **skip stale entries on pop** (check against a validity map). The standard trick for Dijkstra with `heapq`, which has no `decrease-key`.
-
 ## Gotchas / edge cases
 
 - **Empty heap** - `peek`/`pop` on an empty heap must be guarded (`heapq.heappop([])` raises `IndexError`). Check `if not h` first.
@@ -225,7 +216,7 @@ Contest tools the heap unlocks (advisory for the Tree/heap family, but heaps are
 
 ## Practice problems
 
-### 1. Kth Largest Element in a Stream - bounded min-heap
+### 1. Kth Largest Element in a Stream
 
 Design a class that, given `k`, returns the k-th largest element seen so far after each `add(val)`. Constraints: a stream - elements arrive over time, so you can't sort once; queries are continuous.
 
@@ -266,7 +257,7 @@ class KthLargest:
 
 ---
 
-### 2. Top K Frequent Elements - heap of size K
+### 2. Top K Frequent Elements
 
 Return the `k` most frequent elements of an array. Constraints: `n ≤ 10⁵`; expected better than O(n log n) full sort when `k ≪ n`.
 
@@ -304,7 +295,7 @@ def top_k_frequent(nums: list[int], k: int) -> list[int]:
 
 ---
 
-### 3. Merge K Sorted Lists (LC 23) - k-way merge with a heap
+### 3. Merge K Sorted Lists (LC 23)
 
 Merge `k` sorted lists into one sorted list. Constraints: total `N` elements across `k` lists; naive concatenate-then-sort is O(N log N) - the heap does O(N log k).
 
@@ -342,7 +333,7 @@ def merge_k_lists(lists: list[list[int]]) -> list[int]:
 
 ---
 
-### 4. Find Median from Data Stream - two heaps
+### 4. Find Median from Data Stream
 
 Support `addNum(x)` and `findMedian()` on a growing stream. Constraints: continuous queries, so you must keep order statistics incrementally - no re-sorting.
 
@@ -385,7 +376,7 @@ class MedianFinder:
 
 ---
 
-### 5. Swim in Rising Water (LC 778) - Dijkstra-style heap shortest path
+### 5. Swim in Rising Water (LC 778)
 
 An `n × n` grid where `grid[r][c]` is the elevation of that cell. Starting at `(0,0)`, at time `t` you can move to any adjacent cell whose elevation is `≤ t` (water has risen to level `t` everywhere). Find the minimum time to reach `(n-1, n-1)`. Elevations are a permutation of `0..n²-1`; `n ≤ 50`.
 
@@ -428,3 +419,48 @@ def swimInWater(grid: list[list[int]]) -> int:
 **Duplicate problems:**
 - Path with Minimum Effort (LC 1631) - identical "minimize the max edge weight along a path" Dijkstra variant, framed as absolute elevation difference between adjacent cells instead of raw elevation.
 - Path with Maximum Probability (LC 1514) - same heap-frontier-expansion shape, but combines edge weights by multiplication (probabilities) instead of max, and maximizes instead of minimizes - the heap becomes a max-heap via negation.
+
+---
+
+### 6. Network Delay Time (LC 743)
+
+A signal starts at node `k` and travels through a weighted directed graph (`times[i] = [u, v, w]`, edge u→v costs w, weights can repeat/overlap across multiple edges to the same node). Return the time for the signal to reach every node, or -1 if some node is unreachable.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** times = [[2,1,1],[2,3,1],[3,4,1]], n = 4, k = 2 | **Output:** 2
+  - **Explanation:** from node 2, nodes 1 and 3 are reached in 1, node 4 (via 3) in 2 - the last node to receive the signal sets the answer.
+- **Example 2**
+  - **Input:** times = [[1,2,1]], n = 2, k = 2 | **Output:** -1
+  - **Explanation:** node 2 has no outgoing edge to node 1, so node 1 is unreachable from source 2.
+
+**Constraints:** `1 ≤ n ≤ 100`, `1 ≤ times.length ≤ 6000`, `1 ≤ w ≤ 100`, `1 ≤ u, v, k ≤ n`, edge weights positive, multiple entries may relax the same node repeatedly before it's finalized.
+
+**Approach:** Plain `heapq` has no `decrease-key` - once a `(distance, node)` pair is pushed, you can't update it in place if a shorter path to that node is found later. Rather than build an indexed/addressable heap, push the update anyway and let stale entries accumulate; **skip them lazily on pop** by checking a `finalized` set (or comparing against the best-known distance) before processing. Because a node can be pushed multiple times at different distances before its shortest is popped, the pop step must recognize and discard the leftover worse copies rather than trust every popped entry is fresh - the heap ends up doing a bit of extra (harmless) work carrying stale entries instead of paying for an indexed structure to prevent them.
+
+```python
+import heapq
+
+def network_delay_time(times: list[list[int]], n: int, k: int) -> int:
+    graph: dict[int, list[tuple[int, int]]] = {}
+    for u, v, w in times:
+        graph.setdefault(u, []).append((v, w))
+
+    dist: dict[int, int] = {}                # node -> finalized shortest distance
+    pq: list[tuple[int, int]] = [(0, k)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if u in dist:                        # stale entry - a shorter path already finalized u
+            continue                         # lazy deletion: skip instead of removing from the heap
+        dist[u] = d
+        for v, w in graph.get(u, []):
+            if v not in dist:
+                heapq.heappush(pq, (d + w, v))   # may push v again later at a worse distance - fine, it'll be skipped
+
+    return max(dist.values()) if len(dist) == n else -1
+```
+
+**Complexity:** O(E log E) time (each edge may push a stale duplicate, so up to E heap entries rather than V), O(V + E) space.
+
+**Duplicate problems:**
+- Cheapest Flights Within K Stops (LC 787) - same lazy-deletion-on-a-heap shape, with a stop-count bound added to the state so a "stale" entry is one exceeding the stop budget, not just a worse distance.

@@ -4,7 +4,7 @@
 
 - [Graph](./graph.md) [Must read]
 - [Binary Tree](./binary-tree.md) [Should read]
-- <!-- [Minimum Spanning Tree (Kruskal)](../../algorithms/minimum-spanning-tree.md) [Should read] -->
+- [Minimum Spanning Tree (Kruskal)](../algorithms/minimum-spanning-tree.md) [Should read]
 
 ## Table of Contents
 
@@ -19,7 +19,6 @@
 - [Variants](#variants)
 - [Traversal & invariant](#traversal--invariant)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
@@ -142,7 +141,7 @@ Real-world usage: DSU appears in **network partitioning** (are these two machine
 
 - **Union by size** - attach the smaller component's root under the larger one. Guarantees tree depth ≤ ⌊log₂ n⌋ (same asymptotic as rank). Simpler to reason about than rank because "size" is exact and never stale; see Traversal & invariant for why rank can diverge from actual height after path compression.
 - **Weighted Union-Find** - augment each edge with a value (e.g., relative weight or parity) to answer "what is the relationship between x and y?" in addition to connectivity. Used in bipartite checking and weighted connectivity problems.
-- **Rollback DSU (offline / persistent)** - keep a stack of `(node, old_parent, old_rank)` to undo unions. Used in divide-and-conquer on time (offline deletion), competitive programming with "undo" queries, and persistent connectivity. Note: path compression cannot be used with rollback (it loses the old path); union by rank only. See CP-primitives.
+- **Rollback DSU (offline / persistent)** - keep a stack of `(node, old_parent, old_rank)` to undo unions. Used in divide-and-conquer on time (offline deletion), competitive programming with "undo" queries, and persistent connectivity. Note: path compression cannot be used with rollback (it loses the old path); union by rank only.
 - **Parallel DSU** - lock-free or fine-grained-locking variants for multi-threaded component counting in large graph pipelines.
 
 ## Traversal & invariant
@@ -266,18 +265,6 @@ def find(self, x: int) -> int:
     return root
 ```
 
-## CP-primitives
-
-Contest tools that Union-Find unlocks (advisory for the Tree/heap family, but DSU is one of the most CP-relevant data structures):
-
-- **Kruskal's MST - sort edges, skip cycles with DSU.** Sort all edges by weight. Iterate; for each edge (u, v, w), if `find(u) != find(v)`, add it to the MST and call `union(u, v)`; otherwise skip (it would form a cycle). O(E log E) sort + O(E·α(V)) union-find = effectively O(E log E). The DSU replaces an O(V + E) BFS cycle check for every candidate edge, giving a clean amortized cost per edge. Why for CP: any problem asking "minimum cost to connect all nodes" or "build a spanning forest with minimum total weight" maps directly here - sort edges, greedily add, DSU guards the cycle.
-
-- **Online undirected cycle detection.** Edges arrive one by one. Before calling `union(u, v)`, check `find(u) == find(v)`. If so, this edge creates a cycle (LC 684 / 685 / 261 - "is this graph a valid tree?"). A valid tree on n nodes has exactly n-1 edges and no cycle; DSU checks both conditions in one pass at O(α(n)) per edge. Why for CP: replaces O(n) BFS per added edge with O(α(n)), enabling online "add edge, is graph still acyclic?" queries on graphs up to 10⁵ nodes.
-
-- **Component counting and size queries.** Maintain a `components` counter (decrement on each successful union) and a `size[]` array (update the absorbing root). After processing all edges, `components` gives the number of connected components; `size[find(x)]` gives x's component size in O(α(n)). Why for CP: problems like "number of islands after flipping cells", "accounts merge", "friend circles", and "largest component after unions" all reduce to this - count components, find the max-size component, or track which merges changed the count. This turns an otherwise O(n²) simulation into O(n·α(n)).
-
-- **Offline connectivity with rollback (divide-and-conquer on time).** A stream of "add edge" + "connectivity query" events can be processed offline by dividing the time axis in half: recurse on each half, adding persistent edges to a DSU with rollback (union-by-rank only, no path compression - compression cannot be undone in O(1)). Each union records `(ry, old_parent[ry], old_rank[rx])` on a stack; undo pops the stack in O(1). Note: path compression is disabled in rollback DSU, so each `find()` costs O(log n) (union by rank only) - that O(log n) per query × O(log n) levels of D&C gives O(log²n) per query total. Why for CP: enables handling edge **deletions** (reframe as "this edge is absent from a time interval") - a standard technique when online DSU cannot be used because operations must be undoable.
-
 ## Gotchas / edge cases
 
 - **Always call `find()` inside `union()`.** The union procedure must compare roots, not raw nodes. Writing `parent[x] = y` directly instead of calling `find(x)` and `find(y)` and then comparing by rank/size ignores the optimization and can create O(n)-depth chains instantly. This is the single most common DSU bug in contest code.
@@ -292,7 +279,7 @@ Contest tools that Union-Find unlocks (advisory for the Tree/heap family, but DS
 
 - **"What's the difference between union by rank and union by size?"** Both give O(log n) depth guarantees and the same O(α(n)) amortized bound when combined with path compression. Rank tracks an upper bound on tree height and never decreases after compression (even though the actual height may drop). Size tracks the node count exactly. Size is simpler to reason about; rank is slightly more efficient in practice for trees where large-size trees are actually short. Neither is definitively better - the interviewer is checking whether you know rank can become stale (over-estimate actual height) after compression.
 - **"Why do you need both optimizations?"** Rank alone gives O(log n) worst case per find - the path from a leaf in a balanced tree is O(log n) and you walk it fully with no shortcutting. Compression alone gives O(log n) amortized - trees grow slowly, but without rank they can be tall initially. Together they give O(α(n)) - a fundamentally different complexity regime.
-- **"Can you support deletions?"** Not directly with the standard structure - once two components merge, the merge is permanent. Offline deletions are handled by the "rollback DSU + divide-and-conquer on time" technique (see CP-primitives). Online deletions require a different approach (link-cut trees or virtual nodes per deleted element). This question tests whether you understand the structure's fundamental limitation.
+- **"Can you support deletions?"** Not directly with the standard structure - once two components merge, the merge is permanent. Offline deletions are handled by the "rollback DSU + divide-and-conquer on time" technique (see [Variants](#variants)). Online deletions require a different approach (link-cut trees or virtual nodes per deleted element). This question tests whether you understand the structure's fundamental limitation.
 - **"How do you find all members of a component?"** DSU doesn't maintain member lists - it only tracks the representative. To enumerate members, maintain a `collections.defaultdict(list)` keyed on `find(x)` and rebuild after all unions, or maintain it incrementally (on each successful `union(x, y)`, extend `members[find(x)]` with `members[find(y)]`). The interviewer is checking whether you understand what the structure does and does not provide out of the box.
 - **"What breaks if you use path compression in a rollback DSU?"** Path compression re-wires the parent array to bypass intermediate nodes - undoing this during rollback would require storing the full path before each `find()`, not just the two union edges. The rollback stack entry would need to record O(path length) writes instead of O(1), eliminating the space advantage. This is why rollback DSU uses union by rank only (O(log n) find) and skips path compression entirely.
 
@@ -346,6 +333,7 @@ def count_components(n: int, edges: list[list[int]]) -> int:
 **Duplicate problems:**
 - Number of Provinces (LC 547) - identical structure with an adjacency matrix input instead of an edge list.
 - Number of Islands (LC 200) - same component-count pattern, but the "edges" are derived from 4-directional grid adjacency rather than an explicit list.
+- Largest component / max size after unions - same `components` + `size[]` maintenance mechanic, reading `size[find(x)]` instead of (or in addition to) the raw `components` counter.
 
 ---
 
@@ -403,6 +391,7 @@ def kruskal_mst(n: int, edges: list[tuple[int, int, int]]) -> int:
 **Duplicate problems:**
 - Min Cost to Connect All Points (LC 1584) - same Kruskal template, edges are Euclidean distances between 2D points.
 - Connecting Cities With Minimum Cost (LC 1135) - direct Kruskal on explicit edge list.
+- Any "minimum cost to connect all nodes" / "build a minimum-weight spanning forest" restatement - the sort-edges-then-DSU-guards-cycles template applies unchanged regardless of the surface framing (network cabling cost, road-building cost, etc.).
 
 ---
 
@@ -505,6 +494,7 @@ def find_redundant_connection(edges: list[list[int]]) -> list[int]:
 **Duplicate problems:**
 - Redundant Connection II (LC 685) - directed graph variant where a node may have two parents; requires checking both "is there a node with in-degree 2?" and "does removing one candidate edge break all cycles?" - harder, requiring two-pass DSU.
 - Graph Valid Tree (LC 261) - same cycle check but the output is a boolean rather than the offending edge.
+- Online "add edge, is the graph still acyclic?" streaming queries - the identical `find(u) == find(v)` gate before each `union`, just asked incrementally after every edge instead of once at the end.
 
 ---
 

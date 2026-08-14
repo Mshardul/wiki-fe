@@ -17,20 +17,18 @@
 - [Variants](#variants)
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Growable buffer as a stack - `append` / `pop` = O(1)](#growable-buffer-as-a-stack--append--pop--o1)
-  - [Sorted dynamic array + binary insertion - `bisect.insort`](#sorted-dynamic-array--binary-insertion--bisectinsort)
-  - [Growable result buffer - build output in one O(n) pass](#growable-result-buffer--build-output-in-one-on-pass)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [1. Implement a Dynamic Array from Scratch - grow-and-shrink resize policy](#1-implement-a-dynamic-array-from-scratch--grow-and-shrink-resize-policy)
-  - [2. O(1) Removal at an Arbitrary Index - swap-with-last-then-pop](#2-o1-removal-at-an-arbitrary-index--swap-with-last-then-pop)
+  - [2. O(1) Removal at an Arbitrary Index](#2-o1-removal-at-an-arbitrary-index)
   - [3. Amortized Copy-Count Walkthrough - aggregate-method proof by simulation](#3-amortized-copy-count-walkthrough--aggregate-method-proof-by-simulation)
   - [4. Growth Factor Comparison - geometric vs fixed-increment resizing](#4-growth-factor-comparison--geometric-vs-fixed-increment-resizing)
-  - [5. Insert Delete GetRandom O(1) - swap-with-last + index map](#5-insert-delete-getrandom-o1---swap-with-last--index-map)
-  - [6. Min Stack - parallel auxiliary buffer](#6-min-stack---parallel-auxiliary-buffer)
+  - [5. Insert Delete GetRandom O(1)](#5-insert-delete-getrandom-o1)
+  - [6. Min Stack](#6-min-stack)
   - [7. Implement Queue using Stacks - amortized analysis across two buffers](#7-implement-queue-using-stacks---amortized-analysis-across-two-buffers)
+  - [8. Next Greater Element](#8-next-greater-element)
+  - [9. Sliding Window Median](#9-sliding-window-median)
 
 ## What it is
 
@@ -235,53 +233,6 @@ class DynamicArray(Generic[T]):
         return (self._data[i] for i in range(self._size))  # type: ignore[misc]
 ```
 
-## CP-primitives
-
-The dynamic array is less a _holder_ of primitives (that's the fixed [array](./array.md#cp-primitives)) and more the **workhorse container** the primitives run on. Two contest uses earn their place:
-
-### Growable buffer as a stack - `append` / `pop` = O(1)
-
-A dynamic array's amortized-O(1) `append` and O(1) `pop()`-from-end _is_ a stack - no separate structure needed. This is the backbone of **monotonic-stack** problems (next-greater-element, largest-rectangle-in-histogram), DFS without recursion, and expression parsing. In Python you just use a `list`:
-
-```python
-stack: list[int] = []
-for x in arr:
-    while stack and stack[-1] < x:   # monotonic pop
-        stack.pop()                  # O(1)
-    stack.append(x)                  # amortized O(1)
-```
-
-**Why for CP:** the language's built-in list gives you a contest-speed stack for free - no class, no imports - and its amortized append is exactly the cost model these patterns assume.
-
-### Sorted dynamic array + binary insertion - `bisect.insort`
-
-Keep a dynamic array _sorted_ and insert with `bisect.insort` (binary-search the position, then shift). Lookups and range queries are then O(log n); insertion is O(n) (the shift), which is fine when reads dominate writes.
-
-```python
-import bisect
-
-s: list[int] = []
-bisect.insort(s, x)          # O(log n) to find slot, O(n) to shift
-i = bisect.bisect_left(s, q) # O(log n) membership / lower-bound
-```
-
-**Why for CP:** for read-heavy "keep it ordered, query by rank/range" tasks, a sorted dynamic array beats hauling in a balanced BST - and `bisect` is contest-velocity. (When writes also dominate, reach for a real ordered structure instead.)
-
-### Growable result buffer - build output in one O(n) pass
-
-Most array algorithms (two pointers, sliding window, in-place compaction) produce a result of _unknown length up front_. Amortized-O(1) `append` lets you stream results into a growing buffer in a single pass - no pre-counting, no second pass to size a fixed array. The whole pass stays O(n) because the appends amortize away.
-
-```python
-def compact_evens(arr: list[int]) -> list[int]:
-    out: list[int] = []           # grows as needed, amortized O(1) per append
-    for x in arr:                 # one pass, total O(n)
-        if x % 2 == 0:
-            out.append(x)
-    return out
-```
-
-**Why for CP:** "filter / transform / collect in one pass" is the default contest idiom precisely because the dynamic array makes the unknown-size output free. Without amortized append you'd either pre-scan to count or risk an O(n) resize per element.
-
 ## Gotchas / edge cases
 
 - **"Append is O(1)" is amortized, not worst-case.** If the interviewer asks for _worst-case per operation_, a single append is O(n) (the resize). In latency-sensitive contexts this matters - say "amortized O(1), worst-case O(n) on the resize."
@@ -365,7 +316,7 @@ class DynamicArray:
 
 ---
 
-### 2. O(1) Removal at an Arbitrary Index - swap-with-last-then-pop
+### 2. O(1) Removal at an Arbitrary Index
 
 Given a dynamic array and an index `i`, delete the element at `i` in O(1) time **without preserving order**. A naive delete-at-index shifts every element after `i`, which is O(n) - the task is to avoid that shift entirely using only index arithmetic on the array itself (no auxiliary hash map).
 
@@ -503,7 +454,7 @@ print("fixed (+64):     ", simulate(n, "fixed", increment=64, start_cap=64))  # 
 
 ---
 
-### 5. Insert Delete GetRandom O(1) - swap-with-last + index map
+### 5. Insert Delete GetRandom O(1)
 
 Design a set supporting `insert(val)`, `remove(val)`, and `getRandom()` - returning a uniformly random current element - **all in average O(1)**. Values are distinct.
 
@@ -556,7 +507,7 @@ class RandomizedSet:
 
 ---
 
-### 6. Min Stack - parallel auxiliary buffer
+### 6. Min Stack
 
 Design a stack supporting `push`, `pop`, `top`, and `getMin` (the minimum element currently in the stack) - **all in O(1)**.
 
@@ -646,3 +597,84 @@ class MyQueue:
 
 **Duplicate problems:**
 - Implement Stack using Queues (LC 225) - the mirror-image problem, same amortized-pour argument in the opposite direction.
+
+---
+
+### 8. Next Greater Element
+
+Given an array, return for each element the next element to its right that is strictly greater, or -1 if none exists. Must run in O(n), not the O(n²) brute-force scan-right-for-each-element.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [2, 1, 2, 4, 3] | **Output:** [4, 2, 4, -1, -1]
+  - **Explanation:** for index 0 (2), the next greater value scanning right is 4; for index 1 (1), it's 2; index 3 (4) and index 4 (3) have nothing greater to their right, so -1.
+- **Example 2**
+  - **Input:** nums = [5, 4, 3, 2, 1] | **Output:** [-1, -1, -1, -1, -1]
+  - **Explanation:** the array is strictly decreasing, so no element ever has a greater value to its right.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-10⁹ ≤ nums[i] ≤ 10⁹`.
+
+**Approach:** A dynamic array's amortized-O(1) `append`/`pop`-from-end **is** a stack - no separate structure needed, just a plain `list`. Scan left to right, keeping the stack **monotonically decreasing** (indices whose answer isn't found yet): before pushing the current value, pop every stack index whose value is smaller than it - each pop means "the current element is that index's next-greater," so record it. Every element is pushed once and popped at most once, so total work is O(n) despite the nested-looking `while`. This is the same amortized cost model as the array's own doubling - each `append`/`pop` is O(1) amortized, which is exactly what a monotonic-stack sweep assumes.
+
+```python
+def next_greater_element(nums: list[int]) -> list[int]:
+    result = [-1] * len(nums)
+    stack: list[int] = []            # holds indices, values monotonically decreasing
+    for i, x in enumerate(nums):
+        while stack and nums[stack[-1]] < x:   # monotonic pop
+            result[stack.pop()] = x            # x is that index's next-greater
+        stack.append(i)              # amortized O(1)
+    return result
+```
+
+**Complexity:** O(n) time (each index pushed once, popped at most once), O(n) space for the stack and output.
+
+**Duplicate problems:**
+- Daily Temperatures (LC 739) - identical monotonic-stack-of-indices sweep; the answer stored is the index gap instead of the value.
+- Largest Rectangle in Histogram (LC 84) - same monotonic-stack mechanic, popping to find each bar's next-smaller boundary on both sides instead of next-greater.
+
+---
+
+### 9. Sliding Window Median
+
+Given an array and a window size `k`, return the median of every contiguous window of size `k` as it slides across the array.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1, 3, -1, -3, 5, 3, 6, 7], k = 3 | **Output:** [1, -1, -1, 3, 5, 6]
+  - **Explanation:** the first window [1,3,-1] sorted is [-1,1,3], median 1; the window then slides one at a time, each median read off the middle of the current sorted window.
+- **Example 2**
+  - **Input:** nums = [1, 2, 3, 4, 2, 3, 1, 4, 2], k = 3 | **Output:** [2, 3, 3, 3, 2, 3, 2]
+  - **Explanation:** each window's median is the middle value (or average of the two middle values for even k) of that window's 3 elements in sorted order.
+
+**Constraints:** `1 ≤ k ≤ nums.length ≤ 10⁵`, `-2³¹ ≤ nums[i] ≤ 2³¹ - 1`.
+
+**Approach:** Keep a dynamic array **sorted** as the window slides, using `bisect.insort` to insert the incoming element (binary-search the slot, O(log k) to find it, O(k) to shift) and `bisect.bisect_left` + list deletion to remove the outgoing one. The median is then a direct O(1) read of the middle index (or average of the two middle indices for even `k`). This trades a real shift cost for avoiding a full re-sort per window - read-heavy (one median read per window) against a write cost (O(k) insert/remove) that's fine because `k` is the window size, not `n`.
+
+```python
+import bisect
+
+def median_sliding_window(nums: list[int], k: int) -> list[float]:
+    window = sorted(nums[:k])
+    result = []
+
+    def current_median() -> float:
+        mid = k // 2
+        if k % 2:
+            return float(window[mid])
+        return (window[mid - 1] + window[mid]) / 2
+
+    result.append(current_median())
+    for i in range(k, len(nums)):
+        outgoing = nums[i - k]
+        idx = bisect.bisect_left(window, outgoing)
+        window.pop(idx)                      # remove the element leaving the window
+        bisect.insort(window, nums[i])       # O(log k) find slot, O(k) shift
+        result.append(current_median())
+    return result
+```
+
+**Complexity:** O(n·k) time (n windows, each O(k) for the insert/remove shift), O(k) space for the sorted window.
+
+**Duplicate problems:**
+- Find Median from Data Stream (LC 295) - same "maintain order, read the middle" goal, but solved with two balanced heaps instead of a sorted array, since there's no sliding-window removal to handle.

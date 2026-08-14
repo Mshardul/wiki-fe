@@ -13,7 +13,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -138,96 +137,6 @@ Result:  [3]→[2]→[1]→[6]→[5]→[4]→None
 - **Rotate right by k** (LC 61) - find the tail, form a ring (tail.next = head), walk to the new tail at position `n - k % n`, cut.
 - **Reorder list** (LC 143) - find mid, reverse second half, interleave the two halves.
 - **Reverse in pairs** - k=2 special case of k-groups; simpler stitching.
-
-## CP-primitives
-
-**1. Iterative k-group reversal with a dummy head sentinel**
-
-The standard k-group recursive solution has O(n/k) call-stack depth - fine for small k, but contest judges sometimes set k close to n. The iterative version uses a dummy head and a `group_prev` pointer that advances by k each iteration:
-
-```python
-def reverse_k_group(head: Optional[ListNode], k: int) -> Optional[ListNode]:
-    dummy = ListNode(0, head)
-    group_prev = dummy
-    while True:
-        kth = get_kth(group_prev, k)   # walk k steps; None if < k remain
-        if not kth:
-            break
-        group_next = kth.next
-        prev, curr = kth.next, group_prev.next
-        while curr != group_next:
-            nxt = curr.next
-            curr.next = prev
-            prev = curr
-            curr = nxt
-        tmp = group_prev.next
-        group_prev.next = kth
-        group_prev = tmp
-    return dummy.next
-
-def get_kth(node: Optional[ListNode], k: int) -> Optional[ListNode]:
-    while node and k > 0:
-        node = node.next
-        k -= 1
-    return node
-```
-
-Why for CP: O(n) time, O(1) space - avoids stack-overflow on n = 10⁵ with k = 10⁵.
-
-**2. In-place palindrome check (reverse + compare + restore)**
-
-Contests occasionally ask to verify palindrome without extra space AND restore the original list after. The trick: reverse second half in place, compare, reverse back.
-
-```python
-def is_palindrome(head: Optional[ListNode]) -> bool:
-    slow: Optional[ListNode] = head
-    fast = head
-    while fast and fast.next:
-        slow = slow.next if slow else None
-        fast = fast.next.next
-    second = reverse_list(slow)
-    copy = second
-    result = True
-    p, q = head, second
-    while q:
-        assert p is not None
-        if p.val != q.val:
-            result = False
-            break
-        p = p.next
-        q = q.next
-    reverse_list(copy)
-    return result
-```
-
-Why for CP: O(n) time, O(1) space - passes strict memory constraints; the restore step is required when the judge checks the original list post-call.
-
-**3. Right-rotation as ring-cut**
-
-Rotation by k is equivalent to: form a ring, find the new tail at position `n - k % n - 1`, cut. Avoids a full reversal entirely.
-
-```python
-def rotate_right(head: Optional[ListNode], k: int) -> Optional[ListNode]:
-    if not head or not head.next or k == 0:
-        return head
-    tail = head
-    n = 1
-    while tail.next:
-        tail = tail.next
-        n += 1
-    tail.next = head
-    steps = n - k % n
-    new_tail = head
-    for _ in range(steps - 1):
-        assert new_tail.next is not None
-        new_tail = new_tail.next
-    assert new_tail.next is not None
-    new_head = new_tail.next
-    new_tail.next = None
-    return new_head
-```
-
-Why for CP: O(n) single pass to find length + O(n) walk to cut - cleaner than three-reversal approach and harder to get wrong under contest time pressure.
 
 ## Pitfalls
 
@@ -406,6 +315,7 @@ def reverseKGroup(head: Optional[ListNode], k: int) -> Optional[ListNode]:
 
 **Duplicate problems:**
 - Swap Nodes in Pairs (LC 24) - k=2 special case; same iterative k-group template with k hardcoded to 2.
+- Reverse Nodes in k-Group (iterative, contest variant) - identical dummy-head + `group_prev` template shown above; the recursive version has O(n/k) call-stack depth, so contest judges with k close to n require this exact iterative form to avoid stack overflow.
 
 ---
 
@@ -459,3 +369,103 @@ def reorderList(head: Optional[ListNode]) -> None:
 
 **Duplicate problems:**
 - Interleaving two lists (variant) - same merge step; the only difference is the second list isn't the reversed tail of the first.
+
+---
+
+### 5. Palindrome Linked List (LC 234)
+
+Given the head of a singly linked list, return true if it reads the same forward and backward. Solve in O(1) extra space. n ≤ 10⁵.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = [1,2,2,1] | **Output:** true
+- **Example 2**
+  - **Input:** head = [1,2] | **Output:** false
+  - **Explanation:** reversed is [2,1], which does not match the original [1,2].
+
+**Constraints:** `1 ≤ n ≤ 10⁵`, `0 ≤ Node.val ≤ 9`.
+
+**Approach:** find the midpoint with fast/slow pointers, reverse the second half in place, then walk both halves comparing values. If the list must be left unmodified after the check, reverse the second half back before returning - some callers depend on the original structure surviving the call.
+
+```python
+from typing import Optional
+
+def isPalindrome(head: Optional[ListNode]) -> bool:
+    slow: Optional[ListNode] = head
+    fast = head
+    while fast and fast.next:
+        slow = slow.next if slow else None
+        fast = fast.next.next
+
+    def reverse(node: Optional[ListNode]) -> Optional[ListNode]:
+        prev = None
+        while node:
+            nxt = node.next
+            node.next = prev
+            prev = node
+            node = nxt
+        return prev
+
+    second = reverse(slow)
+    copy_of_second = second
+    result = True
+    p, q = head, second
+    while q:
+        assert p is not None
+        if p.val != q.val:
+            result = False
+            break
+        p = p.next
+        q = q.next
+    reverse(copy_of_second)
+    return result
+```
+
+**Complexity:** O(n) time, O(1) space.
+
+**Duplicate problems:**
+- Valid Palindrome (LC 125) - same reverse-and-compare idea but on a string/array with two pointers walking from both ends instead of a reversed-and-restored second half; O(n)/O(1).
+
+---
+
+### 6. Rotate List (LC 61)
+
+Given the head of a linked list, rotate the list to the right by `k` places. n ≤ 500.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** head = [1,2,3,4,5], k = 2 | **Output:** [4,5,1,2,3]
+- **Example 2**
+  - **Input:** head = [0,1,2], k = 4 | **Output:** [2,0,1]
+  - **Explanation:** k = 4 exceeds the list length 3, but 4 % 3 = 1, so it rotates as if k = 1.
+
+**Constraints:** `0 ≤ n ≤ 500`, `-100 ≤ Node.val ≤ 100`, `0 ≤ k ≤ 2 × 10⁹`.
+
+**Approach:** rotation is not reversal - the fastest solution never flips a single pointer. Walk to the tail to find the length `n`, link `tail.next = head` to form a ring, then walk `n - k % n` steps from the head to find the new tail, and cut the ring there. This avoids the naive three-reversal approach (`reverse all`, `reverse [0..k-1]`, `reverse [k..n-1]`) entirely.
+
+```python
+from typing import Optional
+
+def rotateRight(head: Optional[ListNode], k: int) -> Optional[ListNode]:
+    if not head or not head.next or k == 0:
+        return head
+    tail = head
+    n = 1
+    while tail.next:
+        tail = tail.next
+        n += 1
+    tail.next = head
+    steps = n - k % n
+    new_tail = head
+    for _ in range(steps - 1):
+        assert new_tail.next is not None
+        new_tail = new_tail.next
+    assert new_tail.next is not None
+    new_head = new_tail.next
+    new_tail.next = None
+    return new_head
+```
+
+**Complexity:** O(n) time, O(1) space.
+
+**Duplicate problems:** none - the ring-cut mechanic is distinct from every reversal-based entry in this file.

@@ -16,7 +16,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -98,7 +97,7 @@ gap = 4 (the whole array):
 | Space | O(n²) for the dp table |
 | Recursion stack (top-down) | O(n) - max depth is n/2 nested calls |
 
-**Where the n³ comes from:** for each of the O(n²) `(i, j)` pairs, you try O(n) split points. No known general approach reduces interval DP below O(n³) in the worst case, though specific cost functions admit the Knuth-Yao speedup (see CP-primitives).
+**Where the n³ comes from:** for each of the O(n²) `(i, j)` pairs, you try O(n) split points. No known general approach reduces interval DP below O(n³) in the worst case, though specific cost functions admit the Knuth-Yao speedup (see Practice problems: Matrix Chain Multiplication).
 
 **Cache behavior:** the dp table is n² cells × 8 bytes = 2 MB at n = 500 - this spills out of L2 (typically 256 KB–1 MB per core). The bottom-up fill accesses `dp[i][k]` and `dp[k+1][j]` in diagonal stripes, not sequential rows, so the hardware prefetcher doesn't help. In practice the inner loop (over k) still hits the same row `dp[i][*]` sequentially, which stays warm; the `dp[k+1][j]` accesses scatter across rows and cause the misses. At n ≤ 300 (720 KB table, borderline L2) this is rarely the bottleneck; at n = 500 in a tight C++ inner loop, cache misses on `dp[k+1][j]` can cost 30–40% of wall time.
 
@@ -125,44 +124,6 @@ gap = 4 (the whole array):
 - **Matrix Chain Multiplication:** classic interval DP; `dp[i][j]` = min scalar multiplications for the chain `M_i × ... × M_j`. Split point `k` gives `dp[i][k] + dp[k+1][j] + dims[i] × dims[k+1] × dims[j+1]`.
 - **Stone merging / Zuma game:** merge adjacent piles / groups, cost is the merged pile's weight (or a function of the merged group). Identical shape to matrix chain - only the cost function changes.
 - **Minimum cost to cut a stick (LC 1547):** the cost of a cut depends on the current stick length, not just the two pieces. Sort cut positions, pad with 0 and L, reframe as merging intervals - standard interval DP.
-
-## CP-primitives
-
-### Knuth-Yao speedup (O(n²) for convex cost functions)
-
-When the cost function satisfies the **quadrangle inequality** (also called the "concave SMAWK" or "Monge condition"), the optimal split point `opt[i][j]` is monotone: `opt[i][j-1] ≤ opt[i][j] ≤ opt[i+1][j]`. This bounds the total work to O(n²).
-
-**Condition:** `cost(a, c) + cost(b, d) ≤ cost(a, d) + cost(b, c)` for all `a ≤ b ≤ c ≤ d`. Holds for matrix chain, optimal BST, and stone merging with additive weight.
-
-**Why for CP:** many CP problems have costs satisfying this - applying Knuth-Yao turns a TLE O(n³) into an AC O(n²) on n ≤ 10⁴.
-
-```python
-def interval_dp_knuth(n: int, w: list[list[int]]) -> list[list[int]]:
-    dp = [[0] * n for _ in range(n)]
-    opt = [[0] * n for _ in range(n)]
-
-    for i in range(n):
-        opt[i][i] = i
-
-    for length in range(2, n + 1):
-        for i in range(n - length + 1):
-            j = i + length - 1
-            dp[i][j] = float("inf")
-            lo = opt[i][j - 1]
-            hi = opt[i + 1][j] if i + 1 <= j else j
-            for k in range(lo, min(hi, j - 1) + 1):
-                val = dp[i][k] + dp[k + 1][j] + w[i][j]
-                if val < dp[i][j]:
-                    dp[i][j] = val
-                    opt[i][j] = k
-    return dp
-```
-
-### Padding to avoid boundary special-cases
-
-Many interval DP problems (Burst Balloons, minimum cost cut) pad the input with sentinel values at both ends. This eliminates the `if i > 0 and j < n-1` guards in the recurrence - the sentinels are always present and contribute 0 or 1 to the cost function.
-
-**Why for CP:** clean up the recurrence by 5–10 lines and eliminate a common source of off-by-one errors. In Burst Balloons, padding with `[1] + nums + [1]` means the last balloon in any interval always has a left and right neighbor - no boundary check needed.
 
 ## Pitfalls
 
@@ -232,8 +193,8 @@ def maxCoins(nums: List[int]) -> int:
 
 **Duplicate problems:**
 - Minimum Cost Tree from Leaf Values (LC 1130) - same split-point-combine template; cost is `max(arr[i..k]) * max(arr[k+1..j])` instead of a product of boundary values.
-- Matrix Chain Multiplication (classic) - same shape; cost is `dims[i] * dims[k+1] * dims[j+1]`; the textbook interval DP problem.
 - Zuma Game (LC 488) - burst groups of same-colored balls; interval DP on the sequence of groups, cost depends on group size. Same shape, more complex cost function.
+- Minimum Cost to Cut a Stick (LC 1547) - same padded-sentinel trick (`[0] + cuts + [L]`) to eliminate boundary special-cases in the recurrence; cost of a cut is the current stick length instead of a product of neighbor values.
 
 ---
 
@@ -358,7 +319,52 @@ def min_cut(s: str) -> int:
 
 ---
 
-### 5. Remove Boxes (LC 546)
+### 5. Matrix Chain Multiplication (classic)
+
+Given the dimensions of a chain of matrices `M₁ × M₂ × ... × Mₙ` (matrix `i` has dimensions `p[i-1] × p[i]`), find the parenthesization that minimizes the total number of scalar multiplications needed to compute the product. `1 ≤ n ≤ 500`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** p = [40, 20, 30, 10, 30] (4 matrices: 40×20, 20×30, 30×10, 10×30) | **Output:** 26000
+  - **Explanation:** the optimal parenthesization `((M1 M2) M3) M4` costs fewer multiplications than the naive left-to-right order.
+- **Example 2**
+  - **Input:** p = [10, 20, 30] (2 matrices: 10×20, 20×30) | **Output:** 6000
+  - **Explanation:** only one parenthesization exists for 2 matrices: `10 × 20 × 30 = 6000`.
+
+**Constraints:** `2 ≤ n ≤ 500` matrices, `1 ≤ p[i] ≤ 500`.
+
+**Approach:** the textbook interval DP - `dp[i][j]` = min scalar multiplications to compute the product of matrices `i..j`. For split point `k`, combining `dp[i][k]` and `dp[k+1][j]` costs `p[i-1] * p[k] * p[j]` extra multiplications for the final merge. This cost function satisfies the quadrangle inequality (`cost(a,c) + cost(b,d) ≤ cost(a,d) + cost(b,c)` for `a ≤ b ≤ c ≤ d`), so **Knuth-Yao's monotone-split-point optimization applies**: the optimal split `opt[i][j]` is monotone in `i` and `j` (`opt[i][j-1] ≤ opt[i][j] ≤ opt[i+1][j]`), which bounds the total split-point search across all intervals to O(n²) instead of O(n³) - track `opt[i][j]` during the fill and restrict each interval's inner loop to the range `[opt[i][j-1], opt[i+1][j]]`.
+
+```python
+def matrix_chain_order(p: list[int]) -> int:
+    n = len(p) - 1  # number of matrices
+    dp = [[0] * n for _ in range(n)]
+    opt = [[0] * n for _ in range(n)]
+    for i in range(n):
+        opt[i][i] = i
+
+    for length in range(2, n + 1):
+        for i in range(n - length + 1):
+            j = i + length - 1
+            dp[i][j] = float("inf")
+            lo = opt[i][j - 1]
+            hi = opt[i + 1][j] if i + 1 <= j else j
+            for k in range(lo, min(hi, j - 1) + 1):
+                cost = dp[i][k] + dp[k + 1][j] + p[i] * p[k + 1] * p[j + 1]
+                if cost < dp[i][j]:
+                    dp[i][j] = cost
+                    opt[i][j] = k
+    return dp[0][n - 1]
+```
+
+**Complexity:** O(n²) time with the Knuth-Yao monotone-split optimization (O(n³) without it), O(n²) space.
+
+**Duplicate problems:**
+- Optimal Binary Search Tree (classic) - identical Knuth-Yao-eligible shape; `dp[i][j]` = min expected search cost for keys `i..j`, split point is the chosen root, same quadrangle-inequality cost structure.
+
+---
+
+### 6. Remove Boxes (LC 546)
 
 Given an array of colored boxes, repeatedly remove a contiguous group of `k` boxes of the same color for `k²` points. Maximize total points. `1 ≤ n ≤ 100`.
 

@@ -19,18 +19,15 @@
 - [Variants](#variants)
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Monotonic stack - next greater/smaller element](#monotonic-stack---next-greatersmaller-element)
-  - [Paren/bracket matching \& expression parsing](#parenbracket-matching--expression-parsing)
-  - [Explicit stack to flatten recursion](#explicit-stack-to-flatten-recursion)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [1. Valid Parentheses - _matching with a stack_](#1-valid-parentheses---matching-with-a-stack)
-  - [2. Daily Temperatures - _monotonic stack_](#2-daily-temperatures---monotonic-stack)
-  - [3. Min Stack - _auxiliary stack_](#3-min-stack---auxiliary-stack)
-  - [4. Evaluate Reverse Polish Notation - _operand stack_](#4-evaluate-reverse-polish-notation---operand-stack)
-  - [5. Largest Rectangle in Histogram - _monotonic stack with widths_](#5-largest-rectangle-in-histogram---monotonic-stack-with-widths)
+  - [1. Valid Parentheses](#1-valid-parentheses)
+  - [2. Daily Temperatures](#2-daily-temperatures)
+  - [3. Min Stack](#3-min-stack)
+  - [4. Evaluate Reverse Polish Notation](#4-evaluate-reverse-polish-notation)
+  - [5. Largest Rectangle in Histogram](#5-largest-rectangle-in-histogram)
+  - [6. Iterative Postorder Traversal](#6-iterative-postorder-traversal)
 
 ## What it is
 
@@ -124,7 +121,7 @@ The stack's identity is the **restriction**: only the top. That restriction is a
 - **Linked-list-backed stack** - push/pop at the head of a [singly linked list](./linked-list.md). Worst-case O(1) push (no resize), at pointer-overhead cost.
 - **Min/Max stack** - a stack that also returns its current minimum (or maximum) in O(1), via a parallel auxiliary stack of running minima. The technique is in the [Min Stack practice problem](#3-min-stack--auxiliary-stack); structurally it's a stack-of-pairs.
 - **Two-stack queue** - a FIFO [queue](./queue.md) built from two stacks (push onto one, pop from the other, transferring when empty); amortized O(1). A classic "implement X with Y" interview shape.
-- **Monotonic stack** - a stack kept strictly increasing or decreasing by popping violators on push. Not a different structure - a discipline on a normal stack that solves next-greater/smaller in amortized O(n). Full treatment in [CP-primitives](#cp-primitives) and the [Monotonic Stack](../patterns/monotonic-stack.md) pattern.
+- **Monotonic stack** - a stack kept strictly increasing or decreasing by popping violators on push. Not a different structure - a discipline on a normal stack that solves next-greater/smaller in amortized O(n). Full treatment in the [Daily Temperatures](#2-daily-temperatures) practice problem and the [Monotonic Stack](../patterns/monotonic-stack.md) pattern.
 - **Call stack** - the runtime's own stack of activation records. Not something you allocate, but the reason recursion works and the thing that overflows on deep input.
 
 ## Memory layout
@@ -227,75 +224,6 @@ if not st: ...   # empty check
 
 (For a stack you'll later turn into a deque/queue, `collections.deque` gives the same `append`/`pop` plus O(1) on the left end.)
 
-## CP-primitives
-
-The stack's contest power is concentrated in three moves - the first one, the monotonic stack, is one of the highest-leverage patterns in competitive programming.
-
-### Monotonic stack - next greater/smaller element
-
-Keep the stack **monotonic** (e.g. strictly decreasing): before pushing `x`, pop every element smaller than `x`. Each popped element has just found its **next greater element** - it's `x`. One pass, and because every element is pushed and popped at most once, it's **amortized O(n)**, not O(n²).
-
-```
-nums = [2, 1, 5, 3]   find next-greater for each (decreasing stack of indices):
-
-push 2 → [2]
-push 1 → [2,1]          1 < 2, no pop
-push 5 → pop 1 (NGE=5), pop 2 (NGE=5) → [5]
-push 3 → [5,3]          3 < 5, no pop
-end → 5,3 have no NGE
-result: [5, 5, -1, -1]
-```
-
-```python
-def next_greater(nums: list[int]) -> list[int]:
-    res = [-1] * len(nums)
-    stack: list[int] = []                 # indices, values decreasing
-    for i, x in enumerate(nums):
-        while stack and nums[stack[-1]] < x:
-            res[stack.pop()] = x          # x is the NGE of the popped index
-        stack.append(i)
-    return res
-```
-
-**Why for CP:** collapses "for each element, find the next bigger/smaller one" from O(n²) to O(n). The engine behind daily-temperatures, stock span, histogram-rectangle, and trapping-rain-water variants - see the [Monotonic Stack](../patterns/monotonic-stack.md) pattern.
-
-### Paren/bracket matching & expression parsing
-
-Push every opening symbol; on a closing symbol, pop and check it matches. The stack naturally models nesting - the most-recent unmatched open is exactly the one a close must pair with.
-
-```python
-PAIRS = {")": "(", "]": "[", "}": "{"}
-def valid(s: str) -> bool:
-    stack: list[str] = []
-    for ch in s:
-        if ch in "([{":
-            stack.append(ch)
-        elif not stack or stack.pop() != PAIRS[ch]:
-            return False                  # unmatched / mismatched close
-    return not stack                       # leftover opens → invalid
-```
-
-**Why for CP:** the stack turns nesting validation and expression evaluation (infix→postfix via shunting-yard, RPN evaluation) into a single linear pass - the canonical "this is obviously a stack" trigger.
-
-### Explicit stack to flatten recursion
-
-Any recursion is a stack of frames. When recursion depth could overflow the call stack (a chain of 10⁵+ nodes), rewrite it iteratively with your own heap-allocated stack - same algorithm, no `RecursionError`.
-
-```python
-def dfs_iterative(root) -> list[int]:
-    order, stack = [], [root]
-    while stack:
-        node = stack.pop()                # LIFO = depth-first
-        if node is None:
-            continue
-        order.append(node.val)
-        stack.append(node.right)          # push right first → left processed first
-        stack.append(node.left)
-    return order
-```
-
-**Why for CP:** Python caps recursion ~1000 by default; deep inputs crash. An explicit stack moves frames to the (much larger) heap - the standard fix for deep-DFS TLE/overflow, no `sys.setrecursionlimit` hacks.
-
 ## Gotchas / edge cases
 
 - **Underflow - popping/peeking an empty stack.** The single most common stack bug. Always guard `if not stack` before `pop()`/`stack[-1]`, or you get an `IndexError` (Python) / undefined behavior (C). In matching problems, a close-symbol on an empty stack means "invalid", not a crash - handle it as a result, not an exception.
@@ -313,9 +241,9 @@ def dfs_iterative(root) -> list[int]:
 
 ## Practice problems
 
-Five staples, each a **distinct** stack technique
+Six staples, each a **distinct** stack technique
 
-### 1. Valid Parentheses - _matching with a stack_
+### 1. Valid Parentheses
 
 **Problem.** Given a string of `()[]{}`, decide if every bracket is closed by the correct type in the correct order. E.g. `"([)]"` → false, `"([])"` → true.
 
@@ -349,7 +277,7 @@ def is_valid(s: str) -> bool:
 - Remove All Adjacent Duplicates In String (LC 1047) - same push-then-pop-on-match stack <abbr>invariant</abbr>, cancelling adjacent equal characters instead of matching bracket pairs.
 - Minimum Remove to Make Valid Parentheses (LC 1249) - same bracket-matching-with-stack technique, extended to removing the minimum unmatched parens instead of a boolean valid/invalid check.
 
-### 2. Daily Temperatures - _monotonic stack_
+### 2. Daily Temperatures
 
 **Problem.** Given daily temperatures, for each day return how many days until a warmer day (0 if none). E.g. `[73,74,75,71,69,72,76,73]` → `[1,1,4,2,1,1,0,0]`.
 
@@ -382,7 +310,7 @@ def daily_temperatures(temps: list[int]) -> list[int]:
 **Duplicate problems:**
 - Next Greater Element I (LC 496) - identical decreasing-monotonic-stack next-greater mechanic; that article's [Practice problems](../patterns/monotonic-stack.md) treats it as the canonical form and cites Daily Temperatures as its own duplicate.
 
-### 3. Min Stack - _auxiliary stack_
+### 3. Min Stack
 
 **Problem.** Design a stack supporting `push`, `pop`, `top`, and `get_min` - all in O(1).
 
@@ -424,7 +352,7 @@ class MinStack:
 **Duplicate problems:**
 - Max Stack (LC 716) - identical auxiliary-stack O(1) running-extremum technique, tracking a running maximum instead of minimum.
 
-### 4. Evaluate Reverse Polish Notation - _operand stack_
+### 4. Evaluate Reverse Polish Notation
 
 **Problem.** Evaluate an arithmetic expression in postfix (RPN) form, given as tokens. E.g. `["2","1","+","3","*"]` → `9` (`(2+1)*3`).
 
@@ -459,7 +387,7 @@ def eval_rpn(tokens: list[str]) -> int:
 
 **Complexity:** O(n) time, O(n) space.
 
-### 5. Largest Rectangle in Histogram - _monotonic stack with widths_
+### 5. Largest Rectangle in Histogram
 
 **Problem.** Given bar heights of width 1, find the area of the largest rectangle that fits inside the histogram. E.g. `[2,1,5,6,2,3]` → `10` (the `5,6` pair, width 2 × height 5).
 
@@ -493,3 +421,39 @@ def largest_rectangle(heights: list[int]) -> int:
 
 **Duplicate problems:**
 - Maximal Rectangle (LC 85) - same span-based histogram algorithm run once per row of a binary matrix, accumulating column heights first; cited as the duplicate of this exact problem in the [Monotonic Stack](../patterns/monotonic-stack.md#2-largest-rectangle-in-histogram-lc-84) pattern article, where this problem (LC 84) is itself the primary entry.
+
+### 6. Iterative Postorder Traversal
+
+**Problem.** Given a binary tree, return its postorder traversal (left, right, node) without recursion. The canonical "flatten recursion onto an explicit stack" problem - any recursive tree/graph walk that could overflow the call stack on adversarial-depth input reduces to this shape.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [1,null,2,3] (1 → right child 2, 2 → left child 3) | **Output:** [3,2,1]
+  - **Explanation:** postorder visits 3 (left of 2), then 2, then 1 (the root) last - an explicit stack replays the same left-right-node order a recursive call would, one frame at a time.
+- **Example 2**
+  - **Input:** root = [] | **Output:** []
+  - **Explanation:** an empty tree has no nodes to visit, so the stack starts and ends empty.
+
+**Constraints:** `0 ≤ number of nodes ≤ 10⁵`, node values fit a 32-bit signed integer - the node count is exactly the scale where recursive postorder risks a `RecursionError` on a degenerate (linked-list-shaped) tree.
+
+**Approach:** Recursive postorder is `left → right → node`; reversed, that's `node → right → left`, which is a **preorder with children pushed left-before-right** (so right pops first). Push the root; each pop appends to the result and pushes left then right (mirroring the reversed order); reversing the collected result at the end recovers true postorder. Every recursive call frame becomes one explicit stack push - the same transformation applies to any deep recursive traversal, not just postorder.
+
+```python
+def postorder_iterative(root) -> list[int]:
+    if root is None:
+        return []
+    order, stack = [], [root]
+    while stack:
+        node = stack.pop()
+        order.append(node.val)
+        if node.left:
+            stack.append(node.left)
+        if node.right:
+            stack.append(node.right)
+    return order[::-1]          # reverse the node-right-left order to get left-right-node
+```
+
+**Complexity:** O(n) time, O(n) space (worst-case stack depth on a skewed tree, matching the recursive version's call-stack depth).
+
+**Duplicate problems:**
+- Iterative Inorder Traversal (variant, no distinct LC number beyond LC 94) - same explicit-stack-replaces-recursion mechanic, differing only in when a node is appended to the result relative to pushing its children.

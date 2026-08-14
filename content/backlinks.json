@@ -443,10 +443,6 @@
   ],
   "./content/dsa/algorithms/dijkstra.md": [
     {
-      "path": "./content/dsa/data-structures/deque.md",
-      "title": "Deque"
-    },
-    {
       "path": "./content/dsa/data-structures/graph.md",
       "title": "Graph"
     },
@@ -749,12 +745,6 @@
       "title": "DP Recognition"
     }
   ],
-  "./content/dsa/algorithms/lowest-common-ancestor.md": [
-    {
-      "path": "./content/dsa/data-structures/graph.md",
-      "title": "Graph"
-    }
-  ],
   "./content/dsa/algorithms/manacher-algorithm.md": [
     {
       "path": "./content/dsa/paths/cp-weighted.md",
@@ -826,6 +816,10 @@
     }
   ],
   "./content/dsa/algorithms/minimum-spanning-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/union-find.md",
+      "title": "Union-Find (DSU)"
+    },
     {
       "path": "./content/dsa/algorithms/greedy.md",
       "title": "Greedy"
@@ -1449,6 +1443,10 @@
   ],
   "./content/dsa/data-structures/avl-tree.md": [
     {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
       "path": "./content/dsa/data-structures/treap.md",
       "title": "Treap"
     },
@@ -1841,6 +1839,10 @@
       "title": "Segment Tree"
     },
     {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
       "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
       "title": "Lowest Common Ancestor (LCA)"
     },
@@ -1946,10 +1948,6 @@
     }
   ],
   "./content/dsa/data-structures/hash-table.md": [
-    {
-      "path": "./content/dsa/data-structures/string.md",
-      "title": "String"
-    },
     {
       "path": "./content/dsa/data-structures/hash-set.md",
       "title": "Hash Set"
@@ -2385,10 +2383,6 @@
     {
       "path": "./content/dsa/patterns/monotonic-stack.md",
       "title": "Monotonic Stack"
-    },
-    {
-      "path": "./content/dsa/patterns/monotonic-queue.md",
-      "title": "Monotonic Queue"
     },
     {
       "path": "./content/dsa/patterns/tree-graph-traversal.md",
@@ -2973,6 +2967,10 @@
       "title": "Sliding Window"
     },
     {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    },
+    {
       "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
       "title": "Pattern Selection Cheat Sheet"
     },
@@ -3060,10 +3058,6 @@
     }
   ],
   "./content/dsa/patterns/sliding-window.md": [
-    {
-      "path": "./content/dsa/data-structures/string.md",
-      "title": "String"
-    },
     {
       "path": "./content/dsa/data-structures/queue.md",
       "title": "Queue"
@@ -3277,10 +3271,6 @@
   ],
   "./content/dsa/patterns/two-pointers.md": [
     {
-      "path": "./content/dsa/data-structures/string.md",
-      "title": "String"
-    },
-    {
       "path": "./content/dsa/algorithms/manacher-algorithm.md",
       "title": "Manacher Algorithm"
     },
@@ -3479,6 +3469,30 @@
   ],
   "./content/system-design/components/authentication.md": [
     {
+      "path": "./content/system-design/components/session-auth.md",
+      "title": "Session-Based Authentication"
+    },
+    {
+      "path": "./content/system-design/components/jwt.md",
+      "title": "JWT"
+    },
+    {
+      "path": "./content/system-design/components/oauth-oidc.md",
+      "title": "OAuth 2.0 & OIDC"
+    },
+    {
+      "path": "./content/system-design/components/mfa.md",
+      "title": "Multi-Factor Authentication"
+    },
+    {
+      "path": "./content/system-design/components/service-to-service-auth.md",
+      "title": "Service-to-Service Authentication"
+    },
+    {
+      "path": "./content/system-design/components/mtls.md",
+      "title": "mTLS"
+    },
+    {
       "path": "./content/system-design/paths/components-foundation.md",
       "title": "Components Foundation"
     }
@@ -3539,6 +3553,20 @@
       "title": "Components Foundation"
     }
   ],
+  "./content/system-design/components/jwt.md": [
+    {
+      "path": "./content/system-design/components/authentication.md",
+      "title": "Authentication"
+    },
+    {
+      "path": "./content/system-design/components/oauth-oidc.md",
+      "title": "OAuth 2.0 & OIDC"
+    },
+    {
+      "path": "./content/system-design/components/service-to-service-auth.md",
+      "title": "Service-to-Service Authentication"
+    }
+  ],
   "./content/system-design/components/load-balancer.md": [
     {
       "path": "./content/system-design/components/rate-limiter.md",
@@ -3561,6 +3589,24 @@
     {
       "path": "./content/dsa/data-structures/queue.md",
       "title": "Queue"
+    }
+  ],
+  "./content/system-design/components/mfa.md": [
+    {
+      "path": "./content/system-design/components/authentication.md",
+      "title": "Authentication"
+    }
+  ],
+  "./content/system-design/components/mtls.md": [
+    {
+      "path": "./content/system-design/components/service-to-service-auth.md",
+      "title": "Service-to-Service Authentication"
+    }
+  ],
+  "./content/system-design/components/oauth-oidc.md": [
+    {
+      "path": "./content/system-design/components/authentication.md",
+      "title": "Authentication"
     }
   ],
   "./content/system-design/components/proxies.md": [
@@ -3593,6 +3639,22 @@
     {
       "path": "./content/system-design/paths/components-foundation.md",
       "title": "Components Foundation"
+    }
+  ],
+  "./content/system-design/components/service-to-service-auth.md": [
+    {
+      "path": "./content/system-design/components/authentication.md",
+      "title": "Authentication"
+    },
+    {
+      "path": "./content/system-design/components/oauth-oidc.md",
+      "title": "OAuth 2.0 & OIDC"
+    }
+  ],
+  "./content/system-design/components/session-auth.md": [
+    {
+      "path": "./content/system-design/components/authentication.md",
+      "title": "Authentication"
     }
   ],
   "./content/system-design/components/websockets-sse-long-polling.md": [

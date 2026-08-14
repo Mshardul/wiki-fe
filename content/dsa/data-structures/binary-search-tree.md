@@ -22,18 +22,16 @@
   - [In-order traversal = sorted](#in-order-traversal--sorted)
   - [Why balance is everything](#why-balance-is-everything)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Predecessor / successor & range queries](#predecessor--successor--range-queries)
-  - [Balanced BST via the standard library](#balanced-bst-via-the-standard-library)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [Validate Binary Search Tree](#1-validate-binary-search-tree--bounded-recursion)
-  - [Kth Smallest Element in a BST](#2-kth-smallest-element-in-a-bst--in-order-counting)
-  - [Lowest Common Ancestor of a BST](#3-lowest-common-ancestor-of-a-bst--ordering-shortcut)
-  - [Insert into a BST](#4-insert-into-a-bst--recursive-descent)
-  - [Convert Sorted Array to BST](#5-convert-sorted-array-to-bst--balanced-build)
-  - [Delete Node in a BST](#6-delete-node-in-a-bst--two-child-successor-replacement)
+  - [Validate Binary Search Tree](#1-validate-binary-search-tree)
+  - [Kth Smallest Element in a BST](#2-kth-smallest-element-in-a-bst)
+  - [Lowest Common Ancestor of a BST](#3-lowest-common-ancestor-of-a-bst)
+  - [Insert into a BST](#4-insert-into-a-bst)
+  - [Convert Sorted Array to BST](#5-convert-sorted-array-to-bst)
+  - [Delete Node in a BST](#6-delete-node-in-a-bst)
+  - [Inorder Successor in BST](#7-inorder-successor-in-bst)
 
 ## What it is
 
@@ -127,7 +125,7 @@ The BST's column is the only one with **O(log n) on every ordered operation at o
 - **Plain BST** - no balancing; O(log n) average but O(n) worst on sorted/adversarial input. The subject of this page (the invariant and operations), with balancing deferred to its own page.
 - **Treap / randomized BST** - assigns each node a random priority and keeps a heap order on priorities, making the expected height O(log n) without explicit balancing logic. A simpler-to-implement alternative to AVL/red-black.
 - **B-tree / B+-tree** - a BST generalized to many keys per node, minimizing disk seeks; the structure behind database and filesystem indexes. The BST idea scaled to block storage.
-- **Order-statistic tree** - a balanced BST augmented with subtree sizes, giving O(log n) "k-th smallest" and "rank of x". The augmentation lives in [CP-primitives](#predecessor--successor--range-queries).
+- **Order-statistic tree** - a balanced BST augmented with subtree sizes, giving O(log n) "k-th smallest" and "rank of x". See the [order-statistics worked entry on AVL Tree](./avl-tree.md#5-count-of-smaller-numbers-after-self) for the full augmentation.
 - **Self-balancing ordered map/set** - the library form: `std::map`/`std::set` (red-black), Java `TreeMap`, Python `sortedcontainers.SortedList`. What you reach for instead of hand-rolling.
 
 ## Traversal & invariant
@@ -255,27 +253,7 @@ def delete(root: Optional[Node], k: int) -> Optional[Node]:
     return root
 ```
 
-**Contest velocity - don't hand-roll a balanced BST under time pressure.** Python has no built-in balanced tree, but `sortedcontainers.SortedList` gives O(log n) add/remove and O(log n) index/bisect - the practical stand-in (see [CP-primitives](#balanced-bst-via-the-standard-library)). For static data, just `sorted()` + `bisect`.
-
-## CP-primitives
-
-The BST's contest value is its **ordered operations** - the things a hash table can't do.
-
-### Predecessor / successor & range queries
-
-The ordering invariant makes "the next-smaller / next-larger key" and "everything in `[lo, hi]`" O(log n) navigations. **Successor** of a node: if it has a right child, the leftmost node of that subtree; otherwise the lowest ancestor whose left subtree contains the node. Augmenting nodes with **subtree sizes** turns "k-th smallest" and "rank of x" into O(log n) too (an order-statistic tree).
-
-```
-successor of 8 in   (8)          → right subtree's leftmost = 10's leftmost = 10
-                   /   \
-                (3)    (10)       predecessor of 8 → left subtree's rightmost = 3's rightmost = 6
-```
-
-**Why for CP:** nearest-smaller/larger key, rank/select, and range-count queries all become O(log n) on a balanced BST - problems a hash map forces into O(n). The augment-with-sizes trick is the standard "k-th element with updates" answer.
-
-### Balanced BST in contest settings
-
-Most BST contest problems are really "I need an ordered multiset with O(log n) insert/delete/rank". In C++ `std::set`/`std::multiset` and in Java `TreeMap`/`TreeSet` provide this directly. In Python, use the hand-rolled BST with size augmentation shown above for rank/select, or an AVL/red-black implementation when rotations are required. The key operations - ordered insert, delete, rank, and range queries - are all covered by the augmented BST patterns on this page.
+**Contest velocity - don't hand-roll a balanced BST under time pressure.** Python has no built-in balanced tree, but `sortedcontainers.SortedList` gives O(log n) add/remove and O(log n) index/bisect - the practical stand-in for "I need an ordered multiset with O(log n) insert/delete/rank" (C++ reaches for `std::set`/`std::multiset`, Java for `TreeMap`/`TreeSet`). For static data, just `sorted()` + `bisect`.
 
 ## Gotchas / edge cases
 
@@ -297,9 +275,9 @@ Most BST contest problems are really "I need an ordered multiset with O(log n) i
 
 ## Practice problems
 
-Six staples, each a **distinct** BST technique - no two solved the same way.
+Seven staples, each a **distinct** BST technique - no two solved the same way.
 
-### 1. Validate Binary Search Tree - _bounded recursion_
+### 1. Validate Binary Search Tree
 
 Determine if a binary tree is a valid BST: every node's left subtree is strictly less and right subtree strictly greater, _globally_.
 
@@ -327,7 +305,7 @@ def is_valid_bst(root, low=float("-inf"), high=float("inf")) -> bool:
 
 **Complexity:** O(n) time, O(h) space.
 
-### 2. Kth Smallest Element in a BST - _in-order counting_
+### 2. Kth Smallest Element in a BST
 
 Return the k-th smallest key (1-indexed) in a BST.
 
@@ -363,7 +341,7 @@ def kth_smallest(root, k: int) -> int:
 **Duplicate problems:**
 - Binary Search Tree Iterator (LC 173) - same stack-based iterative in-order, wrapped as a stateful `next()`/`hasNext()` API instead of a one-shot k-th lookup.
 
-### 3. Lowest Common Ancestor of a BST - _ordering shortcut_
+### 3. Lowest Common Ancestor of a BST
 
 Find the LCA of two nodes `p` and `q` in a BST.
 
@@ -396,7 +374,7 @@ def lca_bst(root, p, q):
 **Duplicate problems:**
 - Lowest Common Ancestor of a Binary Tree III (LC 1650) - same ordering-based split-point shortcut, adapted to nodes carrying a `parent` pointer instead of descending from the root.
 
-### 4. Insert into a BST - _recursive descent_
+### 4. Insert into a BST
 
 Insert a value into a BST and return the (possibly new) root, keeping it a valid BST. The value is guaranteed not already present.
 
@@ -425,7 +403,7 @@ def insert_into_bst(root, val: int):
 
 **Complexity:** O(h) time, O(h) space.
 
-### 5. Convert Sorted Array to BST - _balanced build_
+### 5. Convert Sorted Array to BST
 
 Given a sorted array, build a **height-balanced** BST from it.
 
@@ -459,7 +437,7 @@ def sorted_array_to_bst(nums: list[int]):
 **Duplicate problems:**
 - Convert Sorted List to Binary Search Tree (LC 109) - same midpoint-recursion technique, adapted to a linked list's lack of random access (usually solved via slow/fast pointer to find the midpoint, or an in-order simulation).
 
-### 6. Delete Node in a BST - _two-child successor-replacement_
+### 6. Delete Node in a BST
 
 Delete a node with the given key from a BST and return the root of the resulting tree, keeping it a valid BST.
 
@@ -500,3 +478,44 @@ def delete_node(root, key: int):
 
 **Duplicate problems:**
 - Delete Leaves With a Given Value (LC 1325) - a related but distinct splice-only variant (no two-child successor case, since only leaves are ever removed).
+
+### 7. Inorder Successor in BST
+
+Given a BST and a node `p`, find `p`'s in-order successor (the node with the smallest key strictly greater than `p.val`), or `null` if `p` is the last node in-order.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** root = [2,1,3], p = 1 | **Output:** 2
+  - **Explanation:** 1 has a right child? No - 1 has no right subtree, so the successor is the lowest ancestor for which 1 sits in the left subtree, which is 2.
+- **Example 2**
+  - **Input:** root = [5,3,6,2,4], p = 3 | **Output:** 4
+  - **Explanation:** 3 has a right child (4) with no left subtree, so the successor is the leftmost node of 3's right subtree - 4 itself.
+
+**Constraints:** `1 ≤ number of nodes ≤ 10⁴`, all node values unique, `p` exists in the tree.
+
+**Approach:** This is the ordering invariant's **navigation** operation, distinct from the traversal-counting used in problem 2 and the split-point search in problem 3. Two cases: if `p` has a right child, the successor is that subtree's **leftmost** node (walk `right`, then `left` until none remain). If `p` has no right child, the successor is the **lowest ancestor for which `p` lies in the left subtree** - found by descending from the root, going left whenever the current node is greater than `p.val` (recording it as a successor candidate) and right otherwise, since only a "went-left" ancestor can have `p` entirely in its left subtree. No parent pointers needed if you track candidates during the single root-to-`p` descent.
+
+```python
+def inorder_successor(root, p) -> "Node | None":
+    if p.right:                             # case 1: successor is leftmost of right subtree
+        node = p.right
+        while node.left:
+            node = node.left
+        return node
+    successor = None                        # case 2: lowest ancestor where we went left
+    node = root
+    while node:
+        if p.val < node.val:
+            successor = node                # candidate: p is in this node's left subtree
+            node = node.left
+        elif p.val > node.val:
+            node = node.right
+        else:
+            break
+    return successor
+```
+
+**Complexity:** O(h) time, O(1) space.
+
+**Duplicate problems:**
+- Inorder Successor in BST II (LC 510) - same two-case successor logic, adapted to nodes carrying an explicit `parent` pointer instead of re-descending from the root.

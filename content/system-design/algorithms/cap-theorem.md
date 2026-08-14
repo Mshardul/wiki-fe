@@ -244,7 +244,7 @@ _Consistency preserved at the cost of availability: reject or block rather than 
 
 A CP system prioritises returning correct data over returning any data. During a partition, requests that cannot be served with guaranteed consistency are rejected outright or blocked until the partition heals.
 
-In practice: writes require acknowledgment from a quorum of nodes before succeeding; reads go to a quorum or to the leader only. If quorum cannot be reached, the operation fails with an error.
+In practice: writes require acknowledgment from a <abbr>quorum</abbr> of nodes before succeeding; reads go to a quorum or to the leader only. If quorum cannot be reached, the operation fails with an error.
 
 **What the client experiences:** errors or timeouts during partition events. The data returned is always correct - but the service may be temporarily degraded.
 
@@ -396,7 +396,7 @@ CP is the right choice when consistency violations have direct, concrete consequ
 
 - **Financial transactions** - double-spend, overdraft, incorrect balance. A wrong response causes money to appear or disappear.
 - **Distributed locking** - two nodes believing they hold the same lock causes concurrent writes to a resource that must be mutually exclusive.
-- **Leader election** - two nodes believing they are the leader (split-brain) causes conflicting decisions and potential data corruption.
+- **<abbr>Leader election</abbr>** - two nodes believing they are the leader (<abbr>split-brain</abbr>) causes conflicting decisions and potential data corruption.
 - **Inventory reservation** - overselling a limited resource is a real-world commitment that must be honoured.
 - **Coordination services** - systems like ZooKeeper are explicitly CP: all cluster members must see the same configuration or the cluster is unsafe.
 

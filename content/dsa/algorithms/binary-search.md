@@ -33,7 +33,7 @@
 
 Mental model: **looking up a word in a physical dictionary.** You don't read page 1, then page 2 - you flip to the middle, see whether your word falls before or after, and throw away half the book. Each flip halves what's left, so a 1000-page dictionary is settled in ~10 flips, not 1000.
 
-The deeper idea - the one that separates a junior from a senior answer - is that binary search is **not really about sorted arrays**. It's about any search space split by a **monotonic predicate**: a yes/no test that, once it flips from no to yes, stays yes. "Is `a[i] >= target`?" is one such predicate. So is "can Koko finish the bananas eating `k`/hour?" The array is the easy case; "binary search on the answer" is the same algorithm pointed at an abstract space.
+The deeper idea - the one that separates a junior from a senior answer - is that binary search is **not really about sorted arrays**. It's about any search space split by a **monotonic <abbr>predicate</abbr>**: a yes/no test that, once it flips from no to yes, stays yes. "Is `a[i] >= target`?" is one such predicate. So is "can Koko finish the bananas eating `k`/hour?" The array is the easy case; "binary search on the answer" is the same algorithm pointed at an abstract space.
 
 > **Takeaway (say this out loud):** "Binary search halves a sorted search space each step - O(log n) - and generalizes to _any monotonic predicate_, which is how you binary-search on the answer."
 
@@ -71,7 +71,7 @@ Three comparisons settle a 10-element array. Note how the live window `[lo, hi]`
 
 ## Correctness / invariant
 
-The loop maintains one **invariant**: _if the target is in the array, it lies within the closed interval `[lo, hi]`._
+The loop maintains one **<abbr>invariant</abbr>**: _if the target is in the array, it lies within the closed interval `[lo, hi]`._
 
 - **Initialization:** before the loop, `lo = 0, hi = n-1` - the interval is the whole array, so the invariant holds trivially.
 - **Maintenance:** each iteration computes `mid` inside `[lo, hi]`. If `a[mid] < target`, then by sortedness every index `≤ mid` is too small, so the target (if present) is in `[mid+1, hi]` - we set `lo = mid+1` and the invariant survives. The `a[mid] > target` case is symmetric (`hi = mid-1`). If `a[mid] == target`, we return.

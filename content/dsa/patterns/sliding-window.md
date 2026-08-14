@@ -15,7 +15,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -141,92 +140,6 @@ Step 6: R=5, window="bcc",distinct=2 ✓  best=4
 | Multi-source / permutation | Fixed window over character frequencies | Find all anagrams of P in S (LC 438) |
 
 The **exactly-K trick** is the non-obvious one: if `atMost(K)` is easy to compute with a sliding window, then `exactly(K) = atMost(K) − atMost(K−1)`. This transforms an "exact" constraint (hard to handle with a single window) into two "at most" windows.
-
----
-
-## CP-primitives
-
-### 1. Monotonic deque for window max/min
-
-**The problem:** find the maximum in every window of size K naively → O(nk). With a sliding window that queries `max(window)` via a heap → O(n log k). With a monotonic deque → **O(n)**.
-
-**The trick:** maintain a deque of indices in decreasing order of value. When the window slides:
-- Pop from the back any index whose value is ≤ new element (they can never be the max).
-- Pop from the front any index that has left the window (`i - deque[0] >= k`).
-- Front of deque = index of current window max.
-
-Each index is pushed and popped at most once → O(n) total.
-
-```python
-from collections import deque
-
-def sliding_window_max(nums: list[int], k: int) -> list[int]:
-    dq: deque[int] = deque()   # stores indices, values decreasing
-    result: list[int] = []
-    for i, val in enumerate(nums):
-        while dq and nums[dq[-1]] <= val:
-            dq.pop()                    # smaller values can never be max
-        dq.append(i)
-        if dq[0] == i - k:
-            dq.popleft()                # front has left the window
-        if i >= k - 1:
-            result.append(nums[dq[0]])
-    return result
-```
-
-**Why for CP:** collapses window-max from O(k) per step to O(1) amortized - critical when n=10⁵ and k=10⁴ would make a naive approach TLE.
-
-### 2. Frequency map / Counter for distribution matching
-
-**The problem:** "does window contain all characters of pattern?" or "is window an anagram of P?"
-
-**The trick:** maintain a frequency delta: `need[c]` = how many more of `c` the window needs. Track `have` = number of characters fully satisfied. When `have == len(need)`, the window is valid.
-
-```python
-from collections import Counter
-
-def find_anagrams(s: str, p: str) -> list[int]:
-    need = Counter(p)
-    window: Counter[str] = Counter()
-    have, required = 0, len(need)
-    L = 0
-    result: list[int] = []
-    for R, c in enumerate(s):
-        window[c] += 1
-        if c in need and window[c] == need[c]:
-            have += 1
-        if R - L + 1 == len(p):
-            if have == required:
-                result.append(L)
-            if s[L] in need and window[s[L]] == need[s[L]]:
-                have -= 1
-            window[s[L]] -= 1
-            L += 1
-    return result
-```
-
-**Why for CP:** O(1) validity check per step (just compare `have == required`) instead of comparing entire frequency maps - reduces constant factor dramatically for large alphabets.
-
-### 3. atMost(K) decomposition
-
-**Why for CP:** converts "exactly K" problems (where a single window can't maintain validity monotonically) into two "at most K" windows that CAN. One function, two calls, O(n) total. Used in LC 992 (Subarrays with K Different Integers), LC 930 (Binary Subarrays with Sum).
-
-```python
-def count_subarrays_with_exactly_k(nums: list[int], k: int) -> int:
-    def at_most(limit: int) -> int:
-        freq: defaultdict[int, int] = defaultdict(int)
-        L = count = 0
-        for R, val in enumerate(nums):
-            freq[val] += 1
-            while len(freq) > limit:
-                freq[nums[L]] -= 1
-                if freq[nums[L]] == 0:
-                    del freq[nums[L]]
-                L += 1
-            count += R - L + 1   # all windows ending at R are valid
-        return count
-    return at_most(k) - at_most(k - 1)
-```
 
 ---
 
@@ -466,3 +379,48 @@ def subarrays_with_k_distinct(nums: list[int], k: int) -> int:
 **Duplicate problems:**
 - Binary Subarrays With Sum (LC 930) - `atMost(goal) − atMost(goal−1)` on 0/1 arrays; identical decomposition.
 - Count Number of Nice Subarrays (LC 1248) - same trick on odd-count constraint.
+
+---
+
+### 6. Find All Anagrams in a String (LC 438)
+
+Given strings `s` and `p`, return the starting indices of all anagrams of `p` in `s`. Constraints: `1 ≤ len(s), len(p) ≤ 3×10⁴`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** s = "cbaebabacd", p = "abc" | **Output:** [0, 6]
+  - **Explanation:** the substring starting at index 0 is "cba" and at index 6 is "bac", both anagrams of "abc".
+- **Example 2**
+  - **Input:** s = "abab", p = "ab" | **Output:** [0, 1, 2]
+
+**Constraints:** `1 ≤ len(s), len(p) ≤ 3×10⁴`, both strings consist of lowercase English letters.
+
+**Approach.** Fixed-size window of length `len(p)`. Rather than comparing two full frequency maps at every position (O(alphabet) per step), maintain a "how many distinct characters are currently fully satisfied" counter: `need[c]` tracks the target count for each character in `p`, and `have` increments/decrements only when a character's window count crosses exactly into or out of matching its target. The window is a valid anagram exactly when `have == required`. This is distinct from other window problems in this file because validity is checked via an O(1) satisfied-count comparison instead of tracking a single running aggregate (sum, distinct-count) - the state is a multi-character distribution match.
+
+```python
+from collections import Counter
+
+def find_anagrams(s: str, p: str) -> list[int]:
+    need = Counter(p)
+    window: Counter[str] = Counter()
+    have, required = 0, len(need)
+    L = 0
+    result: list[int] = []
+    for R, c in enumerate(s):
+        window[c] += 1
+        if c in need and window[c] == need[c]:
+            have += 1
+        if R - L + 1 == len(p):
+            if have == required:
+                result.append(L)
+            if s[L] in need and window[s[L]] == need[s[L]]:
+                have -= 1
+            window[s[L]] -= 1
+            L += 1
+    return result
+```
+
+**Complexity.** O(len(s) + len(p)) time, O(|Σ|) space.
+
+**Duplicate problems:**
+- Permutation in String (LC 567) - identical have/required distribution-match mechanic, returns a boolean instead of all starting indices.

@@ -16,7 +16,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -123,62 +122,6 @@ Output: 1, 2, 3, 4, 5, 6, 7, 8, 9
 - **External sort:** sort n/M chunks of M elements each (k = n/M chunks), then k-way merge with buffered I/O. At n = 1B and M = 10⁶, k = 1000 - the heap has 1000 entries, each backed by a disk buffer.
 - **Merge k sorted linked lists (LC 23):** heap holds `(node.val, tiebreak_index, node)`; on pop, link node into result and push `node.next` if it exists.
 
-## CP-primitives
-
-### Smallest range covering k lists
-
-Pop the heap min, track running `cur_max`, record `[heap_min, cur_max]` if it's narrower than the best seen, then push the next element from the popped list's sequence. Stop when any list exhausts.
-
-**Why for CP:** avoids the O(N² · k) brute-force over all possible ranges; the heap encodes the "minimum left boundary" efficiently. O(N log k) total. Appears in Codeforces problems as "choose one from each group, minimize range."
-
-```python
-import heapq
-
-def smallest_range(nums: list[list[int]]) -> list[int]:
-    heap = [(lst[0], i, 0) for i, lst in enumerate(nums)]
-    heapq.heapify(heap)
-    cur_max = max(lst[0] for lst in nums)
-    best = [heap[0][0], cur_max]
-
-    while heap:
-        val, i, j = heapq.heappop(heap)
-        if j + 1 == len(nums[i]):
-            break
-        nxt = nums[i][j + 1]
-        cur_max = max(cur_max, nxt)
-        heapq.heappush(heap, (nxt, i, j + 1))
-        lo = heap[0][0]
-        if cur_max - lo < best[1] - best[0]:
-            best = [lo, cur_max]
-    return best
-```
-
-### Online k-way merge (iterator-based)
-
-When inputs are infinite streams or lazy iterators (competitive I/O), hold `(current_val, iterator)` pairs in the heap. `next()` advances each stream - no index needed, no list stored in memory.
-
-**Why for CP:** lets you merge sorted generators without materializing all N elements. Useful for "process events from k logs in time order" problems.
-
-```python
-import heapq
-from typing import Iterator
-
-def merge_iterators(iters: list[Iterator[int]]) -> Iterator[int]:
-    heap: list[tuple[int, int, Iterator[int]]] = []
-    for idx, it in enumerate(iters):
-        try:
-            heapq.heappush(heap, (next(it), idx, it))
-        except StopIteration:
-            pass
-    while heap:
-        val, idx, it = heapq.heappop(heap)
-        yield val
-        try:
-            heapq.heappush(heap, (next(it), idx, it))
-        except StopIteration:
-            pass
-```
-
 ## Pitfalls
 
 - **Not including a tiebreaker in the heap tuple.** When two lists have equal values at their fronts, Python tries to compare the third element of the tuple. For linked lists that's a `ListNode` - which raises `TypeError`. Always include a unique integer tiebreaker (list index) as the second element: `(value, list_idx, node_or_index)`.
@@ -208,7 +151,7 @@ Scanning all k heads to find the minimum is O(k) per element → O(N·k) total. 
 The heap size never exceeds k regardless of list lengths - it always holds exactly one entry per non-exhausted list. Long lists just contribute more pop-push cycles, but each cycle is still O(log k). The total cost is O(N log k) where N is the total element count across all lists, not the max single-list length.
 
 **"Can you do this without O(N) output space - streaming the merged output?"**
-Yes - use a generator (see CP-primitives: iterator-based variant). The heap stays O(k) and you yield each element as it's popped instead of appending to a list. The merged sequence is never materialized. This is how production external merge sort works: each of the k runs is read from disk one buffer-page at a time, and the merged output is streamed to the output file.
+Yes - use a generator that holds `(current_val, iterator)` pairs in the heap instead of `(current_val, list_index, element_index)`, advancing each stream with `next()` rather than indexing (see the duplicate-problems note under Merge K Sorted Lists). The heap stays O(k) and you yield each element as it's popped instead of appending to a list. The merged sequence is never materialized. This is how production external merge sort works: each of the k runs is read from disk one buffer-page at a time, and the merged output is streamed to the output file.
 
 **"What if the lists are not fully sorted but nearly sorted (bounded disorder d)?"**
 A min-heap of size k still works correctly - it makes no assumption about global order, only that each individual list is sorted. "Nearly sorted" is a property of each list independently; the heap tolerates it without modification. If d is the max displacement within each list, you can use a heap of size d instead of k for a bounded-disorder single-sequence problem (patience sort variant) - but that's a different problem shape.
@@ -262,6 +205,7 @@ def mergeKLists(lists: list[Optional[ListNode]]) -> Optional[ListNode]:
 - Merge Two Sorted Lists (LC 21) - k=2 special case; two-pointer merge is O(N) and simpler, no heap needed.
 - Merge Sorted Array (LC 88) - in-place 2-way merge; same idea, fill from right to avoid shifting, O(m+n) time.
 - Sort List (LC 148) - merge sort a linked list; the merge step is 2-way, but recognizing it as k-way (k=2) solidifies the pattern.
+- Merge k sorted streams/generators (online variant) - identical heap-of-fronts mechanic, but each heap entry holds a lazy iterator instead of a list index, and elements are advanced with `next()` instead of indexing; useful when inputs are infinite or too large to materialize.
 
 ---
 
@@ -343,6 +287,7 @@ def smallestRange(nums: List[List[int]]) -> List[int]:
 
 **Duplicate problems:**
 - Minimum Window Substring (LC 76) - sliding window over one string with a character-count constraint; different pattern (not k-way merge) despite the "smallest window" framing.
+- Smallest Range II / running-window variants (classic) - same running-max + heap-min window-tracking mechanic; only the source of `cur_max` updates differs.
 
 ---
 

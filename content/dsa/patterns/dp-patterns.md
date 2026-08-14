@@ -9,7 +9,7 @@
 
 ## Prerequisites
 
-<!-- U9: the DS/algo this pattern leans on. [Title](./path.md) [Must read] - reason. -->
+<!-- U9: the DS/algo this pattern leans on. Format: [Title](target slug) [Must read] - reason. -->
 
 ## Table of Contents
 
@@ -36,15 +36,11 @@
 
 ## Constraints & approach
 
-<!-- PA10 (gated): input size → reach for this pattern (or not). n ≤ 1e5 and "contiguous subarray" → sliding window, not O(n²). State when the constraint pushes you OFF this pattern. Distinct from PA11: PA10 = when the constraint selects this pattern; PA11 = the contest tricks once you're in it. -->
+<!-- PA10 (gated): input size → reach for this pattern (or not). n ≤ 1e5 and "contiguous subarray" → sliding window, not O(n²). State when the constraint pushes you OFF this pattern. -->
 
 ## Variations
 
 <!-- PA5 (advisory): common twists (general). -->
-
-## CP-primitives
-
-<!-- PA11 (gated): the contest-flavored tricks/variants of THIS mechanic - the ones that show up in contests, not basic interviews (sliding window → monotonic-deque window-max; two pointers → meet-in-the-middle; binary-search-on-answer). ≥2, each with a one-line "why for CP". Distinct from PA5 (general twists). -->
 
 ## Pitfalls
 
@@ -60,4 +56,4 @@
 
 ## Practice problems
 
-<!-- U6: ≥3 problems, each a WORKED entry (### subheading per problem): (1) full problem statement in 2–3 sentences; (2) worked examples (2–3, nested-list format, Input|Output + Explanation); (3) constraints; (4) approach/insight in prose; (5) short runnable Python solution; (6) time/space complexity, one line after the code. EVERY PROBLEM MUST EXERCISE A DISTINCT TECHNIQUE - no duplicates padding the count. This is the article's sole problems section - no separate Skeleton or sketch-only worked-problems section exists. -->
+<!-- U6: ≥3 problems, each a WORKED entry (### subheading per problem): (1) full problem statement in 2–3 sentences; (2) worked examples (2–3, nested-list format, Input|Output + Explanation); (3) constraints; (4) approach/insight in prose; (5) short runnable Python solution; (6) time/space complexity, one line after the code. EVERY PROBLEM MUST EXERCISE A DISTINCT TECHNIQUE - no duplicates padding the count. This is the article's sole problems section - no separate Skeleton or sketch-only worked-problems section exists. CP-primitive-style contest tools (e.g. this pattern's own technique variants) belong here as full worked entries, not in a separate CP-primitives section - none exists anymore. -->

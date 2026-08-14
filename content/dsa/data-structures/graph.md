@@ -17,7 +17,6 @@
 - [Variants](#variants)
 - [Representations](#representations)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
@@ -300,35 +299,6 @@ def build_matrix(
     return matrix
 ```
 
-## CP-primitives
-
-Gated for the Graph family - graph representation choice and augmentation are contest staples, distinct from the traversal-algorithm CP coverage on the algorithm pages themselves.
-
-**Adjacency-list-with-index trick (fast contest I/O).** Rather than a `dict`-of-lists, contest code typically pre-sizes a `list[list[int]]` of length n (0-indexed or 1-indexed by convention) and appends directly - avoiding the hash overhead of a `defaultdict` when n is known upfront and vertices are small dense integers:
-
-```python
-n, m = map(int, input().split())
-graph: list[list[int]] = [[] for _ in range(n + 1)]   # 1-indexed
-for _ in range(m):
-    u, v = map(int, input().split())
-    graph[u].append(v)
-    graph[v].append(u)                                  # omit for directed
-```
-
-**Why for CP:** shaves the hash-table constant off every neighbor access - measurable when V, E are large (10⁶+) and the time limit is tight; the standard fast-I/O adjacency-list pattern for competitive judges.
-
-**Union-Find (DSU) on graphs.** For connectivity queries that don't need full traversal (is u connected to v? how many components?), [Union-Find](./union-find.md) answers in near-O(1) amortized per query without building an explicit adjacency structure at all - just union each edge's endpoints. The standard alternative to BFS/DFS-based component counting when queries are online (edges arrive interleaved with connectivity questions) rather than batch.
-
-```python
-# dsu.union(u, v) for each edge; dsu.find(u) == dsu.find(v) answers connectivity in O(α(n))
-```
-
-**Why for CP:** turns "is X connected to Y" from an O(V+E) traversal into an O(α(n)) ≈ O(1) query, and generalizes to Kruskal's MST (see [Union-Find](./union-find.md#cp-primitives)) and offline dynamic-connectivity problems.
-
-**Euler tour for subtree/LCA queries.** Flattening a tree (a graph with no cycles) via a DFS pre/post-order timestamp turns "is u an ancestor of v?" and subtree-range queries into O(1) interval-containment checks over the flattened array - the technique behind [Lowest Common Ancestor](../algorithms/lowest-common-ancestor.md)'s binary-lifting alternative and offline subtree-sum queries with a Fenwick/segment tree over the tour array.
-
-**Why for CP:** converts tree-shaped graph queries into array-range queries, unlocking the entire toolkit of range data structures (segment tree, Fenwick tree) for problems that are structurally about a graph.
-
 ## Gotchas / edge cases
 
 **1. Disconnected graphs - not every node is reachable from the source.**
@@ -373,7 +343,7 @@ When summing path weights, the running total can exceed 32-bit int range. In Pyt
 
 ## Practice problems
 
-### 1. Number of Islands (LC 200) - BFS/DFS connected components
+### 1. Number of Islands (LC 200)
 
 Given a 2D binary grid of `'1'`s (land) and `'0'`s (water), count the number of islands. An island is a maximal group of connected `'1'`s (4-directional). Grid size up to 300 × 300.
 
@@ -427,7 +397,7 @@ def numIslands(grid: list[list[str]]) -> int:
 
 ---
 
-### 2. Clone Graph (LC 133) - BFS + hashmap original-to-clone
+### 2. Clone Graph (LC 133)
 
 Given a reference to a node in a connected undirected graph (each node has a value and a list of neighbors), return a deep copy. Nodes have values 1 to n; n ≤ 100.
 
@@ -477,7 +447,7 @@ def cloneGraph(node: Optional[Node]) -> Optional[Node]:
 
 ---
 
-### 3. Course Schedule (LC 207) - DFS three-color cycle detection / topo sort
+### 3. Course Schedule (LC 207)
 
 Given `numCourses` and a list of `[a, b]` prerequisites (must take b before a), determine if all courses can be finished. Up to 2000 courses, 5000 prerequisites.
 
@@ -524,7 +494,7 @@ def canFinish(numCourses: int, prerequisites: list[list[int]]) -> bool:
 
 ---
 
-### 4. Network Delay Time (LC 743) - weighted shortest path (Dijkstra)
+### 4. Network Delay Time (LC 743)
 
 A signal starts at node `k` and travels through a weighted directed graph (`times[i] = [u, v, w]`, edge u→v costs w). Return the time for the signal to reach every node, or -1 if some node is unreachable. Up to 100 nodes, 6000 edges, positive weights.
 
@@ -567,3 +537,108 @@ def networkDelayTime(times: list[list[int]], n: int, k: int) -> int:
 **Duplicate problems:**
 - Path with Minimum Effort (LC 1631) - same Dijkstra-on-graph shape, but the "distance" being minimized is the max step-height along the path instead of a sum, so the relax rule swaps `+` for `max`.
 - Cheapest Flights Within K Stops (LC 787) - Dijkstra-shaped but with a stop-count constraint added to the state, so plain Dijkstra needs a Bellman-Ford-style relaxation-count bound instead of a simple visited set.
+
+---
+
+### 5. Redundant Connection (LC 684)
+
+Given a tree of `n` nodes with one extra edge added (making exactly one cycle), find the extra edge. If multiple edges could be removed to restore a tree, return the one that appears last in the input list.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** edges = [[1,2],[1,3],[2,3]] | **Output:** [2,3]
+  - **Explanation:** edges [1,2] and [1,3] already connect all three nodes into a tree; [2,3] is the extra edge that closes the cycle, and it appears last.
+- **Example 2**
+  - **Input:** edges = [[1,2],[2,3],[3,4],[1,4],[1,5]] | **Output:** [1,4]
+  - **Explanation:** [1,2],[2,3],[3,4],[1,5] already form a spanning tree over all 5 nodes; [1,4] is the edge that closes the cycle and is the last one in the input to do so.
+
+**Constraints:** `n == edges.length`, `3 ≤ n ≤ 1000`, each `edges[i] = [ai, bi]` with `1 ≤ ai < bi ≤ n`, no repeated edges.
+
+**Approach:** For connectivity queries interleaved with edge arrivals - "does adding this edge create a cycle?" - a full BFS/DFS traversal per edge would be O(n) each, O(n²) total. A [Union-Find](./union-find.md) structure answers "are these two nodes already connected?" in near-O(1) amortized per query without rebuilding any traversal state: process edges in order, and for each `(u, v)`, if `find(u) == find(v)` they're already connected, so this edge is the redundant one (return it immediately, since input order picks the last such edge automatically); otherwise `union(u, v)`. This is the online alternative to entry 3's DFS three-color cycle check - DSU wins here because edges arrive one at a time and only connectivity, not full traversal, is needed.
+
+```python
+class DSU:
+    def __init__(self, n: int) -> None:
+        self.parent = list(range(n + 1))
+        self.rank = [0] * (n + 1)
+
+    def find(self, x: int) -> int:
+        while self.parent[x] != x:
+            self.parent[x] = self.parent[self.parent[x]]  # path halving
+            x = self.parent[x]
+        return x
+
+    def union(self, a: int, b: int) -> bool:
+        ra, rb = self.find(a), self.find(b)
+        if ra == rb:
+            return False              # already connected - this edge is redundant
+        if self.rank[ra] < self.rank[rb]:
+            ra, rb = rb, ra
+        self.parent[rb] = ra
+        if self.rank[ra] == self.rank[rb]:
+            self.rank[ra] += 1
+        return True
+
+def find_redundant_connection(edges: list[list[int]]) -> list[int]:
+    dsu = DSU(len(edges))
+    for u, v in edges:
+        if not dsu.union(u, v):
+            return [u, v]
+    return []
+```
+
+**Complexity:** O(E · α(V)) time (α = inverse Ackermann, effectively constant), O(V) space.
+
+**Duplicate problems:**
+- Number of Provinces (LC 547) - same union-by-edge connectivity tracking, counting the final number of distinct DSU roots instead of finding the one cycle-closing edge.
+- Accounts Merge (LC 721) - same DSU-on-graph shape, unioning accounts that share an email instead of unioning graph nodes directly.
+
+---
+
+### 6. Count of Smaller Numbers After Self on a Tree (subtree-sum queries via Euler tour)
+
+Given a rooted tree where each node has a value, answer repeated queries of the form "what is the sum of values in the subtree rooted at node `u`?", after point updates to individual node values. Both queries and updates are interleaved and must be faster than re-walking the subtree each time.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** tree rooted at 1 with edges [(1,2),(1,3),(2,4),(2,5)], values = [_,10,20,30,40,50] (1-indexed by node), subtree_sum(2) | **Output:** 110
+  - **Explanation:** node 2's subtree is {2,4,5} with values 20+40+50 = 110; node 3's subtree isn't included because node 3 hangs off the root, not off node 2.
+- **Example 2**
+  - **Input:** continuing from Example 1, update(4, +5), subtree_sum(1) | **Output:** 155 (up from 150)
+  - **Explanation:** the root's subtree is the whole tree (10+20+30+40+50 = 150); a point update inside node 2's subtree (node 4, +5) changes every ancestor's subtree sum that contains node 4, all the way to the root, so the total becomes 155.
+
+**Constraints:** `1 ≤ n ≤ 10⁵` nodes, up to `10⁵` combined `update`/`subtree_sum` calls, tree given as parent pointers or an edge list.
+
+**Approach:** A subtree is a contiguous **range**, not a scattered set, once the tree is flattened by a single DFS pass that records each node's entry time (`tin[u]`) and exit time (`tout[u]`) - the **Euler tour**. Every descendant of `u` gets a `tin` strictly between `tin[u]` and `tout[u]`, so "sum over `u`'s subtree" becomes "sum over the array range `[tin[u], tout[u]]`" - exactly the shape a [Fenwick tree](./fenwick-tree.md) answers in O(log n) per point-update/range-query. This is the technique that converts a tree-shaped graph query into a plain array-range problem, unlocking the entire range-query toolkit (Fenwick tree, segment tree) for what looks like a graph problem.
+
+```python
+def euler_tour(n: int, children: list[list[int]], root: int = 1) -> tuple[list[int], list[int]]:
+    tin = [0] * (n + 1)
+    tout = [0] * (n + 1)
+    timer = 0
+    stack = [(root, iter(children[root]), False)]
+    visited_start = set()
+    while stack:
+        node, it, _ = stack[-1]
+        if node not in visited_start:
+            tin[node] = timer
+            timer += 1
+            visited_start.add(node)
+        advanced = False
+        for child in it:
+            stack.append((child, iter(children[child]), False))
+            advanced = True
+            break
+        if not advanced:
+            tout[node] = timer - 1
+            stack.pop()
+    return tin, tout
+
+# subtree_sum(u) = fenwick.range_sum(tin[u] + 1, tout[u] + 1)   # 1-indexed BIT
+# update(u, delta) = fenwick.add(tin[u] + 1, delta)             # point update at u's tour position
+```
+
+**Complexity:** O(n) one-time Euler tour, then O(log n) per `update`/`subtree_sum` via the Fenwick tree. O(n) space for the tour arrays and BIT.
+
+**Duplicate problems:**
+- Kth Ancestor of a Tree Node (LC 1483) - a different tree-flattening technique (binary lifting, not Euler tour), but the same family move of preprocessing a tree once to answer repeated structural queries in O(log n).

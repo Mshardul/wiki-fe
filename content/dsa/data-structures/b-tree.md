@@ -22,15 +22,16 @@
 - [Variants](#variants)
 - [Traversal & invariant](#traversal--invariant)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [Why B-trees for databases](#1-why-b-trees-for-databases--reasoning)
-  - [B-tree search](#2-b-tree-search--multi-key-node-descent)
-  - [Choose the order for a disk block](#3-choose-the-order-for-a-disk-block--sizing)
-  - [B-tree vs B+-tree for range scans](#4-b-tree-vs-b-tree-for-range-scans--reasoning)
-  - [Insert-with-node-split](#5-insert-with-node-split--median-push-up)
+  - [Why B-trees for databases](#1-why-b-trees-for-databases)
+  - [B-tree search](#2-b-tree-search)
+  - [Choose the order for a disk block](#3-choose-the-order-for-a-disk-block)
+  - [B-tree vs B+-tree for range scans](#4-b-tree-vs-b-tree-for-range-scans)
+  - [Insert-with-node-split](#5-insert-with-node-split)
+  - [Range Sum Query - Mutable](#6-range-sum-query---mutable)
+  - [Merge k Sorted Lists](#7-merge-k-sorted-lists)
 
 ## What it is
 
@@ -257,15 +258,6 @@ class BTree:
 
 **Contest velocity.** B-trees almost never appear in contests (they're a systems structure, not an algorithmic one) - and you'd never hand-roll one. Know the _concept_ (wide nodes, few seeks, DB indexes) for system-design and DB interviews; reach for the binary [balanced BST](./balanced-bst.md) or a library structure for in-memory contest needs.
 
-## CP-primitives
-
-Tree/heap family - advisory; B-trees are a systems structure, not a contest one, but two ideas transfer:
-
-- **Block/chunk decomposition.** The B-tree's core trick - group elements into fixed-size blocks to amortize a per-access cost - shows up directly as **sqrt decomposition**: split an array into `√n`-sized blocks so range queries/updates cost O(√n) instead of O(n), the same "wide-node, few-hops" trade-off in array form.
-- **Multiway merge / k-way search.** A B-tree node's "binary-search within, then descend" pattern generalizes the same way a k-way merge does - useful framing when a contest problem partitions work into k sorted buckets and needs the next-smallest across all of them.
-
-**Why for CP:** the B-tree's defining idea (amortize a per-access cost by batching into wide chunks) is the same idea behind sqrt decomposition and block-based CP data structures, even though nobody implements an actual B-tree in a contest.
-
 ## Gotchas / edge cases
 
 - **Root special-cases.** The root may have as few as 1 key (every other node needs ≥ `t−1`). The tree gains height only when the root splits, and loses height only when the root underflows to empty - handle these two events separately from ordinary split/merge.
@@ -286,9 +278,9 @@ Tree/heap family - advisory; B-trees are a systems structure, not a contest one,
 
 ## Practice problems
 
-Five problems, each a **distinct** facet of B-trees - no two the same. The first and third are pure reasoning (no code, by design - see the note after entry 5); search and the new split entry are the two code-bearing, hands-on mechanics.
+Seven problems, each a **distinct** facet of B-trees or the block-decomposition idea it embodies - no two the same. The first and third are pure reasoning (no code, by design - see the note after entry 5); search and the split/decomposition/merge entries are the code-bearing, hands-on mechanics.
 
-### 1. Why B-trees for databases - _reasoning_
+### 1. Why B-trees for databases
 
 Explain why relational databases index with B-trees (B+-trees) rather than an in-memory balanced BST like red-black.
 
@@ -306,7 +298,7 @@ Explain why relational databases index with B-trees (B+-trees) rather than an in
 
 **Complexity:** N/A - the answer is the seek-count argument, not an algorithm.
 
-### 2. B-tree search - _multi-key-node descent_
+### 2. B-tree search
 
 Implement search in a B-tree: find a key, returning the node and index, or null.
 
@@ -335,7 +327,7 @@ print(bt.search(12) is not None)          # True
 **Duplicate problems:**
 - Search in a Binary Search Tree (LC 700) - identical descend-by-comparison logic, collapsed to the 2-child case (t=1 conceptually).
 
-### 3. Choose the order for a disk block - _sizing_
+### 3. Choose the order for a disk block
 
 A disk page is 4096 bytes; keys are 8 bytes and child pointers are 8 bytes. What order (max children) should the B-tree use, and how many levels for 1 billion keys?
 
@@ -363,7 +355,7 @@ print(b_tree_order(), levels(10**9, b_tree_order()))   # 256 4
 
 **Complexity:** O(1) arithmetic - it's a sizing decision, not an algorithm.
 
-### 4. B-tree vs B+-tree for range scans - _reasoning_
+### 4. B-tree vs B+-tree for range scans
 
 A query needs all keys in `[100, 500]` from a billion-row indexed table. Explain why a B+-tree handles this better than a plain B-tree.
 
@@ -381,7 +373,7 @@ A query needs all keys in `[100, 500]` from a billion-row indexed table. Explain
 
 **Complexity:** Range scan: O(log_t n + k/B) block reads in a B+-tree (k results, B per block) - the `k/B` term being sequential.
 
-### 5. Insert-with-node-split - _median push-up_
+### 5. Insert-with-node-split
 
 Implement B-tree insert with split-on-overflow: when a leaf reaches its maximum key count, split it and push the median key up into the parent, propagating the split upward if the parent also overflows.
 
@@ -416,3 +408,102 @@ bt.insert(35)                         # descends into [30, 40], which has room (
 
 **Complexity:** O(log_t n) node visits on the way down, O(t) work per split (copying up to `t-1` keys) - O(t log_t n) worst case, but split-per-insert is amortized rare since a node must fill (`t` inserts through it) before splitting again, so amortized cost stays O(log_t n) with a small constant.
 
+### 6. Range Sum Query - Mutable
+
+Given an integer array `nums`, support two operations: `update(index, val)` sets `nums[index] = val`, and `sumRange(left, right)` returns the sum of `nums[left..right]` inclusive, with many calls of both interleaved.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,3,5], sumRange(0,2), update(1,2), sumRange(0,2) | **Output:** 9, 8
+  - **Explanation:** the first query sums the whole array (1+3+5=9); after `update(1,2)` sets index 1 to 2, the same range now sums to 1+2+5=8.
+  - **Handwork trace:** with block size ≈ √3 ≈ 2, blocks are `[1,3]` and `[5]` with block sums `4` and `5`. `update(1,2)` changes `nums[1]` from 3 to 2 and adjusts block 0's sum from 4 to 3. `sumRange(0,2)` now adds block 0's sum (3) plus block 1's sum (5) = 8.
+- **Example 2**
+  - **Input:** nums = [-1], sumRange(0,0) | **Output:** -1
+  - **Explanation:** a single-element array is its own single block; the range query reads that block's sum directly.
+
+**Constraints:** `1 ≤ nums.length ≤ 3 × 10⁴`, `-100 ≤ nums[i] ≤ 100`, up to `3 × 10⁴` calls split between `update` and `sumRange`.
+
+**Approach:** Because updates are interleaved with queries, a plain prefix-sum array (O(1) query, O(n) update) is wrong here - one update would force rebuilding the whole prefix array. Instead, apply the B-tree's core idea directly to a flat array: partition `nums` into `√n`-sized blocks, each caching its own sum. `update` touches one element and its one enclosing block's cached sum - O(1). `sumRange` sums whole blocks fully inside `[left, right]` (O(1) each, using the cached sum) plus a partial linear scan of the two boundary blocks - O(√n) total. This is exactly the B-tree's "wide node amortizes a per-access cost" trade-off, expressed over a flat array instead of a pointer tree.
+
+```python
+import math
+
+class NumArray:
+    def __init__(self, nums: list[int]) -> None:
+        self.nums = nums[:]
+        self.block_size = max(1, int(math.sqrt(len(nums))))
+        self.block_sum = [
+            sum(nums[i:i + self.block_size])
+            for i in range(0, len(nums), self.block_size)
+        ]
+
+    def update(self, index: int, val: int) -> None:
+        block = index // self.block_size
+        self.block_sum[block] += val - self.nums[index]
+        self.nums[index] = val
+
+    def sumRange(self, left: int, right: int) -> int:
+        total = 0
+        i = left
+        while i <= right:
+            block = i // self.block_size
+            block_start = block * self.block_size
+            block_end = block_start + self.block_size - 1
+            if block_start == i and block_end <= right:      # whole block inside range
+                total += self.block_sum[block]
+                i = block_end + 1
+            else:                                              # partial block - scan element-by-element
+                total += self.nums[i]
+                i += 1
+        return total
+```
+
+**Complexity:** O(√n) per `update` and per `sumRange` (O(1) update to one block sum, O(√n) worst-case boundary scan for range sum), O(n) space.
+
+**Duplicate problems:**
+- Range Sum Query 2D - Mutable (LC 308) - same block-decomposition idea extended to two dimensions, trading a 1D block sum for a Fenwick tree (or blocked 2D grid) to keep both update and query sub-linear.
+
+### 7. Merge k Sorted Lists
+
+Given `k` sorted linked lists, merge them into one sorted linked list and return its head.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** lists = [[1,4,5],[1,3,4],[2,6]] | **Output:** [1,1,2,3,4,4,5,6]
+  - **Explanation:** repeatedly taking the smallest head across all three lists produces the fully merged, sorted sequence.
+- **Example 2**
+  - **Input:** lists = [] | **Output:** []
+  - **Explanation:** no lists to merge yields an empty result.
+
+**Constraints:** `0 ≤ k ≤ 10⁴`, `0 ≤ length of each list ≤ 500`, `-10⁴ ≤ node.val ≤ 10⁴`, total nodes across all lists up to `5 × 10⁴`.
+
+**Approach:** Merging two lists at a time pairwise, k-1 times, costs O(nk) total (n = total nodes) - each of the k-1 merges touches most of the accumulated output. The B-tree-flavored insight is the **k-way merge**: instead of a binary "merge next pair," maintain a min-heap of size k holding each list's current head. Repeatedly pop the smallest, append it to the output, and push that list's next node - the same "binary-search-within-a-wide-node-then-descend-into-one-child" shape a B-tree uses, but here the "node" is the heap of k candidates and "descending" is popping the winner and advancing that one list. This drops the merge cost from O(nk) to O(n log k).
+
+```python
+import heapq
+from dataclasses import dataclass, field
+from typing import Optional
+
+@dataclass
+class ListNode:
+    val: int
+    next: Optional["ListNode"] = None
+
+def merge_k_lists(lists: list[Optional[ListNode]]) -> Optional[ListNode]:
+    heap = [(node.val, i, node) for i, node in enumerate(lists) if node]
+    heapq.heapify(heap)                        # k-way frontier, size <= k
+    dummy = tail = ListNode(0)
+    while heap:
+        val, i, node = heapq.heappop(heap)      # smallest among all k current heads
+        tail.next = node
+        tail = tail.next
+        if node.next:
+            heapq.heappush(heap, (node.next.val, i, node.next))
+    return dummy.next
+```
+
+**Complexity:** O(n log k) time (n total nodes, k lists), O(k) space for the heap.
+
+**Duplicate problems:**
+- Smallest Range Covering Elements from K Lists (LC 632) - same k-way-merge-via-heap frontier over k sorted lists, tracking the running min/max across the frontier instead of emitting a merged sequence.
+- Find K Pairs with Smallest Sums (LC 373) - same bounded-frontier min-heap idea, applied to pairs drawn from two arrays instead of merging k lists outright.

@@ -18,16 +18,13 @@
 - [Variants](#variants)
 - [Hashing & collisions](#hashing--collisions)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Seen-set dedup on a stream](#seen-set-dedup-on-a-stream)
-  - [Set algebra for O(1) membership tests](#set-algebra-for-o1-membership-tests)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [Contains Duplicate](#1-contains-duplicate--seen-set)
-  - [Intersection of Two Arrays](#2-intersection-of-two-arrays--set-algebra)
-  - [Longest Consecutive Sequence](#3-longest-consecutive-sequence--boundary-only-scan)
-  - [Happy Number](#4-happy-number--cycle-detection-via-seen-set)
+  - [Contains Duplicate](#1-contains-duplicate)
+  - [Intersection of Two Arrays](#2-intersection-of-two-arrays)
+  - [Longest Consecutive Sequence](#3-longest-consecutive-sequence)
+  - [Happy Number](#4-happy-number)
 
 ## What it is
 
@@ -61,7 +58,7 @@ bucket array:   0     1     2       3     4     5     6     7
 | Iterate all elements | O(n + b) | O(n + b) | O(1)  |
 | Union / intersection / difference | O(min(n, m)) or O(n + m)* | O(n · m) | O(n + m) |
 
-`b` = number of buckets. Worst case O(n) is the same degenerate-collision scenario as a hash table. *Set algebra: CPython iterates the smaller set and probes the larger for intersection (O(min(n, m))), and iterates both for union (O(n + m)) - see [Set algebra](#set-algebra-for-o1-membership-tests).
+`b` = number of buckets. Worst case O(n) is the same degenerate-collision scenario as a hash table. *Set algebra: CPython iterates the smaller set and probes the larger for intersection (O(min(n, m))), and iterates both for union (O(n + m)) - see [Practice problems › Intersection of Two Arrays](#2-intersection-of-two-arrays).
 
 ## Complexity summary
 
@@ -85,7 +82,7 @@ bucket array:   0     1     2       3     4     5     6     7
 
 - **You need to associate a value with each key** ("count how many", "map key to something") → a [hash table](./hash-table.md) - a hash set literally can't hold a value, so a `dict` mapping key→1 or key→count is the tool the moment you need more than yes/no.
 - **You need sorted order or range queries** ("smallest element ≥ x", "all elements between a and b") → a balanced BST / sorted structure; a hash set has no order at all. <!-- balanced-bst.md exists but is a hub; keep plain-text if unsure -->
-- **Elements are small bounded integers and you'd otherwise build a set of them** → a boolean [array](./array.md) (`seen[v]`) beats a hash set on constant factor, no hashing overhead at all (see [CP-primitives](#cp-primitives)).
+- **Elements are small bounded integers and you'd otherwise build a set of them** → a boolean [array](./array.md) (`seen[v]`) beats a hash set on constant factor, no hashing overhead at all (see [Set-vs-array for small bounded domains](#gotchas--edge-cases)).
 - **You need prefix membership on strings** ("does any word start with this prefix?") → a [trie](./trie.md); a hash set of whole strings can't answer prefix queries without scanning every entry.
 
 Rule of thumb: **hash table when you need to store something per key; hash set when the key's presence is the entire answer.** If the sentence is "map/count/associate", it's a hash table; if it's "have I seen/contains/is present", it's a hash set.
@@ -203,35 +200,6 @@ a, b = {1, 2, 3}, {2, 3, 4}
 a & b, a | b, a - b            # intersection, union, difference - all near-linear
 ```
 
-## CP-primitives
-
-### Seen-set dedup on a stream
-
-Track every value encountered in a single O(n) pass without a second data structure - the seen-set pattern that turns "have I visited this before?" into O(1).
-
-```python
-seen = set()
-for x in stream:
-    if x in seen:
-        continue               # skip duplicate
-    seen.add(x)
-    # process x once
-```
-
-**Why for CP:** collapses an O(n²) "check every prior element" scan into O(n) - the single most reused primitive in graph traversal (visited-node tracking) and stream dedup.
-
-### Set algebra for O(1) membership tests
-
-Precompute one collection as a set, then test membership against it in O(1) per query instead of scanning it repeatedly.
-
-```python
-banned = set(banned_words)
-valid = [w for w in words if w not in banned]      # O(n), not O(n·k)
-common = set(a) & set(b)                             # intersection in O(min(len(a), len(b)))
-```
-
-**Why for CP:** any "is x in this other collection?" repeated k times against an unsorted list is O(n·k) brute force; converting the lookup side to a set drops it to O(n + k).
-
 ## Gotchas / edge cases
 
 - **Elements must be hashable and immutable**, exactly like hash table keys. A `list` can't go in a `set` (unhashable); a `tuple` or `frozenset` can. Mutating an object after adding it (in languages that permit mutable set elements) corrupts the bucket it's stored under - the element becomes unfindable though still present in memory.
@@ -251,7 +219,7 @@ common = set(a) & set(b)                             # intersection in O(min(len
 
 Four staples, each a **distinct** hash-set technique - no two solved the same way.
 
-### 1. Contains Duplicate - _seen-set_
+### 1. Contains Duplicate
 
 Given an integer array, return true if any value appears at least twice. The seen-set primitive in its purest form.
 
@@ -284,7 +252,7 @@ def contains_duplicate(nums: list[int]) -> bool:
 
 ---
 
-### 2. Intersection of Two Arrays - _set algebra_
+### 2. Intersection of Two Arrays
 
 Given two integer arrays, return their intersection (each element at most once). The set-algebra technique - converting a nested-loop search into a single set operation.
 
@@ -309,7 +277,7 @@ def intersection(nums1: list[int], nums2: list[int]) -> list[int]:
 
 ---
 
-### 3. Longest Consecutive Sequence - _boundary-only scan_
+### 3. Longest Consecutive Sequence
 
 Given an unsorted integer array, return the length of the longest run of consecutive integers, in O(n) - no sorting allowed. The set-membership technique that turns "is the next value present?" into O(1), with a boundary check that keeps the total work linear.
 
@@ -345,7 +313,7 @@ def longest_consecutive(nums: list[int]) -> int:
 
 ---
 
-### 4. Happy Number - _cycle detection via seen-set_
+### 4. Happy Number
 
 A number is "happy" if repeatedly replacing it with the sum of the squares of its digits eventually reaches 1; otherwise it loops forever in a cycle. Determine if a given number is happy. The seen-set-as-cycle-detector technique, distinct from the two-pointer Floyd's-cycle approach.
 

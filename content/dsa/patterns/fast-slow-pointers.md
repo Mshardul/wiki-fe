@@ -13,7 +13,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -132,46 +131,6 @@ The constraint that matters isn't really `n` here - it's **whether O(1) space is
 
 ---
 
-## CP-primitives
-
-### 1. Cycle length computation
-
-**The trick:** once slow and fast meet inside a cycle, keep one pointer fixed and advance the other, counting steps until it returns to the same node - that count is the cycle's length `λ`. This is a small addition to the basic detection skeleton that shows up whenever a problem needs the cycle's *size*, not just its existence.
-
-```python
-def cycle_length(meeting_node: ListNode) -> int:
-    length = 1
-    current = meeting_node.next
-    while current is not meeting_node:
-        current = current.next
-        length += 1
-    return length
-```
-
-**Why for CP:** several "functional graph" contest problems (each node has exactly one outgoing edge, forming rho-shaped/"tadpole" structures) ask for both the tail length (`μ`) and cycle length (`λ`) - this is the standard O(n) time, O(1) space way to extract both without building an explicit visited-array.
-
-### 2. Brent's cycle detection (faster in practice than Floyd's)
-
-**The trick:** Floyd's algorithm restarts comparison every iteration; Brent's algorithm uses **exponentially growing power-of-two step counts** before checking for a match, which reduces the constant factor - fewer total pointer moves in practice (though still O(n) asymptotically), and also directly yields the cycle length as a side effect without the extra "walk from the meeting point" pass.
-
-```python
-def brent_cycle_length(f, x0):
-    power = lam = 1
-    tortoise, hare = x0, f(x0)
-    while tortoise != hare:
-        if power == lam:
-            tortoise = hare
-            power *= 2
-            lam = 0
-        hare = f(hare)
-        lam += 1
-    return lam
-```
-
-**Why for CP:** in contest settings with tight time limits and large functional-graph inputs, Brent's lower constant factor (roughly half the function evaluations of Floyd's in the worst case) can matter, and it directly returns `λ` without a second pass. Same asymptotic bound as Floyd's: O(n) time, O(1) space - the win is a smaller constant factor, not a better Big-O.
-
----
-
 ## Pitfalls
 
 1. **Off-by-one in the loop condition, causing a null-pointer dereference.** The loop guard must check `fast and fast.next` (not just `fast`) before computing `fast.next.next` - otherwise, on an odd-vs-even length edge case, `fast.next` can be `None` and `.next.next` crashes. This is the single most common bug when first implementing this pattern.
@@ -281,6 +240,8 @@ def detect_cycle(head: ListNode | None) -> ListNode | None:
 
 **Duplicate problems:**
 - Linked List Cycle (LC 141) - the detection-only subset of this same algorithm.
+- Cycle length computation (CP-primitive) - once slow and fast meet, fixing one pointer and advancing the other until it returns to the same node counts the cycle's length `λ` - the same meeting-point mechanic, one more pass to extract a number instead of a node.
+- Brent's cycle detection (CP-primitive) - solves the identical meeting/cycle-length problem with exponentially growing step counts instead of Floyd's fixed 1×/2× pacing; same O(n) time, O(1) space bound, just a smaller constant factor - not a different technique, an optimized restatement of the same invariant.
 
 ---
 

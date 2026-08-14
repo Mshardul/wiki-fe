@@ -18,17 +18,16 @@
 - [Variants](#variants)
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Prefix sums (range queries in O(1))](#prefix-sums-range-queries-in-o1)
-  - [Difference array (range updates in O(1))](#difference-array-range-updates-in-o1)
-  - [Array as a direct-address (frequency) map](#array-as-a-direct-address-frequency-map)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [Trapping Rain Water](#1-trapping-rain-water--converging-two-pointers)
-  - [Next Permutation](#2-next-permutation--in-place-index-manipulation)
-  - [Maximum Subarray](#3-maximum-subarray--kadanes-dynamic-programming)
-  - [Minimum Size Subarray Sum](#4-minimum-size-subarray-sum--sliding-window)
+  - [Trapping Rain Water](#1-trapping-rain-water)
+  - [Next Permutation](#2-next-permutation)
+  - [Maximum Subarray](#3-maximum-subarray)
+  - [Minimum Size Subarray Sum](#4-minimum-size-subarray-sum)
+  - [Range Sum Query - Immutable](#5-range-sum-query---immutable)
+  - [Range Addition](#6-range-addition)
+  - [Group Anagrams](#7-group-anagrams)
 
 ## What it is
 
@@ -104,7 +103,7 @@ That same O(1) address arithmetic is what makes **binary search** possible on a 
 
 **Reach for an array when:**
 
-- You index by position a lot - `arr[i]` is O(1) and cache-friendly.
+- You index by position a lot - `arr[i]` is O(1) and <abbr>cache-friendly</abbr>.
 - The collection is read-heavy and append-mostly (a log, a buffer, a matrix row).
 - You need contiguous memory for tight iteration (numeric/SIMD work, hot loops).
 
@@ -139,7 +138,7 @@ The array's column is the only one with **O(1) indexed access and contiguous mem
 - **Multidimensional array** - a grid stored as one flat block, indexed by `(r, c)` arithmetic. Row-major vs column-major storage and the traversal-cost consequences are covered in [Memory layout](#memory-layout) below.
 - **Static array** - the true fixed-size primitive, no resize; what all the above build on. That's the subject of this page.
 
-**CP-flavored variants** - same contiguous array, repurposed by what you store in it. Each is named here as a _shape_; the technique that wields it lives in [CP-primitives](#cp-primitives):
+**CP-flavored variants** - same contiguous array, repurposed by what you store in it. Each is named here as a _shape_; the technique that wields it lives in [Practice problems](#practice-problems):
 
 - **Prefix-sum array** - store cumulative sums instead of values; turns range-sum queries into O(1) subtractions.
 - **Difference array** - store deltas (`diff[l] += x; diff[r+1] -= x`); turns range _updates_ into O(1), recovered by a prefix-sum pass.
@@ -261,62 +260,7 @@ j = bisect.bisect_right(a, 7)    # 4  - one past it; (j - i) = count of 7s
 bisect.insort(a, 8)              # insert keeping sorted order, O(log n) search + O(n) shift
 ```
 
-Likewise `arr.append`/`arr.pop()` for a stack, `collections.Counter(arr)` for frequencies, and `itertools.accumulate(arr)` for prefix sums (see [CP-primitives](#cp-primitives)) replace whole hand-written loops.
-
-## CP-primitives
-
-Three array tricks that turn up constantly in contests - each trades a one-time O(n) preprocess for O(1) queries or updates.
-
-### Prefix sums (range queries in O(1))
-
-Precompute `pref[i] = pref[i-1] + arr[i]` with a `pref[0] = 0` sentinel (1-based `arr`). Then **any subarray sum is one subtraction**: `sum(l..r) = pref[r] - pref[l-1]`. O(n) build, O(1) per query - instead of O(n) per query naively.
-
-```
-i:          0   1   2   3   4
-arr:      [ 3 | 1 | 2 | 1 | 2 ]
-pref: [ 0 | 3 | 4 | 6 | 7 | 9 ]     pref[0]=0 sentinel
-
-sum(2..4) = arr[2]+arr[3]+arr[4] = 1+4+1 = 6  =  pref[4] − pref[1] = 9 − 3 = 6  ✓
-```
-
-**2D extension** - rectangle sums in O(1) by inclusion–exclusion:
-
-```
-pref[i][j] = pref[i-1][j] + pref[i][j-1] − pref[i-1][j-1] + arr[i][j]
-
-rect_sum(r1,c1,r2,c2) = pref[r2][c2] − pref[r1-1][c2] − pref[r2][c1-1] + pref[r1-1][c1-1]
-```
-
-The same skeleton generalizes: **prefix-XOR** (subarray XOR), **prefix-product** (subarray product - but handle zeros separately, since you can't divide them out).
-
-**Why for CP:** turns range-query problems from O(n) per query into O(1) after O(n) preprocessing - the difference between TLE and AC when there are 10⁵ queries.
-
-### Difference array (range updates in O(1))
-
-The dual of prefix sums. To add `x` to every element of `arr[l..r]` - many times - don't touch the range each time. Maintain a `diff` array: `diff[l] += x; diff[r+1] -= x`. After all updates, the **prefix sum of `diff` is the final array**.
-
-```
-add 5 to [1..3], then add 2 to [2..4]:
-diff:  [0| +5 |  0 |  0 | −5 |  0 ]   after update 1
-       [0| +5 | +2 |  0 | −5 | −2 ]   after update 2
-prefix→[0|  5 |  7 |  7 |  2 |  0 ]   final deltas applied to arr
-```
-
-**Why for CP:** O(1) per range update + one O(n) final pass, instead of O(n) per update. Classic for "apply Q range increments, then print the array."
-
-### Array as a direct-address (frequency) map
-
-When values are bounded - say `0 ≤ a[i] ≤ 10⁶` - a plain array `freq[value]` **is** an O(1) map with zero <abbr>hashing</abbr> overhead, often beating a hash table on constant factor. For a small fixed alphabet (lowercase letters) it's `freq = [0]*26`.
-
-```python
-freq = [0] * 26
-for ch in s:
-    freq[ord(ch) - ord("a")] += 1   # direct address, no hash
-```
-
-When values are large but sparse, **coordinate-compress** first (map the distinct values to `0..k-1` via a sorted-unique index), then use the array.
-
-**Why for CP:** direct-address is faster and simpler than a hash map when the value range is bounded. A candidate who reflexively says "hash map" for a 26-letter alphabet is leaving speed (and simplicity) on the table.
+Likewise `arr.append`/`arr.pop()` for a stack, `collections.Counter(arr)` for frequencies, and `itertools.accumulate(arr)` for prefix sums (see [Practice problems](#practice-problems)) replace whole hand-written loops.
 
 ## Gotchas / edge cases
 
@@ -351,9 +295,9 @@ When values are large but sparse, **coordinate-compress** first (map the distinc
 
 ## Practice problems
 
-Four staples, each a **distinct** technique on an array - no two solved the same way.
+Seven staples, each a **distinct** technique on an array - no two solved the same way.
 
-### 1. Trapping Rain Water - _converging two pointers_
+### 1. Trapping Rain Water
 
 Given `height`, an array of non-negative bar heights of width 1, compute how much rain water is trapped between the bars after it rains. This is the <abbr>two-pointer</abbr> workhorse: no extra array, just two indices closing inward while a running max on each side does the work.
 
@@ -393,7 +337,7 @@ def trap(height: list[int]) -> int:
 
 ---
 
-### 2. Next Permutation - _in-place index manipulation_
+### 2. Next Permutation
 
 Rearrange `nums` into the **next lexicographically greater** permutation in place. If it's already the largest (descending), wrap to the smallest (ascending). Pure index arithmetic - no auxiliary structure at all, which is what makes it distinct from every other entry here.
 
@@ -430,7 +374,7 @@ def next_permutation(nums: list[int]) -> None:
 
 ---
 
-### 3. Maximum Subarray - _Kadane's dynamic programming_
+### 3. Maximum Subarray
 
 Find the contiguous subarray with the largest sum and return that sum. At least one element; values may be negative. The DP-over-endpoints technique: no pointers to move, just a running decision at each index.
 
@@ -463,7 +407,7 @@ def max_subarray(nums: list[int]) -> int:
 
 ---
 
-### 4. Minimum Size Subarray Sum - _sliding window_
+### 4. Minimum Size Subarray Sum
 
 Given an array of positive integers `nums` and a target sum, find the length of the **shortest contiguous subarray** whose sum is `>= target`, or `0` if none exists. The sliding-window technique: a window that only ever expands on the right and contracts on the left, never resetting - the core array pattern the other three entries don't exercise.
 
@@ -497,3 +441,111 @@ def min_subarray_len(target: int, nums: list[int]) -> int:
 
 **Duplicate problems:**
 - Minimum Window Substring (LC 76) - same shrink-while-valid variable window minimizing length; the validity condition is character-count coverage instead of a numeric sum threshold.
+
+---
+
+### 5. Range Sum Query - Immutable
+
+Given an integer array `nums`, implement a class that answers repeated queries `sumRange(i, j)` - the sum of elements between indices `i` and `j` inclusive - as fast as possible, over many calls.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [-2,0,3,-5,2,-1], sumRange(0,2), sumRange(2,5), sumRange(0,5) | **Output:** 1, -1, -3
+  - **Explanation:** sumRange(0,2) = -2+0+3 = 1; sumRange(2,5) = 3-5+2-1 = -1; sumRange(0,5) sums the whole array = -3.
+- **Example 2**
+  - **Input:** nums = [3], sumRange(0,0) | **Output:** 3
+  - **Explanation:** a single-element array's only valid range is itself.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁴`, `-10⁵ ≤ nums[i] ≤ 10⁵`, `0 ≤ i ≤ j < nums.length`, up to `10⁴` calls to `sumRange`.
+
+**Approach:** Recomputing the sum on every call is O(n) per query - too slow across many calls. Precompute a prefix-sum array once, `pref[i] = pref[i-1] + nums[i-1]` with a leading `pref[0] = 0` sentinel, so any range sum is one subtraction: `sumRange(i, j) = pref[j+1] - pref[i]`. The one-time O(n) build amortizes to O(1) per query, however many queries follow - the canonical motivation for the prefix-sum trick.
+
+```python
+from itertools import accumulate
+
+class NumArray:
+    def __init__(self, nums: list[int]) -> None:
+        self.pref = [0] + list(accumulate(nums))   # pref[i] = sum(nums[:i])
+
+    def sumRange(self, i: int, j: int) -> int:
+        return self.pref[j + 1] - self.pref[i]
+```
+
+**Complexity:** O(n) build, O(1) per query, O(n) space.
+
+**Duplicate problems:**
+- Range Sum Query 2D - Immutable (LC 304) - same prefix-sum trick extended to two dimensions via inclusion-exclusion (`pref[i][j] = pref[i-1][j] + pref[i][j-1] - pref[i-1][j-1] + arr[i][j]`).
+- Contiguous Array (LC 525) - same prefix-sum-as-lookup shape, using a running 0/1-to-±1 sum stored in a hash map to find the longest balanced subarray instead of answering fixed-range queries.
+
+---
+
+### 6. Range Addition
+
+Given an array of length `n` initialized to all zeros, apply a list of updates `[start, end, inc]` - each adds `inc` to every element in `nums[start..end]` inclusive - and return the final array after all updates.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** length = 5, updates = [[1,3,2],[2,4,3],[0,2,-2]] | **Output:** [-2,0,3,5,3]
+  - **Explanation:** applying each range-add directly would cost O(range length) per update; the difference-array trick applies each in O(1) and recovers the final array with one O(n) prefix-sum pass.
+- **Example 2**
+  - **Input:** length = 3, updates = [[0,0,5]] | **Output:** [5,0,0]
+  - **Explanation:** a single-element range still routes through `diff[0] += 5; diff[1] -= 5`, prefix-summing to `[5,0,0]`.
+
+**Constraints:** `1 ≤ length ≤ 10⁵`, `0 ≤ updates.length ≤ 10⁴`, `0 ≤ start ≤ end < length`.
+
+**Approach:** Applying each update by looping `start..end` costs O(range length) per update - O(n·q) worst case across `q` updates. Instead, maintain a `diff` array where each update is two O(1) writes: `diff[start] += inc`, `diff[end+1] -= inc` (if in bounds). After all updates, one prefix-sum pass over `diff` reconstructs the final array - the range-add cost collapses to O(1) each, paid off by a single O(n) pass at the end.
+
+```python
+def get_modified_array(length: int, updates: list[list[int]]) -> list[int]:
+    diff = [0] * (length + 1)
+    for start, end, inc in updates:
+        diff[start] += inc
+        diff[end + 1] -= inc
+    result = [0] * length
+    running = 0
+    for i in range(length):
+        running += diff[i]
+        result[i] = running
+    return result
+```
+
+**Complexity:** O(n + q) time (q updates, n array length), O(n) space.
+
+**Duplicate problems:**
+- My Calendar II (LC 731) - same difference-array range-increment idea applied to a sparse/dynamic timeline (a hash map keyed by event boundary instead of a fixed array) to detect triple-booked intervals.
+
+---
+
+### 7. Group Anagrams
+
+Given an array of strings, group the anagrams together (strings that are rearrangements of each other), returning the groups in any order.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** strs = ["eat","tea","tan","ate","nat","bat"] | **Output:** [["eat","tea","ate"],["tan","nat"],["bat"]]
+  - **Explanation:** "eat", "tea", and "ate" share the same letter-frequency signature, so they land in one group; "bat" has no anagram partner and forms its own group.
+- **Example 2**
+  - **Input:** strs = [""] | **Output:** [[""]]
+  - **Explanation:** a single empty string is trivially its own (only) anagram group.
+
+**Constraints:** `1 ≤ strs.length ≤ 10⁴`, `0 ≤ strs[i].length ≤ 100`, lowercase English letters only.
+
+**Approach:** Two strings are anagrams iff they have identical per-letter counts. Since the alphabet is bounded (26 lowercase letters), build each string's signature with a **direct-address frequency array** `freq = [0]*26` (no hashing needed to build the count) and use the tuple of that array as a dict key to bucket strings - the O(26)-per-string direct-address count is what makes building each signature fast, distinct from every other array technique here in that it repurposes the array as a bounded-domain map rather than a positional or delta structure.
+
+```python
+from collections import defaultdict
+
+def group_anagrams(strs: list[str]) -> list[list[str]]:
+    groups: dict[tuple[int, ...], list[str]] = defaultdict(list)
+    for s in strs:
+        freq = [0] * 26                      # direct address, no hash per character
+        for ch in s:
+            freq[ord(ch) - ord("a")] += 1
+        groups[tuple(freq)].append(s)
+    return list(groups.values())
+```
+
+**Complexity:** O(n · k) time (n strings, average length k), O(n · k) space.
+
+**Duplicate problems:**
+- Find All Anagrams in a String (LC 438) - same direct-address 26-count frequency signature, compared incrementally via a sliding window instead of bucketing whole strings.

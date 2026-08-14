@@ -20,16 +20,14 @@
 - [Variants](#variants)
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Monotonic deque - sliding-window max/min in O(n)](#monotonic-deque--sliding-window-maxmin-in-on)
-  - [0/1-BFS - Dijkstra-free shortest path](#01-bfs--dijkstra-free-shortest-path)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [Sliding Window Maximum](#1-sliding-window-maximum--monotonic-deque)
-  - [Design Circular Deque](#2-design-circular-deque--ring-buffer-both-ends)
-  - [Shortest Subarray with Sum at Least K](#3-shortest-subarray-with-sum-at-least-k-lc-862--monotonic-deque-on-prefix-sums)
-  - [Sliding Window Median](#4-sliding-window-median--why-a-deque-is-not-enough)
+  - [Sliding Window Maximum](#1-sliding-window-maximum)
+  - [Design Circular Deque](#2-design-circular-deque)
+  - [Shortest Subarray with Sum at Least K](#3-shortest-subarray-with-sum-at-least-k-lc-862)
+  - [Sliding Window Median](#4-sliding-window-median)
+  - [Minimum Cost to Make at Least One Valid Path in a Grid](#5-minimum-cost-to-make-at-least-one-valid-path-in-a-grid)
 
 ## What it is
 
@@ -57,7 +55,7 @@ Two layouts deliver O(1) both ends (detailed in [Memory layout](#memory-layout))
 - **Circular buffer** - `front` and `back` are indices that advance and **wrap** (`% capacity`); pushing front means `front = (front - 1) % cap`, pushing back means `back = (back + 1) % cap`. Nothing shifts. Cache-friendly, fixed capacity.
 - **Doubly linked list of blocks** - what Python's `collections.deque` uses: a linked list of fixed-size arrays. O(1) at both ends, unbounded growth, decent locality within a block.
 
-The deep idea: the deque doesn't add a new _capability_ over a queue so much as remove a _restriction_. A queue forbids touching the back's removal and the front's insertion; lift that and the same O(1)-ends machinery answers a whole class of "the useful element is at one end, the stale one at the other" problems - which is why the [monotonic deque](#monotonic-deque--sliding-window-maxmin-in-on) and [0/1-BFS](#01-bfs--dijkstra-free-shortest-path) live here and not on the queue page.
+The deep idea: the deque doesn't add a new _capability_ over a queue so much as remove a _restriction_. A queue forbids touching the back's removal and the front's insertion; lift that and the same O(1)-ends machinery answers a whole class of "the useful element is at one end, the stale one at the other" problems - which is why the [monotonic deque](#1-sliding-window-maximum) and [0/1-BFS](#5-minimum-cost-to-make-at-least-one-valid-path-in-a-grid) live here and not on the queue page.
 
 ## Operations
 
@@ -96,7 +94,7 @@ The constants differ too: the block-linked form chases a pointer **between** blo
 **Reach for a deque when:**
 
 - You need **O(1) access at both ends** - a sliding window that grows on the right and shrinks on the left, a work list you push/pop from either side, an undo/redo where both ends matter.
-- You're running a **[monotonic-deque](#monotonic-deque--sliding-window-maxmin-in-on) sliding-window extremum** - window max/min in O(n), the deque's signature trick.
+- You're running a **[monotonic-deque](#1-sliding-window-maximum) sliding-window extremum** - window max/min in O(n), the deque's signature trick.
 - You want **one structure that is both a queue and a stack** - BFS uses it as FIFO, DFS as LIFO, with no second type.
 - You need **0/1-BFS** - shortest path on 0/1-weighted edges without Dijkstra's heap.
 
@@ -105,7 +103,7 @@ The constants differ too: the block-linked form chases a pointer **between** blo
 - **You only ever touch one end** → a plain [stack](./stack.md) (LIFO) or [queue](./queue.md) (FIFO) states intent more clearly; the deque is a superset but a less specific signal in an interview.
 - **You need random access or iteration by index** → an [array](./array.md) / [dynamic array](./dynamic-array.md). Indexing a deque is O(n); indexing an array is O(1).
 - **You need priority order, not positional order** → a [heap](./heap.md). "Most urgent next" is a heap; "leftmost / rightmost next" is a deque.
-- **You need the median or k-th element of the window** → a deque can't help (it only sees the ends); use two heaps or an ordered structure (see [practice problem 4](#4-sliding-window-median--why-a-deque-is-not-enough)).
+- **You need the median or k-th element of the window** → a deque can't help (it only sees the ends); use two heaps or an ordered structure (see [practice problem 4](#4-sliding-window-median)).
 
 Rule of thumb: **deque = both ends are cheap, the middle is not.** If the useful element is always at one of the two ends, it's a deque; if it's the largest/smallest regardless of position, it's a heap.
 
@@ -125,11 +123,11 @@ The deque's identity is **both ends in O(1), middle in O(n)** - it strictly gene
 
 ## Variants
 
-- **Circular-buffer deque** - fixed-capacity ring with wrapping `front`/`back` indices; O(1) both ends, cache-friendly, no shifting. The bounded-capacity choice; built in [practice problem 2](#2-design-circular-deque--ring-buffer-both-ends).
+- **Circular-buffer deque** - fixed-capacity ring with wrapping `front`/`back` indices; O(1) both ends, cache-friendly, no shifting. The bounded-capacity choice; built in [practice problem 2](#2-design-circular-deque).
 - **Doubly-linked-list deque** - a node with prev/next pointers per element; O(1) both ends, unbounded, at pointer-overhead + cache-miss cost. The textbook unbounded form.
 - **Block-linked deque** - a linked list of fixed-size arrays (blocks), blending the two: O(1) ends, unbounded, with locality within a block. This is what `collections.deque` actually is.
 - **Bounded deque (`deque(maxlen=k)`)** - a ring that **evicts from the opposite end** on overflow. `deque(maxlen=k)`: appending to a full deque drops the front automatically. The one-liner sliding-window-of-last-k buffer, and a rate-limiter primitive.
-- **Monotonic deque** - a deque kept increasing or decreasing to answer window min/max in O(n). A _discipline_ on a deque, not a new structure; full treatment in [CP-primitives](#monotonic-deque--sliding-window-maxmin-in-on).
+- **Monotonic deque** - a deque kept increasing or decreasing to answer window min/max in O(n). A _discipline_ on a deque, not a new structure; full treatment in [Practice problems](#1-sliding-window-maximum).
 - **Output-restricted / input-restricted deque** - theoretical variants allowing insertion or removal at only one end. Rarely used in practice; named for completeness because interviews occasionally cite the taxonomy.
 
 ## Memory layout
@@ -276,56 +274,6 @@ dq.rotate(k)         # rotate right by k - O(k), handy for cyclic problems
 # deque(maxlen=k): appending when full evicts the OPPOSITE end automatically
 ```
 
-## CP-primitives
-
-The deque's contest leverage is two linear-time shortcuts that a queue or stack alone can't give: sliding-window extremes and a heap-free shortest path on 0/1 graphs.
-
-### Monotonic deque - sliding-window max/min in O(n)
-
-To get the maximum of every window of size `k`, keep a deque of **indices** whose values are strictly decreasing. Before pushing `i`, pop smaller-or-equal values off the **back** (they can never be the max while `nums[i]` is in the window); pop the **front** when its index slides out of the window. The front index is always the current window max. Each index is pushed and popped at most once → **O(n)** for all windows, beating the O(n·k) brute force and the O(n log n) heap.
-
-```python
-from collections import deque
-
-def max_sliding_window(nums: list[int], k: int) -> list[int]:
-    dq: deque[int] = deque()              # indices, values decreasing
-    res = []
-    for i, x in enumerate(nums):
-        while dq and nums[dq[-1]] <= x:   # back: drop dominated values
-            dq.pop()
-        dq.append(i)
-        if dq[0] == i - k:                # front: index slid out of window
-            dq.popleft()
-        if i >= k - 1:
-            res.append(nums[dq[0]])
-    return res
-```
-
-**Why for CP:** collapses sliding-window extremum from O(n·k) / O(n log n) to **O(n)**. It's the deque cousin of the [monotonic stack](./stack.md#monotonic-stack--next-greatersmaller-element) and the core of the [sliding window](../patterns/sliding-window.md) pattern. Flip the comparison (`>=`) for window-min.
-
-### 0/1-BFS - Dijkstra-free shortest path
-
-When every edge weight is **0 or 1**, you don't need Dijkstra's heap. Use a deque: relax a 0-weight edge with **`appendleft`** (same distance - process it next, before any distance-+1 node) and a 1-weight edge with **`append`** (distance + 1 - process later). The deque stays sorted by distance automatically, so the first time you pop a node its distance is final → **O(V + E)**, beating Dijkstra's O(E log V).
-
-```python
-from collections import deque
-
-def zero_one_bfs(graph, source, n):       # graph[u] = [(v, w in {0, 1}), ...]
-    INF = float("inf")
-    dist = [INF] * n
-    dist[source] = 0
-    dq = deque([source])
-    while dq:
-        u = dq.popleft()
-        for v, w in graph[u]:
-            if dist[u] + w < dist[v]:
-                dist[v] = dist[u] + w
-                dq.appendleft(v) if w == 0 else dq.append(v)
-    return dist
-```
-
-**Why for CP:** shortest path on 0/1-weighted graphs (grid problems with "free" vs "cost-1" moves, or "minimum walls to break") in **linear time**, no priority queue - a frequent contest shortcut over [Dijkstra](../algorithms/dijkstra.md). The deque's two ends encode the two possible distances.
-
 ## Gotchas / edge cases
 
 - **Indexing a deque is O(n), not O(1).** `collections.deque` supports `dq[i]`, but it walks from the nearest end - innocuous-looking, O(n) in the middle, O(n²) in a loop. If you find yourself indexing a deque repeatedly you wanted a [dynamic array](./dynamic-array.md). The senior trap: the API permits `dq[i]`, so the cost is invisible until it TLEs.
@@ -343,9 +291,9 @@ def zero_one_bfs(graph, source, n):       # graph[u] = [(v, w in {0, 1}), ...]
 
 ## Practice problems
 
-Four staples, each a **distinct** deque technique - no two solved the same way.
+Five staples, each a **distinct** deque technique - no two solved the same way.
 
-### 1. Sliding Window Maximum - _monotonic deque_
+### 1. Sliding Window Maximum
 
 **Problem.** Given an array `nums` and window size `k`, return the maximum of each contiguous window. E.g. `nums=[1,3,-1,-3,5,3,6,7], k=3` → `[3,3,5,5,6,7]`. Constraints: `n ≤ 10⁵`, so O(n·k) brute force and even O(n log n) heaps are on the edge - O(n) is the intended bound.
 
@@ -384,7 +332,7 @@ def max_sliding_window(nums: list[int], k: int) -> list[int]:
 - Jump Game VI (LC 1696) - same monotonic-deque max-in-window extraction, run over a `dp` array computed on the fly instead of a given input array.
 - Constrained Subsequence Sum (LC 1425) - same monotonic-deque DP-transition shape as Jump Game VI, with a max-with-zero clamp.
 
-### 2. Design Circular Deque - _ring buffer, both ends_
+### 2. Design Circular Deque
 
 **Problem.** Design a fixed-capacity deque with `insertFront`, `insertLast`, `deleteFront`, `deleteLast`, `getFront`, `getRear`, `isEmpty`, `isFull` - all O(1).
 
@@ -454,7 +402,7 @@ class MyCircularDeque:
 **Duplicate problems:**
 - Design Circular Queue (LC 622) - identical ring-buffer wrapping-index technique (`front`/`size`, `% cap` arithmetic), restricted to single-ended enqueue/dequeue.
 
-### 3. Shortest Subarray with Sum at Least K (LC 862) - _monotonic deque on prefix sums_
+### 3. Shortest Subarray with Sum at Least K (LC 862)
 
 **Problem.** Given an integer array `nums` (values may be **negative**) and integer `k`, return the length of the shortest non-empty contiguous subarray with sum ≥ `k`, or -1. Constraints: `n ≤ 10⁵`; negatives rule out the simple two-pointer sliding window that works for all-positive arrays.
 
@@ -494,7 +442,7 @@ def shortest_subarray(nums: list[int], k: int) -> int:
 
 **Complexity:** O(n) time, O(n) space. Pattern: [Prefix Sum](../patterns/prefix-sum.md) + monotonic deque.
 
-### 4. Sliding Window Median - _why a deque is **not** enough_
+### 4. Sliding Window Median
 
 **Problem.** Return the median of every window of size `k`. E.g. `nums=[1,3,-1,-3,5,3,6,7], k=3` → `[1,-1,-1,3,5,6]`. Constraints: `n ≤ 10⁵`.
 
@@ -551,3 +499,52 @@ def median_sliding_window(nums: list[int], k: int) -> list[float]:
 
 **Duplicate problems:**
 - Find Median from Data Stream (LC 295) - the same two-heap balancing + lazy-deletion-free core technique, without the sliding-window eviction.
+
+### 5. Minimum Cost to Make at Least One Valid Path in a Grid
+
+**Problem.** Given an `m x n` grid where each cell has a direction arrow (one of 4), moving along the arrow costs 0 and moving against it costs 1 (you may change any cell's arrow). Return the minimum cost to build a path from the top-left to the bottom-right corner.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [[1,1,1,1],[2,2,2,2],[1,1,1,1],[2,2,2,2]] | **Output:** 3
+  - **Explanation:** every "free" move (following the arrow) costs 0 and every "against the arrow" move costs 1 - the shortest-cost path changes direction 3 times.
+- **Example 2**
+  - **Input:** grid = [[1,1,3],[3,2,2],[1,1,4]] | **Output:** 0
+  - **Explanation:** the arrows already point along a valid top-left-to-bottom-right path, so no direction changes (0-cost moves only) are needed.
+
+**Constraints:** `1 ≤ m, n ≤ 100`, grid values are 1-4 (arrow directions).
+
+**Approach:** Model the grid as a graph where each cell has 4 outgoing edges (one per direction): weight **0** if it matches the cell's arrow, weight **1** otherwise. This is exactly a **0/1-weighted shortest-path** problem - Dijkstra's O(E log V) heap works, but a deque solves it in O(V + E) instead: `appendleft` a neighbor reached via a 0-cost (arrow-following) move so it's processed next at the same distance, `append` a neighbor reached via a 1-cost move so it's processed after all current-distance nodes are exhausted. The deque naturally stays sorted by distance, so the first pop of any cell is its final shortest cost - no heap needed. This is the deque's contest-signature "two ends encode the two possible edge weights" trick, distinct from every other entry in this section.
+
+```python
+from collections import deque
+
+def min_cost(grid: list[list[int]]) -> int:
+    m, n = len(grid), len(grid[0])
+    # direction encodings 1..4 map to (dr, dc); index 0 unused
+    moves = [(0, 0), (0, 1), (0, -1), (1, 0), (-1, 0)]
+    INF = float("inf")
+    dist = [[INF] * n for _ in range(m)]
+    dist[0][0] = 0
+    dq = deque([(0, 0)])
+    while dq:
+        r, c = dq.popleft()
+        for d in range(1, 5):
+            dr, dc = moves[d]
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < m and 0 <= nc < n:
+                cost = 0 if grid[r][c] == d else 1
+                if dist[r][c] + cost < dist[nr][nc]:
+                    dist[nr][nc] = dist[r][c] + cost
+                    if cost == 0:
+                        dq.appendleft((nr, nc))     # free move - process next
+                    else:
+                        dq.append((nr, nc))         # cost-1 move - process later
+    return dist[m - 1][n - 1]
+```
+
+**Complexity:** O(m·n) time (V + E on a grid graph with O(1) out-degree), O(m·n) space.
+
+**Duplicate problems:**
+- Shortest Path in Binary Matrix (LC 1091) - a related but distinct plain-BFS problem (all edge weights equal 1, no 0-weight edges) - only the queue-based BFS mechanic is shared, not the two-ended 0/1 distinction.
+- Number of Ways to Arrive at Destination (LC 1976) - same weighted-shortest-path shape but with arbitrary positive weights, requiring Dijkstra's heap rather than 0/1-BFS's deque.

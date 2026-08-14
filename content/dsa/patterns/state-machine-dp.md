@@ -15,7 +15,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -184,106 +183,6 @@ Answer: `max(SOLD=3, REST=2) = 3`. The invariant holds at every step: HELD is on
 
 ---
 
-## CP-primitives
-
-### 1. Rolling-array space compression: O(S) instead of O(n · S)
-
-**The trick:** state machine DP recurrences only read `dp[i-1][*]` when computing `dp[i][*]`. Replace the full `n × S` table with two `S`-length arrays, swapping them each iteration.
-
-**Why for CP:** for n = 10⁵ and S = 3, the full table is 300 000 integers - fine. But for k-transaction problems with n = 10⁵ and k = 10⁴, the naive table is 10⁹ integers (OOM). Rolling to `O(k · S)` = `O(2k)` fits in memory. The amortized cost of the rolling approach is O(S) extra space - constant relative to problem size.
-
-```python
-# k-transaction rolling: O(k) space instead of O(n*k)
-def max_profit_k_tx(k: int, prices: list[int]) -> int:
-    n = len(prices)
-    if n == 0 or k == 0:
-        return 0
-    if k >= n // 2:
-        return sum(max(0, prices[i+1] - prices[i]) for i in range(n - 1))
-    # held[j] = best profit after at most j+1 buys, currently holding
-    # cash[j] = best profit after at most j+1 complete transactions, not holding
-    held = [float('-inf')] * k
-    cash = [0] * k
-    for price in prices:
-        for j in range(k - 1, -1, -1):    # iterate in reverse to avoid using updated values
-            cash[j] = max(cash[j], held[j] + price)
-            held[j] = max(held[j], (cash[j-1] if j > 0 else 0) - price)
-    return cash[-1]
-```
-
-### 2. Top-2 tracking for k-color paint house in O(n · k)
-
-**The problem:** paint house with k colors, no two adjacent same. Naive state machine is O(n · k²) - for each house and each color, scan all k-1 other colors. When k = 100 and n = 10⁵, this is 10⁹ operations: TLE.
-
-**The trick:** for each row, instead of storing all k costs, track only the **two smallest costs and their color indices** (the minimum and the second-minimum). For any color c at house i+1, the cheapest previous color is either the global min (if it's a different color) or the second-global-min. Look-up is O(1) per color instead of O(k).
-
-**Why for CP:** reduces paint-house-k from O(n · k²) to O(n · k) - a factor of k improvement, critical when k is large.
-
-```python
-def min_cost_k_colors(costs: list[list[int]]) -> int:
-    # costs[i][j] = cost to paint house i with color j
-    n, k = len(costs), len(costs[0])
-    if n == 0:
-        return 0
-    prev_min1 = prev_min2 = (0, -1)   # (cost, color_idx); -1 = no color constraint
-    for i in range(n):
-        cur_min1 = cur_min2 = (float('inf'), -1)
-        for c in range(k):
-            prev = prev_min1[0] if prev_min1[1] != c else prev_min2[0]
-            total = costs[i][c] + prev
-            if total <= cur_min1[0]:
-                cur_min2 = cur_min1
-                cur_min1 = (total, c)
-            elif total < cur_min2[0]:
-                cur_min2 = (total, c)
-        prev_min1, prev_min2 = cur_min1, cur_min2
-    return prev_min1[0]
-```
-
-### 3. Profile DP: state = bitmask of last row (grid tiling problems)
-
-**The problem:** tile an n × m grid with dominoes. Naively O(2^(n·m)). With profile DP: the "state" at column j is the bitmask of which cells in column j are already filled by tiles starting in column j-1. Only the last row's profile matters for valid transitions.
-
-**Why for CP:** transforms a 2D tiling problem into a state machine over columns where state = bitmask of row coverage (2^n states). For n ≤ 10, this is 1024 states - tractable even with n · 2^n · 2^n transitions. The key is that "past column j-1" is fully summarized by the profile - no need to remember deeper history.
-
-**Signal to use it:** grid problem, n or m ≤ 20, question about tilings/placements. State = bitmask of last column profile.
-
-```python
-def domino_tiling(n: int, m: int) -> int:
-    """Count ways to tile an n-row × m-col grid with 1×2 dominoes."""
-    # profile DP: dp[mask] = ways to reach this column where `mask` encodes
-    # which rows of the current column are already filled by a horizontal
-    # domino extending from the previous column.
-
-    def place(row: int, in_mask: int, out_mask: int, ways: int,
-              nxt: dict[int, int]) -> None:
-        # in_mask:  rows pre-filled in this column (from left neighbour)
-        # out_mask: rows pre-filled in NEXT column (horizontal placed now)
-        if row == n:
-            nxt[out_mask] = nxt.get(out_mask, 0) + ways
-            return
-        if (in_mask >> row) & 1:
-            place(row + 1, in_mask, out_mask, ways, nxt)      # already filled
-        else:
-            # horizontal: fills this row here + same row in next column
-            place(row + 1, in_mask, out_mask | (1 << row), ways, nxt)
-            # vertical: fills this row + row+1 here (both must be free in in_mask)
-            if row + 1 < n and not ((in_mask >> (row + 1)) & 1):
-                place(row + 2, in_mask, out_mask, ways, nxt)
-
-    dp: dict[int, int] = {0: 1}
-    for _ in range(m):
-        nxt: dict[int, int] = {}
-        for mask, ways in dp.items():
-            place(0, mask, 0, ways, nxt)
-        dp = nxt
-
-    return dp.get(0, 0)  # mask=0: no overhang beyond the last column
-```
-
-`dp[mask]` holds the count of ways to complete all columns so far, given that `mask` describes which rows of the next column are pre-filled by a horizontal domino. `place` recurses row-by-row within a column, choosing horizontal (fills this cell + marks next column) or vertical (fills two rows here) for each free row. After processing all m columns, only `mask=0` is valid - no domino extends beyond the grid.
-
-
 ## Pitfalls
 
 1. **Buying from SOLD in cooldown problems.** The cooldown rule means SOLD → REST is *mandatory* and REST is the *only* state from which you can buy. Writing `dp[i][HELD] = max(prev[HELD], prev[SOLD] - price)` is wrong - you can't buy immediately after selling. The correct recurrence is `dp[i][HELD] = max(prev[HELD], prev[REST] - price)`. This is the single most common bug in LC 309.
@@ -440,7 +339,7 @@ Given `n` houses and `costs[i][j]` (cost to paint house `i` with color `j`, thre
 
 **Constraints:** `1 ≤ n ≤ 100`, `costs.length == n`, `costs[i].length == 3`, `1 ≤ costs[i][j] ≤ 20`.
 
-**Approach.** Three-state machine: COLOR_0, COLOR_1, COLOR_2 - the state is *which specific color* the current house is painted, an absolute label. `dp[i][c] = costs[i][c] + min(dp[i-1][c'] for c' ≠ c)`. At each step, the cheapest previous color is one of the other two - no scanning needed. Roll to O(1) space with three scalars. The pattern generalizes: for k colors, track top-2 minimums (see CP-primitives).
+**Approach.** Three-state machine: COLOR_0, COLOR_1, COLOR_2 - the state is *which specific color* the current house is painted, an absolute label. `dp[i][c] = costs[i][c] + min(dp[i-1][c'] for c' ≠ c)`. At each step, the cheapest previous color is one of the other two - no scanning needed. Roll to O(1) space with three scalars. The pattern generalizes: for k colors, track top-2 minimums instead of scanning all k-1 rivals (see Problem 6, Paint House II, below).
 
 ```python
 def min_cost_paint_house(costs: list[list[int]]) -> int:
@@ -456,8 +355,6 @@ def min_cost_paint_house(costs: list[list[int]]) -> int:
 
 **Complexity.** O(n · colors) = O(n) time (colors = 3, constant), O(1) space.
 
-**Duplicate problems:**
-- Paint House II (LC 265) - k colors; use top-2 minimum tracking for O(n · k) instead of O(n · k²).
 
 ---
 
@@ -490,3 +387,88 @@ def num_ways_fence(n: int, k: int) -> int:
 **Complexity.** O(n) time, O(1) space.
 
 **Duplicate problems:** none - the relative-state (same/different) design is distinct from every other entry in this file, which all track absolute state.
+
+---
+
+### 6. Paint House II (LC 265)
+
+Given `n` houses and `costs[i][j]` (cost to paint house `i` with color `j`, `k` colors), paint all houses so no two adjacent houses share a color, minimizing total cost. Constraints: `1 ≤ n ≤ 100`, `2 ≤ k ≤ 100`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** costs = [[1,5,3],[2,9,4]] | **Output:** 5
+  - **Explanation:** paint house 0 with color 0 (cost 1), house 1 with color 2 (cost 4); total 5.
+- **Example 2**
+  - **Input:** costs = [[1,3]] | **Output:** 1
+
+**Constraints:** `1 ≤ n ≤ 100`, `1 ≤ k ≤ 100`, `1 ≤ costs[i][j] ≤ 20`.
+
+**Approach.** This is Paint House's k-state machine, but the naive per-house scan of "cheapest color other than mine" is O(k) per color, giving O(n·k²) overall - at k = 100 that's 10⁶ per test, still fine here, but the technique that removes the k² factor entirely is the CP-relevant one: track only the two smallest total costs from the previous row (and which color index produced the smaller one). For any color `c` at the current house, the best previous cost is the row minimum if `c` didn't produce it, otherwise the second-smallest. This turns the O(k) inner lookup into O(1), collapsing the whole DP to O(n·k). Distinct from Paint House (k=3): here `k` is large enough that the k² factor actually matters, so the top-2 compression is the point of the problem, not an incidental optimization.
+
+```python
+def min_cost_ii(costs: list[list[int]]) -> int:
+    n, k = len(costs), len(costs[0])
+    if n == 0:
+        return 0
+    prev_min1 = prev_min2 = (0, -1)   # (cost, color_idx); -1 = no color yet
+    for i in range(n):
+        cur_min1 = cur_min2 = (float("inf"), -1)
+        for c in range(k):
+            prev = prev_min1[0] if prev_min1[1] != c else prev_min2[0]
+            total = costs[i][c] + prev
+            if total <= cur_min1[0]:
+                cur_min2 = cur_min1
+                cur_min1 = (total, c)
+            elif total < cur_min2[0]:
+                cur_min2 = (total, c)
+        prev_min1, prev_min2 = cur_min1, cur_min2
+    return prev_min1[0]
+```
+
+**Complexity.** O(n·k) time, O(1) space (rolling top-2 pair).
+
+---
+
+### 7. Domino Tiling of a Grid
+
+Given an `n × m` grid (`n` small, `m` up to 1000), count the number of ways to fully tile it with 1×2 dominoes (horizontal or vertical placement), modulo `10⁹+7`. Constraints: `1 ≤ n ≤ 11`, `1 ≤ m ≤ 1000`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 2, m = 2 | **Output:** 2
+  - **Explanation:** two vertical dominoes, or two horizontal dominoes - 2 tilings.
+- **Example 2**
+  - **Input:** n = 1, m = 2 | **Output:** 1
+  - **Explanation:** a single 1×2 grid has exactly one horizontal-domino tiling.
+
+**Constraints:** `1 ≤ n ≤ 11`, `1 ≤ m ≤ 1000` (grid area up to ~10⁴, but naive enumeration is exponential in area).
+
+**Approach.** A grid-tiling state machine where the "state" isn't a small fixed label but a **bitmask profile**: at each column boundary, the state records which rows of the next column are already pre-filled by a horizontal domino placed from the current column. This is a genuinely different flavor of state machine DP from the rest of this article - the state count is `2ⁿ` (exponential in the grid height, not a constant 2-5), which is exactly the boundary condition this pattern's Recognition signals section calls out for reaching for [Bitmask DP](./bitmask-dp.md) instead. It's included here because the *transition* discipline (define named states, enumerate legal transitions, DP over state × position) is identical to the rest of the article even though the state space itself is exponential - recognizing when "state machine" tips into "profile/bitmask DP" is itself a CP-reading skill worth having anchored to a concrete problem.
+
+```python
+MOD = 10**9 + 7
+
+def count_tilings(n: int, m: int) -> int:
+    def place(row: int, in_mask: int, out_mask: int, ways: int, nxt: dict[int, int]) -> None:
+        if row == n:
+            nxt[out_mask] = (nxt.get(out_mask, 0) + ways) % MOD
+            return
+        if (in_mask >> row) & 1:
+            place(row + 1, in_mask, out_mask, ways, nxt)
+        else:
+            place(row + 1, in_mask, out_mask | (1 << row), ways, nxt)
+            if row + 1 < n and not ((in_mask >> (row + 1)) & 1):
+                place(row + 2, in_mask, out_mask, ways, nxt)
+
+    dp: dict[int, int] = {0: 1}
+    for _ in range(m):
+        nxt: dict[int, int] = {}
+        for mask, ways in dp.items():
+            place(0, mask, 0, ways, nxt)
+        dp = nxt
+    return dp.get(0, 0)
+```
+
+**Complexity.** O(m · 3ⁿ) time (each column's profile transition branches roughly 2-3 ways per row), O(2ⁿ) space for the state dictionary.
+
+**Duplicate problems:** none - this is the article's sole bitmask-profile entry, included as the recognition boundary against [Bitmask DP](./bitmask-dp.md) rather than as a duplicate of a named-state problem.

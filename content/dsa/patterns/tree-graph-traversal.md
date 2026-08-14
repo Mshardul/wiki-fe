@@ -16,7 +16,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -124,22 +123,6 @@ These are the same bounds as the underlying BFS/DFS algorithms - the pattern add
 - **DFS with path tracking** - carry a mutable `path` list through recursion, appending on entry and popping on exit, to enumerate root-to-leaf paths.
 - **DFS with global state via closures** - use a mutable counter/accumulator captured in a nested function, common when the "your logic here" step needs to mutate shared state (component count, max depth seen).
 - **0/1-weighted BFS (deque)** - swap the queue for a deque so 0-weight edges are pushed to the front; still fits the "which frontier structure" mental model from this pattern even though it's covered in depth on the [BFS page](../algorithms/bfs.md#graphtree-assumptions).
-
----
-
-## CP-primitives
-
-### 1. Multi-source BFS as a virtual super-source
-
-**Why for CP:** collapses "distance from any of k sources" from k separate O(V+E) BFS runs (O(k·(V+E)) total) into one O(V+E) run - seed all sources into the queue at distance 0 up front, as if they were all connected to a virtual zero-cost super-node. This is the single highest-leverage BFS trick in contest grids (nearest-zero, rotting-oranges-style spreading, multi-gate shortest distance).
-
-### 2. Iterative DFS with an explicit stack to dodge recursion-limit TLE/RE
-
-**Why for CP:** Python's default recursion limit (1000) and small OS thread stack mean recursive DFS on a path-like graph of 10⁴–10⁵ nodes crashes with `RecursionError` or a native stack overflow - a correctness bug disguised as a performance one. The `(node, neighbor_iterator)` stack pattern from [DFS § Implementation](../algorithms/dfs.md#implementation) replicates recursive semantics (including finish order) with heap-allocated space instead of call-stack space.
-
-### 3. Bitmask visited-state for implicit-graph traversal
-
-**Why for CP:** when the "graph" is a state space (e.g. visiting a subset of cells, TSP-style), encode the visited set as an integer bitmask instead of a hash set of tuples. `visited | (1 << i)` and `visited & (1 << i)` are O(1) and dramatically faster than set operations, making the graph-BFS/DFS skeleton usable on state spaces up to roughly 2²⁰-2²⁴ states.
 
 ---
 
@@ -404,3 +387,103 @@ def findCircleNum(isConnected: list[list[int]]) -> int:
 **Duplicate problems:**
 - Number of Islands (LC 200) - same connected-components DFS, but on a grid (implicit graph) instead of an explicit adjacency matrix. Full entry in [Matrix Traversal](./matrix-traversal.md).
 - Number of Connected Components in an Undirected Graph (classic) - identical mechanic on an edge-list-to-adjacency-list graph.
+
+---
+
+### 6. Rotting Oranges (LC 994)
+
+**Problem.** Given an `m×n` grid where each cell is empty (0), fresh (1), or rotten (2), every minute a rotten orange rots any orthogonally-adjacent fresh orange. Return the minimum minutes until no fresh orange remains, or -1 if impossible. `1 ≤ m, n ≤ 10`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [[2,1,1],[1,1,0],[0,1,1]] | **Output:** 4
+  - **Explanation:** rot spreads outward one ring per minute from the single starting rotten cell; the farthest fresh orange takes 4 minutes to reach.
+- **Example 2**
+  - **Input:** grid = [[2,1,1],[0,1,1],[1,0,1]] | **Output:** -1
+  - **Explanation:** the fresh orange in the bottom-left corner is isolated by empty cells and can never rot.
+
+**Constraints:** `1 ≤ m, n ≤ 10`, each cell is `0`, `1`, or `2`.
+
+**Approach.** Multi-source BFS: seed the queue with every rotten cell at distance 0 simultaneously, as if they all hung off one virtual super-source, instead of running a separate BFS per rotten cell. Draining the queue level-by-level (same level-size-snapshot technique as tree level order) gives the exact minute count directly - each level drained is one minute elapsed. A leftover fresh orange after the queue empties means -1.
+
+```python
+from collections import deque
+
+def orangesRotting(grid: list[list[int]]) -> int:
+    rows, cols = len(grid), len(grid[0])
+    queue: deque[tuple[int, int]] = deque()
+    fresh = 0
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r][c] == 2:
+                queue.append((r, c))
+            elif grid[r][c] == 1:
+                fresh += 1
+
+    minutes = 0
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    while queue and fresh > 0:
+        minutes += 1
+        for _ in range(len(queue)):
+            r, c = queue.popleft()
+            for dr, dc in directions:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 1:
+                    grid[nr][nc] = 2
+                    fresh -= 1
+                    queue.append((nr, nc))
+
+    return minutes if fresh == 0 else -1
+```
+
+**Complexity.** O(m·n) time (each cell enqueued at most once), O(m·n) space for the queue in the worst case.
+
+**Duplicate problems:**
+- Walls and Gates (classic, not on LC) - identical multi-source BFS from every gate cell simultaneously, filling in distance-to-nearest-gate instead of a rot timer.
+- As Far from Land as Possible (LC 1162) - same multi-source BFS seeded from all land cells to find the water cell maximizing distance to nearest land.
+
+---
+
+### 7. Shortest Path Visiting All Nodes (LC 847)
+
+**Problem.** Given an undirected connected graph of up to 12 nodes, return the length of the shortest path that visits every node at least once, starting and ending at any node (revisits and repeated edges allowed).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** graph = [[1,2,3],[0],[0],[0]] | **Output:** 4
+  - **Explanation:** start at node 1, go 1→0→2→0→3 (or a symmetric route) - visits every node in 4 edges.
+- **Example 2**
+  - **Input:** graph = [[1],[0,2,4],[1,3,4],[2],[1,2]] | **Output:** 4
+
+**Constraints:** `n == graph.length`, `1 ≤ n ≤ 12`, graph is connected and undirected.
+
+**Approach.** This isn't traversal over the given graph alone - the state space is `(current node, set of nodes visited so far)`, and a plain visited-boolean-per-node BFS can't represent "visited so far" as a single flag because the same node may need to be revisited. Encode the visited set as an integer bitmask (`n ≤ 12` fits in 12 bits) and BFS over the state space `(node, mask)`, seeding the queue with `(i, 1<<i)` for every starting node `i` at distance 0 - a multi-source BFS over an implicit state graph. The first time `mask == (1<<n) - 1` is reached, that BFS layer's distance is the answer.
+
+```python
+from collections import deque
+
+def shortestPathLength(graph: list[list[int]]) -> int:
+    n = len(graph)
+    full_mask = (1 << n) - 1
+    if n == 1:
+        return 0
+
+    queue: deque[tuple[int, int, int]] = deque()
+    visited: set[tuple[int, int]] = set()
+    for i in range(n):
+        queue.append((i, 1 << i, 0))
+        visited.add((i, 1 << i))
+
+    while queue:
+        node, mask, dist = queue.popleft()
+        if mask == full_mask:
+            return dist
+        for nxt in graph[node]:
+            next_mask = mask | (1 << nxt)
+            if (nxt, next_mask) not in visited:
+                visited.add((nxt, next_mask))
+                queue.append((nxt, next_mask, dist + 1))
+    return -1
+```
+
+**Complexity.** O(n² · 2ⁿ) time and space - each of the `n · 2ⁿ` `(node, mask)` states is visited once, with up to `n` neighbor transitions each.

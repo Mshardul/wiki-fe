@@ -43,6 +43,8 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `dsa/data-structures/union-find.md` - expanded: "Traversal & invariant" - array-vs-explicit-node representation note
 - `dsa/index.md` - new row: Big-O Notation
 - 28 files across `dsa/data-structures/` and `dsa/algorithms/` - fixed dangling Big-O Notation prerequisite links now that the target article exists
+- 49 files across `dsa/data-structures/` and `dsa/patterns/` - restructured: merged `CP-primitives` section into Practice problems as full worked entries or duplicate-problems lines; section removed article-wide; all Practice-problem titles made technique-neutral (no longer name the solving approach)
+- `system-design/index.md` - fixed broken table rows for Session-Based Authentication, JWT, OAuth 2.0 & OIDC, MFA, Service-to-Service Authentication, mTLS - registered 6 already-written but unlisted articles
 
 ## 2026-08-12
 - `dsa/index.md` - new section: "Learning Paths" - links the 3 existing track pages

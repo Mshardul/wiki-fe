@@ -14,7 +14,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -143,72 +142,6 @@ Result: [0, 1, 2, 3, 4, ...]  first L elements are the answer
 | kSum (fix + recurse) | Fix k−2 outer pointers, two-pointer the last two | 3Sum (LC 15), 4Sum (LC 18) |
 | Merge of two sorted arrays | One pointer per array, merge into third | Merge Sorted Array (LC 88) |
 | Two pointers on two arrays | "closest pair across arrays" | Closest pair from two sorted arrays |
-
----
-
-## CP-primitives
-
-### 1. Meet in the middle (two-pointer on two sorted halves)
-
-**The problem:** subset-sum with n ≤ 40 - brute force is O(2ⁿ), too slow. Split into two halves of size n/2. Enumerate all 2^(n/2) ≈ 2²⁰ ≈ 10⁶ subset sums for each half. Sort one list, <abbr>two-pointer</abbr> the other to find pairs summing to target.
-
-```python
-def meet_in_middle(nums: list[int], target: int) -> bool:
-    n = len(nums)
-    half = n // 2
-    def all_sums(arr: list[int]) -> list[int]:
-        sums = [0]
-        for x in arr:
-            sums += [s + x for s in sums]
-        return sums
-    left = sorted(all_sums(nums[:half]))
-    right = sorted(all_sums(nums[half:]))
-    L, R = 0, len(right) - 1
-    while L < len(left) and R >= 0:
-        s = left[L] + right[R]
-        if s == target:
-            return True
-        elif s < target:
-            L += 1
-        else:
-            R -= 1
-    return False
-```
-
-**Why for CP:** reduces O(2ⁿ) to O(2^(n/2) · log(2^(n/2))) = O(n · 2^(n/2)) - makes n=40 feasible where n=50 is not.
-
-### 2. Three-pointer / kSum generalization
-
-**The problem:** find all unique triplets (or quadruplets) summing to a target without duplicates.
-
-**The trick:** sort the array. Fix the outermost k−2 pointers with a nested for loop (skipping duplicates). Two-pointer the remaining two positions. Duplicate skipping: after recording a valid pair, advance past any equal elements on both ends.
-
-```python
-def four_sum(nums: list[int], target: int) -> list[list[int]]:
-    nums.sort()
-    n, result = len(nums), []
-    for i in range(n - 3):
-        if i > 0 and nums[i] == nums[i - 1]:
-            continue
-        for j in range(i + 1, n - 2):
-            if j > i + 1 and nums[j] == nums[j - 1]:
-                continue
-            L, R = j + 1, n - 1
-            while L < R:
-                s = nums[i] + nums[j] + nums[L] + nums[R]
-                if s == target:
-                    result.append([nums[i], nums[j], nums[L], nums[R]])
-                    while L < R and nums[L] == nums[L + 1]: L += 1
-                    while L < R and nums[R] == nums[R - 1]: R -= 1
-                    L += 1; R -= 1
-                elif s < target:
-                    L += 1
-                else:
-                    R -= 1
-    return result
-```
-
-**Why for CP:** O(nᵏ⁻¹) vs O(nᵏ) brute force. For 3Sum: O(n²) vs O(n³). Each fixed pointer loop is one factor of n; two-pointer replaces the innermost loop.
 
 ---
 
@@ -408,7 +341,7 @@ def three_sum(nums: list[int]) -> list[list[int]]:
 **Complexity:** O(n²) time, O(1) extra space (sort is in-place).
 
 **Duplicate problems:**
-- 4Sum (LC 18) - add one more outer fixed pointer; O(n³).
+- 4Sum (LC 18) - add one more outer fixed pointer; O(n³). Same kSum generalization: fix the outermost k−2 pointers in a nested loop (skipping duplicates), two-pointer the innermost two.
 - 3Sum Closest (LC 16) - track closest sum instead of exact zero.
 
 ---
@@ -448,3 +381,56 @@ def is_palindrome(s: str) -> bool:
 **Duplicate problems:**
 - Valid Palindrome II (LC 680) - allow one deletion; try skipping L or R on mismatch, check remainder.
 - Longest Palindromic Substring (LC 5) - expand-around-center variant, not convergence.
+
+---
+
+### 6. Closest Subsequence Sum (LC 1755)
+
+**Problem.** Given an integer array `nums` (up to 40 elements) and a target, find the minimum absolute difference between `target` and the sum of any subsequence (including the empty subsequence) of `nums`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [5,-7,3,5], goal = 6 | **Output:** 0
+  - **Explanation:** the full array {5,-7,3,5} sums to 6, exactly matching the goal, so the minimum difference is 0.
+- **Example 2**
+  - **Input:** nums = [7,-9,15,-2], goal = 3 | **Output:** 1
+  - **Explanation:** the subsequence {-9,15,-2} sums to 4, one away from the goal of 3 - no subsequence sums to exactly 3.
+
+**Constraints:** `1 ≤ nums.length ≤ 40`, `-10⁷ ≤ nums[i] ≤ 10⁷`, `-10⁹ ≤ goal ≤ 10⁹`.
+
+**Approach.** `n ≤ 40` rules out brute force (2⁴⁰ subsequences) but is exactly the meet-in-the-middle regime: split into two halves of ~20 elements, enumerate all 2²⁰ subsequence sums per half (still ~10⁶, feasible), sort one half's sums, then two-pointer across the two sorted sum lists to find the pair whose total lands closest to `goal`. The two-pointer step is what makes the combination step O(2^(n/2)) instead of O(2ⁿ) via nested search: since both lists are sorted, moving the pointer on whichever side under/overshoots `goal` explores every promising combination exactly once.
+
+```python
+from itertools import combinations
+
+def minAbsDifference(nums: list[int], goal: int) -> int:
+    n = len(nums)
+    half = n // 2
+
+    def all_sums(arr: list[int]) -> list[int]:
+        sums = [0]
+        for x in arr:
+            sums += [s + x for s in sums]
+        return sums
+
+    left = sorted(all_sums(nums[:half]))
+    right = sorted(all_sums(nums[half:]))
+
+    best = float("inf")
+    L, R = 0, len(right) - 1
+    while L < len(left) and R >= 0:
+        total = left[L] + right[R]
+        best = min(best, abs(total - goal))
+        if total == goal:
+            return 0
+        elif total < goal:
+            L += 1
+        else:
+            R -= 1
+    return int(best)
+```
+
+**Complexity.** O(2^(n/2) · n) time (enumeration dominates; two-pointer scan is O(2^(n/2))), O(2^(n/2)) space for the two sum lists.
+
+**Duplicate problems:**
+- Partition Equal Subset Sum-style subset-sum with n ≤ 40 (classic, not on LC in this exact form) - same split-enumerate-two-pointer shape, checking for an exact target instead of closest.

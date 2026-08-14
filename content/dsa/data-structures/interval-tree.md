@@ -128,7 +128,7 @@ When k = n (every interval overlaps) on a balanced tree, the query is forced to 
 ## Variants
 
 - **Centered interval tree:** partition intervals around a center point; store intervals crossing the center sorted by left endpoint (for left queries) and right endpoint (for right queries). Two sorted lists per node - simpler overlap logic, but harder to balance dynamically.
-- **Segment tree for intervals (coordinate compression):** discretize endpoints, build a standard segment tree, mark covered nodes. Handles range-coverage counting; see CP-primitives of [segment tree](./segment-tree.md).
+- **Segment tree for intervals (coordinate compression):** discretize endpoints, build a standard [segment tree](./segment-tree.md), mark covered nodes. Handles range-coverage counting - a general segment-tree preprocessing trick, not specific to one worked example there.
 - **2D interval tree:** nest one interval tree inside another - outer on x-axis intervals, inner on y-axis. O(log² n + k) 2D rectangle stabbing; used in 2D collision detection.
 - **Augmented AVL / Red-Black tree:** the production form. Most language standard libraries don't ship interval trees natively; you build one by augmenting an AVL or RB tree with the `max` field and fixup on rotations.
 

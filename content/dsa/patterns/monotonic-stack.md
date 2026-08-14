@@ -13,7 +13,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -137,56 +136,6 @@ The signal that should push you *off* this pattern: if the problem needs element
 | Span-based area/width problems | Stack of indices; span = distance between the two "boundary" elements that resolve a given index | Largest Rectangle in Histogram (LC 84), Trapping Rain Water (LC 42) |
 | Greedy digit removal | Pop while removals remain and top digit is "worse" than incoming | Remove K Digits (LC 402), Remove Duplicate Letters (LC 316) |
 | Circular array variant | Scan the array twice (conceptually wrapping around) | Next Greater Element II (LC 503) |
-
----
-
-## CP-primitives
-
-### 1. Largest Rectangle in Histogram via monotonic stack (single-pass span trick)
-
-**The trick:** rather than computing "distance to next smaller on the left" and "distance to next smaller on the right" as two separate passes, a single left-to-right pass with an increasing monotonic stack computes each bar's full span in one go: when a bar `i` pops bar `j` off the stack (because `height[i] < height[j]`), the width for bar `j`'s rectangle is exactly `i - stack[-1] - 1` after the pop (or `i` if the stack is now empty) - the new top is `j`'s "next smaller on the left," discovered implicitly.
-
-```python
-def largest_rectangle_area(heights: list[int]) -> int:
-    stack: list[int] = []          # indices, increasing height bottom-to-top
-    max_area = 0
-    for i, h in enumerate(heights + [0]):     # sentinel 0 flushes the stack at the end
-        while stack and heights[stack[-1]] >= h:
-            height = heights[stack.pop()]
-            width = i if not stack else i - stack[-1] - 1
-            max_area = max(max_area, height * width)
-        stack.append(i)
-    return max_area
-```
-
-**Why for CP:** collapses what looks like it needs two auxiliary arrays (next-smaller-left, next-smaller-right) into one pass with a sentinel trick - a standard contest-speed simplification once you recognize the span is fully determined by the stack's state at pop time.
-
-### 2. Monotonic stack for "sum over all subarray minimums/maximums"
-
-**The trick:** to compute `sum(min(subarray) for every subarray)` in O(n) instead of enumerating all O(n²) subarrays, use a monotonic stack to find, for each element, how many subarrays have it as the minimum - via "distance to previous smaller" times "distance to next smaller or equal" (careful with the tie-breaking direction to avoid double-counting equal elements).
-
-```python
-def sum_subarray_mins(arr: list[int]) -> int:
-    MOD = 10**9 + 7
-    n = len(arr)
-    stack: list[int] = []
-    left = [0] * n     # distance to previous element strictly less
-    for i in range(n):
-        while stack and arr[stack[-1]] >= arr[i]:
-            stack.pop()
-        left[i] = i - (stack[-1] if stack else -1)
-        stack.append(i)
-    stack.clear()
-    right = [0] * n     # distance to next element strictly less (or equal, tie-broken)
-    for i in range(n - 1, -1, -1):
-        while stack and arr[stack[-1]] > arr[i]:
-            stack.pop()
-        right[i] = (stack[-1] if stack else n) - i
-        stack.append(i)
-    return sum(arr[i] * left[i] * right[i] for i in range(n)) % MOD
-```
-
-**Why for CP:** the "count subarrays where element i is the min/max" trick via monotonic stack is a recurring building block across contest problems (contribution technique) - it turns an O(n²) or O(n³) enumeration into O(n).
 
 ---
 
@@ -367,4 +316,47 @@ def remove_k_digits(num: str, k: int) -> str:
 **Duplicate problems:**
 - Remove Duplicate Letters (LC 316) - same increasing-stack greedy-removal shape, with an additional "each letter must appear exactly once" constraint gating the pop.
 - Create Maximum Number (LC 321) - same greedy monotonic-stack digit selection, extended to picking the best subsequence of a target length and merging two such subsequences.
+
+---
+
+### 5. Sum of Subarray Minimums (LC 907)
+
+Given an array of integers, find the sum of `min(subarray)` over every contiguous subarray, modulo `10⁹+7`. Constraints: `1 ≤ n ≤ 3×10⁴`, `0 ≤ arr[i] ≤ 3×10⁴`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** arr = [3,1,2,4] | **Output:** 17
+  - **Explanation:** subarray minimums are 3,1,2,4,1,1,2,1,1,1 for all 10 subarrays; their sum is 17.
+- **Example 2**
+  - **Input:** arr = [11,81,94,43,3] | **Output:** 444
+
+**Constraints:** `1 ≤ n ≤ 3×10⁴`, `0 ≤ arr[i] ≤ 3×10⁴`.
+
+**Approach.** Enumerating all O(n²) subarrays and taking each minimum is too slow. Instead use the contribution technique: for each element, count how many subarrays have it as the minimum, then sum `value × count` over all elements. That count is `(distance to the previous strictly-smaller element) × (distance to the next smaller-or-equal element)` - two monotonic-stack passes (one left-to-right, one right-to-left) computing "distance to previous/next smaller" for every index. This is distinct from every other problem in this file: it uses the stack not to answer a per-element next-greater query directly, but to derive a multiplicative span count that gets summed - the "contribution of each element across all subarrays" shape rather than a single resolved value per element.
+
+```python
+def sum_subarray_mins(arr: list[int]) -> int:
+    MOD = 10**9 + 7
+    n = len(arr)
+    stack: list[int] = []
+    left = [0] * n     # distance to previous element strictly less
+    for i in range(n):
+        while stack and arr[stack[-1]] >= arr[i]:
+            stack.pop()
+        left[i] = i - (stack[-1] if stack else -1)
+        stack.append(i)
+    stack.clear()
+    right = [0] * n     # distance to next element strictly less (tie-broken to avoid double count)
+    for i in range(n - 1, -1, -1):
+        while stack and arr[stack[-1]] > arr[i]:
+            stack.pop()
+        right[i] = (stack[-1] if stack else n) - i
+        stack.append(i)
+    return sum(arr[i] * left[i] * right[i] for i in range(n)) % MOD
+```
+
+**Complexity.** O(n) time, O(n) space.
+
+**Duplicate problems:**
+- Sum of Subarray Ranges (LC 2104) - same contribution technique run twice (once for max, once for min), answer is `sum(max) - sum(min)`.
 

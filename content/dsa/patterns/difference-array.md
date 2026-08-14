@@ -13,11 +13,14 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
 - [Practice problems](#practice-problems)
+  - [Range Addition (LC 370)](#1-range-addition-lc-370)
+  - [Meeting Rooms II (LC 253)](#2-meeting-rooms-ii-lc-253)
+  - [Number of Flowers in Full Bloom (LC 2251)](#3-number-of-flowers-in-full-bloom-lc-2251)
+  - [Increment Submatrix by One (LC 2536)](#4-increment-submatrix-by-one-lc-2536)
 
 ## What it is
 
@@ -128,72 +131,6 @@ Naive approach (update each element in the range): O(n·q) time.
 - **Overlap counting** - treat each interval `[l, r]` as `+1` at `l` and `-1` at `r+1`; prefix sum gives the count of overlapping intervals at each position. Max of prefix sum = answer to "max simultaneous overlap."
 - **Difference array on events (coordinate-compressed)** - when updates span a large integer range, map event coordinates to compressed indices first, apply difference array, then reconstruct.
 
-## CP-primitives
-
-### 1. 2D difference array
-
-Extend to a matrix for rectangle updates: increment all cells in sub-matrix `(r1, c1)` to `(r2, c2)` by `val`.
-
-```
-D[r1][c1]     += val
-D[r1][c2+1]   -= val
-D[r2+1][c1]   -= val
-D[r2+1][c2+1] += val
-```
-
-After all updates, compute the 2D prefix sum (row-then-column, or column-then-row) to recover the matrix.
-
-**Why for CP:** "paint rectangles, find max cell value" problems on grids with up to 10³×10³ cells and 10⁵ rectangle updates. Naive O(n²·q) → O(n² + q) with 2D difference array. Appears in Codeforces Div 2 C/D problems involving grid painting.
-
-```python
-def rect_updates(R: int, C: int,
-                 updates: list[tuple[int, int, int, int, int]]) -> list[list[int]]:
-    """Each update: (r1, c1, r2, c2, val)."""
-    D = [[0] * (C + 1) for _ in range(R + 1)]
-    for r1, c1, r2, c2, val in updates:
-        D[r1][c1]     += val
-        D[r1][c2 + 1] -= val
-        D[r2 + 1][c1] -= val
-        D[r2 + 1][c2 + 1] += val
-    for r in range(R):
-        for c in range(1, C):
-            D[r][c] += D[r][c - 1]
-    for c in range(C):
-        for r in range(1, R):
-            D[r][c] += D[r - 1][c]
-    return [row[:C] for row in D[:R]]
-```
-
-### 2. Floating / event-sweep difference array
-
-When updates are on a continuous or large-integer axis, sort events instead of allocating a giant array. Each interval `[l, r]` contributes a `+val` event at `l` and a `-val` event at `r` (or `r+1` for half-open). Sort all events by coordinate; a running sum as you sweep is the equivalent of the prefix-sum pass.
-
-**Why for CP:** meeting-rooms II (max concurrent meetings), car-fleet problems, bandwidth allocation, and any problem where the "positions" are large integers or floats. Avoids O(max_coord) space - O(q log q) time from sorting.
-
-```python
-def max_overlap(intervals: list[tuple[int, int]]) -> int:
-    """Count max simultaneous overlapping intervals."""
-    events: list[tuple[int, int]] = []
-    for l, r in intervals:
-        events.append((l, +1))
-        events.append((r, -1))   # exclusive at r: half-open interval, not r+1
-    events.sort()
-    cur = ans = 0
-    for _, delta in events:
-        cur += delta
-        ans = max(ans, cur)
-    return ans
-```
-
-### 3. Difference array on a circular array
-
-When the range can wrap around (index `l > r` in a circular array of length `n`):
-
-- If `l ≤ r`: normal update - `D[l] += val`, `D[r+1] -= val`.
-- If `l > r` (wraps): split into `[l, n-1]` and `[0, r]` - equivalently: `D[l] += val`, `D[n] -= val`, `D[0] += val`, `D[r+1] -= val`.
-
-**Why for CP:** circular scheduler problems, wrap-around range painting on rings. Common in IOI / CF problems with circular indices.
-
 ## Pitfalls
 
 ### 1. Off-by-one on the sentinel slot
@@ -290,6 +227,7 @@ def min_meeting_rooms(intervals: list[list[int]]) -> int:
 **Duplicate problems:**
 - Divide Intervals Into Minimum Number of Groups (LC 2406) - identical in structure.
 - Car Pooling (LC 1094) - same event-sweep shape, deltas are passenger counts instead of ±1, checked against a capacity threshold.
+- Floating / event-sweep difference array (CP-primitive) - identical mechanic when the update axis is continuous or spans large integers: sort `(+val, -val)` events instead of allocating a dense array, sweep with a running sum in place of the prefix-sum pass. Same O(q log q) cost from sorting.
 
 ---
 
@@ -320,3 +258,45 @@ def full_bloom_flowers(flowers: list[list[int]], people: list[int]) -> list[int]
 
 **Duplicate problems:**
 - Meeting Rooms II (LC 253) - same "each interval contributes a +1/-1 delta" idea, but asks for the peak concurrent count rather than per-query counts at arbitrary points.
+
+---
+
+### 4. Increment Submatrix by One (LC 2536)
+
+Given an `n × n` matrix initialized to zero and a list of queries, each `[r1, c1, r2, c2]` meaning "add 1 to every cell in the rectangle from `(r1,c1)` to `(r2,c2)` inclusive", return the final matrix after applying all queries. `1 ≤ n ≤ 500`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 3, queries = [[1,1,2,2],[0,0,1,1]] | **Output:** [[1,1,0],[1,2,1],[0,1,1]]
+  - **Explanation:** cell (1,1) is covered by both rectangles so it accumulates 2; cells covered by only one rectangle get 1.
+- **Example 2**
+  - **Input:** n = 2, queries = [[0,0,1,1]] | **Output:** [[1,1],[1,1]]
+  - **Explanation:** the single query covers the whole 2×2 grid.
+
+**Constraints:** `1 ≤ n ≤ 500`, `0 ≤ queries.length ≤ 10⁴`, `0 ≤ r1 ≤ r2 < n`, `0 ≤ c1 ≤ c2 < n`.
+
+**Approach.** Distinct from every 1D entry above: a range update here is a *rectangle*, not an interval, so a single point write per endpoint no longer cancels the effect correctly - four corner writes are needed so that the two-dimensional prefix sum reconstructs the rectangle exactly. Each query does `D[r1][c1] += 1`, `D[r1][c2+1] -= 1`, `D[r2+1][c1] -= 1`, `D[r2+1][c2+1] += 1` (inclusion-exclusion on the four corners), and the final matrix is recovered with a prefix sum pass first along rows, then along columns (or vice versa - order doesn't matter as long as both passes run).
+
+```python
+def range_add_queries(n: int, queries: list[list[int]]) -> list[list[int]]:
+    D = [[0] * (n + 1) for _ in range(n + 1)]
+    for r1, c1, r2, c2 in queries:
+        D[r1][c1] += 1
+        D[r1][c2 + 1] -= 1
+        D[r2 + 1][c1] -= 1
+        D[r2 + 1][c2 + 1] += 1
+
+    for r in range(n):
+        for c in range(1, n):
+            D[r][c] += D[r][c - 1]
+    for c in range(n):
+        for r in range(1, n):
+            D[r][c] += D[r - 1][c]
+
+    return [row[:n] for row in D[:n]]
+```
+
+**Complexity.** O(n² + q) time, O(n²) space.
+
+**Duplicate problems:**
+- Range Sum Query 2D - Mutable variant scoped to batch rectangle *increments* instead of interleaved point updates (classic CP "paint rectangles, read once at the end") - identical four-corner difference technique.

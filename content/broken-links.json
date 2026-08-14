@@ -1,52 +1,4 @@
 {
-  "./content/dsa/algorithms/bellman-ford.md": [
-    {
-      "target": "./content/dsa/algorithms/path.md",
-      "title": "Bellman-Ford"
-    }
-  ],
-  "./content/dsa/algorithms/bucket-sort.md": [
-    {
-      "target": "./content/dsa/algorithms/path.md",
-      "title": "Bucket Sort"
-    }
-  ],
-  "./content/dsa/algorithms/floyd-warshall.md": [
-    {
-      "target": "./content/dsa/algorithms/path.md",
-      "title": "Floyd-Warshall"
-    }
-  ],
-  "./content/dsa/algorithms/minimum-spanning-tree.md": [
-    {
-      "target": "./content/dsa/algorithms/path.md",
-      "title": "Minimum Spanning Tree (Kruskal / Prim)"
-    }
-  ],
-  "./content/dsa/algorithms/quickselect.md": [
-    {
-      "target": "./content/dsa/algorithms/path.md",
-      "title": "Quickselect"
-    }
-  ],
-  "./content/dsa/algorithms/selection-sort.md": [
-    {
-      "target": "./content/dsa/algorithms/path.md",
-      "title": "Selection Sort"
-    }
-  ],
-  "./content/dsa/algorithms/topological-sort.md": [
-    {
-      "target": "./content/dsa/algorithms/path.md",
-      "title": "Topological Sort"
-    }
-  ],
-  "./content/dsa/data-structures/union-find.md": [
-    {
-      "target": "./content/algorithms/minimum-spanning-tree.md",
-      "title": "Union-Find (DSU)"
-    }
-  ],
   "./content/dsa/paths/cp-weighted.md": [
     {
       "target": "./content/dsa/index.md",
@@ -63,46 +15,6 @@
     {
       "target": "./content/dsa/index.md",
       "title": "Standard SWE"
-    }
-  ],
-  "./content/dsa/patterns/cyclic-sort.md": [
-    {
-      "target": "./content/dsa/patterns/path.md",
-      "title": "Cyclic Sort"
-    }
-  ],
-  "./content/dsa/patterns/dp-patterns.md": [
-    {
-      "target": "./content/dsa/patterns/path.md",
-      "title": "DP Patterns"
-    }
-  ],
-  "./content/dsa/patterns/subsets-permutations.md": [
-    {
-      "target": "./content/dsa/patterns/path.md",
-      "title": "Subsets & Permutations"
-    }
-  ],
-  "./content/system-design/components/authentication.md": [
-    {
-      "target": "./content/system-design/components/session-auth.md",
-      "title": "Authentication"
-    },
-    {
-      "target": "./content/system-design/components/jwt.md",
-      "title": "Authentication"
-    },
-    {
-      "target": "./content/system-design/components/oauth-oidc.md",
-      "title": "Authentication"
-    },
-    {
-      "target": "./content/system-design/components/mfa.md",
-      "title": "Authentication"
-    },
-    {
-      "target": "./content/system-design/components/service-to-service-auth.md",
-      "title": "Authentication"
     }
   ],
   "./content/system-design/paths/components-foundation.md": [

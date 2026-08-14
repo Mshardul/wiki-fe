@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - [Deque](../data-structures/deque.md) [Must read]
-- [Monotonic Stack](../data-structures/stack.md#cp-primitives) [Should read]
+- [Monotonic Stack](./monotonic-stack.md) [Should read]
 - [Sliding Window](./sliding-window.md) [Should read]
 
 ## Table of Contents
@@ -14,7 +14,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -45,7 +44,7 @@ Mental model: **a queue of "still-relevant" candidates, front-to-back from most-
 
 | Pattern | Distinction |
 |---|---|
-| [Monotonic Stack](../data-structures/stack.md#cp-primitives) | Stack answers "next greater/smaller element" for each index looking **one direction, unbounded** (until the answer is found or the array ends) - no window, no eviction from a second end. Queue answers windowed extremum, needs *two*-ended eviction (stale index expires **and** dominated value is popped). |
+| [Monotonic Stack](./monotonic-stack.md) | Stack answers "next greater/smaller element" for each index looking **one direction, unbounded** (until the answer is found or the array ends) - no window, no eviction from a second end. Queue answers windowed extremum, needs *two*-ended eviction (stale index expires **and** dominated value is popped). |
 | [Two Heaps](./two-heaps.md) | Heaps track the **median** (an interior order statistic) with lazy deletion; a monotonic queue can only ever report the **max or min**, never a middle rank - see [deque.md's sliding-window-median counterexample](../data-structures/deque.md#4-sliding-window-median--why-a-deque-is-not-enough) for exactly where a deque stops being enough. |
 | [Sliding Window (general)](./sliding-window.md) | Sliding window is the umbrella recognition pattern (shrink/grow on *any* constraint - sum, distinct count, extremum). Monotonic queue is the specific *data-structure engine* you plug in only when the constraint being tracked is a max/min. |
 
@@ -97,12 +96,6 @@ The tell: if the window **slides** (one element in, one out, repeatedly) and you
 - **Variable-size window** - instead of a fixed `k`, expand/shrink `L`/`R` per a constraint (classic sliding-window skeleton), using the monotonic queue only to answer "what's the max in `[L, R]` right now" as the window moves - the eviction-from-front step becomes "pop while front index `< L`" rather than a fixed `i - k` check.
 - **Two monotonic queues at once** - track both a max-queue and a min-queue over the same window to answer "is `max - min` within a bound" (see [Practice problems](#practice-problems)).
 
-## CP-primitives
-
-- **Monotonic-deque optimization of DP transitions** - when a DP recurrence looks like `dp[i] = min(dp[j] + cost) for j in [i-k, i)`, the sliding-window-min is exactly a monotonic queue, collapsing an O(n·k) DP to **O(n)**. Common in "jump game with cost" and constrained knapsack variants.
-- **2D sliding-window max via two monotonic-queue passes** - for the max over every `k×k` submatrix, run the 1D monotonic queue along each row first (collapsing every row to its sliding-row-max), then run it again along each column of the row-max result. Two O(rows·cols) passes instead of an O(rows·cols·k²) brute force per submatrix - the pattern composes cleanly because "max of a window" is associative across dimensions.
-- **Monotonic queue as a poor-man's convex hull trick (CHT) gateway** - when a DP transition is `dp[i] = min_j(dp[j] + b[j]·a[i])` and the `b[j]` values arrive in monotonic order, tracking the best line with a deque (push new lines to the back, pop dominated ones, evict from the front when the query point moves past the optimal line) is a monotonic queue over lines instead of values. Recognizing this shape is the on-ramp to full CHT/Li Chao tree for the harder DP-speedup problems.
-
 ## Pitfalls
 
 - **Storing values instead of indices.** You need the index to know *when* an entry expires (`i - k`); storing bare values loses that information and you can't detect a stale front. Always push indices, dereference with `nums[dq[i]]` when comparing.
@@ -116,11 +109,11 @@ The tell: if the window **slides** (one element in, one out, repeatedly) and you
 
 ## Related
 
-- [Deque](../data-structures/deque.md) - the underlying structure; its [CP-primitives](../data-structures/deque.md#cp-primitives) section has the canonical implementation this pattern page builds recognition and transfer around.
-- [Monotonic Stack](../data-structures/stack.md#cp-primitives) - the single-ended sibling for "next greater/smaller," not windowed.
+- [Deque](../data-structures/deque.md) - the underlying structure; its [Sliding Window Maximum practice entry](../data-structures/deque.md#1-sliding-window-maximum) has the canonical implementation this pattern page builds recognition and transfer around.
+- [Monotonic Stack](./monotonic-stack.md) - the single-ended sibling for "next greater/smaller," not windowed.
 - [Sliding Window](./sliding-window.md) - the parent recognition pattern; monotonic queue is the engine for the extremum-tracking sub-case.
 - [Two Heaps](./two-heaps.md) - reach here instead when the window needs a median/order-statistic, which a monotonic queue cannot provide.
-- [DP Patterns](./dp-patterns.md) - monotonic-queue DP optimization (problem 1 above) is a named transition-speedup technique within that family.
+- [DP Patterns](./dp-patterns.md) - monotonic-queue DP optimization (see Problem 1's duplicate-problems list) is a named transition-speedup technique within that family.
 
 ## Practice problems
 
@@ -159,7 +152,7 @@ def max_sliding_window(nums: list[int], k: int) -> list[int]:
 
 **Duplicate problems:**
 - Sliding Window Minimum (LC-adjacent, no canonical number) - identical technique with the comparison flipped (`>=` instead of `<=`).
-- Jump Game VI (LC 1696) - same algorithm run over a `dp` array computed on the fly instead of a given input array: `dp[i] = nums[i] + max(dp[j] for j in [i-k, i-1])`.
+- Jump Game VI (LC 1696) - same algorithm run over a `dp` array computed on the fly instead of a given input array: `dp[i] = nums[i] + max(dp[j] for j in [i-k, i-1])` - the general shape of "monotonic-deque optimizes a DP transition of the form `dp[i] = f(dp[j])` for `j` in a sliding window."
 - Constrained Subsequence Sum (LC 1425) - same DP-transition shape as Jump Game VI, with a max-with-zero clamp: `dp[i] = nums[i] + max(0, dp[j] for j in [i-k, i-1])`.
 - Maximum of Minimums of Every Window Size (GfG) - repeated application of the same monotonic-queue max/min extraction across all window sizes at once.
 
@@ -253,3 +246,48 @@ def longest_subarray(nums: list[int], limit: int) -> int:
 
 **Duplicate problems:**
 - Subarrays with Bounded Max/Min variants (interview-staple rephrasing) - same dual-monotonic-queue shrink-on-violation shape under a different constraint name.
+
+---
+
+### 4. Sliding Window Maximum II (grid version)
+
+**Problem.** Given a 2D grid of numbers and a window size `k`, return the maximum value in every `k×k` submatrix as the window slides across both dimensions. Constraints: `1 ≤ rows, cols ≤ 10³`, `1 ≤ k ≤ min(rows, cols)`, values in `[-10⁴, 10⁴]`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [[1,2,3],[4,5,6],[7,8,9]], k = 2 | **Output:** [[5,6],[8,9]]
+  - **Explanation:** the four 2×2 submatrices have maxima 5, 6, 8, 9, arranged in the same relative positions as their top-left corners.
+- **Example 2**
+  - **Input:** grid = [[1,1,1],[1,1,1],[1,1,1]], k = 3 | **Output:** [[1]]
+  - **Explanation:** only one 3×3 window fits in a 3×3 grid, and every value is 1.
+
+**Constraints:** `1 ≤ rows, cols ≤ 10³`, `1 ≤ k ≤ min(rows, cols)`, values in `[-10⁴, 10⁴]`.
+
+**Approach.** A brute-force scan of every `k×k` submatrix is O(rows·cols·k²), which is too slow once `k` grows. Instead, exploit that "max of a window" composes across dimensions: run the 1D sliding-window-maximum (Problem 1's exact skeleton) along every row first, collapsing each row into its sliding-row-max of width `k`; then run the same 1D routine again down every column of that intermediate result. Two O(rows·cols) passes replace the O(rows·cols·k²) brute force - this is distinct from problems 1-3 because it composes the 1D monotonic-queue routine across two dimensions rather than running it once.
+
+```python
+from collections import deque
+
+def sliding_window_max_1d(row: list[int], k: int) -> list[int]:
+    dq: deque[int] = deque()
+    res = []
+    for i, x in enumerate(row):
+        while dq and row[dq[-1]] <= x:
+            dq.pop()
+        dq.append(i)
+        if dq[0] == i - k:
+            dq.popleft()
+        if i >= k - 1:
+            res.append(row[dq[0]])
+    return res
+
+def max_submatrix(grid: list[list[int]], k: int) -> list[list[int]]:
+    row_maxed = [sliding_window_max_1d(row, k) for row in grid]
+    cols = len(row_maxed[0])
+    transposed = [[row_maxed[r][c] for r in range(len(row_maxed))] for c in range(cols)]
+    col_maxed = [sliding_window_max_1d(col, k) for col in transposed]
+    out_rows = len(col_maxed[0])
+    return [[col_maxed[c][r] for c in range(cols)] for r in range(out_rows)]
+```
+
+**Complexity.** O(rows·cols) time, O(rows·cols) space for the intermediate arrays.

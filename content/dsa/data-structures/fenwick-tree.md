@@ -24,16 +24,13 @@
   - [Why prefix sum decomposes into O(log n) pieces](#why-prefix-sum-decomposes-into-olog-n-pieces)
   - [Update walks the same tree upward](#update-walks-the-same-tree-upward)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Range update, point query (difference array + BIT)](#range-update-point-query-difference-array--bit)
-  - [Range update, range query (two BITs)](#range-update-range-query-two-bits)
-  - [BIT as an order-statistics structure (count inversions / k-th element)](#bit-as-an-order-statistics-structure-count-inversions--k-th-element)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [Range Sum Query - Mutable](#1-range-sum-query---mutable--point-update-range-query)
-  - [Count of Smaller Numbers After Self](#2-count-of-smaller-numbers-after-self--bit-as-order-statistics)
-  - [Range Sum Query - Range Update and Range Sum](#3-range-sum-query---range-update-and-range-sum--two-bits)
+  - [1. Range Sum Query - Mutable](#1-range-sum-query---mutable)
+  - [2. Count of Smaller Numbers After Self](#2-count-of-smaller-numbers-after-self)
+  - [3. Range Sum Query - Range Update and Range Sum](#3-range-sum-query---range-update-and-range-sum)
+  - [4. Range Addition](#4-range-addition)
 
 ## What it is
 
@@ -136,10 +133,10 @@ Real-world: order-statistics / "count of elements less than X seen so far" power
 ## Variants
 
 - **[Segment tree](./segment-tree.md)** - the general-purpose superset: any associative op, lazy propagation for range updates. Fenwick is what you reach for when you only need sums and want less code.
-- **BIT for range update + point query** - store the **difference array** in the BIT instead of the raw array; a range update becomes two point updates, a point query becomes a prefix-sum query. One-line inversion of what BIT normally does - full treatment in [CP-primitives](#range-update-point-query-difference-array--bit).
-- **BIT for range update + range query** - two BITs combined algebraically to support both in O(log n) - see [CP-primitives](#range-update-range-query-two-bits).
+- **BIT for range update + point query** - store the **difference array** in the BIT instead of the raw array; a range update becomes two point updates, a point query becomes a prefix-sum query. One-line inversion of what BIT normally does - full treatment in [Practice problems › Range Addition](#4-range-addition).
+- **BIT for range update + range query** - two BITs combined algebraically to support both in O(log n) - see [Practice problems › Range Sum Query - Range Update and Range Sum](#3-range-sum-query---range-update-and-range-sum).
 - **2D Fenwick tree (BIT of BITs)** - each "node" of the outer BIT is itself a BIT over the second dimension; supports 2D prefix-sum with point updates in O(log n · log m). Used for grid range-sum-with-updates (e.g. live heatmap queries).
-- **BIT as order statistics (Fenwick over frequency)** - index the BIT by **value** rather than array position, storing counts; prefix-sum then answers "how many elements ≤ x" and, with binary lifting over the tree, "find the k-th smallest" in O(log n) - see [CP-primitives](#bit-as-an-order-statistics-structure-count-inversions--k-th-element).
+- **BIT as order statistics (Fenwick over frequency)** - index the BIT by **value** rather than array position, storing counts; prefix-sum then answers "how many elements ≤ x" and, with binary lifting over the tree, "find the k-th smallest" in O(log n) - see [Practice problems › Count of Smaller Numbers After Self](#2-count-of-smaller-numbers-after-self).
 
 ## Traversal & invariant
 
@@ -258,69 +255,6 @@ class FenwickTree:
 
 **Contest velocity.** For a one-off static prefix sum with no updates, `itertools.accumulate` is faster to type and O(1) per query - only reach for `FenwickTree` once a point update appears in the problem. The `from_array` linear build (pushing each node onto its parent) beats calling `add` n times (O(n log n)) - worth it once `n` exceeds a few thousand.
 
-## CP-primitives
-
-### Range update, point query (difference array + BIT)
-
-Store the [difference array](../patterns/difference-array.md) in the BIT instead of the raw array. A range update `add [l,r] += delta` becomes two point updates (`add(l, delta)`, `add(r+1, -delta)`); a point query for `a[i]` becomes `prefix_sum(i)` on the difference BIT (prefix sum of deltas reconstructs the value, exactly like the difference-array pattern).
-
-```python
-def range_update(bit: FenwickTree, l: int, r: int, delta: int) -> None:
-    bit.add(l, delta)
-    bit.add(r + 1, -delta)          # cancel the delta past r
-
-def point_query(bit: FenwickTree, i: int) -> int:
-    return bit.prefix_sum(i)         # sum of deltas up to i = current value
-```
-
-**Why for CP:** collapses O(range length) batch increments to O(log n) per update - the same trick as a plain difference array, but now interleaved with point queries at any time (a static difference array only reconstructs the full array in one O(n) pass at the end).
-
-### Range update, range query (two BITs)
-
-Extending the trick above to answer **range sum queries** (not just point queries) after range updates needs a second BIT tracking `delta * index`. The algebra: if `B1` holds the difference array and `B2` holds `delta * (l-1)` corrections, then `prefix_sum(i) = i * B1.prefix_sum(i) - B2.prefix_sum(i)`.
-
-```python
-class RangeBIT:
-    def __init__(self, n: int) -> None:
-        self.b1 = FenwickTree(n)     # tracks raw deltas
-        self.b2 = FenwickTree(n)     # tracks delta * (index just before range)
-
-    def _add(self, i: int, delta: int) -> None:
-        self.b1.add(i, delta)
-        self.b2.add(i, delta * (i - 1))
-
-    def range_update(self, l: int, r: int, delta: int) -> None:
-        self._add(l, delta)
-        self._add(r + 1, -delta)
-
-    def prefix_sum(self, i: int) -> int:
-        return i * self.b1.prefix_sum(i) - self.b2.prefix_sum(i)
-
-    def range_sum(self, l: int, r: int) -> int:
-        return self.prefix_sum(r) - self.prefix_sum(l - 1)
-```
-
-**Why for CP:** this is the BIT answer to "range update, range query" that would otherwise force a segment tree with lazy propagation - two BITs (still ~20 lines total) match a lazy segment tree's asymptotics for the additive case with a smaller constant.
-
-### BIT as an order-statistics structure (count inversions / k-th element)
-
-Index the BIT by **value** (after [coordinate compression](../patterns/prefix-sum.md) if values are large/sparse) instead of array position, storing a count of `1`s. `prefix_sum(v)` then answers "how many elements seen so far are `≤ v`" - process the array right-to-left, and for each element, `prefix_sum(v-1)` counts existing elements smaller than it (an inversion count point). Binary-lifting over the same tree ("BIT walk") answers **k-th smallest** in O(log n) without a query loop.
-
-```python
-def count_inversions(a: list[int]) -> int:
-    """Count pairs (i, j) with i < j and a[i] > a[j], via a value-indexed BIT."""
-    ranks = {v: r + 1 for r, v in enumerate(sorted(set(a)))}   # coordinate compression
-    bit = FenwickTree(len(ranks))
-    inversions = 0
-    for x in reversed(a):
-        r = ranks[x]
-        inversions += bit.prefix_sum(r - 1)   # count already-seen elements smaller than x
-        bit.add(r, 1)
-    return inversions
-```
-
-**Why for CP:** turns "count smaller elements to the right" / "k-th order statistic under updates" from an O(n²) or O(n log² n) merge-sort-tree problem into a single O(n log n) linear scan with O(log n) per step - one of the most-reused CP tricks once the "BIT over values, not positions" reframe clicks.
-
 ## Gotchas / edge cases
 
 - **1-indexing is not optional.** `i & -i` for `i = 0` is `0`, which breaks both loops (query never terminates moving toward 0 from 0; more subtly, index 0 can't "own" any range since every index's range is defined by its lowest set bit, and 0 has none). Real-world data is usually 0-indexed - shift every external index by `+1` at the API boundary, and document it loudly, or an off-by-one silently corrupts every query.
@@ -333,12 +267,12 @@ def count_inversions(a: list[int]) -> int:
 
 - **"Why not just use a prefix-sum array?"** - A prefix-sum array gives O(1) query but O(n) to fix after any single update (every downstream prefix shifts). If updates are rare and queries dominate, prefix sum wins; the moment updates and queries interleave, Fenwick's O(log n) both ways wins overall. State the crossover explicitly: worth it once there's at least one update mixed with `Ω(log n)` queries.
 - **"Why not always use a segment tree instead - it does everything Fenwick does and more?"** - True in power, false in practice: Fenwick is ~5x less code, roughly half to a third the memory (one array vs. an explicit tree, often over-allocated to `4n`), and has a smaller constant factor (no recursion, no node-object overhead). Use Fenwick when the query is a sum/XOR and you don't need lazy range updates or min/max; reach for the heavier segment tree only when the extra generality is actually needed.
-- **"What if the update is a range, not a point?"** - Not natively - a bare Fenwick only does point-update/range-query. Two workarounds exist without leaving BIT-land: store a difference array in the BIT for range-update/point-query, or run two BITs together for range-update/range-query (both shown in [CP-primitives](#cp-primitives)). Beyond additive updates (e.g. "set range to x"), a segment tree with lazy propagation is the right tool.
+- **"What if the update is a range, not a point?"** - Not natively - a bare Fenwick only does point-update/range-query. Two workarounds exist without leaving BIT-land: store a difference array in the BIT for range-update/point-query, or run two BITs together for range-update/range-query (both shown in [Practice problems](#practice-problems), entries 3 and 4). Beyond additive updates (e.g. "set range to x"), a segment tree with lazy propagation is the right tool.
 - **"Can this work for 2D grids?"** - Yes: a BIT of BITs, where each outer-BIT node is itself a BIT over the second dimension. O(log n · log m) per point update / prefix query. Costs O(n·m) space like the grid itself, same asymptotic story as 1D just squared in both dimensions.
 
 ## Practice problems
 
-### 1. Range Sum Query - Mutable - _point update, range query_
+### 1. Range Sum Query - Mutable
 
 **Problem.** Given an integer array, support two operations: `update(index, val)` (set `a[index] = val`) and `sumRange(left, right)` (return the sum of `a[left..right]`, inclusive), with both called repeatedly in any order.
 
@@ -373,9 +307,8 @@ class NumArray:
 
 **Duplicate problems:**
 - Range Sum Query 2D - Mutable (LC 308) - identical shape extended to 2D via a BIT-of-BITs; same point-update/range-query recognition, one more dimension of index arithmetic.
-- My Calendar III (LC 732) - range-add + max-overlap query is the difference-array-on-BIT variant, tracking booking counts instead of raw sums.
 
-### 2. Count of Smaller Numbers After Self - _BIT as order statistics_
+### 2. Count of Smaller Numbers After Self
 
 **Problem.** Given an integer array `nums`, return an array `counts` where `counts[i]` is the number of elements to the right of `nums[i]` that are smaller than it. E.g. `[5,2,6,1]` → `[2,1,1,0]`.
 
@@ -389,7 +322,7 @@ class NumArray:
 
 **Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-10⁴ ≤ nums[i] ≤ 10⁴`.
 
-**Approach:** Coordinate-compress the values to ranks `1..k`, then scan **right to left**, maintaining a value-indexed BIT of counts. For each element, `prefix_sum(rank - 1)` gives the count of smaller elements already inserted (i.e., to its right in original order); then insert it (`add(rank, 1)`). This is the order-statistics reframe from [CP-primitives](#bit-as-an-order-statistics-structure-count-inversions--k-th-element) applied per-element instead of as a single inversion count.
+**Approach:** Coordinate-compress the values to ranks `1..k`, then scan **right to left**, maintaining a value-indexed BIT of counts (a BIT indexed by *value* instead of array position, answering "how many elements ≤ v have I seen so far"). For each element, `prefix_sum(rank - 1)` gives the count of smaller elements already inserted (i.e., to its right in original order); then insert it (`add(rank, 1)`).
 
 ```python
 def count_smaller(nums: list[int]) -> list[int]:
@@ -408,8 +341,9 @@ def count_smaller(nums: list[int]) -> list[int]:
 **Duplicate problems:**
 - Reverse Pairs (LC 493) - same right-to-left BIT-over-ranks scan, counting pairs `i < j, nums[i] > 2*nums[j]` instead of raw inversions.
 - Count of Range Sum (LC 327) - prefix sums compressed into ranks, then the identical "count smaller already-inserted" BIT scan.
+- Count inversions in an array (classic) - the textbook name for this exact mechanic: a single global inversion count instead of a per-element `counts[i]` array, same value-indexed-BIT scan.
 
-### 3. Range Sum Query - Range Update and Range Sum - _two BITs_
+### 3. Range Sum Query - Range Update and Range Sum
 
 **Problem.** Support `update(left, right, val)` (add `val` to every element in `[left, right]`) and `sumRange(left, right)` (return the sum of `a[left..right]`), both called repeatedly.
 
@@ -423,7 +357,7 @@ def count_smaller(nums: list[int]) -> list[int]:
 
 **Constraints:** `1 ≤ n ≤ 10⁵`, `0 ≤ left ≤ right < n`, `-10³ ≤ val ≤ 10³`, up to `10⁵` calls to `update` and `sumRange` combined.
 
-**Approach:** Point-update Fenwick can't do range updates in O(log n) directly. Use the **two-BIT range-update/range-query** trick from [CP-primitives](#range-update-range-query-two-bits): one BIT tracks the raw delta array, a second tracks `delta * (index - 1)` correction terms, and `prefix_sum(i) = i * B1.prefix_sum(i) - B2.prefix_sum(i)` reconstructs the true prefix sum in O(log n).
+**Approach:** Point-update Fenwick can't do range updates in O(log n) directly. Use a **two-BIT range-update/range-query** trick: one BIT tracks the raw delta array, a second tracks `delta * (index - 1)` correction terms, and `prefix_sum(i) = i * B1.prefix_sum(i) - B2.prefix_sum(i)` reconstructs the true prefix sum in O(log n). This extends [entry 4's](#4-range-addition) single-BIT range-update trick to also answer range-*sum* queries, not just point queries after the fact.
 
 ```python
 class RangeUpdateRangeQuery:
@@ -439,5 +373,34 @@ class RangeUpdateRangeQuery:
 
 **Complexity:** O(log n) per `update` and `sumRange`. O(n) space (two BITs).
 
+---
+
+### 4. Range Addition
+
+Given an array of length `n` initialized to all zeros, apply a list of `updates`, each `[start, end, inc]` meaning "add `inc` to every element in `[start, end]`". Return the final array after all updates. Unlike entry 3, no range-sum query is interleaved with the updates - only the final array is needed.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** n = 5, updates = [[1,3,2],[2,4,3],[0,2,-2]] | **Output:** [-2, 0, 3, 5, 3]
+  - **Explanation:** starting from [0,0,0,0,0], applying each range-add in order accumulates to the final array.
+- **Example 2**
+  - **Input:** n = 3, updates = [[0,2,1]] | **Output:** [1, 1, 1]
+  - **Explanation:** a single update covering the whole array adds 1 to every index.
+
+**Constraints:** `1 ≤ n ≤ 10⁵`, `0 ≤ updates.length ≤ 10⁴`, `0 ≤ start ≤ end < n`, `-1000 ≤ inc ≤ 1000`.
+
+**Approach:** Store the [difference array](../patterns/difference-array.md) in a single BIT instead of the raw array. A range update `add [l,r] += delta` becomes two point updates on the BIT (`add(l, delta)`, `add(r+1, -delta)`); reading any single final value is a point query - `prefix_sum(i)` on the difference BIT (the running sum of deltas up to `i` reconstructs the current value, exactly like the plain difference-array pattern, but now the BIT lets updates and point-reads interleave in O(log n) each instead of needing one final O(n) reconstruction pass). Since this problem only asks for the array *after* all updates, a plain difference array with a single O(n) prefix-sum pass at the end is actually simpler and just as fast - the BIT only earns its cost when point queries need to interleave with updates.
+
+```python
+def get_modified_array(n: int, updates: list[list[int]]) -> list[int]:
+    bit = FenwickTree(n)
+    for start, end, inc in updates:
+        bit.add(start + 1, inc)          # 1-indexed range-update trick
+        bit.add(end + 2, -inc)
+    return [bit.prefix_sum(i + 1) for i in range(n)]   # each point value = prefix sum of deltas
+```
+
+**Complexity:** O((n + u) log n) time (`u` updates, each O(log n); `n` point reads, each O(log n)), O(n) space.
+
 **Duplicate problems:**
-- Range Addition (LC 370) - the same range-update mechanism, but only needs the final array (a single difference-array pass suffices; the two-BIT machinery is overkill if queries never interleave with updates).
+- My Calendar III (LC 732) - range-add + max-overlap query is the same difference-array-on-BIT variant, tracking booking counts instead of raw sums.

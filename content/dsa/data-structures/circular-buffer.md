@@ -16,10 +16,18 @@
 - [Variants](#variants)
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
+  - [Design Circular Queue](#1-design-circular-queue)
+  - [Design Hit Counter](#2-design-hit-counter)
+  - [Moving Average from Data Stream](#3-moving-average-from-data-stream)
+  - [Design a Rate Limiter](#4-design-a-rate-limiter)
+  - [Rotate Array](#5-rotate-array)
+  - [Design Hit Counter](#2-design-hit-counter)
+  - [Moving Average from Data Stream](#3-moving-average-from-data-stream)
+  - [Design a Rate Limiter](#4-design-a-rate-limiter)
+  - [Rotate Array](#5-rotate-array)
 
 ## What it is
 
@@ -219,30 +227,6 @@ class CircularBuffer(Generic[T]):
 
 Note Python's standard library gives you this for free: `collections.deque(maxlen=N)` is a fixed-capacity ring buffer with overwrite-on-full - reach for it in real code, implement the above to show you understand the mechanism in an interview.
 
-## CP-primitives
-
-- **Fixed-window rolling aggregate.** Keep a ring buffer of the last `k` values plus a running sum/min/max maintained incrementally on enqueue/overwrite - turns "aggregate of the last k elements" from an O(k) rescan per step into O(1) amortized per step. The classic use: streaming moving average, or a fixed-size monotonic structure layered on top (see [Monotonic Queue](../patterns/monotonic-queue.md) for the sliding-window-max variant of this idea).
-
-  ```python
-  class RollingSum:
-      def __init__(self, k: int) -> None:
-          self.buf = CircularBuffer(k)
-          self.total = 0
-
-      def add(self, x: int) -> int:
-          if self.buf.is_full():
-              self.total -= self.buf.dequeue()   # evict oldest before adding
-          self.buf.enqueue(x)
-          self.total += x
-          return self.total
-  ```
-
-  **Why for CP:** collapses the naive "sum the last k elements every step" from O(n·k) total to O(n) total across a whole stream - the ring buffer's O(1) evict-oldest is what makes the running total maintainable incrementally.
-
-- **Two-buffer bit-reversal / rotation trick.** For problems needing a fixed-size circular scan starting at an arbitrary offset (e.g. "rotate array by k, then process"), index into the buffer via `(start + i) % capacity` instead of physically rotating the underlying array - avoids an O(n) rotation entirely when the buffer is already ring-shaped.
-
-  **Why for CP:** replaces an O(n) array-rotate-then-scan with O(1) offset arithmetic per access - relevant whenever a problem's "rotate the array" framing is really just "start scanning from a different logical origin."
-
 ## Gotchas / edge cases
 
 - **Full vs empty ambiguity.** Both can satisfy `head == tail`. Forgetting to disambiguate (via a count or a wasted slot) is _the_ classic ring-buffer bug - you'll dequeue from an empty buffer or silently drop a write. State your choice explicitly.
@@ -258,6 +242,8 @@ Note Python's standard library gives you this for free: `collections.deque(maxle
 - **"How would this scale to a 10 GB buffer that doesn't fit in one process's memory?"** - A single-process ring buffer caps out at available RAM; beyond that, the pattern generalizes to a **distributed ring** (Kafka partitions are conceptually a disk-backed, replicated circular buffer per partition, with head/tail becoming the consumer offset and the log-end offset). Naming Kafka's partition log as "ring buffer at scale" is the senior answer here.
 
 ## Practice problems
+
+Five staples, each a **distinct** ring-buffer technique - no two solved the same way.
 
 ### 1. Design Circular Queue
 
@@ -373,7 +359,7 @@ class HitCounter:
 
 **Constraints:** `1 ≤ size ≤ 1000`, `-10⁵ ≤ val ≤ 10⁵`, at most `10⁴` calls to `next`.
 
-**Approach:** This is the [CP-primitives](#cp-primitives) rolling-sum ring buffer applied directly - maintain a fixed-capacity ring of the last `size` values plus a running `total`; on each `next`, evict-and-subtract the oldest value if the buffer is full, then enqueue-and-add the new one, and return `total / len(buffer)`. O(1) per call regardless of window size, versus O(size) if the window were rescanned every time.
+**Approach:** This is the fixed-window rolling-aggregate idea (see this entry's Duplicate problems) applied directly - maintain a fixed-capacity ring of the last `size` values plus a running `total`; on each `next`, evict-and-subtract the oldest value if the buffer is full, then enqueue-and-add the new one, and return `total / len(buffer)`. O(1) per call regardless of window size, versus O(size) if the window were rescanned every time.
 
 ```python
 class MovingAverage:
@@ -394,6 +380,7 @@ class MovingAverage:
 **Duplicate problems:**
 - Design Hit Counter (above) - same fixed-window-over-a-stream shape, generalized to per-second bucketing instead of a raw running sum.
 - Sliding Window Average of All Subarrays of Size K (variant framing) - identical mechanic applied to a static array instead of a live stream.
+- Fixed-window rolling aggregate (running sum/min/max over the last k elements, no LC number) - the same evict-oldest-before-adding ring-buffer shape generalized to any incrementally-maintainable aggregate, not just the average; see [Monotonic Queue](../patterns/monotonic-queue.md) for the sliding-window-max variant of this idea.
 
 ### 4. Design a Rate Limiter
 
@@ -435,3 +422,34 @@ class RateLimiter:
 **Duplicate problems:**
 - Design a Logger Rate Limiter (LC 359) - simpler single-timestamp-per-key version of the same eviction idea, no count threshold.
 - Design Hit Counter (above) - same bounded-recent-history shape, aggregated as a count rather than gated as an allow/reject decision.
+
+### 5. Rotate Array
+
+Given an array `nums`, rotate it to the right by `k` steps, where `k` may be larger than `nums.length`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,2,3,4,5,6,7], k = 3 | **Output:** [5,6,7,1,2,3,4]
+  - **Explanation:** rotating right by 3 moves the last 3 elements to the front - conceptually, index `i` of the input lands at `(i + k) % n` in the output.
+- **Example 2**
+  - **Input:** nums = [-1,-100,3,99], k = 2 | **Output:** [3,99,-1,-100]
+  - **Explanation:** `k = 2` on a length-4 array swaps the two halves; each index moves exactly `(i + 2) % 4`.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-2³¹ ≤ nums[i] ≤ 2³¹ - 1`, `0 ≤ k ≤ 10⁵`.
+
+**Approach:** The brute-force "rotate by shifting one step at a time, k times" is O(n·k). Recognizing this as a **circular-buffer indexing problem** rather than a physical-move problem is the insight: element at input index `i` belongs at output index `(i + k) % n`, so a single O(n) pass placing each element directly at its ring-offset destination avoids ever touching an index twice. (An equally common O(n) in-place solution reverses the whole array, then reverses each of the two halves - a different route to the same ring-offset result, useful when extra O(n) space isn't allowed.) The array-as-ring reframing - index by logical offset instead of physically moving elements - is the same trick a circular buffer uses internally for `head`/`tail`, applied here to a one-shot rotation instead of a live structure.
+
+```python
+def rotate(nums: list[int], k: int) -> None:
+    n = len(nums)
+    k %= n                                    # k can exceed n; only the remainder matters
+    rotated = [0] * n
+    for i, x in enumerate(nums):
+        rotated[(i + k) % n] = x              # ring-offset destination, no physical shifting
+    nums[:] = rotated
+```
+
+**Complexity:** O(n) time, O(n) space (O(1) extra space with the reverse-three-times variant).
+
+**Duplicate problems:**
+- Rotate List (LC 61) - same ring-offset idea applied to a linked list: find the new tail at `(n - k % n - 1)` steps in and relink, instead of indexing an array.

@@ -21,14 +21,14 @@
 - [Variants](#variants)
 - [Traversal & invariant](#traversal--invariant)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [Insert into an AVL tree](#1-insert-into-an-avl-tree--rebalance-on-the-way-up)
-  - [Validate height-balanced](#2-validate-height-balanced--bottom-up-heights)
-  - [Build a balanced BST from sorted data](#3-build-a-balanced-bst-from-sorted-data--vs-avl)
-  - [AVL delete with rebalance-on-removal](#4-avl-delete-with-rebalance-on-removal--multi-ancestor-fixup)
+  - [Insert into an AVL tree](#1-insert-into-an-avl-tree)
+  - [Validate height-balanced](#2-validate-height-balanced)
+  - [Build a balanced BST from sorted data](#3-build-a-balanced-bst-from-sorted-data)
+  - [AVL delete with rebalance-on-removal](#4-avl-delete-with-rebalance-on-removal)
+  - [Count of Smaller Numbers After Self](#5-count-of-smaller-numbers-after-self)
 
 ## What it is
 
@@ -252,15 +252,6 @@ def insert(node: Optional[Node], key: int) -> Node:
 
 **Contest velocity.** You almost never hand-roll AVL in a contest - reach for the language's balanced structure ([Red-Black-backed](./red-black-tree.md) `std::map`/`TreeMap`, or Python `sortedcontainers.SortedList`). Code AVL only when an interviewer explicitly asks for the rotation logic.
 
-## CP-primitives
-
-Tree/heap family - advisory, but AVL's height guarantee unlocks two contest-relevant tricks:
-
-- **Order-statistics augmentation.** Store a `size` (subtree node count) per node alongside `height`, updated the same way during rotations. This turns the tree into an order-statistics tree: "find the k-th smallest" and "count elements less than x" both become O(log n) tree walks instead of an O(n) scan - the classic augmentation for offline rank queries.
-- **Guaranteed-height recursion bound.** Because AVL height is provably ≤ 1.44 log₂ n, any recursive tree algorithm run on an AVL (not a plain BST) has a *guaranteed* O(log n) stack depth - useful in contest problems that build a balanced tree specifically to bound recursion depth for a follow-up computation, rather than risking a degenerate O(n)-deep plain BST.
-
-**Why for CP:** both tricks lean on the property a plain BST can't offer - a *provable* height bound - to turn otherwise-linear operations logarithmic.
-
 ## Gotchas / edge cases
 
 - **Empty tree / single node.** Insert into empty creates the root (height 0/1 per convention); no rotation possible with < 3 nodes. Handle `root is None` as the base case in every recursive op.
@@ -281,9 +272,9 @@ Tree/heap family - advisory, but AVL's height guarantee unlocks two contest-rele
 
 ## Practice problems
 
-Four problems, each a **distinct** facet of AVL - no two the same.
+Five problems, each a **distinct** facet of AVL - no two the same.
 
-### 1. Insert into an AVL tree - _rebalance on the way up_
+### 1. Insert into an AVL tree
 
 Implement AVL insert: insert a key as in a BST, then restore the height-balance invariant with rotations, returning the new subtree root.
 
@@ -312,7 +303,7 @@ for k in [10, 20, 30, 40, 50, 25]:
 **Duplicate problems:**
 - Balance a Binary Search Tree (LC 1382) - same rotation-based rebalancing goal, framed as one-shot rebalance of an existing tree rather than incremental insert.
 
-### 2. Validate height-balanced - _bottom-up heights_
+### 2. Validate height-balanced
 
 Given a binary tree, decide whether it satisfies the AVL invariant: every node's subtree heights differ by ≤ 1.
 
@@ -344,7 +335,7 @@ def is_balanced(root) -> bool:
 
 **Complexity:** O(n) time, O(h) space.
 
-### 3. Build a balanced BST from sorted data - _vs AVL_
+### 3. Build a balanced BST from sorted data
 
 Given a sorted array, build a height-balanced BST. Contrast with inserting the same keys one-by-one into an AVL.
 
@@ -375,7 +366,7 @@ def sorted_to_balanced(nums: list[int]):
 **Duplicate problems:**
 - Convert Sorted List to Binary Search Tree (LC 109) - identical midpoint-recursion technique, adapted to a linked list's lack of random access.
 
-### 4. AVL delete with rebalance-on-removal - _multi-ancestor fixup_
+### 4. AVL delete with rebalance-on-removal
 
 Delete a node from an AVL tree and return the new root. The tree must remain height-balanced after the delete - unlike insert, a delete can require rebalancing at **multiple** ancestors on the way back up, not just the lowest violator.
 
@@ -429,3 +420,85 @@ def delete(node: Optional[Node], key: int) -> Optional[Node]:
 
 **Complexity:** O(log n) time, O(log n) space (recursion) - the retrace touches every node on the root-to-deleted-node path, and each can trigger a rotation, unlike insert's single rebalance point.
 
+### 5. Count of Smaller Numbers After Self
+
+Given an integer array `nums`, return a `counts` array where `counts[i]` is the number of elements to the **right** of index `i` that are smaller than `nums[i]`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [5, 2, 6, 1] | **Output:** [2, 1, 1, 0]
+  - **Explanation:** to the right of 5 there are 2 smaller values (2, 1); to the right of 2 there is 1 (1); to the right of 6 there is 1 (1); 1 has nothing smaller after it.
+- **Example 2**
+  - **Input:** nums = [-1, -1] | **Output:** [0, 0]
+  - **Explanation:** equal values never count as "smaller", so neither -1 has any qualifying element after it.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-10⁴ ≤ nums[i] ≤ 10⁴`.
+
+**Approach:** Process the array **right to left**, inserting each value into a balanced BST augmented with a per-node `size` (subtree count) - the same augmentation AVL's height-balance guarantee makes safe to maintain under rotations, since every insert is O(log n) worst-case, never the O(n) a plain BST risks on adversarial input. On each insert, accumulate the count of already-inserted values strictly less than the new one: every left turn during descent doesn't change the count, but every time you branch right, add `1 + size(left subtree of that node)` (the node itself plus everything smaller in its left subtree) to a running total for `nums[i]`. This is the order-statistics-tree "rank of x" query, applied incrementally as elements are inserted rather than looked up after the fact.
+
+```python
+from __future__ import annotations
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class OSNode:
+    key: int
+    size: int = 1                    # subtree node count, incl. self
+    height: int = 1
+    left: Optional["OSNode"] = None
+    right: Optional["OSNode"] = None
+
+def _sz(n: Optional[OSNode]) -> int:
+    return n.size if n else 0
+
+def _h(n: Optional[OSNode]) -> int:
+    return n.height if n else 0
+
+def _update(n: OSNode) -> None:
+    n.size = 1 + _sz(n.left) + _sz(n.right)
+    n.height = 1 + max(_h(n.left), _h(n.right))
+
+def _rotate_right(z: OSNode) -> OSNode:
+    y = z.left
+    z.left, y.right = y.right, z
+    _update(z); _update(y)
+    return y
+
+def _rotate_left(z: OSNode) -> OSNode:
+    y = z.right
+    z.right, y.left = y.left, z
+    _update(z); _update(y)
+    return y
+
+def insert_count_smaller(node: Optional[OSNode], key: int) -> tuple[OSNode, int]:
+    if node is None:
+        return OSNode(key), 0
+    if key < node.key:
+        node.left, smaller = insert_count_smaller(node.left, key)
+    else:
+        node.right, right_smaller = insert_count_smaller(node.right, key)
+        smaller = _sz(node.left) + (1 if key >= node.key else 0) + right_smaller
+    _update(node)
+    bf = _h(node.left) - _h(node.right)
+    if bf > 1 and key < node.left.key: node = _rotate_right(node)
+    elif bf < -1 and key >= node.right.key: node = _rotate_left(node)
+    elif bf > 1:
+        node.left = _rotate_left(node.left); node = _rotate_right(node)
+    elif bf < -1:
+        node.right = _rotate_right(node.right); node = _rotate_left(node)
+    return node, smaller
+
+def count_smaller(nums: list[int]) -> list[int]:
+    root = None
+    result = [0] * len(nums)
+    for i in range(len(nums) - 1, -1, -1):
+        root, smaller = insert_count_smaller(root, nums[i])
+        result[i] = smaller
+    return result
+```
+
+**Complexity:** O(n log n) time (n inserts, each O(log n) thanks to the AVL height guarantee), O(n) space.
+
+**Duplicate problems:**
+- Kth Largest Element in a Stream (LC 703) - same order-statistics-tree idea (maintain rank under insertion), simplified to "give me the k-th largest right now" instead of a per-element smaller-count.

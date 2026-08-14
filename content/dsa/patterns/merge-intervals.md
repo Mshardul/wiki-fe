@@ -14,7 +14,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -119,7 +118,7 @@ Time: **O(n log n)**, dominated entirely by the sort - the sweep itself is a sin
 | `n ≤ 10⁵`, "minimum meeting rooms" / "max simultaneous events" | "minimum rooms", "max overlap at any point" | Sort start & end separately (two-pointer sweep) or min-heap of end times, O(n log n) | Merging intervals - merging tells you disjoint groups, not concurrent-overlap count |
 | `n ≤ 10⁵`, list is **already sorted and disjoint**, one new interval arrives | "insert interval" | Binary-search the insertion point, O(log n) to locate + O(n) to splice/shift | Re-sorting the whole list from scratch, O(n log n) - wasteful when it's already sorted |
 | Two separate already-sorted, disjoint interval lists, want overlaps between them | "interval list intersections" | Two-pointer walk across both lists, O(n + m) | Merge-intervals sweep on a concatenation of both lists - loses which list each interval came from |
-| `n ≤ 10⁹`, only need max-overlap-count, not the list of intervals themselves | "count of overlapping intervals at some point" | Coordinate-compressed sweep-line with event deltas (+1/-1), O(n log n) - see CP-primitives | Building an explicit timeline array indexed by coordinate - O(range), infeasible when endpoints span up to 10⁹ |
+| `n ≤ 10⁹`, only need max-overlap-count, not the list of intervals themselves | "count of overlapping intervals at some point" | Coordinate-compressed sweep-line with event deltas (+1/-1), O(n log n) - see Practice problems (My Calendar III) | Building an explicit timeline array indexed by coordinate - O(range), infeasible when endpoints span up to 10⁹ |
 
 ---
 
@@ -129,45 +128,6 @@ Time: **O(n log n)**, dominated entirely by the sort - the sweep itself is a sin
 - **Insert Interval (binary-search insertion into sorted-disjoint list).** When the input is already sorted and non-overlapping and a single new interval is inserted, don't re-sort - binary-search for where the new interval's start would land, then walk outward merging every neighbor it overlaps. This turns an O(n log n) re-sort into an O(log n) locate + O(n) worst-case splice (still O(n) overall because of the potential shift, but avoids the sort).
 - **Interval List Intersections (two-pointer variant).** Two *separate* sorted, disjoint lists - walk one index into each list, and at each step compute the overlap (if any) between the two current intervals, then advance whichever interval ends first. This is genuinely Two Pointers wearing an interval costume, not Merge Intervals - see Related.
 - **Employee Free Time.** Merge all employees' intervals into one sorted, merged timeline (a direct application of the core mechanic across a flattened multi-list input), then the gaps *between* consecutive merged intervals are the free-time answer.
-
----
-
-## CP-primitives
-
-### 1. Sweep-line with event points (+1 / -1) for max-overlap-count
-
-**The trick:** instead of merging intervals, convert each `[start, end]` into two **events**: `(start, +1)` and `(end, -1)` (or `(end + 1, -1)` if the interval is inclusive of its endpoint and you want touching intervals to not count as overlapping). Sort all events by coordinate (breaking ties by processing `-1` before `+1` at the same coordinate if touching intervals shouldn't count as concurrent). Sweep through, maintaining a running counter; the counter's peak value across the whole sweep is the maximum number of intervals overlapping at any single point - this answers "minimum meeting rooms" without a heap.
-
-```python
-def max_overlap(intervals: list[list[int]]) -> int:
-    events = []
-    for start, end in intervals:
-        events.append((start, 1))
-        events.append((end, -1))
-    events.sort(key=lambda e: (e[0], e[1]))   # process -1 before +1 on ties (end before start)
-
-    count = peak = 0
-    for _, delta in events:
-        count += delta
-        peak = max(peak, count)
-    return peak
-```
-
-**Why for CP:** collapses "how many intervals overlap at the busiest point" from an O(n²) pairwise-check or an O(n log n) heap simulation into a single O(n log n) sort + O(n) linear scan with no auxiliary structure beyond the event list - the standard contest tool whenever the question is about a count at some moment, not the merged shape.
-
-### 2. Coordinate compression for sparse, large-range endpoints
-
-**The trick:** when interval endpoints are drawn from a huge range (up to `10⁹` or beyond) but there are only `n ≤ 10⁵` intervals, you can't index a timeline array by raw coordinate value. Collect all `2n` distinct endpoint values, sort and de-duplicate them, and map each original coordinate to its rank in that sorted list (a dictionary lookup, `O(log n)` via `bisect` or an `O(1)` dict). Any sweep-line or difference-array technique then runs over the compressed index space of size `O(n)` instead of the raw coordinate range.
-
-```python
-import bisect
-
-def compress_coordinates(intervals: list[list[int]]) -> list[list[int]]:
-    coords = sorted({x for start, end in intervals for x in (start, end)})
-    return [[bisect.bisect_left(coords, s), bisect.bisect_left(coords, e)] for s, e in intervals]
-```
-
-**Why for CP:** turns an otherwise `O(range)`-space problem (a difference array or segment tree indexed by raw coordinate, infeasible when `range ~ 10⁹`) into an `O(n)`-space one - the difference between "times out / OOMs" and "runs in the contest time limit" whenever endpoints are sparse relative to their range.
 
 ---
 
@@ -270,7 +230,8 @@ def min_meeting_rooms(intervals: list[list[int]]) -> int:
 **Complexity.** O(n log n) time (sort plus n heap operations, each O(log n)), O(n) space for the heap in the worst case (all meetings overlapping).
 
 **Duplicate problems:**
-- Car Pooling (LC 1094) - identical event-sweep-line shape (CP-primitives #1) with capacity in place of room count.
+- Car Pooling (LC 1094) - identical event-sweep-line shape with capacity in place of room count: convert each trip into `(start, +passengers)` and `(end, -passengers)` events, sort, sweep, and check the running total never exceeds capacity.
+- Max overlap via event points (contest form) - instead of a heap of end times, convert every interval into two events `(start, +1)`/`(end, -1)`, sort by coordinate, and sweep a running counter whose peak is the answer; same concurrency count with no heap, just a sort and a linear scan.
 
 ---
 
@@ -347,4 +308,47 @@ def interval_intersection(first: list[list[int]], second: list[list[int]]) -> li
 **Duplicate problems:**
 - Merge Sorted Array (LC 88) - same "two sorted sequences, one advancing pointer per side" shape, applied to values instead of ranges.
 - Find Right Interval (LC 436) - different mechanic (binary search per query) but same family of "match up intervals from related sorted collections."
+
+---
+
+### 5. My Calendar III (LC 732)
+
+Implement a class that tracks calendar bookings and returns the maximum number of overlapping bookings (the "k-booking" count) after each new booking `[start, end)` is added. Up to `n ≤ 400` calls, endpoints up to `10⁹`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** book(10,20) → 1; book(50,60) → 1; book(10,40) → 2; book(5,15) → 3; book(5,10) → 3; book(25,55) → 3 | **Output:** [1,1,2,3,3,3]
+  - **Explanation:** after book(5,15), three intervals [10,20], [10,40], [5,15] all cover point 12, giving a triple-booking.
+- **Example 2**
+  - **Input:** book(1,5) → 1; book(5,10) → 1 | **Output:** [1,1]
+  - **Explanation:** half-open intervals [1,5) and [5,10) don't share a point, so they never overlap.
+
+**Constraints:** `0 ≤ start < end ≤ 10⁹`, at most `400` calls to `book`.
+
+**Approach:** endpoints span up to `10⁹`, so a raw timeline array is infeasible - but there are at most `2n ≤ 800` distinct endpoint values across all calls. Collect and sort the distinct endpoints seen so far, map each new interval's `start`/`end` to its rank in that sorted list (coordinate compression), and maintain a difference array indexed by rank: `+1` at the compressed start, `-1` at the compressed end. After each booking, re-run a prefix sum over the compressed array and take the max. This turns an `O(range)`-space sweep into an `O(n)`-space one.
+
+```python
+import bisect
+
+class MyCalendarThree:
+    def __init__(self) -> None:
+        self.bookings: list[tuple[int, int]] = []
+
+    def book(self, start: int, end: int) -> int:
+        self.bookings.append((start, end))
+        coords = sorted({x for s, e in self.bookings for x in (s, e)})
+        delta = [0] * (len(coords) + 1)
+        for s, e in self.bookings:
+            delta[bisect.bisect_left(coords, s)] += 1
+            delta[bisect.bisect_left(coords, e)] -= 1
+        peak = running = 0
+        for d in delta:
+            running += d
+            peak = max(peak, running)
+        return peak
+```
+
+**Complexity:** O(n²) time across all calls (each `book` re-compresses and re-sweeps O(n) points), O(n) space for the compressed coordinate list. A Fenwick-tree-on-compressed-coordinates variant amortizes this to O(n log n) total.
+
+**Duplicate problems:** none - the coordinate-compression-under-a-huge-range constraint is distinct from every other entry in this file.
 

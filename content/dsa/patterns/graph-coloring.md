@@ -14,11 +14,14 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
 - [Practice problems](#practice-problems)
+  - [Possible Bipartition (LC 886)](#1-possible-bipartition-lc-886)
+  - [Flower Planting With No Adjacent (LC 1042)](#2-flower-planting-with-no-adjacent-lc-1042)
+  - [Chromatic Number (bitmask DP)](#3-chromatic-number-bitmask-dp)
+  - [Maximum Number of Accepted Invitations (LC 1820)](#4-maximum-number-of-accepted-invitations-lc-1820)
 
 ---
 
@@ -153,80 +156,6 @@ Assign color[1]=1
 
 ---
 
-## CP-primitives
-
-### 1. Bipartite matching via 2-coloring
-
-Once you prove a graph is bipartite (2-colorable), the two color classes become the two sides of a bipartite graph. You can then run **maximum bipartite matching** on it. The pattern: "assign tasks to workers with conflicts" → 2-color to identify the two sides → augmenting-path BFS to find maximum matching.
-
-```python
-from typing import List
-
-def max_bipartite_matching(graph: List[List[int]], n: int, color: List[int]) -> int:
-    # graph: adjacency list; color[v] in {0,1} assigned by IS-BIPARTITE
-    # left side = color 0, right side = color 1
-    match_r = [-1] * n  # match_r[v] = left-side node matched to right node v, or -1
-
-    def dfs_augment(u: int, visited: list[bool]) -> bool:
-        for v in graph[u]:              # v is a right-side neighbor
-            if not visited[v]:
-                visited[v] = True
-                if match_r[v] == -1 or dfs_augment(match_r[v], visited):
-                    match_r[v] = u      # flip the augmenting path
-                    return True
-        return False
-
-    result = 0
-    for u in range(n):
-        if color[u] == 0:              # only iterate left-side nodes
-            visited = [False] * n
-            if dfs_augment(u, visited):
-                result += 1
-    return result
-```
-
-Why for CP: bipartite structure is the gateway to max-flow / matching reductions (job scheduling, minimum vertex cover via König's theorem) that are opaque on an unstructured graph. This DFS augmenting-path matcher runs in O(V · E); Hopcroft-Karp (BFS to find all shortest augmenting paths simultaneously) improves it to O(E√V) for large inputs.
-
-### 2. Bitmask DP for chromatic number (n ≤ 20)
-
-For small graphs, compute the chromatic number exactly:
-1. Precompute all **independent sets** (no two adjacent nodes) via subset enumeration: for each mask, check `mask & adj[v] == 0` for all v in mask.
-2. DP: `can[mask]` = True if the nodes in `mask` form an independent set.
-3. `dp[mask]` = minimum colors to color all nodes in `mask` = min over all independent-set submasks `s ⊆ mask` of `1 + dp[mask ^ s]`.
-
-```python
-def chromatic_number(adj: list[int], n: int) -> int:
-    # adj[v] = bitmask of v's neighbors
-    full = (1 << n) - 1
-    indep = [False] * (full + 1)
-    for mask in range(full + 1):
-        ok = True
-        for v in range(n):
-            if mask >> v & 1:
-                if mask & adj[v] & ((1 << v) - 1):  # earlier neighbor in mask
-                    ok = False
-                    break
-        indep[mask] = ok
-
-    dp = [float('inf')] * (full + 1)
-    dp[0] = 0
-    for mask in range(1, full + 1):
-        sub = mask
-        while sub:
-            if indep[sub]:
-                dp[mask] = min(dp[mask], 1 + dp[mask ^ sub])
-            sub = (sub - 1) & mask
-    return dp[full]
-```
-
-Why for CP: exact chromatic number in O(2^n · n) beats backtracking's O(k^n) for dense graphs with n ≤ 20.
-
-### 3. Odd-cycle detection via 2-coloring
-
-BFS 2-coloring is strictly faster than DFS for odd-cycle detection because it terminates as soon as a cross-edge hits the same color layer, without needing to track back-edge ancestry. Why for CP: in problems that ask "is this constraint graph satisfiable with two categories", a failed 2-coloring pinpoints the exact conflicting edge - useful for printing "which edge causes conflict."
-
----
-
 ## Pitfalls
 
 1. **Forgetting disconnected components.** A common mistake is starting BFS from node 0 only. If the graph has multiple connected components, each must be independently 2-colored - missing any component may silently return the wrong answer. Always loop over all unvisited nodes as potential sources.
@@ -308,6 +237,7 @@ def possible_bipartition(n: int, dislikes: List[List[int]]) -> bool:
 **Duplicate problems:**
 - Is Graph Bipartite? (LC 785) - identical algorithm; explicit adjacency list vs "dislike" edges, same 2-coloring logic.
 - Divide Nodes into the Maximum Number of Groups (LC 2493) - requires bipartite check per component then BFS-layer assignment; coloring is the prerequisite.
+- Odd-cycle detection (CP-primitive framing) - the same BFS 2-coloring mechanic described generically as "does a same-color collision occur"; this problem is its concrete worked instance over an explicit conflict graph.
 
 ---
 
@@ -398,3 +328,47 @@ def chromatic_number(adj: list[int], n: int) -> int:
 
 **Duplicate problems:**
 - Minimum number of teams / groups such that no two conflicting members share a team (classic/CP framing) - same bitmask-DP-over-independent-sets shape, different cover story.
+
+---
+
+### 4. Maximum Number of Accepted Invitations (LC 1820)
+
+`m` boys and `n` girls; `grid[i][j] = 1` if boy `i` is willing to invite girl `j`. Each boy can invite at most one girl and each girl can accept at most one invitation. Find the maximum number of accepted invitations. `1 ≤ m, n ≤ 200`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [[1,1,1],[1,0,1],[0,0,1]] | **Output:** 3
+  - **Explanation:** boy 0 → girl 1, boy 1 → girl 0, boy 2 → girl 2 - every boy is matched.
+- **Example 2**
+  - **Input:** grid = [[1,0,1,0],[1,0,0,0],[0,0,1,0],[1,1,1,0]] | **Output:** 3
+
+**Constraints:** `m == grid.length`, `n == grid[i].length`, `1 ≤ m, n ≤ 200`, `grid[i][j]` is 0 or 1.
+
+**Approach.** Boys and girls are already the two sides of a bipartite graph (the willingness matrix *is* the 2-coloring - boys and girls are two disjoint classes with edges only crossing between them, no coloring computation needed). This is a genuinely distinct technique from every prior entry: instead of assigning colors or checking feasibility, it searches for a **maximum matching** - repeatedly try to match each boy to some willing girl via an augmenting path (DFS from the boy, and if a candidate girl is already taken, recursively try to re-route her current match to a different girl). A boy contributes to the answer only if an augmenting path is found for him.
+
+```python
+def maximum_invitations(grid: list[list[int]]) -> int:
+    m, n = len(grid), len(grid[0])
+    match_girl = [-1] * n  # match_girl[j] = boy matched to girl j, or -1
+
+    def try_match(boy: int, visited: list[bool]) -> bool:
+        for girl in range(n):
+            if grid[boy][girl] and not visited[girl]:
+                visited[girl] = True
+                if match_girl[girl] == -1 or try_match(match_girl[girl], visited):
+                    match_girl[girl] = boy
+                    return True
+        return False
+
+    count = 0
+    for boy in range(m):
+        visited = [False] * n
+        if try_match(boy, visited):
+            count += 1
+    return count
+```
+
+**Complexity.** O(V · E) time (V = m boys, E = up to m·n edges), O(n) space for the matching arrays.
+
+**Duplicate problems:**
+- Bipartite matching via 2-coloring (CP-primitive, general graph) - identical augmenting-path mechanic, but starts from an arbitrary graph and must first run 2-coloring to identify which side is "left" and which is "right" before matching, instead of the sides being given directly as boys/girls.

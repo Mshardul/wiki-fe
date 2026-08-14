@@ -68,7 +68,7 @@ Each family grows strictly faster than the one before it - not just "usually fas
 
 ## Correctness / invariant
 
-**The invariant Big-O expresses:** for `f(n) = O(g(n))`, the invariant is that the ratio `f(n) / g(n)` is bounded above by some constant `c` for all `n ≥ n₀` - it never grows without bound. This is what "f doesn't grow faster than g" formally means.
+**The <abbr>invariant</abbr> Big-O expresses:** for `f(n) = O(g(n))`, the invariant is that the ratio `f(n) / g(n)` is bounded above by some constant `c` for all `n ≥ n₀` - it never grows without bound. This is what "f doesn't grow faster than g" formally means.
 
 **Why the definition requires an `n₀` (not "for all n"):** small inputs are allowed to violate the bound because Big-O is a statement about *asymptotic* (large-n) behavior only. `f(n) = 1000` and `g(n) = n` - at `n = 1`, `f(1) = 1000 > g(1) = 1`, so no constant `c` makes `f(n) ≤ c·g(n)` hold at `n=1` unless `c ≥ 1000`. But pick `c = 1000` and `n₀ = 1`: then `f(n) = 1000 ≤ 1000n = c·g(n)` holds for all `n ≥ 1`. The `n₀` threshold is what lets Big-O ignore small-input noise (startup constants, one-time overhead) and focus purely on the growth trend.
 
@@ -175,10 +175,10 @@ Each level costs exactly `n` (the work is redistributed but not lost - `n/2 + n/
 ## Edge cases
 
 - **O(1) is not "instant" - it's "independent of `n`."** An O(1) operation can still be slow in absolute terms (a single disk seek is O(1) but far slower than an O(n) scan of a small in-memory array). Big-O says nothing about the constant - conflating "O(1)" with "fast" is a common junior mistake.
-- **Amortized ≠ worst-case, and both are legitimate Big-O claims about different things.** A dynamic array's `append` is "O(1) amortized" - meaning the *average* cost per operation over any sequence is O(1), even though any *individual* append can cost O(n) (the resize). Stating "O(1)" without the "amortized" qualifier when a worst-case single call can be O(n) is a precision failure that misleads about latency-sensitive contexts (a single slow append can violate a real-time deadline even though the amortized throughput is fine).
+- **<abbr>Amortized</abbr> ≠ worst-case, and both are legitimate Big-O claims about different things.** A dynamic array's `append` is "O(1) amortized" - meaning the *average* cost per operation over any sequence is O(1), even though any *individual* append can cost O(n) (the resize). Stating "O(1)" without the "amortized" qualifier when a worst-case single call can be O(n) is a precision failure that misleads about latency-sensitive contexts (a single slow append can violate a real-time deadline even though the amortized throughput is fine).
 - **Multiple variables need multiple letters - don't collapse a graph's V and E into one `n`.** A graph algorithm's true cost is O(V + E) or O(V·E) or O(E log V) - collapsing to "O(n)" hides which variable dominates. For a sparse graph (E ≈ V) this barely matters; for a dense graph (E ≈ V²) writing "O(n)" when the truth is O(V²) is a serious understatement.
 - **Best/average/worst case are three different Big-O claims for the same algorithm - name which one you mean.** Quicksort is O(n log n) *average* but O(n²) *worst* case (already-sorted input with a naive pivot). Saying "quicksort is O(n log n)" without qualification is technically the average case, not a universal bound - a interviewer probing quicksort will expect the worst-case caveat.
-- **Recursive algorithms need a space term for the call stack, not just time.** An unbounded-depth recursive algorithm has O(depth) space from the call stack alone, even if it allocates no other memory - stating O(1) space for a recursive function (unless it's tail-call-eliminated or converted to iteration) is a common and gated-serious error (see [Recursion › Complexity](./recursion.md#complexity-derivation)).
+- **Recursive algorithms need a space term for the <abbr>call stack</abbr>, not just time.** An unbounded-depth recursive algorithm has O(depth) space from the call stack alone, even if it allocates no other memory - stating O(1) space for a recursive function (unless it's tail-call-eliminated or converted to iteration) is a common and gated-serious error (see [Recursion › Complexity](./recursion.md#complexity-derivation)).
 
 ### Big O vs the constant factor: lies O hides
 

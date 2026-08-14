@@ -17,7 +17,6 @@
 - [Variants](#variants)
 - [Traversal & invariant](#traversal--invariant)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
@@ -227,13 +226,6 @@ class SkipList:
         return True
 ```
 
-## CP-primitives
-
-- **Order-statistics via span-augmented towers** - store, per forward pointer, how many level-0 nodes it spans (Redis `ZSET`'s technique); this turns "find the k-th smallest key" and "find the rank of key x" into O(log n) walks instead of O(n) scans - useful whenever a contest problem needs an ordered structure with rank queries and you don't want to hand-code a Fenwick tree over coordinate-compressed values.
-- **Mergeable/splittable ordered sets** - because a skip list's structure doesn't depend on strict shape invariants, splitting it at a key or merging two skip lists is easier to reason about than splitting a balanced tree (which requires careful subtree surgery); this matters for offline problems processed in an order where sets need to be split and merged repeatedly (e.g., some divide-and-conquer-on-queries techniques).
-
-*(Advisory for the Tree/heap family - Python's standard library provides no skip list; contest use typically reaches for `sortedcontainers.SortedList`, which is not a skip list internally but gives the same asymptotic behavior for these use cases.)*
-
 ## Gotchas / edge cases
 
 - **The worst case is real, just improbable.** Unlike a balanced BST where the invariant makes O(n) height *structurally impossible*, a skip list has no such invariant - a sequence of insertions could (with probability `~(1/2)^n`) produce a list where every node reaches `MAX_LEVEL`, degenerating search toward O(n). This is why production skip lists cap `MAX_LEVEL` at `log_{1/p}(expected_max_n)` rather than leaving it unbounded - an uncapped level can theoretically grow without bound.
@@ -310,7 +302,7 @@ class Solution:
 
 **Constraints:** `1 ≤ n, q ≤ 10⁵`, values fit in a 32-bit signed integer range.
 
-**Approach:** A span-augmented skip list (see CP-primitives) answers "how many elements are ≤ x" in O(log n) by accumulating span while descending to the position just past x; range count is `rank(hi) - rank(lo - 1)`. This is a genuinely different technique from problem 1 - it requires the order-statistics augmentation, not plain search/insert/delete.
+**Approach:** A **span-augmented skip list** - store, per forward pointer, how many level-0 nodes it spans (Redis `ZSET`'s technique) - answers "how many elements are ≤ x" in O(log n) by accumulating span while descending to the position just past x; range count is `rank(hi) - rank(lo - 1)`. This turns "find the k-th smallest key" and "find the rank of key x" into O(log n) walks instead of O(n) scans, without hand-coding a Fenwick tree over coordinate-compressed values. This is a genuinely different technique from problem 1 - it requires the order-statistics augmentation, not plain search/insert/delete.
 
 ```python
 # Sketch: extend SkipNode.forward entries with a parallel `span` list,

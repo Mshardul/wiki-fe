@@ -13,7 +13,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -131,51 +130,6 @@ The signal that pushes you *off* this pattern: if updates happen between queries
 
 ---
 
-## CP-primitives
-
-### 1. 2D prefix sum via inclusion-exclusion
-
-**The trick:** extend the 1D idea to a grid so any rectangle's sum is O(1) after an O(nm) build. `P[i][j]` = sum of the rectangle from `(0,0)` to `(i-1,j-1)`. Building it requires inclusion-exclusion to avoid double-counting the overlap: `P[i][j] = P[i-1][j] + P[i][j-1] - P[i-1][j-1] + grid[i-1][j-1]`. Reading a rectangle sum uses the same inclusion-exclusion pattern in reverse.
-
-```python
-def build_2d_prefix(grid: list[list[int]]) -> list[list[int]]:
-    rows, cols = len(grid), len(grid[0])
-    P = [[0] * (cols + 1) for _ in range(rows + 1)]
-    for i in range(1, rows + 1):
-        for j in range(1, cols + 1):
-            P[i][j] = P[i-1][j] + P[i][j-1] - P[i-1][j-1] + grid[i-1][j-1]
-    return P
-
-def rect_sum(P: list[list[int]], r1: int, c1: int, r2: int, c2: int) -> int:
-    # inclusive rectangle from (r1,c1) to (r2,c2), 0-indexed
-    return P[r2+1][c2+1] - P[r1][c2+1] - P[r2+1][c1] + P[r1][c1]
-```
-
-**Why for CP:** turns what looks like it needs O(nm) per rectangle query into O(1) per query after one O(nm) build - the standard technique whenever a contest problem asks for many rectangle-sum queries on a static grid.
-
-### 2. Prefix sum + hash map of frequencies (subarray-sum-equals-K generalization)
-
-**The trick:** to count subarrays summing to exactly `K`, note that `sum(arr[L..R]) == K` iff `prefix[R+1] - prefix[L] == K`, i.e. `prefix[L] == prefix[R+1] - K`. Scan left to right, maintaining a hash map of `{prefix_sum_value: count_of_times_seen}`; at each index, look up how many earlier prefix sums equal `current_prefix - K` and add that count to the answer. This converts an O(n²) pair-enumeration into O(n).
-
-```python
-from collections import defaultdict
-
-def subarray_sum_equals_k(arr: list[int], k: int) -> int:
-    count = defaultdict(int)
-    count[0] = 1                 # empty prefix, handles subarrays starting at index 0
-    prefix_sum = 0
-    result = 0
-    for x in arr:
-        prefix_sum += x
-        result += count[prefix_sum - k]
-        count[prefix_sum] += 1
-    return result
-```
-
-**Why for CP:** this "prefix sum value → frequency map, look up complement" shape generalizes to sum-divisible-by-K (key by `prefix_sum % K` instead of raw value), longest-subarray-with-sum-K (store first-seen *index* instead of frequency), and XOR-based variants - one mental template covers a whole family of contest problems.
-
----
-
 ## Pitfalls
 
 1. **Off-by-one between the `n`-length and `n+1`-length prefix array conventions.** Using an `n`-length array (`P[i]` = sum through index `i` inclusive) requires a special case for `L = 0` in every query (`P[R] - (P[L-1] if L > 0 else 0)`); the `n+1`-length-with-sentinel convention (`P[0] = 0`) avoids this branch entirely. Mixing the two conventions mid-problem is the most common source of off-by-one bugs in this pattern.
@@ -238,7 +192,6 @@ class NumArray:
 **Complexity.** O(n) build, O(1) per query, O(n) space.
 
 **Duplicate problems:**
-- Range Sum Query 2D - Immutable (LC 304) - same idea generalized to two dimensions.
 - Running Sum of 1d Array (LC 1480) - the prefix array itself is the answer, no queries needed.
 
 ---
@@ -317,4 +270,40 @@ def product_except_self(nums: list[int]) -> list[int]:
 **Duplicate problems:**
 - Trapping Rain Water (LC 42) - same "prefix pass + suffix pass, combine" shape, with max instead of product.
 - Range Sum Query - Immutable (LC 303) - same precompute-once-query-many idea, additive instead of multiplicative.
+
+---
+
+### 4. Range Sum Query 2D - Immutable (LC 304)
+
+Design a class that, given a 2D matrix, answers multiple `sumRegion(row1, col1, row2, col2)` rectangle-sum queries efficiently. Constraints: `1 ≤ rows, cols ≤ 200`, up to `10⁴` queries.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** matrix with sumRegion(2,1,4,3) | **Output:** 8
+  - **Explanation:** the sum of the 3×3 rectangle from row 2, col 1 to row 4, col 3 is 8.
+- **Example 2**
+  - **Input:** matrix with sumRegion(1,1,2,2), sumRegion(1,2,2,4) | **Output:** two independent O(1) lookups after one O(rows·cols) build
+
+**Constraints:** `1 ≤ rows, cols ≤ 200`, `-10⁵ ≤ matrix[i][j] ≤ 10⁵`, up to `10⁴` calls to `sumRegion`.
+
+**Approach.** Extend the 1D idea to a grid: `P[i][j]` = sum of the rectangle from `(0,0)` to `(i-1,j-1)`. Building it needs inclusion-exclusion to avoid double-counting the overlap region: `P[i][j] = P[i-1][j] + P[i][j-1] - P[i-1][j-1] + grid[i-1][j-1]`. Reading a rectangle sum reverses the same inclusion-exclusion. This is a distinct technique from Problem 1, not a relabeling of it - the extra dimension forces an inclusion-exclusion correction term that has no 1D analogue.
+
+```python
+class NumMatrix:
+    def __init__(self, matrix: list[list[int]]):
+        rows, cols = len(matrix), len(matrix[0])
+        self.prefix = [[0] * (cols + 1) for _ in range(rows + 1)]
+        for i in range(1, rows + 1):
+            for j in range(1, cols + 1):
+                self.prefix[i][j] = (
+                    self.prefix[i-1][j] + self.prefix[i][j-1]
+                    - self.prefix[i-1][j-1] + matrix[i-1][j-1]
+                )
+
+    def sum_region(self, row1: int, col1: int, row2: int, col2: int) -> int:
+        P = self.prefix
+        return P[row2+1][col2+1] - P[row1][col2+1] - P[row2+1][col1] + P[row1][col1]
+```
+
+**Complexity.** O(rows·cols) build, O(1) per query, O(rows·cols) space.
 

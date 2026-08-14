@@ -19,18 +19,15 @@
 - [Variants](#variants)
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Deque - O(1) at both ends](#deque--o1-at-both-ends)
-  - [Monotonic deque - sliding-window max/min](#monotonic-deque--sliding-window-maxmin)
-  - [0/1-BFS with a deque](#01-bfs-with-a-deque)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [Implement Queue using Stacks](#1-implement-queue-using-stacks--amortized-transfer)
-  - [Number of Recent Calls](#2-number-of-recent-calls--sliding-window-queue)
-  - [Sliding Window Maximum](#3-sliding-window-maximum--monotonic-deque)
-  - [Rotting Oranges](#4-rotting-oranges--multi-source-bfs)
-  - [Design Circular Queue](#5-design-circular-queue--ring-buffer)
+  - [Implement Queue using Stacks](#1-implement-queue-using-stacks)
+  - [Number of Recent Calls](#2-number-of-recent-calls)
+  - [Sliding Window Maximum](#3-sliding-window-maximum)
+  - [Rotting Oranges](#4-rotting-oranges)
+  - [Design Circular Queue](#5-design-circular-queue)
+  - [0/1 Matrix Shortest Path](#6-01-matrix-shortest-path)
 
 ## What it is
 
@@ -96,7 +93,7 @@ The deep idea: a queue processes things in the order they arrived, which is exac
 
 - **You need last-in-first-out** → a [stack](./stack.md). DFS, undo, and nesting want LIFO, not FIFO.
 - **You need priority order, not arrival order** → a [priority queue / heap](./heap.md). "Process the most urgent next" is a heap; "process the oldest next" is a queue. Dijkstra needs the heap; unweighted BFS needs the plain queue.
-- **You need both-end access or random access** → a [deque](#deque--o1-at-both-ends) (both ends) or an [array](./array.md) (by index).
+- **You need both-end access or random access** → a deque (see [Variants](#variants), both ends) or an [array](./array.md) (by index).
 
 Rule of thumb: **queue = FIFO = "process in the order they arrived."** If fairness or level-by-level order matters, it's a queue; if urgency matters, it's a heap; if recency matters, it's a stack.
 
@@ -120,10 +117,10 @@ The queue's identity is **two-ended FIFO in O(1)** - add one side, remove the ot
 
 - **Linear queue (circular buffer)** - fixed array with wrapping `front`/`back` indices; O(1) both ends, no shifting. The standard efficient implementation. Its own page: [Circular Buffer](./circular-buffer.md).
 - **Linked-list queue** - head/tail pointers over a [linked list](./linked-list.md); O(1) enqueue/dequeue, grows without resize, at pointer-overhead cost. What `collections.deque` is built on.
-- **Deque (double-ended queue)** - add/remove at **both** ends in O(1). A superset of both queue and stack; the basis for sliding-window tricks. Detailed in [CP-primitives](#deque--o1-at-both-ends).
+- **Deque (double-ended queue)** - add/remove at **both** ends in O(1). A superset of both queue and stack; the basis for sliding-window tricks (see the [Sliding Window Maximum](#3-sliding-window-maximum) and [0/1 Matrix Shortest Path](#6-01-matrix-shortest-path) practice problems).
 - **Priority queue** - dequeues the min/max (by priority) rather than the oldest. Not really a queue under the hood - it's a [heap](./heap.md). Named here because interviews conflate them; the discipline differs (priority, not arrival).
-- **Circular queue (ring buffer)** - fixed-capacity queue that overwrites or rejects when full; streaming windows, audio buffers, [rate limiters](../../system-design/components/rate-limiter.md). The [Design Circular Queue practice problem](#5-design-circular-queue--ring-buffer) builds one.
-- **Monotonic deque** - a deque kept increasing/decreasing to answer sliding-window min/max in O(n). A discipline on a deque, not a new structure; see [CP-primitives](#monotonic-deque--sliding-window-maxmin).
+- **Circular queue (ring buffer)** - fixed-capacity queue that overwrites or rejects when full; streaming windows, audio buffers, [rate limiters](../../system-design/components/rate-limiter.md). The [Design Circular Queue practice problem](#5-design-circular-queue) builds one.
+- **Monotonic deque** - a deque kept increasing/decreasing to answer sliding-window min/max in O(n). A discipline on a deque, not a new structure; see the [Sliding Window Maximum](#3-sliding-window-maximum) practice problem.
 
 ## Memory layout
 
@@ -245,68 +242,7 @@ front = q[0]       # peek front (guard `if q`)
 val = q.popleft()  # NOT list.pop(0), which is O(n)
 ```
 
-`deque` also gives `appendleft`/`pop` for the back end (the [deque primitive](#deque--o1-at-both-ends)). A plain `list` as a queue is an O(n²) TLE waiting to happen - reach for `deque` reflexively.
-
-## CP-primitives
-
-The queue's contest leverage is the **deque** and what it unlocks - sliding-window extremes and a Dijkstra-free shortest path on 0/1 graphs.
-
-### Deque - O(1) at both ends
-
-A **double-ended queue** adds/removes at both front and back in O(1). It is a queue and a stack at once, and the substrate for the next two primitives.
-
-```python
-from collections import deque
-dq = deque()
-dq.append(x)
-dq.appendleft(x)
-dq.pop()
-dq.popleft()
-```
-
-**Why for CP:** one structure covers BFS (FIFO), DFS (LIFO), and both-end window tricks - no need to pick a backing structure per problem, and every op is O(1).
-
-### Monotonic deque - sliding-window max/min
-
-To get the max of every window of size `k`, keep a deque of **indices** whose values are decreasing: before adding `i`, pop smaller values from the back (they can never be the max while `nums[i]` is around); pop the front when it slides out of the window. The front is always the window max. Each index is added and removed once → **O(n)** for all windows, beating the O(n·k) brute force and the O(n log n) heap.
-
-```python
-def max_sliding_window(nums: list[int], k: int) -> list[int]:
-    dq: deque[int] = deque()              # indices, values decreasing
-    res = []
-    for i, x in enumerate(nums):
-        while dq and nums[dq[-1]] <= x:   # back: drop dominated values
-            dq.pop()
-        dq.append(i)
-        if dq[0] == i - k:                # front: drop out-of-window index
-            dq.popleft()
-        if i >= k - 1:
-            res.append(nums[dq[0]])       # front = window max
-    return res
-```
-
-**Why for CP:** collapses sliding-window extremum from O(n·k)/O(n log n) to O(n). The deque cousin of the [monotonic stack](./stack.md#monotonic-stack--next-greatersmaller-element); see the [Sliding Window](../patterns/sliding-window.md) pattern.
-
-### 0/1-BFS with a deque
-
-When graph edges have weight **0 or 1 only**, you don't need Dijkstra's heap. Use a deque: relax a 0-weight edge by **`appendleft`** (same distance, process next) and a 1-weight edge by **`append`** (distance + 1, process later). The deque stays sorted by distance automatically → **O(V + E)**, beating Dijkstra's O(E log V).
-
-```python
-def zero_one_bfs(graph, source, n):       # graph[u] = [(v, w in {0,1}), ...]
-    INF = float("inf")
-    dist = [INF] * n
-    dist[source] = 0
-    dq = deque([source])
-    while dq:
-        u = dq.popleft()
-        for v, w in graph[u]:
-            if dist[u] + w < dist[v]:
-                dist[v] = dist[u] + w
-                dq.appendleft(v) if w == 0 else dq.append(v)
-    return dist
-```
-
-**Why for CP:** shortest path on 0/1-weighted graphs (grid problems with "free" vs "cost-1" moves) in linear time, no priority queue - a frequent contest shortcut over Dijkstra.
+`deque` also gives `appendleft`/`pop` for the back end - the both-ends primitive behind the [Sliding Window Maximum](#3-sliding-window-maximum) and [0/1 Matrix Shortest Path](#6-01-matrix-shortest-path) practice problems. A plain `list` as a queue is an O(n²) TLE waiting to happen - reach for `deque` reflexively.
 
 ## Gotchas / edge cases
 
@@ -327,9 +263,9 @@ def zero_one_bfs(graph, source, n):       # graph[u] = [(v, w in {0,1}), ...]
 
 ## Practice problems
 
-Five staples, each a **distinct** queue technique - no two solved the same way.
+Six staples, each a **distinct** queue technique - no two solved the same way.
 
-### 1. Implement Queue using Stacks - amortized transfer
+### 1. Implement Queue using Stacks
 
 Implement a FIFO queue (`push`, `pop`, `peek`, `empty`) using only two LIFO stacks.
 
@@ -378,7 +314,7 @@ class MyQueue:
 
 ---
 
-### 2. Number of Recent Calls - sliding-window queue
+### 2. Number of Recent Calls
 
 Implement a counter `ping(t)` that returns how many calls happened in the last 3000 ms, i.e. in `[t-3000, t]`. Calls arrive in increasing `t`.
 
@@ -412,7 +348,7 @@ class RecentCounter:
 
 ---
 
-### 3. Sliding Window Maximum - monotonic deque
+### 3. Sliding Window Maximum
 
 Given an array and a window size `k`, return the maximum of each contiguous window. E.g. `nums=[1,3,-1,-3,5,3,6,7], k=3` → `[3,3,5,5,6,7]`.
 
@@ -452,7 +388,7 @@ def max_sliding_window(nums: list[int], k: int) -> list[int]:
 
 ---
 
-### 4. Rotting Oranges - multi-source BFS
+### 4. Rotting Oranges
 
 In a grid, `2` = rotten orange, `1` = fresh, `0` = empty. Each minute, a rotten orange rots its 4-directional fresh neighbors. Return the minutes until none are fresh, or -1 if impossible.
 
@@ -501,7 +437,7 @@ def oranges_rotting(grid: list[list[int]]) -> int:
 
 ---
 
-### 5. Design Circular Queue - ring buffer
+### 5. Design Circular Queue
 
 Design a fixed-capacity circular queue with `enQueue`, `deQueue`, `Front`, `Rear`, `isEmpty`, `isFull` - all O(1).
 
@@ -556,3 +492,41 @@ class MyCircularQueue:
 
 **Duplicate problems:**
 - First Unique Character in a Stream - queue-based stale-front eviction with a running count map, no LRU-specific hashmap+DLL mechanism.
+
+### 6. 0/1 Matrix Shortest Path
+
+Given a grid where each move either costs 0 (e.g. stepping onto a "free" cell) or 1 (a normal cell), find the shortest cost path from a source cell to every other cell. Weighted-edge shortest path without a priority queue - the deque replaces Dijkstra's heap when weights are restricted to `{0, 1}`.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** grid = [[0,1],[1,1]], 0-cells are free to enter, source = (0,0) | **Output:** dist = [[0,0],[1,1]]
+  - **Explanation:** moving right into the other 0-cell costs 0 (both are "free"), so it's reached at distance 0; moving down or diagonally through a 1-cell costs 1.
+- **Example 2**
+  - **Input:** a 1×4 grid [0,1,0,1], source = (0,0) | **Output:** dist = [0,1,1,2]
+  - **Explanation:** cell 2 is reached via cell 1 at cost 1 then a free (0-weight) hop, illustrating why a 0-edge must be processed before later 1-edges even though it was discovered after them.
+
+**Constraints:** `1 ≤ rows, cols ≤ 500`, edge weights restricted to `{0, 1}` (grid values or move costs), source given.
+
+**Approach:** Ordinary BFS assumes every edge costs 1, so a plain queue processes nodes in true distance order. With 0-weight edges mixed in, a 0-edge neighbor is at the *same* distance as the current node, so it must be processed before nodes already queued at the next distance tier - `appendleft` puts it at the very front, while a 1-edge neighbor `append`s to the back like normal BFS. The deque stays sorted by distance without ever needing a heap, which is what makes this beat Dijkstra's O(E log V) down to O(V + E).
+
+```python
+from collections import deque
+
+def zero_one_bfs(graph, source, n):       # graph[u] = [(v, w in {0,1}), ...]
+    INF = float("inf")
+    dist = [INF] * n
+    dist[source] = 0
+    dq = deque([source])
+    while dq:
+        u = dq.popleft()
+        for v, w in graph[u]:
+            if dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                dq.appendleft(v) if w == 0 else dq.append(v)
+    return dist
+```
+
+**Complexity:** O(V + E) time, O(V) space.
+
+**Duplicate problems:**
+- Minimum Cost to Make at Least One Valid Path in a Grid (LC 1368) - identical 0/1-BFS mechanic, where following the grid's existing arrow costs 0 and redirecting it costs 1.

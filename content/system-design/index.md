@@ -25,12 +25,12 @@ Foundational building blocks. Each page covers mechanics, trade-offs, failure mo
 | [Distributed File System](./components/distributed-file-system.md)             | Block storage, metadata management, fault tolerance              |
 | [Search](./components/search.md)                                               | Inverted index, relevance ranking, distributed search            |
 | [Authentication](./components/authentication.md)                               | Hub: AuthN vs AuthZ, stateful vs stateless, which mechanism to use |
-| <!--                                                                           | [Session-Based Authentication](./components/session-auth.md)     | Session mechanics, storage, cookies, scaling, fixation/hijacking | --> |
-| <!--                                                                           | [JWT](./components/jwt.md)                                       | Structure, signing algorithms, JWKS, verification gotchas      | --> |
-| <!--                                                                           | [OAuth 2.0 & OIDC](./components/oauth-oidc.md)                   | Grant types, PKCE, ID token vs access token                    | --> |
-| <!--                                                                           | [Multi-Factor Authentication](./components/mfa.md)               | TOTP, WebAuthn/Passkeys, SMS OTP weaknesses, step-up auth       | --> |
-| <!--                                                                           | [Service-to-Service Authentication](./components/service-to-service-auth.md) | API keys, mTLS, JWT service accounts, SPIFFE/SPIRE  | --> |
-| <!--                                                                           | [mTLS](./components/mtls.md)                                     | Handshake, PKI management, certificate lifecycle, service mesh | --> |
+| [Session-Based Authentication](./components/session-auth.md)                   | Session mechanics, storage, cookies, scaling, fixation/hijacking |
+| [JWT](./components/jwt.md)                                                     | Structure, signing algorithms, JWKS, verification gotchas      |
+| [OAuth 2.0 & OIDC](./components/oauth-oidc.md)                                 | Grant types, PKCE, ID token vs access token                    |
+| [Multi-Factor Authentication](./components/mfa.md)                             | TOTP, WebAuthn/Passkeys, SMS OTP weaknesses, step-up auth       |
+| [Service-to-Service Authentication](./components/service-to-service-auth.md)   | API keys, mTLS, JWT service accounts, SPIFFE/SPIRE             |
+| [mTLS](./components/mtls.md)                                                   | Handshake, PKI management, certificate lifecycle, service mesh |
 
 ---
 

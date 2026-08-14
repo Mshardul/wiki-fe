@@ -22,7 +22,6 @@
 - [Variants](#variants)
 - [Traversal & invariant](#traversal--invariant)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
@@ -306,15 +305,6 @@ class RedBlackTree:
 ```
 
 **Contest velocity.** Never hand-roll this in a contest - `std::map`/`std::set` (C++), `TreeMap`/`TreeSet` (Java), or `sortedcontainers.SortedList` (Python) give you the same O(log n) ordered operations for free. Write the fixup only when an interviewer asks for it.
-
-## CP-primitives
-
-Tree/heap family - advisory; contests reach for the library map/set (backed by red-black internally) rather than hand-rolling, but the augmentation trick transfers:
-
-- **Order-statistics augmentation.** Store a `size` (subtree node count) per node, updated on insert/delete/rotation the same way colors are. Turns `rank(x)` and `select(k)` into O(log n) tree walks instead of an O(n) scan - the standard red-black augmentation, and the technique behind [Practice problem 4](#4-order-statistics-with-a-red-black-tree--augmentation).
-- **Interval augmentation.** Store the max endpoint of each subtree's intervals per node, turning the tree into an interval tree supporting O(log n) overlap queries - the same "augment + maintain on rotation" recipe applied to a different payload.
-
-**Why for CP:** both lean on the fact that a rotation only touches O(1) nodes, so any per-node aggregate that can be recomputed from its two children in O(1) stays correct and cheap to maintain through rebalancing - a general trick, not red-black-specific, but red-black is where it's most commonly taught.
 
 ## Gotchas / edge cases
 

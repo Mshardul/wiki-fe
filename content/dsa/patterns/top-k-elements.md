@@ -15,7 +15,6 @@
 - [Complexity](#complexity)
 - [Constraints & approach](#constraints--approach)
 - [Variations](#variations)
-- [CP-primitives](#cp-primitives)
 - [Pitfalls](#pitfalls)
 - [First 30 seconds](#first-30-seconds)
 - [Related](#related)
@@ -108,28 +107,6 @@ Final heap: {5, 11, 12} - the 3 largest, min-heap top = 5 = the 3rd largest
 - **K closest points (or any custom distance):** heap ordered by a computed key (`-distance` for a min-heap simulating "k closest" eviction), not the raw value - the mechanic is identical, only the comparison key changes.
 - **Streaming top-k with removal:** if elements can also leave the stream (not just arrive), plain top-K breaks - that shape belongs to [Two Heaps](./two-heaps.md)'s lazy-deletion technique or an order-statistics structure, not this pattern.
 
-## CP-primitives
-
-### `heapq.nlargest` / `nsmallest` as the contest shortcut
-
-Python's stdlib does the whole pattern in one call: `heapq.nlargest(k, iterable, key=...)`. Internally it's the same size-k heap, but it's faster to type in a contest than hand-rolling the loop, and it accepts a `key` function directly.
-
-**Why for CP:** contest velocity - skip the manual eviction loop when you don't need to interleave it with other stream processing.
-
-```python
-import heapq
-
-nums = [3, 1, 5, 12, 2, 11]
-print(heapq.nlargest(3, nums))   # [12, 11, 5]
-print(heapq.nsmallest(2, nums))  # [1, 2]
-```
-
-### Bucket-counting as an O(n) alternative when values are bounded
-
-If the k largest are needed from values in a small known range `[0, V]`, skip the heap entirely: build a count array of size V (a [Frequency Array](./frequency-array.md)), then walk from the top bucket down until k items are collected. O(n + V) instead of O(n log k) - wins when V is small even if k is not.
-
-**Why for CP:** contest constraints often bound values tightly (e.g. scores 0-100); recognizing this swaps a log factor for a linear scan.
-
 ## Pitfalls
 
 - **Using a max-heap for "k largest."** The natural instinct is "I want the largest, so max-heap" - but a max-heap of *all* elements just gives you O(1) access to the single largest, not an efficient size-k window. The trick is inverting: a **min-heap of size k** lets you cheaply find and evict the *weakest* of your current top-k. Getting this backwards means the heap grows unbounded or evicts the wrong element.
@@ -179,7 +156,7 @@ A single size-k heap only answers one fixed k efficiently. For repeated queries 
 
 **Constraints.** `1 ≤ k ≤ nums.length ≤ 10⁵`; `-10⁴ ≤ nums[i] ≤ 10⁴`.
 
-**Approach.** At n ≤ 10⁵, a size-k min-heap (top-K pattern) gives O(n log k). Since only the *boundary value* is needed (not the full top-k set), quickselect is the asymptotically better choice at O(n) average - the constraint doesn't force one over the other here, so this problem is the canonical place to show both and name the trade: heap is simpler and worst-case-safe at O(n log k); quickselect is faster average-case but O(n²) worst-case unless pivots are randomized.
+**Approach.** At n ≤ 10⁵, a size-k min-heap (top-K pattern) gives O(n log k). Since only the *boundary value* is needed (not the full top-k set), quickselect is the asymptotically better choice at O(n) average - the constraint doesn't force one over the other here, so this problem is the canonical place to show both and name the trade: heap is simpler and worst-case-safe at O(n log k); quickselect is faster average-case but O(n²) worst-case unless pivots are randomized. Contest velocity note: `heapq.nlargest(k, nums)[-1]` does the same size-k heap internally in one stdlib call - faster to type than the hand-rolled loop below when you don't need to interleave the eviction with other per-element logic.
 
 ```python
 import heapq
@@ -274,3 +251,44 @@ def k_closest(points: List[List[int]], k: int) -> List[List[int]]:
 **Duplicate problems:**
 - Kth Smallest Element in a Sorted Matrix (LC 378) - different key structure, actually a [K-Way Merge](./k-way-merge.md) problem once treated as n sorted rows - included here as a reminder that "smallest" framing doesn't automatically mean top-K.
 - Find K Closest Elements (LC 658) - closest to a target value in a *sorted* array; solvable with two pointers or binary search instead of a heap, since sortedness gives a cheaper approach - a good contrast case for when top-K is overkill.
+
+---
+
+### 4. Top K Frequent Elements, bucket-sort variant (LC 347)
+
+**Problem.** Same problem as entry 2 (given an integer array, return the k elements that appear most frequently) - solved here with a different technique to show the O(n) alternative that exists whenever the ranking key is bounded.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** `nums = [1,1,1,2,2,3], k = 2` | **Output:** `[1,2]`
+  - **Explanation:** frequency 3→[1], frequency 2→[2], frequency 1→[3]; bucket index = frequency, so walking buckets from n down to 1 yields 1 then 2 first.
+- **Example 2**
+  - **Input:** `nums = [1], k = 1` | **Output:** `[1]`
+
+**Constraints.** `1 ≤ nums.length ≤ 10⁵`; `k` is guaranteed valid.
+
+**Approach.** The heap approach (entry 2) is O(m log k) where m = distinct elements, and it's the right default. But frequency is a bounded key: any element's count is between 1 and n, so a frequency *cannot* exceed n. That bound means you can skip comparison-based selection entirely - build `buckets[f]` = list of values with frequency exactly `f` (a [Frequency Array](./frequency-array.md) indexed by count, not value), then walk buckets from `n` down to `1`, collecting values until `k` are gathered. This is O(n) total, no `log` factor, because placement is by direct indexing rather than comparison. Distinct from entry 2: this trades a heap's O(log k) per-operation cost for O(1) bucket placement, exploiting that the key range is known and small (bounded by n) rather than arbitrary.
+
+```python
+from collections import Counter
+
+def top_k_frequent_bucket(nums: list[int], k: int) -> list[int]:
+    counts = Counter(nums)
+    n = len(nums)
+    buckets: list[list[int]] = [[] for _ in range(n + 1)]
+    for val, freq in counts.items():
+        buckets[freq].append(val)
+
+    result: list[int] = []
+    for freq in range(n, 0, -1):
+        for val in buckets[freq]:
+            result.append(val)
+            if len(result) == k:
+                return result
+    return result
+```
+
+**Complexity.** O(n) time, O(n) space.
+
+**Duplicate problems:**
+- Sort Characters By Frequency (LC 451) - same bucket-by-frequency idea, walking every bucket instead of stopping at k.

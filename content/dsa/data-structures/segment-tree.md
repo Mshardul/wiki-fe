@@ -24,9 +24,6 @@
   - [Why query and build are O(log n) / O(n)](#why-query-and-build-are-olog-n--on)
   - [Lazy propagation's correctness argument](#lazy-propagations-correctness-argument)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Lazy propagation (range update, range query)](#lazy-propagation-range-update-range-query)
-  - [Merge sort tree (offline range-rank queries)](#merge-sort-tree-offline-range-rank-queries)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
@@ -88,7 +85,7 @@ No amortization anywhere - every operation is a **hard O(log n)** in the worst c
 **Reach for a segment tree when:**
 
 - You need **range queries over a non-invertible aggregate** - min, max, gcd, or any associative op with no inverse. A [Fenwick tree](./fenwick-tree.md) only works for invertible ops (sum, XOR); segment tree works for anything associative.
-- You need **range updates combined with range queries** - "add `x` to every element in `[l, r]`, then query the range sum" - via **lazy propagation** (see [CP-primitives](#lazy-propagation-range-update-range-query)). A Fenwick tree only reaches this with the two-BIT trick, and only for additive/invertible ops.
+- You need **range updates combined with range queries** - "add `x` to every element in `[l, r]`, then query the range sum" - via **lazy propagation** (see the [Range Addition](#3-range-addition) practice problem). A Fenwick tree only reaches this with the two-BIT trick, and only for additive/invertible ops.
 - The query changes shape between problems (sum today, min tomorrow) - a segment tree is a **generic template**: swap `combine` and the identity element, everything else stays the same.
 
 **Reach for something else when:**
@@ -112,7 +109,7 @@ No amortization anywhere - every operation is a **hard O(log n)** in the worst c
 
 - **Iterative (bottom-up) segment tree.** Store the tree as a flat array of size `2n` with leaves at indices `[n, 2n)` and each parent at `i/2` - no recursion, no pointers, smaller constant factor than the recursive `4n` version. Trades away easy lazy-propagation support (harder to implement correctly) for raw speed on point-update/range-query workloads.
 - **Persistent segment tree.** Every update creates O(log n) new nodes instead of mutating in place, sharing the unchanged subtrees with the previous version - lets you query **any historical version** of the array. Used for "k-th smallest in range `[l,r]` as of time `t`" and offline range-rank problems.
-- **Merge sort tree.** Each node stores its range as a **sorted list** instead of a scalar aggregate, built via merge sort's merge step. Answers "how many elements ≤ x in range `[l,r]`" in O(log²n) - full treatment in [CP-primitives](#merge-sort-tree-offline-range-rank-queries).
+- **Merge sort tree.** Each node stores its range as a **sorted list** instead of a scalar aggregate, built via merge sort's merge step. Answers "how many elements ≤ x in range `[l,r]`" in O(log²n) - full treatment in the [Range Frequency Query](#4-range-frequency-query) practice problem.
 - **2D segment tree (segment tree of segment trees).** Each node of the outer tree is itself a segment tree over the second dimension - O(log²n) point update / range query over a 2D grid, at O(n log n) space. Used for 2D range-max/range-sum with updates (e.g. live heatmaps).
 - **Segment tree beats (Ji Driver tree).** An advanced lazy-propagation variant supporting range chmin/chmax updates (clamp every element in a range to at most/at least x) in amortized O(log²n) - a competitive-programming specialization, rarely needed outside contests.
 
@@ -249,11 +246,108 @@ class SegmentTree:
 
 **Contest velocity.** For a static array with no updates, skip the segment tree entirely: use `itertools.accumulate` for sum ranges (O(1) query) or a sparse table for min/max ranges (O(1) query after O(n log n) build). Reach for `SegmentTree` only once an update appears in the problem statement.
 
-## CP-primitives
+## Gotchas / edge cases
 
-### Lazy propagation (range update, range query)
+- **Off-by-one at `mid` boundaries.** The split `mid = (lo + hi) / 2` gives children `[lo, mid]` and `[mid+1, hi]` - using `[lo, mid]`/`[mid, hi]` (no `+1`) double-counts index `mid` in both children, silently corrupting every aggregate that includes it. Trace one build by hand on a 2-element array to catch this before trusting the code.
+- **Array size must round to `4n`, not `2n`, for the recursive array-backed version.** A segment tree over `n` leaves has at most `2n - 1` real nodes, but the recursive indexing scheme (`2·node`, `2·node+1`) can address indices up to roughly `4n` in the worst case (when `n` isn't a power of two) - under-allocating causes an out-of-bounds write that may not crash immediately, corrupting unrelated memory instead.
+- **Identity element must match `combine` exactly.** Sum's identity is `0`; min's identity is `+∞`; max's identity is `-∞`; gcd's identity is `0` (since `gcd(x, 0) == x`). Using the wrong identity (e.g. `0` for a min-tree) silently makes every "no overlap" branch return a wrong answer that looks plausible - it often passes small test cases where 0 happens not to be the true minimum, then fails at scale.
+- **Overflow on accumulation.** A sum segment tree over `10⁵`-`10⁶` elements at `int32`-range values can overflow 32-bit accumulators well before the query even gets interesting - use 64-bit accumulators (`long` in C++/Java; Python ints are unbounded, which hides this bug until porting to another language).
+- **Forgetting to push down lazy markers before reading a child.** The single most common lazy-propagation bug: a query or update descends into a child whose parent has an un-pushed pending marker, reading a stale aggregate. The fix is mechanical but easy to skip - **every** recursive call that goes past a node with children must call push-down first, no exceptions, including inside `query`, not just `update`.
+- **At-scale: recursion depth and call-stack overhead.** A recursive segment tree over `n = 10⁷` elements has depth `~24`, which is safe, but the **constant-factor overhead of ~2n to 4n recursive calls per build**, each with Python function-call overhead, makes a recursive Python segment tree noticeably slower than an iterative bottom-up array version at that scale - the iterative variant (see [Variants](#variants)) is the standard mitigation when raw throughput matters.
 
-Add a `lazy` array parallel to `tree`; a pending value at `lazy[node]` means "this node's whole subtree owes this delta but it hasn't been pushed to children yet." Every query/update first **pushes down** any pending lazy value before recursing further.
+## What the interviewer probes for
+
+- **"Why not just use a Fenwick tree - it's simpler?"** - Fenwick trees only support invertible/associative ops (sum, XOR) because query *subtracts* one prefix from another; min/max/gcd have no inverse, so they need a segment tree's explicit tree structure instead of BIT's implicit-array trick. If the query is sum-only with point updates, Fenwick wins on code size and constant factor; the moment min/max or range-update+range-query appears, segment tree is the right tool.
+- **"How would you support range updates, not just point updates?"** - Lazy propagation: defer pushing an update to children until a later query/update actually needs to descend past that node, storing a pending marker instead. This keeps range update O(log n) instead of the naive O(range length) of updating every leaf directly.
+- **"What if `n` isn't known in advance / the array needs to grow?"** - A segment tree is normally built over a fixed-size array; growing it means rebuilding (O(n)) or over-allocating to a generous upper bound up front. Dynamic/implicit segment trees (allocate nodes lazily, only where visited) handle sparse or unbounded coordinate ranges without materializing the full `4n` array - the standard fix for "segment tree over `10⁹` possible values" problems.
+- **"Can two segment trees be merged?"** - Yes, in O(n) by rebuilding from the combined leaves, or in specialized "small-to-large" / persistent-tree merging schemes at O(log n) amortized per merge for certain problem shapes (used in offline tree-DP problems merging subtree segment trees). This is advanced/CP-specialized territory, worth naming but not expected to implement cold.
+
+## Practice problems
+
+### 1. Range Sum Query - Mutable
+
+**Problem.** Given an integer array, support `update(index, val)` (set `a[index] = val`) and `sumRange(left, right)` (sum of `a[left..right]`, inclusive), called repeatedly in any order.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [1,3,5], update(1, 2), sumRange(0, 2) | **Output:** 8
+  - **Explanation:** after `update(1, 2)` the array is [1,2,5]; summing indices 0..2 gives 1+2+5 = 8.
+- **Example 2**
+  - **Input:** nums = [1,3,5], sumRange(0, 1), update(0, 10), sumRange(0, 1) | **Output:** 4, then 13
+  - **Explanation:** first query sums [1,3] = 4; after `update(0, 10)` the array is [10,3,5], and the same range now sums to 13.
+
+**Constraints:** `1 ≤ nums.length ≤ 3 × 10⁴`, `-100 ≤ nums[i] ≤ 100`, at most `3 × 10⁴` calls to `update` and `sumRange` combined.
+
+**Approach:** The textbook segment-tree shape (also solvable with a Fenwick tree, since sum is invertible - but this entry uses the general `SegmentTree` template to exercise the combine/identity pattern). Build with `combine = operator.add`, `identity = 0`; `update` is a direct point update; `sumRange` is a direct range query.
+
+```python
+import operator
+
+class NumArray:
+    def __init__(self, nums: list[int]) -> None:
+        self.tree = SegmentTree(nums, combine=operator.add, identity=0)
+
+    def update(self, index: int, val: int) -> None:
+        self.tree.update(index, val)
+
+    def sumRange(self, left: int, right: int) -> int:
+        return self.tree.query(left, right)
+```
+
+**Complexity:** O(log n) per `update` and `sumRange`, O(n) build, O(n) space.
+
+**Duplicate problems:**
+- Range Sum Query 2D - Mutable (LC 308) - same shape extended to 2D via a 2D segment tree; same point-update/range-query recognition, one more dimension.
+
+### 2. Range Minimum Query with updates
+
+**Problem.** Given an integer array, support `update(index, val)` and `queryMin(left, right)` (minimum of `a[left..right]`, inclusive), called repeatedly. Min has no inverse, so this is the canonical case where a Fenwick tree cannot substitute.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** nums = [5, 2, 8, 1, 9], queryMin(1, 3) | **Output:** 1
+  - **Explanation:** the minimum of indices 1..3 (values 2, 8, 1) is 1.
+- **Example 2**
+  - **Input:** nums = [5, 2, 8, 1, 9], update(3, 100), queryMin(1, 3) | **Output:** 2
+  - **Explanation:** after `update(3, 100)` the array is [5,2,8,100,9]; the minimum of indices 1..3 (values 2, 8, 100) is now 2.
+
+**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-10⁹ ≤ nums[i] ≤ 10⁹`, up to `10⁵` calls combined.
+
+**Approach:** Same `SegmentTree` template, different `combine`/`identity`: `combine = min`, `identity = +infinity`. This is the direct demonstration of why segment tree generalizes past Fenwick - swapping two parameters retargets the entire structure from sum to min with zero other code changes, because min is associative even though it isn't invertible.
+
+```python
+class MinArray:
+    def __init__(self, nums: list[int]) -> None:
+        self.tree = SegmentTree(nums, combine=min, identity=float("inf"))
+
+    def update(self, index: int, val: int) -> None:
+        self.tree.update(index, val)
+
+    def queryMin(self, left: int, right: int) -> int:
+        return self.tree.query(left, right)
+```
+
+**Complexity:** O(log n) per `update` and `queryMin`, O(n) build, O(n) space.
+
+**Duplicate problems:**
+- Range Maximum Query variants (implicit in many sliding-window/stack problems reframed with updates) - identical template with `combine = max`, `identity = -infinity`.
+- Sliding Window Maximum (LC 239) - related shape, but no persistent updates between windows; usually solved with [Monotonic Queue](../patterns/monotonic-queue.md) instead since the window only slides, it doesn't get arbitrary point updates - included here as a *non*-duplicate to sharpen the boundary: segment tree wins once updates are arbitrary, monotonic queue wins for pure sliding without updates.
+
+### 3. Range Addition
+
+**Problem.** Support `update(left, right, val)` (add `val` to every element in `[left, right]`) and `sumRange(left, right)` (sum of `a[left..right]`), both called repeatedly and interleaved in any order.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** a = [0,0,0,0,0], update(1, 3, 2), sumRange(0, 4) | **Output:** 6
+  - **Explanation:** adding 2 to indices 1..3 gives [0,2,2,2,0]; summing all five gives 0+2+2+2+0 = 6.
+- **Example 2**
+  - **Input:** a = [0,0,0,0,0], update(0, 2, 5), update(2, 4, 3), sumRange(2, 2) | **Output:** 8
+  - **Explanation:** the first update sets index 2 to 5; the second adds 3 more to index 2 (within `[2,4]`), so `a[2] = 8`, matching the single-index range query.
+
+**Constraints:** `1 ≤ n ≤ 10⁵`, `0 ≤ left ≤ right < n`, `-10³ ≤ val ≤ 10³`, up to `10⁵` combined calls.
+
+**Approach:** Range-update + range-query needs **lazy propagation** - a point-update segment tree would need O(range length) per update. Add a `lazy` array parallel to `tree`; a pending value at `lazy[node]` means "this node's whole subtree owes this delta but it hasn't been pushed to children yet." Every query/update first **pushes down** any pending lazy value before recursing further - `range_update` marks affected nodes and defers pushing to children, `range_query` pushes pending markers down only along the path it actually descends. This is the direct segment-tree analog of Fenwick's two-BIT range-update/range-query trick, but generalizes past sum to any associative op with the right push-down rule.
 
 ```python
 class LazySegmentTree:
@@ -306,13 +400,41 @@ class LazySegmentTree:
         mid = (lo + hi) // 2
         return (self.range_query(2 * node, lo, mid, l, r) +
                 self.range_query(2 * node + 1, mid + 1, hi, l, r))
+
+
+class RangeAddRangeSum:
+    def __init__(self, n: int) -> None:
+        self.tree = LazySegmentTree([0] * n)
+        self.n = n
+
+    def update(self, left: int, right: int, val: int) -> None:
+        self.tree.range_update(1, 0, self.n - 1, left, right, val)
+
+    def sumRange(self, left: int, right: int) -> int:
+        return self.tree.range_query(1, 0, self.n - 1, left, right)
 ```
 
-**Why for CP:** collapses "add `delta` to every element in `[l,r]`, then query range sum" from O(n) per update to O(log n) - the single most-tested segment-tree extension in contests, and the one Fenwick can only match via the less-general two-BIT trick.
+**Complexity:** O(log n) per `update` and `sumRange`. O(n) space (tree + lazy arrays).
 
-### Merge sort tree (offline range-rank queries)
+**Duplicate problems:**
+- Range Sum Query - Range Update and Range Sum (the two-BIT Fenwick version, see [Fenwick tree practice problems](./fenwick-tree.md#3-range-sum-query---range-update-and-range-sum--two-bits)) - identical problem, alternate data structure; both hit O(log n), segment tree's lazy-prop generalizes further (works for min/max range-update too, which two-BIT does not).
+- My Calendar III (LC 732) - range-add + max-overlap query is the same lazy-propagation shape with `combine = max` instead of sum.
 
-Each node stores its range's elements as a **sorted list** (built via the merge step of merge sort, bottom-up). Answers "how many elements `≤ x` in `[l, r]`" via binary search at each visited node: O(log n) nodes visited × O(log(node size)) binary search each = **O(log² n)** per query.
+### 4. Range Frequency Query
+
+**Problem.** Given an array, answer repeated queries of the form "how many times does value `x` occur in `a[left..right]`?" without rebuilding on each query - a range-rank problem the base `SegmentTree`'s `combine` can't answer, since counting occurrences isn't associative in the way a scalar aggregate is.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** arr = [1,3,3,3,2,4,3], query(left=0, right=6, value=3) | **Output:** 4
+  - **Explanation:** value 3 appears at indices 1, 2, 3, and 6, all within `[0,6]`, so the count is 4.
+- **Example 2**
+  - **Input:** arr = [1,3,3,3,2,4,3], query(left=1, right=4, value=3) | **Output:** 2
+  - **Explanation:** restricting to indices 1..4 keeps only the 3s at indices 1 and 2 (index 6 falls outside the range), so the count is 2.
+
+**Constraints:** `1 ≤ arr.length ≤ 10⁵`, `1 ≤ arr[i], value ≤ 10⁹`, up to `10⁵` queries, array is static (no updates between queries).
+
+**Approach:** A **merge sort tree**: each node stores its range's elements as a **sorted list**, built bottom-up via the merge step of merge sort (merging two sorted children costs O(child size), so the whole build is O(n log n)). A range-count-of-value query visits the same O(log n) nodes a normal segment-tree query would, but at each visited node does a binary search (`bisect`) instead of an O(1) read - `count(x) = count_leq(x) - count_leq(x - 1)` gives the exact frequency. This is a genuinely different technique from the lazy-propagation entry above: it trades a scalar per-node aggregate for a per-node sorted list to answer a rank-style query the base template structurally cannot.
 
 ```python
 import bisect
@@ -334,136 +456,21 @@ class MergeSortTree:
         left, right = self.tree[2 * node], self.tree[2 * node + 1]
         self.tree[node] = sorted(left + right)
 
-    def count_leq(self, node: int, lo: int, hi: int, l: int, r: int, x: int) -> int:
+    def _count_leq(self, node: int, lo: int, hi: int, l: int, r: int, x: int) -> int:
         if r < lo or hi < l:
             return 0
         if l <= lo and hi <= r:
             return bisect.bisect_right(self.tree[node], x)
         mid = (lo + hi) // 2
-        return (self.count_leq(2 * node, lo, mid, l, r, x) +
-                self.count_leq(2 * node + 1, mid + 1, hi, l, r, x))
+        return (self._count_leq(2 * node, lo, mid, l, r, x) +
+                self._count_leq(2 * node + 1, mid + 1, hi, l, r, x))
+
+    def count(self, left: int, right: int, value: int) -> int:
+        return (self._count_leq(1, 0, self.n - 1, left, right, value) -
+                self._count_leq(1, 0, self.n - 1, left, right, value - 1))
 ```
 
-**Why for CP:** turns "how many elements in range `[l,r]` are `≤ x`" - a query a plain segment tree can't answer (it only aggregates, doesn't rank) - into O(log² n), without the complexity of a persistent segment tree or a full offline-with-BIT sweep.
-
-## Gotchas / edge cases
-
-- **Off-by-one at `mid` boundaries.** The split `mid = (lo + hi) / 2` gives children `[lo, mid]` and `[mid+1, hi]` - using `[lo, mid]`/`[mid, hi]` (no `+1`) double-counts index `mid` in both children, silently corrupting every aggregate that includes it. Trace one build by hand on a 2-element array to catch this before trusting the code.
-- **Array size must round to `4n`, not `2n`, for the recursive array-backed version.** A segment tree over `n` leaves has at most `2n - 1` real nodes, but the recursive indexing scheme (`2·node`, `2·node+1`) can address indices up to roughly `4n` in the worst case (when `n` isn't a power of two) - under-allocating causes an out-of-bounds write that may not crash immediately, corrupting unrelated memory instead.
-- **Identity element must match `combine` exactly.** Sum's identity is `0`; min's identity is `+∞`; max's identity is `-∞`; gcd's identity is `0` (since `gcd(x, 0) == x`). Using the wrong identity (e.g. `0` for a min-tree) silently makes every "no overlap" branch return a wrong answer that looks plausible - it often passes small test cases where 0 happens not to be the true minimum, then fails at scale.
-- **Overflow on accumulation.** A sum segment tree over `10⁵`-`10⁶` elements at `int32`-range values can overflow 32-bit accumulators well before the query even gets interesting - use 64-bit accumulators (`long` in C++/Java; Python ints are unbounded, which hides this bug until porting to another language).
-- **Forgetting to push down lazy markers before reading a child.** The single most common lazy-propagation bug: a query or update descends into a child whose parent has an un-pushed pending marker, reading a stale aggregate. The fix is mechanical but easy to skip - **every** recursive call that goes past a node with children must call push-down first, no exceptions, including inside `query`, not just `update`.
-- **At-scale: recursion depth and call-stack overhead.** A recursive segment tree over `n = 10⁷` elements has depth `~24`, which is safe, but the **constant-factor overhead of ~2n to 4n recursive calls per build**, each with Python function-call overhead, makes a recursive Python segment tree noticeably slower than an iterative bottom-up array version at that scale - the iterative variant (see [Variants](#variants)) is the standard mitigation when raw throughput matters.
-
-## What the interviewer probes for
-
-- **"Why not just use a Fenwick tree - it's simpler?"** - Fenwick trees only support invertible/associative ops (sum, XOR) because query *subtracts* one prefix from another; min/max/gcd have no inverse, so they need a segment tree's explicit tree structure instead of BIT's implicit-array trick. If the query is sum-only with point updates, Fenwick wins on code size and constant factor; the moment min/max or range-update+range-query appears, segment tree is the right tool.
-- **"How would you support range updates, not just point updates?"** - Lazy propagation: defer pushing an update to children until a later query/update actually needs to descend past that node, storing a pending marker instead. This keeps range update O(log n) instead of the naive O(range length) of updating every leaf directly.
-- **"What if `n` isn't known in advance / the array needs to grow?"** - A segment tree is normally built over a fixed-size array; growing it means rebuilding (O(n)) or over-allocating to a generous upper bound up front. Dynamic/implicit segment trees (allocate nodes lazily, only where visited) handle sparse or unbounded coordinate ranges without materializing the full `4n` array - the standard fix for "segment tree over `10⁹` possible values" problems.
-- **"Can two segment trees be merged?"** - Yes, in O(n) by rebuilding from the combined leaves, or in specialized "small-to-large" / persistent-tree merging schemes at O(log n) amortized per merge for certain problem shapes (used in offline tree-DP problems merging subtree segment trees). This is advanced/CP-specialized territory, worth naming but not expected to implement cold.
-
-## Practice problems
-
-### 1. Range Sum Query - Mutable - _point update, range sum_
-
-**Problem.** Given an integer array, support `update(index, val)` (set `a[index] = val`) and `sumRange(left, right)` (sum of `a[left..right]`, inclusive), called repeatedly in any order.
-
-**Worked examples:**
-- **Example 1**
-  - **Input:** nums = [1,3,5], update(1, 2), sumRange(0, 2) | **Output:** 8
-  - **Explanation:** after `update(1, 2)` the array is [1,2,5]; summing indices 0..2 gives 1+2+5 = 8.
-- **Example 2**
-  - **Input:** nums = [1,3,5], sumRange(0, 1), update(0, 10), sumRange(0, 1) | **Output:** 4, then 13
-  - **Explanation:** first query sums [1,3] = 4; after `update(0, 10)` the array is [10,3,5], and the same range now sums to 13.
-
-**Constraints:** `1 ≤ nums.length ≤ 3 × 10⁴`, `-100 ≤ nums[i] ≤ 100`, at most `3 × 10⁴` calls to `update` and `sumRange` combined.
-
-**Approach:** The textbook segment-tree shape (also solvable with a Fenwick tree, since sum is invertible - but this entry uses the general `SegmentTree` template to exercise the combine/identity pattern). Build with `combine = operator.add`, `identity = 0`; `update` is a direct point update; `sumRange` is a direct range query.
-
-```python
-import operator
-
-class NumArray:
-    def __init__(self, nums: list[int]) -> None:
-        self.tree = SegmentTree(nums, combine=operator.add, identity=0)
-
-    def update(self, index: int, val: int) -> None:
-        self.tree.update(index, val)
-
-    def sumRange(self, left: int, right: int) -> int:
-        return self.tree.query(left, right)
-```
-
-**Complexity:** O(log n) per `update` and `sumRange`, O(n) build, O(n) space.
+**Complexity:** O(n log n) build, O(log² n) per query, O(n log n) space (each element appears in O(log n) node lists).
 
 **Duplicate problems:**
-- Range Sum Query 2D - Mutable (LC 308) - same shape extended to 2D via a 2D segment tree; same point-update/range-query recognition, one more dimension.
-
-### 2. Range Minimum Query with updates - _point update, range min_
-
-**Problem.** Given an integer array, support `update(index, val)` and `queryMin(left, right)` (minimum of `a[left..right]`, inclusive), called repeatedly. Min has no inverse, so this is the canonical case where a Fenwick tree cannot substitute.
-
-**Worked examples:**
-- **Example 1**
-  - **Input:** nums = [5, 2, 8, 1, 9], queryMin(1, 3) | **Output:** 1
-  - **Explanation:** the minimum of indices 1..3 (values 2, 8, 1) is 1.
-- **Example 2**
-  - **Input:** nums = [5, 2, 8, 1, 9], update(3, 100), queryMin(1, 3) | **Output:** 2
-  - **Explanation:** after `update(3, 100)` the array is [5,2,8,100,9]; the minimum of indices 1..3 (values 2, 8, 100) is now 2.
-
-**Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-10⁹ ≤ nums[i] ≤ 10⁹`, up to `10⁵` calls combined.
-
-**Approach:** Same `SegmentTree` template, different `combine`/`identity`: `combine = min`, `identity = +infinity`. This is the direct demonstration of why segment tree generalizes past Fenwick - swapping two parameters retargets the entire structure from sum to min with zero other code changes, because min is associative even though it isn't invertible.
-
-```python
-class MinArray:
-    def __init__(self, nums: list[int]) -> None:
-        self.tree = SegmentTree(nums, combine=min, identity=float("inf"))
-
-    def update(self, index: int, val: int) -> None:
-        self.tree.update(index, val)
-
-    def queryMin(self, left: int, right: int) -> int:
-        return self.tree.query(left, right)
-```
-
-**Complexity:** O(log n) per `update` and `queryMin`, O(n) build, O(n) space.
-
-**Duplicate problems:**
-- Range Maximum Query variants (implicit in many sliding-window/stack problems reframed with updates) - identical template with `combine = max`, `identity = -infinity`.
-- Sliding Window Maximum (LC 239) - related shape, but no persistent updates between windows; usually solved with [Monotonic Queue](../patterns/monotonic-queue.md) instead since the window only slides, it doesn't get arbitrary point updates - included here as a *non*-duplicate to sharpen the boundary: segment tree wins once updates are arbitrary, monotonic queue wins for pure sliding without updates.
-
-### 3. Range Addition - _lazy propagation, range update + range query_
-
-**Problem.** Support `update(left, right, val)` (add `val` to every element in `[left, right]`) and `sumRange(left, right)` (sum of `a[left..right]`), both called repeatedly and interleaved in any order.
-
-**Worked examples:**
-- **Example 1**
-  - **Input:** a = [0,0,0,0,0], update(1, 3, 2), sumRange(0, 4) | **Output:** 6
-  - **Explanation:** adding 2 to indices 1..3 gives [0,2,2,2,0]; summing all five gives 0+2+2+2+0 = 6.
-- **Example 2**
-  - **Input:** a = [0,0,0,0,0], update(0, 2, 5), update(2, 4, 3), sumRange(2, 2) | **Output:** 8
-  - **Explanation:** the first update sets index 2 to 5; the second adds 3 more to index 2 (within `[2,4]`), so `a[2] = 8`, matching the single-index range query.
-
-**Constraints:** `1 ≤ n ≤ 10⁵`, `0 ≤ left ≤ right < n`, `-10³ ≤ val ≤ 10³`, up to `10⁵` combined calls.
-
-**Approach:** Range-update + range-query needs lazy propagation - point-update segment tree would need O(range length) per update. Use `LazySegmentTree` from [CP-primitives](#lazy-propagation-range-update-range-query): `range_update` marks affected nodes and defers pushing to children; `range_query` pushes pending markers down only along the path it actually descends. This is the direct segment-tree analog of Fenwick's two-BIT range-update/range-query trick, but generalizes past sum to any associative op with the right push-down rule.
-
-```python
-class RangeAddRangeSum:
-    def __init__(self, n: int) -> None:
-        self.tree = LazySegmentTree([0] * n)
-        self.n = n
-
-    def update(self, left: int, right: int, val: int) -> None:
-        self.tree.range_update(1, 0, self.n - 1, left, right, val)
-
-    def sumRange(self, left: int, right: int) -> int:
-        return self.tree.range_query(1, 0, self.n - 1, left, right)
-```
-
-**Complexity:** O(log n) per `update` and `sumRange`. O(n) space (tree + lazy arrays).
-
-**Duplicate problems:**
-- Range Sum Query - Range Update and Range Sum (the two-BIT Fenwick version, see [Fenwick tree practice problems](./fenwick-tree.md#3-range-sum-query---range-update-and-range-sum--two-bits)) - identical problem, alternate data structure; both hit O(log n), segment tree's lazy-prop generalizes further (works for min/max range-update too, which two-BIT does not).
-- My Calendar III (LC 732) - range-add + max-overlap query is the same lazy-propagation shape with `combine = max` instead of sum.
+- Count of Range Sum (LC 327) - a different rank-style range query (prefix-sum values falling in `[lower, upper]`), usually solved with a Fenwick tree or merge-sort-based counting rather than a merge sort tree, but shares the "count elements in a value range via a sorted-merge structure" mechanic.

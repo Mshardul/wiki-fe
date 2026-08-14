@@ -19,10 +19,6 @@
 - [Variants](#variants)
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Dummy (sentinel) head - kill the head-edge-case](#dummy-sentinel-head--kill-the-head-edge-case)
-  - [In-place reversal of pointers](#in-place-reversal-of-pointers)
-  - [Fast/slow pointers - cycle, middle, k-from-end](#fastslow-pointers--cycle-middle-k-from-end)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
@@ -135,7 +131,7 @@ How the linked list stacks up against the structures you'd weigh it against in a
 - **Singly linked list** - one `next` pointer per node. Minimal memory; can only walk forward; deleting a held node needs its predecessor. The default and the subject of most of this page.
 - **Doubly linked list** - each node also stores `prev`. Doubles the pointer overhead but buys **O(1) deletion of any held node** and backward traversal - the variant behind deques and LRU caches.
 - **Circular linked list** - the tail's `next` points back to the head (singly) or head/tail link both ways (doubly). No null terminator; useful for round-robin scheduling and ring buffers built from nodes. A list-based cousin of the [circular buffer](./circular-buffer.md).
-- **Sentinel / dummy-node list** - a permanent placeholder head (and sometimes tail) node that is never deleted, so the "list is empty" and "operate on the head" edge cases vanish. A structural shape; the technique that wields it lives in [CP-primitives](#cp-primitives).
+- **Sentinel / dummy-node list** - a permanent placeholder head (and sometimes tail) node that is never deleted, so the "list is empty" and "operate on the head" edge cases vanish. A structural shape; the technique that wields it is used throughout [Practice problems](#practice-problems) (see [Merge Two Sorted Lists](#3-merge-two-sorted-lists--dummy-head--splice) and [Remove Nth Node From End](#4-remove-nth-node-from-end--two-pointers-one-pass)).
 - **XOR linked list** - a doubly list storing `prev XOR next` in one field instead of two pointers, recovering each from the other. A memory-saving party trick; brittle (breaks GC, debugging), rarely used in practice - name it, don't reach for it.
 - **[Skip list](./skip-list.md)** - a tower of linked lists with express lanes giving O(log n) search/insert, a probabilistic alternative to a [balanced BST](./balanced-bst.md). A structurally distinct cousin; mention it when asked "how do you make a list searchable in O(log n)".
 
@@ -286,54 +282,10 @@ dq.rotate(1)         # O(k) circular shift
 
 Hand-rolled nodes are for the rare problem that _requires_ holding and splicing specific nodes (LRU cache, in-place reversal) - exactly the interview problems below.
 
-## CP-primitives
-
-Three pointer techniques that turn linked-list problems from fiddly edge-case minefields into clean O(n)/O(1) solutions.
-
-### Dummy (sentinel) head - kill the head-edge-case
-
-Half of all linked-list bugs are the special case "what if I'm modifying the head?". A **dummy node** that sits permanently before the real head makes the head no longer special - every node now has a predecessor, so one code path handles all positions. Return `dummy.next` at the end.
-
-```python
-dummy = Node(0, head)        # dummy.next is the real head
-prev = dummy
-# ... splice freely; deleting head is now just prev.next = cur.next ...
-return dummy.next            # the (possibly new) head
-```
-
-**Why for CP:** collapses the "insert/delete at head" branch into the general case - fewer branches, fewer off-by-one bugs, faster to code correctly under time pressure.
-
-### In-place reversal of pointers
-
-Reverse a list (or a sub-segment) by walking once and flipping each `next` to point backward, carrying three pointers (`prev`, `cur`, `nxt`). O(n) time, **O(1) space** - no new nodes.
-
-```
-prev=/  cur=[1]→[2]→[3]→/
-step:   save nxt = cur.next; cur.next = prev; prev = cur; cur = nxt
-result: /←[1]←[2]←[3]=prev   →   new head is prev
-```
-
-**Why for CP:** the building block for "reverse in groups of k", palindrome-check on a list, and reorder-list - all O(1) space because you rewire instead of copying.
-
-### Fast/slow pointers - cycle, middle, k-from-end
-
-Two pointers advancing at different rates extract positional facts in **one pass, O(1) space**: a fast pointer at 2× speed meets a slow one inside any cycle (Floyd's tortoise and hare); when fast reaches the end, slow sits at the **middle**; starting fast `k` nodes ahead, when fast hits the end slow is **k-from-the-end**. Full treatment in the [Fast & Slow Pointers](../patterns/fast-slow-pointers.md) pattern.
-
-```python
-slow = fast = head
-while fast and fast.next:
-    slow, fast = slow.next, fast.next.next
-    if slow is fast:          # pointers met - there is a cycle
-        break
-# if loop ended without meeting, no cycle - slow is the middle
-```
-
-**Why for CP:** replaces a two-pass or O(n)-extra-space approach (counting length, or a visited set) with a single O(1)-space sweep.
-
 ## Gotchas / edge cases
 
 - **Losing the rest of the list (the classic).** When rewiring, if you overwrite `cur.next` _before_ saving it, everything after is unreachable and garbage-collected. Always `nxt = cur.next` _first_, then reassign. This is the #1 linked-list bug in interviews.
-- **The head is special - until you use a dummy node.** Inserting/deleting at the head touches `head` itself, not a `prev.next`; forgetting this branch corrupts the list or crashes on the empty case. The [dummy-head trick](#dummy-sentinel-head--kill-the-head-edge-case) erases the whole class of bug - reach for it reflexively.
+- **The head is special - until you use a dummy node.** Inserting/deleting at the head touches `head` itself, not a `prev.next`; forgetting this branch corrupts the list or crashes on the empty case. The dummy-head trick (see [Merge Two Sorted Lists](#3-merge-two-sorted-lists--dummy-head--splice)) erases the whole class of bug - reach for it reflexively.
 - **Singly delete needs the predecessor - O(n), not O(1).** "Delete this node I'm pointing at" is _not_ O(1) in a singly list; you need `prev` to rewire `prev.next`, so you walk from the head. The famous exception: if you're allowed to delete a **non-tail** node, copy the next node's value into the current node and unlink the _next_ node instead - O(1), but it doesn't work on the tail.
 - **Null / empty-list dereference.** `cur.next` when `cur` is null throws. Every traversal loop guards `while cur is not None`, and <abbr>two-pointer</abbr> loops must guard **both** `fast and fast.next` before the double hop - dropping the second check throws on even-length lists.
 - **Cycle turns traversal into an infinite loop.** A `while cur` loop never terminates if the list has a cycle. If cycles are possible, detect with fast/slow before any length-counting or full traversal - never assume a `next` chain ends.
@@ -488,4 +440,4 @@ def remove_nth_from_end(head: Optional[Node], n: int) -> Optional[Node]:
 **Complexity:** O(n) time, O(1) space.
 
 **Duplicate problems:**
-- LRU Cache - the canonical hashmap + doubly-linked-list composite structure, showing why the list needs to be *doubly* linked (O(1) unlink at an arbitrary node); see [LRU Cache](./lru-cache.md#1-lru-cache--map--doubly-linked-list-o1) for the full treatment.
+- LRU Cache - the canonical hashmap + doubly-linked-list composite structure, showing why the list needs to be *doubly* linked (O(1) unlink at an arbitrary node); see [LRU Cache](./lru-cache.md#1-lru-cache) for the full treatment.

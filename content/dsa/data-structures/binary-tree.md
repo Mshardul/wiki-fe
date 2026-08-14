@@ -23,17 +23,14 @@
   - [Breadth-first: level-order](#breadth-first-level-order)
   - [The shape invariants: full, complete, balanced](#the-shape-invariants-full-complete-balanced)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Tree DP - answer from children](#tree-dp--answer-from-children)
-  - [Array-embedded tree (no pointers)](#array-embedded-tree-no-pointers)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [Maximum Depth of Binary Tree](#1-maximum-depth-of-binary-tree--dfs-recursion)
-  - [Binary Tree Level Order Traversal](#2-binary-tree-level-order-traversal--bfs)
-  - [Invert Binary Tree](#3-invert-binary-tree--recursive-swap)
-  - [Diameter of Binary Tree](#4-diameter-of-binary-tree--tree-dp)
-  - [Lowest Common Ancestor](#5-lowest-common-ancestor--recursive-search)
+  - [Maximum Depth of Binary Tree](#1-maximum-depth-of-binary-tree)
+  - [Binary Tree Level Order Traversal](#2-binary-tree-level-order-traversal)
+  - [Invert Binary Tree](#3-invert-binary-tree)
+  - [Diameter of Binary Tree](#4-diameter-of-binary-tree)
+  - [Lowest Common Ancestor](#5-lowest-common-ancestor)
 
 ## What it is
 
@@ -60,7 +57,7 @@ Two definitions that every tree problem leans on:
 - **Height** of a node = the longest downward path to a leaf (the tree's height is the root's). **Depth** = distance from the root. The tree above has height 2.
 - **O(height), not O(n).** Search/insert/delete in a search tree are O(height): **O(log n)** when the tree is balanced (height ~log n), but **O(n)** when it degenerates into a chain. Balance is the difference between a tree and a glorified linked list - and the entire reason [balanced BSTs](./balanced-bst.md) exist.
 
-The structure's self-similarity is the key working insight: **`tree = node + left subtree + right subtree`**. Any property you want (height, sum, whether it's balanced) you compute by recursing into both subtrees and combining their answers at the current node - the [tree-DP](#tree-dp--answer-from-children) pattern. Iteratively, the same walk uses an explicit [stack](./stack.md) (depth-first) or [queue](./queue.md) (breadth-first).
+The structure's self-similarity is the key working insight: **`tree = node + left subtree + right subtree`**. Any property you want (height, sum, whether it's balanced) you compute by recursing into both subtrees and combining their answers at the current node - the [tree-DP](#4-diameter-of-binary-tree) pattern. Iteratively, the same walk uses an explicit [stack](./stack.md) (depth-first) or [queue](./queue.md) (breadth-first).
 
 ## Operations
 
@@ -153,7 +150,7 @@ Each is the same O(n) walk; the choice encodes _when_ you need a node's answer r
 
 - **Pre-order** - act on a node before its children: serialize, clone, render top-down.
 - **In-order** - on a [BST](./binary-search-tree.md), produces keys in **sorted** order. The defining BST property.
-- **Post-order** - need both children's results first: compute height/size, delete (free children before parent), [tree DP](#tree-dp--answer-from-children).
+- **Post-order** - need both children's results first: compute height/size, delete (free children before parent), [tree DP](#4-diameter-of-binary-tree).
 
 ### Breadth-first: level-order
 
@@ -174,7 +171,7 @@ Use level-order for "process by depth": shortest path in an unweighted tree, lev
 The single number that governs tree performance is **height**, and these invariants bound it:
 
 - **Full** - every node has 0 or 2 children (no node has exactly one). A structural curiosity, not a performance guarantee.
-- **Complete** - every level filled except possibly the last, which fills left-to-right. Guarantees height = ⌊log₂ n⌋ and packs perfectly into an array with **no gaps** - this is exactly the [heap](./heap.md)'s shape and why a heap needs no pointers (see [CP-primitives](#array-embedded-tree-no-pointers)).
+- **Complete** - every level filled except possibly the last, which fills left-to-right. Guarantees height = ⌊log₂ n⌋ and packs perfectly into an array with **no gaps** (children of index `i` at `2i+1`/`2i+2`, parent at `(i-1)//2`) - this is exactly the [heap](./heap.md)'s shape and why a heap needs no pointers.
 - **Balanced** - every node's two subtree heights differ by ≤ 1 (AVL's definition), keeping height O(log n). This is the invariant a [balanced BST](./balanced-bst.md) maintains via rotations - and the difference between O(log n) and a skewed O(n) chain.
 
 The invariant matters because **a binary tree with no balance guarantee can degenerate into a linked list** (insert sorted data into a plain BST → a right-leaning chain, every op O(n)). Balance is not decoration; it's what makes the tree a tree.
@@ -254,44 +251,6 @@ def level_order(root: Optional[TreeNode]) -> list[list[int]]:
 
 **Contest velocity.** Recursion is the fastest to write for tree DFS - but Python's ~1000-frame recursion cap means a deep/skewed tree (10⁵ nodes) overflows. Either `sys.setrecursionlimit(10**6)` (and raise the OS stack) or switch to the iterative stack version. For BFS, `collections.deque` is the queue (never `list.pop(0)`).
 
-## CP-primitives
-
-A plain binary tree's contest surface is smaller than a Linear structure's (no prefix-sum-style tricks), but two ideas recur constantly.
-
-### Tree DP - answer from children
-
-Most "compute X of the tree" problems are a **post-order DP**: each node's answer is a function of its children's answers, computed once on the way back up. Often you return one value to the parent while updating a global with another (the diameter trick).
-
-```python
-def diameter(root) -> int:
-    best = 0
-    def height(node) -> int:             # returns height; updates best (diameter)
-        nonlocal best
-        if not node:
-            return 0
-        lh, rh = height(node.left), height(node.right)
-        best = max(best, lh + rh)        # path through this node
-        return 1 + max(lh, rh)           # height reported upward
-    height(root)
-    return best
-```
-
-**Why for CP:** one O(n) post-order pass answers height, diameter, subtree sums, "max path sum", balance-check, and "houses to rob on a tree" - all the same skeleton: recurse both children, combine at the node. The single highest-leverage tree pattern.
-
-### Array-embedded tree (no pointers)
-
-A **complete** binary tree maps perfectly to a flat [array](./array.md) by index math - no node objects, no pointers, cache-friendly. For a node at index `i` (0-based): children at `2i+1` and `2i+2`, parent at `(i-1)//2`.
-
-```
-tree:        (A)              array:  index: 0  1  2  3  4  5  6
-            /   \                            [A][B][C][D][E][F][G]
-          (B)   (C)                  children of i: 2i+1, 2i+2
-         /  \   /  \                  parent of i:  (i-1)//2
-       (D)(E)(F)(G)
-```
-
-**Why for CP:** this is exactly how a [heap](./heap.md) is stored, and how [segment trees](./segment-tree.md) are built - pointer-free, contiguous, and indexable. When the tree is complete (or you pad to complete), drop the pointers entirely and do index arithmetic.
-
 ## Gotchas / edge cases
 
 - **The empty tree (null root).** Every traversal and computation must handle `root is None` as the base case - it's the most-forgotten edge and the first thing an interviewer tests. Height of empty = 0 (or -1 by some conventions - state which), traversal = empty list.
@@ -313,7 +272,7 @@ tree:        (A)              array:  index: 0  1  2  3  4  5  6
 
 Five staples, each a **distinct** tree technique - no two solved the same way.
 
-### 1. Maximum Depth of Binary Tree - _DFS recursion_
+### 1. Maximum Depth of Binary Tree
 
 Return the maximum depth (number of nodes on the longest root-to-leaf path) of a binary tree.
 
@@ -341,7 +300,7 @@ def max_depth(root: Optional[TreeNode]) -> int:
 **Duplicate problems:**
 - Minimum Depth of Binary Tree (LC 111) - same post-order recurse-and-combine shape, but must special-case a single-child node (it's not a leaf, so the shorter side doesn't count).
 
-### 2. Binary Tree Level Order Traversal - _BFS_
+### 2. Binary Tree Level Order Traversal
 
 Return the node values grouped by level, top to bottom.
 
@@ -381,7 +340,7 @@ def level_order(root: Optional[TreeNode]) -> list[list[int]]:
 - Binary Tree Zigzag Level Order Traversal (LC 103) - identical BFS-by-level mechanic, alternating the append direction per level.
 - Average of Levels in Binary Tree (LC 637) - same level-snapshot BFS, averaging instead of collecting.
 
-### 3. Invert Binary Tree - _recursive swap_
+### 3. Invert Binary Tree
 
 Mirror a binary tree: swap every node's left and right children.
 
@@ -407,7 +366,7 @@ def invert_tree(root: Optional[TreeNode]) -> Optional[TreeNode]:
 
 **Complexity:** O(n) time, O(h) space.
 
-### 4. Diameter of Binary Tree - _tree DP_
+### 4. Diameter of Binary Tree
 
 Return the length of the longest path between any two nodes (counted in edges), which may or may not pass through the root.
 
@@ -441,8 +400,10 @@ def diameter_of_binary_tree(root: Optional[TreeNode]) -> int:
 
 **Duplicate problems:**
 - Binary Tree Maximum Path Sum (LC 124) - same return-one-track-another tree DP shape, summing values instead of counting edges (and clamping negative subtree contributions to 0).
+- Balanced Binary Tree (LC 110) - same post-order tree-DP skeleton (recurse both children, combine at the node) computing a balance check instead of a diameter.
+- House Robber III (LC 337) - same post-order tree-DP skeleton, returning a pair of values (rob-this-node / skip-this-node) instead of a single height, to combine at each node.
 
-### 5. Lowest Common Ancestor - _recursive search_
+### 5. Lowest Common Ancestor
 
 Given two nodes `p` and `q` in a binary tree, return their lowest common ancestor (the deepest node having both as descendants). Both nodes exist in the tree.
 

@@ -24,18 +24,15 @@
   - [Open addressing](#open-addressing)
   - [Load factor & resize](#load-factor--resize)
 - [Implementation](#implementation)
-- [CP-primitives](#cp-primitives)
-  - [Frequency map / counter](#frequency-map--counter)
-  - [Seen-set for O(1) complement lookup](#seen-set-for-o1-complement-lookup)
-  - [Hashing tuples & frozensets as keys](#hashing-tuples--frozensets-as-keys)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
-  - [Two Sum](#1-two-sum--complement-lookup)
-  - [Group Anagrams](#2-group-anagrams--canonical-key)
-  - [Longest Consecutive Sequence](#3-longest-consecutive-sequence--set-membership)
-  - [Subarray Sum Equals K](#4-subarray-sum-equals-k--prefix-sum--hashing)
-  - [First Unique Character](#5-first-unique-character--frequency-map)
+  - [1. Two Sum](#1-two-sum)
+  - [2. Group Anagrams](#2-group-anagrams)
+  - [3. Longest Consecutive Sequence](#3-longest-consecutive-sequence)
+  - [4. Subarray Sum Equals K](#4-subarray-sum-equals-k)
+  - [5. First Unique Character](#5-first-unique-character)
+  - [6. Longest Common Subsequence](#6-longest-common-subsequence)
 
 ## What it is
 
@@ -95,7 +92,7 @@ Worst case is O(n) when every key collides into one bucket (a degenerate hash or
 
 - **You need sorted order or range queries** ("all keys between a and b", "the smallest key") → a **balanced BST** / sorted structure gives O(log n) ordered ops; a hash table has no order at all. <!-- balanced-bst not yet written -->
 - **You need guaranteed worst-case <abbr>latency</abbr>** → the O(n) resize/collision tail makes hash tables unsuitable for hard-real-time; a balanced tree's O(log n) is a firm ceiling.
-- **Keys are small bounded integers** → a plain [array](./array.md) indexed directly (`freq[v]`) beats a hash table on constant factor with zero hashing overhead (see [CP-primitives](#cp-primitives)).
+- **Keys are small bounded integers** → a plain [array](./array.md) indexed directly (`freq[v]`) beats a hash table on constant factor with zero hashing overhead.
 - **You need prefix lookups on string keys** → a [<abbr>trie</abbr>](./trie.md) gives prefix/autocomplete queries a hash table can't.
 
 Rule of thumb: **hash table for "lookup by key, order irrelevant"; tree for "lookup by key, order matters."** If the problem says "sorted", "range", "next-greater-key", or "k-th smallest", it's not a hash table.
@@ -120,7 +117,7 @@ The hash table's column is the only one with **O(1) average lookup for arbitrary
 
 - **Hash set** - values dropped, keys only; an O(1) membership structure (`x in s`). The dedup/seen-set workhorse. Its own page: [Hash Set](./hash-set.md).
 - **Multimap** - one key → many values (a hash map whose value is a list/set). Used for grouping; Python's `collections.defaultdict(list)`.
-- **Counter / multiset** - key → count; insertion increments rather than overwrites. `collections.Counter`. A frequency-map shape; the technique lives in [CP-primitives](#cp-primitives).
+- **Counter / multiset** - key → count; insertion increments rather than overwrites. `collections.Counter`. A frequency-map shape; see [First Unique Character](#5-first-unique-character) in Practice problems.
 - **Ordered / insertion-ordered map** - preserves insertion order on iteration (Python `dict` since 3.7, Java `LinkedHashMap`). Still O(1); order is a free bonus, not a sorted order.
 - **Concurrent hash map** - sharded/striped locking for thread-safe O(1) access (Java `ConcurrentHashMap`). The concurrency story, not a different algorithm.
 - **Consistent hashing** - distributes keys across N servers so adding/removing a server reshuffles only ~1/N of keys, not all. The distributed-systems variant: [consistent hashing](../../system-design/algorithms/consistent-hashing.md).
@@ -275,47 +272,6 @@ seen = set()                  # O(1) membership - the seen-set pattern
 
 `dict`/`set`/`Counter`/`defaultdict` are C-implemented open-addressing tables - orders of magnitude faster than the teaching class above. The class is for explaining collisions, not for the contest.
 
-## CP-primitives
-
-The hash table's contest value isn't the structure - it's the patterns it unlocks. Three that appear constantly.
-
-### Frequency map / counter
-
-Count occurrences of each key in one O(n) pass - the substrate for anagrams, "most frequent", "first unique", majority element.
-
-```python
-freq: dict[str, int] = {}
-for ch in s:
-    freq[ch] = freq.get(ch, 0) + 1
-```
-
-**Why for CP:** turns "how many of each?" from an O(n²) double-loop into O(n) with a one-liner. The single most-used contest primitive after prefix sums.
-
-### Seen-set for O(1) complement lookup
-
-Sweep once, and for each element ask "have I already seen the value that completes my target?" - a set/map gives that answer in O(1), collapsing an O(n²) pair-search to O(n).
-
-```python
-seen = set()
-for x in nums:
-    if target - x in seen:
-        return True
-    seen.add(x)
-```
-
-**Why for CP:** the two-sum trick generalized - any "find a pair/complement" problem drops from O(n²) to O(n) by trading memory for time.
-
-### Hashing tuples & frozensets as keys
-
-Python hashes any **immutable** value, so a `tuple`, `frozenset`, or sorted-string can be a dict/set key - perfect for memoizing on a multi-part state or grouping by a canonical signature.
-
-```python
-memo: dict[tuple[int, int], int] = {}   # DP state (i, j) -> answer
-groups: dict[str, list[str]] = {}       # key = "".join(sorted(word)) -> anagram group
-```
-
-**Why for CP:** lets you memoize DP over compound states and group by a derived key without inventing an encoding - `tuple` keys are O(1) to hash and compare.
-
 ## Gotchas / edge cases
 
 - **Mutable keys are a landmine.** A key's hash must never change while it's in the table. Using a `list` as a key fails (unhashable in Python); worse, mutating an object after insertion (in languages that allow it) makes its old slot unreachable - the entry is "lost" though still in memory. **Keys must be immutable** (`tuple`, not `list`; `frozenset`, not `set`).
@@ -337,7 +293,7 @@ groups: dict[str, list[str]] = {}       # key = "".join(sorted(word)) -> anagram
 
 Five staples, each a **distinct** hashing technique - no two solved the same way.
 
-### 1. Two Sum - _complement lookup_
+### 1. Two Sum
 
 Given an integer array `nums` and a target, return the indices of the two numbers that add to `target`. Exactly one solution exists. The seen-map/complement-lookup primitive in its purest form.
 
@@ -371,7 +327,7 @@ def two_sum(nums: list[int], target: int) -> list[int]:
 
 ---
 
-### 2. Group Anagrams - _canonical key_
+### 2. Group Anagrams
 
 Given a list of strings, group the anagrams together (any order). The canonical-key/bucketing technique - hashing a derived signature rather than the raw value.
 
@@ -403,7 +359,7 @@ def group_anagrams(words: list[str]) -> list[list[str]]:
 
 ---
 
-### 3. Longest Consecutive Sequence - _set membership_
+### 3. Longest Consecutive Sequence
 
 Given an unsorted integer array, return the length of the longest run of consecutive integers. Must run in O(n) - no sorting. The set-membership technique: turning "is the next value present?" into O(1).
 
@@ -436,7 +392,7 @@ def longest_consecutive(nums: list[int]) -> int:
 
 ---
 
-### 4. Subarray Sum Equals K - _prefix sum + hashing_
+### 4. Subarray Sum Equals K
 
 Count contiguous subarrays of `nums` (values may be negative) whose sum equals `k`. The prefix-sum-plus-hashmap technique - the hashmap is the load-bearing structure that makes this problem's home here rather than on [Array](./array.md), since a plain sliding window can't handle negative values.
 
@@ -471,7 +427,7 @@ def subarray_sum(nums: list[int], k: int) -> int:
 
 ---
 
-### 5. First Unique Character - _frequency map_
+### 5. First Unique Character
 
 Given a string, return the index of the first non-repeating character, or -1 if none. The counter primitive in its plainest form - two passes over a frequency map.
 
@@ -485,7 +441,7 @@ Given a string, return the index of the first non-repeating character, or -1 if 
 
 **Constraints:** `1 ≤ s.length ≤ 10⁵`, lowercase English letters only.
 
-**Approach:** Two passes with a frequency map: first count every character, then scan left to right for the first with count 1. The counter primitive in its plainest form - O(n) instead of an O(n²) "for each char, scan the rest". A bounded 26-array would shave the constant (see [Array CP-primitives](./array.md#cp-primitives)).
+**Approach:** Two passes with a frequency map: first count every character, then scan left to right for the first with count 1. The counter primitive in its plainest form - O(n) instead of an O(n²) "for each char, scan the rest". A bounded 26-array would shave the constant (see [Array's Counter / bucket array variant](./array.md#variants)).
 
 ```python
 def first_uniq_char(s: str) -> int:
@@ -502,4 +458,43 @@ def first_uniq_char(s: str) -> int:
 
 **Duplicate problems:**
 - Sort Characters By Frequency (LC 451) - same count-then-scan frequency map, but sorts by count instead of scanning for the first count-1 character.
+
+---
+
+### 6. Longest Common Subsequence
+
+Given two strings, return the length of their longest common subsequence (a sequence that appears in both, not necessarily contiguous).
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** text1 = "abcde", text2 = "ace" | **Output:** 3
+  - **Explanation:** "ace" is a subsequence of both strings, and no longer common subsequence exists.
+- **Example 2**
+  - **Input:** text1 = "abc", text2 = "def" | **Output:** 0
+  - **Explanation:** the two strings share no characters at all, so the longest common subsequence is empty.
+
+**Constraints:** `1 ≤ text1.length, text2.length ≤ 1000`, lowercase English letters only.
+
+**Approach:** The recurrence `lcs(i, j) = lcs(i+1, j+1) + 1` if `text1[i] == text2[j]`, else `max(lcs(i+1, j), lcs(i, j+1))` has overlapping subproblems indexed by a **pair** `(i, j)` - a compound state that a single-integer key can't represent. Python hashes any immutable value, so a `dict[tuple[int, int], int]` memoizes directly on the `(i, j)` pair with no need to invent a flat encoding (like `i * len(text2) + j`) the way a language without tuple-hashing would require. This is a different use of hashing than a canonical-key bucketing problem (entry 2): here the hashed key isn't grouping equal items, it's addressing a point in a multi-dimensional recursion state space.
+
+```python
+from functools import lru_cache
+
+def longest_common_subsequence(text1: str, text2: str) -> int:
+    @lru_cache(maxsize=None)
+    def lcs(i: int, j: int) -> int:            # memo key is the tuple (i, j)
+        if i == len(text1) or j == len(text2):
+            return 0
+        if text1[i] == text2[j]:
+            return 1 + lcs(i + 1, j + 1)
+        return max(lcs(i + 1, j), lcs(i, j + 1))
+
+    return lcs(0, 0)
+```
+
+**Complexity:** O(n · m) time and space (n, m = string lengths; each of the n·m `(i, j)` states memoized once).
+
+**Duplicate problems:**
+- Edit Distance (LC 72) - same `(i, j)`-tuple-keyed memoization over two string pointers, with insert/delete/replace costs added to the recurrence instead of a match/no-match choice.
+- Distinct Subsequences (LC 115) - same two-pointer `(i, j)` state space hashed via a tuple key, counting ways instead of taking a max/min.
 

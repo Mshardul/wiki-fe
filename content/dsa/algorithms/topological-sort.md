@@ -9,7 +9,7 @@
 
 ## Prerequisites
 
-<!-- U9: [Title](./path.md) [Must read] - reason. HTML-comment link for unwritten targets. -->
+<!-- U9: Format: [Title](target slug) [Must read] - reason. HTML-comment link for unwritten targets. -->
 
 ## Table of Contents
 
