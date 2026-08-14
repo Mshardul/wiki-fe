@@ -116,7 +116,7 @@ This is the **Fibonacci recurrence** (shifted): `N(h) ≈ φ^h` where `φ = (1+�
 **Reach for an AVL tree when:**
 
 - Lookups dominate writes and you want the **tightest height** → AVL's strict balance shaves comparisons off every search; the extra write rotations rarely matter if writes are infrequent.
-- You need a **hard worst-case O(log n)** guarantee (not amortized, not average) on ordered operations - real-time-ish systems, or data structures where a single slow op is unacceptable.
+- You need a **hard worst-case O(log n)** guarantee (not <abbr>amortized</abbr>, not average) on ordered operations - real-time-ish systems, or data structures where a single slow op is unacceptable.
 
 **Reach for something else when:**
 
@@ -137,6 +137,8 @@ Real-world: AVL trees show up in read-heavy in-memory indexes and some database 
 | [B-Tree](./b-tree.md)                | wide nodes, equal leaf depth | log_m n      | few seeks   | split/merge                 | on-disk indexes                     |
 
 AVL and red-black are the same asymptotics; AVL trades more write-work for a shorter tree (faster reads). Pick on your read/write ratio.
+
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
 
 ## Variants
 
@@ -159,7 +161,7 @@ bf = −2           → right-heavy → RR or RL rotation
 
 The discipline: every structural change retraces the path to the root, recomputes heights bottom-up, and rotates the first node it finds at ±2. The **balanced** shape invariant from the [binary tree](./binary-tree.md#the-shape-invariants-full-complete-balanced) page is exactly AVL's enforced rule - AVL is the structure that _guarantees_ it.
 
-**Invariant, stated precisely:** for every node `v`, `|height(v.left) − height(v.right)| ≤ 1`.
+**<abbr>Invariant</abbr>, stated precisely:** for every node `v`, `|height(v.left) − height(v.right)| ≤ 1`.
 
 **Base case:** an empty tree (or single node) trivially satisfies the invariant - no subtree pair to compare, or both heights are 0.
 
@@ -258,10 +260,10 @@ def insert(node: Optional[Node], key: int) -> Node:
 - **Rotation choosing the wrong case (LL vs LR).** The classic AVL bug: deciding single vs double rotation from the _grandparent's_ balance factor alone. You must inspect the **child's** balance factor too - `bf(z)=+2` is LL if `bf(z.left) ≥ 0`, but LR if `bf(z.left) < 0`. Getting this wrong leaves the tree unbalanced or unsorted.
 - **Forgetting to update heights after a rotation.** Rotations change the heights of the two rotated nodes; if you don't recompute them (in the right order - children before parents) the balance factors go stale and later rebalancing misfires.
 - **Delete stopping after one rotation.** Unlike insert, a delete may unbalance multiple ancestors - you must continue rebalancing all the way to the root, not return early. A frequent correctness bug.
-- **Recursion depth.** Height is O(log n), so the recursion stack is safe even for large n - one of AVL's quiet advantages over a plain BST (which can recurse O(n) deep and overflow).
+- **Recursion depth.** Height is O(log n), so the <abbr>call stack</abbr> is safe even for large n - one of AVL's quiet advantages over a plain BST (which can recurse O(n) deep and overflow).
 - **Duplicate keys.** Decide a policy (reject, or store a count per node); inserting duplicates as real nodes complicates the balance bookkeeping and the in-order order.
 - **At-scale trap (n > 10⁷): pointer-chasing depth under concurrent load.** Every AVL op walks ~1.44 log₂ n pointer hops, each a potential cache miss (unlike a heap's flat array). At n = 10⁸, that's ~40 hops of scattered heap allocations per lookup - and under high-write concurrency, the retrace-to-root on every insert/delete means writes serialize around overlapping root-to-leaf paths, so a single global AVL becomes a lock-contention bottleneck long before the O(log n) time bound itself is the problem. Real systems shard or use a lock-free/relaxed-balance variant at this scale rather than a single AVL instance.
-- **Cache behavior.** AVL nodes are heap-allocated and pointer-linked, not contiguous - each hop down the tree is a likely cache miss, unlike a heap's flat-array layout (sequential, cache-friendly). This is the structural reason a red-black tree (fewer rotations, same pointer-chasing cost) rather than an AVL is the typical library default: the cache-miss cost per hop dwarfs the difference between 1.44 log n and 2 log n hops.
+- **Cache behavior.** AVL nodes are heap-allocated and pointer-linked, not contiguous - each hop down the tree is a likely cache miss, unlike a heap's flat-array layout (sequential, <abbr>cache-friendly</abbr>). This is the structural reason a red-black tree (fewer rotations, same <abbr>pointer chasing</abbr> cost) rather than an AVL is the typical library default: the cache-miss cost per hop dwarfs the difference between 1.44 log n and 2 log n hops.
 
 ## What the interviewer probes for
 

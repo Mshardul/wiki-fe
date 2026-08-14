@@ -17,7 +17,7 @@
 - [When to use / when not](#when-to-use--when-not)
 - [Comparison](#comparison)
 - [Variants](#variants)
-- [Traversal & <abbr>invariant</abbr>](#traversal--invariant)
+- [Traversal & invariant](#traversal--invariant)
 - [Implementation](#implementation)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
@@ -90,7 +90,7 @@ Every core operation is **O(L)** - the word length - and crucially **independent
 **Reach for a trie when:**
 
 - You need **prefix queries** - autocomplete, "words starting with…", longest-prefix match, type-ahead. This is the trie's reason to exist; nothing else does it as cleanly.
-- You're doing **many lookups on a fixed dictionary** of strings - spell-check, word games, dictionary membership where O(L) beats hashing the whole word repeatedly.
+- You're doing **many lookups on a fixed dictionary** of strings - spell-check, word games, dictionary membership where O(L) beats <abbr>hashing</abbr> the whole word repeatedly.
 - The keys **share lots of prefixes** - URLs, file paths, IP prefixes (routing) - so the sharing pays for the node overhead.
 - You need **lexicographic ordering** of string keys - a pre-order walk emits them sorted, for free.
 
@@ -118,6 +118,8 @@ How a trie relates to the structures you'd weigh against it for string keys:
 
 The trie's column is the only one with **O(p) prefix queries**. The hash table beats it on memory and whole-key lookup constant but can't do prefixes at all; the compressed trie keeps the prefix power while slashing the memory overhead.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 - **Standard (array-node) trie** - each node has a fixed array of `alphabet` child slots. Fastest child lookup (O(1) index), heaviest memory. Good for small alphabets (26 letters, 2 bits).
@@ -129,7 +131,7 @@ The trie's column is the only one with **O(p) prefix queries**. The hash table b
 
 ## Traversal & invariant
 
-A trie's **invariant** is structural: each edge is labeled by exactly one symbol of the alphabet, a node's path from the root spells its prefix, and `is_end` flags which prefixes are complete words. No ordering-by-value invariant like a [BST](./binary-search-tree.md) - the order is the **lexicographic order of the edge labels**.
+A trie's <abbr>invariant</abbr> is structural: each edge is labeled by exactly one symbol of the alphabet, a node's path from the root spells its prefix, and `is_end` flags which prefixes are complete words. No ordering-by-value invariant like a [BST](./binary-search-tree.md) - the order is the **lexicographic order of the edge labels**.
 
 **Traversal - pre-order yields sorted words.** Walk children in alphabetical order, emitting the accumulated string whenever you hit an `is_end` node:
 

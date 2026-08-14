@@ -83,7 +83,7 @@ No two elements were ever compared - every placement was an array index computed
 
 ## Correctness / invariant
 
-Counting sort's correctness rests on the **prefix-sum invariant**, not a loop/recurrence:
+Counting sort's correctness rests on the **prefix-sum <abbr>invariant</abbr>**, not a loop/recurrence:
 
 - **After Step 2**, `count[v]` equals the number of input elements with key **≤ v**. So the elements with key exactly `v` must occupy output slots `[count[v-1], count[v] - 1]` - a contiguous block whose size is exactly `count[v] - count[v-1]` = the occurrence count of `v`. This is the placement contract.
 - **Step 3 maintains it:** each time we place a key `v`, we write to `count[v] - 1` and decrement `count[v]`, so successive elements of the same key fill that key's block from its **right end leftward**. Every key lands inside its own block, and blocks are in ascending key order → the output is sorted.

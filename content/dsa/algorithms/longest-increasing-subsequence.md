@@ -34,7 +34,7 @@
 
 **Why the O(n²) DP works:** for every index `i`, ask "what's the longest increasing run that could end exactly here?" That run is either just `nums[i]` alone, or `nums[i]` appended onto the best run ending at some earlier, smaller element `nums[j]`. Trying every earlier `j` and taking the best is brute-force but airtight - the answer for the whole array is just the best of all per-index answers.
 
-**Why the O(n log n) patience-sorting trick works, intuitively:** instead of asking "what's the best run *ending* at index `i`?", ask a different question: "if I'm building increasing runs of length `1, 2, 3, …` greedily, what is the *smallest possible last card* for each length, using only the numbers seen so far?" Keeping the last card of each length as small as possible is a greedy move that never hurts - a smaller tail only makes it *easier* to extend that run later with a future number. Each new number either **extends** the longest run so far (its tail is bigger than every current tail) or **replaces** the tail of the shortest run it can improve (making that run's tail smaller without shortening it). Because the tails end up sorted, "which run can this number improve" is answerable by binary search - that's where `log n` comes from, and why the technique carries the name of the solitaire game where you place each card on the leftmost pile it's allowed to sit on.
+**Why the O(n log n) patience-sorting trick works, intuitively:** instead of asking "what's the best run *ending* at index `i`?", ask a different question: "if I'm building increasing runs of length `1, 2, 3, …` greedily, what is the *smallest possible last card* for each length, using only the numbers seen so far?" Keeping the last card of each length as small as possible is a <abbr>greedy</abbr> move that never hurts - a smaller tail only makes it *easier* to extend that run later with a future number. Each new number either **extends** the longest run so far (its tail is bigger than every current tail) or **replaces** the tail of the shortest run it can improve (making that run's tail smaller without shortening it). Because the tails end up sorted, "which run can this number improve" is answerable by binary search - that's where `log n` comes from, and why the technique carries the name of the solitaire game where you place each card on the leftmost pile it's allowed to sit on.
 
 ## How it works
 
@@ -106,13 +106,13 @@ final tails = [1, 2, 5, 6]  ->  len(tails) = 4
 
 ## Complexity derivation
 
-**O(n²) DP.** Two nested loops: the outer loop runs `n` times (one per index `i`), and for each `i` the inner loop scans all `j < i` - the *number of steps* is `sum_{i=0}^{n-1} i = n(n-1)/2 = O(n²)`. No recursion to unroll, no Master theorem needed - it's a direct double-loop count. Space: `O(n)` for the `dp` array.
+**O(n²) DP.** Two nested loops: the outer loop runs `n` times (one per index `i`), and for each `i` the inner loop scans all `j < i` - the *number of steps* is `sum_{i=0}^{n-1} i = n(n-1)/2 = O(n²)`. No <abbr>recursion</abbr> to unroll, no Master theorem needed - it's a direct double-loop count. Space: `O(n)` for the `dp` array.
 
 **O(n log n) patience sorting.** The outer loop runs `n` times (one per array element); for each element, the binary search over the current `tails` array (which has at most `n` entries) costs `O(log n)`. Total: `n` iterations `× O(log n)` binary search each `= O(n log n)`. Space: `O(n)` for the `tails` array (worst case, a fully increasing input where `tails` grows to length `n`).
 
 **Why the fast version doesn't need a smarter recurrence, just a smarter *representation*.** The O(n²) version re-derives, from scratch each time, "which earlier element can I extend?" by scanning linearly. The O(n log n) version instead maintains a **sorted proxy** (`tails`) of the state that lets that same question be answered by binary search instead of linear scan - the recurrence is unchanged (it's still "extend the best compatible smaller run"), only the lookup structure changed from O(n) scan to O(log n) search. This is the senior-level insight: `n` iterations that each *used to be* O(n) work become `n` iterations of O(log n) work by keeping an invariant-preserving sorted array around.
 
-**Cache behavior.** Both variants scan a contiguous array sequentially in the outer loop - cache-friendly. The O(n²) inner loop is also a sequential scan over a contiguous `dp` array - cache-friendly. The O(n log n) binary search jumps around inside `tails`, but `tails` is small (`≤ n` ints) and typically fits entirely in L1/L2 cache, so the "non-sequential" access pattern of binary search costs far less in practice here than pointer-chasing a tree would - the asymptotic win is real and not eaten by cache effects.
+**Cache behavior.** Both variants scan a contiguous array sequentially in the outer loop - cache-friendly. The O(n²) inner loop is also a sequential scan over a contiguous `dp` array - cache-friendly. The O(n log n) binary search jumps around inside `tails`, but `tails` is small (`≤ n` ints) and typically fits entirely in L1/L2 cache, so the "non-sequential" access pattern of binary search costs far less in practice here than <abbr>pointer chasing</abbr> a tree would - the asymptotic win is real and not eaten by cache effects.
 
 ## Constraints & approach
 
@@ -131,7 +131,7 @@ Reach for LIS's O(n²) DP when `n` is small and you want a solution that's easy 
 
 **Prefer an alternative when:**
 
-- The subsequence must be **contiguous** (a subarray, not a subsequence) - that's [Kadane's](./kadane.md)-style DP or a sliding window, not LIS; LIS explicitly allows skipping elements.
+- The subsequence must be **contiguous** (a subarray, not a subsequence) - that's [Kadane's](./kadane.md)-style DP or a <abbr>sliding window</abbr>, not LIS; LIS explicitly allows skipping elements.
 - You need **longest common subsequence between two arrays**, not the longest increasing run within one - that's [LCS](../patterns/dp-patterns.md), a genuinely different 2D DP (though see the Comparison table below for how LIS can be *reduced* to LCS in a pinch).
 - You need the **number of** distinct LIS's, not just the length - a variant DP that additionally tracks a count alongside each `dp[i]`, still O(n²) or O(n log n) with a Fenwick tree for the count-tracking version.
 
@@ -160,7 +160,7 @@ The row that matters most in interviews: **O(n²) vs O(n log n)** - both give th
 - O(n²): `dp[i] = 1` for every `i` with no smaller predecessor - a single element is trivially an increasing subsequence of length 1.
 - O(n log n): `tails` starts empty; the first element always gets appended (there is nothing to compare against, so it trivially becomes the smallest tail of a length-1 run).
 
-**3. Memo vs tabulation.** The O(n²) formulation is naturally **tabulated bottom-up**: fill `dp[0..n-1]` left to right, since `dp[i]` only depends on `dp[j]` for `j < i` - a clean topological order with no benefit to memoized top-down recursion here (every state is visited exactly once regardless of direction, and there's no sparsity to exploit). The O(n log n) formulation isn't a classic memo table at all - it's a **single maintained array updated online**, one pass, no revisiting - which is precisely why it's faster: it never re-derives what a smaller sub-scan already established, because the sorted `tails` array *is* the compressed summary of every previous decision.
+**3. Memo vs tabulation.** The O(n²) formulation is naturally **tabulated bottom-up**: fill `dp[0..n-1]` left to right, since `dp[i]` only depends on `dp[j]` for `j < i` - a clean <abbr>topological order</abbr> with no benefit to memoized top-down recursion here (every state is visited exactly once regardless of direction, and there's no sparsity to exploit). The O(n log n) formulation isn't a classic memo table at all - it's a **single maintained array updated online**, one pass, no revisiting - which is precisely why it's faster: it never re-derives what a smaller sub-scan already established, because the sorted `tails` array *is* the compressed summary of every previous decision.
 
 **4. State-space size.** O(n²): `n` states (one `dp[i]` per index), each costing O(n) to compute in the worst case → O(n²) total, matching the derivation above. O(n log n): the `tails` array has at most `n` slots, but only **one slot is touched per input element** (via binary search) - so state-space size doesn't directly bound the runtime the way it does in classic DP; instead, per-element work is bounded by `O(log(current tails size))`, which is where the `log n` factor comes from.
 
@@ -381,7 +381,7 @@ Given pairs `(a, b)` with `a < b`, find the longest chain you can form where pai
 
 **Constraints:** `n ≤ 1000` - small enough that either an O(n²) LIS-style DP or an O(n log n) greedy both pass, making this a good "which technique is actually needed" gut-check.
 
-**Approach:** Although this *looks* like 2D LIS, it reduces further: because the chain condition is a strict ordering by end-then-start, sorting pairs by their second element and greedily taking every pair whose start exceeds the last chosen pair's end is provably optimal (interval-scheduling exchange argument) - no DP table needed at all. Contrast with Russian Doll Envelopes, where both dimensions must independently increase and greedy alone doesn't suffice, forcing the LIS reduction.
+**Approach:** Although this *looks* like 2D LIS, it reduces further: because the chain condition is a strict ordering by end-then-start, sorting pairs by their second element and greedily taking every pair whose start exceeds the last chosen pair's end is provably optimal (interval-scheduling <abbr>exchange argument</abbr>) - no DP table needed at all. Contrast with Russian Doll Envelopes, where both dimensions must independently increase and greedy alone doesn't suffice, forcing the LIS reduction.
 
 ```python
 from typing import List, Tuple

@@ -57,7 +57,7 @@ Look for these literal phrasings in the problem statement:
 | Pattern | Distinction |
 |---|---|
 | **Two Pointers** | Two-pointers is the parent - sliding window IS two-pointers, but with **window semantics**: every element between L and R contributes to a maintained aggregate (sum, frequency map). Pure two-pointer (pair-sum on sorted array) converges toward a condition without maintaining a running aggregate over the gap. |
-| **Prefix Sum** | Prefix sum answers range queries in O(1) after O(n) preprocessing; it doesn't move a window. Use prefix sum when you need arbitrary `[L, R]` queries; use sliding window when you're scanning for an optimal window under a constraint. |
+| **Prefix Sum** | <abbr>Prefix sum</abbr> answers range queries in O(1) after O(n) preprocessing; it doesn't move a window. Use prefix sum when you need arbitrary `[L, R]` queries; use sliding window when you're scanning for an optimal window under a constraint. |
 | **DP** | DP memoizes overlapping subproblems. Sliding window is a special case where the subproblem structure is purely contiguous and can be maintained in O(1) per step without memoization. |
 
 ---
@@ -97,7 +97,7 @@ Step 5: R=4, window="aabbc",distinct=3 ✗
 Step 6: R=5, window="bcc",distinct=2 ✓  best=4
 ```
 
-**Key invariant:** after every step, the window `[L, R]` satisfies the constraint. `R` never moves left; `L` never moves right past `R`.
+**Key <abbr>invariant</abbr>:** after every step, the window `[L, R]` satisfies the constraint. `R` never moves left; `L` never moves right past `R`.
 
 ---
 
@@ -149,7 +149,7 @@ The **exactly-K trick** is the non-obvious one: if `atMost(K)` is easy to comput
 
 2. **Off-by-one on window size check.** In fixed windows: `window_size = R - L + 1`, not `R - L`. Forgetting the `+1` causes a window one element too small throughout.
 
-3. **Using sliding window when elements aren't contiguous.** If the problem allows skipping elements or selecting non-adjacent ones (e.g. "pick any k elements from the array"), there is no contiguous window - reach for sorting, heap, or DP instead.
+3. **Using sliding window when elements aren't contiguous.** If the problem allows skipping elements or selecting non-adjacent ones (e.g. "pick any k elements from the array"), there is no contiguous window - reach for sorting, <abbr>heap</abbr>, or DP instead.
 
 4. **Missing the exactly-K trap.** "Exactly K distinct" cannot be directly windowed because the window can't maintain a simple monotonic valid/invalid boundary. Apply `atMost(K) − atMost(K−1)`.
 
@@ -172,7 +172,7 @@ Then clarify: fixed size K (simpler) or variable size (need a constraint to driv
 - [Monotonic Stack](./monotonic-stack.md) - next-greater-element sibling; monotonic deque is the window-max version
 - [Deque](../data-structures/deque.md) - the data structure powering the monotonic deque CP-primitive
 - [Hash Table](../data-structures/hash-table.md) - frequency maps for character/value distribution in variable windows
-- [Fast & Slow Pointers](./fast-slow-pointers.md) - different two-pointer variant (cycle detection, not window)
+- [Fast & Slow Pointers](./fast-slow-pointers.md) - different two-pointer variant (<abbr>cycle detection</abbr>, not window)
 
 ---
 

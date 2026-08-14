@@ -28,7 +28,7 @@
 
 ## What it is
 
-**Euclidean GCD** computes the greatest common divisor of two integers `a` and `b` in **O(log min(a,b))** time using the recurrence `gcd(a, b) = gcd(b, a mod b)`, bottoming out at `gcd(a, 0) = a`. The **extended** version additionally recovers integers `x, y` such that `a·x + b·y = gcd(a, b)` (Bézout's identity), which is the mechanism behind the **modular inverse for any modulus**.
+**Euclidean GCD** computes the greatest common divisor of two integers `a` and `b` in **O(log min(a,b))** time using <abbr>recursion</abbr> via `gcd(a, b) = gcd(b, a mod b)`, bottoming out at `gcd(a, 0) = a`. The **extended** version additionally recovers integers `x, y` such that `a·x + b·y = gcd(a, b)` (Bézout's identity), which is the mechanism behind the **modular inverse for any modulus**.
 
 > **One-liner:** Repeatedly replace `(a, b)` with `(b, a mod b)` until `b = 0` - the last nonzero remainder is the GCD, and it takes only O(log min(a,b)) steps because each pair of steps at least halves the smaller number.
 
@@ -121,7 +121,7 @@ Final: `3×48 + (-8)×18 = 144 - 144 = 6`. So `x = 3, y = -8`.
     = 12                = 6               = 0            return a = 6
 ```
 
-**Cache behavior:** Both variables are scalars held in registers; no array or pointer structure is touched. The algorithm is trivially cache-friendly - the only "memory traffic" is stack frames in the recursive form, and even those are tiny (two integers per frame).
+**Cache behavior:** Both variables are scalars held in registers; no array or pointer structure is touched. The algorithm is trivially <abbr>cache-friendly</abbr> - the only "memory traffic" is stack frames in the recursive form, and even those are tiny (two integers per frame).
 
 ---
 
@@ -144,7 +144,7 @@ The two directions show the set of common divisors of `(a, b)` is **identical** 
 
 ### Invariant for extended Euclid
 
-At every level of the recursion, the algorithm maintains: *the returned `(g, x, y)` satisfies `a·x + b·y = g` for the `a, b` at that level.* The base case `(a, 0) → (a, 1, 0)` trivially satisfies `a·1 + 0·0 = a`. The recursive case substitutes the child's `(x', y')` (which satisfies `b·x' + r·y' = g`, where `r = a mod b = a - ⌊a/b⌋·b`) to derive the parent's coefficients: `x = y'`, `y = x' - ⌊a/b⌋·y'` - this is the algebraic rearrangement shown in the trace above.
+At every level of the recursion, the algorithm maintains an <abbr>invariant</abbr>: *the returned `(g, x, y)` satisfies `a·x + b·y = g` for the `a, b` at that level.* The base case `(a, 0) → (a, 1, 0)` trivially satisfies `a·1 + 0·0 = a`. The recursive case substitutes the child's `(x', y')` (which satisfies `b·x' + r·y' = g`, where `r = a mod b = a - ⌊a/b⌋·b`) to derive the parent's coefficients: `x = y'`, `y = x' - ⌊a/b⌋·y'` - this is the algebraic rearrangement shown in the trace above.
 
 ---
 
@@ -166,7 +166,7 @@ So the number of steps to reach `b = 0` is **O(log₂ a)** - specifically, at mo
 
 **Fibonacci worst case:** the slowest-shrinking inputs are **consecutive Fibonacci numbers** - `gcd(F(n+1), F(n))` takes exactly `n` steps, each remainder being the next-smaller Fibonacci number, achieving the worst-case ratio (this is why the golden ratio bounds the constant in the O(log) - Lamé's theorem states the number of steps is at most 5× the number of decimal digits in the smaller number).
 
-**Total:** O(log min(a,b)) time (each step is O(1) arithmetic on numbers of bounded size), O(1) space iterative, O(log min(a,b)) space recursive (stack depth).
+**Total:** O(log min(a,b)) time (each step is O(1) arithmetic on numbers of bounded size), O(1) space iterative, O(log min(a,b)) space recursive (<abbr>call stack</abbr> depth).
 
 **Big-integer caveat:** for arbitrary-precision integers (as in cryptographic applications with 2048-bit numbers), each `mod` operation itself costs more than O(1) - the true complexity becomes O(log(min(a,b)) × M(n)) where `n` is the bit-length and `M(n)` is the cost of big-integer division. For fixed-width 64-bit integers, this doesn't matter; for RSA-scale numbers, it does.
 
@@ -226,7 +226,7 @@ So the number of steps to reach `b = 0` is **O(log₂ a)** - specifically, at mo
 
 *(Family: **Recursive/build**.)*
 
-**State definition:** the state at any point in the recursion is the pair `(a, b)`. There is no auxiliary memoization table - unlike DP, each state is visited exactly once (the sequence of pairs is strictly decreasing and never revisits a previous pair), so this is **recursion without overlapping subproblems**, not dynamic programming.
+**State definition:** the state at any point in the recursion is the pair `(a, b)`. There is no auxiliary <abbr>memoization</abbr> table - unlike DP, each state is visited exactly once (the sequence of pairs is strictly decreasing and never revisits a previous pair), so this is **recursion without overlapping subproblems**, not dynamic programming.
 
 **Base case:** `gcd(a, 0) = a`. This is reached because `b` strictly decreases (`a mod b < b`) at every step and is bounded below by 0.
 

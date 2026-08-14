@@ -77,7 +77,7 @@ A log entry captures a single event at a point in time: a request received, an e
 
 **Where logs shine:** debugging specific incidents, capturing business events, audit trails, understanding _what_ happened to a single request.
 
-**Limitations:** unstructured logs are nearly unsearchable at scale. High-throughput services can produce gigabytes per minute. Aggregating logs across 50 service instances to reconstruct a single user's journey is slow without a correlation ID and a log aggregation pipeline.
+**Limitations:** unstructured logs are nearly unsearchable at scale. High-<abbr>throughput</abbr> services can produce gigabytes per minute. Aggregating logs across 50 service instances to reconstruct a single user's journey is slow without a correlation ID and a log aggregation pipeline.
 
 Deep dive: **[Logging](./logging.md)**
 
@@ -110,7 +110,7 @@ trace_id: abc123
 
 Each indent level is a child span nested under its parent's `parent-span-id`; horizontal position and bar length show start time and duration. The tree makes the bottleneck visually obvious - here, the DB query inside Payment Service accounts for most of the 220ms total, not the gateway or inventory check.
 
-**Where tracing shines:** diagnosing latency in multi-service call chains, identifying which service in a fan-out is the bottleneck, understanding async flows across queues.
+**Where tracing shines:** diagnosing latency in multi-service call chains, identifying which service in a <abbr>fan-out</abbr> is the bottleneck, understanding async flows across queues.
 
 **Limitations:** traces require every service in the call chain to propagate trace context headers. A single uninstrumented service breaks the chain. Storing 100% of traces is prohibitively expensive - sampling is required, which means some failures go unrecorded.
 
@@ -176,7 +176,7 @@ If you adopt distributed tracing, the `trace-id` replaces ad-hoc correlation IDs
 
 > _A pointer from a metric aggregation to the specific trace that contributed to it - the bridge between "something spiked" and "here's why."_
 
-An exemplar is a sample trace ID embedded in a metric data point. When a histogram bucket records a high-latency observation, it can attach the trace ID of that specific request. In a metrics UI (Grafana), clicking an exemplar on a p99 spike jumps directly to the trace - no manual log searching required.
+An exemplar is a sample trace ID embedded in a metric data point. When a histogram bucket records a high-<abbr>latency</abbr> observation, it can attach the trace ID of that specific request. In a metrics UI (Grafana), clicking an exemplar on a p99 spike jumps directly to the trace - no manual log searching required.
 
 ```
 # Prometheus exemplar format
@@ -193,7 +193,7 @@ Exemplars are supported in the OpenMetrics format and Prometheus ≥ 2.26. They 
 
 > **Interviewer TL;DR:** Instrument at I/O boundaries using RED for services and USE for infrastructure. These two frameworks cover 90% of what you need to detect and diagnose production issues without drowning in noise.
 
-**Mental model:** Instrument the edges, not the internals - I/O boundaries are where latency accumulates and errors surface.
+**Mental model:** Instrument the edges, not the internals - I/O boundaries are where <abbr>latency</abbr> accumulates and errors surface.
 
 ### RED Method
 
@@ -358,7 +358,7 @@ Log levels exist to control signal-to-noise ratio and storage cost:
 
 **Cause-based alerts** fire on internal resource signals: CPU > 90%, memory > 85%, disk > 80%. These are tempting because they feel proactive - catch the problem before users notice. In practice they create noise: CPU spikes constantly during normal batch jobs, disk fills and empties on predictable schedules. On-call engineers learn to ignore them.
 
-**Symptom-based alerts** fire on user-visible signals: error rate above SLO threshold, p99 latency above SLO threshold, availability below target. These fire only when something a user would notice is happening. Every page is actionable.
+**Symptom-based alerts** fire on user-visible signals: error rate above SLO threshold, p99 <abbr>latency</abbr> above SLO threshold, availability below target. These fire only when something a user would notice is happening. Every page is actionable.
 
 |                     | Cause-based                          | Symptom-based                       |
 | ------------------- | ------------------------------------ | ----------------------------------- |
@@ -408,7 +408,7 @@ A single service that does not forward the `X-Correlation-ID` or `traceparent` h
 
 ### Tail-Based Sampler Buffer Overflow
 
-Tail-based sampling requires buffering spans in memory until a trace completes. During an incident - when trace volume spikes and many traces are slow or erroring - the buffer fills and the collector drops traces using LRU eviction. This means you lose the most traces exactly when you most need them.
+Tail-based sampling requires buffering spans in memory until a trace completes. During an incident - when trace volume spikes and many traces are slow or erroring - the buffer fills and the collector drops traces using <abbr>LRU</abbr> eviction. This means you lose the most traces exactly when you most need them.
 
 **Mitigation:** Size the buffer for spike traffic. Combine tail-based sampling with a dedicated error-capture path that bypasses the buffer (always record traces with `error=true`).
 
@@ -449,7 +449,7 @@ Teams enabling full 100% trace sampling or DEBUG logging in production without c
 ### Debugging a Rare Latency Spike
 
 > 🎯 **Interview Lens**
-> **Q:** How would you debug a p99 latency spike that only affects 0.1% of requests?
+> **Q:** How would you debug a p99 <abbr>latency</abbr> spike that only affects 0.1% of requests?
 > **Ideal answer:** Alert fires on the metric. Use an exemplar on the histogram bucket to jump to a sampled trace. Follow the trace to the slow span. Filter logs by that trace ID to get the full event context. Root cause without reproducing the issue.
 > **Common trap:** "I'd add more logging" - misses that the issue is already sampled in the trace; the bottleneck is linking pillars, not adding more data.
 > **Next question:** "What if the slow requests aren't being sampled by your tracer?" → Head-based sampling at a low rate can simply miss rare/slow events by chance - tail-based sampling or a dedicated always-capture path for errors/slow requests closes that gap.

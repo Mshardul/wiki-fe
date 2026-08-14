@@ -40,7 +40,7 @@ Suppose you're scanning left to right and you've accumulated a running sum `curr
 - If `current > 0`: keeping the accumulated prefix helps - any positive contribution makes the sum larger. Extend: `current += nums[i]`.
 - If `current <= 0`: the accumulated prefix actively hurts. Starting fresh at `nums[i]` gives a better subarray ending at `i` than dragging the negative tail along. Restart: `current = nums[i]`.
 
-**Why this greedy choice is globally safe:** the maximum subarray ending at `i` either (a) is just `nums[i]` alone, or (b) extends the maximum subarray ending at `i-1`. If the maximum subarray ending at `i-1` is negative, (a) is always better than (b) - no future element will benefit from a negative prefix. So the local decision (extend or restart) is always globally consistent with the optimal answer.
+**Why this <abbr>greedy</abbr> choice is globally safe:** the maximum subarray ending at `i` either (a) is just `nums[i]` alone, or (b) extends the maximum subarray ending at `i-1`. If the maximum subarray ending at `i-1` is negative, (a) is always better than (b) - no future element will benefit from a negative prefix. So the local decision (extend or restart) is always globally consistent with the optimal answer.
 
 This is also a DP: define `dp[i]` = maximum subarray sum ending exactly at index `i`. Then:
 
@@ -85,7 +85,7 @@ best:    -2    1    1    4    4    5    6    6    6
                                       answer = 6
 ```
 
-The invariant holds at every step: `current` is the maximum sum of any subarray ending at the current index; `best` is the maximum across all indices seen so far.
+The <abbr>invariant</abbr> holds at every step: `current` is the maximum sum of any subarray ending at the current index; `best` is the maximum across all indices seen so far.
 
 ## Correctness / invariant
 
@@ -100,7 +100,7 @@ The invariant holds at every step: `current` is the maximum sum of any subarray 
 
 **Termination:** After the loop, `best` holds the maximum subarray sum over all of `nums[0..n-1]`. ∎
 
-**Why the greedy choice is safe (exchange argument):** Suppose the optimal subarray starts at index `j`. At index `j-1`, `current ≤ 0` (otherwise, including `nums[0..j-1]` in the subarray would only improve the sum, contradicting the optimum starting at `j`). So the algorithm restarts at `j` - exactly where the optimum begins. Kadane's never misses the optimal start.
+**Why the <abbr>greedy</abbr> choice is safe (<abbr>exchange argument</abbr>):** Suppose the optimal subarray starts at index `j`. At index `j-1`, `current ≤ 0` (otherwise, including `nums[0..j-1]` in the subarray would only improve the sum, contradicting the optimum starting at `j`). So the algorithm restarts at `j` - exactly where the optimum begins. Kadane's never misses the optimal start.
 
 ## Complexity derivation
 
@@ -138,7 +138,7 @@ Only two scalar variables maintained (`current`, `best`). No auxiliary array, no
 - The 2-D extension is needed - fix column bounds, reduce each row to 1-D, apply Kadane's.
 
 **Do not reach for Kadane's when:**
-- The subarray must have a **fixed length** - use a sliding window instead.
+- The subarray must have a **fixed length** - use a <abbr>sliding window</abbr> instead.
 - The problem asks for **maximum subarray product** - multiplication doesn't share Kadane's "restart on negative" logic; you must track both max and min running products (negatives flip sign).
 - The problem asks for **all subarrays above a threshold** - Kadane's finds one optimum, not all qualifying subarrays.
 - Elements are **non-negative** - the maximum subarray is always the entire array; answer is `sum(nums)` in O(n) with no algorithm needed.

@@ -32,7 +32,7 @@
 
 ## What it is
 
-**<abbr>Recursion</abbr>** is a function that solves a problem by calling itself on a smaller version of the same problem, until it reaches a **base case** small enough to answer directly - then the answers combine back up.
+**Recursion** is a function that solves a problem by calling itself on a smaller version of the same problem, until it reaches a **base case** small enough to answer directly - then the answers combine back up.
 
 **Mental model:** Russian nesting dolls. You can't open the outermost doll and see the answer - you have to open it, find a smaller doll inside, open that one too, and so on until you hit the smallest doll (the base case) that opens directly. Then you close them back up in reverse order, and each shell adds its own bit of work on the way back out.
 
@@ -52,7 +52,7 @@ This is precisely mathematical induction. To prove `P(n)` for all `n`:
 
 A recursive function *is* that proof, executed. `factorial(n)` doesn't need to know how `factorial(n-1)` computes its answer - it only needs to trust that it does, and multiply by `n`. This is why the single hardest skill in reading or writing recursion is **not tracing every call** - it's identifying the base case and the one relationship between a problem and its smaller version, then trusting it.
 
-The other half of the intuition: recursion is just the call stack doing bookkeeping you'd otherwise do by hand with an explicit stack (see [How it works](#how-it-works) and the [State & recurrence](#state--recurrence) section below) - "the function calls itself" is really "push a frame with this call's local state, and don't resume this frame until the pushed one returns."
+The other half of the intuition: recursion is just the <abbr>call stack</abbr> doing bookkeeping you'd otherwise do by hand with an explicit stack (see [How it works](#how-it-works) and the [State & recurrence](#state--recurrence) section below) - "the function calls itself" is really "push a frame with this call's local state, and don't resume this frame until the pushed one returns."
 
 ---
 
@@ -139,7 +139,7 @@ T(0) = O(1)
 
 Unrolling: `T(n) = T(n-1) + c = T(n-2) + 2c = ... = T(0) + nc = O(n)`. Time is **O(n)**.
 
-**Space:** this is the parameter recursion articles get wrong most often. Every pending call sits on the stack as a live frame until its recursive call returns - `factorial(4)` has 5 frames alive simultaneously at the deepest point (`factorial(4)` down to `factorial(0)`), each holding its own copy of `n`. Space is **O(n)**, not O(1) - the call stack depth equals the recursion depth, and each frame is real memory. A recursive `factorial` is **not** O(1) space unless the language does **tail-call elimination** (Python's CPython does not) or you manually convert to an iterative loop with an accumulator.
+**Space:** this is the parameter recursion articles get wrong most often. Every pending call sits on the stack as a live frame until its recursive call returns - `factorial(4)` has 5 frames alive simultaneously at the deepest point (`factorial(4)` down to `factorial(0)`), each holding its own copy of `n`. Space is **O(n)**, not O(1) - the <abbr>call stack</abbr> depth equals the recursion depth, and each frame is real memory. A recursive `factorial` is **not** O(1) space unless the language does **tail-call elimination** (Python's CPython does not) or you manually convert to an iterative loop with an accumulator.
 
 **General recurrence-solving pattern** (this is the technique to reuse on any recursive algorithm, not just factorial): write `T(n)` in terms of `T(smaller)`, unroll a few levels until the pattern is clear, then either sum the arithmetic/geometric series directly (as above) or apply the [Master theorem](./divide-and-conquer.md) when the recurrence has the divide-and-conquer shape `T(n) = a·T(n/b) + f(n)`.
 

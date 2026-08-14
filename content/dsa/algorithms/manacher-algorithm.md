@@ -34,11 +34,11 @@ Mental model: **expand-around-center, but never redo work a mirror already did f
 
 Start from the brute-force idea: the longest palindromic substring is found by trying every possible center (each single character, and each gap between two characters, since palindromes can be odd or even length) and expanding outward while the two sides match. That's `2n-1` centers, each expansion up to O(n) - **O(n²)** worst case (e.g. `"aaaaaaaa"`).
 
-The insight that makes it linear: suppose you've already found a palindrome centered at `C` with right edge at `R` (the furthest-right boundary any palindrome has reached so far). For a new center `i` inside `[C, R]`, its **mirror position** `i' = 2C - i` (reflected across `C`) has *already* been fully processed. Because the region around `C` out to `R` is itself a palindrome, whatever palindrome structure existed around `i'` is **mirrored** around `i` - up to the boundary `R`. So instead of expanding `i` from radius 0, you start from `min(P[i'], R - i)` and only expand *further* if that lower bound is tight against the boundary. Most positions need zero or few extra comparisons; the total extra work across the whole string is bounded by how far `R` moves, which only moves forward - giving amortized O(n).
+The insight that makes it linear: suppose you've already found a palindrome centered at `C` with right edge at `R` (the furthest-right boundary any palindrome has reached so far). For a new center `i` inside `[C, R]`, its **mirror position** `i' = 2C - i` (reflected across `C`) has *already* been fully processed. Because the region around `C` out to `R` is itself a palindrome, whatever palindrome structure existed around `i'` is **mirrored** around `i` - up to the boundary `R`. So instead of expanding `i` from radius 0, you start from `min(P[i'], R - i)` and only expand *further* if that lower bound is tight against the boundary. Most positions need zero or few extra comparisons; the total extra work across the whole string is bounded by how far `R` moves, which only moves forward - giving <abbr>amortized</abbr> O(n).
 
 ## How it works
 
-**Step 0 - transform the string.** Insert a sentinel separator (commonly `#`) between every character and at both ends: `"abba"` → `"#a#b#b#a#"`. This unifies odd- and even-length palindromes into one case - every palindrome in the transformed string has odd length, centered on either an original character or a separator.
+**Step 0 - transform the string.** Insert a <abbr>sentinel</abbr> separator (commonly `#`) between every character and at both ends: `"abba"` → `"#a#b#b#a#"`. This unifies odd- and even-length palindromes into one case - every palindrome in the transformed string has odd length, centered on either an original character or a separator.
 
 **Step 1 - scan left to right, tracking the rightmost-reaching palindrome.** Maintain `C` (center) and `R` (right boundary, exclusive or inclusive per convention) of the palindrome that currently extends furthest right. For each position `i`:
 
@@ -76,7 +76,7 @@ The mirror step at `i=4` shows the payoff directly: instead of blindly re-expand
 
 ## Correctness / invariant
 
-**Invariant maintained at the start of each iteration `i`:** `P[j]` is the exact palindrome radius centered at `j`, for every `j < i`; and `(C, R)` describe the palindrome among those already found whose right edge `R` reaches furthest right, with `C` its center.
+**<abbr>Invariant</abbr> maintained at the start of each iteration `i`:** `P[j]` is the exact palindrome radius centered at `j`, for every `j < i`; and `(C, R)` describe the palindrome among those already found whose right edge `R` reaches furthest right, with `C` its center.
 
 **Why the mirror seed `min(P[i'], R - i)` is always a valid *lower bound* on `P[i]`, never an overestimate:** the substring `t[C-(R-C) .. R]` (centered at `C`, extending to `R`) is a palindrome by definition of `R`. Reflecting position `i` (inside this palindrome) across `C` gives `i'`, and because the region is a palindrome, `t[i - k] == t[i + k]` for any `k` such that both `i-k` and `i+k` stay within `[C-(R-C), R]` - which mirrors `t[i'-k] == t[i'+k]`. Since `P[i']` is already known to be correct (by the loop invariant, as `i' < i`), any match/mismatch pattern within the mirrored region at `i'` is guaranteed to replay at `i`, **up to the point where the outer boundary `R` is reached** - beyond `R`, nothing is known yet, so the seed is capped at `R - i` and must be *verified* by direct comparison, not assumed.
 
@@ -130,7 +130,7 @@ Manacher's crossover condition: it strictly dominates expand-around-center on as
 
 ## Loop/recurrence invariant
 
-The scanning loop maintains a recurrence on `(C, R)` bounded by a monotone potential, structurally the same shape as the two-pointer / sliding-window amortized argument, applied here to a palindrome-boundary rather than a window:
+The scanning loop maintains a recurrence on `(C, R)` bounded by a monotone potential, structurally the same shape as the <abbr>two-pointer</abbr> / <abbr>sliding window</abbr> amortized argument, applied here to a palindrome-boundary rather than a window:
 
 ```
 for i = 1 to len(t) - 2:
@@ -148,7 +148,7 @@ for i = 1 to len(t) - 2:
 
 - **Empty string or single character.** `n = 0` → return `""`. `n = 1` → the single character is trivially a palindrome of length 1; the transformed-string machinery still handles this correctly (`t = "#a#"`), but it's worth a guard clause for clarity/speed rather than relying on the general path.
 - **All-same-character string (`"aaaaaa"`).** This is the worst case for naive expand-around-center (O(n²)) and the case that most clearly demonstrates Manacher's payoff - every center's radius reaches nearly `n`, and the mirror seeding avoids re-verifying the same matches over and over. A correct Manacher's implementation should be tested against this explicitly.
-- **Off-by-one in the sentinel transform / index mapping back.** The transformed string's index `i` maps back to the original string's center via `(i - 1) // 2` (integer division) - getting this wrong silently shifts every reported palindrome by one character. This is the single most common bug in a from-scratch Manacher's implementation; test against a known answer (`"babad"` → `"bab"` or `"aba"`) to catch it.
+- **Off-by-one in the <abbr>sentinel</abbr> transform / index mapping back.** The transformed string's index `i` maps back to the original string's center via `(i - 1) // 2` (integer division) - getting this wrong silently shifts every reported palindrome by one character. This is the single most common bug in a from-scratch Manacher's implementation; test against a known answer (`"babad"` → `"bab"` or `"aba"`) to catch it.
 - **Choice of sentinel character colliding with input alphabet.** If the input string can contain `#` (or whatever separator is chosen) as a real character, the transform corrupts the result. Use a sentinel guaranteed absent from the input's alphabet (or two *distinct* guard sentinels at the very ends, `^...$`, if the alphabet is unconstrained) - a CP-flavored trap when the problem allows arbitrary byte values.
 - **Integer index underflow at the mirror computation `2*C - i` when `C` is still 0 early in the scan.** Guard with `if i < R` before using the mirror at all (as in the pseudocode); skipping this check risks reading `P[]` at a negative or otherwise invalid index in a naive implementation.
 

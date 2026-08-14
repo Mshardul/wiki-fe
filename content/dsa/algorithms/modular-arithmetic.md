@@ -134,7 +134,7 @@ Division mod m requires the *modular inverse*: `a^(-1) mod m` is the value `x` s
 
 At the start of each iteration, the following holds:
 
-> **Invariant:** `result × base^exp ≡ original_base^original_exp (mod m)`
+> **<abbr>Invariant</abbr>:** `result × base^exp ≡ original_base^original_exp (mod m)`
 
 **Proof by induction:**
 
@@ -215,14 +215,14 @@ Total precomputation: **O(n + log p)**, queries: **O(1)**.
 
 ## When to use / when not
 
-**Cache behavior:** Binary exponentiation operates entirely on scalar variables (`result`, `base`, `exp`) - everything fits in registers, no array is touched, and the loop is trivially cache-friendly. The linear-sieve and factorial precomputation passes are single forward (or backward) scans over a dense integer array - stride-1, sequential prefetch, maximally cache-friendly. By contrast, arbitrary `C(n, k)` queries into the factorial-inverse table are **cache-hostile when n and k are far apart**: `fact[n]`, `inv_fact[k]`, and `inv_fact[n-k]` can be separated by hundreds of kilobytes of array, each a potential L2/L3 miss. For n ≤ 10^6 the entire table fits in ~8 MB (L3 on most machines), so cold-start misses amortize away after the first sweep - but for n ≈ 10^7 the table exceeds L3 and random-query performance degrades noticeably.
+**Cache behavior:** Binary exponentiation operates entirely on scalar variables (`result`, `base`, `exp`) - everything fits in registers, no array is touched, and the loop is trivially <abbr>cache-friendly</abbr>. The linear-sieve and factorial precomputation passes are single forward (or backward) scans over a dense integer array - stride-1, sequential prefetch, maximally cache-friendly. By contrast, arbitrary `C(n, k)` queries into the factorial-inverse table are **cache-hostile when n and k are far apart**: `fact[n]`, `inv_fact[k]`, and `inv_fact[n-k]` can be separated by hundreds of kilobytes of array, each a potential L2/L3 miss. For n ≤ 10^6 the entire table fits in ~8 MB (L3 on most machines), so cold-start misses amortize away after the first sweep - but for n ≈ 10^7 the table exceeds L3 and random-query performance degrades noticeably.
 
 **Use modular arithmetic when:**
 
 - The problem says "output the answer modulo 10^9+7" (or any prime) - this is the universal CP signal
 - Counting problems: permutations, combinations, and paths grow exponentially; keep them bounded
 - Power / exponentiation of integers with large exponents (cryptography, DP transitions)
-- Hashing by polynomial rolling hash uses a prime modulus to reduce collisions
+- <abbr>Hashing</abbr> by polynomial rolling hash uses a prime modulus to reduce <abbr>collisions</abbr>
 
 **Do not use (or use with care) when:**
 
@@ -288,7 +288,7 @@ For non-prime modulus (or any modulus), the extended Euclidean algorithm finds `
 a·x + m·y = gcd(a, m)
 ```
 
-If `gcd(a, m) = 1`, then `a·x ≡ 1 (mod m)`, so `x mod m` is the modular inverse of `a`. The algorithm is a simple recursion on `gcd(a, m) = gcd(m, a mod m)`, back-substituting at each step.
+If `gcd(a, m) = 1`, then `a·x ≡ 1 (mod m)`, so `x mod m` is the modular inverse of `a`. The algorithm is a simple <abbr>recursion</abbr> on `gcd(a, m) = gcd(m, a mod m)`, back-substituting at each step.
 
 ```
 EXTENDED-GCD(a, m):

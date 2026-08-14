@@ -86,7 +86,7 @@ Each pass is a counting sort over `b = 10` buckets; stability carries the lower-
 
 The correctness is an induction over passes, resting entirely on the **stability of each counting-sort pass**:
 
-- **Invariant:** after pass `i` (having sorted on digits `1..i`, counting from the least significant), the array is sorted by the **last `i` digits** of each key, treating those `i` digits as a single number.
+- **<abbr>Invariant</abbr>:** after pass `i` (having sorted on digits `1..i`, counting from the least significant), the array is sorted by the **last `i` digits** of each key, treating those `i` digits as a single number.
 - **Base case:** after pass 1, the array is sorted by digit 1 (the ones digit) - directly, since pass 1 is a counting sort on that digit.
 - **Inductive step:** assume the array is sorted by the last `i-1` digits. Pass `i` stably sorts by digit `i` (the next more-significant one). Keys with different digit-`i` values are now ordered by that digit - correct, since it dominates. Keys with the _same_ digit-`i` value retain their pre-pass relative order (stability), which by hypothesis is sorted by the last `i-1` digits. So the whole array is now sorted by the last `i` digits.
 - **Termination:** after pass `d`, the array is sorted by all `d` digits - the full keys.

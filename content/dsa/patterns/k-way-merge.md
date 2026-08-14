@@ -48,7 +48,7 @@ Mental model: **k runners at k different starting lines, all running in order.**
 
 ### (c) Not to be confused with
 
-- **Top-K Elements (one heap):** top-K pulls the k largest from one unsorted stream; k-way merge pulls one global minimum at a time from k *already-sorted* streams. The heap sizes go in opposite directions: top-K's heap stays size k; k-way merge's heap starts size k and drains to 0 as lists exhaust.
+- **Top-K Elements (one <abbr>heap</abbr>):** top-K pulls the k largest from one unsorted stream; k-way merge pulls one global minimum at a time from k *already-sorted* streams. The heap sizes go in opposite directions: top-K's heap stays size k; k-way merge's heap starts size k and drains to 0 as lists exhaust.
 - **Merge Sort's merge step:** merge sort's merge is 2-way (k=2), offline (both halves in memory), and runs in O(n) with two pointers. K-way merge generalizes to arbitrary k, handles streams, and uses a heap because k pointers need an efficient minimum selection.
 - **Sliding Window / Two Pointers:** those patterns move pointers over a single sequence; k-way merge moves one pointer per sequence, coordinated by a heap.
 

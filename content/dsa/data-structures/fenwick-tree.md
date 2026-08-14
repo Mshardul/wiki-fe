@@ -34,7 +34,7 @@
 
 ## What it is
 
-A **Fenwick tree** (a.k.a. **Binary Indexed Tree / BIT**) is a flat array that supports **point update** and **prefix-sum query** in **O(log n)** each, by having each index implicitly "own" a range of elements whose size is determined by the index's lowest set bit.
+A **Fenwick tree** (a.k.a. **Binary Indexed Tree / BIT**) is a flat array that supports **point update** and **<abbr>prefix sum</abbr> query** in **O(log n)** each, by having each index implicitly "own" a range of elements whose size is determined by the index's lowest set bit.
 
 Mental model: **a tree hiding inside an array, wired by binary arithmetic instead of pointers.** Index `i` doesn't store one element - it stores the sum of a range ending at `i`, and the range's length is exactly `i`'s lowest set bit (`i & -i`). Querying a prefix sum means jumping through O(log n) of these ranges by stripping the lowest set bit each step; updating one element means propagating the change upward through the O(log n) ranges that contain it, by adding the lowest set bit each step. Same bit trick, opposite direction.
 
@@ -106,7 +106,7 @@ No amortization here - every operation is a **hard O(log n)** in all cases, beca
 
 **Reach for a Fenwick tree when:**
 
-- You need **prefix-sum queries interleaved with point updates** on an array - the exact "mutable range sum" shape. A plain [prefix sum](../patterns/prefix-sum.md) array is O(1) query but O(n) to fix after any update; Fenwick trades a little query speed for O(log n) updates.
+- You need **<abbr>prefix sum</abbr> queries interleaved with point updates** on an array - the exact "mutable range sum" shape. A plain [prefix sum](../patterns/prefix-sum.md) array is O(1) query but O(n) to fix after any update; Fenwick trades a little query speed for O(log n) updates.
 - The query is a **sum (or any invertible/associative op)** - not min/max. Sum, XOR, and product (with care for zeros) all work because the decomposition can be "undone" going the other direction; min/max cannot be undone, so a plain Fenwick can't support point-update-range-min without extra machinery (a [segment tree](./segment-tree.md) can).
 - You want the **smallest, fastest implementation** for range-sum - a Fenwick tree is ~10 lines, one array, no recursion, roughly **2-3x less memory and a smaller constant factor** than an equivalent segment tree, because it has no explicit tree nodes or recursive call overhead.
 
@@ -128,19 +128,21 @@ Real-world: order-statistics / "count of elements less than X seen so far" power
 | [Prefix sum array](../patterns/prefix-sum.md) | O(n) rebuild | **O(1)**          | no              | O(n)            | trivial           | array is **static** - no updates after build, query-only workload    |
 | Plain array (rescan each query)     | **O(1)**      | O(n)               | O(n)            | O(n)            | trivial           | updates are frequent, queries are rare (opposite of Fenwick's sweet spot) |
 
-\*A Fenwick tree over min/max is possible only with restrictions (e.g. updates strictly decrease the value) - it loses the general point-update guarantee, unlike a segment tree. The crossover: with **q queries and u updates**, Fenwick/segment tree win once `u ≥ 1` and `q ≥ log n` - below that (pure static, all queries), a prefix-sum array's O(1) query is unbeatable and the log-n structures are pure overhead.
+\*A Fenwick tree over min/max is possible only with restrictions (e.g. updates strictly decrease the value) - it loses the general point-update guarantee, unlike a segment tree. The crossover: with **q queries and u updates**, Fenwick/segment tree win once `u ≥ 1` and `q ≥ log n` - below that (pure static, all queries), a <abbr>prefix sum</abbr> array's O(1) query is unbeatable and the log-n structures are pure overhead.
+
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
 
 ## Variants
 
 - **[Segment tree](./segment-tree.md)** - the general-purpose superset: any associative op, lazy propagation for range updates. Fenwick is what you reach for when you only need sums and want less code.
-- **BIT for range update + point query** - store the **difference array** in the BIT instead of the raw array; a range update becomes two point updates, a point query becomes a prefix-sum query. One-line inversion of what BIT normally does - full treatment in [Practice problems › Range Addition](#4-range-addition).
+- **BIT for range update + point query** - store the **difference array** in the BIT instead of the raw array; a range update becomes two point updates, a point query becomes a <abbr>prefix sum</abbr> query. One-line inversion of what BIT normally does - full treatment in [Practice problems › Range Addition](#4-range-addition).
 - **BIT for range update + range query** - two BITs combined algebraically to support both in O(log n) - see [Practice problems › Range Sum Query - Range Update and Range Sum](#3-range-sum-query---range-update-and-range-sum).
 - **2D Fenwick tree (BIT of BITs)** - each "node" of the outer BIT is itself a BIT over the second dimension; supports 2D prefix-sum with point updates in O(log n · log m). Used for grid range-sum-with-updates (e.g. live heatmap queries).
 - **BIT as order statistics (Fenwick over frequency)** - index the BIT by **value** rather than array position, storing counts; prefix-sum then answers "how many elements ≤ x" and, with binary lifting over the tree, "find the k-th smallest" in O(log n) - see [Practice problems › Count of Smaller Numbers After Self](#2-count-of-smaller-numbers-after-self).
 
 ## Traversal & invariant
 
-The entire structure rests on one bitwise operation and one invariant it maintains: **`tree[i]` always equals the sum of exactly `lowbit(i)` original elements ending at `i`.**
+The entire structure rests on one bitwise operation and one <abbr>invariant</abbr> it maintains: **`tree[i]` always equals the sum of exactly `lowbit(i)` original elements ending at `i`.**
 
 ### The `i & -i` isolation trick
 
@@ -253,7 +255,7 @@ class FenwickTree:
         return self.prefix_sum(r) - self.prefix_sum(l - 1)
 ```
 
-**Contest velocity.** For a one-off static prefix sum with no updates, `itertools.accumulate` is faster to type and O(1) per query - only reach for `FenwickTree` once a point update appears in the problem. The `from_array` linear build (pushing each node onto its parent) beats calling `add` n times (O(n log n)) - worth it once `n` exceeds a few thousand.
+**Contest velocity.** For a one-off static <abbr>prefix sum</abbr> with no updates, `itertools.accumulate` is faster to type and O(1) per query - only reach for `FenwickTree` once a point update appears in the problem. The `from_array` linear build (pushing each node onto its parent) beats calling `add` n times (O(n log n)) - worth it once `n` exceeds a few thousand.
 
 ## Gotchas / edge cases
 
@@ -261,12 +263,12 @@ class FenwickTree:
 - **Overflow on accumulation.** Prefix sums over `int32`-range values summed across 10⁵-10⁶ elements can exceed `2³¹-1` fast (worst case ~2×10¹⁴ for `10⁶` elements at `2×10⁸` each) - use 64-bit accumulators (`long` in C++/Java; Python ints are arbitrary-precision so this is invisible until porting to another language, which is exactly when it bites).
 - **Coordinate compression is a separate step, not automatic.** If the "index" is a value (timestamps, coordinates, arbitrary large keys) rather than a dense `1..n` position, you must **compress to ranks first** - the BIT array is sized to the key range, not the element count, so an uncompressed BIT over `10⁹` timestamps allocates `10⁹` ints and OOMs.
 - **Sum-only, not min/max.** A beginner's first instinct is "I'll just take max instead of sum in `add`" - this silently breaks correctness, because `query` **subtracts** ranges (`i - lowbit(i)`) which requires the operation to be invertible. Max has no inverse; a BIT over max only works as a monotone "running max so far" (no decreases ever), not general point updates.
-- **At-scale: cache locality degrades for very large n.** The BIT array itself is contiguous (cache-friendly, like any array), but the **access pattern per query is not sequential** - each `i & -i` jump can leap far across the array (e.g. from index 1000 to 1024), so at `n > 10⁷` the working set stops fitting in L2 and each hop risks a cache miss, unlike a true sequential scan. Still far better than a pointer-chasing segment tree, but not "free" cache behavior.
+- **At-scale: cache locality degrades for very large n.** The BIT array itself is contiguous (<abbr>cache-friendly</abbr>, like any array), but the **access pattern per query is not sequential** - each `i & -i` jump can leap far across the array (e.g. from index 1000 to 1024), so at `n > 10⁷` the working set stops fitting in L2 and each hop risks a cache miss, unlike a true sequential scan. Still far better than a pointer-chasing segment tree, but not "free" cache behavior.
 
 ## What the interviewer probes for
 
-- **"Why not just use a prefix-sum array?"** - A prefix-sum array gives O(1) query but O(n) to fix after any single update (every downstream prefix shifts). If updates are rare and queries dominate, prefix sum wins; the moment updates and queries interleave, Fenwick's O(log n) both ways wins overall. State the crossover explicitly: worth it once there's at least one update mixed with `Ω(log n)` queries.
-- **"Why not always use a segment tree instead - it does everything Fenwick does and more?"** - True in power, false in practice: Fenwick is ~5x less code, roughly half to a third the memory (one array vs. an explicit tree, often over-allocated to `4n`), and has a smaller constant factor (no recursion, no node-object overhead). Use Fenwick when the query is a sum/XOR and you don't need lazy range updates or min/max; reach for the heavier segment tree only when the extra generality is actually needed.
+- **"Why not just use a prefix-sum array?"** - A prefix-sum array gives O(1) query but O(n) to fix after any single update (every downstream prefix shifts). If updates are rare and queries dominate, <abbr>prefix sum</abbr> wins; the moment updates and queries interleave, Fenwick's O(log n) both ways wins overall. State the crossover explicitly: worth it once there's at least one update mixed with `Ω(log n)` queries.
+- **"Why not always use a segment tree instead - it does everything Fenwick does and more?"** - True in power, false in practice: Fenwick is ~5x less code, roughly half to a third the memory (one array vs. an explicit tree, often over-allocated to `4n`), and has a smaller constant factor (no <abbr>recursion</abbr>, no node-object overhead). Use Fenwick when the query is a sum/XOR and you don't need lazy range updates or min/max; reach for the heavier segment tree only when the extra generality is actually needed.
 - **"What if the update is a range, not a point?"** - Not natively - a bare Fenwick only does point-update/range-query. Two workarounds exist without leaving BIT-land: store a difference array in the BIT for range-update/point-query, or run two BITs together for range-update/range-query (both shown in [Practice problems](#practice-problems), entries 3 and 4). Beyond additive updates (e.g. "set range to x"), a segment tree with lazy propagation is the right tool.
 - **"Can this work for 2D grids?"** - Yes: a BIT of BITs, where each outer-BIT node is itself a BIT over the second dimension. O(log n · log m) per point update / prefix query. Costs O(n·m) space like the grid itself, same asymptotic story as 1D just squared in both dimensions.
 
@@ -340,7 +342,7 @@ def count_smaller(nums: list[int]) -> list[int]:
 
 **Duplicate problems:**
 - Reverse Pairs (LC 493) - same right-to-left BIT-over-ranks scan, counting pairs `i < j, nums[i] > 2*nums[j]` instead of raw inversions.
-- Count of Range Sum (LC 327) - prefix sums compressed into ranks, then the identical "count smaller already-inserted" BIT scan.
+- Count of Range Sum (LC 327) - <abbr>prefix sum</abbr>s compressed into ranks, then the identical "count smaller already-inserted" BIT scan.
 - Count inversions in an array (classic) - the textbook name for this exact mechanic: a single global inversion count instead of a per-element `counts[i]` array, same value-indexed-BIT scan.
 
 ### 3. Range Sum Query - Range Update and Range Sum

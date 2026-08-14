@@ -55,7 +55,7 @@ From a client's perspective, they connect to one IP and get a response. They hav
 3. Forwarding the request (and response)
 4. Managing the lifecycle of both connections
 
-This transparency is what makes horizontal scaling seamless - you can add or remove backends without clients noticing.
+This transparency is what makes <abbr>horizontal scaling</abbr> seamless - you can add or remove backends without clients noticing.
 
 ### L4 vs L7 - Where in the Stack Interception Happens
 
@@ -79,7 +79,7 @@ L7 Flow:  Client ──TCP──▶ LB (parses HTTP) ──TCP──▶ Backend 
 
 ## Classification & Variants
 
-**Interviewer TL;DR:** Default to cloud-native; use software LBs when you need control; hardware only for legacy or extreme throughput requirements.
+**Interviewer TL;DR:** Default to cloud-native; use software LBs when you need control; hardware only for legacy or extreme <abbr>throughput</abbr> requirements.
 
 **Mental model:** Load balancers come in different shapes depending on _where_ they live in the network and _what_ they run on. Knowing the taxonomy prevents you from proposing a software LB for a job that needs hardware-level throughput, or a cloud-native LB for a use case requiring custom protocol support.
 
@@ -312,7 +312,7 @@ GET /health → 200 OK   (process is alive, nothing else verified)
 - **Readiness** (`/readyz`): Is the process ready to serve traffic? Checks local state (connection pools initialized, caches warmed). Does **not** query external dependencies.
 - **Dependency health**: Monitor separately via metrics/alerting - do not couple it to the LB health check.
 
-**Key Takeaway:** Active probes + readiness semantics + graceful drain + slow-start - omit any one and you will cause cascading failures or thundering herds on every deploy. Deep health checks that query dependencies are more dangerous than shallow ones.
+**Key Takeaway:** Active probes + readiness semantics + graceful drain + slow-start - omit any one and you will cause cascading failures or <abbr>thundering herds</abbr> on every deploy. Deep health checks that query dependencies are more dangerous than shallow ones.
 
 ---
 
@@ -466,7 +466,7 @@ VRRP broadcasts heartbeats. If the primary misses N consecutive heartbeats, the 
 
 ### Split-Brain Prevention
 
-**Split-brain:** Both LBs simultaneously believe they are the primary and both claim the VIP. Causes duplicate responses, routing inconsistencies, and state corruption.
+**<abbr>Split-brain</abbr>:** Both LBs simultaneously believe they are the primary and both claim the VIP. Causes duplicate responses, routing inconsistencies, and state corruption.
 
 Prevention strategies:
 

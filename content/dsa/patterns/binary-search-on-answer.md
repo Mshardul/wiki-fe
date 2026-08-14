@@ -58,7 +58,7 @@
 |---|---|
 | **Binary Search (classic)** | Classic binary search finds a target *within a sorted array* using array indices as the search space. Binary search on answer uses a **numeric range of candidate answers** as the search space - there may be no array being searched at all (e.g. searching over possible "max load" values from 1 to sum(weights)). |
 | **Two Pointers** | Two pointers scans a sorted array with two indices converging - O(n) total movement. Binary search on answer discards half the *answer* range each iteration - O(log(range)) iterations, each costing an O(n) feasibility check, for O(n log(range)) total. |
-| **Greedy** | The feasibility check *inside* binary search on answer is usually itself a greedy algorithm (e.g. "greedily pack items into the current capacity, count bins used"). The pattern's outer binary search decides *which* capacity to try; greedy answers *whether it works*. They compose, they aren't alternatives. |
+| **<abbr>Greedy</abbr>** | The feasibility check *inside* binary search on answer is usually itself a greedy algorithm (e.g. "greedily pack items into the current capacity, count bins used"). The pattern's outer binary search decides *which* capacity to try; greedy answers *whether it works*. They compose, they aren't alternatives. |
 
 ---
 
@@ -113,9 +113,9 @@ Typical time: **O(log(range) × cost of one feasibility check)**. If the feasibi
 
 The constraint that actually matters here isn't `n` in isolation - it's the **width of the answer range**, since that's what's being binary-searched. A range of `10⁹` collapses to ~30 iterations; the pattern's whole value proposition is turning a huge linear scan over possible answers into a logarithmic one.
 
-**Real-world usage:** capacity-planning systems use this exact shape - a load balancer or autoscaler asking "what's the minimum instance count such that projected request latency stays under budget?" is a feasibility-monotonic search over a numeric answer space, same as Koko's speed. **At-scale failure:** if the feasibility check itself is expensive (e.g. a full simulation rather than an O(n) scan), the O(log(range)) factor stops being "free" - at large `range` and an expensive per-check cost, the total search time can dominate a request's latency budget, which is why production systems often cap the number of binary-search iterations rather than searching to exact convergence.
+**Real-world usage:** capacity-planning systems use this exact shape - a system doing <abbr>load balancing</abbr> asking "what's the minimum instance count such that projected request <abbr>latency</abbr> stays under budget?" is a feasibility-monotonic search over a numeric answer space, same as Koko's speed. **At-scale failure:** if the feasibility check itself is expensive (e.g. a full simulation rather than an O(n) scan), the O(log(range)) factor stops being "free" - at large `range` and an expensive per-check cost, the total search time can dominate a request's latency budget, which is why production systems often cap the number of binary-search iterations rather than searching to exact convergence.
 
-**Cache behavior:** n/a for this pattern - it's a pure numeric-range search over `lo`/`hi`/`mid` scalars with no array traversal of its own; whatever memory-access pattern exists belongs to the feasibility check (e.g. Koko's linear scan over `piles`, which is a contiguous, cache-friendly array pass).
+**Cache behavior:** n/a for this pattern - it's a pure numeric-range search over `lo`/`hi`/`mid` scalars with no array traversal of its own; whatever memory-access pattern exists belongs to the feasibility check (e.g. Koko's linear scan over `piles`, which is a contiguous, <abbr>cache-friendly</abbr> array pass).
 
 ---
 

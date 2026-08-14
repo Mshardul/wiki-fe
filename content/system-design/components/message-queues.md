@@ -32,7 +32,7 @@
 
 ## TLDR
 
-A message queue decouples producers and consumers temporally (they don't need to be online simultaneously), spatially (they don't need to know each other's addresses), and by load (producers can burst without overwhelming consumers). The core choice is between a **work queue** (message consumed once, then deleted), a **log/stream** (append-only, offset-tracked, replayable by multiple independent consumers), and **pub/sub** (broadcast, no persistence). Kafka and Pulsar are logs; RabbitMQ and SQS are queues. Delivery semantics - at-most-once, at-least-once, exactly-once - are the hardest trade-off: exactly-once is achievable but expensive, and only necessary for use cases like financial ledgers where both loss and duplication are unacceptable. In production, the leading failure modes are consumer lag cascades, unclean leader elections causing data loss, and poison messages blocking partitions in infinite retry loops.
+A message queue decouples producers and consumers temporally (they don't need to be online simultaneously), spatially (they don't need to know each other's addresses), and by load (producers can burst without overwhelming consumers). The core choice is between a **work queue** (message consumed once, then deleted), a **log/stream** (append-only, offset-tracked, replayable by multiple independent consumers), and **pub/sub** (broadcast, no persistence). Kafka and Pulsar are logs; RabbitMQ and SQS are queues. Delivery semantics - at-most-once, at-least-once, exactly-once - are the hardest trade-off: exactly-once is achievable but expensive, and only necessary for use cases like financial ledgers where both loss and duplication are unacceptable. In production, the leading failure modes are consumer lag cascades, unclean <abbr>leader elections</abbr> causing data loss, and poison messages blocking partitions in infinite retry loops.
 
 ---
 
@@ -47,7 +47,7 @@ Adding a message queue introduces a broker to deploy, monitor, and operate - plu
 - **The payload is large binary data (images, video)** - store blobs in object storage (S3/GCS); put only a reference (URL or object key) in the message. Queues are for coordination metadata, not bulk data transfer.
 - **You need strict global ordering across all messages** - a single-partition topic caps throughput at ~10-50MB/s and limits you to one active consumer. Probe whether per-entity ordering (achievable with key partitioning at full throughput) satisfies the requirement before accepting this constraint.
 - **Message volume is very low and latency is tight** - at low throughput (< ~100 msgs/min), a database-backed job queue (Postgres `SKIP LOCKED`, Redis list) is simpler and avoids broker operational overhead entirely.
-- **Your consumer can't be made idempotent and you need exactly-once to an external system** - Kafka's exactly-once only covers Kafka-to-Kafka flows. Without idempotent writes or an outbox pattern, a message queue won't deliver the guarantee you need.
+- **Your consumer can't be made <abbr>idempotent</abbr> and you need exactly-once to an external system** - Kafka's exactly-once only covers Kafka-to-Kafka flows. Without idempotent writes or an outbox pattern, a message queue won't deliver the guarantee you need.
 
 > ⚖️ **Decision heuristic:** If producer and consumer could be in the same process, or a direct HTTP call would work, start there. Reach for a message queue when you need temporal decoupling, fan-out to multiple independent consumers, or load leveling against a slow or unreliable downstream.
 
@@ -121,7 +121,7 @@ Pub/Sub: Publisher ──▶ Broker ──▶ Subscriber A  (no persistence)
 
 ### Push vs Pull Consumer Models
 
-**Pull (Kafka, SQS):** Consumers poll the broker when ready. The consumer controls its own pace - natural backpressure. Simpler flow control.
+**Pull (Kafka, SQS):** Consumers poll the broker when ready. The consumer controls its own pace - natural <abbr>backpressure</abbr>. Simpler flow control.
 
 **Push (RabbitMQ AMQP):** Broker pushes to consumers. Faster delivery but requires explicit prefetch limits. Without limits, a slow consumer gets overwhelmed.
 
@@ -236,7 +236,7 @@ With replication (`acks=all`), async flush is safe: a message ACKed by the leade
 - **Compaction:** Keep only the latest message per key - for CDC, event sourcing, config topics
 - **Tiered storage:** Offload cold segments to object storage (S3/GCS) while keeping hot segments local. Kafka 3.6+ supports this natively - dramatically reduces broker disk costs for high-retention topics.
 
-**Tombstones:** In compacted topics, deleting a key requires publishing a message with that key and a null value. Compaction eventually removes both the old messages and the tombstone (after `delete.retention.ms`). Without tombstones, deleted keys persist indefinitely.
+**<abbr>Tombstones</abbr>:** In compacted topics, deleting a key requires publishing a message with that key and a null value. Compaction eventually removes both the old messages and the tombstone (after `delete.retention.ms`). Without tombstones, deleted keys persist indefinitely.
 
 ### Crash Recovery
 
@@ -374,7 +374,7 @@ Kafka transactions enable atomic writes across multiple partitions and topics. O
 
 **Key-Based Hashing:** `partition = hash(key) % num_partitions`. All messages with the same key go to the same partition - guaranteeing per-key ordering. Required for use cases like "all events for order 123 must be processed in sequence."
 
-> **Note on consistent hashing:** Kafka uses modulo partitioning, not consistent hashing (as used in Cassandra or distributed hash tables). Changing partition count remaps every key to a different partition - destroying per-key ordering for all active consumers. Treat partition count increases as potentially disruptive: any consumer relying on key-based ordering needs a migration plan (drain in-flight messages, update partition count, restart consumers).
+> **Note on consistent hashing:** Kafka uses modulo partitioning, not <abbr>consistent hashing</abbr> (as used in Cassandra or distributed hash tables). Changing partition count remaps every key to a different partition - destroying per-key ordering for all active consumers. Treat partition count increases as potentially disruptive: any consumer relying on key-based ordering needs a migration plan (drain in-flight messages, update partition count, restart consumers).
 
 **Hotspot Risk:** If one key generates disproportionate traffic (a viral user, or a misconfigured producer using key="default" for everything), one partition gets overwhelmed while others sit idle. Mitigation: use high-cardinality keys; or append a random suffix to high-volume keys (accepting partial loss of per-key ordering).
 
@@ -440,7 +440,7 @@ When a consumer joins or leaves a group, Kafka redistributes partitions. During 
 
 **Pause/Resume:** Kafka consumers can pause individual partitions (`consumer.pause(partitions)`) without triggering a rebalance. Used when a downstream dependency (database, external API) is slow - pause the affected partition, let others drain, resume when downstream recovers.
 
-**Circuit Breaker on Processing Backend:** If the consumer's downstream is timing out, a circuit breaker opens, the consumer pauses polling, waits for recovery, then resumes. Prevents the consumer from crashing in a tight retry loop.
+**<abbr>Circuit Breaker</abbr> on Processing Backend:** If the consumer's downstream is timing out, a circuit breaker opens, the consumer pauses polling, waits for recovery, then resumes. Prevents the consumer from crashing in a tight retry loop.
 
 ### Dead Letter Queue (DLQ) Strategy
 
@@ -609,7 +609,7 @@ Message queues break distributed traces - the producer's trace context must be c
 
 ### Split-Brain & Fencing Tokens
 
-**Split-brain:** Two broker nodes both believe they are leader for the same partition. Both accept writes; divergent state accumulates. Resolution requires discarding one node's writes - data loss is almost always the outcome.
+**<abbr>Split-brain</abbr>:** Two broker nodes both believe they are leader for the same partition. Both accept writes; divergent state accumulates. Resolution requires discarding one node's writes - data loss is almost always the outcome.
 
 **Fencing tokens:** Each leader election increments an epoch. A broker with a stale epoch is rejected by ISR members - it cannot write to replicas. Kafka's leader epoch serves this role. `unclean.leader.election.enable=false` prevents a lagging replica from being elected leader, avoiding split-brain at the cost of availability (partition stays offline until an ISR member recovers).
 
@@ -748,7 +748,7 @@ Orchestration (explicit flow):
 
 ### Multi-Datacenter Replication
 
-**Active-Passive:** One DC accepts writes; the other is a replica. Kafka MirrorMaker 2 handles async replication. Simpler; RPO bounded by replication lag (typically seconds). Failover requires rerouting producers and resetting consumer offsets in the passive DC.
+**Active-Passive:** One DC accepts writes; the other is a replica. Kafka MirrorMaker 2 handles async <abbr>replication</abbr>. Simpler; RPO bounded by replication lag (typically seconds). Failover requires rerouting producers and resetting consumer offsets in the passive DC.
 
 **Active-Active:** Both DCs accept writes; bidirectional replication. Requires conflict resolution for messages on the same key from both DCs. High complexity - use only when global low-latency writes are a hard requirement.
 

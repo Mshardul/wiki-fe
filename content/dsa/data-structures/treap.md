@@ -90,13 +90,13 @@ Heap order top→bottom reads 90,80,50,30 (max-heap, strictly decreasing down th
 
 The **expected** bound is the number that matters in practice - the classic result (Seidel & Aragon, 1996) shows expected height is O(log n) via the same analysis as randomized quicksort's expected depth, and the worst case requires an adversary who can predict the RNG, which a correctly-seeded PRNG makes practically impossible. **Space complexity for the recursive insert/delete must include this call-stack term** - it is not O(1) auxiliary space; a converted-to-iterative version (walking down with an explicit stack or parent pointers) would trade the call-stack term for an explicit O(log n) data structure instead, not eliminate it.
 
-Note there is **no amortized cost to prove here**, unlike a dynamic array or hash table: "expected" (averaged over random priority draws, for a single fixed sequence of operations) and "amortized" (worst-case-per-op cost averaged over a sequence, no randomness involved) are different guarantees. A treap has the former, not the latter - there's no accounting or potential-function argument to show because no operation is ever "paying off" a debt from an earlier cheap operation; every insert/delete is independently O(log n) in expectation.
+Note there is **no <abbr>amortized</abbr> cost to prove here**, unlike a dynamic array or hash table: "expected" (averaged over random priority draws, for a single fixed sequence of operations) and "amortized" (worst-case-per-op cost averaged over a sequence, no randomness involved) are different guarantees. A treap has the former, not the latter - there's no accounting or potential-function argument to show because no operation is ever "paying off" a debt from an earlier cheap operation; every insert/delete is independently O(log n) in expectation.
 
 ## When to use / when not
 
 Reach for a treap when you want **BST-balance with far simpler code than AVL or Red-Black rotations**, or when you specifically need **split/merge by key** - a capability rotation-balanced trees don't offer cleanly. Skip it when you need a **hard worst-case guarantee** (a security-sensitive service accepting adversarial input where an attacker controls both keys and, in a broken implementation, the RNG seed) - there, Red-Black's deterministic O(log n) worst case is the safer choice. Skip it also when the language's standard library already ships a production-grade balanced map (`std::map`, Java `TreeMap`) - hand-rolling a treap to replace a mature library structure is rarely justified outside of contest code or when split/merge is the actual feature you need.
 
-Real-world usage: treaps back the implicit-treap technique for maintaining an **array under insert/delete/reverse at any position** in O(log n) (competitive programming's "sequence with range reversal" problems), and they appear in **CRDTs and persistent/functional data structures** where a treap's simple split/merge composes well with structural sharing. **At scale:** a treap's pointer-chasing structure means every operation touches O(log n) scattered heap allocations - at n > 10⁷ nodes, cache-miss cost per operation dominates the same way it does for any pointer-based tree (AVL, Red-Black), and a cache-friendlier flat structure (a B-tree, or an array-backed implicit treap) wins if throughput at that scale matters more than code simplicity.
+Real-world usage: treaps back the implicit-treap technique for maintaining an **array under insert/delete/reverse at any position** in O(log n) (competitive programming's "sequence with range reversal" problems), and they appear in **CRDTs and persistent/functional data structures** where a treap's simple split/merge composes well with structural sharing. **At scale:** a treap's pointer-chasing structure means every operation touches O(log n) scattered heap allocations - at n > 10⁷ nodes, cache-miss cost per operation dominates the same way it does for any pointer-based tree (AVL, Red-Black), and a cache-friendlier flat structure (a B-tree, or an array-backed implicit treap) wins if <abbr>throughput</abbr> at that scale matters more than code simplicity.
 
 ## Comparison
 
@@ -109,6 +109,8 @@ Real-world usage: treaps back the implicit-treap technique for maintaining an **
 
 **Pick it when…crossover:** a treap beats AVL/Red-Black specifically when split/merge-by-key is a requirement (e.g. "maintain a sequence supporting insert-at-position and reverse-a-range") - at that point AVL/Red-Black's rotation machinery doesn't generalize cleanly and a treap's O(log n) split/merge is the practical winner, not just the simpler one. Conversely, a treap loses to Red-Black the moment the workload is adversarial-input-facing in production (an attacker who can force worst-case shape via a compromised or predictable RNG is a real, if narrow, threat model) - Red-Black's deterministic worst case removes that risk entirely.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 - **Implicit treap (array-as-treap):** drop the explicit key field and instead define "key" implicitly as **in-order position** - subtree size replaces key comparisons. This turns the treap into a dynamic array supporting insert-at-index, delete-at-index, and **range reverse/rotate** all in O(log n), by lazily propagating a "reversed" flag down subtrees exactly like a lazy segment tree. The CP staple built on treaps.
@@ -117,7 +119,7 @@ Real-world usage: treaps back the implicit-treap technique for maintaining an **
 
 ## Traversal & invariant
 
-A treap maintains **two simultaneous invariants** on the same node set:
+A treap maintains **two simultaneous <abbr>invariant</abbr>s** on the same node set:
 
 1. **BST invariant** (on `key`): for every node, all keys in the left subtree < `node.key` < all keys in the right subtree.
 2. **Max-heap invariant** (on `priority`): for every node, `node.priority ≥ child.priority` for both children.
@@ -229,10 +231,10 @@ Python's `random.random()` gives a float priority - collisions are astronomicall
 
 ## Gotchas / edge cases
 
-- **Priority collisions.** If two nodes are assigned equal priority (rare with a good RNG and `float` priorities, more likely with a narrow 16-bit `rand()`), the heap-order tie-break becomes arbitrary and the tree's shape guarantee weakens slightly. Fix: use a wide-range RNG (`random.random()`'s float, or `mt19937` in C++), or break ties with a secondary random value.
+- **Priority <abbr>collision</abbr>s.** If two nodes are assigned equal priority (rare with a good RNG and `float` priorities, more likely with a narrow 16-bit `rand()`), the heap-order tie-break becomes arbitrary and the tree's shape guarantee weakens slightly. Fix: use a wide-range RNG (`random.random()`'s float, or `mt19937` in C++), or break ties with a secondary random value.
 - **Forgetting priorities are set once, never recomputed.** A common bug is regenerating a node's priority on every access (confusing it with a "recently used" score) - priorities must be assigned exactly once at insertion and never touched again, or the heap invariant analysis (and the balance guarantee) no longer holds.
 - **At-scale trap: RNG predictability under adversarial input.** If the priority generator is a weak or seedable PRNG and an attacker can both choose the insertion key sequence *and* predict or influence priority values (e.g. a predictable seed, or a priority derived from a value the attacker controls), they can force worst-case O(n) chain shape - this is a real, documented attack class against naive treap implementations in adversarial-input services. Fix: use a cryptographically seeded RNG that the caller cannot observe or influence.
-- **Recursion depth on the expected-case assumption.** The Python implementation above recurses per level; at expected O(log n) depth this is fine, but a treap given a maliciously-crafted or extremely unlucky priority sequence could in principle recurse to depth O(n), risking a Python recursion-limit error or stack overflow in languages without tail-call elimination - a risk plain AVL/Red-Black don't share, since their worst-case height is bounded by construction, not by chance.
+- **<abbr>Recursion</abbr> depth on the expected-case assumption.** The Python implementation above recurses per level; at expected O(log n) depth this is fine, but a treap given a maliciously-crafted or extremely unlucky priority sequence could in principle recurse to depth O(n), risking a Python recursion-limit error or stack overflow in languages without tail-call elimination - a risk plain AVL/Red-Black don't share, since their worst-case height is bounded by construction, not by chance.
 - **Misconception: split/merge work because a treap is "balanced."** They work because of the **heap-ordered priority invariant specifically**, not balance as a general property - a plain balanced BST (AVL, Red-Black) is just as balanced but cannot split/merge this simply, because a height or color invariant doesn't decompose cleanly at an arbitrary cut point. A treap's balance is actually a *side effect* of the priority invariant; split/merge exploit the priority invariant directly, not "balance" in the abstract.
 
 ## What the interviewer probes for

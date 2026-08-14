@@ -32,6 +32,7 @@
   "monotonic stack": "A stack kept strictly increasing or decreasing by popping elements that violate the order before pushing. Finds next-greater/smaller elements in O(n) total.",
   "sliding window": "A contiguous subrange over a sequence, expanded and contracted with two pointers to avoid re-scanning. Turns O(n²) brute force into O(n).",
   "prefix sum": "A precomputed running total, `pref[i] = pref[i-1] + arr[i]`, letting any range sum be answered in O(1) by subtraction.",
+  "difference array": "Prefix sum's dual: two O(1) point writes per range update, one prefix-sum pass at the end to reconstruct - turns O(n) per range update into O(1).",
   "topological order": "A linear ordering of a DAG's nodes such that every edge points from an earlier node to a later one. Undefined if the graph has a cycle.",
   "cycle detection": "Determining whether a graph contains a cycle - a back edge in DFS for directed graphs, or a union-find same-root check for undirected ones.",
   "load factor": "The ratio of stored entries to bucket count in a hash table. High load factor increases collision rate and triggers a resize.",

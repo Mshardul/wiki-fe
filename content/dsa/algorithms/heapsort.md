@@ -35,7 +35,7 @@
 
 Mental model: **selection sort with a turbocharger.** Selection sort also repeatedly grabs the largest remaining element and parks it at the end - but it _scans_ the whole remainder each time (O(n) per pick → O(n²)). Heapsort keeps the remainder in a heap, so grabbing the max and re-heaping costs O(log n), not O(n) - turning the O(n²) into O(n log n).
 
-Heapsort's unique selling point among comparison sorts: **worst-case O(n log n) guaranteed** (unlike [quicksort](./quicksort.md)'s O(n²) tail) **and O(1) extra space** (unlike [merge sort](./merge-sort.md)'s O(n) buffer). It's the only common comparison sort with _both_. The price is that it's **not stable** and its memory access jumps all over the array (poor cache locality), so quicksort usually beats it in wall-clock time despite the identical asymptotic - which is why heapsort's real-world role is the **safety net inside introsort** (switch to it when quicksort recurses too deep).
+Heapsort's unique selling point among comparison sorts: **worst-case O(n log n) guaranteed** (unlike [quicksort](./quicksort.md)'s O(n²) tail) **and O(1) extra space** (unlike [merge sort](./merge-sort.md)'s O(n) buffer). It's the only common comparison sort with _both_. The price is that it's **not stable** and its memory access jumps all over the array (poor cache locality, i.e. not <abbr>cache-friendly</abbr>), so quicksort usually beats it in wall-clock time despite the identical asymptotic - which is why heapsort's real-world role is the **safety net inside introsort** (switch to it when quicksort recurses too deep).
 
 > **Takeaway (say this out loud):** "Heapsort build-heaps then repeatedly extracts the max into a growing sorted suffix - worst-case O(n log n) with O(1) space, the only comparison sort with both, but not stable and cache-unfriendly."
 
@@ -47,7 +47,7 @@ Two ideas, both inherited from the [heap](../data-structures/heap.md):
 
 **Why O(n log n) and not O(n²):** the bottleneck in selection sort is _finding_ the max - an O(n) scan. A max-heap makes the max free (it's the root) and makes _restoring_ the max-property after removing it cheap (one sift-down, O(log n)). So each of the `n` extractions is O(log n) instead of O(n). The heap converts "scan for the max" into "the max is already at the top."
 
-**Why O(1) space:** the heap doesn't need a separate array - it lives _in the array being sorted_. The boundary between "heap region" (front) and "sorted region" (back) is just an index. Each extraction swaps the root into the slot just past the shrinking heap, so the sorted suffix and the heap share the same array with no overlap. No buffer, no recursion-heavy stack (sift-down can be iterative) → O(1) extra.
+**Why O(1) space:** the heap doesn't need a separate array - it lives _in the array being sorted_. The boundary between "heap region" (front) and "sorted region" (back) is just an index. Each extraction swaps the root into the slot just past the shrinking heap, so the sorted suffix and the heap share the same array with no overlap. No buffer, no recursion-heavy <abbr>call stack</abbr> (sift-down can be iterative) → O(1) extra.
 
 ## How it works
 
@@ -81,7 +81,7 @@ Each extraction moves the current max to the front of the sorted suffix; the hea
 
 ## Correctness / invariant
 
-Two invariants, one per phase:
+Two <abbr>invariants</abbr>, one per phase:
 
 **Build phase (heapify invariant):** processing nodes from `⌊n/2⌋-1` downto 0, before handling node `i`, _every node with index > `i` is already the root of a valid max-heap_. Sift-down at `i` (whose children's subtrees are already heaps) makes `i`'s subtree a heap too. When `i = 0` finishes, the whole array is a max-heap. (Bottom-up order is essential - it guarantees children are heaps before their parent is processed.)
 
@@ -97,7 +97,7 @@ The correctness hinges entirely on the [heap](../data-structures/heap.md) proper
 
 Two phases, summed:
 
-- **Build-heap:** **O(n)**, not O(n log n) - the bottom-up heapify result (derived on the [heap](../data-structures/heap.md) page): a node at height `h` does O(h) work and there are ≤ `n/2^(h+1)` such nodes, and `Σ h/2^h` converges, giving `O(n)`.
+- **Build-heap:** **O(n)**, not O(n log n) - the bottom-up heapify result, in standard <abbr>Big-O</abbr> notation (derived on the [heap](../data-structures/heap.md) page): a node at height `h` does O(h) work and there are ≤ `n/2^(h+1)` such nodes, and `Σ h/2^h` converges, giving `O(n)`.
 - **Extraction:** `n` extractions, each an O(1) swap plus a sift-down costing O(log m) for current heap size `m`. Total: `Σ_{m=1}^{n} log m = log(n!) = Θ(n log n)` (Stirling).
 
 ```
@@ -152,7 +152,7 @@ The clean framing: heapsort is **selection sort with an O(log n) "find max" inst
 - **All-equal elements** - O(n log n), correct: every sift-down finds children equal (not greater), so swaps are minimal but the structure still processes all `n`. No degeneracy (unlike quicksort's all-equal O(n²)).
 - **Stability (the key non-feature)** - heapsort is **not stable**: the root-to-end swap moves an element across the array, leapfrogging equal keys. There's no cheap fix; if stability matters, use merge sort. Naming this unprompted is a senior tell.
 - **Max-heap for ascending, min-heap for descending** - to sort ascending you build a _max_-heap (extracted maxes fill the end); using a min-heap by mistake sorts descending. A frequent off-by-direction bug.
-- **Iterative sift-down (CP-flavored)** - write sift-down as a loop, not recursion, to keep space at a true O(1); recursive sift-down adds O(log n) stack. Also, the sift-down bound check must use the _current_ heap size `m`, not `n` - comparing against `n` would pull already-sorted suffix elements back into the heap, a corrupting off-by-one.
+- **Iterative sift-down (CP-flavored)** - write sift-down as a loop, not <abbr>recursion</abbr>, to keep space at a true O(1); recursive sift-down adds O(log n) stack. Also, the sift-down bound check must use the _current_ heap size `m`, not `n` - comparing against `n` would pull already-sorted suffix elements back into the heap, a corrupting off-by-one.
 
 ## Implementation
 

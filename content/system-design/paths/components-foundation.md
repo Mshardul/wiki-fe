@@ -30,4 +30,4 @@ See [SD Learning Paths](../index.md#learning-paths) for the other tracks.
 
 ## Explicitly skipped in this track
 
-HLD walkthroughs, distributed-systems algorithms (consistent hashing, consensus, sharding). Covered in [HLD Interview Loop](./hld-interview-loop.md) and [Distributed Depth](./distributed-depth.md).
+HLD walkthroughs, distributed-systems algorithms (<abbr>consistent hashing</abbr>, <abbr>consensus</abbr>, <abbr>sharding</abbr>). Covered in [HLD Interview Loop](./hld-interview-loop.md) and [Distributed Depth](./distributed-depth.md).

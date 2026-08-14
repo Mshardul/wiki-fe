@@ -1,6 +1,6 @@
 # Complexity Master Cheatsheet
 
-Every data structure and algorithm's Big-O, one page.
+Every data structure and algorithm's <abbr>Big-O</abbr>, one page.
 
 > 📖 Full articles: see [Data Structure Selection](./data-structure-selection.md) and [Sorting Comparison](./sorting-comparison.md) for per-topic links - this page aggregates both plus the remaining algorithm families.
 
@@ -73,6 +73,6 @@ See [String Algorithm Decision](./string-algorithm-decision.md) for the full tab
 
 ## Gotchas
 
-- ⚠️ "O(n log n)" hides which constant dominates - quicksort's average case and merge sort's guaranteed case are the same Big-O but different real-world speed.
+- ⚠️ "O(n log n)" hides which constant dominates - quicksort's average case and merge sort's guaranteed case are the same <abbr>Big-O</abbr> but different real-world speed.
 - ⚠️ Graph algorithm complexity depends on representation - adjacency list gives O(V+E), adjacency matrix forces O(V²) regardless of actual edge count.
 - ⚠️ DP's stated complexity is `states × transition` - always verify both factors before trusting a memorized bound.

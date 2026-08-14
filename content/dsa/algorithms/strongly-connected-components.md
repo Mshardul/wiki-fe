@@ -145,7 +145,7 @@ finish 0: low[0]=0 == disc[0]=0 → ROOT. Pop until 0: SCC={2,1,0}
 
 ### Tarjan invariant
 
-**Low-link invariant:** `low[u]` = the minimum discovery time reachable from any node in *u*'s DFS subtree via at most one back edge to an ancestor. A node *u* is an SCC root iff `low[u] == disc[u]` - meaning no back edge from *u*'s subtree reaches a node that was pushed onto the stack before *u*. At that point, all nodes pushed since *u* form a complete SCC, because they are mutually reachable (the DFS path from *u* reaches them, and the back edges bring them back to *u*'s discovery time).
+**Low-link <abbr>invariant</abbr>:** `low[u]` = the minimum discovery time reachable from any node in *u*'s DFS subtree via at most one back edge to an ancestor. A node *u* is an SCC root iff `low[u] == disc[u]` - meaning no back edge from *u*'s subtree reaches a node that was pushed onto the stack before *u*. At that point, all nodes pushed since *u* form a complete SCC, because they are mutually reachable (the DFS path from *u* reaches them, and the back edges bring them back to *u*'s discovery time).
 
 ## Complexity derivation
 
@@ -201,7 +201,7 @@ Both algorithms do two DFS passes over a graph with V vertices and E edges (Kosa
 - **Tarjan** - single pass, no transpose needed, slightly faster in practice; harder to implement correctly (low-link update rule is subtle); iterative version is significantly more complex.
 - In interviews, Kosaraju is safer to code under pressure. In contests with large V, Tarjan's single pass and lower constant win.
 
-**Real-world usage:** Linux kernel uses SCC-style cycle detection in module dependency graphs to enforce that the dependency DAG is acyclic. Compilers use SCC condensation to find circular dependencies between translation units.
+**Real-world usage:** Linux kernel uses SCC-style <abbr>cycle detection</abbr> in module dependency graphs to enforce that the dependency DAG is acyclic. Compilers use SCC condensation to find circular dependencies between translation units.
 
 ## Comparison
 
@@ -222,7 +222,7 @@ Both algorithms do two DFS passes over a graph with V vertices and E edges (Kosa
 2. **Visited state:** Both algorithms track `visited[]` (boolean) to avoid re-processing nodes. Tarjan additionally tracks `on_stack[]` - a node that is visited but not yet popped may still be part of an SCC being formed. A back edge to a node that is visited but *not* on the stack crosses SCC boundaries and must not update `low[]`.
 
 3. **Queue vs stack vs PQ:**
-   - Kosaraju Pass 1: DFS (call stack or explicit stack) - post-order finish times recorded on a stack.
+   - Kosaraju Pass 1: DFS (<abbr>call stack</abbr> or explicit stack) - post-order finish times recorded on a stack.
    - Kosaraju Pass 2: DFS (call stack or explicit stack) - standard DFS, no PQ.
    - Tarjan: DFS + explicit auxiliary stack for SCC membership. No queue, no PQ.
 
@@ -478,7 +478,7 @@ DFS recursion will overflow the stack well before that - Python's default is 100
 On an undirected graph every edge goes both ways, so every connected component is trivially an SCC - every node can reach every other node in the component. Running Kosaraju or Tarjan on an undirected graph is wasteful; a single BFS/DFS connected-components pass suffices.
 
 **"How does 2-SAT use SCC?"**
-Each boolean variable x creates two nodes (x and ¬x). Each clause (a ∨ b) adds implications ¬a → b and ¬b → a. Run SCC on the implication graph. If any variable x and ¬x end up in the same SCC, the formula is UNSATISFIABLE (they force each other to be both true and false). Otherwise, assign truth values based on SCC order in the condensation - the SCC appearing later in topological order "wins."
+Each boolean variable x creates two nodes (x and ¬x). Each clause (a ∨ b) adds implications ¬a → b and ¬b → a. Run SCC on the implication graph. If any variable x and ¬x end up in the same SCC, the formula is UNSATISFIABLE (they force each other to be both true and false). Otherwise, assign truth values based on SCC order in the condensation - the SCC appearing later in <abbr>topological order</abbr> "wins."
 
 ## Practice problems
 

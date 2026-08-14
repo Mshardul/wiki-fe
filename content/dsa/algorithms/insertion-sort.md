@@ -67,7 +67,7 @@ Watch the cost vary: `key=6` does zero shifts (already in place), `key=1` does f
 
 ## Correctness / invariant
 
-The outer loop maintains a single **loop invariant**: _at the start of iteration `i`, the subarray `a[0..i-1]` contains the original first `i` elements, now in sorted order._
+The outer loop maintains a single **loop <abbr>invariant</abbr>**: _at the start of iteration `i`, the subarray `a[0..i-1]` contains the original first `i` elements, now in sorted order._
 
 - **Initialization:** before `i = 1`, the prefix `a[0..0]` is a single element - trivially sorted, and it's the original first element.
 - **Maintenance:** iteration `i` takes `key = a[i]` and shifts every prefix element greater than `key` one slot right, then drops `key` into the gap. The result is `a[0..i]` sorted (the prefix was sorted, and `key` is now placed correctly among them) and still a permutation of the original first `i+1` elements. So the invariant holds for `i+1`.
@@ -77,7 +77,7 @@ This is _the_ canonical loop-invariant proof - CLRS opens the book with it preci
 
 ## Complexity derivation
 
-Let `t_i` be the number of shifts when inserting element `i`. The outer loop runs `n-1` times; iteration `i` does `t_i + 1` comparisons and `t_i` shifts. Total work:
+Let `t_i` be the number of shifts when inserting element `i`, expressed in <abbr>Big-O</abbr> style bounds. The outer loop runs `n-1` times; iteration `i` does `t_i + 1` comparisons and `t_i` shifts. Total work:
 
 ```
 T(n) = Σ_{i=1}^{n-1} (t_i + 1)
@@ -124,7 +124,7 @@ Insertion sort is the canonical **iterative loop-invariant** algorithm rather th
 
 - **State:** the sorted prefix `a[0..i-1]`. Each iteration extends it by exactly one element. The "recurrence," informally, is `sorted(i) = insert(a[i], sorted(i-1))` with base case `sorted(0) = [a[0]]` - a _fold_, not a binary split.
 - **Invariant (the proof obligation):** `a[0..i-1]` sorted at the top of iteration `i` (proven above). This is the whole correctness argument; there is no recursion tree to analyze, only the loop.
-- **Cost is data-dependent - like quicksort, unlike merge sort.** `Θ(n + inversions)`: the input's pre-existing order sets the running time. But the dependence is the _opposite_ of quicksort's - quicksort's bad case is _sorted_ input (extreme pivots), insertion sort's _best_ case is sorted input (zero shifts). The recursive cousin worth naming: a recursive insertion sort `sort(a[0..i]) = insert(a[i], sort(a[0..i-1]))` gives `T(n) = T(n-1) + O(n)` → O(n²), the same chain-shaped recurrence as quicksort's _worst_ case - which is the structural reason both are O(n²) when they degrade.
+- **Cost is data-dependent - like quicksort, unlike merge sort.** `Θ(n + inversions)`: the input's pre-existing order sets the running time. But the dependence is the _opposite_ of quicksort's - quicksort's bad case is _sorted_ input (extreme pivots), insertion sort's _best_ case is sorted input (zero shifts). The <abbr>recursion</abbr>-based cousin worth naming: a recursive insertion sort `sort(a[0..i]) = insert(a[i], sort(a[0..i-1]))` gives `T(n) = T(n-1) + O(n)` → O(n²), the same chain-shaped recurrence as quicksort's _worst_ case - which is the structural reason both are O(n²) when they degrade.
 
 > **Family note:** insertion sort has no clean fit among the algorithm families (Search/divide, Traversal, Recursive/build, Bit/greedy) - it is a loop-invariant incremental sort. Filed under **Recursive/build** as the nearest match (its incremental `insert(x, sorted)` fold is a build), with the family heading repurposed to its loop state. The depth lives in the invariant and the inversion-based cost analysis, not in a recurrence.
 

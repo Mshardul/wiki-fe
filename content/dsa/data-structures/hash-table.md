@@ -44,7 +44,7 @@ Mental model: **a coat check.** You hand over a coat (the key); the attendant ru
 
 ## How it works
 
-Three pieces: a backing **bucket array**, a **hash function** that maps a key to a bucket index, and a **collision strategy** for when two keys land in the same bucket.
+Three pieces: a backing **bucket array**, a **hash function** that maps a key to a bucket index, and a **<abbr>collision</abbr> strategy** for when two keys land in the same bucket.
 
 ```
 key "apple"  ──hash──▶  3847122  ──% capacity (8)──▶  bucket 2
@@ -78,7 +78,7 @@ Worst case is O(n) when every key collides into one bucket (a degenerate hash or
 | Lookup    | O(1) | O(1)    | O(n) (all collide)          |
 | Delete    | O(1) | O(1)    | O(n) (all collide)          |
 
-**Space:** O(n) for n entries, **plus slack** - a hash table deliberately keeps its bucket array larger than the entry count (load factor < 1) to keep collisions rare, so true footprint is O(capacity), typically 1.3–2× the entries. The **amortized** O(1) insert hides occasional O(n) **resizes** (rehash every key into a bigger array), exactly like a [dynamic array's](./dynamic-array.md) doubling.
+**Space:** O(n) for n entries, **plus slack** - a hash table deliberately keeps its bucket array larger than the entry count (<abbr>load factor</abbr> < 1) to keep collisions rare, so true footprint is O(capacity), typically 1.3–2× the entries. The **<abbr>amortized</abbr>** O(1) insert hides occasional O(n) **resizes** (rehash every key into a bigger array), exactly like a [dynamic array's](./dynamic-array.md) doubling.
 
 ## When to use / when not
 
@@ -109,9 +109,11 @@ How the hash table stacks up against the structures you'd weigh it against in an
 | Balanced BST         | O(log n)      | O(log n)      | **yes**   | **O(log n)**       | scattered + ptrs       | ordered keys, range queries, k-th smallest |
 | Sorted array         | O(log n)      | O(n)          | yes       | O(log n) lookup    | contiguous, tight      | static data, binary search, cache-tight    |
 | Direct-address array | **O(1)**      | **O(1)**      | by index  | by index           | contiguous, dense      | keys are small bounded integers            |
-| Trie                 | O(L) by len   | O(L)          | by prefix | prefix queries     | scattered + child ptrs | string keys, prefix/autocomplete           |
+| <abbr>Trie</abbr>                 | O(L) by len   | O(L)          | by prefix | prefix queries     | scattered + child ptrs | string keys, prefix/autocomplete           |
 
 The hash table's column is the only one with **O(1) average lookup for arbitrary keys**. Every rival either restricts the key type or buys ordering by giving up that O(1).
+
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
 
 ## Variants
 
@@ -120,7 +122,7 @@ The hash table's column is the only one with **O(1) average lookup for arbitrary
 - **Counter / multiset** - key → count; insertion increments rather than overwrites. `collections.Counter`. A frequency-map shape; see [First Unique Character](#5-first-unique-character) in Practice problems.
 - **Ordered / insertion-ordered map** - preserves insertion order on iteration (Python `dict` since 3.7, Java `LinkedHashMap`). Still O(1); order is a free bonus, not a sorted order.
 - **Concurrent hash map** - sharded/striped locking for thread-safe O(1) access (Java `ConcurrentHashMap`). The concurrency story, not a different algorithm.
-- **Consistent hashing** - distributes keys across N servers so adding/removing a server reshuffles only ~1/N of keys, not all. The distributed-systems variant: [consistent hashing](../../system-design/algorithms/consistent-hashing.md).
+- **<abbr>Consistent hashing</abbr>** - distributes keys across N servers so adding/removing a server reshuffles only ~1/N of keys, not all. The distributed-systems variant: [consistent hashing](../../system-design/algorithms/consistent-hashing.md).
 
 ## Hashing & collisions
 
@@ -144,7 +146,7 @@ The **avalanche** property - a one-bit change in the key flips ~half the output 
 
 ### Collisions are inevitable
 
-By the **pigeonhole principle**, mapping an unbounded key space into `b` buckets _must_ produce collisions - two distinct keys with the same bucket index. And by the **birthday paradox**, they come far sooner than intuition suggests: with just ~√b inserted keys you already expect a collision. So a hash table is defined not by avoiding collisions (impossible) but by **resolving** them. Two families:
+By the **pigeonhole principle**, mapping an unbounded key space into `b` buckets _must_ produce <abbr>collision</abbr>s - two distinct keys with the same bucket index. And by the **birthday paradox**, they come far sooner than intuition suggests: with just ~√b inserted keys you already expect a collision. So a hash table is defined not by avoiding collisions (impossible) but by **resolving** them. Two families:
 
 ### Chaining
 
@@ -172,7 +174,7 @@ linear probing, "grape" wants bucket 2 but it's taken:
 
 ### Load factor & resize
 
-The **load factor** α = entries / buckets is the dial that controls collision rate. As α rises, chains lengthen / probes grow, and O(1) slips toward O(n). The fix: when α crosses a threshold (chaining ~0.75, open addressing ~0.66), **resize** - allocate a bigger bucket array (usually 2×) and **rehash every entry** into it (the index `hash % capacity` changes when capacity changes, so you can't just copy).
+The **<abbr>load factor</abbr>** α = entries / buckets is the dial that controls collision rate. As α rises, chains lengthen / probes grow, and O(1) slips toward O(n). The fix: when α crosses a threshold (chaining ~0.75, open addressing ~0.66), **resize** - allocate a bigger bucket array (usually 2×) and **rehash every entry** into it (the index `hash % capacity` changes when capacity changes, so you can't just copy).
 
 ```
 α = 6/8 = 0.75 → resize to 16 buckets → rehash all 6 keys → α = 6/16 = 0.375
@@ -283,9 +285,9 @@ seen = set()                  # O(1) membership - the seen-set pattern
 
 ## What the interviewer probes for
 
-**What changes at n = 10⁹ entries - is O(1) lookup still true?** - The per-lookup cost stays O(1) average, but the *system* around it changes: a table that large won't fit in one machine's memory, so you shard across nodes ([consistent hashing](../../system-design/algorithms/consistent-hashing.md)), and even in-memory the O(n) resize/rehash pass becomes a multi-second stall that a live service can't absorb on the thread doing the insert. Production systems at that scale use incremental resizing (rehash a few buckets per operation instead of all at once) specifically to avoid that stall - "O(1) amortized" hides a real latency cliff that gets worse, not better, as n grows.
+**What changes at n = 10⁹ entries - is O(1) lookup still true?** - The per-lookup cost stays O(1) average, but the *system* around it changes: a table that large won't fit in one machine's memory, so you shard across nodes ([consistent hashing](../../system-design/algorithms/consistent-hashing.md)), and even in-memory the O(n) resize/rehash pass becomes a multi-second stall that a live service can't absorb on the thread doing the insert. Production systems at that scale use incremental resizing (rehash a few buckets per operation instead of all at once) specifically to avoid that stall - "O(1) <abbr>amortized</abbr>" hides a real <abbr>latency</abbr> cliff that gets worse, not better, as n grows.
 
-**Why not always use open addressing instead of chaining, since it has better cache locality?** - Open addressing packs everything inline (no pointer chasing), which is why CPython's `dict` uses it, but it degrades sharply as load factor approaches 1 (probe sequences lengthen) and deletion needs tombstones or lookups break; chaining degrades more gracefully under high load and deletes trivially by unlinking, at the cost of pointer overhead and scattered chain memory. Pick open addressing when memory and cache locality dominate (CPython's choice); pick chaining when load factor is hard to bound in advance or deletions are frequent.
+**Why not always use open addressing instead of chaining, since it has better cache locality?** - Open addressing packs everything inline (no <abbr>pointer chasing</abbr>), which is why CPython's `dict` uses it, but it degrades sharply as load factor approaches 1 (probe sequences lengthen) and deletion needs <abbr>tombstone</abbr>s or lookups break; chaining degrades more gracefully under high load and deletes trivially by unlinking, at the cost of pointer overhead and scattered chain memory. Pick open addressing when memory and cache locality dominate (CPython's choice); pick chaining when load factor is hard to bound in advance or deletions are frequent.
 
 **How would this work with concurrent writers from multiple threads?** - A single lock around the whole table serializes every operation, killing the O(1) win under contention. Java's `ConcurrentHashMap` instead shards the bucket array into independent segments, each with its own lock (or lock-free CAS on modern versions), so unrelated keys rarely contend - the same idea as [consistent hashing](../../system-design/algorithms/consistent-hashing.md) applied to a single process instead of a cluster.
 
@@ -406,7 +408,7 @@ Count contiguous subarrays of `nums` (values may be negative) whose sum equals `
 
 **Constraints:** `1 ≤ nums.length ≤ 2 × 10⁴`, `-1000 ≤ nums[i] ≤ 1000`, `-10⁷ ≤ k ≤ 10⁷`.
 
-**Approach:** `sum(i..j] == k` ⟺ `prefix[j] - prefix[i] == k` ⟺ `prefix[i] == prefix[j] - k`. Sweep keeping a running prefix and a **hashmap of how many times each prefix value has occurred**; at each step add the count of `prefix - k`. Hashing prefix sums turns an O(n²) range scan into O(n) - and handles negatives, which a sliding window can't.
+**Approach:** `sum(i..j] == k` ⟺ `prefix[j] - prefix[i] == k` ⟺ `prefix[i] == prefix[j] - k`. Sweep keeping a running prefix and a **hashmap of how many times each prefix value has occurred**; at each step add the count of `prefix - k`. Hashing <abbr>prefix sum</abbr>s turns an O(n²) range scan into O(n) - and handles negatives, which a sliding window can't.
 
 ```python
 def subarray_sum(nums: list[int], k: int) -> int:

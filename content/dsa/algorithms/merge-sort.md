@@ -29,7 +29,7 @@
 
 ## What it is
 
-**Merge sort** sorts by _divide and conquer_: split the array in half, recursively sort each half, then **merge** the two sorted halves into one sorted whole. The work is all in the merge - combining two already-sorted runs is cheap because you only ever compare their two front elements.
+**Merge sort** sorts by _<abbr>divide and conquer</abbr>_: split the array in half, recursively sort each half, then **merge** the two sorted halves into one sorted whole. The work is all in the merge - combining two already-sorted runs is cheap because you only ever compare their two front elements.
 
 Mental model: **riffling two sorted piles of cards.** You have two face-up stacks, each already in order. Repeatedly take the smaller of the two top cards onto the output. Because both stacks are sorted, the smaller top card is the smallest card overall - so the output comes out sorted, in one linear pass over both piles.
 
@@ -43,7 +43,7 @@ What makes merge sort the one to reach for when guarantees matter: its O(n log n
 
 Why is merging cheap, and why does halving give `log n` levels? Two separate ideas:
 
-**Merging is linear because sortedness makes the next output obvious.** To merge two sorted runs you never search - the smallest unplaced element is always one of the two run-heads, so a single comparison picks it. Each comparison emits one element, so merging `m` total elements costs O(m). The hard part (deciding global order) was already paid for by the recursion sorting each half.
+**Merging is linear because sortedness makes the next output obvious.** To merge two sorted runs you never search - the smallest unplaced element is always one of the two run-heads, so a single comparison picks it. Each comparison emits one element, so merging `m` total elements costs O(m). The hard part (deciding global order) was already paid for by the <abbr>recursion</abbr> sorting each half.
 
 **Halving gives `log n` levels because you can only halve `n` about `log₂ n` times before hitting size 1.** Level 0 is one array of size `n`; level 1 is two of size `n/2`; level `k` is `2^k` arrays of size `n/2^k`. At every level the merges touch all `n` elements once → O(n) per level. Multiply: `log n` levels × O(n) per level = O(n log n). The genius is that the per-level cost is _constant in `n`_ no matter how deep you are - the arrays get smaller exactly as fast as they get more numerous.
 
@@ -101,7 +101,7 @@ L: [3, 27, 38, 43]   R: [9, 10, 82]      out: []
  drain R               → out: [3, 9, 10, 27, 38, 43, 82]
 ```
 
-Each comparison emits exactly one element and advances one pointer; the **invariant** holds throughout - `out` is sorted, and everything still in `L`/`R` is ≥ everything in `out`.
+Each comparison emits exactly one element and advances one pointer; the **<abbr>invariant</abbr>** holds throughout - `out` is sorted, and everything still in `L`/`R` is ≥ everything in `out`.
 
 ## Correctness / invariant
 
@@ -149,7 +149,7 @@ The senior reading: when the constraint is **"worst case must stay O(n log n)"**
 
 Reach for merge sort when you need a **guaranteed** O(n log n) (no input can degrade it - unlike [quicksort](./quicksort.md), whose naive pivot is O(n²)), when you need **stability** (equal keys keep input order, essential for multi-key sorts), or when sorting **data too large for RAM** (external merge sort streams sorted runs from disk). It's also the natural sort for **linked lists** - merging needs only sequential access, no random indexing, so a list sorts in O(n log n) with O(1) extra space (no buffer needed; you relink nodes).
 
-Don't use it when **memory is tight** - the O(n) auxiliary buffer is its one real cost; in-place [quicksort](./quicksort.md) (O(log n) space) or heapsort (O(1) space) win there. And for general in-memory arrays where the average case is all that matters, quicksort's smaller constant factor and cache-friendly sequential partitioning usually beat merge sort in wall-clock time despite the identical asymptotic.
+Don't use it when **memory is tight** - the O(n) auxiliary buffer is its one real cost; in-place [quicksort](./quicksort.md) (O(log n) space) or heapsort (O(1) space) win there. And for general in-memory arrays where the average case is all that matters, quicksort's smaller constant factor and <abbr>cache-friendly</abbr> sequential partitioning usually beat merge sort in wall-clock time despite the identical asymptotic.
 
 Merge sort is the backbone of **external sorting** in databases and big-data frameworks, and the merge half of Python's **Timsort** (which merges insertion-sorted runs).
 
@@ -263,7 +263,7 @@ Sort an integer array in O(n log n) without using the library sort.
 
 **Constraints:** `n ≤ 5·10⁴`, values fit in 32-bit - a direct "implement a sort" prompt that rejects `.sort()`.
 
-**Approach:** Textbook top-down merge sort: recurse to singletons, merge back up with the two-pointer `_merge`. The whole point is demonstrating you can write a correct, stable O(n log n) sort and explain its invariant. Quicksort also passes but risks the O(n²) tail on adversarial test cases; merge sort's guarantee is safer here.
+**Approach:** Textbook top-down merge sort: recurse to singletons, merge back up with the <abbr>two-pointer</abbr> `_merge`. The whole point is demonstrating you can write a correct, stable O(n log n) sort and explain its invariant. Quicksort also passes but risks the O(n²) tail on adversarial test cases; merge sort's guarantee is safer here.
 
 ```python
 def sort_array(nums: list[int]) -> list[int]:
@@ -340,7 +340,7 @@ Merge `k` sorted linked lists into one sorted list.
 
 **Constraints:** `k ≤ 10⁴`, total nodes `≤ 10⁴` per list - naive concatenate-then-sort is O(N log N); the structure invites better.
 
-**Approach:** Generalize the two-way merge to `k` ways. Two options: (a) pairwise-merge lists in a tournament - `log k` rounds, each merging all `N` nodes → O(N log k); or (b) a **min-heap** of the `k` current heads, popping the smallest and pushing its successor → also O(N log k). Both beat re-sorting; the heap version is the cleanest to code and the canonical answer.
+**Approach:** Generalize the two-way merge to `k` ways. Two options: (a) pairwise-merge lists in a tournament - `log k` rounds, each merging all `N` nodes → O(N log k); or (b) a **min-<abbr>heap</abbr>** of the `k` current heads, popping the smallest and pushing its successor → also O(N log k). Both beat re-sorting; the heap version is the cleanest to code and the canonical answer.
 
 ```python
 import heapq

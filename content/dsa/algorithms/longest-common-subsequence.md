@@ -38,7 +38,7 @@ Think about comparing the last characters of the two prefixes you're currently c
 - **If `A[i-1] == B[j-1]`:** that character can always be part of *some* longest common subsequence of the two prefixes - there's no reason to ever throw it away, because keeping it costs nothing and only helps. So the answer is "1 + whatever the best answer was for the prefixes with that character stripped from both sides."
 - **If `A[i-1] != B[j-1]`:** at least one of these two trailing characters cannot be in the LCS (they can't both be the last matched character since they differ). So the LCS of `A[:i], B[:j]` is *either* the LCS ignoring `A`'s last character, *or* the LCS ignoring `B`'s last character - whichever is longer. You don't know which side to drop, so you try both and keep the max.
 
-That's the entire idea: at every pair of prefix endpoints, you either get a free extension (characters match) or you're forced to make a binary choice and take the better branch. Because the same `(i, j)` prefix pair recurs across many decision paths in the naive recursion, this is a textbook overlapping-subproblems setup - exactly the shape DP exists for.
+That's the entire idea: at every pair of prefix endpoints, you either get a free extension (characters match) or you're forced to make a binary choice and take the better branch. Because the same `(i, j)` prefix pair recurs across many decision paths in the naive <abbr>recursion</abbr>, this is a textbook overlapping-subproblems setup - exactly the shape DP exists for.
 
 ## How it works
 
@@ -94,7 +94,7 @@ Loop ends (`j = 0`). Matched characters collected in reverse-walk order are `A, 
 
 ## Correctness / invariant
 
-**Claim:** for every `0 ≤ i ≤ n`, `0 ≤ j ≤ m`, `dp[i][j]` equals the length of the longest common subsequence of `A[0..i)` and `B[0..j)` (the first `i` and first `j` characters).
+**Claim (the <abbr>invariant</abbr>):** for every `0 ≤ i ≤ n`, `0 ≤ j ≤ m`, `dp[i][j]` equals the length of the longest common subsequence of `A[0..i)` and `B[0..j)` (the first `i` and first `j` characters).
 
 **Proof by strong induction on `i + j`.**
 
@@ -117,7 +117,7 @@ Since every dependency `(i-1, j-1)`, `(i-1, j)`, `(i, j-1)` has a strictly small
 
 **The senior-depth trade-off, named explicitly:** rolling the rows **destroys the backtrack path**. Reconstructing the actual subsequence (not just its length) requires walking backward through `dp[i-1][j-1]`, `dp[i-1][j]`, `dp[i][j-1]` - cells that, under the rolled-row optimization, have already been overwritten by the time you'd want to walk back. If you need both `O(min(n,m))` space *and* the reconstructed string, you need extra bookkeeping: either (a) **Hirschberg's algorithm**, which recursively splits the problem using a forward pass from one end and a backward pass from the other to find the midpoint of the LCS in `O(n·m)` time but only `O(min(n,m))` space, recursing on halves - the space-optimal reconstruction technique - or (b) store direction bits alongside a rolled table and accept that only the length is truly free; full reconstruction with O(min(n,m)) space genuinely costs more machinery, not less. **This is exactly the probe interviewers use to separate "knows the DP" from "understands the trade-off."**
 
-**Cache behavior:** the table fill is a sequential scan of a flat 2D array in row-major order - each row read/write is contiguous, so it's cache-friendly (unlike, say, a pointer-chasing tree DP). The rolled-row version is friendlier still: two rows of length `O(min(n,m))` fit in L1/L2 far more often than the full `O(n·m)` table for large inputs.
+**Cache behavior:** the table fill is a sequential scan of a flat 2D array in row-major order - each row read/write is contiguous, so it's <abbr>cache-friendly</abbr> (unlike, say, a pointer-chasing tree DP). The rolled-row version is friendlier still: two rows of length `O(min(n,m))` fit in L1/L2 far more often than the full `O(n·m)` table for large inputs.
 
 ## Constraints & approach
 
@@ -169,7 +169,7 @@ dp[i][j]  =  ⎨
 
 **4. Fill order.** Any order that finalizes `(i-1, j-1)`, `(i-1, j)`, `(i, j-1)` before `(i, j)` - simplest is row-major: `i` from `1` to `n`, and for each `i`, `j` from `1` to `m`.
 
-**Memo vs tabulation.** Top-down: recurse on `(i, j)`, branch on the character comparison, `@lru_cache` (or a dict) on `(i, j)` to avoid recomputation - visits only the reachable `(i, j)` pairs, which for LCS is usually the *entire* table anyway (nearly every prefix pair is reachable from `(n, m)` by *some* path of match/no-match decisions), so memoization rarely beats tabulation here on states-visited. Bottom-up: fill the grid row by row - no recursion overhead, no stack-depth risk on long strings (Python's default recursion limit is a real concern for `n, m` in the thousands), and it's what enables the row-rolling space optimization directly. **For LCS specifically, tabulation is the default choice** precisely because nearly all states are reachable and long strings make recursion depth a genuine risk.
+**Memo vs tabulation.** Top-down: recurse on `(i, j)`, branch on the character comparison, `@lru_cache` (or a dict) on `(i, j)` to avoid recomputation - visits only the reachable `(i, j)` pairs, which for LCS is usually the *entire* table anyway (nearly every prefix pair is reachable from `(n, m)` by *some* path of match/no-match decisions), so <abbr>memoization</abbr> rarely beats tabulation here on states-visited. Bottom-up: fill the grid row by row - no recursion overhead, no stack-depth risk on long strings (Python's default recursion limit is a real concern for `n, m` in the thousands), and it's what enables the row-rolling space optimization directly. **For LCS specifically, tabulation is the default choice** precisely because nearly all states are reachable and long strings make recursion depth a genuine risk.
 
 **State-space size.** `O(n·m)` cells for the full table; collapses to `O(min(n, m))` rolling rows when only the length is needed (see Complexity derivation for the reconstruction trade-off this optimization costs).
 

@@ -83,11 +83,11 @@ i=5 j=3  T[5]=B == P[3]=B  → i=6 j=4
 i=6 j=4  T[6]=C == P[4]=C  → i=7 j=5  → j==m → MATCH ending at i=7, start = 7-5 = 2
 ```
 
-Notice the single fallback step at `i=4`: the naive scan would have reset `j=0` and re-read `T[4]` from a new start. KMP instead jumped `j` to 2 - keeping the `AB` it had already verified - and **`i` never went backward**. That non-rewinding `i` is the whole game (see the invariant).
+Notice the single fallback step at `i=4`: the naive scan would have reset `j=0` and re-read `T[4]` from a new start. KMP instead jumped `j` to 2 - keeping the `AB` it had already verified - and **`i` never went backward**. That non-rewinding `i` is the whole game (see the <abbr>invariant</abbr>).
 
 ## Correctness / invariant
 
-KMP rests on two invariants, one per phase.
+KMP rests on two <abbr>invariant</abbr>s, one per phase.
 
 **Failure-function invariant (Phase 1):** after computing `lps[j]`, `lps[j]` equals the length of the longest proper prefix of `P[0..j]` that is also a suffix. The build maintains a length `len` of the current longest prefix-suffix; on a character match it extends (`len += 1`), and on a mismatch it falls back to `lps[len-1]` - the next-longest prefix-suffix candidate - which is correct precisely because a shorter prefix-suffix of `P[0..j]` must itself be a prefix-suffix of the longer one. This is the same fallback idea applied to the pattern against itself.
 
@@ -103,7 +103,7 @@ The non-rewinding `i` is what guarantees we never miss or double-count an occurr
 
 **Phase 1 (build).** The outer loop runs `m-1` times. The inner `while len > 0` only ever _decreases_ `len`, and `len` increases by at most 1 per outer iteration - so total decreases ≤ total increases ≤ `m`. Build is O(m).
 
-**Phase 2 (scan).** Here `i` advances `n` times and never retreats → at most `n` matches. On each mismatch `j` strictly decreases (`j = lps[j-1] < j`); `j` only increases by 1 per text advance, so across the whole scan the total decrease in `j` is bounded by the total increase, which is ≤ `n`. Hence the fallback work is O(n) amortized, not O(n·m). Scan is O(n).
+**Phase 2 (scan).** Here `i` advances `n` times and never retreats → at most `n` matches. On each mismatch `j` strictly decreases (`j = lps[j-1] < j`); `j` only increases by 1 per text advance, so across the whole scan the total decrease in `j` is bounded by the total increase, which is ≤ `n`. Hence the fallback work is O(n) <abbr>amortized</abbr>, not O(n·m). Scan is O(n).
 
 ```
 total = O(m)  [build]  +  O(n)  [scan]  =  O(n + m)

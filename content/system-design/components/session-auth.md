@@ -67,7 +67,7 @@ Session state lives inside the application process. Zero infrastructure overhead
 
 _The standard production choice for session storage._
 
-Sub-millisecond reads, native TTL support (keys auto-expire without a cleanup job), pub/sub for cross-node invalidation, and replication for HA. A single Redis node comfortably handles millions of session keys.
+Sub-millisecond reads, native TTL support (keys auto-expire without a cleanup job), pub/sub for cross-node invalidation, and <abbr>replication</abbr> for HA. A single Redis node comfortably handles millions of session keys.
 
 ```shell
 SET session:abc123 '{"user_id":42,"roles":["user"]}' EX 86400

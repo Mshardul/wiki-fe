@@ -26,8 +26,7 @@
   - [Number of Recent Calls](#2-number-of-recent-calls)
   - [Sliding Window Maximum](#3-sliding-window-maximum)
   - [Rotting Oranges](#4-rotting-oranges)
-  - [Design Circular Queue](#5-design-circular-queue)
-  - [0/1 Matrix Shortest Path](#6-01-matrix-shortest-path)
+  - [0/1 Matrix Shortest Path](#5-01-matrix-shortest-path)
 
 ## What it is
 
@@ -113,13 +112,14 @@ How the queue stacks up against the structures you'd weigh it against:
 
 The queue's identity is **two-ended FIFO in O(1)** - add one side, remove the other. The deque generalizes it (both ends), the heap replaces arrival-order with priority, the stack flips the discipline to LIFO.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
-- **Linear queue (circular buffer)** - fixed array with wrapping `front`/`back` indices; O(1) both ends, no shifting. The standard efficient implementation. Its own page: [Circular Buffer](./circular-buffer.md).
+- **Circular queue (ring buffer)** - fixed array with wrapping `front`/`back` indices; O(1) both ends, no shifting, overwrites or rejects when full - streaming windows, audio buffers, [rate limiters](../../system-design/components/rate-limiter.md). The standard efficient implementation; its own page with the worked "Design Circular Queue" problem: [Circular Buffer](./circular-buffer.md).
 - **Linked-list queue** - head/tail pointers over a [linked list](./linked-list.md); O(1) enqueue/dequeue, grows without resize, at pointer-overhead cost. What `collections.deque` is built on.
-- **Deque (double-ended queue)** - add/remove at **both** ends in O(1). A superset of both queue and stack; the basis for sliding-window tricks (see the [Sliding Window Maximum](#3-sliding-window-maximum) and [0/1 Matrix Shortest Path](#6-01-matrix-shortest-path) practice problems).
+- **Deque (double-ended queue)** - add/remove at **both** ends in O(1). A superset of both queue and stack; the basis for sliding-window tricks (see the [Sliding Window Maximum](#3-sliding-window-maximum) and [0/1 Matrix Shortest Path](#5-01-matrix-shortest-path) practice problems).
 - **Priority queue** - dequeues the min/max (by priority) rather than the oldest. Not really a queue under the hood - it's a [heap](./heap.md). Named here because interviews conflate them; the discipline differs (priority, not arrival).
-- **Circular queue (ring buffer)** - fixed-capacity queue that overwrites or rejects when full; streaming windows, audio buffers, [rate limiters](../../system-design/components/rate-limiter.md). The [Design Circular Queue practice problem](#5-design-circular-queue) builds one.
 - **Monotonic deque** - a deque kept increasing/decreasing to answer sliding-window min/max in O(n). A discipline on a deque, not a new structure; see the [Sliding Window Maximum](#3-sliding-window-maximum) practice problem.
 
 ## Memory layout
@@ -150,8 +150,8 @@ dequeue → front advances to 3 (wraps via % 6 when it passes the end)
 enqueue → write at back, back = (back+1) % 6
 ```
 
-- **Cache-friendly** (contiguous), no per-element pointer overhead.
-- Capacity is fixed; growing means allocate + copy (amortized O(1), [dynamic-array style](./dynamic-array.md#memory-layout)). Detail lives in [Circular Buffer](./circular-buffer.md).
+- **<abbr>Cache-friendly</abbr>** (contiguous), no per-element pointer overhead.
+- Capacity is fixed; growing means allocate + copy (<abbr>amortized</abbr> O(1), [dynamic-array style](./dynamic-array.md#memory-layout)). Detail lives in [Circular Buffer](./circular-buffer.md).
 
 **The linked-list fix (scattered, unbounded).** Head pointer = front, tail pointer = back. Enqueue appends a tail node, dequeue drops the head node - both O(1), grows without limit, no resize spike.
 
@@ -242,7 +242,7 @@ front = q[0]       # peek front (guard `if q`)
 val = q.popleft()  # NOT list.pop(0), which is O(n)
 ```
 
-`deque` also gives `appendleft`/`pop` for the back end - the both-ends primitive behind the [Sliding Window Maximum](#3-sliding-window-maximum) and [0/1 Matrix Shortest Path](#6-01-matrix-shortest-path) practice problems. A plain `list` as a queue is an O(n²) TLE waiting to happen - reach for `deque` reflexively.
+`deque` also gives `appendleft`/`pop` for the back end - the both-ends primitive behind the [Sliding Window Maximum](#3-sliding-window-maximum) and [0/1 Matrix Shortest Path](#5-01-matrix-shortest-path) practice problems. A plain `list` as a queue is an O(n²) TLE waiting to happen - reach for `deque` reflexively.
 
 ## Gotchas / edge cases
 
@@ -255,9 +255,9 @@ val = q.popleft()  # NOT list.pop(0), which is O(n)
 
 ## What the interviewer probes for
 
-**What changes when the queue holds 10⁹ items, or the producer is faster than the consumer forever?** - An unbounded queue under sustained producer/consumer imbalance grows without limit and eventually OOMs - the queue becomes the memory leak, not a buffer. At scale you bound the queue's capacity and decide an explicit **backpressure** policy for what happens when it's full: block the producer, drop the newest item, drop the oldest, or reject with an error - each is a real product decision (e.g. a message broker like Kafka persists to disk and lets consumers lag instead of blocking producers, trading memory pressure for disk I/O).
+**What changes when the queue holds 10⁹ items, or the producer is faster than the consumer forever?** - An unbounded queue under sustained producer/consumer imbalance grows without limit and eventually OOMs - the queue becomes the memory leak, not a buffer. At scale you bound the queue's capacity and decide an explicit **<abbr>backpressure</abbr>** policy for what happens when it's full: block the producer, drop the newest item, drop the oldest, or reject with an error - each is a real product decision (e.g. a message broker like Kafka persists to disk and lets consumers lag instead of blocking producers, trading memory pressure for disk I/O).
 
-**Why not always use an unbounded queue (or a plain linked-list queue) instead of a fixed-capacity ring buffer?** - An unbounded queue is simpler to reason about but has no ceiling, so it can't give latency or memory guarantees under load - a burst can grow it arbitrarily and page memory into swap. A bounded circular buffer trades that flexibility for predictability: fixed memory footprint, cache-friendly contiguous layout, and an explicit full/empty signal a caller can react to (retry, shed load) instead of silently consuming unbounded RAM. Pick bounded whenever the system needs a hard latency/memory SLA; pick unbounded (or a resizing one) when burst absorption matters more than a strict ceiling.
+**Why not always use an unbounded queue (or a plain linked-list queue) instead of a fixed-capacity ring buffer?** - An unbounded queue is simpler to reason about but has no ceiling, so it can't give <abbr>latency</abbr> or memory guarantees under load - a burst can grow it arbitrarily and page memory into swap. A bounded circular buffer trades that flexibility for predictability: fixed memory footprint, cache-friendly contiguous layout, and an explicit full/empty signal a caller can react to (retry, shed load) instead of silently consuming unbounded RAM. Pick bounded whenever the system needs a hard latency/memory SLA; pick unbounded (or a resizing one) when burst absorption matters more than a strict ceiling.
 
 **What changes under concurrent producers and consumers?** - A single-threaded queue implementation (like the plain circular buffer or linked-list queue on this page) is not safe for concurrent enqueue/dequeue - two producers can race on the same `back` slot, or a consumer can read mid-write. Concurrent queues need either a lock around both ends, separate locks per end (safe only when one producer and one consumer each, since the ends don't overlap), or a lock-free ring buffer using atomic compare-and-swap on the head/tail indices - the standard building block behind bounded channels in most concurrent runtimes.
 
@@ -437,63 +437,7 @@ def oranges_rotting(grid: list[list[int]]) -> int:
 
 ---
 
-### 5. Design Circular Queue
-
-Design a fixed-capacity circular queue with `enQueue`, `deQueue`, `Front`, `Rear`, `isEmpty`, `isFull` - all O(1).
-
-**Worked examples:**
-- **Example 1**
-  - **Input:** MyCircularQueue(3), enQueue(1), enQueue(2), enQueue(3), enQueue(4), Rear() | **Output:** true, true, true, false, 3
-  - **Explanation:** the queue has capacity 3; the fourth enqueue fails because the queue is full, so Rear stays at 3.
-- **Example 2**
-  - **Input:** MyCircularQueue(2), enQueue(1), deQueue(), enQueue(2), enQueue(3), Front() | **Output:** true, true, true, true, 2
-  - **Explanation:** dequeuing after the first enqueue frees a slot, so both subsequent enqueues succeed and the front is now 2.
-
-**Constraints:** `1 ≤ k ≤ 1000`, at most `3000` calls total to the queue's operations.
-
-**Approach:** A fixed array with a `front` index and a `size` count; the back slot is `(front + size) % capacity`. Wrapping arithmetic means nothing shifts and the array reuses freed front slots. Tracking `size` explicitly resolves the empty-vs-full ambiguity that plagues `front == back` designs. The ring-buffer primitive made concrete.
-
-```python
-class MyCircularQueue:
-    def __init__(self, k: int) -> None:
-        self._data = [0] * k
-        self._cap = k
-        self._front = 0
-        self._size = 0
-
-    def enQueue(self, value: int) -> bool:
-        if self._size == self._cap:
-            return False
-        self._data[(self._front + self._size) % self._cap] = value
-        self._size += 1
-        return True
-
-    def deQueue(self) -> bool:
-        if self._size == 0:
-            return False
-        self._front = (self._front + 1) % self._cap
-        self._size -= 1
-        return True
-
-    def Front(self) -> int:
-        return -1 if self._size == 0 else self._data[self._front]
-
-    def Rear(self) -> int:
-        return -1 if self._size == 0 else self._data[(self._front + self._size - 1) % self._cap]
-
-    def isEmpty(self) -> bool:
-        return self._size == 0
-
-    def isFull(self) -> bool:
-        return self._size == self._cap
-```
-
-**Complexity:** O(1) per operation, O(k) space. See [Circular Buffer](./circular-buffer.md).
-
-**Duplicate problems:**
-- First Unique Character in a Stream - queue-based stale-front eviction with a running count map, no LRU-specific hashmap+DLL mechanism.
-
-### 6. 0/1 Matrix Shortest Path
+### 5. 0/1 Matrix Shortest Path
 
 Given a grid where each move either costs 0 (e.g. stepping onto a "free" cell) or 1 (a normal cell), find the shortest cost path from a source cell to every other cell. Weighted-edge shortest path without a priority queue - the deque replaces Dijkstra's heap when weights are restricted to `{0, 1}`.
 

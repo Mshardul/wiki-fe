@@ -23,7 +23,7 @@
 
 ## What it is
 
-**Top-K Elements** maintains a **size-bounded heap of k entries** over a stream or array, so the k largest (or smallest, or most-frequent) elements are always available without sorting everything.
+**Top-K Elements** maintains a **size-bounded <abbr>heap</abbr> of k entries** over a stream or array, so the k largest (or smallest, or most-frequent) elements are always available without sorting everything.
 
 Mental model: **a bouncer at a club with exactly k seats.** Every new arrival is compared to the *worst-currently-seated* guest (the heap top). If the newcomer beats them, the worst guest is evicted and the newcomer takes the seat; otherwise the newcomer is turned away. The heap top is always "the worst of the best k so far."
 
@@ -46,7 +46,7 @@ Mental model: **a bouncer at a club with exactly k seats.** Every new arrival is
 
 ### (c) Not to be confused with
 
-- **Quickselect:** quickselect finds a single static answer (the k-th largest of a fixed array) in O(n) average with in-place partitioning; top-K's heap is for an ongoing stream or when you need all k elements (not just the boundary one) with a worse but simpler O(n log k) bound.
+- **Quickselect:** quickselect finds a single static answer (the k-th largest of a fixed array) in O(n) average with in-place partitioning; top-K's <abbr>heap</abbr> is for an ongoing stream or when you need all k elements (not just the boundary one) with a worse but simpler O(n log k) bound.
 - **Two Heaps:** two heaps track the **center** (median) of a stream with a balanced max-heap/min-heap pair; top-K tracks a **one-sided extreme** with a single fixed-size heap.
 - **K-Way Merge:** k-way merge combines k *already-sorted* sequences with a heap of size k (one slot per sequence); top-K filters the k best items out of *one* unsorted stream with a heap of size k (one slot per candidate answer). Same heap size k, opposite roles.
 
@@ -156,7 +156,7 @@ A single size-k heap only answers one fixed k efficiently. For repeated queries 
 
 **Constraints.** `1 ≤ k ≤ nums.length ≤ 10⁵`; `-10⁴ ≤ nums[i] ≤ 10⁴`.
 
-**Approach.** At n ≤ 10⁵, a size-k min-heap (top-K pattern) gives O(n log k). Since only the *boundary value* is needed (not the full top-k set), quickselect is the asymptotically better choice at O(n) average - the constraint doesn't force one over the other here, so this problem is the canonical place to show both and name the trade: heap is simpler and worst-case-safe at O(n log k); quickselect is faster average-case but O(n²) worst-case unless pivots are randomized. Contest velocity note: `heapq.nlargest(k, nums)[-1]` does the same size-k heap internally in one stdlib call - faster to type than the hand-rolled loop below when you don't need to interleave the eviction with other per-element logic.
+**Approach.** At n ≤ 10⁵, a size-k min-<abbr>heap</abbr> (top-K pattern) gives O(n log k). Since only the *boundary value* is needed (not the full top-k set), quickselect is the asymptotically better choice at O(n) average - the constraint doesn't force one over the other here, so this problem is the canonical place to show both and name the trade: heap is simpler and worst-case-safe at O(n log k); quickselect is faster average-case but O(n²) worst-case unless pivots are randomized. Contest velocity note: `heapq.nlargest(k, nums)[-1]` does the same size-k heap internally in one stdlib call - faster to type than the hand-rolled loop below when you don't need to interleave the eviction with other per-element logic.
 
 ```python
 import heapq

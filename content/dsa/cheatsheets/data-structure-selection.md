@@ -39,6 +39,6 @@ Which structure to reach for, given the operations you need fast.
 
 ## Gotchas
 
-- ⚠️ Heap gives O(1) peek-extreme but O(n) search - don't reach for a heap when you need "does X exist?", that's a hash table or BST.
+- ⚠️ <abbr>Heap</abbr> gives O(1) peek-extreme but O(n) search - don't reach for a heap when you need "does X exist?", that's a hash table or BST.
 - ⚠️ BST is O(log n) only when balanced - a plain BST degrades to O(n) on sorted/adversarial input; use a balanced variant (AVL/Red-Black) when balance isn't guaranteed by construction.
 - ⚠️ Union-Find answers "connected?" and "merge" in near-O(1), but can't delete/split a union or list members - use graph traversal when you need those.

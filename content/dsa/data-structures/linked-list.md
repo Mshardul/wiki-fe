@@ -99,7 +99,7 @@ The catch hiding in "O(1) insert": it's O(1) **only once you already hold the pr
 **Reach for a linked list when:**
 
 - You **splice constantly at known positions** - insert/delete in the middle or front without paying the array's O(n) shift, once you hold the node.
-- You need a structure that **grows one node at a time with no reallocation** - appends never trigger a copy-the-whole-thing resize (the array's amortized-O(1) hides occasional O(n) spikes; a list has none).
+- You need a structure that **grows one node at a time with no reallocation** - appends never trigger a copy-the-whole-thing resize (the array's <abbr>amortized</abbr>-O(1) hides occasional O(n) spikes; a list has none).
 - You're building a **queue, deque, or <abbr>LRU</abbr> cache** where O(1) removal from an arbitrary held position is the core requirement.
 
 **Reach for something else when:**
@@ -126,12 +126,14 @@ How the linked list stacks up against the structures you'd weigh it against in a
 
 \*Singly: O(1) only with the predecessor in hand; finding it from the head is O(n). The list's column is the only one with **O(1) splice at a held node and no resize spikes** - that's its identity. Every rival buys cheaper access by giving that up.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 - **Singly linked list** - one `next` pointer per node. Minimal memory; can only walk forward; deleting a held node needs its predecessor. The default and the subject of most of this page.
 - **Doubly linked list** - each node also stores `prev`. Doubles the pointer overhead but buys **O(1) deletion of any held node** and backward traversal - the variant behind deques and LRU caches.
 - **Circular linked list** - the tail's `next` points back to the head (singly) or head/tail link both ways (doubly). No null terminator; useful for round-robin scheduling and ring buffers built from nodes. A list-based cousin of the [circular buffer](./circular-buffer.md).
-- **Sentinel / dummy-node list** - a permanent placeholder head (and sometimes tail) node that is never deleted, so the "list is empty" and "operate on the head" edge cases vanish. A structural shape; the technique that wields it is used throughout [Practice problems](#practice-problems) (see [Merge Two Sorted Lists](#3-merge-two-sorted-lists--dummy-head--splice) and [Remove Nth Node From End](#4-remove-nth-node-from-end--two-pointers-one-pass)).
+- **<abbr>Sentinel</abbr> / dummy-node list** - a permanent placeholder head (and sometimes tail) node that is never deleted, so the "list is empty" and "operate on the head" edge cases vanish. A structural shape; the technique that wields it is used throughout [Practice problems](#practice-problems) (see [Merge Two Sorted Lists](#3-merge-two-sorted-lists--dummy-head--splice) and [Remove Nth Node From End](#4-remove-nth-node-from-end--two-pointers-one-pass)).
 - **XOR linked list** - a doubly list storing `prev XOR next` in one field instead of two pointers, recovering each from the other. A memory-saving party trick; brittle (breaks GC, debugging), rarely used in practice - name it, don't reach for it.
 - **[Skip list](./skip-list.md)** - a tower of linked lists with express lanes giving O(log n) search/insert, a probabilistic alternative to a [balanced BST](./balanced-bst.md). A structurally distinct cousin; mention it when asked "how do you make a list searchable in O(log n)".
 

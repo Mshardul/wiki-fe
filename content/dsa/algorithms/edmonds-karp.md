@@ -77,11 +77,11 @@ Edmonds-Karp inherits Ford-Fulkerson's correctness argument in full - max-flow m
 
 **The monotone-distance lemma.** Let `dist(v)` be the shortest-path distance (in edges) from `s` to `v` in the residual graph at any point during the algorithm. As the algorithm proceeds through iterations, `dist(v)` is non-decreasing for every node `v` - it never gets shorter. Intuitively: BFS always saturates at least one edge on the shortest path; saturating an edge can only remove options, pushing future shortest paths to be as long or longer, never shorter, because any new residual reverse-edge created goes "backward" along the path just used and cannot shorten a future forward path to `v`.
 
-This lemma is the load-bearing piece for the O(VE) bound on the number of augmentations, derived next.
+This lemma is the load-bearing piece for the O(VE) bound - a fixed <abbr>invariant</abbr> maintained across the whole run - on the number of augmentations, derived next.
 
 ## Complexity derivation
 
-**Time: O(VE²).**
+**Time: O(VE²)** in standard <abbr>big-O</abbr> notation.
 
 **Step 1 - bound the number of augmentations to O(VE).** Call an edge `(u,v)` "critical" on a given augmenting path if it is the bottleneck (its residual capacity determines how much flow gets pushed, and it becomes fully saturated - residual capacity 0 - after the push). Every augmentation has at least one critical edge.
 
@@ -95,7 +95,7 @@ With `E` edges each critical O(V) times, and every augmentation having ≥1 crit
 
 This bound is **capacity-independent** - it depends only on `V` and `E`, never on the magnitude of edge capacities. This is the entire point of the BFS discipline: it converts Ford-Fulkerson's pseudo-polynomial O(E·max_flow) into a true polynomial bound.
 
-**Space: O(V + E)** - the residual graph plus BFS's queue and visited set (O(V)).
+**Space: O(V + E)** - the residual graph plus BFS's queue and visited set (O(V)); the queue itself never needs the full <abbr>call stack</abbr> depth since BFS is iterative.
 
 ## Constraints & approach
 

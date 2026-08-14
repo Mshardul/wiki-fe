@@ -43,7 +43,7 @@ Mental model: **binary search frozen into a structure.** Every node is a yes/no 
 
 ## How it works
 
-The BST **invariant** holds at every node: `left subtree keys < node.key < right subtree keys`. That single rule turns search into a guided descent - at each node you compare, then go left or right, never both.
+The BST **<abbr>invariant</abbr>** holds at every node: `left subtree keys < node.key < right subtree keys`. That single rule turns search into a guided descent - at each node you compare, then go left or right, never both.
 
 ```
             (8)
@@ -58,7 +58,7 @@ search 7:  8 → 7<8 go left → 3 → 7>3 go right → 6 → 7>6 go right → 7
 insert 5:  8 → left → 3 → right → 6 → left → 4 → right → null → place 5 there
 ```
 
-Each comparison **halves** the candidate set, so a search visits at most `height` nodes. When the tree is balanced, height ≈ log₂ n → **O(log n)**. The recursion is the same `tree = node + left + right` self-similarity as the [binary tree](./binary-tree.md), now with the comparison deciding _which_ subtree to recurse into (one, not both - that's the speedup over an unordered tree's O(n) search).
+Each comparison **halves** the candidate set, so a search visits at most `height` nodes. When the tree is balanced, height ≈ log₂ n → **O(log n)**. The <abbr>recursion</abbr> is the same `tree = node + left + right` self-similarity as the [binary tree](./binary-tree.md), now with the comparison deciding _which_ subtree to recurse into (one, not both - that's the speedup over an unordered tree's O(n) search).
 
 **Delete is the one tricky operation.** Removing a node with two children would orphan a subtree, so you replace the node with its **in-order successor** (the smallest key in its right subtree - the leftmost node there), which preserves the invariant, then delete that successor (which has at most one child). Leaf and one-child deletes are trivial splices.
 
@@ -118,6 +118,8 @@ How a BST relates to the structures you'd weigh against it:
 | Heap               | O(n)         | O(log n)     | **O(1)** | min/max only             | no           | repeated min/max only                  |
 
 The BST's column is the only one with **O(log n) on every ordered operation at once** - search, insert, range, successor, sorted iteration. The hash table beats it on raw lookup but offers no order; the sorted array matches its order but pays O(n) per insert.
+
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
 
 ## Variants
 
@@ -259,9 +261,9 @@ def delete(root: Optional[Node], k: int) -> Optional[Node]:
 
 - **Validating with only local checks.** The #1 BST bug: checking `node.left.key < node.key < node.right.key` per node passes invalid trees (a deep-left descendant can exceed an ancestor). Validate by passing **down a (low, high) range** that each subtree must fit, or by checking the in-order traversal is strictly increasing.
 - **Skew on sorted input.** Inserting already-sorted (or reverse-sorted) keys into a plain BST builds a height-n chain - every operation O(n). This is the BST's defining failure; use a [balanced BST](./balanced-bst.md) when input order is uncontrolled.
-- **Delete with two children.** The hard case: you must replace the node with its in-order **successor** (or predecessor) to preserve the invariant, then delete that successor. Forgetting this - or splicing wrongly - corrupts the ordering. It's the most-tested BST coding detail.
+- **Delete with two children.** The hard case: you must replace the node with its in-order **successor** (or predecessor) to preserve the <abbr>invariant</abbr>, then delete that successor. Forgetting this - or splicing wrongly - corrupts the ordering. It's the most-tested BST coding detail.
 - **Duplicate keys policy.** Decide up front: reject duplicates, store a per-node count, or always send equals to one side (consistently!). Inconsistent handling breaks search and in-order order. State your choice.
-- **Recursion depth on a tall tree.** Recursive search/insert/delete is O(height) stack frames - fine balanced, but a skewed tree overflows Python's ~1000-frame limit. Iterative search (shown above) avoids it; recursive insert/delete on adversarial input does not.
+- **<abbr>Recursion</abbr> depth on a tall tree.** Recursive search/insert/delete is O(height) stack frames - fine balanced, but a skewed tree overflows Python's ~1000-frame limit. Iterative search (shown above) avoids it; recursive insert/delete on adversarial input does not.
 - **In-order-sorted only holds for a _valid_ BST.** "Just do an in-order traversal to sort" assumes the tree already satisfies the invariant. If you're not certain it's a valid BST, in-order gives garbage order - validate first.
 - **At n > 10⁷ nodes, pointer-chasing dominates even on a balanced tree (at-scale trap).** Every level of descent follows a `left`/`right` pointer to a node allocated somewhere else on the heap - there's no locality between a parent and its children the way an array has between adjacent indices. At small n the whole tree fits in cache and this is invisible; at large n, each level of the O(log n) descent is a fresh cache miss, so wall-clock lookup time grows noticeably faster than the O(log n) comparison count alone suggests. This is the concrete reason database indexes use **B-trees**, not BSTs - a B-tree's high fan-out packs many keys per node so one cache-line/disk-page fetch resolves several comparisons at once, trading comparison count for far fewer pointer hops.
 

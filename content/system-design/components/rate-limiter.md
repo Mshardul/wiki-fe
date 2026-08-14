@@ -101,7 +101,7 @@ Divides time into fixed windows (e.g., each 60-second slot). Counts requests per
 
 ### Sliding Window Log
 
-Stores a timestamp for every accepted request. Count = timestamps within the last window from now. Most accurate - no boundary spikes. Memory cost is O(n) per identifier where n = allowed request count per window. Expensive at high throughput.
+Stores a timestamp for every accepted request. Count = timestamps within the last window from now. Most accurate - no boundary spikes. Memory cost is O(n) per identifier where n = allowed request count per window. Expensive at high <abbr>throughput</abbr>.
 
 ### Sliding Window Counter
 
@@ -149,7 +149,7 @@ Geography-aware enforcement at edge PoPs (Cloudflare Workers, Fastly, CloudFront
 
 Best for unauthenticated volumetric attacks, bot detection, and DDoS mitigation. No application context available at the edge - cannot check user tier or account state without a round-trip to origin (which defeats the cost advantage).
 
-**Limitation:** Counter propagation across PoPs has latency. At very high frequencies, counters across regions are slightly stale - acceptable for DDoS mitigation, not for strict per-user quota enforcement.
+**Limitation:** Counter propagation across PoPs has <abbr>latency</abbr>. At very high frequencies, counters across regions are slightly stale - acceptable for DDoS mitigation, not for strict per-user quota enforcement.
 
 ### API Gateway
 
@@ -235,7 +235,7 @@ _In a cluster, the limiter's correctness depends on time agreement and key local
 
 **Clock skew** between application instances affects time-based window boundaries. Two instances with clocks drifted by 500ms disagree on which "minute" window a request falls into - producing small over-count or under-count at window boundaries. NTP synchronisation keeps drift under 10ms in practice; sliding window algorithms are less sensitive than fixed window.
 
-**Redis Cluster key routing**: rate limit keys for the same user hash to a specific shard. If that shard becomes slow or partitioned, every request for users hashing to that shard is affected. Hash tags (`{user_id}`) can co-locate related keys on one shard but concentrate load - a hot user saturates a single shard.
+**Redis Cluster key routing**: rate limit keys for the same user hash to a specific shard. If that shard becomes slow or partitioned, every request for users <abbr>hashing</abbr> to that shard is affected. Hash tags (`{user_id}`) can co-locate related keys on one shard but concentrate load - a hot user saturates a single shard.
 
 ### Accuracy vs Availability
 
@@ -301,7 +301,7 @@ RFC 7231 header. Two formats:
 - **Delta seconds:** `Retry-After: 30` - retry in 30 seconds from now
 - **HTTP date:** `Retry-After: Sun, 25 May 2026 12:00:00 GMT` - retry at this absolute timestamp
 
-Delta seconds is more common. **The thundering herd problem:** all throttled clients receive the same delta and retry simultaneously, reproducing the exact spike that triggered the limit.
+Delta seconds is more common. **The <abbr>thundering herd</abbr> problem:** all throttled clients receive the same delta and retry simultaneously, reproducing the exact spike that triggered the limit.
 
 Fix: add jitter to the suggested retry value.
 
@@ -436,7 +436,7 @@ A university campus, corporate office, or mobile carrier NAT can funnel thousand
 
 ## Observability & Debugging
 
-> **Interviewer TL;DR:** Three signals matter: throttled ratio per identifier (are limits calibrated?), 429 spike patterns (attack or misconfiguration?), and Redis latency (is the limiter becoming the bottleneck itself?).
+> **Interviewer TL;DR:** Three signals matter: throttled ratio per identifier (are limits calibrated?), 429 spike patterns (attack or misconfiguration?), and Redis <abbr>latency</abbr> (is the limiter becoming the bottleneck itself?).
 
 _Mental model: the rate limiter is a traffic cop - observability tells you whether it's stopping the right cars, stopping too many, or causing a jam of its own._
 

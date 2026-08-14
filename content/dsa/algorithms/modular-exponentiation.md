@@ -34,7 +34,7 @@
 
 **Soundbite for interviews:** "Instead of multiplying base by itself exp times, I square it - every squaring doubles the exponent I've covered, so I only need log₂(exp) squarings."
 
-**Time:** O(log exp) - the loop runs once per bit of `exp`. **Space:** O(1) iterative (the only variables are `result`, `base`, `exp`), O(log exp) recursive (call stack depth).
+**Time:** O(log exp) - the loop runs once per bit of `exp`. **Space:** O(1) iterative (the only variables are `result`, `base`, `exp`), O(log exp) recursive (<abbr>call stack</abbr> depth).
 
 ---
 
@@ -139,7 +139,7 @@ Verify: `2^13 = 8192`. `8192 mod 1000 = 192`. Correct.
   Final: 192
 ```
 
-**Cache behavior:** The iterative form operates on three scalar variables (`result`, `base`, `exp`) - entirely register-resident. No array is touched, no memory access pattern to analyze. The algorithm is trivially cache-friendly with O(1) memory traffic.
+**Cache behavior:** The iterative form operates on three scalar variables (`result`, `base`, `exp`) - entirely register-resident. No array is touched, no memory access pattern to analyze. The algorithm is trivially <abbr>cache-friendly</abbr> with O(1) memory traffic.
 
 ---
 
@@ -149,7 +149,7 @@ Verify: `2^13 = 8192`. `8192 mod 1000 = 192`. Correct.
 
 At the start of every iteration, the following holds:
 
-> **Invariant:** `result × base^exp ≡ original_base^original_exp (mod m)`
+> **<abbr>Invariant</abbr>:** `result × base^exp ≡ original_base^original_exp (mod m)`
 
 **Proof by induction:**
 

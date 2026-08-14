@@ -101,8 +101,8 @@ No best/average/worst split for the core ops - that's the point. Unlike a [Dynam
 **Reach for a circular buffer when:**
 
 - You need a **fixed-capacity FIFO queue** with hard O(1) guarantees - producer/consumer pipelines, task queues, request buffers.
-- You're holding a **sliding window over a stream** - last N samples, last N log lines, a rate-limiter's recent timestamps.
-- **Worst-case latency must be bounded** - real-time audio/video, embedded, kernel ring buffers. No resize spike, ever.
+- You're holding a **<abbr>sliding window</abbr> over a stream** - last N samples, last N log lines, a rate-limiter's recent timestamps.
+- **Worst-case <abbr>latency</abbr> must be bounded** - real-time audio/video, embedded, kernel ring buffers. No resize spike, ever.
 
 **Reach for something else when:**
 
@@ -122,6 +122,8 @@ Rule of thumb: **fixed capacity + FIFO + must-not-spike → ring buffer.** Unbou
 | [Deque](./deque.md) (dynamic, e.g. `collections.deque`) | O(1) amortized both ends | O(n), grows in blocks | Smaller, chunked (block allocation, not doubling) | FIFO or LIFO | Need unbounded growth **and** O(1) both-end ops - the general-purpose default when capacity isn't known upfront |
 
 **Crossover condition:** a circular buffer beats a growable deque only when the **capacity ceiling is a real, known requirement** (bounded memory, bounded latency) - once growth is genuinely unbounded, a circular buffer's fixed capacity becomes a liability (drop-or-block policy needed) rather than a feature, and `collections.deque` wins on flexibility with only a small constant-factor cost from its block-based (not single-array) allocation.
+
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
 
 ## Variants
 
@@ -417,7 +419,7 @@ class RateLimiter:
         return False
 ```
 
-**Complexity:** O(1) amortized per `allow` call (each timestamp is enqueued once and dequeued at most once), O(N) space per client.
+**Complexity:** O(1) <abbr>amortized</abbr> per `allow` call (each timestamp is enqueued once and dequeued at most once), O(N) space per client.
 
 **Duplicate problems:**
 - Design a Logger Rate Limiter (LC 359) - simpler single-timestamp-per-key version of the same eviction idea, no count threshold.

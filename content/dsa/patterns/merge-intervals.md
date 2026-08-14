@@ -52,7 +52,7 @@
 | Pattern | Distinction |
 |---|---|
 | **Two Pointers** | Two pointers walks two indices *into the same array* (or across two arrays) toward a convergence condition - the "gap" between pointers is a position range. Merge Intervals walks a *single* index over a list of already-sorted interval *objects*, and the comparison is between an interval's start and the running merged end, not between two positions in one array. The one true two-pointer sub-case here is **Interval List Intersections**, which really does need two independent walk indices across two separate sorted lists - see Variations. |
-| **Sliding Window** | Sliding window maintains a *contiguous subarray* `[L, R]` over a single array and grows/shrinks it based on a running aggregate (sum, count, frequency map). Merge Intervals has no contiguous subarray at all - its inputs are discrete `[start, end]` objects that may be scattered anywhere in the input order before sorting; there's no "window" sliding over indices. |
+| **Sliding Window** | <abbr>Sliding window</abbr> maintains a *contiguous subarray* `[L, R]` over a single array and grows/shrinks it based on a running aggregate (sum, count, frequency map). Merge Intervals has no contiguous subarray at all - its inputs are discrete `[start, end]` objects that may be scattered anywhere in the input order before sorting; there's no "window" sliding over indices. |
 
 ---
 
@@ -124,7 +124,7 @@ Time: **O(n log n)**, dominated entirely by the sort - the sweep itself is a sin
 
 ## Variations
 
-- **Meeting Rooms II (min-heap-of-end-times).** Instead of merging, sort by *start* only, and push each meeting's end time onto a min-heap; before pushing a new meeting, pop-while the heap's smallest end time is `<=` the new meeting's start (that room frees up and gets reused). The heap's size at any point is the number of rooms in simultaneous use - the answer is the heap's peak size. This needs a heap, not just a sweep, because a later meeting can free up *any* currently-open room, not just the most-recently-opened one.
+- **Meeting Rooms II (min-heap-of-end-times).** Instead of merging, sort by *start* only, and push each meeting's end time onto a min-<abbr>heap</abbr>; before pushing a new meeting, pop-while the heap's smallest end time is `<=` the new meeting's start (that room frees up and gets reused). The heap's size at any point is the number of rooms in simultaneous use - the answer is the heap's peak size. This needs a heap, not just a sweep, because a later meeting can free up *any* currently-open room, not just the most-recently-opened one.
 - **Insert Interval (binary-search insertion into sorted-disjoint list).** When the input is already sorted and non-overlapping and a single new interval is inserted, don't re-sort - binary-search for where the new interval's start would land, then walk outward merging every neighbor it overlaps. This turns an O(n log n) re-sort into an O(log n) locate + O(n) worst-case splice (still O(n) overall because of the potential shift, but avoids the sort).
 - **Interval List Intersections (two-pointer variant).** Two *separate* sorted, disjoint lists - walk one index into each list, and at each step compute the overlap (if any) between the two current intervals, then advance whichever interval ends first. This is genuinely Two Pointers wearing an interval costume, not Merge Intervals - see Related.
 - **Employee Free Time.** Merge all employees' intervals into one sorted, merged timeline (a direct application of the core mechanic across a flattened multi-list input), then the gaps *between* consecutive merged intervals are the free-time answer.
@@ -249,7 +249,7 @@ Given an array of intervals, find the minimum number to remove so the rest are n
 
 **Constraints:** `1 ≤ n ≤ 10⁵`, `-5×10⁴ ≤ start_i < end_i ≤ 5×10⁴`.
 
-**Approach.** The trap: this is greedy-by-**end** time, not the usual sort-by-start. Sort by end; walk left to right keeping track of the last kept interval's end. Whenever the next interval's start is before that end, it must be removed (greedily keeping the interval that frees up the earliest end time for future intervals is provably optimal). Count removals instead of building a merged list.
+**Approach.** The trap: this is <abbr>greedy</abbr>-by-**end** time, not the usual sort-by-start. Sort by end; walk left to right keeping track of the last kept interval's end. Whenever the next interval's start is before that end, it must be removed (greedily keeping the interval that frees up the earliest end time for future intervals is provably optimal). Count removals instead of building a merged list.
 
 ```python
 def erase_overlap_intervals(intervals: list[list[int]]) -> int:

@@ -151,7 +151,7 @@ Assign color[1]=1
 - **Directed graph 2-coloring:** check if the underlying undirected graph is bipartite; direction usually doesn't change the coloring semantics. Use when edges are directed but the conflict is symmetric (e.g., mutual dislike).
 - **Edge coloring:** color edges (not nodes) so no two edges sharing a vertex share a color - Vizing's theorem guarantees Δ or Δ+1 colors always suffice. O(E·√V) with the Hopcroft-Karp-based approach. Appears in scheduling problems where *jobs* (edges) share a *machine* (vertex), not the other way around.
 - **List coloring:** each node has a prescribed list of allowed colors; determine if a valid assignment exists from the per-node lists. NP-complete in general; polynomial for bipartite graphs (Hall's theorem). Appears as "each worker has a set of available shifts" problems.
-- **Greedy coloring:** process nodes in any order; assign the smallest color not used by a neighbor. Gives ≤ Δ+1 colors, O(V + E). Result depends on order - Welsh-Powell (sort by degree descending) consistently produces fewer colors in practice, though still not guaranteed optimal.
+- **<abbr>Greedy</abbr> coloring:** process nodes in any order; assign the smallest color not used by a neighbor. Gives ≤ Δ+1 colors, O(V + E). Result depends on order - Welsh-Powell (sort by degree descending) consistently produces fewer colors in practice, though still not guaranteed optimal.
 - **Interval graph coloring:** clique number = chromatic number for interval graphs (chordal); a greedy left-to-right sweep by start time is optimal in O(n log n). Appears as "minimum conference rooms for overlapping meetings."
 
 ---

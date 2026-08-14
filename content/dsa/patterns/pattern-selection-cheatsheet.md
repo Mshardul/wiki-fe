@@ -34,6 +34,6 @@ Trigger phrase → which pattern.
 
 ## Gotchas
 
-- ⚠️ Sliding window IS two-pointers with a maintained aggregate over the gap - if you don't need to know what's between the pointers, it's plain two-pointers.
+- ⚠️ <abbr>Sliding window</abbr> IS two-pointers with a maintained aggregate over the gap - if you don't need to know what's between the pointers, it's plain two-pointers.
 - ⚠️ Bitmask DP vs meet-in-the-middle: both handle small n, but bitmask needs a DP recurrence over subsets (n ≤ 20); meet-in-the-middle splits into two independent halves with no recurrence (n ≤ 40).
 - ⚠️ "Find all X" doesn't always mean backtracking - if the same state recurs via different paths, that's overlapping subproblems, meaning DP, not backtracking.

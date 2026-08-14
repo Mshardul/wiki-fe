@@ -25,7 +25,7 @@
 
 ## What it is
 
-<abbr>Dynamic programming</abbr> solves a problem by **breaking it into overlapping subproblems, solving each subproblem exactly once, and reusing the stored answer** instead of recomputing it. It applies precisely when two properties hold together: **optimal substructure** (the optimal answer is built from optimal answers to subproblems) and **overlapping subproblems** (the same subproblem recurs many times in the naive recursion).
+Dynamic programming solves a problem by **breaking it into overlapping subproblems, solving each subproblem exactly once, and reusing the stored answer** instead of recomputing it. It applies precisely when two properties hold together: **optimal substructure** (the optimal answer is built from optimal answers to subproblems) and **overlapping subproblems** (the same subproblem recurs many times in the naive recursion).
 
 **Mental model:** a naive recursive solution is a tree that recomputes the same branches over and over; DP is that tree with a **memo pad clipped to it** - the first time you compute `f(state)` you write it down, and every later request reads the pad instead of re-descending. The exponential tree collapses into a polynomial-sized _graph_ of distinct states.
 
@@ -171,7 +171,7 @@ This is the section to write most carefully - defining the state correctly is 80
 ## Edge cases
 
 - **Empty input** (`amount == 0`, empty string): the base case _is_ the answer - `dp[0] = 0`, `LCS("", y) = 0`. A missing base case here returns garbage; always seed it explicitly.
-- **Unreachable / impossible target** (Coin Change `[2]`, amount `3`): no combination works. Initialize the table to a sentinel (`float('inf')`) and return `-1` if `dp[amount]` is still infinite. The trap: using `inf` then doing `1 + inf` - fine in Python, but in C++/Java `1 + INT_MAX` **overflows** to a negative number and corrupts the `min`. Guard with `if dp[a-c] != INF`.
+- **Unreachable / impossible target** (Coin Change `[2]`, amount `3`): no combination works. Initialize the table to a <abbr>sentinel</abbr> (`float('inf')`) and return `-1` if `dp[amount]` is still infinite. The trap: using `inf` then doing `1 + inf` - fine in Python, but in C++/Java `1 + INT_MAX` **overflows** to a negative number and corrupts the `min`. Guard with `if dp[a-c] != INF`.
 - **Single element / single coin:** trivial but flushes out base-case and loop-bound off-by-ones; always test it.
 - **0/1 vs unbounded iteration order** (the senior CP trap): in the space-rolled 1D Knapsack, iterating capacity **forward** lets you reuse an item (unbounded knapsack); iterating **backward** uses each item at most once (0/1). Same code, opposite loop direction, completely different problem - get the direction wrong and the answer is silently incorrect.
 - **Integer overflow on counting DP** (CP): "number of ways" answers explode; accumulate every transition `% (10**9 + 7)`, and keep the modulo _inside_ the recurrence, not just at the end.

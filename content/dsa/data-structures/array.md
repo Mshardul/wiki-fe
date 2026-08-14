@@ -131,6 +131,8 @@ How the array stacks up against the structures you'd actually weigh it against i
 
 The array's column is the only one with **O(1) indexed access and contiguous memory** - that's its whole identity. Every rival buys a different operation cheaper by giving that up.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 - **[Dynamic Array](./dynamic-array.md)** (Python `list`, Java `ArrayList`, C++ `std::vector`) - wraps a fixed array, doubles capacity on overflow, copies elements over. Append is **amortized O(1)**. Its own article - the resize/amortization argument is interview-heavy.
@@ -458,7 +460,7 @@ Given an integer array `nums`, implement a class that answers repeated queries `
 
 **Constraints:** `1 ≤ nums.length ≤ 10⁴`, `-10⁵ ≤ nums[i] ≤ 10⁵`, `0 ≤ i ≤ j < nums.length`, up to `10⁴` calls to `sumRange`.
 
-**Approach:** Recomputing the sum on every call is O(n) per query - too slow across many calls. Precompute a prefix-sum array once, `pref[i] = pref[i-1] + nums[i-1]` with a leading `pref[0] = 0` sentinel, so any range sum is one subtraction: `sumRange(i, j) = pref[j+1] - pref[i]`. The one-time O(n) build amortizes to O(1) per query, however many queries follow - the canonical motivation for the prefix-sum trick.
+**Approach:** Recomputing the sum on every call is O(n) per query - too slow across many calls. Precompute a <abbr>prefix sum</abbr> array once, `pref[i] = pref[i-1] + nums[i-1]` with a leading `pref[0] = 0` <abbr>sentinel</abbr>, so any range sum is one subtraction: `sumRange(i, j) = pref[j+1] - pref[i]`. The one-time O(n) build amortizes to O(1) per query, however many queries follow - the canonical motivation for the prefix-sum trick.
 
 ```python
 from itertools import accumulate

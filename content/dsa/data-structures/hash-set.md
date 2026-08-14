@@ -36,7 +36,7 @@ Mental model: **a guest list at a door.** The bouncer doesn't care what you brou
 
 ## How it works
 
-Structurally identical to a hash table minus the stored value: a **bucket array**, a **hash function** mapping each element to a bucket index, and a **collision strategy**. Where a hash table stores `(key, value)` pairs, a hash set stores just `key` (or `(key, sentinel)` internally, if the implementation reuses hash-table machinery - CPython's `set` does exactly this, backed by the same open-addressing table as `dict`).
+Structurally identical to a hash table minus the stored value: a **bucket array**, a **hash function** mapping each element to a bucket index, and a **<abbr>collision</abbr> strategy**. Where a hash table stores `(key, value)` pairs, a hash set stores just `key` (or `(key, sentinel)` internally, if the implementation reuses hash-table machinery - CPython's `set` does exactly this, backed by the same open-addressing table as `dict`).
 
 ```
 add("apple")  ──hash──▶  3847122  ──% capacity (8)──▶  bucket 2
@@ -68,7 +68,7 @@ bucket array:   0     1     2       3     4     5     6     7
 | Remove      | O(1) | O(1)    | O(n) (all collide)           |
 | Membership  | O(1) | O(1)    | O(n) (all collide)           |
 
-**Space:** O(n) for n elements, plus the same slack a hash table carries - the bucket array is kept larger than the element count (load factor < 1) to hold collisions down, typically 1.3-2x the element count. The **amortized** O(1) add hides occasional O(n) resizes, identical to [hash table's resize argument](./hash-table.md#load-factor--resize) and a [dynamic array's](./dynamic-array.md) doubling - see [Hashing & collisions](#hashing--collisions) for the accounting.
+**Space:** O(n) for n elements, plus the same slack a hash table carries - the bucket array is kept larger than the element count (<abbr>load factor</abbr> < 1) to hold collisions down, typically 1.3-2x the element count. The **<abbr>amortized</abbr>** O(1) add hides occasional O(n) resizes, identical to [hash table's resize argument](./hash-table.md#load-factor--resize) and a [dynamic array's](./dynamic-array.md) doubling - see [Hashing & collisions](#hashing--collisions) for the accounting.
 
 ## When to use / when not
 
@@ -96,10 +96,12 @@ Real-world: hash sets back **deduplication pipelines** (log ingestion, ETL dedup
 | **Hash set**           | **O(1)** avg | **O(1)** avg | no      | no                | scattered + slack    | pure membership, dedup, seen-set             |
 | Hash table             | O(1) avg   | O(1) avg   | no        | **yes**           | scattered + slack    | key needs an associated value/count          |
 | Sorted array / BST     | O(log n)   | O(log n)/O(n) | **yes** | optional          | contiguous or ptrs   | need ordered iteration or range queries too - the O(log n) tax buys sortedness a hash set can't |
-| Bloom filter           | O(k), **may false-positive** | O(k) add-only (no remove) | no | no    | **O(m) bits**, sublinear in n | billions of elements, a small false-positive rate is acceptable, memory is the binding constraint |
+| <abbr>Bloom filter</abbr>           | O(k), **may false-positive** | O(k) add-only (no remove) | no | no    | **O(m) bits**, sublinear in n | billions of elements, a small false-positive rate is acceptable, memory is the binding constraint |
 | Boolean array (direct-address) | **O(1)** | **O(1)** | by index | no        | contiguous, dense    | keys are small bounded integers (0..k) - zero hashing overhead, beats hash set's constant factor |
 
 The hash set's column is the cheapest correct answer for "arbitrary key, yes/no, no value" - every rival either adds a capability (order, values, sub-linear memory) at a real cost (log n ops, false positives, or a bounded key domain).
+
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
 
 ## Variants
 
@@ -115,7 +117,7 @@ Everything that makes a hash set's membership test O(1) is inherited unchanged f
 
 **The hash function.** Same three properties as a hash table: deterministic (the same element always hashes the same), uniform (spreads elements evenly across buckets so no bucket gets crowded), fast (computed on every add/remove/membership check). A hash set has no keys-vs-values distinction to complicate this - the element itself is hashed, full stop.
 
-**Collision resolution.** The same two families apply: **chaining** (each bucket holds a small list of colliding elements; membership walks the chain comparing elements) or **open addressing** (all elements live inline in the bucket array; a collision probes forward by a rule - linear, quadratic, or double hashing - until it finds the element or an empty slot). CPython's `set` uses open addressing with the same probing strategy as `dict`, since it's implemented as a `dict` with dummy values under the hood.
+**Collision resolution.** The same two families apply: **chaining** (each bucket holds a small list of colliding elements; membership walks the chain comparing elements) or **open addressing** (all elements live inline in the bucket array; a <abbr>collision</abbr> probes forward by a rule - linear, quadratic, or double hashing - until it finds the element or an empty slot). CPython's `set` uses open addressing with the same probing strategy as `dict`, since it's implemented as a `dict` with dummy values under the hood.
 
 **Load factor & resize (the amortized argument, DS9a).** Let α = elements / buckets. As α climbs past a threshold (≈0.66 for open addressing, matching `dict`/`set`'s internal table), the structure **resizes**: allocate a bucket array roughly 2x the size and **rehash every element** into it, since `hash(x) % new_capacity` differs from the old index. A single resize costs O(n) - touching every element - but resizes happen only when the table has grown by a constant factor since the last one, so they occur O(log n) times over n insertions total.
 
@@ -206,13 +208,13 @@ a & b, a | b, a - b            # intersection, union, difference - all near-line
 - **O(1) is average, not guaranteed.** Adversarial input crafted to collide every element degrades every operation to O(n) - identical hash-flooding risk to a hash table; Python's randomized hash seed (`PYTHONHASHSEED`) defends against it. Never claim worst-case O(1) membership in an interview.
 - **A hash set has no "get" - only "contains".** A common beginner mistake is reaching for a hash set when the problem actually needs an associated value ("count of x", "index of x") - that's a hash table, not a set. If you catch yourself wanting `s[x]`, you picked the wrong structure.
 - **Iteration order is not sorted and not guaranteed stable across languages.** CPython's `set` iteration order depends on hash values and insertion history, not insertion order (unlike `dict`, which is insertion-ordered since 3.7) - never rely on `set` iteration order for anything, including reproducibility across runs with different hash seeds.
-- **Resize cost hides inside "O(1) amortized".** A single `add` that triggers a resize costs O(n) wall-clock, not O(1) - the same amortized-vs-worst-case distinction as a hash table and dynamic array. If a problem needs firm per-operation latency bounds, a hash set's occasional O(n) spike disqualifies it.
+- **Resize cost hides inside "O(1) amortized".** A single `add` that triggers a resize costs O(n) wall-clock, not O(1) - the same <abbr>amortized</abbr>-vs-worst-case distinction as a hash table and dynamic array. If a problem needs firm per-operation <abbr>latency</abbr> bounds, a hash set's occasional O(n) spike disqualifies it.
 - **Set-vs-array for small bounded domains (CP trap).** Using `set()` for a fixed alphabet or a small integer range (e.g. tracking which of 26 letters appeared) burns hashing overhead a plain boolean array avoids entirely - a classic contest constant-factor mistake when the input size is large and every microsecond counts.
 
 ## What the interviewer probes for
 
 - **"What if you need 10 billion elements and can't fit them all in memory?"** - A hash set stores every element, so memory is O(n) regardless of what the elements are; at 10 billion entries this may not fit in RAM at all. Reach for a [Bloom filter](./bloom-filter.md) instead - it trades exactness for O(m) bits total (m independent of n's growth rate at fixed false-positive rate), accepting a small false-positive rate in exchange.
-- **"Why not just use a hash table with dummy values instead of a dedicated set type?"** - You could (and some languages' `set` is implemented exactly that way, keyed with a sentinel value), but a dedicated set type communicates intent, saves the memory of an unused value slot per entry, and exposes O(1) set-algebra operations (union/intersection/difference) that a hash table's API doesn't naturally offer.
+- **"Why not just use a hash table with dummy values instead of a dedicated set type?"** - You could (and some languages' `set` is implemented exactly that way, keyed with a <abbr>sentinel</abbr> value), but a dedicated set type communicates intent, saves the memory of an unused value slot per entry, and exposes O(1) set-algebra operations (union/intersection/difference) that a hash table's API doesn't naturally offer.
 - **"Does removing while iterating break anything?"** - Yes, in most languages - mutating a hash set's bucket structure (via add or remove, which can trigger a resize) while an iterator is mid-walk is undefined behavior or throws (`RuntimeError: Set changed size during iteration` in Python). Collect items to remove in a separate list first, then remove after the iteration completes.
 
 ## Practice problems
@@ -315,7 +317,7 @@ def longest_consecutive(nums: list[int]) -> int:
 
 ### 4. Happy Number
 
-A number is "happy" if repeatedly replacing it with the sum of the squares of its digits eventually reaches 1; otherwise it loops forever in a cycle. Determine if a given number is happy. The seen-set-as-cycle-detector technique, distinct from the two-pointer Floyd's-cycle approach.
+A number is "happy" if repeatedly replacing it with the sum of the squares of its digits eventually reaches 1; otherwise it loops forever in a cycle. Determine if a given number is happy. The seen-set-as-cycle-detector technique, distinct from the <abbr>two-pointer</abbr> Floyd's-cycle approach.
 
 **Worked examples:**
 - **Example 1**

@@ -89,7 +89,7 @@ graph LR
 
 Dinic inherits the full residual-graph / augmenting-path correctness argument from [Ford-Fulkerson](./ford-fulkerson.md) - every push preserves capacity and conservation, and termination happens exactly when no augmenting path remains, at which point the max-flow min-cut theorem certifies optimality.
 
-**Two invariants Dinic adds on top:**
+**Two <abbr>invariant</abbr>s Dinic adds on top:**
 
 1. **The level graph contains only shortest-path edges.** By construction (BFS layering, keep only `level[v] = level[u]+1` edges), any s→t path within the level graph is a shortest path in the current residual graph. Pushing flow only along such edges guarantees every augmentation this phase is along a currently-shortest path - the same guarantee Edmonds-Karp gives per-augmentation, but Dinic gives it for the *entire phase* at once.
 
@@ -111,7 +111,7 @@ Dinic inherits the full residual-graph / augmenting-path correctness argument fr
 
 **Space: O(V + E)** for the residual graph, BFS's level array and queue (O(V)), and the current-arc pointers (one per node, O(V)).
 
-**Cache behavior.** The level-graph BFS is a sequential sweep over adjacency lists - cache-friendly, similar to any BFS. The blocking-flow DFS's current-arc pointers are the structural win here: without them, a naive re-DFS-from-scratch per augmenting path re-touches the same early nodes' full adjacency lists repeatedly, thrashing cache on graphs with high-degree nodes near the source; the pointer ensures each adjacency-list slot is dereferenced at most once per phase, turning what would be repeated random-ish re-scans into one monotonic sweep per node.
+**Cache behavior.** The level-graph BFS is a sequential sweep over adjacency lists - <abbr>cache-friendly</abbr>, similar to any BFS. The blocking-flow DFS's current-arc pointers are the structural win here: without them, a naive re-DFS-from-scratch per augmenting path re-touches the same early nodes' full adjacency lists repeatedly, thrashing cache on graphs with high-degree nodes near the source; the pointer ensures each adjacency-list slot is dereferenced at most once per phase, turning what would be repeated random-ish re-scans into one monotonic sweep per node.
 
 ## Constraints & approach
 
@@ -139,7 +139,7 @@ Dinic inherits the full residual-graph / augmenting-path correctness argument fr
 - The problem needs **min-cost flow**, not just max-flow - Dinic's blocking-flow machinery answers "how much" but not "at what cost"; that requires a cost-aware augmenting-path algorithm (e.g. successive shortest paths with potentials, SPFA/Bellman-Ford-based), a genuinely different technique.
 - Capacities are irrational or otherwise non-integer in a way that breaks the finite-augmentation guarantee - the same termination caveat [Ford-Fulkerson](./ford-fulkerson.md) documents applies here too, since Dinic still relies on integer (or rational) capacities for the blocking-flow-per-phase argument to terminate in finitely many pushes.
 
-**Real-world usage:** Dinic (and push-relabel variants built on similar layering ideas) is the workhorse behind production flow solvers - network bandwidth/traffic engineering systems, and image-segmentation pipelines that formulate foreground/background separation as a min-cut computation on pixel-adjacency graphs, routinely use Dinic or a push-relabel derivative because the plain Edmonds-Karp bound doesn't scale to graphs with millions of nodes. At scale, even O(V²E) becomes a real ceiling past roughly V ~ 10⁵–10⁶ with dense connectivity - production systems either exploit unit-capacity/planar structure (the O(E√V) or planar-specific bounds) or switch to push-relabel (O(V²√E)), which trades Dinic's phase-based batching for a different amortized argument that parallelizes better on some hardware.
+**Real-world usage:** Dinic (and push-relabel variants built on similar layering ideas) is the workhorse behind production flow solvers - network bandwidth/traffic engineering systems, and image-segmentation pipelines that formulate foreground/background separation as a min-cut computation on pixel-adjacency graphs, routinely use Dinic or a push-relabel derivative because the plain Edmonds-Karp bound doesn't scale to graphs with millions of nodes. At scale, even O(V²E) becomes a real ceiling past roughly V ~ 10⁵–10⁶ with dense connectivity - production systems either exploit unit-capacity/planar structure (the O(E√V) or planar-specific bounds) or switch to push-relabel (O(V²√E)), which trades Dinic's phase-based batching for a different <abbr>amortized</abbr> argument that parallelizes better on some hardware.
 
 ## Comparison
 

@@ -17,7 +17,7 @@
 - [When to use / when not](#when-to-use--when-not)
 - [Comparison](#comparison)
 - [Variants](#variants)
-- [Traversal & <abbr>invariant</abbr>](#traversal--invariant)
+- [Traversal & invariant](#traversal--invariant)
 - [Implementation](#implementation)
 - [Gotchas / edge cases](#gotchas--edge-cases)
 - [What the interviewer probes for](#what-the-interviewer-probes-for)
@@ -118,6 +118,8 @@ A heap is the workhorse behind OS/event-loop **schedulers**, **Dijkstra's shorte
 | Unsorted array  | O(n)         | O(1)       | O(n)           | O(n)     | ❌               | insert-heavy, extreme needed rarely       |
 
 The heap's niche is the **insert + extract-extreme** combo: a sorted array peeks in O(1) too, but insertion is O(n); a BST does everything in O(log n) but loses the O(1) peek and costs pointer memory. When the _only_ queries are "insert" and "remove the extreme," the heap wins on both constants and simplicity.
+
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
 
 ## Variants
 

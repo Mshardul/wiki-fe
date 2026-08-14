@@ -119,7 +119,7 @@ All variants halve the search space each iteration → O(log n). Duplicates brea
 
 **When the constraint pushes you off:** if the problem says "find all occurrences" rather than "find one index," binary search finds bounds (first/last) but you still need O(k) to enumerate - consider whether a hash map is simpler. If duplicates are dense and the worst-case O(n) is unacceptable, a linear scan or a different structure (hash set) is safer.
 
-**Real-world usage:** Elasticsearch uses binary search on sorted segment-level term dictionaries to locate postings lists in O(log n) per lookup - the same rotated/bounded search logic scaled to billions of documents. **At scale:** when the sorted structure spans multiple machines (distributed sorted index), a single binary search becomes a cascade of network round-trips - each halving step may hit a different shard. At that point, consistent hashing or a B-tree index (which amortizes depth) replaces pure binary search; the O(log n) bound holds per node but the constant grows with network latency.
+**Real-world usage:** Elasticsearch uses binary search on sorted segment-level term dictionaries to locate postings lists in O(log n) per lookup - the same rotated/bounded search logic scaled to billions of documents. **At scale:** when the sorted structure spans multiple machines (distributed sorted index), a single binary search becomes a cascade of network round-trips - each halving step may hit a different shard. At that point, <abbr>consistent hashing</abbr> or a B-tree index (which amortizes depth) replaces pure binary search; the O(log n) bound holds per node but the constant grows with network latency.
 
 ## Variations
 
@@ -252,7 +252,7 @@ def findPeakElement(nums: list[int]) -> int:
 - Peak Index in a Mountain Array (LC 852) - identical peak-finding mechanic; array is guaranteed bitonic (strictly up then strictly down), so any peak-finding binary search applies directly.
 - Find in Mountain Array (LC 1095) - same peak-finding as its first phase, then two plain binary searches (one per side of the peak, one with a reversed comparator) to locate a target - no new halving mechanic beyond peak-finding and classic search.
 - Find Peak Element in 2D Matrix (LC 1901) - 2D extension; find column of global row-max, binary search columns; same "move toward the higher neighbor" rule applied to columns.
-- Generalized "first True" predicate search (contest template) - the loop above is the special case of a monotone boolean predicate `f(mid) = nums[mid] < nums[mid+1]`; any problem with a `False...False...True...True` monotone condition (rotation-minimum, allocation/capacity problems) reduces to the same `while lo < hi: hi = mid if predicate(mid) else lo = mid + 1` template.
+- Generalized "first True" <abbr>predicate</abbr> search (contest template) - the loop above is the special case of a monotone boolean predicate `f(mid) = nums[mid] < nums[mid+1]`; any problem with a `False...False...True...True` monotone condition (rotation-minimum, allocation/capacity problems) reduces to the same `while lo < hi: hi = mid if predicate(mid) else lo = mid + 1` template.
 
 ---
 
@@ -357,7 +357,7 @@ You are given an ascending sorted array of unknown size, accessible only through
 
 **Constraints:** `1 ≤ secret.length ≤ 10⁴`, `-10⁴ ≤ secret[i], target ≤ 10⁴`, `secret` sorted in ascending order.
 
-**Approach:** the array's length is unknown, so a fixed `[0, n-1]` window doesn't exist yet - the search space itself must be discovered before it can be halved. Double a `hi` bound (`1, 2, 4, 8, ...`) until `reader.get(hi)` either exceeds `target` or returns the sentinel `2³¹-1`, which bounds the array within `[hi/2, hi]` in O(log n) doublings. Then run standard binary search inside that bound - the doubling phase and the search phase are each O(log n), so the total stays O(log n) despite not knowing `n` up front.
+**Approach:** the array's length is unknown, so a fixed `[0, n-1]` window doesn't exist yet - the search space itself must be discovered before it can be halved. Double a `hi` bound (`1, 2, 4, 8, ...`) until `reader.get(hi)` either exceeds `target` or returns the <abbr>sentinel</abbr> `2³¹-1`, which bounds the array within `[hi/2, hi]` in O(log n) doublings. Then run standard binary search inside that bound - the doubling phase and the search phase are each O(log n), so the total stays O(log n) despite not knowing `n` up front.
 
 ```python
 class ArrayReader:

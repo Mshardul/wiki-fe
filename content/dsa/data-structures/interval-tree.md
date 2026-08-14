@@ -125,6 +125,8 @@ When k = n (every interval overlaps) on a balanced tree, the query is forced to 
 - Segment tree beats interval tree in **CP** because coordinate compression + array-based segment tree is faster to implement correctly under time pressure, especially when range-update/range-query is also needed.
 - Brute-force wins only when n < ~1000 and queries are infrequent - the constant factor of the tree structure dominates at small n.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 - **Centered interval tree:** partition intervals around a center point; store intervals crossing the center sorted by left endpoint (for left queries) and right endpoint (for right queries). Two sorted lists per node - simpler overlap logic, but harder to balance dynamically.
@@ -136,14 +138,14 @@ When k = n (every interval overlaps) on a balanced tree, the query is forced to 
 
 ### The augmented BST invariant
 
-An interval tree maintains **two simultaneous invariants**:
+An interval tree maintains **two simultaneous <abbr>invariant</abbr>s**:
 
 1. **BST order on low endpoints:** `left subtree lo < node.lo ≤ right subtree lo` (standard BST).
 2. **Max-endpoint annotation:** `node.max = max(node.hi, left.max, right.max)` at every node.
 
 Invariant 2 is what makes the structure useful. It holds after every insert/delete by recomputing `max` bottom-up along the insertion/deletion path - O(path length) extra work, absorbed into the BST mutation cost. That's O(log n) on a balanced tree; on the plain unbalanced BST in [Implementation](#implementation) the path (and therefore this work) can reach O(n) - see the balancing warning in [How it works](#how-it-works).
 
-**Amortized behavior: n/a.** Insert and delete are strictly O(log n) worst-case per operation - no batching, no deferred work, no resize event. There is no amortized argument to make; every operation pays its cost immediately.
+**<abbr>Amortized</abbr> behavior: n/a.** Insert and delete are strictly O(log n) worst-case per operation - no batching, no deferred work, no resize event. There is no amortized argument to make; every operation pays its cost immediately.
 
 ### Overlap search correctness
 
@@ -309,7 +311,7 @@ class IntervalTree:
 - **max_hi fixup after rotation is easy to forget.** If you balance the tree (AVL/RB), every rotation must recompute `max_hi` for both the rotated node and its new parent - bottom-up. Forgetting this silently corrupts all future queries without any obvious error.
 - **The "always go right" fallacy.** The standard single-overlap search goes left if `left.max ≥ q_lo`, else right. You cannot skip both subtrees after finding one match - for all-overlaps you must explore both branches, pruned only by `max_hi < q_lo`.
 - **CP trap - coordinate overflow.** When endpoints are given as timestamps (Unix epoch in milliseconds), they overflow a 32-bit int. Use `int` (Python arbitrary precision) or `long` in Java/C++; the comparison `node.lo <= q_hi` silently wraps in C++ `int`.
-- **At scale: pointer chasing degrades cache performance.** At n > 10⁶ intervals a pointer-based BST interval tree can be 3–5× slower than a sorted array + sweep for static workloads because of L2/L3 cache misses on every pointer hop. Profile before choosing the tree for read-heavy static data.
+- **At scale: <abbr>pointer chasing</abbr> degrades cache performance.** At n > 10⁶ intervals a pointer-based BST interval tree can be 3–5× slower than a sorted array + sweep for static workloads because of L2/L3 cache misses on every pointer hop. Profile before choosing the tree for read-heavy static data.
 
 ## What the interviewer probes for
 

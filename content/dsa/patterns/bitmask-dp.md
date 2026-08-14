@@ -100,7 +100,7 @@ Answer = `min(dp[111][1] + d[1][0], dp[111][2] + d[2][0])` - return to city 0 fr
 
 **Why O(2ⁿ · n²)?** 2ⁿ masks × n possible last cities × n possible next cities = 2ⁿ · n² transitions.
 
-Cache behaviour: `dp` is a 2ⁿ × n table accessed sequentially per mask - **cache-friendly row-by-row fill**, much better than the recursion tree it replaces.
+Cache behaviour: `dp` is a 2ⁿ × n table accessed sequentially per mask - **<abbr>cache-friendly</abbr> row-by-row fill**, much better than the recursion tree it replaces.
 
 ## Complexity
 
@@ -157,7 +157,7 @@ The dominant constant is the inner `n` or `n²` loop. At n = 20, `2²⁰ · 20 �
 ## Related
 
 - [Bit Manipulation](../algorithms/bit-manipulation.md) - the low-level ops (AND/OR/shift/popcount) that bitmask DP rides on.
-- [Dynamic Programming](../algorithms/dynamic-programming.md) - the general framework; bitmask DP is DP where one state dimension is a subset integer.
+- [Dynamic Programming](../algorithms/dynamic-programming.md) - the general framework; bitmask DP is <abbr>dynamic programming</abbr> where one state dimension is a subset integer.
 - [Backtracking](./backtracking.md) - the non-memoised cousin; use backtracking when n is small and subproblems don't overlap; switch to bitmask DP when they do.
 - [DP Patterns](./dp-patterns.md) - other DP shapes (knapsack, LIS, interval DP); bitmask DP is the "exponential state" entry in that family.
 - [Subsets & Permutations](./subsets-permutations.md) - backtracking enumeration of subsets without DP; useful when n ≤ 10 and overlap is absent.

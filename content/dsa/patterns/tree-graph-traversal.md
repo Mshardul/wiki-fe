@@ -25,7 +25,7 @@
 
 ## What it is
 
-**Tree & Graph Traversal** is the transfer layer over BFS and DFS: instead of re-deriving the walk from scratch for every new problem, you recognize "this is a reachability/level/component problem," reach for one of two fixed skeletons (queue-based or stack/recursion-based), and drop your problem-specific logic into the one slot marked for it.
+**Tree & Graph Traversal** is the transfer layer over BFS and DFS: instead of re-deriving the walk from scratch for every new problem, you recognize "this is a reachability/level/component problem," reach for one of two fixed skeletons (queue-based or stack/<abbr>recursion</abbr>-based), and drop your problem-specific logic into the one slot marked for it.
 
 **Mental model:** BFS and DFS are the *engine*; this pattern is the *chassis* you bolt any problem onto. The algorithm articles prove the engine works and derive its complexity - this article is the parts catalog: which chassis for which job, and where the custom logic plugs in.
 

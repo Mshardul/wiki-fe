@@ -34,7 +34,7 @@
 
 A **dynamic array** is a growable array: a fixed-size array underneath, wrapped in logic that allocates a bigger block and copies everything over when it fills. It gives you array-speed indexing (O(1)) plus the ability to append without knowing the size in advance.
 
-Mental model: **a parking lot that paves itself bigger when it's full.** You keep parking cars; most of the time there's a free spot and parking is instant. Occasionally the lot is full, so you pave a lot twice as big, tow every car over, and carry on. That one expensive move is rare enough that _parking-on-average_ is still cheap - that's amortization.
+Mental model: **a parking lot that paves itself bigger when it's full.** You keep parking cars; most of the time there's a free spot and parking is instant. Occasionally the lot is full, so you pave a lot twice as big, tow every car over, and carry on. That one expensive move is rare enough that _parking-on-average_ is still cheap - that's <abbr>amortized</abbr> cost.
 
 > **Takeaway (say this out loud):** "A dynamic array is a fixed array that doubles when full - append is amortized O(1) because doubling makes the total copy work across all resizes sum to ~2n, even though any single resize is O(n)."
 
@@ -80,7 +80,7 @@ The next 3 appends are O(1) (room to spare). The 8th append triggers another dou
 | Insert at index | O(1) (at end, room)  | O(n)           | O(n) (at front, or + resize)  |
 | Delete at index | O(1) (at end)        | O(n)           | O(n) (at front)               |
 
-**Space:** O(n) elements, but actual footprint is O(capacity). Because capacity can be up to 2× the size right after a doubling, a dynamic array wastes up to ~50% memory in the worst case - the time-for-space trade behind amortized append.
+**Space:** O(n) elements, but actual footprint is O(capacity). Because capacity can be up to 2× the size right after a doubling, a dynamic array wastes up to ~50% memory in the worst case - the time-for-space trade behind <abbr>amortized</abbr> append.
 
 ## When to use / when not
 
@@ -91,7 +91,7 @@ The next 3 appends are O(1) (room to spare). The 8th append triggers another dou
 
 **Reach for something else when:**
 
-- **Worst-case latency matters** (real-time, low-latency systems) → the occasional O(n) resize is a latency spike. A [Circular Buffer](./circular-buffer.md) with fixed capacity gives true O(1) with no resize, or pre-size the array to a known bound.
+- **Worst-case <abbr>latency</abbr> matters** (real-time, low-latency systems) → the occasional O(n) resize is a latency spike. A [Circular Buffer](./circular-buffer.md) with fixed capacity gives true O(1) with no resize, or pre-size the array to a known bound.
 - **Heavy front/middle insertion** → still O(n) here, same as a plain array; a **linked list** does O(1) splices once you hold the node. <!-- linked-list.md not yet written -->
 - **Memory is tight** → the up-to-2× over-allocation can hurt; a fixed array or pre-sized block avoids the slack.
 
@@ -113,9 +113,11 @@ Against the structures you'd weigh it against when "I need a growable sequence" 
 
 The dynamic array is the only row giving **O(1) random access AND amortized-O(1) append** - that combination is why it's the default. Its weakness is the lone column where it loses: worst-case append spikes to O(n) on resize.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
-- **Growth factor is a time/space dial.** Doubling isn't a law - _any_ factor `> 1` preserves amortized O(1); what changes is the constant, and it's a direct **memory-vs-time trade**:
+- **Growth factor is a time/space dial.** Doubling isn't a law - _any_ factor `> 1` preserves <abbr>amortized</abbr> O(1); what changes is the constant, and it's a direct **memory-vs-time trade**:
 
   - **Larger factor (2×)** → resizes are rarer, so fewer total copies (**less time**), but right after a grow up to ~50% of the block is unused slack (**more wasted memory**).
   - **Smaller factor (1.5×)** → ~33% worst-case slack (**less memory**), but resizes happen more often, so more total copy work (**more time**).
@@ -129,7 +131,7 @@ The dynamic array is the only row giving **O(1) random access AND amortized-O(1)
 
 ## Memory layout
 
-**Contiguous, like a plain array - that's the whole appeal.** Elements sit inline in one block, so indexing is still `base + i × element_size` and iteration is still cache-friendly. The dynamic array adds only a thin header (`size`, `capacity`, pointer-to-block); the _data_ layout is identical to a fixed array.
+**Contiguous, like a plain array - that's the whole appeal.** Elements sit inline in one block, so indexing is still `base + i × element_size` and iteration is still <abbr>cache-friendly</abbr>. The dynamic array adds only a thin header (`size`, `capacity`, pointer-to-block); the _data_ layout is identical to a fixed array.
 
 ```
 DynamicArray header           backing block (capacity 8)
@@ -147,7 +149,7 @@ DynamicArray header           backing block (capacity 8)
 1 + 2 + 4 + 8 + … + n  =  2n − 1  ≈  2n     (geometric series)
 ```
 
-Total work for n appends is ~2n element-moves → **O(n) total → O(1) amortized per append.** Contrast a fixed-increment growth (`+1` each time): resizes at every size, total work `1 + 2 + … + n = n(n+1)/2 ≈ n²/2` → O(n) per append. **The geometric growth factor is exactly what collapses the cost.**
+Total work for n appends is ~2n element-moves → **O(n) total → O(1) <abbr>amortized</abbr> per append.** Contrast a fixed-increment growth (`+1` each time): resizes at every size, total work `1 + 2 + … + n = n(n+1)/2 ≈ n²/2` → O(n) per append. **The geometric growth factor is exactly what collapses the cost.**
 
 This is _amortized_, not _average-case-over-random-inputs_: it's a worst-case guarantee that any sequence of n appends costs O(n) total, even though one individual append can spike to O(n).
 
@@ -235,7 +237,7 @@ class DynamicArray(Generic[T]):
 
 ## Gotchas / edge cases
 
-- **"Append is O(1)" is amortized, not worst-case.** If the interviewer asks for _worst-case per operation_, a single append is O(n) (the resize). In latency-sensitive contexts this matters - say "amortized O(1), worst-case O(n) on the resize."
+- **"Append is O(1)" is <abbr>amortized</abbr>, not worst-case.** If the interviewer asks for _worst-case per operation_, a single append is O(n) (the resize). In <abbr>latency</abbr>-sensitive contexts this matters - say "amortized O(1), worst-case O(n) on the resize."
 - **Resize transiently doubles memory.** During the copy, both old and new blocks are live, so peak memory is ~1.5–2× the data. A dynamic array near the memory ceiling can throw `OutOfMemoryError` mid-resize even though the final size fits. Pre-size to the known capacity to avoid this.
 - **Shrink at 1/4, not 1/2.** A naive "halve when half-empty" thrashes: push/pop right at the 1/2 boundary forces O(n) resize every operation, making the amortization collapse. Shrinking at 1/4 leaves hysteresis so each resize is "paid for" by enough cheap operations.
 - **Insertion in the middle is still O(n).** Growable ≠ cheap-to-splice. Inserting at index i shifts everything after it, same as a plain array. Dynamic only buys cheap _append_.
@@ -247,11 +249,11 @@ class DynamicArray(Generic[T]):
 
 **Why not always over-allocate generously (say, 4× or start at capacity 10⁶) to avoid resizes altogether?** - Because the up-to-~2× memory slack after a doubling is already the cost side of this trade; over-allocating further wastes memory for collections that never grow that large, and most callers don't know the final size up front (that's the whole reason to reach for a dynamic array instead of a fixed one). The better lever is choosing the growth factor to match the workload's read/write and memory-vs-time priorities (see [Variants](#variants)), not blindly padding the initial capacity.
 
-**Why not use a linked list instead, since it never has a resize spike at all?** - A linked list trades away O(1) random access and cache locality to get that smoothness - every node is a separate heap allocation, so iteration is dominated by cache misses even though Big-O looks the same. The dynamic array's occasional O(n) resize is worse for worst-case *latency* but better for aggregate *throughput*; pick the list only when a single worst-case pause is unacceptable (real-time systems) and access is genuinely sequential, not random.
+**Why not use a linked list instead, since it never has a resize spike at all?** - A linked list trades away O(1) random access and cache locality to get that smoothness - every node is a separate heap allocation, so iteration is dominated by cache misses even though Big-O looks the same. The dynamic array's occasional O(n) resize is worse for worst-case *<abbr>latency</abbr>* but better for aggregate *<abbr>throughput</abbr>*; pick the list only when a single worst-case pause is unacceptable (real-time systems) and access is genuinely sequential, not random.
 
 ## Practice problems
 
-Seven problems, each exercising a **distinct** dynamic-array mechanic - resize-with-shrink policy, index-based O(1) deletion, amortized-cost accounting by hand, growth-factor trade-offs, swap-with-map deletion, a parallel auxiliary buffer, and amortized analysis across two buffers.
+Seven problems, each exercising a **distinct** dynamic-array mechanic - resize-with-shrink policy, index-based O(1) deletion, <abbr>amortized</abbr>-cost accounting by hand, growth-factor trade-offs, swap-with-map deletion, a parallel auxiliary buffer, and amortized analysis across two buffers.
 
 ### 1. Implement a Dynamic Array from Scratch - grow-and-shrink resize policy
 

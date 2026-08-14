@@ -31,4 +31,4 @@ See [SD Learning Paths](../index.md#learning-paths) for the other tracks.
 
 ## Explicitly skipped in this track
 
-Consensus/replication/sharding internals, payment/ledger design, distributed ID generation, key-value store internals. Covered in [Distributed Depth](./distributed-depth.md).
+<abbr>Consensus</abbr>/<abbr>replication</abbr>/<abbr>sharding</abbr> internals, payment/ledger design, distributed ID generation, key-value store internals. Covered in [Distributed Depth](./distributed-depth.md).

@@ -17,7 +17,7 @@
 - [Which sort, when](#which-sort-when)
 - [Constraints & approach](#constraints--approach)
 
-> **Hub article.** This page is the _survey + decision layer_ for sorting - it does not trace any single algorithm. Each algorithm has (or will have) its own page with the full worked example, invariant, complexity derivation, implementation, and practice problems. Use this page to choose _which_ sort; follow the link to learn _how_ it works.
+> **Hub article.** This page is the _survey + decision layer_ for sorting - it does not trace any single algorithm. Each algorithm has (or will have) its own page with the full worked example, <abbr>invariant</abbr>, complexity derivation, implementation, and practice problems. Use this page to choose _which_ sort; follow the link to learn _how_ it works.
 
 ## What it is
 

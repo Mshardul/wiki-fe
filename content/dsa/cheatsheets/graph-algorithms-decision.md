@@ -43,6 +43,6 @@ Which graph algorithm for which graph shape/question.
 
 ## Gotchas
 
-- ⚠️ BFS on adjacency list is cache-hostile at n > 10⁶ - pointer-chasing through scattered neighbor lists.
+- ⚠️ BFS on adjacency list is cache-hostile at n > 10⁶ - <abbr>pointer chasing</abbr> through scattered neighbor lists.
 - ⚠️ Ford-Fulkerson's bound depends on the flow's numeric value, not graph size - can be catastrophically slow on large capacities even for a tiny graph.
 - ⚠️ Mark-visited-on-dequeue instead of on-enqueue in BFS → duplicate enqueues, wrong distances.

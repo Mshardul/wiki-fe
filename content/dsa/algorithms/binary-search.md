@@ -89,7 +89,7 @@ T(n) = T(n/2) + O(1)
 
 Unrolling: `T(n) = T(n/2) + 1 = T(n/4) + 2 = … = T(n/2^k) + k`. The interval bottoms out at size 1 when `n/2^k = 1`, i.e. `k = log₂ n`. So `T(n) = O(log n)`.
 
-By the Master theorem (`a=1, b=2, f(n)=O(1)`): `n^(log_b a) = n^0 = 1`, which matches `f(n)`, giving case 2 → `Θ(log n)`. Space is O(1) for the iterative form (two index variables); the recursive form adds O(log n) call-stack frames.
+By the Master theorem (`a=1, b=2, f(n)=O(1)`): `n^(log_b a) = n^0 = 1`, which matches `f(n)`, giving case 2 → `Θ(log n)`. Space is O(1) for the iterative form (two index variables); the recursive form adds O(log n) <abbr>call stack</abbr> frames.
 
 ## Constraints & approach
 

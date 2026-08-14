@@ -57,7 +57,7 @@ Two backings give the same O(1) interface (see [Memory layout](#memory-layout)):
 - **Array-backed** - push = append to the end, pop = remove from the end. The array's end is the top; both are <abbr>amortized</abbr> O(1). This is the default (Python `list`, Java `ArrayDeque`).
 - **Linked-list-backed** - push = insert at head, pop = remove head. True O(1) per op, no resize spike, at the cost of per-node pointer overhead.
 
-The deep idea: a stack is the data-structure form of **recursion**. Every recursive call pushes a frame (locals, return address) onto the program's **call stack**; every return pops one. Anything you can solve recursively, you can solve with an explicit stack - and sometimes must, to avoid stack-overflow on deep inputs.
+The deep idea: a stack is the data-structure form of <abbr>recursion</abbr>. Every recursive call pushes a frame (locals, return address) onto the program's <abbr>call stack</abbr>; every return pops one. Anything you can solve recursively, you can solve with an explicit stack - and sometimes must, to avoid stack-overflow on deep inputs.
 
 ## Operations
 
@@ -70,7 +70,7 @@ The deep idea: a stack is the data-structure form of **recursion**. Every recurs
 | Size             | O(1)   | O(1)  |
 | Search by value  | O(n)   | O(1)  |
 
-\*Array-backed push is **amortized** O(1) - an occasional resize is O(n) (see [dynamic array](./dynamic-array.md)). Linked-list-backed push is worst-case O(1). Search is O(n) and almost never the right use of a stack; if you need lookup, you picked the wrong structure.
+\*Array-backed push is <abbr>amortized</abbr> O(1) - an occasional resize is O(n) (see [dynamic array](./dynamic-array.md)). Linked-list-backed push is worst-case O(1). Search is O(n) and almost never the right use of a stack; if you need lookup, you picked the wrong structure.
 
 ## Complexity summary
 
@@ -88,7 +88,7 @@ The deep idea: a stack is the data-structure form of **recursion**. Every recurs
 
 - The problem has **nesting or matching** - parentheses/brackets/tags, expression evaluation, nested structures. The most-recent-open is always the one you close first: pure LIFO.
 - You need **"most recent" / reverse order** - undo/redo, browser back, backtracking state, reversing a sequence.
-- You're **eliminating recursion** - a DFS or any recursive walk rewritten iteratively uses an explicit stack to dodge call-stack overflow.
+- You're **eliminating <abbr>recursion</abbr>** - a DFS or any recursive walk rewritten iteratively uses an explicit stack to dodge call-stack overflow.
 - You need the **next-greater/smaller element** or a span - the [monotonic stack](#monotonic-stack--next-greatersmaller-element) pattern.
 
 **Reach for something else when:**
@@ -99,7 +99,7 @@ The deep idea: a stack is the data-structure form of **recursion**. Every recurs
 
 Rule of thumb: **stack = LIFO = "deal with the most recent thing first."** If the order you process in is the reverse of the order you received, it's a stack.
 
-Real-world: the **program call stack** (every language runtime), expression evaluation in compilers and calculators, the **undo stack** in editors, browser/back-button history, depth-first traversal in graph/file-system walkers, and the VM operand stack in the JVM and CPython bytecode interpreter.
+Real-world: the **program <abbr>call stack</abbr>** (every language runtime), expression evaluation in compilers and calculators, the **undo stack** in editors, browser/back-button history, depth-first traversal in graph/file-system walkers, and the VM operand stack in the JVM and CPython bytecode interpreter.
 
 ## Comparison
 
@@ -115,12 +115,14 @@ How the stack stacks up against the structures you'd weigh it against:
 
 The stack's identity is the **restriction**: only the top. That restriction is a feature - it makes the LIFO guarantee free and the code trivially correct for nesting problems. Every rival relaxes it and pays elsewhere.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 - **Array-backed stack** - a [dynamic array](./dynamic-array.md) with push/pop at the end. The default; best cache locality. Python `list`.
 - **Linked-list-backed stack** - push/pop at the head of a [singly linked list](./linked-list.md). Worst-case O(1) push (no resize), at pointer-overhead cost.
 - **Min/Max stack** - a stack that also returns its current minimum (or maximum) in O(1), via a parallel auxiliary stack of running minima. The technique is in the [Min Stack practice problem](#3-min-stack--auxiliary-stack); structurally it's a stack-of-pairs.
-- **Two-stack queue** - a FIFO [queue](./queue.md) built from two stacks (push onto one, pop from the other, transferring when empty); amortized O(1). A classic "implement X with Y" interview shape.
+- **Two-stack queue** - a FIFO [queue](./queue.md) built from two stacks (push onto one, pop from the other, transferring when empty); <abbr>amortized</abbr> O(1). A classic "implement X with Y" interview shape.
 - **Monotonic stack** - a stack kept strictly increasing or decreasing by popping violators on push. Not a different structure - a discipline on a normal stack that solves next-greater/smaller in amortized O(n). Full treatment in the [Daily Temperatures](#2-daily-temperatures) practice problem and the [Monotonic Stack](../patterns/monotonic-stack.md) pattern.
 - **Call stack** - the runtime's own stack of activation records. Not something you allocate, but the reason recursion works and the thing that overflows on deep input.
 
@@ -138,7 +140,7 @@ index:  0   1   2   3   4   5     capacity 6, size 4
                     ▲ top = data[size-1];  push writes data[size], size++
 ```
 
-- **Cache-friendly** - sequential memory, the prefetcher loves it; iteration and repeated push/pop hit cache.
+- **<abbr>Cache-friendly</abbr>** - sequential memory, the prefetcher loves it; iteration and repeated push/pop hit cache.
 - **Resize spike** - when full, push triggers an O(n) copy into a 2× block (the [dynamic-array doubling](./dynamic-array.md#memory-layout) argument), so push is _amortized_ O(1) with occasional O(n) pauses, and footprint carries up to ~2× slack.
 - **The accounting, shown on-page.** Charge every `push` 2 credits: 1 pays for its own append, 1 is banked toward the next resize. When the array fills at capacity `c` (having last resized from `c/2`), the `c/2` pushes since then banked `c/2` credits - covering exactly the O(c) cost of copying all `c` elements into the doubled array. Every `push` looks like O(1) in credit terms; the one push that happens to trigger the O(n) copy is paid for by credits every prior push already set aside, not charged fresh on the spot. Total credits spent across `n` pushes is O(n), so amortized cost per push is O(1) - the O(n) spike on one push is real time, not a broken bound; amortized is an average over the sequence, not a per-call promise.
 
@@ -155,7 +157,7 @@ top → [9|•] → [2|•] → [7|•] → [3|/]      push = new head node; pop
 
 **Which to pick:** array-backed is the default and usually faster (locality wins). Choose linked-list-backed only when you need **no amortized-resize spike** (hard-real-time) or are composing nodes you already hold. This is the same array-vs-list trade as everywhere, applied to one end.
 
-**The call stack (why overflow happens).** The runtime stack grows per call frame and has a hard OS limit (commonly ~1–8 MB). Deep recursion - an unbalanced tree, a long linked list walked recursively - can exceed it and crash (`RecursionError` / stack overflow). Rewriting with an explicit heap-allocated stack moves the frames to the heap, which is far larger, removing the limit at the cost of managing the stack yourself ([CP-primitive below](#explicit-stack-to-flatten-recursion)).
+**The <abbr>call stack</abbr> (why overflow happens).** The runtime stack grows per call frame and has a hard OS limit (commonly ~1–8 MB). Deep recursion - an unbalanced tree, a long linked list walked recursively - can exceed it and crash (`RecursionError` / stack overflow). Rewriting with an explicit heap-allocated stack moves the frames to the heap, which is far larger, removing the limit at the cost of managing the stack yourself ([CP-primitive below](#explicit-stack-to-flatten-recursion)).
 
 ## Implementation
 
@@ -228,14 +230,14 @@ if not st: ...   # empty check
 
 - **Underflow - popping/peeking an empty stack.** The single most common stack bug. Always guard `if not stack` before `pop()`/`stack[-1]`, or you get an `IndexError` (Python) / undefined behavior (C). In matching problems, a close-symbol on an empty stack means "invalid", not a crash - handle it as a result, not an exception.
 - **Leftover elements at the end.** Validating brackets, an empty input string is valid, but a string of only opens (`"((("`) leaves the stack non-empty - you must check `stack is empty` at the end, not just that every close matched. Forgetting the final emptiness check is the classic off-by-completeness bug.
-- **Recursion depth = an implicit stack that overflows.** "I'll just recurse" hides an O(depth) call-stack cost. On adversarial deep input (a degenerate tree, a long list) it overflows. If depth can be large, say so and convert to an [explicit stack](#explicit-stack-to-flatten-recursion).
+- **<abbr>Recursion</abbr> depth = an implicit stack that overflows.** "I'll just recurse" hides an O(depth) call-stack cost. On adversarial deep input (a degenerate tree, a long list) it overflows. If depth can be large, say so and convert to an [explicit stack](#explicit-stack-to-flatten-recursion).
 - **Monotonic-stack direction & strictness.** Increasing vs decreasing, and `<` vs `<=`, decide whether you get next-greater vs next-greater-or-equal and how ties/duplicates are handled. Getting the comparison wrong is the subtle monotonic-stack bug - pin down the exact requirement (strict? from which side?) before coding.
 - **Storing indices vs values.** Monotonic-stack problems usually need to store **indices**, not values, so you can compute distances/widths (histogram, daily-temperatures gap) and still read the value via `nums[idx]`. Pushing values when you needed indices silently loses the position information.
 - **Order of pushing children in iterative DFS.** To visit left-first, push **right then left** (LIFO reverses them). Reversing the push order silently changes the traversal - a quiet correctness bug, not a crash.
 
 ## What the interviewer probes for
 
-**What happens if the input recurses to a depth of 10⁹, and you're using the call stack implicitly?** - The runtime call stack is bounded (commonly ~1-8 MB, a few thousand to a few hundred thousand frames depending on frame size), so implicit recursion at that depth overflows and crashes well before you reach 10⁹. The fix is exactly the [explicit-stack conversion](#explicit-stack-to-flatten-recursion) covered above: move the frames from the bounded call stack to a heap-allocated `list`, which scales with available memory instead of a fixed OS limit.
+**What happens if the input recurses to a depth of 10⁹, and you're using the <abbr>call stack</abbr> implicitly?** - The runtime call stack is bounded (commonly ~1-8 MB, a few thousand to a few hundred thousand frames depending on frame size), so implicit recursion at that depth overflows and crashes well before you reach 10⁹. The fix is exactly the [explicit-stack conversion](#explicit-stack-to-flatten-recursion) covered above: move the frames from the bounded call stack to a heap-allocated `list`, which scales with available memory instead of a fixed OS limit.
 
 **Why not always use a linked-list-backed stack instead of array-backed, since it has no resize spike?** - Because locality wins in practice: an array-backed stack is one contiguous block the prefetcher loves, while a linked-list-backed stack scatters nodes across the heap and pays a cache miss on nearly every push/pop despite both being "O(1)". Pick linked-list-backed only when a hard-real-time system genuinely cannot tolerate the array's occasional O(n) amortized-resize pause - the two are the same array-vs-list trade-off applied to one end, covered in [Memory layout](#memory-layout).
 
@@ -401,7 +403,7 @@ def eval_rpn(tokens: list[str]) -> int:
 
 **Constraints:** `1 ≤ heights.length ≤ 10⁵`, `0 ≤ heights[i] ≤ 10⁴`.
 
-**Approach:** An **increasing monotonic stack of indices**. When a bar shorter than the stack top appears, the top bar can't extend further right - pop it and compute its maximal rectangle, using the new top as the left boundary to get the width. A sentinel `0` at the end flushes the stack. The width calculation (`i - stack[-1] - 1`) is why we store indices. The hardest classic monotonic-stack problem.
+**Approach:** An **increasing monotonic stack of indices**. When a bar shorter than the stack top appears, the top bar can't extend further right - pop it and compute its maximal rectangle, using the new top as the left boundary to get the width. A <abbr>sentinel</abbr> `0` at the end flushes the stack. The width calculation (`i - stack[-1] - 1`) is why we store indices. The hardest classic monotonic-stack problem.
 
 ```python
 def largest_rectangle(heights: list[int]) -> int:

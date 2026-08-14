@@ -144,7 +144,7 @@ dfs(1,3)  grid[1][3]='0'  try down(2,3)✓ right(1,4)✗ up(0,3)=0✗ left(1,2)=
 Total islands = 2.
 ```
 
-The invariant: every cell is visited at most once (marked before enqueue/recurse), so total work is O(mn) regardless of grid structure.
+The <abbr>invariant</abbr>: every cell is visited at most once (marked before enqueue/recurse), so total work is O(mn) regardless of grid structure.
 
 ## Complexity
 
@@ -158,7 +158,7 @@ The invariant: every cell is visited at most once (marked before enqueue/recurse
 
 Every cell is visited at most once; each visit does O(1) work (4 neighbor checks). Total work is proportional to cells, not edges - the implicit-graph encoding means there's no separate edge list to traverse.
 
-**Stack overflow risk (DFS):** a fully connected m×n grid triggers recursion depth up to mn. For n = 300 (LC constraints), depth can reach 90 000 - well above Python's default 1 000 limit. Either raise `sys.setrecursionlimit` or use an iterative DFS with an explicit stack. BFS has no stack-overflow risk.
+**Stack overflow risk (DFS):** a fully connected m×n grid triggers <abbr>recursion</abbr> depth up to mn. For n = 300 (LC constraints), depth can reach 90 000 - well above Python's default 1 000 limit. Either raise `sys.setrecursionlimit` or use an iterative DFS with an explicit stack. BFS has no stack-overflow risk.
 
 ## Constraints & approach
 
@@ -170,20 +170,20 @@ Every cell is visited at most once; each visit does O(1) work (4 neighbor checks
 | m,n ≤ 10⁴ | O(mn) = O(10⁸) | BFS/DFS borderline; needs fast I/O and minimal overhead |
 | Weighted edges, shortest path | O(mn log mn) | Dijkstra on implicit graph (PQ + dist array) |
 | Edge weights in {0,1} | O(mn) | 0-1 BFS with deque - no PQ needed |
-| Strictly top→bottom or left→right | O(mn) | DP, not BFS/DFS - no backtracking needed |
+| Strictly top→bottom or left→right | O(mn) | <abbr>dynamic programming</abbr>, not BFS/DFS - no backtracking needed |
 
 **The key read:** `m × n` in the problem title and a movement / connectivity query → matrix traversal. "Shortest path" + unweighted → BFS. "Count components" or "fill region" → DFS. "Minimum cost path" with varying weights → Dijkstra or 0-1 BFS.
 
 **When to push OFF this pattern:** if movement has no directional constraint and the problem is about row/column aggregates (max in a row, column prefix sums), it's a linear-scan or DP problem; the implicit-graph framing adds no value.
 
-**Real-world anchor:** game engines (A* / BFS on tile maps), Google Maps routing (road network as implicit graph over discretised space), robotics path planning, and image segmentation (connected-component labelling on pixel grids) all implement variants of this exact pattern. **At scale:** a 10⁴ × 10⁴ grid has 10⁸ cells; a BFS queue holding up to 10⁸ `(r,c)` tuples consumes ~1.6 GB - at that size, switch to a compact bit-array for the visited set and a ring-buffer queue with integer-encoded coordinates rather than Python tuples. **Cache behavior:** BFS processes cells in wave-front (breadth-first) order - the frontier spans non-contiguous rows simultaneously, so memory accesses jump across cache lines and evict L2 entries before they're reused, making it cache-hostile for large n. DFS dives deep along one corridor first, giving better row-major spatial locality on narrow paths (sequential cell accesses stay in L2), but degrades to O(mn) random hops on wide, fully connected grids. A plain row-major scan is the most cache-friendly access pattern on a grid; BFS/DFS trade that off for traversal correctness.
+**Real-world anchor:** game engines (A* / BFS on tile maps), Google Maps routing (road network as implicit graph over discretised space), robotics path planning, and image segmentation (connected-component labelling on pixel grids) all implement variants of this exact pattern. **At scale:** a 10⁴ × 10⁴ grid has 10⁸ cells; a BFS queue holding up to 10⁸ `(r,c)` tuples consumes ~1.6 GB - at that size, switch to a compact bit-array for the visited set and a ring-buffer queue with integer-encoded coordinates rather than Python tuples. **Cache behavior:** BFS processes cells in wave-front (breadth-first) order - the frontier spans non-contiguous rows simultaneously, so memory accesses jump across cache lines and evict L2 entries before they're reused, making it cache-hostile for large n. DFS dives deep along one corridor first, giving better row-major spatial locality on narrow paths (sequential cell accesses stay in L2), but degrades to O(mn) random hops on wide, fully connected grids. A plain row-major scan is the most <abbr>cache-friendly</abbr> access pattern on a grid; BFS/DFS trade that off for traversal correctness.
 
 ## Variations
 
 - **4-directional vs 8-directional:** add diagonal offsets `(±1, ±1)` for problems where diagonal moves are valid (e.g., "number of islands" with 8-connectivity, word search).
 - **Multi-source BFS:** enqueue all source cells at distance 0 simultaneously. Equivalent to adding a virtual super-source; finds minimum distance from *any* source to every cell in one BFS pass. Used for "distance to nearest 0" (LC 542), "Pacific Atlantic water flow".
 - **DFS with return value:** instead of just marking visited, accumulate a value (area, perimeter, path) during the DFS. Used for "max area of island" (area = 1 + sum of recursive returns).
-- **In-place visited marking:** overwrite the grid with a sentinel (e.g., `'#'`, `2`) instead of a separate `visited` array - saves O(mn) space but mutates the input (restore after if the grid is reused).
+- **In-place visited marking:** overwrite the grid with a <abbr>sentinel</abbr> (e.g., `'#'`, `2`) instead of a separate `visited` array - saves O(mn) space but mutates the input (restore after if the grid is reused).
 - **Iterative DFS (explicit stack):** push `(r, c)` onto a list; pop and process - same traversal order as recursive DFS but avoids Python's recursion limit. Critical for large grids.
 - **Topological traversal (peeling layers):** BFS from the boundary inward, processing cells with no unvisited neighbors first - used for "surrounded regions" and "remove invalid leaves".
 - **Dijkstra on grid:** when edge weights are arbitrary (cell cost varies per terrain type), replace the BFS queue with a min-heap keyed by distance - O(mn log mn). Completes the continuum: BFS (uniform cost) → 0-1 BFS (binary cost) → Dijkstra (arbitrary cost).

@@ -38,6 +38,6 @@ The three commonly-confused array/string scanning patterns, disambiguated.
 
 ## Gotchas
 
-- ⚠️ Sliding window IS two-pointers with window semantics - the test is "does the gap between L and R carry a maintained aggregate?" If yes, it's sliding window.
-- ⚠️ Prefix sum requires the array to not change between queries - a single update forces an O(n) rebuild; if updates are frequent, use a Fenwick tree/segment tree instead.
-- ⚠️ Two pointers requires sorted input (or a convergence property) - using it on unsorted data without that property gives wrong answers, not just slow ones.
+- ⚠️ <abbr>Sliding window</abbr> IS two-pointers with window semantics - the test is "does the gap between L and R carry a maintained aggregate?" If yes, it's sliding window.
+- ⚠️ <abbr>Prefix sum</abbr> requires the array to not change between queries - a single update forces an O(n) rebuild; if updates are frequent, use a Fenwick tree/segment tree instead.
+- ⚠️ <abbr>Two-pointer</abbr> requires sorted input (or a convergence property) - using it on unsorted data without that property gives wrong answers, not just slow ones.

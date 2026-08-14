@@ -32,7 +32,7 @@ Time: **O(E·√V)** (Hopcroft-Karp) or **O(VE)** (Kuhn's augmenting-path method
 
 ## Intuition
 
-Picture jobs on the left, applicants on the right, an edge if an applicant is qualified for a job. A **matching** is an assignment of applicants to jobs where nobody is double-booked. The greedy approach - assign applicants to the first job they're qualified for, in order - gets stuck: applicant A might grab job 1 (their only option), leaving applicant B unable to take job 1 even though B could have taken job 2, freeing job 1 for A's replacement.
+Picture jobs on the left, applicants on the right, an edge if an applicant is qualified for a job. A **matching** is an assignment of applicants to jobs where nobody is double-booked. The <abbr>greedy</abbr> approach - assign applicants to the first job they're qualified for, in order - gets stuck: applicant A might grab job 1 (their only option), leaving applicant B unable to take job 1 even though B could have taken job 2, freeing job 1 for A's replacement.
 
 The fix is the **augmenting path**: a path that starts at an unmatched left node, alternates unmatched-edge / matched-edge / unmatched-edge / ..., and ends at an unmatched right node. Flip every edge on this path from matched to unmatched and vice versa - the matching size grows by exactly 1, because the path had one more unmatched edge than matched edge. Kuhn's algorithm is just: **for every left node, try to find an augmenting path from it (via DFS), and if found, flip it.** Repeat until no left node can find one. This is the same "find a path, push along it, repeat" loop that max-flow uses - because bipartite matching *is* a max-flow problem in disguise (see [Maximum Flow](./maximum-flow.md)).
 
@@ -59,7 +59,7 @@ Each successful DFS from a left node is exactly one **augmenting path search**; 
 
 ## Correctness / invariant
 
-**Invariant:** after processing left nodes `1..k`, the current matching is a **maximum matching restricted to the subgraph induced by left nodes `1..k`** and all right nodes.
+**<abbr>Invariant</abbr>:** after processing left nodes `1..k`, the current matching is a **maximum matching restricted to the subgraph induced by left nodes `1..k`** and all right nodes.
 
 **Why augmenting paths preserve optimality (Berge's theorem):** a matching `M` is maximum if and only if there is no augmenting path with respect to `M`. An augmenting path alternates unmatched/matched/unmatched/.../unmatched edges, starting and ending at unmatched nodes - it necessarily has one more unmatched edge than matched edge. XOR-ing the path into the matching (flip every edge's status) removes `k` matched edges and adds `k+1` unmatched edges that were on the path, so `|M|` grows by exactly 1. Kuhn's algorithm's correctness rests entirely on this: at termination, no left node can find an augmenting path, which by Berge's theorem means the current matching is maximum - not just locally best, but globally optimal.
 
@@ -183,7 +183,7 @@ def max_bipartite_matching(left_n: int, adj: dict[int, list[int]]) -> tuple[int,
 ## What the interviewer probes for
 
 **"Why can't you just greedily assign each left node to its first available right node?"**
-Greedy commits early and can block a better global assignment - a left node might take the *only* right node another left node could ever reach, when a different (still-valid) assignment would have freed that right node for the blocked node. The fix (augmenting paths) is exactly what separates a correct algorithm from a greedy heuristic that merely looks plausible.
+<abbr>Greedy</abbr> commits early and can block a better global assignment - a left node might take the *only* right node another left node could ever reach, when a different (still-valid) assignment would have freed that right node for the blocked node. The fix (augmenting paths) is exactly what separates a correct algorithm from a greedy heuristic that merely looks plausible.
 
 **"What if the graph isn't bipartite - two people on the same side might be compatible too?"**
 Kuhn's and Hopcroft-Karp both rely on the alternating-path argument holding over a strict two-coloring; a same-side edge creates an odd cycle that breaks the alternation, and you'd need the general **Blossom algorithm** (O(V³)) instead - much more complex because it has to detect and "shrink" these odd cycles.

@@ -70,7 +70,7 @@ The structure's self-similarity is the key working insight: **`tree = node + lef
 | Height / depth computation      | O(n)  | O(h)   |
 | Search/insert/delete (as a BST) | O(h)  | O(h)   |
 
-\*Recursion (or an explicit stack) holds up to `h` frames - O(h) space, where h = height. †Deleting an arbitrary node and re-parenting its children is O(1) only with the node and parent in hand; in a [BST](./binary-search-tree.md), maintaining the order invariant on delete is O(h). A plain binary tree has **no ordering**, so search is O(n) - ordering is what a [BST](./binary-search-tree.md) adds.
+\*<abbr>Recursion</abbr> (or an explicit stack) holds up to `h` frames - O(h) space, where h = height. †Deleting an arbitrary node and re-parenting its children is O(1) only with the node and parent in hand; in a [BST](./binary-search-tree.md), maintaining the order invariant on delete is O(h). A plain binary tree has **no ordering**, so search is O(n) - ordering is what a [BST](./binary-search-tree.md) adds.
 
 ## Complexity summary
 
@@ -81,7 +81,7 @@ The structure's self-similarity is the key working insight: **`tree = node + lef
 | Insert (as BST)       | O(log n)        | O(log n) | O(n)           |
 | Recursion stack depth | O(log n)        | O(log n) | O(n)           |
 
-**Space:** O(n) for the nodes (two child pointers each). The crucial hidden cost is the **recursion stack**: O(height) frames - fine at O(log n) for a balanced tree, but a degenerate (skewed) tree makes it O(n) and can **overflow the call stack** on large inputs. Morris traversal achieves O(1) space by temporarily threading pointers, at the cost of mutating the tree during the walk (see [Gotchas](#gotchas--edge-cases)).
+**Space:** O(n) for the nodes (two child pointers each). The crucial hidden cost is the **recursion stack**: O(height) frames - fine at O(log n) for a balanced tree, but a degenerate (skewed) tree makes it O(n) and can **overflow the <abbr>call stack</abbr>** on large inputs. Morris traversal achieves O(1) space by temporarily threading pointers, at the cost of mutating the tree during the walk (see [Gotchas](#gotchas--edge-cases)).
 
 ## When to use / when not
 
@@ -115,6 +115,8 @@ How a binary tree relates to the structures you'd weigh against it:
 | Hash table      | **O(1)** avg  | **O(1)** avg | no                 | no           | scattered + slack      | lookup speed matters and **order is irrelevant** - beats every tree here the instant "sorted"/"range"/"k-th smallest" isn't part of the problem; a tree wins back the trade the moment one of those three phrases appears |
 
 The plain binary tree's value is **structure and recursion**, not speed - its specialized children (BST, heap, trie) are where the O(log n)/O(1) guarantees live. A hash table beats them all on unordered lookup; trees win the moment _order_ enters.
+
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
 
 ## Variants
 
@@ -249,7 +251,7 @@ def level_order(root: Optional[TreeNode]) -> list[list[int]]:
     return out
 ```
 
-**Contest velocity.** Recursion is the fastest to write for tree DFS - but Python's ~1000-frame recursion cap means a deep/skewed tree (10⁵ nodes) overflows. Either `sys.setrecursionlimit(10**6)` (and raise the OS stack) or switch to the iterative stack version. For BFS, `collections.deque` is the queue (never `list.pop(0)`).
+**Contest velocity.** <abbr>Recursion</abbr> is the fastest to write for tree DFS - but Python's ~1000-frame recursion cap means a deep/skewed tree (10⁵ nodes) overflows. Either `sys.setrecursionlimit(10**6)` (and raise the OS stack) or switch to the iterative stack version. For BFS, `collections.deque` is the queue (never `list.pop(0)`).
 
 ## Gotchas / edge cases
 
@@ -262,7 +264,7 @@ def level_order(root: Optional[TreeNode]) -> list[list[int]]:
 
 ## What the interviewer probes for
 
-**What breaks if this tree has 10⁹ nodes?** - Two separate things degrade: recursive traversal blows the call stack long before 10⁹ (Python's ~1000-frame default limit is the first wall, and even a raised limit hits the OS stack eventually on a skewed tree), so at that scale you switch to the iterative explicit-stack/queue forms shown in Implementation. Second, even with iteration fixed, pointer-chasing between scattered heap-allocated nodes means each traversal step is a likely cache miss - the same cost the Gotchas section's skew case hints at, just now hitting even a balanced tree because 10⁹ nodes can't fit in cache regardless of shape.
+**What breaks if this tree has 10⁹ nodes?** - Two separate things degrade: recursive traversal blows the <abbr>call stack</abbr> long before 10⁹ (Python's ~1000-frame default limit is the first wall, and even a raised limit hits the OS stack eventually on a skewed tree), so at that scale you switch to the iterative explicit-stack/queue forms shown in Implementation. Second, even with iteration fixed, pointer-chasing between scattered heap-allocated nodes means each traversal step is a likely cache miss - the same cost the Gotchas section's skew case hints at, just now hitting even a balanced tree because 10⁹ nodes can't fit in cache regardless of shape.
 
 **Why not always use a BST instead of a plain binary tree?** - A plain binary tree is the right choice when the data is **inherently hierarchical** and there's no key ordering to exploit - an expression tree, a file-system tree, a decision tree - the shape of the tree *is* the answer, not a lookup mechanism. Imposing a BST's ordering invariant on that data buys nothing since there's no "search by key" need. The Comparison table's crossover is explicit: reach for a BST the moment you also need fast lookup **by key**, not just structural traversal - at that point a plain binary tree is strictly worse (O(n) search vs the BST's O(log n)) for no benefit.
 

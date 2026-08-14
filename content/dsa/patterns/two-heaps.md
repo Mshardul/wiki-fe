@@ -22,7 +22,7 @@
 
 ## What it is
 
-The **two-heaps** pattern maintains a running partition of a data stream into two halves - a **max-heap of the lower half** and a **min-heap of the upper half** - so the median (or any partition-point statistic) is always one or two heap peeks away.
+The **two-heaps** pattern maintains a running partition of a data stream into two halves - a **max-<abbr>heap</abbr> of the lower half** and a **min-heap of the upper half** - so the median (or any partition-point statistic) is always one or two heap peeks away.
 
 Mental model: **two back-to-back sorted piles, each with its top card face-up.** The left pile is sorted descending (max-heap, so the largest of the small values is visible); the right pile is sorted ascending (min-heap, so the smallest of the large values is visible). The median lives at the boundary - either the top of one pile (odd total) or the average of both tops (even total).
 
@@ -46,7 +46,7 @@ Mental model: **two back-to-back sorted piles, each with its top card face-up.**
 ### (c) Not to be confused with
 
 - **Top-K Elements (one heap):** one heap finds the k-th largest in a stream; two heaps find the middle - use top-K when the partition point is fixed and one-sided, two-heaps when it must track the center of an expanding (or sliding) dataset.
-- **Sliding Window (two pointers):** sliding window finds subarrays satisfying a constraint; two-heaps tracks a running statistic across the whole seen stream. The confusion arises when combining both (sliding window median) - the outer loop is a window, the inner structure is two heaps.
+- **<abbr>Sliding Window</abbr> (two pointers):** sliding window finds subarrays satisfying a constraint; two-heaps tracks a running statistic across the whole seen stream. The confusion arises when combining both (sliding window median) - the outer loop is a window, the inner structure is two heaps.
 - **Sorting:** sorting gives the median once in O(n log n) but can't update in O(log n) per element; two-heaps trades space (two heaps) for O(log n) per update.
 
 ## How it works
@@ -99,11 +99,11 @@ Invariant after each insert: `len(lo) == len(hi)` or `len(lo) == len(hi) + 1`. T
 - If you need the **k-th smallest for arbitrary k** (not just the median), two heaps don't generalize - use an order-statistics tree or a Fenwick tree on coordinate-compressed values.
 - If the **window slides** (elements enter and leave), two heaps require lazy deletion (mark-and-ignore), which is trickier; a sorted structure (`SortedList`) may be cleaner at the cost of a larger constant.
 
-**Real-world usage:** Apache Flink and Kafka Streams use two-heaps-style exact quantile tracking for low-latency streaming percentile metrics (p50/p99 dashboards). **At scale:** at n > 10⁷ events per second, maintaining exact two heaps becomes a bottleneck - the heap's O(log n) per insert with high constant dominates. Production systems replace exact two-heaps with approximate sketches (DDSketch, t-digest) that give p99 within ±1% error in O(1) amortized inserts and constant space.
+**Real-world usage:** Apache Flink and Kafka Streams use two-heaps-style exact quantile tracking for low-latency streaming percentile metrics (p50/p99 dashboards). **At scale:** at n > 10⁷ events per second, maintaining exact two heaps becomes a bottleneck - the heap's O(log n) per insert with high constant dominates. Production systems replace exact two-heaps with approximate sketches (DDSketch, t-digest) that give p99 within ±1% error in O(1) <abbr>amortized</abbr> inserts and constant space.
 
 ## Variations
 
-- **Sliding window median:** outer loop slides a window of size k. On each slide, add the new element and lazy-delete the element leaving. Lazy deletion: keep a `to_remove` counter map; skip deleted elements when they surface at a heap top. Requires rebalancing after each add and each delete.
+- **<abbr>Sliding window</abbr> median:** outer loop slides a window of size k. On each slide, add the new element and lazy-delete the element leaving. Lazy deletion: keep a `to_remove` counter map; skip deleted elements when they surface at a heap top. Requires rebalancing after each add and each delete.
 - **Weighted median:** each element has a weight; the median is where cumulative weight first exceeds total/2. Two heaps with a running weight sum per heap; rebalance by weight, not count.
 - **k-th quantile (not just median):** maintain the partition point at position k rather than n/2. The lo heap has exactly k elements; hi has n − k. Works identically - just change the rebalance target.
 - **Two heaps on a fixed array (offline):** sort elements by value, assign to lo/hi by position; useful when all elements are known upfront and queries are static.
@@ -141,7 +141,7 @@ Implement `addNum(int num)` and `findMedian() → float` for a growing stream. M
 
 **Constraints:** `-10⁵ ≤ num ≤ 10⁵`, up to `5×10⁴` calls to `addNum` and `findMedian`.
 
-**Approach:** standard two-heaps skeleton - max-heap `lo` for lower half, min-heap `hi` for upper half. Insert into correct half, rebalance, read tops. O(log n) per add, O(1) per query.
+**Approach:** standard two-heaps skeleton - max-<abbr>heap</abbr> `lo` for lower half, min-heap `hi` for upper half. Insert into correct half, rebalance, read tops. O(log n) per add, O(1) per query.
 
 ```python
 import heapq

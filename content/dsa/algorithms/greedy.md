@@ -25,11 +25,11 @@
 
 ## What it is
 
-A <abbr>greedy</abbr> algorithm builds a solution **one step at a time, always taking the choice that looks best right now, and never reconsidering it.** It commits to each local optimum and moves on. This is correct _only_ when the problem has two properties: the **greedy-choice property** (a globally optimal solution can be reached by a sequence of locally optimal choices) and **optimal substructure** (an optimal solution contains optimal solutions to subproblems).
+A greedy algorithm builds a solution **one step at a time, always taking the choice that looks best right now, and never reconsidering it.** It commits to each local optimum and moves on. This is correct _only_ when the problem has two properties: the **greedy-choice property** (a globally optimal solution can be reached by a sequence of locally optimal choices) and **optimal substructure** (an optimal solution contains optimal solutions to subproblems).
 
 **Mental model:** filling a backpack by always grabbing the single most valuable thing that still fits, never putting anything back. Fast and obvious - and _correct only when no later item could have made an earlier swap worthwhile._ The entire skill of greedy is recognizing when "never put anything back" is safe.
 
-- **Time:** usually `O(n log n)` - dominated by the initial sort (or `O(n log n)` of heap operations); the greedy pass itself is `O(n)`.
+- **Time:** usually `O(n log n)` - dominated by the initial sort (or `O(n log n)` of <abbr>heap</abbr> operations); the greedy pass itself is `O(n)`.
 - **Space:** `O(1)`–`O(n)` - often constant beyond the input, since you keep only the running choice, not a table.
 
 > **Takeaway (say it out loud):** "Greedy takes the locally best choice and never looks back. It's only correct if you can _prove_ the greedy choice is safe - via an exchange argument. No proof, no greedy."
@@ -77,7 +77,7 @@ Result: `{A, C, F}`, three activities - optimal. **The invariant - "after proces
 
 ## Correctness / invariant
 
-**Invariant:** after each pick, the chosen set is a valid (non-overlapping) selection, and the last chosen activity has **the earliest possible finish time** among all valid selections of that size. Earliest finish = maximum remaining room.
+**<abbr>Invariant</abbr>:** after each pick, the chosen set is a valid (non-overlapping) selection, and the last chosen activity has **the earliest possible finish time** among all valid selections of that size. Earliest finish = maximum remaining room.
 
 The greedy-choice property here, proved by the **exchange argument** (the universal greedy proof technique):
 

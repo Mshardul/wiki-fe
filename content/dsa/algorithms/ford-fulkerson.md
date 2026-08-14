@@ -24,7 +24,7 @@
 
 ## What it is
 
-Ford-Fulkerson finds the maximum flow from a source `s` to a sink `t` in a capacity network by repeatedly finding a path with spare capacity (an **augmenting path**) and pushing as much flow as that path allows, until no augmenting path remains.
+Ford-Fulkerson finds the maximum flow from a source `s` to a sink `t` in a capacity graph by repeatedly finding a path with spare capacity (an **augmenting path**) and pushing as much flow as that path allows, until no augmenting path remains.
 
 Time: **O(E · |max_flow|)** with integer capacities (can be worse - see Complexity derivation). Space: **O(V + E)** for the residual graph.
 
@@ -78,7 +78,7 @@ Notice: at every step, the invariant "flow pushed so far respects every edge's c
 
 ## Correctness / invariant
 
-**Invariant:** After each augmentation, the flow assignment is a valid flow - it satisfies capacity constraints (`0 ≤ f(u,v) ≤ c(u,v)` for every edge) and flow conservation (inflow = outflow at every node except `s` and `t`). Pushing the bottleneck amount along a path never violates capacity, and pushing the same amount into and out of every intermediate node on the path preserves conservation.
+**<abbr>Invariant</abbr>:** After each augmentation, the flow assignment is a valid flow - it satisfies capacity constraints (`0 ≤ f(u,v) ≤ c(u,v)` for every edge) and flow conservation (inflow = outflow at every node except `s` and `t`). Pushing the bottleneck amount along a path never violates capacity, and pushing the same amount into and out of every intermediate node on the path preserves conservation.
 
 **Why termination requires integer capacities.** With integer capacities, each augmenting path increases total flow by at least 1 unit, so the algorithm terminates in at most `|max_flow|` iterations. With **irrational** capacities, a pathological choice of augmenting paths can make the flow converge to a value *strictly less* than the true max flow, taking infinitely many steps and never terminating - this is a classical counterexample (first shown by Ford and Fulkerson themselves). In practice, all interview/contest inputs use integer or rational capacities, so this never bites, but it is the theoretical reason Ford-Fulkerson is stated for integer (or rational, after scaling) capacities.
 
@@ -88,7 +88,7 @@ Notice: at every step, the invariant "flow pushed so far respects every edge's c
 
 **Time: O(E · |max_flow|)** for integer capacities.
 
-Each augmentation requires one DFS/BFS over the residual graph to find a path: O(E) (or O(V+E), but E dominates in the graphs Ford-Fulkerson is used on). Each augmentation increases the flow by at least 1 (integer capacities), and the flow is bounded above by `|max_flow|`, so there are at most `|max_flow|` augmentations. Total: **O(E · |max_flow|)**.
+Each augmentation requires one DFS/BFS over the residual graph to find a path: O(E) in standard <abbr>Big-O</abbr> terms (or O(V+E), but E dominates in the graphs Ford-Fulkerson is used on). Each augmentation increases the flow by at least 1 (integer capacities), and the flow is bounded above by `|max_flow|`, so there are at most `|max_flow|` augmentations. Total: **O(E · |max_flow|)**.
 
 This bound is loose and can be genuinely bad. The classic textbook construction: a 4-node graph (`s`, `a`, `b`, `t`) with `s→a` and `s→b` at capacity `C`, `a→t` and `b→t` at capacity `C`, plus a small crossing edge `a↔b` at capacity 1. If DFS happens to pick a path that crosses through `a↔b` at each step instead of draining `s→a→t` and `s→b→t` directly, it pushes only 1 unit per augmentation and takes `2C` iterations to reach the true max flow of `2C` - on a graph with only 6 edges. With `C = 10⁹`, that is a billion-plus iterations even though `E` is constant. Whether DFS actually hits this worst case depends entirely on which neighbor it explores first (an implementation detail - see the adjacency-order note in How it works), which is exactly the danger: the runtime is not just large, it's *unpredictable* from the graph structure alone. This pseudo-polynomial dependence on the *value* of the input (not its size in bits) is precisely the gap Edmonds-Karp closes by choosing augmenting paths via BFS, which bounds the number of augmentations by O(VE) regardless of capacity magnitude or path-selection luck.
 

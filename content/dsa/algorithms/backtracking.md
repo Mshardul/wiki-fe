@@ -26,7 +26,7 @@
 
 Backtracking is a **systematic, depth-first search of a state-space tree** that builds a solution one choice at a time and **abandons a partial candidate the moment it cannot possibly lead to a valid complete one** (a _prune_). It is brute force with a steering wheel: the same exhaustive enumeration, but whole subtrees are cut off the instant a constraint is violated.
 
-**Mental model:** exploring a maze with a ball of string. You walk forward making choices; at every dead end you reel the string back to the last junction (_undo the choice_) and try the next door. The string is the call stack; reeling back is the "backtrack".
+**Mental model:** exploring a maze with a ball of string. You walk forward making choices; at every dead end you reel the string back to the last junction (_undo the choice_) and try the next door. The string is the <abbr>call stack</abbr>; reeling back is the "backtrack".
 
 - **Time:** `O(b^d)` worst case (`b` = branching factor, `d` = depth) - but pruning is the whole point, so the _effective_ cost is far below the bound on real inputs.
 - **Space:** `O(d)` for the recursion stack plus the current partial candidate (the output itself is not counted as working space).
@@ -84,7 +84,7 @@ Watch the invariant hold *line by line* in the trace above:
 
 ## Correctness / invariant
 
-**Invariant:** at every node of the search, the current partial candidate is **valid** (satisfies all constraints checkable so far). Equivalently: `cols` only ever contains mutually non-attacking queens.
+**<abbr>Invariant</abbr>:** at every node of the search, the current partial candidate is **valid** (satisfies all constraints checkable so far). Equivalently: `cols` only ever contains mutually non-attacking queens.
 
 - **Maintained:** we only descend after `is_safe` confirms the new choice keeps the candidate valid; we only ascend after popping the choice we made, restoring the parent's exact state.
 - **Completeness (we find every solution):** the recursion enumerates the full tree _except_ pruned subtrees, and a pruned subtree provably contains no valid leaf (its root is already invalid, and invalidity is monotone - extending an invalid prefix cannot make it valid). So no solution is ever skipped.
@@ -126,8 +126,8 @@ The single most useful contest read: **backtracking lives in the small-`n`, expo
 
 **Prefer an alternative when:**
 
-- The problem asks for an **optimal value over overlapping subproblems**, not the configurations themselves → **dynamic programming** ([dynamic-programming.md](./dynamic-programming.md)). If subtrees recompute identical states, DP/memoization collapses the exponential tree to polynomial; backtracking re-explores them.
-- A provably correct local choice exists → **greedy**. No need to explore alternatives you'll never take.
+- The problem asks for an **optimal value over overlapping subproblems**, not the configurations themselves → **<abbr>dynamic programming</abbr>** ([dynamic-programming.md](./dynamic-programming.md)). If subtrees recompute identical states, DP/<abbr>memoization</abbr> collapses the exponential tree to polynomial; backtracking re-explores them.
+- A provably correct local choice exists → **<abbr>greedy</abbr>**. No need to explore alternatives you'll never take.
 - You're traversing an _explicit_ graph, not building candidates → plain **[DFS](./dfs.md)**. Backtracking is DFS over an _implicit_ tree with an undo step; if the graph already exists and you just need to visit it, you don't need the undo machinery.
 
 **Real system:** constraint solvers and SAT/CSP engines (Sudoku solvers, regex backtracking matchers like PCRE, type-class resolution in compilers, and SQL query planners exploring join orders) are production backtracking - they search a space of choices and prune the impossible.

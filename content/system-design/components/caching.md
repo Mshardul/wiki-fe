@@ -520,7 +520,7 @@ A user should never see an older version of data after seeing a newer version. I
 
 ### Write Ordering in Active-Active Setups
 
-If two clients write to the same key on different active-active nodes within the replication lag window, which write wins? LWW by wall clock is unreliable: NTP clock skew of 10–100ms can make an older write appear newer. Hybrid logical clocks (HLC) or vector clocks are correct but complex. In practice: accept LWW with well-synchronized clocks, monitor for anomalies, and design data models to avoid concurrent writes to the same key where correctness is required.
+If two clients write to the same key on different active-active nodes within the <abbr>replication</abbr> lag window, which write wins? LWW by wall clock is unreliable: NTP clock skew of 10–100ms can make an older write appear newer. Hybrid logical clocks (HLC) or vector clocks are correct but complex. In practice: accept LWW with well-synchronized clocks, monitor for anomalies, and design data models to avoid concurrent writes to the same key where correctness is required.
 
 ### Cache Coherence vs DB as Source of Truth
 
@@ -661,7 +661,7 @@ A single Redis node handles ~100k–500k operations/sec depending on command typ
 | ZADD / ZRANGE (large sorted set) | ~50k ops/sec  |
 | HGETALL (large hash)             | ~100k ops/sec |
 
-Redis command execution is single-threaded (I/O threads were added in Redis 6 but command processing remains serial). Shard before hitting the ceiling - adding a second node doubles throughput. Pipelining and Lua scripts (which run atomically in the command thread) are the levers for maximizing single-node throughput.
+Redis command execution is single-threaded (I/O threads were added in Redis 6 but command processing remains serial). Shard before hitting the ceiling - adding a second node doubles <abbr>throughput</abbr>. Pipelining and Lua scripts (which run atomically in the command thread) are the levers for maximizing single-node throughput.
 
 **Key Takeaway:** Size for the working set, not the full dataset. The diminishing returns curve means going from 95% to 99% hit rate rarely justifies the cost. Model throughput ceilings per node and shard before hitting them.
 
@@ -727,7 +727,7 @@ Distinguish between cold misses (key never in cache - expected after deploy or c
 
 The value delivered by the cache is `(miss_latency - hit_latency) × hit_rate`. If a DB optimization reduces miss latency from 50ms to 5ms, the cache saves much less per miss - the hit rate target should be revisited. Conversely, if miss latency spikes (DB under load), the cache becomes more valuable and hit rate target should increase.
 
-Monitor the P99 hit latency and P99 miss latency separately. Alert when the delta shrinks (cache is delivering less value) or when hit latency itself climbs (cache node is under pressure).
+Monitor the P99 hit <abbr>latency</abbr> and P99 miss latency separately. Alert when the delta shrinks (cache is delivering less value) or when hit latency itself climbs (cache node is under pressure).
 
 ### Eviction Rate - Sizing Alarm Threshold
 
@@ -753,7 +753,7 @@ The complete trace should span: `HTTP request → cache key lookup → cache mis
 
 ## Production Issues & Debugging
 
-**Interviewer TL;DR:** Most cache incidents fall into four categories: sudden hit rate drop (key structure change or mass expiry), memory cascade (eviction → miss storm → re-population → more eviction), replication lag causing stale reads, and connection pool exhaustion masking as cache unavailability.
+**Interviewer TL;DR:** Most cache incidents fall into four categories: sudden hit rate drop (key structure change or mass expiry), memory cascade (eviction → miss storm → re-population → more eviction), <abbr>replication</abbr> lag causing stale reads, and connection pool exhaustion masking as cache unavailability.
 
 **Mental model:** Each failure mode has a specific detection signal and a recovery procedure. "Cache is slow" is not a diagnosis - name the failure mode, its cause, and its fix.
 
@@ -853,7 +853,7 @@ When Redis approaches `maxmemory`, it evicts aggressively under the configured p
 
 > 🎯 **Interview Lens**
 > **Q:** Explain the difference between cache stampede, cache avalanche, and cache penetration.
-> **Ideal answer:** Stampede - one popular key expires, many concurrent requests flood the origin for that one key. Avalanche - many keys expire simultaneously (uniform TTL), flooding the origin across many keys at once. Penetration - requests for keys that don't exist in the DB, bypassing the cache on every request. Different causes, different fixes: stampede → single-flight mutex or PER; avalanche → TTL jitter + circuit breaker; penetration → null caching or Bloom filter guard.
+> **Ideal answer:** Stampede - one popular key expires, many concurrent requests flood the origin for that one key. Avalanche - many keys expire simultaneously (uniform TTL), flooding the origin across many keys at once. Penetration - requests for keys that don't exist in the DB, bypassing the cache on every request. Different causes, different fixes: stampede → single-flight mutex or PER; avalanche → TTL jitter + <abbr>circuit breaker</abbr>; penetration → null caching or Bloom filter guard.
 > **Next question:** "Your Bloom filter says a key exists, but the DB returns empty - what happened?" → The key was deleted from the DB after the filter was built; standard Bloom filters don't support deletion. One extra DB query is the acceptable cost. Use a Counting Bloom filter, or rebuild periodically, if deletions are frequent.
 
 ### Read-Your-Writes Violation

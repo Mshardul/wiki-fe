@@ -74,7 +74,7 @@ right-rotate at y:                 left-rotate at x:  (the inverse)
   A    B                    B    C
 ```
 
-The rebalance procedure differs per scheme - **when** to rotate, **how many**, and whether **recoloring** can substitute for a rotation - but rotation is the universal primitive. Master it once on the [binary tree](./binary-tree.md) and it transfers to every member below. (A self-balancing tree is essentially: "after each write, walk up the path and apply rotations to restore my invariant.")
+The rebalance procedure differs per scheme - **when** to rotate, **how many**, and whether **recoloring** can substitute for a rotation - but rotation is the universal primitive. Master it once on the [binary tree](./binary-tree.md) and it transfers to every member below. (A self-balancing tree is essentially: "after each write, walk up the path and apply rotations to restore my <abbr>invariant</abbr>.")
 
 ## The members
 
@@ -82,7 +82,7 @@ Each member enforces a different balance invariant, trading read speed against w
 
 - **[AVL Tree](./avl-tree.md)** - the **strict** one. Invariant: every node's two subtree heights differ by ≤ 1, so height ≤ 1.44 log₂ n. Tightest balance → **fastest lookups**, but **more rotations per write** to maintain the strict bound. Choose for read-heavy workloads (e.g. lookup-dominated indexes).
 - **[Red-Black Tree](./red-black-tree.md)** - the **pragmatic** one. Invariant: color rules (no two consecutive red nodes; equal black-height on every root-to-leaf path), giving height ≤ 2 log₂ n. Looser balance → **fewer rotations per write** (recoloring absorbs most fixes), slightly taller. The **library default**: `std::map`/`std::set`, Java `TreeMap`/`TreeSet`, and the Linux kernel scheduler all use it.
-- **[B-Tree](./b-tree.md)** - the **disk** one. Not binary: each node holds **many keys and many children** (high fan-out), kept balanced so the tree stays shallow. Minimizes the number of **block/disk reads**, which is why **databases and filesystems** index with B-trees (and B+-trees). Choose when data lives on disk/SSD and seek count dominates.
+- **[B-Tree](./b-tree.md)** - the **disk** one. Not binary: each node holds **many keys and many children** (high <abbr>fan-out</abbr>), kept balanced so the tree stays shallow. Minimizes the number of **block/disk reads**, which is why **databases and filesystems** index with B-trees (and B+-trees). Choose when data lives on disk/SSD and seek count dominates.
 
 ## Comparison
 
@@ -94,6 +94,8 @@ Each member enforces a different balance invariant, trading read speed against w
 | [B-Tree](./b-tree.md)            | all leaves same depth, ≥ ⌈m/2⌉ keys/node | log_m n      | fast (few seeks) | node split/merge | on-disk DB & filesystem indexes         |
 
 All three give **O(log n)** search/insert/delete - the table is about constants and the read-vs-write and memory-vs-disk trades, not asymptotics.
+
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
 
 ## Which one when
 

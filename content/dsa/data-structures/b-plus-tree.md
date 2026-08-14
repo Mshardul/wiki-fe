@@ -36,7 +36,7 @@
 
 ## What it is
 
-A **B+ tree** is a B-tree variant where **all values live at the leaves** and internal nodes hold only routing keys - pure separators with no data payloads - so each internal node packs far more keys per page, raising fan-out and cutting tree height, with all leaf nodes linked in a sorted doubly linked list for O(k/m) range scans after a single root-to-leaf descent.
+A **B+ tree** is a B-tree variant where **all values live at the leaves** and internal nodes hold only routing keys - pure separators with no data payloads - so each internal node packs far more keys per page, raising <abbr>fan-out</abbr> and cutting tree height, with all leaf nodes linked in a sorted doubly linked list for O(k/m) range scans after a single root-to-leaf descent.
 
 Mental model: **a book's index page pointing into a numbered data section.** The internal nodes are the index: key labels only, nothing else. The leaf layer is the data section: every record in sorted order, linked left-to-right so a range query walks the list without ever climbing back up the tree.
 
@@ -162,9 +162,9 @@ Step 3 - merge [36] with left sibling [30|32]:
 - Data fits in RAM and you want fastest in-memory performance - a hash table is O(1) point lookup with lower constant; a red-black tree is O(log n) with better cache behavior at small n.
 - You only need point lookups with no range queries - a B-tree (without the linked leaf layer overhead) or a hash index is simpler.
 - The key space is dense integers in a small range - a direct-address or counting structure wins.
-- You want **single-record equality** with lowest possible latency at high concurrency - hash indexes on SSDs rival B+ tree point-lookup latency below ~10M rows; MySQL's `MEMORY` engine and PostgreSQL's hash indexes are faster for pure equality at that scale. The crossover point where hash wins: equality-only workloads on tables that fit in RAM, where the constant-factor O(1) beats O(log_m n) even though `log_m n ≈ 3`.
+- You want **single-record equality** with lowest possible <abbr>latency</abbr> at high concurrency - hash indexes on SSDs rival B+ tree point-lookup latency below ~10M rows; MySQL's `MEMORY` engine and PostgreSQL's hash indexes are faster for pure equality at that scale. The crossover point where hash wins: equality-only workloads on tables that fit in RAM, where the constant-factor O(1) beats O(log_m n) even though `log_m n ≈ 3`.
 
-**Real-world usage:** MySQL InnoDB, PostgreSQL, SQLite, and virtually every RDBMS use B+ trees for primary and secondary indexes. At scale the bottleneck shifts from tree depth (already 3–4 levels) to two specific failure modes: **(1) latch contention** on the root and upper internal nodes under concurrent writes (mitigation: B-link trees with right-sibling pointers for lock-coupling, or optimistic latching); **(2) hot-spot insert problem** - monotonically increasing PKs (auto-increment, UUID v7, timestamps) always insert into the rightmost leaf, serializing all writers onto one page and causing a throughput cliff at ~10⁵ inserts/sec on a single table. InnoDB's `innodb_autoinc_lock_mode` and UUID v4 (random) PKs are the standard mitigations, at the cost of index fragmentation.
+**Real-world usage:** MySQL InnoDB, PostgreSQL, SQLite, and virtually every RDBMS use B+ trees for primary and secondary indexes. At scale the bottleneck shifts from tree depth (already 3–4 levels) to two specific failure modes: **(1) latch contention** on the root and upper internal nodes under concurrent writes (mitigation: B-link trees with right-sibling pointers for lock-coupling, or optimistic latching); **(2) hot-spot insert problem** - monotonically increasing PKs (auto-increment, UUID v7, timestamps) always insert into the rightmost leaf, serializing all writers onto one page and causing a <abbr>throughput</abbr> cliff at ~10⁵ inserts/sec on a single table. InnoDB's `innodb_autoinc_lock_mode` and UUID v4 (random) PKs are the standard mitigations, at the cost of index fragmentation.
 
 ## Comparison
 
@@ -178,18 +178,20 @@ Step 3 - merge [36] with left sibling [30|32]:
 
 \* B-tree range scan requires backtracking through the tree (no linked leaf list), so k matching records may each cost a separate root-to-node traversal in the worst case.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 - **B-link tree** - adds a right-sibling pointer to every node (not just leaves). Enables lock-coupling: a thread can release a parent lock before acquiring a child lock, reducing contention under concurrent writes. Used by PostgreSQL's index access method.
 - **Clustered B+ tree (index-organized table)** - the actual row data is stored in the leaf nodes, not just the key. The table IS the B+ tree; there is no separate heap file. InnoDB's primary key index is always clustered - a primary key lookup costs one root-to-leaf traversal and the row is right there at the leaf.
 - **Unclustered (secondary) B+ tree** - leaves store `(search_key, primary_key)` pairs only; fetching the row requires a second traversal of the clustered index by primary key. A point lookup costs 2 tree traversals (~6–8 I/Os total vs ~3–4 for a clustered lookup). Range scans are worse: each of `k` matching keys may require a separate clustered-index lookup if the rows aren't physically sorted by the secondary key - the "index range scan + heap fetch" pattern that causes InnoDB's "Using index condition" warning in EXPLAIN.
-- **Fractal tree index** - buffers updates ("message buffers") inside internal nodes and flushes them downward in batches, converting random leaf writes into sequential I/Os. Writes are O(log² n / B) vs B+ tree's O(log_B n) but with far smaller constant per write; reads are O(log_B n) - same as B+ tree. The tradeoff: lower write amplification at high insert rates, but higher implementation complexity and larger memory footprint per node. Used by TokuDB/PerconaFT; the same principle underlies LSM tree write buffering.
+- **Fractal tree index** - buffers updates ("message buffers") inside internal nodes and flushes them downward in batches, converting random leaf writes into sequential I/Os. Writes are O(log² n / B) vs B+ tree's O(log_B n) but with far smaller constant per write; reads are O(log_B n) - same as B+ tree. The tradeoff: lower <abbr>write amplification</abbr> at high insert rates, but higher implementation complexity and larger memory footprint per node. Used by TokuDB/PerconaFT; the same principle underlies LSM tree write buffering.
 
 ## Traversal & invariant
 
 ### The invariants
 
-A B+ tree of minimum degree `t` maintains all of the following simultaneously:
+A B+ tree of minimum degree `t` maintains all of the following <abbr>invariant</abbr>s simultaneously:
 
 1. **All leaves at the same depth.** Every root-to-leaf path has length exactly `h` (the tree height). Balance is structural, not probabilistic.
 2. **All values at leaves.** Internal nodes hold only routing keys - copies of keys that partition child ranges. No satellite data lives above the leaf level.
@@ -692,5 +694,5 @@ assert tree.search(30) == 30          # copy-up: 30 is still directly findable a
 assert [v for _, v in tree.range_query(10, 30)] == [10, 20, 25, 30]
 ```
 
-**Complexity:** O(log_m n) node visits on the way down, O(t) work per split (copying up to `t` keys into the new leaf) - amortized O(log_m n) per insert overall, matching B-tree's split-insert cost; the only difference is *what* gets pushed up (a copy vs. a move), not the asymptotic cost.
+**Complexity:** O(log_m n) node visits on the way down, O(t) work per split (copying up to `t` keys into the new leaf) - <abbr>amortized</abbr> O(log_m n) per insert overall, matching B-tree's split-insert cost; the only difference is *what* gets pushed up (a copy vs. a move), not the asymptotic cost.
 

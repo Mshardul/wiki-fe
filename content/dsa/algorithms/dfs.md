@@ -24,7 +24,7 @@
 
 ## What it is
 
-DFS explores as far as possible down each branch before backtracking - it uses a stack (call stack or explicit) and discovers structure: components, cycles, topological order.
+DFS explores as far as possible down each branch before backtracking - it uses a stack (call stack or explicit) and discovers structure: components, cycles, <abbr>topological order</abbr>.
 
 The algorithm visits a vertex, immediately recurses into an unvisited neighbor, and only backtracks when no unvisited neighbors remain. A vertex's **discovery time** is stamped when first reached; its **finish time** is stamped when all reachable descendants are exhausted. These two timestamps are the key to every structural insight DFS provides.
 
@@ -126,7 +126,7 @@ The GRAY set is exactly the current ancestor chain, confirming the stack = ances
 
 ### White-gray-black coloring invariant
 
-At every point during DFS, the set of GRAY vertices is exactly the set of vertices currently on the call stack (or explicit stack). This set always forms a simple path from some DFS root to the currently active vertex - because DFS recurses depth-first, the in-progress vertices are always an ancestor chain, never a set of siblings.
+At every point during DFS, the set of GRAY vertices is exactly the set of vertices currently on the <abbr>call stack</abbr> (or explicit stack). This set always forms a simple path from some DFS root to the currently active vertex - because DFS recurses depth-first, the in-progress vertices are always an ancestor chain, never a set of siblings.
 
 **Formal invariant:** When `DFS-VISIT(u)` is executing, every vertex on the path from the DFS root to u is GRAY. Every vertex not yet discovered is WHITE. Every vertex whose subtree is fully explored is BLACK.
 
@@ -159,7 +159,7 @@ Each vertex undergoes exactly three color transitions: WHITE → GRAY (once, on 
 
 Summing over all vertices: total work = O(V) for vertex processing + Σ_{u ∈ V} |Adj(u)| for edge scanning. For a directed graph Σ|Adj(u)| = |E|. For an undirected graph each edge {u,v} appears in both Adj(u) and Adj(v), so Σ|Adj(u)| = 2|E| - still O(E).
 
-**Total: O(V + E).** This is a tight worst-case bound, not an amortized one. There is no sequence of DFS calls where some are "cheap" offsetting expensive ones - a single DFS run always costs exactly O(V + E).
+**Total: O(V + E).** This is a tight worst-case bound, not an <abbr>amortized</abbr> one. There is no sequence of DFS calls where some are "cheap" offsetting expensive ones - a single DFS run always costs exactly O(V + E).
 
 ### Space: O(V)
 
@@ -173,7 +173,7 @@ The recursion stack (or explicit stack for iterative DFS) holds at most one path
 
 DFS via adjacency list is **cache-hostile**: the adjacency list for each vertex is a separate heap allocation (or a slice of a larger array at a non-contiguous offset). Following an edge means chasing a pointer to a neighbor's adjacency list - a likely cache miss. The recursion call stack itself is contiguous memory, but the *graph traversal pattern* is scattered across heap-allocated neighbor lists, producing irregular memory access.
 
-**Contrast with BFS:** BFS processes vertices level by level and tends to access nearby nodes in memory in bursts, which improves cache locality slightly - but both algorithms are fundamentally pointer-chasing on graph adjacency lists and neither achieves the sequential cache behavior of array algorithms.
+**Contrast with BFS:** BFS processes vertices level by level and tends to access nearby nodes in memory in bursts, which improves cache locality slightly - but both algorithms are fundamentally <abbr>pointer chasing</abbr> on graph adjacency lists and neither achieves the sequential cache behavior of array algorithms.
 
 **In practice:** On a graph stored as a CSR (Compressed Sparse Row) matrix - the format used in high-performance graph libraries - adjacency lists are laid out contiguously in one big array, and DFS becomes more cache-friendly because the neighbor scan `G.Adj[u]` is a contiguous slice. Python's dict-of-lists representation does not have this property.
 
@@ -230,7 +230,7 @@ See also the [Tree/Graph Traversal pattern](../patterns/tree-graph-traversal.md)
 
 **When each wins:**
 - **DFS over BFS:** when you need post-order finish times (topo sort, SCC, articulation points) or when the graph is narrow-but-deep and BFS's wide frontier would consume more memory.
-- **BFS over DFS:** whenever minimum-hop distance is the question. BFS is also more cache-friendly in practice since it processes vertices level by level.
+- **BFS over DFS:** whenever minimum-hop distance is the question. BFS is also more <abbr>cache-friendly</abbr> in practice since it processes vertices level by level.
 - **Topological Sort:** only meaningful on a DAG. DFS-based (post-order) and Kahn's are interchangeable in correctness; Kahn's is easier to reason about when you need to detect cycles incrementally or process in streaming order.
 - **Dijkstra/Bellman-Ford:** the only correct choices for weighted shortest path. DFS ignores weights entirely.
 
@@ -519,7 +519,7 @@ They visit the same vertices, but not necessarily in the same order. A naive ite
 Directed: a GRAY neighbor is a back edge - a cycle exists. The GRAY distinction is essential; a simple `visited` boolean cannot tell you whether a neighbor is currently on the stack (GRAY = cycle) or already finished (BLACK = no cycle from this edge). Undirected: track the parent and skip it; a visited non-parent neighbor is a cycle. **A junior misses the parent check and gets false positives on every edge.** Follow-up on multigraphs: track edge index, not vertex identity.
 
 **"How does DFS give topological order?"**
-Append each vertex to a list on finish (post-order), then reverse the list. Intuitively: vertex u finishes only after all vertices reachable from u have finished. So in the reversed finish order, u appears before everything it depends on - exactly what topological order requires. See [Topological Sort](./topological-sort.md).
+Append each vertex to a list on finish (post-order), then reverse the list. Intuitively: vertex u finishes only after all vertices reachable from u have finished. So in the reversed finish order, u appears before everything it depends on - exactly what <abbr>topological order</abbr> requires. See [Topological Sort](./topological-sort.md).
 
 **"Stack overflow on a large graph - what do you do in production?"**
 Switch to iterative DFS with an explicit stack. `sys.setrecursionlimit` is not a production solution - the OS thread stack is bounded (~1–8 MB) and a path graph of 10⁶ nodes will crash it. In production, the explicit stack is heap-allocated and grows as needed. This is standard in web crawlers, dependency analyzers, and build systems.

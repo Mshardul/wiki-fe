@@ -23,7 +23,7 @@
 
 ## What it is
 
-**Number theory** in a DSA context is the small, high-leverage toolkit for problems about **integers, divisibility, primes, and arithmetic modulo a number** - the "math" tag that shows up constantly in competitive programming and occasionally in interviews (hashing, cryptography, combinatorics with large answers).
+**Number theory** in a DSA context is the small, high-leverage toolkit for problems about **integers, divisibility, primes, and arithmetic modulo a number** - the "math" tag that shows up constantly in competitive programming and occasionally in interviews (<abbr>hashing</abbr>, cryptography, combinatorics with large answers).
 
 Mental model: **three power tools, one workshop.** You rarely need the whole of number theory - you need to recognize which of a handful of standard procedures a problem is secretly asking for, then apply it cleanly. Almost everything reduces to: *find a common factor* (GCD), *compute a huge power without overflow* (modular exponentiation), or *know which numbers are prime, fast* (sieve). The members are not interchangeable; each solves a distinct primitive question, and they **compose** - modular inverse needs both extended GCD *and* fast exponentiation; counting answers "mod 10⁹+7" needs the sieve to precompute factorials' building blocks.
 
@@ -48,7 +48,7 @@ GCD sits slightly apart - it's not about size blowup but about **a clean recurre
 
 Each member replaces an `O(value)` loop with a structural shortcut:
 
-- **GCD** uses the invariant `gcd(a, b) = gcd(b, a mod b)` - every step shrinks the operands at least geometrically (two steps at least halve the larger), so it's logarithmic in the input value, not linear.
+- **GCD** uses the <abbr>invariant</abbr> `gcd(a, b) = gcd(b, a mod b)` - every step shrinks the operands at least geometrically (two steps at least halve the larger), so it's logarithmic in the input value, not linear.
 - **Modular exponentiation** uses `xⁿ = (x^(n/2))²` - halving the exponent each step gives `log n` squarings instead of `n` multiplications (binary expansion of the exponent).
 - **The sieve** uses the fact that **every composite has a prime factor ≤ √n**, so marking multiples of each prime once eliminates all composites without ever testing a number in isolation.
 

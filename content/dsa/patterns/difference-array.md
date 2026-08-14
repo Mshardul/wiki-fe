@@ -51,7 +51,7 @@ Look for these exact phrasings in problem statements:
 
 ### (c) Not to be confused with
 
-- **Prefix sum** - prefix sum answers range-*sum queries* on a static array; difference array answers range-*updates* then one-shot point reads. They are mathematical inverses: prefix sum of a difference array recovers the original array, and vice versa. When the array is static and you want fast range sums, use prefix sum. When the array is modified by many range increments and you want the final array, use difference array.
+- **<abbr>Prefix sum</abbr>** - prefix sum answers range-*sum queries* on a static array; difference array answers range-*updates* then one-shot point reads. They are mathematical inverses: prefix sum of a difference array recovers the original array, and vice versa. When the array is static and you want fast range sums, use prefix sum. When the array is modified by many range increments and you want the final array, use difference array.
 - **Segment tree** - a segment tree handles *interleaved* updates and queries online in O(log n) each; use it when queries arrive between updates. A difference array is strictly offline (batch updates → one read pass) but achieves O(1) per update vs O(log n).
 - **BIT / Fenwick tree** - same trade-off as segment tree: online, O(log n) per op. Difference array wins when all updates precede all reads.
 
@@ -119,9 +119,9 @@ Naive approach (update each element in the range): O(n·q) time.
 
 **When NOT to reach for it:** if the problem says "after each update, report the value at position i" - updates and queries are interleaved, and you need an online structure. Difference array only pays off when you can defer all reads until all writes are complete.
 
-**Real-world usage:** game servers use a difference array to apply area-of-effect damage across player-health arrays (all hits in a tick batch before recalculation); ad-impression systems count overlapping campaign intervals over a time axis before aggregating totals. **At scale:** with `n` approaching 10⁸ (e.g. second-granularity time axes over a day), the O(n) prefix-sum pass over the full array dominates - coordinate-compress to the ~10⁶ actual event endpoints instead, reducing both time and memory by the same factor.
+**Real-world usage:** game servers use a <abbr>difference array</abbr> to apply area-of-effect damage across player-health arrays (all hits in a tick batch before recalculation); ad-impression systems count overlapping campaign intervals over a time axis before aggregating totals. **At scale:** with `n` approaching 10⁸ (e.g. second-granularity time axes over a day), the O(n) prefix-sum pass over the full array dominates - coordinate-compress to the ~10⁶ actual event endpoints instead, reducing both time and memory by the same factor.
 
-**Cache behavior:** the prefix-sum reconstruction pass is maximally cache-friendly - it reads `D` sequentially from index 0 to n−1 with no pointer indirection, so every access is a cache-line hit. The O(n + q) cost in practice has a tiny constant; compare this to a segment tree's O(log n) per query that follows non-contiguous child pointers and incurs a cache miss at each level.
+**Cache behavior:** the prefix-sum reconstruction pass is maximally <abbr>cache-friendly</abbr> - it reads `D` sequentially from index 0 to n−1 with no pointer indirection, so every access is a cache-line hit. The O(n + q) cost in practice has a tiny constant; compare this to a segment tree's O(log n) per query that follows non-contiguous child pointers and incurs a cache miss at each level.
 
 ## Variations
 

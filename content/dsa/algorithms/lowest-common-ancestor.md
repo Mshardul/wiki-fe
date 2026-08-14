@@ -88,7 +88,7 @@ Every step either **lifts the deeper node** (depth-equalize) or **jumps both nod
 
 ## Correctness / invariant
 
-**Invariant (depth-equalize phase):** after lifting the deeper node by `depth_diff` steps (decomposed into powers of two, largest first), both nodes are at the same depth and the LCA is still an ancestor of both - lifting the deeper node alone never skips past the LCA, since the LCA's depth is `≤ min(depth[u], depth[v])` and the lift only closes the depth gap.
+**<abbr>Invariant</abbr> (depth-equalize phase):** after lifting the deeper node by `depth_diff` steps (decomposed into powers of two, largest first), both nodes are at the same depth and the LCA is still an ancestor of both - lifting the deeper node alone never skips past the LCA, since the LCA's depth is `≤ min(depth[u], depth[v])` and the lift only closes the depth gap.
 
 **Invariant (binary-search phase):** at each power-of-two jump size `2^k` (tried largest to smallest), jump both nodes **only if** `up[u][k] ≠ up[v][k]`. This is the crux: if jumping both by `2^k` would make them equal, that common ancestor **might be the LCA or might be higher** - jumping there **can't be undone** by the algorithm's forward-only structure, so the algorithm conservatively **skips that jump** and tries a smaller one. If jumping by `2^k` keeps them distinct, it's always safe to take - the true LCA is strictly above both, so moving both up together (while staying distinct) never passes it.
 
@@ -98,7 +98,7 @@ Every step either **lifts the deeper node** (depth-equalize) or **jumps both nod
 
 ## Complexity derivation
 
-**Preprocessing:** the jump table `up[node][k]` has `n` nodes × `log₂(n)` levels = **O(n log n)** entries, each computed in O(1) from two already-computed entries (`up[node][k] = up[up[node][k-1]][k-1]`) - so **O(n log n) time and space** to build, once, for the whole tree. **Cache behavior:** stored row-major (`up[node]` contiguous), building column-by-column (all nodes at level `k` before level `k+1`, as the pseudocode does) streams sequentially through each row - cache-friendly; but a single `query` call jumps between arbitrary `(node, k)` cells scattered across rows, the same unpredictable-hop pattern a [Fenwick tree](../data-structures/fenwick-tree.md)'s `i & -i` walk has, so per-query cache misses are the norm even though the table itself is a flat array.
+**Preprocessing:** the jump table `up[node][k]` has `n` nodes × `log₂(n)` levels = **O(n log n)** entries, each computed in O(1) from two already-computed entries (`up[node][k] = up[up[node][k-1]][k-1]`) - so **O(n log n) time and space** to build, once, for the whole tree. **Cache behavior:** stored row-major (`up[node]` contiguous), building column-by-column (all nodes at level `k` before level `k+1`, as the pseudocode does) streams sequentially through each row - <abbr>cache-friendly</abbr>; but a single `query` call jumps between arbitrary `(node, k)` cells scattered across rows, the same unpredictable-hop pattern a [Fenwick tree](../data-structures/fenwick-tree.md)'s `i & -i` walk has, so per-query cache misses are the norm even though the table itself is a flat array.
 
 **Per query:** depth-equalizing lifts the deeper node using at most `log₂(n)` bit-decomposed jumps (the depth difference is `< n`, so it has at most `log₂ n` set bits worth of jump sizes) - **O(log n)**. The binary-search phase tries each of the `log₂(n)` powers of two exactly once, each a O(1) table lookup - **O(log n)**. Total: **O(log n) per query**, after the one-time O(n log n) build.
 
@@ -150,14 +150,14 @@ LCA algorithms assume a **rooted tree** - no cycles, exactly one path between an
 
 - **Rooted, not just connected.** An unrooted tree has no notion of "ancestor" - LCA requires picking a root first (DFS from any node, since a tree has a unique root once you fix a starting point and orient every edge away from it). Re-rooting changes every LCA answer.
 - **No cycles.** A tree with `n` nodes has exactly `n-1` edges and a unique path between any two nodes - this uniqueness is exactly what makes "the path goes up through the LCA and back down" well-defined. On a general graph (with cycles), "lowest common ancestor" isn't defined the same way; the DAG generalization (used by `git merge-base`) needs a different algorithm entirely (it can have **multiple** lowest common ancestors).
-- **Unweighted, structurally.** LCA itself ignores edge weights - it's a purely structural (depth/ancestor) query. If you need **weighted distance** between nodes, combine LCA with edge-weight prefix sums from root (`dist(u,v) = distFromRoot[u] + distFromRoot[v] - 2*distFromRoot[LCA]`), not the depth formula.
+- **Unweighted, structurally.** LCA itself ignores edge weights - it's a purely structural (depth/ancestor) query. If you need **weighted distance** between nodes, combine LCA with edge-weight <abbr>prefix sums</abbr> from root (`dist(u,v) = distFromRoot[u] + distFromRoot[v] - 2*distFromRoot[LCA]`), not the depth formula.
 - **Static during the query phase.** Binary lifting and Euler-tour approaches both assume the tree doesn't change between build and query - inserting a node mid-query-batch invalidates the jump table and Euler-tour array, forcing a full rebuild.
 
 ## Edge cases
 
 - **u equals v.** LCA(u, u) = u by definition - both loop phases (depth-equalize, binary-search) trivially return immediately since the depth difference is 0 and the nodes are already identical, but explicitly guard for it if a bug elsewhere could pass the same node twice.
 - **One node is an ancestor of the other.** E.g. LCA(root, deep_leaf) = root. Depth-equalizing lifts the deeper node all the way up to the shallower one; if they become **equal after the lift** (not just close), the answer is that node itself - the binary-search phase must special-case "already equal, skip it" rather than always doing one final `parent[]` step.
-- **k exceeds a node's depth (k-th ancestor).** Querying "50th ancestor" of a node at depth 10 has no answer - return null/sentinel rather than following jump-table entries into undefined territory (`up[node][k]` for an out-of-range `k` may point at a stale/zero entry if not explicitly bounds-checked).
+- **k exceeds a node's depth (k-th ancestor).** Querying "50th ancestor" of a node at depth 10 has no answer - return null/<abbr>sentinel</abbr> rather than following jump-table entries into undefined territory (`up[node][k]` for an out-of-range `k` may point at a stale/zero entry if not explicitly bounds-checked).
 - **Overflow on `log₂(n)` table width.** For `n` up to `10⁵-10⁶`, `LOG = ceil(log2(n)) + 1` (typically 17-21) - allocating `up[node][k]` with too few levels silently truncates long jumps and produces wrong ancestors for deep trees; always compute `LOG` from the actual max depth, not a hardcoded guess.
 - **1-vs-0 indexing on depth/root.** Whether the root has `depth = 0` or `depth = 1` must be fixed once and used consistently in both the depth-equalize step and the `dist(u,v)` formula - an off-by-one here silently shifts every distance calculation by 2.
 - **Misconception: "many queries still means O(n) each."** A candidate who correctly writes the O(n) recursive LCA sometimes assumes that's the ceiling even when told there are 10⁵ queries on the same static tree - missing that a static tree with repeated queries is exactly the signal to preprocess once (binary lifting) rather than re-derive the answer from scratch every call.
@@ -293,10 +293,10 @@ def lowest_common_ancestor(root, p, q):
     return left or right
 ```
 
-**Complexity:** O(n) time (visits every node once, worst case), O(h) space (recursion stack).
+**Complexity:** O(n) time (visits every node once, worst case), O(h) space (<abbr>recursion</abbr> stack).
 
 **Duplicate problems:**
-- Lowest Common Ancestor of a Binary Tree III (LC 1650) - identical problem with parent pointers given instead of the root; solved by walking both nodes up to equal depth then together, the two-pointer analogue of binary lifting's depth-equalize step.
+- Lowest Common Ancestor of a Binary Tree III (LC 1650) - identical problem with parent pointers given instead of the root; solved by walking both nodes up to equal depth then together, the <abbr>two-pointer</abbr> analogue of binary lifting's depth-equalize step.
 - Smallest Common Region (LC 1257) - LCA reframed as a multi-way tree of named regions; same post-order "both sides found something" recognition.
 
 ### 2. Lowest Common Ancestor of a Binary Search Tree - _ordering shortcut_

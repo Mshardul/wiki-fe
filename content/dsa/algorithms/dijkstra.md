@@ -29,7 +29,7 @@ Mental model: **BFS, but the "next ring" is chosen by cost, not by hop count.** 
 
 Time: **O((V + E) log V)** with a binary heap. Space: **O(V + E)** - O(V) for the distance array and finalized set, plus up to O(E) for stale heap entries (see [Complexity derivation](#complexity-derivation) for why the heap grows past O(V)).
 
-> **Soundbite:** Dijkstra is greedy BFS with a price tag on every edge - always finalize the cheapest unfinalized node next, and that greedy choice is provably safe as long as no edge weight is negative.
+> **Soundbite:** Dijkstra is <abbr>greedy</abbr> BFS with a price tag on every edge - always finalize the cheapest unfinalized node next, and that greedy choice is provably safe as long as no edge weight is negative.
 
 ## Intuition
 
@@ -73,7 +73,7 @@ Notice step 4 and step 6: because a plain binary heap (`heapq`) has no `decrease
 
 ## Correctness / invariant
 
-**Invariant:** At any point during execution, for every finalized vertex `u`, `dist[u]` equals the true shortest-path distance from the source to `u`. For every vertex still in the frontier (in the heap but not finalized), `dist[u]` is the length of the shortest path found *so far* using only finalized vertices as intermediates - which may still improve.
+**<abbr>Invariant</abbr>:** At any point during execution, for every finalized vertex `u`, `dist[u]` equals the true shortest-path distance from the source to `u`. For every vertex still in the frontier (in the heap but not finalized), `dist[u]` is the length of the shortest path found *so far* using only finalized vertices as intermediates - which may still improve.
 
 **Proof sketch (by induction on the order of finalization):**
 
@@ -96,7 +96,7 @@ Summing: **O((V + E) log V)**, which simplifies to **O(E log V)** for connected 
 
 **Space:** `O(V)` for the `dist[]` array and the finalized/visited set, plus `O(E)` for the heap in the worst case (every edge can produce a stale entry before being superseded) - commonly stated as `O(V + E)`, or `O(V)` if you use a heap variant with true decrease-key (Fibonacci heap) that never grows the heap past `V` entries. **The algorithm is iterative** - no recursion, so there is no call-stack term to add; this is one of the rare shortest-path algorithms where the space bound has no hidden recursive depth to account for.
 
-> **Cache behavior:** Dijkstra is cache-hostile at scale. Each heap pop jumps to an arbitrary node's adjacency list (pointer-chasing through scattered heap-allocated memory), and each relaxation triggers a heap push that reorders a binary-heap array stored separately from the graph itself - two independent memory regions being hammered in an interleaved, unpredictable pattern. Contrast with a prefix-sum scan or heapsort's in-place array, both of which touch memory sequentially or within a tight local window; Dijkstra's access pattern defeats hardware prefetching almost entirely on large sparse graphs.
+> **Cache behavior:** Dijkstra is cache-hostile at scale. Each heap pop jumps to an arbitrary node's adjacency list (<abbr>pointer chasing</abbr> through scattered heap-allocated memory), and each relaxation triggers a heap push that reorders a binary-heap array stored separately from the graph itself - two independent memory regions being hammered in an interleaved, unpredictable pattern. Contrast with a prefix-sum scan or heapsort's in-place array, both of which touch memory sequentially or within a tight local window; Dijkstra's access pattern defeats hardware prefetching almost entirely on large sparse graphs.
 
 ## Constraints & approach
 
@@ -189,7 +189,7 @@ DIJKSTRA(G, w, s)
   return dist
 ```
 
-**Note on decrease-key:** CLRS's textbook version assumes a priority queue with a true `DECREASE-KEY` operation (achievable with a Fibonacci heap in O(1) amortized). The pseudocode above uses the **lazy re-insertion** form that every practical binary-heap implementation actually uses, with the `finalized[]` check standing in for decrease-key - this is the form to memorize, because it's what you'll actually write.
+**Note on decrease-key:** CLRS's textbook version assumes a priority queue with a true `DECREASE-KEY` operation (achievable with a Fibonacci heap in O(1) <abbr>amortized</abbr>). The pseudocode above uses the **lazy re-insertion** form that every practical binary-heap implementation actually uses, with the `finalized[]` check standing in for decrease-key - this is the form to memorize, because it's what you'll actually write.
 
 ### Python (idiomatic)
 

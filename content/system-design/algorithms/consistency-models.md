@@ -36,9 +36,9 @@ _A consistency model is a promise about what messages you'll see and in what ord
 
 Imagine a group chat replicated across three phones, each syncing over an unreliable connection. Someone sends "meet at 5pm", then a reply "actually make it 6". A consistency model is the answer to: does every phone show both messages? In what order? Can a phone show the reply before the original?
 
-- **Linearizable:** every phone shows both messages, in the same order, the instant either is sent - as if there were only one phone.
+- **<abbr>Linearizability</abbr>:** every phone shows both messages, in the same order, the instant either is sent - as if there were only one phone.
 - **Causally consistent:** every phone shows "meet at 5pm" before "actually make it 6" (the reply logically depends on the original), but unrelated messages from someone else may appear in a different order on different phones.
-- **Eventually consistent:** all phones show both messages *eventually* - but for a while, one phone might show only the reply, or neither, or show them out of order.
+- **<abbr>Eventual consistency</abbr>:** all phones show both messages *eventually* - but for a while, one phone might show only the reply, or neither, or show them out of order.
 
 > 🧠 **Thought Process**
 > A senior engineer doesn't ask "is this system consistent?" - consistency is never binary. The real question is: "what ordering and staleness guarantee does this system make, and does my application's correctness depend on a stronger one?" Most bugs in distributed applications come from assuming a stronger consistency model than the system actually provides.
@@ -172,7 +172,7 @@ The simplest implementation: sticky sessions - route a given client's reads to t
 
 _CAP's C is a single point on this spectrum - linearizability - not the whole spectrum._
 
-[CAP Theorem](./cap-theorem.md) treats consistency as binary: a system either provides linearizability or it doesn't, and that binary choice is what's traded against availability during a partition. Consistency models are the full spectrum this binary collapses. A system can be "not CAP-consistent" (not linearizable) while still providing a meaningful, well-defined guarantee like causal consistency or read-your-writes - "not linearizable" does not mean "no guarantees at all."
+[CAP Theorem](./cap-theorem.md) treats consistency as binary: a system either provides <abbr>linearizability</abbr> or it doesn't, and that binary choice is what's traded against availability during a partition. Consistency models are the full spectrum this binary collapses. A system can be "not CAP-consistent" (not linearizable) while still providing a meaningful, well-defined guarantee like causal consistency or read-your-writes - "not linearizable" does not mean "no guarantees at all."
 
 ### Consistency Models vs ACID's C
 
@@ -199,7 +199,7 @@ Marketing and casual conversation collapse the whole spectrum into "strong consi
 
 **Mental model:** Start from the weakest model the application can tolerate, then add guarantees only where a concrete anomaly would be user-visible or harmful.
 
-- **Linearizability** - distributed locks, leader election, inventory counts, financial balances. Anywhere a stale read causes a wrong decision, not just a stale display.
+- **Linearizability** - distributed locks, <abbr>leader election</abbr>, inventory counts, financial balances. Anywhere a stale read causes a wrong decision, not just a stale display.
 - **Causal consistency** - comment threads, chat messages, collaborative editing. Users notice if a reply appears before the message it replies to; they don't notice if two unrelated updates from different users arrive in a different order.
 - **Read-your-writes / monotonic reads** - almost every user-facing profile or settings update. Cheap to provide, and its absence is one of the most commonly-reported "bugs" in production systems ("I saved my settings and they reverted!").
 - **Eventual consistency (bare)** - metrics, counters, caches, search index freshness. Nothing breaks if two counters converge a few hundred milliseconds apart in different orders.
@@ -223,7 +223,7 @@ Marketing and casual conversation collapse the whole spectrum into "strong consi
 | Google Docs          | Causal (operational transform) | Concurrent edits merge preserving intent, not just last-write-wins |
 | Redis (single primary) | Linearizable on primary | Async replica reads are eventually consistent, opt-in per query      |
 
-**DynamoDB's tunable model** is the clearest production illustration of the spectrum: the same table can serve eventually-consistent reads (cheap, default) or strongly-consistent reads (routed to the leader, more expensive) per request - the application chooses per operation, not per table.
+**DynamoDB's tunable model** is the clearest production illustration of the spectrum: the same table can serve <abbr>eventual consistency</abbr> reads (cheap, default) or strongly-consistent reads (routed to the leader, more expensive) per request - the application chooses per operation, not per table.
 
 **Google Docs** is the clearest illustration of causal consistency in a consumer product: two people typing in the same document see each other's edits applied in a way that preserves intent (via operational transforms or CRDTs), not necessarily in strict real-time order - what matters is that causally-related edits (a fix to a typo you just typed) never get lost or misordered.
 
@@ -242,7 +242,7 @@ Marketing and casual conversation collapse the whole spectrum into "strong consi
 
 ### Common Misconceptions
 
-- **"Eventually consistent" fully describes the system's behavior.** It describes only the floor (convergence, eventually). It says nothing about ordering, staleness bound, or whether read-your-writes is also provided - those require checking the specific system's documentation, not inferring from the label.
+- **"<abbr>Eventual consistency</abbr>" fully describes the system's behavior.** It describes only the floor (convergence, eventually). It says nothing about ordering, staleness bound, or whether read-your-writes is also provided - those require checking the specific system's documentation, not inferring from the label.
 - **A strongly-consistent read option means the whole system is linearizable.** DynamoDB's strongly-consistent reads apply to that single request, routed to the current leader for that partition - concurrent operations elsewhere in the system may still be only eventually consistent. One strong read doesn't retroactively make prior writes from other clients linearizable.
 - **Causal consistency requires global coordination like linearizability does.** It doesn't - causal consistency only requires tracking *which* operations are causally related (via vector clocks or similar), not agreeing on a total order for every operation. This is why it's achievable with much lower latency and higher availability than linearizability.
 
@@ -263,7 +263,7 @@ Teams often observe convergence happening in single-digit milliseconds in testin
 ### Naming the Spectrum
 
 > 🎯 **Interview Lens**
-> **Q:** What consistency models exist between "strongly consistent" and "eventually consistent"?
+> **Q:** What consistency models exist between "<abbr>strong consistency</abbr>" and "eventually consistent"?
 > **Ideal answer:** Sequential consistency (global order, not real-time bound), causal consistency (preserves cause-effect ordering only), and the client-centric guarantees - read-your-writes and monotonic reads - which are cheaper and only apply per-client.
 > **Common trap:** Treating consistency as a binary (strong vs eventual) and having no vocabulary for anything in between.
 > **Next question:** "Which of these would you pick for a comment thread, and why?" → Causal consistency - a reply must never appear before the comment it replies to, but unrelated comments from different users don't need a global order.

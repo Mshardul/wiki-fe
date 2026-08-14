@@ -136,6 +136,8 @@ Bloom filters are production workhorses at scale: Google's BigTable uses one per
 | Counting Bloom Filter | O(k)    | O(k)   | O(k)  | O(m) 4-bit counters | Yes (tunable) | Bloom filter but deletions needed; 4× space vs standard bloom filter                               |
 | Sorted Array          | O(n)    | O(log n)| O(n) | O(n·key_size)  | No              | Read-heavy static set where binary search beats hashing; almost never wins over hash set in practice  |
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 **Counting Bloom Filter** - replaces each bit with a small counter (typically 4 bits). Increment on insert, decrement on delete. Supports deletion at ~4× the space of a standard bloom filter; counter overflow (at 15) is a correctness risk at high load - see Gotchas.
@@ -200,9 +202,9 @@ Sizing guide for common targets:
 
 ### Load factor & the equivalent of "resize"
 
-A bloom filter has no load factor concept in the hash-table sense - filling it doesn't cause a collision chain, it just raises the FP rate as more bits flip to 1. The analogy to hash-table resize is: when `n` exceeds the planned capacity (the `n` you used to size `m`), rebuild with a larger `m`. There is no in-place grow; you must re-insert all elements into the new filter. This means you **must know `n_max` at construction time** or use a Scalable Bloom Filter.
+A bloom filter has no <abbr>load factor</abbr> concept in the hash-table sense - filling it doesn't cause a <abbr>collision</abbr> chain, it just raises the FP rate as more bits flip to 1. The analogy to hash-table resize is: when `n` exceeds the planned capacity (the `n` you used to size `m`), rebuild with a larger `m`. There is no in-place grow; you must re-insert all elements into the new filter. This means you **must know `n_max` at construction time** or use a Scalable Bloom Filter.
 
-Cache behavior: for small `m` (fits in L2/L3), a bloom filter is extremely cache-friendly - `k` random reads into a contiguous bit array. For very large `m` (multi-GB filters), each of the `k` bit probes is likely a cache miss, and a Blocked Bloom Filter (all `k` probes in one cache line) recovers most of the lost throughput.
+Cache behavior: for small `m` (fits in L2/L3), a bloom filter is extremely <abbr>cache-friendly</abbr> - `k` random reads into a contiguous bit array. For very large `m` (multi-GB filters), each of the `k` bit probes is likely a cache miss, and a Blocked Bloom Filter (all `k` probes in one cache line) recovers most of the lost throughput.
 
 ## Implementation
 
@@ -303,7 +305,7 @@ Two hash functions that are correlated (e.g. both derived from `CRC32` with slig
 A bloom filter stores no element data, only a bit mask. You cannot iterate members, find a sample element, or compute the set size (beyond `n_inserted` if you track it separately). Interviewers sometimes probe this: "can you list all inserted URLs?" - the answer is no.
 
 **5. At-scale: large `m` destroys cache performance.**
-For `n = 10⁸` elements at 1% FP rate, `m ≈ 10⁹` bits = 125 MB. Each of the `k = 7` probes is a random access into a 125 MB bit array - almost certainly a cache miss per probe, so 7 LLC misses (~100 ns each) per query. At 10⁶ queries/sec this dominates. **Use a Blocked Bloom Filter or partition the filter to pack all `k` probes into a single 512-bit cache line, trading a small FP rate increase for ~5–7× throughput at large m.**
+For `n = 10⁸` elements at 1% FP rate, `m ≈ 10⁹` bits = 125 MB. Each of the `k = 7` probes is a random access into a 125 MB bit array - almost certainly a cache miss per probe, so 7 LLC misses (~100 ns each) per query. At 10⁶ queries/sec this dominates. **Use a Blocked Bloom Filter or partition the filter to pack all `k` probes into a single 512-bit cache line, trading a small FP rate increase for ~5–7× <abbr>throughput</abbr> at large m.**
 
 **6. CP: Python's `hash()` is non-deterministic between runs.**
 Python 3.3+ randomizes hash seeds by default (PYTHONHASHSEED). In a competitive-programming judge that runs multiple test cases in the same process, this is fine. Across test cases or runs, `hash("abc")` changes. Use `mmh3` or a custom polynomial hash if you need determinism.
@@ -428,7 +430,7 @@ Implement a bloom filter that supports deletion. Support `add(item)`, `remove(it
 
 **Constraints:** up to `10⁶` distinct elements, target FP rate ≈ 1%, counters must not silently overflow (8-bit counters, max 255 per slot).
 
-**Approach:** Replace the bit array with an array of small unsigned integers (4-bit or 8-bit counters). Increment on `add`, decrement on `remove`, check `> 0` on `might_contain`. The critical senior insight: 4-bit counters saturate at 15. If an element is inserted 16 times (or 16 collisions land on one counter), the counter saturates and a subsequent `remove` decrements from 15, leaving a phantom 14 - a false positive that never clears. For correctness, either use 8-bit counters (2× space) or assert `counter < 255` before incrementing and refuse insertion at saturation.
+**Approach:** Replace the bit array with an array of small unsigned integers (4-bit or 8-bit counters). Increment on `add`, decrement on `remove`, check `> 0` on `might_contain`. The critical senior insight: 4-bit counters saturate at 15. If an element is inserted 16 times (or 16 <abbr>collision</abbr>s land on one counter), the counter saturates and a subsequent `remove` decrements from 15, leaving a phantom 14 - a false positive that never clears. For correctness, either use 8-bit counters (2× space) or assert `counter < 255` before incrementing and refuse insertion at saturation.
 
 ```python
 from __future__ import annotations

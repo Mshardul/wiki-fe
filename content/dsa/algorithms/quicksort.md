@@ -31,7 +31,7 @@
 
 ## What it is
 
-**Quicksort** sorts by _divide and conquer_, but it does the work in the **split**: pick a **pivot**, **partition** the array so everything smaller sits left of the pivot and everything larger sits right, then recurse on each side. The pivot lands in its final sorted position after one partition; combining the recursed halves needs no work at all - they're already in place.
+**Quicksort** sorts by _<abbr>divide and conquer</abbr>_, but it does the work in the **split**: pick a **pivot**, **partition** the array so everything smaller sits left of the pivot and everything larger sits right, then recurse on each side. The pivot lands in its final sorted position after one partition; combining the recursed halves needs no work at all - they're already in place.
 
 Mental model: **sorting papers by repeatedly splitting a pile.** Grab one sheet (the pivot), then toss every other sheet left or right of it by comparison. Now that one sheet is in its final spot, and you have two smaller piles to repeat on. No re-merging - once split, the order is locked.
 
@@ -39,7 +39,7 @@ The trade that defines quicksort: **O(n log n) on average with a tiny constant f
 
 > **Takeaway (say this out loud):** "Quicksort partitions around a pivot in place - O(n log n) average with a small constant, O(1) space - but a bad pivot is O(n²), so randomize it; it's the in-memory default, not stable."
 
-**Complexity:** O(n log n) average, **O(n²) worst** (mitigated by randomization), O(log n) space (recursion stack).
+**Complexity:** O(n log n) average, **O(n²) worst** (mitigated by randomization), O(log n) space (<abbr>recursion</abbr> stack).
 
 ## Intuition
 
@@ -87,7 +87,7 @@ Unlike [merge sort](./merge-sort.md)'s always-balanced split, the _shape_ of thi
 
 ## Correctness / invariant
 
-**Partition invariant (the loop):** during the scan with boundary `i` and cursor `j`, the array is kept in three zones - `a[lo .. i-1]` all **≤ pivot**, `a[i .. j-1]` all **> pivot**, and `a[j .. hi-1]` unexamined.
+**Partition <abbr>invariant</abbr> (the loop):** during the scan with boundary `i` and cursor `j`, the array is kept in three zones - `a[lo .. i-1]` all **≤ pivot**, `a[i .. j-1]` all **> pivot**, and `a[j .. hi-1]` unexamined.
 
 - _Initialization:_ `i = j = lo` - both the ≤ and > zones are empty, invariant holds.
 - _Maintenance:_ if `a[j] > pivot`, it joins the > zone (just advance `j`). If `a[j] ≤ pivot`, swap it with `a[i]` (the first > element) and advance both - the ≤ zone grows by one, the > zone shifts right by one, both still correct.
@@ -123,7 +123,7 @@ The senior reading: quicksort is the default _unless_ the constraint says "worst
 
 ## When to use / when not
 
-Reach for quicksort as the **default in-memory array sort** when average-case speed matters and the worst case is tolerable or defended with randomization - its small constant factor and cache-friendly sequential partitioning make it the fastest comparison sort in practice. It's what C++'s `std::sort` uses (as introsort, which switches to heapsort if recursion goes too deep, capping the worst case). Reach for **quickselect** - the one-sided form - when you need the **k-th smallest/largest or the median** without a full sort: O(n) average instead of O(n log n).
+Reach for quicksort as the **default in-memory array sort** when average-case speed matters and the worst case is tolerable or defended with randomization - its small constant factor and <abbr>cache-friendly</abbr> sequential partitioning make it the fastest comparison sort in practice. It's what C++'s `std::sort` uses (as introsort, which switches to heapsort if recursion goes too deep, capping the worst case). Reach for **quickselect** - the one-sided form - when you need the **k-th smallest/largest or the median** without a full sort: O(n) average instead of O(n log n).
 
 Don't use plain quicksort when you need a **guaranteed** O(n log n) (its O(n²) tail rules it out for hard real-time or adversarial inputs - use [merge sort](./merge-sort.md) or heapsort) or when you need **stability** (equal keys get reordered by the swaps - use merge sort). And avoid the naive first/last-element pivot on data that may arrive sorted: it triggers the worst case exactly when you'd least expect it.
 
@@ -145,7 +145,7 @@ Introsort is the practical answer to quicksort's flaw: run quicksort, but if rec
 The **Search/divide** family, doing its work on the way _down_ (partition) rather than up (merge):
 
 - **Recurrence:** `T(n) = T(k) + T(n−1−k) + Θ(n)`. Balanced (`k ≈ n/2`) → `2T(n/2)+Θ(n)` → `Θ(n log n)`; degenerate (`k = 0`) → `T(n−1)+Θ(n)` → `Θ(n²)`. Unlike [merge sort](./merge-sort.md), whose split is always perfectly balanced (`mid`), quicksort's balance is **data-dependent** - that's the entire source of the O(n²) tail.
-- **Invariant:** the three-zone partition invariant (≤ / > / unexamined) is the local correctness obligation; "pivot ends final, sides independent" is the global one.
+- **<abbr>Invariant</abbr>:** the three-zone partition invariant (≤ / > / unexamined) is the local correctness obligation; "pivot ends final, sides independent" is the global one.
 - **Why partition and not merge?** Merge sort pays O(n) to _combine_ and gets a free split; quicksort pays O(n) to _split_ and gets a free combine. The asymmetry is why merge sort's cost is input-independent (`mid` is always balanced) and quicksort's hinges on the pivot - and why quickselect can prune to _one_ side (`T(n)=T(n/2)+O(n)`→O(n)), which merge sort can't, since merge sort's information is created in the combine, not the split.
 
 ## Edge cases
@@ -154,7 +154,7 @@ The **Search/divide** family, doing its work on the way _down_ (partition) rathe
 - **Already sorted / reverse sorted** - the classic O(n²) trap with a first/last-element pivot (every split is maximally unbalanced). **Randomized or median-of-three pivot fixes it** - the single most important quicksort hardening, and the senior-depth point here.
 - **All-equal elements** - a _catastrophe_ for two-way partitioning: every element equals the pivot, splits go 0/(n-1), → O(n²). The fix is **3-way partitioning** (Dutch National Flag): segment into `< p`, `== p`, `> p` and recurse only on the unequal parts → O(n) on all-equal input. (See practice problem 3.)
 - **Duplicates generally** - even non-degenerate, heavy duplicates favor 3-way partitioning; it's the standard production choice (`std::sort` and Sedgewick's quicksort both use a duplicate-aware partition).
-- **Stack overflow on worst case** - naive recursion is O(n) stack depth in the worst case. Recurse into the **smaller** partition and loop on the larger (tail elimination) to cap stack at O(log n) - a real bug in contest code on `n = 10⁶` sorted input.
+- **Stack overflow on worst case** - naive <abbr>recursion</abbr> is O(n) stack depth in the worst case. Recurse into the **smaller** partition and loop on the larger (tail elimination) to cap stack at O(log n) - a real bug in contest code on `n = 10⁶` sorted input.
 - **Overflow (CP-flavored trap)** - `mid = (lo + hi) // 2` when computing a median-of-three pivot index overflows in fixed-width languages; use `lo + (hi - lo) // 2`. Harmless in Python's bigints.
 
 ## Implementation

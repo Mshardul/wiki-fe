@@ -62,4 +62,4 @@ See [DSA Learning Paths](../index.md#learning-paths) for the other tracks.
 
 ## Explicitly skipped in this track
 
-LRU/LFU cache (interview-composite structures, not CP-relevant), B-tree/B+-tree/bloom filter/interval tree (disk/systems internals), network flow, full AVL/Red-Black internals. Covered in [Standard SWE](./standard-swe.md) or [Senior-depth](./senior-depth.md) where relevant.
+<abbr>LRU</abbr>/LFU cache (interview-composite structures, not CP-relevant), B-tree/B+-tree/<abbr>bloom filter</abbr>/interval tree (disk/systems internals), network flow, full AVL/Red-Black internals. Covered in [Standard SWE](./standard-swe.md) or [Senior-depth](./senior-depth.md) where relevant.

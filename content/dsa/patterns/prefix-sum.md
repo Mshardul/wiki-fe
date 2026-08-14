@@ -50,7 +50,7 @@
 
 | Pattern | Distinction |
 |---|---|
-| **Sliding Window** | Sliding window maintains a sum over a range that **shifts** (expand right, contract left) based on a condition, recomputing incrementally as it slides - O(n) total across all window positions, but doesn't support arbitrary, non-adjacent range queries. Prefix sum precomputes once and answers **any** `[L, R]` query in O(1), including ranges accessed in any order. |
+| **Sliding Window** | <abbr>Sliding window</abbr> maintains a sum over a range that **shifts** (expand right, contract left) based on a condition, recomputing incrementally as it slides - O(n) total across all window positions, but doesn't support arbitrary, non-adjacent range queries. Prefix sum precomputes once and answers **any** `[L, R]` query in O(1), including ranges accessed in any order. |
 | **Difference Array** | Difference array is prefix sum's *inverse operation* - it supports O(1) **range updates** (add a value to every element in `[L, R]`) at the cost of needing a full prefix-sum pass to read back individual values. Prefix sum supports O(1) **range reads** on a static array. They solve opposite problems and are often used together (many updates, then one final reconstruction pass). |
 | **Fenwick Tree / Segment Tree** | These support O(log n) range sum queries **and** O(log n) point/range *updates* - useful when the array is mutated between queries. Plain prefix sum requires a full O(n) rebuild after any single update, so it's only appropriate for **immutable** (or rarely-updated) arrays. |
 
@@ -89,7 +89,7 @@ Query: sum of arr[1..3] (i.e. 4 + -1 + 5 = 8)
   = 8   ✓
 ```
 
-**Why the off-by-one convention matters:** `P[i]` is defined as the sum of the first `i` elements (`arr[0]` through `arr[i-1]`), **not** "sum through index `i` inclusive." This means `P` has length `n+1`, with `P[0] = 0` (sum of zero elements) as a sentinel. The payoff: `sum(arr[L..R])` (inclusive, 0-indexed) is `P[R+1] - P[L]` with **no special case for `L = 0`**, because `P[0] = 0` already handles it - if you instead define `P[i]` as "sum through index `i` inclusive" (length `n`, no sentinel), every query needs an `if L == 0` branch to avoid indexing `P[-1]`. The `n+1`-length-with-sentinel convention is what makes the formula uniform.
+**Why the off-by-one convention matters:** `P[i]` is defined as the sum of the first `i` elements (`arr[0]` through `arr[i-1]`), **not** "sum through index `i` inclusive." This means `P` has length `n+1`, with `P[0] = 0` (sum of zero elements) as a <abbr>sentinel</abbr>. The payoff: `sum(arr[L..R])` (inclusive, 0-indexed) is `P[R+1] - P[L]` with **no special case for `L = 0`**, because `P[0] = 0` already handles it - if you instead define `P[i]` as "sum through index `i` inclusive" (length `n`, no sentinel), every query needs an `if L == 0` branch to avoid indexing `P[-1]`. The `n+1`-length-with-sentinel convention is what makes the formula uniform.
 
 ---
 
@@ -113,7 +113,7 @@ The signal that pushes you *off* this pattern: if updates happen between queries
 
 **Real-world usage:** OLAP/analytics engines precompute running aggregates over immutable time-series windows (e.g. cumulative revenue up to each day) so that any date-range rollup query answers in O(1) instead of re-scanning raw rows - the same precompute-once-query-many trade this pattern makes. **At-scale failure:** "immutable" datasets often stop being immutable as requirements evolve. The moment updates start arriving at meaningful frequency, the O(n) full-rebuild cost per update dominates total query time - exactly the point at which teams migrate to a Fenwick tree or segment tree.
 
-**Cache behavior:** building the prefix array is a single sequential pass over contiguous memory - cache-friendly, with hardware prefetching working in the pattern's favor. Each O(1) range-sum query touches exactly two array slots, which for a prefix array small enough to fit in cache is effectively free; only once the array is large enough to exceed cache size do individual queries risk a cache miss on either endpoint.
+**Cache behavior:** building the prefix array is a single sequential pass over contiguous memory - <abbr>cache-friendly</abbr>, with hardware prefetching working in the pattern's favor. Each O(1) range-sum query touches exactly two array slots, which for a prefix array small enough to fit in cache is effectively free; only once the array is large enough to exceed cache size do individual queries risk a cache miss on either endpoint.
 
 ---
 

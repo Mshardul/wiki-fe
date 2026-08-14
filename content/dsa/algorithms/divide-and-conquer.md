@@ -44,7 +44,7 @@ Mental model: **the general contractor**. A GC doesn't lay every brick. They spl
 
 Three ideas make D&C work:
 
-**1. Subproblems are the same shape.** The recursive call gets a problem that looks exactly like the original, just smaller. This is what makes trusting the recursion safe: the invariant that "recursion correctly solves any input of size < n" lets you build the size-n solution on top without understanding the deeper stack frames.
+**1. Subproblems are the same shape.** The <abbr>recursion</abbr> call gets a problem that looks exactly like the original, just smaller. This is what makes trusting the recursion safe: the invariant that "recursion correctly solves any input of size < n" lets you build the size-n solution on top without understanding the deeper stack frames.
 
 **2. Independence.** The left half is solved before the right half is even started (or, in a parallel model, both run at the same time). No subproblem's answer depends on another's in-progress work. This independence is why D&C parallelizes naturally and why correctness arguments are clean.
 
@@ -133,7 +133,7 @@ This is the canonical D&C trace to have ready in an interview: it shows a non-tr
 
 ## Correctness / invariant
 
-**The D&C correctness argument is always the same shape** - strong induction on problem size:
+**The D&C correctness argument is always the same shape** - strong induction on problem size, resting on an <abbr>invariant</abbr>:
 
 1. **Base case:** when the input is small enough (size 1, or some threshold), solve it directly. This is trivially correct.
 2. **Inductive step:** assume the algorithm is correct for all inputs of size < n. The divide step produces subproblems of size strictly less than n (because b > 1). By the inductive hypothesis, the recursive calls return correct answers. The combine step then merges correct answers into a correct answer for the size-n input - provided you prove the combine is correct given correct sub-answers.
@@ -208,8 +208,8 @@ _Karatsuba:_ T(n) = 3T(n/2) + O(n). a = 3, b = 2, c = log₂3 ≈ 1.585. f(n) = 
 - The problem is inherently sequential (each step depends on the previous result) - no useful split exists.
 
 **Alternatives and when they win:**
-- **Dynamic programming** - when subproblems repeat; D&C pays exponential time redoing the same work.
-- **Greedy** - when a single locally optimal choice per step provably yields the global optimum; simpler and O(n) or O(n log n) without the recursion overhead.
+- **<abbr>Dynamic programming</abbr>** - when subproblems repeat; D&C pays exponential time redoing the same work.
+- **<abbr>Greedy</abbr>** - when a single locally optimal choice per step provably yields the global optimum; simpler and O(n) or O(n log n) without the recursion overhead.
 - **Iterative sweep** - for problems where D&C's combine step turns out to be as expensive as the iterative version (finding array max - just scan left to right).
 
 Real-world usage: D&C is the backbone of production sorting (`Timsort` in Python, `pdqsort` in Rust), FFT-based signal processing, and database external merge-sort for out-of-core data that won't fit in memory.
@@ -261,7 +261,7 @@ if lo >= hi:
 **3. Unbalanced splits → O(n²) depth.**  
 Quicksort is D&C but degrades to O(n²) recursion depth on already-sorted input with a naïve pivot. The fix (random pivot, median-of-3) is specific to that algorithm, but the lesson is general: a D&C that splits unevenly doesn't guarantee O(log n) depth.
 
-**4. Stack overflow on large n.**  
+**4. <abbr>Call stack</abbr> overflow on large n.**  
 Python's default recursion limit is 1000. A D&C on n = 10⁵ hits depth log₂(10⁵) ≈ 17 - fine. But if your split is unbalanced, depth can reach n and crash. Either fix the split or convert to iterative bottom-up (merge sort's iterative form, for example).
 
 **5. Combine step assumes sorted / processed sub-answers.**  

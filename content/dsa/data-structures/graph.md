@@ -99,7 +99,7 @@ E ranges from O(V) for sparse trees/chains to O(V²) for complete graphs. When E
 
 ## When to use / when not
 
-**Reach for a graph when** the problem is fundamentally about relationships between entities: shortest path, connectivity, cycle detection, dependency ordering, flow, matching. The signal is "can I reach X from Y?" or "what is the minimum cost connection?"
+**Reach for a graph when** the problem is fundamentally about relationships between entities: shortest path, connectivity, <abbr>cycle detection</abbr>, dependency ordering, flow, matching. The signal is "can I reach X from Y?" or "what is the minimum cost connection?"
 
 **Adjacency list** is the default. Use it when the graph is sparse (E ≪ V²) - social networks, road maps, dependency graphs. Every traversal algorithm (BFS, DFS, Dijkstra, topological sort) runs in O(V + E) on a list; on a matrix they degrade to O(V²) because iterating neighbors costs O(V) per node.
 
@@ -120,6 +120,8 @@ Real-world workhorse: operating system kernels use directed graphs (DAGs) for pa
 | Adjacency matrix | O(V²) | O(1) | O(V) | No | **Crossover:** wins once E > V·log V in practice, or whenever O(1) edge-existence sits in an algorithm's hot loop (Floyd-Warshall) regardless of density - the O(V²) memory is already paid by a near-complete graph's edge list, so the O(1) lookup becomes pure upside. |
 | Edge list | O(E) | O(E) | O(E) | No | **Crossover:** wins specifically when the algorithm needs a **global** view of all edges at once (Kruskal's MST sorts every edge) rather than per-node access - no per-node index means it never wins on lookup or iteration, only on whole-graph operations. |
 | Incidence matrix | O(V·E) | O(E) | O(E) | No | **Crossover:** essentially never for standard graphs (dominated by both list and matrix on every column here) - only relevant once edges themselves need first-class identity, e.g. hypergraphs where one edge connects >2 vertices. |
+
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
 
 ## Variants
 
@@ -278,7 +280,7 @@ def dfs(
     return visited
 ```
 
-**Recursion stack space.** `dfs` above is recursive, so its space complexity is not just the O(V) `visited` set - it also carries an O(V) call-stack term in the worst case (a graph shaped like a single long chain recurses V deep before returning). Total DFS space is therefore **O(V)** for `visited` **+ O(V)** for the call stack = O(V) overall, but state both terms explicitly rather than collapsing to a single O(V) that hides the recursion-depth risk - a chain-shaped input (e.g. a linked-list-like graph) can hit Python's default recursion limit (~1000) well before V gets large, which iterative DFS (an explicit stack) avoids.
+**<abbr>Recursion</abbr> stack space.** `dfs` above is recursive, so its space complexity is not just the O(V) `visited` set - it also carries an O(V) <abbr>call stack</abbr> term in the worst case (a graph shaped like a single long chain recurses V deep before returning). Total DFS space is therefore **O(V)** for `visited` **+ O(V)** for the call stack = O(V) overall, but state both terms explicitly rather than collapsing to a single O(V) that hides the recursion-depth risk - a chain-shaped input (e.g. a linked-list-like graph) can hit Python's default recursion limit (~1000) well before V gets large, which iterative DFS (an explicit stack) avoids.
 
 ### Python - adjacency matrix graph
 
@@ -313,7 +315,7 @@ Missing this is the most common graph bug in interviews - the "number of connect
 **2. Self-loops and parallel edges.**
 Adjacency list handles both naturally, but your algorithm may not. Cycle-detection DFS must distinguish "parent edge" from "back edge" - a self-loop is a back edge to yourself. With an undirected adjacency list, when you traverse edge u→v, skip v if v is the parent (not just if v is visited), otherwise the undirected edge looks like a cycle.
 
-**3. Directed vs undirected cycle detection - two-color is wrong for directed graphs.**
+**3. Directed vs undirected <abbr>cycle detection</abbr> - two-color is wrong for directed graphs.**
 In an undirected graph, a simple `visited` boolean correctly detects cycles: if DFS reaches an already-visited node that isn't the parent, it's a cycle. In a directed graph, this fails - a visited node reachable via a different path is a cross edge (not a back edge), and cross edges don't form cycles. You need three-color marking: WHITE (unvisited) → GRAY (in current DFS stack) → BLACK (done). A back edge is GRAY → GRAY; a cross edge is WHITE/BLACK → BLACK. Juniors apply the undirected two-color approach to directed graphs and get false positives on cross edges. Additionally, in undirected BFS/DFS, mark nodes visited *before* enqueueing, not after popping - otherwise the same node is enqueued multiple times via different neighbors, degrading O(V + E) to O(E) enqueue operations (catastrophic when E = V²).
 
 **4. V and E - know which to use in complexity.**
@@ -461,7 +463,7 @@ Given `numCourses` and a list of `[a, b]` prerequisites (must take b before a), 
 
 **Constraints:** `1 ≤ numCourses ≤ 2000`, `0 ≤ prerequisites.length ≤ 5000`, no duplicate prerequisite pairs.
 
-**Approach:** Build a directed graph; the problem reduces to cycle detection in a DAG. Use DFS with three-color marking: WHITE (unvisited), GRAY (in current DFS path), BLACK (fully processed). If DFS reaches a GRAY node, a cycle exists → return False. This is topological-sort cycle detection, not simple visited/unvisited.
+**Approach:** Build a directed graph; the problem reduces to <abbr>cycle detection</abbr> in a DAG. Use DFS with three-color marking: WHITE (unvisited), GRAY (in current DFS path), BLACK (fully processed). If DFS reaches a GRAY node, a cycle exists → return False. This is topological-sort cycle detection, not simple visited/unvisited.
 
 ```python
 def canFinish(numCourses: int, prerequisites: list[list[int]]) -> bool:
@@ -508,7 +510,7 @@ A signal starts at node `k` and travels through a weighted directed graph (`time
 
 **Constraints:** `1 ≤ n ≤ 100`, `1 ≤ times.length ≤ 6000`, `1 ≤ w ≤ 100`, `1 ≤ u, v, k ≤ n`, all edge weights positive.
 
-**Approach:** This is the coverage gap in this article: all three entries above are unweighted BFS/DFS, but the article's own "When to use" section names Dijkstra as the canonical graph use case, so this is the entry that actually exercises it. Run Dijkstra from `k`: a min-priority-queue of `(distance, node)` pairs, always expanding the closest unvisited frontier node next and relaxing its outgoing edges. Unlike BFS (all edges cost 1, so a plain FIFO queue suffices), positive unequal weights require the greedy "always expand the globally closest frontier node" discipline that only a heap gives efficiently. The answer is the max over all shortest distances, or -1 if any node was never reached.
+**Approach:** This is the coverage gap in this article: all three entries above are unweighted BFS/DFS, but the article's own "When to use" section names Dijkstra as the canonical graph use case, so this is the entry that actually exercises it. Run Dijkstra from `k`: a min-priority-queue of `(distance, node)` pairs, always expanding the closest unvisited frontier node next and relaxing its outgoing edges. Unlike BFS (all edges cost 1, so a plain FIFO queue suffices), positive unequal weights require the <abbr>greedy</abbr> "always expand the globally closest frontier node" discipline that only a <abbr>heap</abbr> gives efficiently. The answer is the max over all shortest distances, or -1 if any node was never reached.
 
 ```python
 import heapq

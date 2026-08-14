@@ -21,7 +21,7 @@ Does the greedy choice provably work, or do you need DP.
 | --- | --- | --- |
 | Coins [1, 3, 4], amount 6 | grab 4 first → 4+1+1 = 3 coins | 3+3 = 2 coins |
 
-Greedy's local choice (biggest coin first) poisons the global answer here - no crash, no obvious tell, just a wrong answer. This is why "no proof, no greedy."
+<abbr>Greedy</abbr>'s local choice (biggest coin first) poisons the global answer here - no crash, no obvious tell, just a wrong answer. This is why "no proof, no greedy."
 
 ## Proof checklist before trusting greedy
 
@@ -31,10 +31,10 @@ Greedy's local choice (biggest coin first) poisons the global answer here - no c
 | Optimal substructure | after committing to the greedy choice, what remains is a smaller instance of the same problem |
 | Exchange argument | show any optimal solution can be modified to include the greedy choice without losing optimality |
 
-If you can't produce the exchange argument, assume DP until proven otherwise.
+If you can't produce the <abbr>exchange argument</abbr>, assume DP until proven otherwise.
 
 ## Gotchas
 
-- ⚠️ Greedy always returns *an* answer - it never crashes when the greedy-choice property fails, it just silently returns a suboptimal one.
+- ⚠️ <abbr>Greedy</abbr> always returns *an* answer - it never crashes when the greedy-choice property fails, it just silently returns a suboptimal one.
 - ⚠️ Fractional knapsack is greedy-solvable (by value/weight ratio); 0/1 knapsack is NOT - the indivisibility breaks the exchange argument, forcing DP.
 - ⚠️ "Sort then scan" being the obvious approach doesn't mean it's correct - interval scheduling's greedy is provably correct, but many sort-then-scan approaches for other problems aren't.

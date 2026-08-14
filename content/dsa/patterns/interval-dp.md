@@ -51,7 +51,7 @@ Mental model: **a table of sub-problems where you fill the diagonal first.** The
 
 - **1-D DP (LIS, Kadane's):** those DP states are a single index `i` ("best answer ending at i"); interval DP states are a pair `[i, j]` - if your recurrence only needs one boundary, it's not interval DP.
 - **Bitmask DP:** bitmask DP encodes a *subset* of n items as a bitmask (order doesn't matter, membership does); interval DP encodes a *contiguous range* (order matters, the range must be a slice of the original sequence). If the problem lets you pick items in any order, it's bitmask; if the sequence is fixed and you split contiguous segments, it's interval DP.
-- **Divide and Conquer (non-DP):** D&C splits a problem into independent sub-problems; interval DP splits into *overlapping* sub-problems that are cached. If `[i, k]` and `[k+1, j]` never share sub-problems, you don't need DP - but they almost always do in interval problems.
+- **<abbr>Divide and Conquer</abbr> (non-DP):** D&C splits a problem into independent sub-problems; interval DP splits into *overlapping* sub-problems that are cached. If `[i, k]` and `[k+1, j]` never share sub-problems, you don't need DP - but they almost always do in interval problems.
 
 ## How it works
 
@@ -111,7 +111,7 @@ gap = 4 (the whole array):
 | n ≤ 10⁵ | Interval DP is too slow; look for a greedy, stack-based, or O(n log n) approach |
 
 **When the constraint pushes you off interval DP:**
-- n > 500 with a general cost: O(n³) won't pass in most OJs (≈ 10⁸–10⁹ ops depending on cost). Look for a greedy exchange argument or a different DP formulation.
+- n > 500 with a general cost: O(n³) won't pass in most OJs (≈ 10⁸–10⁹ ops depending on cost). Look for a greedy <abbr>exchange argument</abbr> or a different DP formulation.
 - The "intervals" are not contiguous sub-sequences: if you can pick arbitrary subsets or permutations, interval DP doesn't apply - bitmask DP or backtracking is the shape.
 - The cost is separable with no split-point dependency: then it's 1-D DP, not interval DP.
 

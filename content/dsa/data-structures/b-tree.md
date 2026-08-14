@@ -45,7 +45,7 @@ Mental model: **a multi-level index in a reference book.** Instead of a binary y
 
 The driving fact: **a disk/SSD seek is roughly 100,000–1,000,000× slower than a RAM access.** So the cost of a search isn't comparisons (cheap, in-RAM once a node is loaded) - it's the **number of nodes you must fetch from disk**, i.e. the tree's height. A binary tree of a billion keys is ~30 levels deep → ~30 seeks. Disaster.
 
-The fix: make each node as **wide** as one disk block (say 4–16 KB), holding hundreds of keys. Now the **fan-out** is hundreds, so a billion keys fit in `log₄₀₀(10⁹) ≈ 3–4` levels → 3–4 seeks. The B-tree trades "many shallow binary decisions" for "few wide multi-way decisions," aligning the structure to the hardware: **one node = one block = one seek.** Everything else (split, merge) is bookkeeping to keep it balanced and the nodes block-sized.
+The fix: make each node as **wide** as one disk block (say 4–16 KB), holding hundreds of keys. Now the **<abbr>fan-out</abbr>** is hundreds, so a billion keys fit in `log₄₀₀(10⁹) ≈ 3–4` levels → 3–4 seeks. The B-tree trades "many shallow binary decisions" for "few wide multi-way decisions," aligning the structure to the hardware: **one node = one block = one seek.** Everything else (split, merge) is bookkeeping to keep it balanced and the nodes block-sized.
 
 A B-tree of **order m** (minimum degree `t`, where each node holds between `t−1` and `2t−1` keys) obeys: every node has between ⌈m/2⌉ and m children (except the root), keys within a node are sorted, and **all leaves sit at the same depth** (perfect balance). A node with `k` keys has `k+1` children, and the keys partition the child key-ranges.
 
@@ -113,7 +113,7 @@ The `log t` / `t` factors are **in-RAM** work (binary-search or shift within a l
 
 - **Everything fits in RAM** → an in-memory [balanced BST](./balanced-bst.md) ([red-black](./red-black-tree.md) or [AVL](./avl-tree.md)); B-tree's wide nodes add complexity with no seek-saving benefit when there are no seeks.
 - **You only need unordered lookup** → a [hash table](./hash-table.md) (or a hash index on disk); O(1) beats O(log_t n) when order doesn't matter. (Many DBs offer both B-tree and hash indexes for exactly this reason.)
-- **Append-only / write-heavy logs** → an LSM-tree often beats a B-tree on write throughput by batching sequential writes.
+- **Append-only / write-heavy logs** → an LSM-tree often beats a B-tree on write <abbr>throughput</abbr> by batching sequential writes.
 
 Real-world: **every relational database** indexes with B-trees or **B+-trees** (PostgreSQL, MySQL/InnoDB, SQL Server, Oracle); **filesystems** use them (NTFS, HFS+, ext4's htree, Btrfs - "B-tree filesystem"); and key-value stores layer them under sorted-access APIs. If you've ever made a database index, you made a B-tree.
 
@@ -129,12 +129,14 @@ Real-world: **every relational database** indexes with B-trees or **B+-trees** (
 
 The B-tree's distinguishing column is **keys-per-node = many**, which collapses height and so disk seeks. The binary balanced trees win in RAM (no seeks to amortize); the B-tree wins the moment a node fetch is expensive.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 - **[B+-Tree](./b-plus-tree.md)** - values live only at leaves, leaves are linked in a sorted list, internal nodes hold pure routing keys. The variant almost every real database actually uses (see [Comparison](#comparison) and [Gotchas](#gotchas--edge-cases)).
 - **B\*-Tree** - delays splitting by redistributing keys between siblings first (2-to-3 split instead of 1-to-2), keeping nodes fuller (~2/3 vs ~1/2 minimum) at the cost of more complex insert logic. Used in some filesystems (HFS+, some NTFS variants).
 - **Counted B-Tree** - each node also tracks subtree size, enabling O(log_t n) "find the k-th element" / rank queries - the B-tree analogue of an order-statistics tree.
-- **Copy-on-write / persistent B-Tree** - writes create new nodes instead of mutating in place, so old versions stay readable (used in LMDB, some snapshot-capable filesystems like Btrfs/ZFS) - trades write amplification for cheap, safe point-in-time snapshots.
+- **Copy-on-write / persistent B-Tree** - writes create new nodes instead of mutating in place, so old versions stay readable (used in LMDB, some snapshot-capable filesystems like Btrfs/ZFS) - trades <abbr>write amplification</abbr> for cheap, safe point-in-time snapshots.
 
 ## Traversal & invariant
 
@@ -406,7 +408,7 @@ bt.insert(35)                         # descends into [30, 40], which has room (
 # root.children[1].keys == [30, 35, 40]
 ```
 
-**Complexity:** O(log_t n) node visits on the way down, O(t) work per split (copying up to `t-1` keys) - O(t log_t n) worst case, but split-per-insert is amortized rare since a node must fill (`t` inserts through it) before splitting again, so amortized cost stays O(log_t n) with a small constant.
+**Complexity:** O(log_t n) node visits on the way down, O(t) work per split (copying up to `t-1` keys) - O(t log_t n) worst case, but split-per-insert is <abbr>amortized</abbr> rare since a node must fill (`t` inserts through it) before splitting again, so amortized cost stays O(log_t n) with a small constant.
 
 ### 6. Range Sum Query - Mutable
 
@@ -477,7 +479,7 @@ Given `k` sorted linked lists, merge them into one sorted linked list and return
 
 **Constraints:** `0 ≤ k ≤ 10⁴`, `0 ≤ length of each list ≤ 500`, `-10⁴ ≤ node.val ≤ 10⁴`, total nodes across all lists up to `5 × 10⁴`.
 
-**Approach:** Merging two lists at a time pairwise, k-1 times, costs O(nk) total (n = total nodes) - each of the k-1 merges touches most of the accumulated output. The B-tree-flavored insight is the **k-way merge**: instead of a binary "merge next pair," maintain a min-heap of size k holding each list's current head. Repeatedly pop the smallest, append it to the output, and push that list's next node - the same "binary-search-within-a-wide-node-then-descend-into-one-child" shape a B-tree uses, but here the "node" is the heap of k candidates and "descending" is popping the winner and advancing that one list. This drops the merge cost from O(nk) to O(n log k).
+**Approach:** Merging two lists at a time pairwise, k-1 times, costs O(nk) total (n = total nodes) - each of the k-1 merges touches most of the accumulated output. The B-tree-flavored insight is the **k-way merge**: instead of a binary "merge next pair," maintain a min-<abbr>heap</abbr> of size k holding each list's current head. Repeatedly pop the smallest, append it to the output, and push that list's next node - the same "binary-search-within-a-wide-node-then-descend-into-one-child" shape a B-tree uses, but here the "node" is the heap of k candidates and "descending" is popping the winner and advancing that one list. This drops the merge cost from O(nk) to O(n log k).
 
 ```python
 import heapq

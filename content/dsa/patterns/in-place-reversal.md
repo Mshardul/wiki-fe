@@ -45,7 +45,7 @@ In-place reversal rewires the `next` pointers of a linked list (or a subrange) u
 
 **(c) Not to be confused with:**
 
-- **Two Pointers on arrays** - two pointers reverse arrays by swapping values at indices; in-place reversal on lists rewires pointers, not values, because random access doesn't exist. The swap approach reads and writes values; the pointer-rewire approach never touches values at all.
+- **<abbr>Two-pointer</abbr> on arrays** - two pointers reverse arrays by swapping values at indices; in-place reversal on lists rewires pointers, not values, because random access doesn't exist. The swap approach reads and writes values; the pointer-rewire approach never touches values at all.
 - **Fast & Slow Pointers** - Floyd's tortoise/hare finds the middle or detects cycles; it does not reverse anything. In-place reversal uses fast/slow only to locate a boundary (e.g. palindrome midpoint), then runs the three-pointer flip from there. When both appear in the same problem, they are sequential steps, not the same mechanic.
 - **Rotate (deque-style)** - rotating a list by k looks similar to reversal (both change node order) but the optimal implementation is ring-cut, not reversal. Candidates who confuse the two reach for the three-reversal algorithm (`reverse all`, `reverse [0..k-1]`, `reverse [k..n-1]`) which is correct but requires three passes where ring-cut needs one; on a linked list specifically the ring-cut is also O(1) additional pointer operations.
 
@@ -126,7 +126,7 @@ Result:  [3]→[2]→[1]→[6]→[5]→[4]→None
 
 **When the constraint pushes you off:** if the input is an array (not a linked list), use index swaps - pointer rewiring is irrelevant. If extra O(n) space is allowed and the code simplicity matters more, copy to a list and reverse with slicing.
 
-**Real-world usage:** in-place list reversal is the kernel of undo/redo stacks in editors (reverse the operation list to undo a batch), and the basis of doubly-linked-list re-splicing in Linux kernel's `list_del` + `list_add` - the same three-pointer rewire, just with both `prev` and `next` updated. **At scale:** for very long lists (n > 10⁷), the bottleneck shifts from pointer count to TLB pressure - each `curr.next` dereference is a pointer-chase to an arbitrary heap address, and at large n those addresses stop fitting in L3. A chunked approach (reverse in cache-sized segments, then stitch) is measurably faster on hardware even though Big-O is the same O(n).
+**Real-world usage:** in-place list reversal is the kernel of undo/redo stacks in editors (reverse the operation list to undo a batch), and the basis of doubly-linked-list re-splicing in Linux kernel's `list_del` + `list_add` - the same three-pointer rewire, just with both `prev` and `next` updated. **At scale:** for very long lists (n > 10⁷), the bottleneck shifts from pointer count to TLB pressure - each `curr.next` dereference is a <abbr>pointer chasing</abbr> hop to an arbitrary heap address, and at large n those addresses stop fitting in L3. A chunked approach (reverse in cache-sized segments, then stitch) is measurably faster on hardware even though Big-O is the same O(n).
 
 ## Variations
 

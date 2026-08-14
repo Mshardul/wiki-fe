@@ -22,7 +22,7 @@
 
 **Maximum flow** is the largest amount of "stuff" (water, data, cargo) that can be pushed from a designated source node `s` to a designated sink node `t` through a directed graph where every edge has a capacity limiting how much can flow through it.
 
-Mental model: **a network of pipes.** Each edge is a pipe with a maximum throughput; the source is a pump, the sink is a drain. Every algorithm on this page answers the same question - "how much water per second can I get from the pump to the drain, given the pipes I have?" - by the same core loop: **find a path with spare capacity, push flow through it, repeat until no such path remains.** The algorithms below differ only in _how they search for that path_, and that single choice is what separates a naive exponential-feeling implementation from a provably fast one.
+Mental model: **a network of pipes.** Each edge is a pipe with a maximum <abbr>throughput</abbr>; the source is a pump, the sink is a drain. Every algorithm on this page answers the same question - "how much water per second can I get from the pump to the drain, given the pipes I have?" - by the same core loop: **find a path with spare capacity, push flow through it, repeat until no such path remains.** The algorithms below differ only in _how they search for that path_, and that single choice is what separates a naive exponential-feeling implementation from a provably fast one.
 
 > **Interview soundbite:** "Max-flow = repeatedly find a path with spare capacity from source to sink and push flow through it, until no path remains - and the max-flow min-cut theorem guarantees that's exactly the maximum."
 
@@ -53,7 +53,7 @@ while an augmenting path p from s to t exists in the residual graph:
 return total flow pushed
 ```
 
-The subtlety every member shares: pushing flow along `u→v` doesn't just reduce `u→v`'s remaining capacity - it also creates or grows a **reverse edge** `v→u` with capacity equal to the flow just pushed. This reverse edge is what lets a later augmenting path "undo" an earlier greedy choice, and it's the reason the algorithm converges to the true optimum regardless of which augmenting path gets picked first. The **max-flow min-cut theorem** is the formal correctness certificate shared by every member: the algorithm has found the max flow exactly when no augmenting path remains, and at that point, the set of nodes still reachable from `s` in the residual graph defines an s-t cut whose capacity equals the flow found - so no larger flow is possible.
+The subtlety every member shares: pushing flow along `u→v` doesn't just reduce `u→v`'s remaining capacity - it also creates or grows a **reverse edge** `v→u` with capacity equal to the flow just pushed. This reverse edge is what lets a later augmenting path "undo" an earlier <abbr>greedy</abbr> choice, and it's the reason the algorithm converges to the true optimum regardless of which augmenting path gets picked first. The **max-flow min-cut theorem** is the formal correctness certificate shared by every member: the algorithm has found the max flow exactly when no augmenting path remains, and at that point, the set of nodes still reachable from `s` in the residual graph defines an s-t cut whose capacity equals the flow found - so no larger flow is possible.
 
 The members differ in **exactly one place**: which strategy they use to find the next augmenting path (or set of paths).
 

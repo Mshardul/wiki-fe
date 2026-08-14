@@ -84,7 +84,7 @@ Level 3: Queue=[6]
 
 ## Correctness / invariant
 
-**Invariant:** At the start of each iteration, every node in the queue is at distance exactly d or d+1 from the source; all nodes at distance < d are already finalized (visited and will not be re-enqueued).
+**<abbr>Invariant</abbr>:** At the start of each iteration, every node in the queue is at distance exactly d or d+1 from the source; all nodes at distance < d are already finalized (visited and will not be re-enqueued).
 
 **Proof sketch:**
 - *Base case:* After enqueuing the source, the queue contains exactly {source} at distance 0. The invariant holds trivially.
@@ -133,7 +133,7 @@ Total auxiliary space: **O(V)**.
 **What rules BFS out:**
 - Weighted edges (use [Dijkstra](./dijkstra.md)/Bellman-Ford)
 - Memory constraints on very large sparse graphs (bidirectional BFS halves the frontier, cutting memory O(V) → O(√V) in the best case)
-- Cycle detection only, no shortest path needed (DFS is simpler and uses O(log V) stack space vs O(V) queue)
+- <abbr>Cycle detection</abbr> only, no shortest path needed (DFS is simpler and uses O(log V) stack space vs O(V) queue)
 
 ## When to use / when not
 
@@ -147,7 +147,7 @@ Total auxiliary space: **O(V)**.
 **Do not use BFS when:**
 
 - Edges have **different weights** → [Dijkstra](./dijkstra.md) (non-negative weights) or Bellman-Ford (negative weights allowed).
-- You need **topological order** → topological sort (DFS-based or Kahn's BFS-based; if using BFS, it's Kahn's specifically).
+- You need **<abbr>topological order</abbr>** → topological sort (DFS-based or Kahn's BFS-based; if using BFS, it's Kahn's specifically).
 - You need to detect **back edges** or determine **articulation points** - DFS provides discovery/finish times that BFS does not.
 - Memory is the bottleneck on a huge graph - DFS uses O(depth) stack space, which is O(log V) on balanced graphs; BFS uses O(V) queue space. When the source and destination are both known, **bidirectional BFS** cuts the frontier: run BFS from both ends simultaneously, stopping when the frontiers meet. The search radius halves from d to d/2, shrinking the explored set from O(b^d) to O(2·b^(d/2)) where b is the branching factor - a square-root reduction. Implementation: maintain two visited sets and two queues; at each step expand whichever frontier is smaller; stop when a node appears in both visited sets.
 - The **solution is deep** in the tree and the **branching factor is large** - a BFS queue can consume enormous memory before reaching the answer (use iterative deepening DFS or A* instead).
@@ -179,7 +179,7 @@ For more details on DFS, see [Depth-First Search (DFS)](./dfs.md). For weighted 
 BFS requires a visited (or "enqueued") set to avoid infinite loops. The semantics matter:
 
 - **Mark on enqueue, not dequeue.** If you mark a node visited when you dequeue it, the same node can be enqueued multiple times by different neighbors before being processed. In the worst case on a dense graph, this bloats the queue to O(E) entries and produces incorrect distances. The invariant breaks: the first dequeue of a node is not necessarily from the shortest path.
-- **Representation:** For graphs with integer node IDs ≤ 10⁵, a boolean array is fastest (O(1) lookup, cache-friendly). For implicit graphs (word ladders, puzzle states), use a hash set. For grids, a 2D boolean array or in-place mutation of the grid (mark visited with a sentinel value) works.
+- **Representation:** For graphs with integer node IDs ≤ 10⁵, a boolean array is fastest (O(1) lookup, <abbr>cache-friendly</abbr>). For implicit graphs (word ladders, puzzle states), use a hash set. For grids, a 2D boolean array or in-place mutation of the grid (mark visited with a sentinel value) works.
 
 **Directed vs undirected**
 
@@ -409,12 +409,12 @@ def bfs_level_order(root) -> list[list[int]]:
     return result
 ```
 
-**Contest note:** For multi-source BFS (e.g., 01-Matrix), initialize `deque` with all sources at distance 0 and run the same loop. The `len(queue)` snapshot trick for level separation is idiomatic Python - it avoids a sentinel `None` element in the queue.
+**Contest note:** For multi-source BFS (e.g., 01-Matrix), initialize `deque` with all sources at distance 0 and run the same loop. The `len(queue)` snapshot trick for level separation is idiomatic Python - it avoids a <abbr>sentinel</abbr> `None` element in the queue.
 
 ## What the interviewer probes for
 
 **"Why `collections.deque` and not a list?"**
-`list.pop(0)` is O(n) - it shifts all remaining elements left. `deque.popleft()` is O(1) amortized because a deque is implemented as a doubly-linked list of fixed-size blocks. On n = 10⁵ BFS iterations, using a list gives O(n²) = 10¹⁰ operations - a TLE that looks like a correctness bug. Always use `deque`.
+`list.pop(0)` is O(n) - it shifts all remaining elements left. `deque.popleft()` is O(1) <abbr>amortized</abbr> because a deque is implemented as a doubly-linked list of fixed-size blocks. On n = 10⁵ BFS iterations, using a list gives O(n²) = 10¹⁰ operations - a TLE that looks like a correctness bug. Always use `deque`.
 
 **"How do you reconstruct the shortest path, not just the distance?"**
 During BFS, maintain a `parent[v] = u` map whenever you enqueue v from u. After BFS terminates, walk backwards from the target to the source via `parent[]`, then reverse. This adds O(V) space and O(path length) time to reconstruct. For problems that ask "does a path exist?", you can omit the parent map entirely.

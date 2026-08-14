@@ -44,7 +44,7 @@ The deep idea: a red-black tree is **a B-tree (specifically a 2-3-4 tree) encode
 
 Why "≤ 2× the shortest path"? Red nodes can't have red children (no two reds in a row), and every path has equal black-height, so the longest possible path alternates red-black-red-black… (at most 2× the all-black shortest path). That bound is looser than AVL's 1.44× - the tree can be taller - but the looser rule means a violation is usually fixable by flipping colors, no structural rotation needed. **Fewer rotations is the whole point**, and the slightly taller tree barely costs lookups.
 
-Each node carries a **color** (red/black). The leaves are conceptually black "nil" sentinels. Insert/delete proceed as a normal [BST](./binary-search-tree.md), then a **fixup** restores the color rules using recoloring and rotations.
+Each node carries a **color** (red/black). The leaves are conceptually black "nil" <abbr>sentinel</abbr>s. Insert/delete proceed as a normal [BST](./binary-search-tree.md), then a **fixup** restores the color rules using recoloring and rotations.
 
 ### The five color rules
 
@@ -151,11 +151,13 @@ Real-world: the C++ STL `map`/`set`/`multimap`, Java's `TreeMap`/`TreeSet`, the 
 
 Red-black and AVL are asymptotically identical; red-black trades a slightly taller tree for cheaper writes - the trade that makes it the standard-library choice.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 - **Left-leaning red-black (LLRB)** - Sedgewick's variant that restricts red links to always lean left, collapsing the insert-fixup case count and making the implementation noticeably shorter to hand-roll. The variant most textbooks/courses teach for exactly that reason.
 - **2-3-4 tree** - the direct B-tree ancestor a red-black tree encodes (see [How it works](#how-it-works)); a black node + its red children is one 2-3-4 node. Rarely implemented directly - red-black is its practical binary encoding.
-- **[AVL tree](./avl-tree.md)** - the stricter balanced-BST sibling; same "self-balancing BST" family, tighter height invariant instead of color rules, see [Comparison](#comparison) for the trade.
+- **[AVL tree](./avl-tree.md)** - the stricter balanced-BST sibling; same "self-balancing BST" family, tighter height <abbr>invariant</abbr> instead of color rules, see [Comparison](#comparison) for the trade.
 - **Weight-balanced / persistent red-black variants** - functional-language implementations (e.g. Haskell, Clojure's persistent maps) use red-black trees with structural sharing so old versions remain valid after an update - a common systems adaptation of the same color-rule core.
 
 ## Traversal & invariant
@@ -314,7 +316,7 @@ class RedBlackTree:
 - **Nil sentinels are black.** Treating null children as black leaves (rule 3) keeps black-height counting consistent; an implementation that special-cases `None` instead of using a shared black sentinel is bug-prone in the fixups.
 - **Mirror cases.** Every insert/delete case has a left/right mirror; hand-rolling means writing both. Forgetting a mirror leaves one side unbalanced - a subtle, data-dependent bug.
 - **Recursion / loop depth.** Height is O(log n), so fixups climb O(log n) levels - safe from stack overflow, unlike a plain BST.
-- **At-scale trap (n > 10⁷): pointer-chasing depth under concurrent load.** Same structural failure mode as AVL: every op is ~2 log₂ n pointer hops through scattered heap allocations, and root-adjacent nodes become write hotspots under concurrent insert/delete (every fixup potentially touches the path to the root). At large n and high write concurrency, a single global red-black tree becomes a lock-contention bottleneck before the O(log n) time bound itself matters - production systems (e.g. database buffer-pool structures) shard, use lock-free variants, or fall back to a coarser structure at this scale.
+- **At-scale trap (n > 10⁷): <abbr>pointer chasing</abbr> depth under concurrent load.** Same structural failure mode as AVL: every op is ~2 log₂ n pointer hops through scattered heap allocations, and root-adjacent nodes become write hotspots under concurrent insert/delete (every fixup potentially touches the path to the root). At large n and high write concurrency, a single global red-black tree becomes a lock-contention bottleneck before the O(log n) time bound itself matters - production systems (e.g. database buffer-pool structures) shard, use lock-free variants, or fall back to a coarser structure at this scale.
 - **Cache behavior.** Like AVL, red-black nodes are heap-allocated and pointer-linked - each hop is a likely cache miss (vs a heap's flat-array layout). Red-black's specific trade here: it does fewer rotations than AVL per write, but the same number of pointer-chased hops per read (height is only ~1.4× taller), so the cache-miss cost per operation is comparable to AVL - the rotation-count difference matters for write cost, not read cache behavior.
 
 ## What the interviewer probes for

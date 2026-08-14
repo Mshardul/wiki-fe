@@ -122,6 +122,8 @@ How a string relates to the structures you'd weigh against it for text work:
 
 The string's identity is **O(1)-indexed immutable text**. The list/`bytearray` trade immutability for cheap building; the [trie](./trie.md) trades flat storage for prefix queries.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 - **Mutable string buffer** - `bytearray` / `io.StringIO` (Python), `StringBuilder` (Java), `std::string` (C++ is mutable). Edit in place in O(1) per char, convert to an immutable string once. The right tool for incremental building.
@@ -134,7 +136,7 @@ The string's identity is **O(1)-indexed immutable text**. The list/`bytearray` t
 
 A string is an [array](./array.md), so its layout story is the array's - with two text-specific twists: **encoding width** and **immutability**.
 
-**Contiguous, like an array.** Characters sit back-to-back in one block; indexing is the same `base + i × width` arithmetic, so `s[i]` is O(1) and iteration is cache-friendly.
+**Contiguous, like an array.** Characters sit back-to-back in one block; indexing is the same `base + i × width` arithmetic, so `s[i]` is O(1) and iteration is <abbr>cache-friendly</abbr>.
 
 ```
 ASCII "hi!" (1 byte/char):     [ 68 | 69 | 21 ]      h=0x68 i=0x69 !=0x21
@@ -158,7 +160,7 @@ build "aaaa" with += :
   "aa"→"aaa" copy 3   ...   total 1+2+3+...+n = O(n²)   ← the trap
 ```
 
-The fix is the dynamic-array one: accumulate into a **mutable, over-allocating** buffer (a Python list, whose append is amortized O(1) by [doubling](./dynamic-array.md#memory-layout)) and materialize the string once with `"".join` - total O(n).
+The fix is the dynamic-array one: accumulate into a **mutable, over-allocating** buffer (a Python list, whose append is <abbr>amortized</abbr> O(1) by [doubling](./dynamic-array.md#memory-layout)) and materialize the string once with `"".join` - total O(n).
 
 **Interning.** Many runtimes store one shared copy of identical string literals/short strings (a global table), so `"ab" is "ab"` may be `True`. It's an allocator optimization (saves memory, makes equality a possible pointer-compare) - never a semantic guarantee; compare with `==`, never `is`.
 
@@ -217,9 +219,9 @@ s.startswith("He"); "lo" in s    # prefix / substring checks
 
 ## What the interviewer probes for
 
-**What if you're building a 10⁹-character string incrementally - does immutability still cost you?** - Yes, catastrophically, if built with `+=` in a loop: each concatenation copies the whole accumulated string, so total work is 1+2+...+n = O(n²), which at n = 10⁹ is computationally infeasible. The fix is unchanged at any scale - accumulate into a mutable buffer (a list, `bytearray`, or `StringBuilder`) whose `append` is amortized O(1) via doubling, and materialize the immutable string once with a single O(n) join, exactly the [dynamic-array amortization argument](./dynamic-array.md#memory-layout) applied to text.
+**What if you're building a 10⁹-character string incrementally - does immutability still cost you?** - Yes, catastrophically, if built with `+=` in a loop: each concatenation copies the whole accumulated string, so total work is 1+2+...+n = O(n²), which at n = 10⁹ is computationally infeasible. The fix is unchanged at any scale - accumulate into a mutable buffer (a list, `bytearray`, or `StringBuilder`) whose `append` is <abbr>amortized</abbr> O(1) via doubling, and materialize the immutable string once with a single O(n) join, exactly the [dynamic-array amortization argument](./dynamic-array.md#memory-layout) applied to text.
 
-**Why not always use a mutable buffer (`bytearray`/`list`) instead of a plain string, since it avoids the copy-on-edit cost entirely?** - Because most string use is read-only (parsing, comparison, hashing as a dict key), and immutability is what makes that safe and fast: an immutable string can be freely shared, interned, and used as a hashable key without defensive copying, none of which a mutable buffer supports. Reach for the mutable buffer only during the build phase, then convert once - using it as your permanent representation trades away hashability and safe sharing for no benefit once construction is done.
+**Why not always use a mutable buffer (`bytearray`/`list`) instead of a plain string, since it avoids the copy-on-edit cost entirely?** - Because most string use is read-only (parsing, comparison, <abbr>hashing</abbr> as a dict key), and immutability is what makes that safe and fast: an immutable string can be freely shared, interned, and used as a hashable key without defensive copying, none of which a mutable buffer supports. Reach for the mutable buffer only during the build phase, then convert once - using it as your permanent representation trades away hashability and safe sharing for no benefit once construction is done.
 
 ## Practice problems
 
@@ -239,7 +241,7 @@ Three staples, each a **distinct**, genuinely string-native technique - no gener
 
 **Constraints:** `1 ≤ s.length, t.length ≤ 5·10⁴`, `s` and `t` consist of lowercase English letters.
 
-**Approach:** Two strings are anagrams iff their character frequencies match. With a bounded alphabet, a **26-length count array** is the fastest check: increment for one string, decrement for the other, then verify all zeros. O(n) time, O(1) space (alphabet is fixed). The count-array primitive in its plainest form - no sorting, no hashing.
+**Approach:** Two strings are anagrams iff their character frequencies match. With a bounded alphabet, a **26-length count array** is the fastest check: increment for one string, decrement for the other, then verify all zeros. O(n) time, O(1) space (alphabet is fixed). The count-array primitive in its plainest form - no sorting, no <abbr>hashing</abbr>.
 
 ```python
 def is_anagram(s: str, t: str) -> bool:
@@ -268,7 +270,7 @@ def is_anagram(s: str, t: str) -> bool:
   - **Explanation:** `"sad"` matches at index 0 (and again at index 6, but the first occurrence wins).
 - **Example 2**
   - **Input:** haystack = "leetcode", needle = "leeto" | **Output:** -1
-  - **Explanation:** `"leeto"` never appears in `"leetcode"`, so no window hash (even after collision verification) matches.
+  - **Explanation:** `"leeto"` never appears in `"leetcode"`, so no window hash (even after <abbr>collision</abbr> verification) matches.
 
 **Constraints:** `1 ≤ haystack.length, needle.length ≤ 10⁴`, `haystack` and `needle` consist of lowercase English characters.
 

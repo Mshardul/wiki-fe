@@ -121,7 +121,7 @@ Who is the client?
 
 | Page | Covers |
 | ---- | ------ |
-| [Session-Based Authentication](./session-auth.md) | Server-side session mechanics, storage (Redis/DB), cookie attributes, horizontal scaling, fixation/hijacking |
+| [Session-Based Authentication](./session-auth.md) | Server-side session mechanics, storage (Redis/DB), cookie attributes, <abbr>horizontal scaling</abbr>, fixation/hijacking |
 | [JWT](./jwt.md) | Token structure, claims, HS256 vs RS256 vs ES256, JWKS key distribution, `alg:none` and algorithm-confusion attacks |
 | [OAuth 2.0 & OIDC](./oauth-oidc.md) | Core roles, all 4 grant types (Authorization Code+PKCE, Client Credentials, Device, deprecated Implicit), ID token vs access token, the OAuth-is-not-authentication trap |
 | [Multi-Factor Authentication](./mfa.md) | TOTP mechanics, WebAuthn/Passkeys, why SMS OTP is weak, step-up authentication |
@@ -153,7 +153,7 @@ Token lifecycle concerns that span multiple mechanisms (refresh token rotation, 
 
 ### Password Hashing
 
-Fast hashes (MD5, SHA-1, SHA-256) are wrong for passwords - modern GPUs compute billions of hashes/second, making a leaked database crackable in hours. The correct countermeasures: **salting** (unique random value per user, defeats rainbow tables) and **slow, memory-hard hashing**.
+Fast hashes (MD5, SHA-1, SHA-256) are wrong for passwords - modern GPUs compute billions of hashes/second, making a leaked database crackable in hours. The correct countermeasures: **salting** (unique random value per user, defeats rainbow tables) and **slow, memory-hard <abbr>hashing</abbr>**.
 
 **Argon2id** is the current recommendation (OWASP, NIST SP 800-63B) - memory-hard (defeats GPU/ASIC parallelization), side-channel resistant. OWASP minimums: `time_cost=2, memory_cost=19456` (19MB), `parallelism=1`.
 
@@ -205,7 +205,7 @@ ph.verify(hashed, "user_password")   # raises if invalid
 
 Failure modes specific to one mechanism (e.g. TOTP phishing, mTLS PKI rotation) live on that mechanism's page. These are the hub-level failures that cut across mechanisms:
 
-**Session store unavailability** - Redis down means every session lookup fails; users are effectively logged out en masse with no distinct error code, just elevated 401s. Mitigate with Redis HA and a circuit breaker that degrades gracefully rather than hard-failing.
+**Session store unavailability** - Redis down means every session lookup fails; users are effectively logged out en masse with no distinct error code, just elevated 401s. Mitigate with Redis HA and a <abbr>circuit breaker</abbr> that degrades gracefully rather than hard-failing.
 
 **JWKS endpoint unavailable** - services can't verify signatures once the cached key set expires. Correct behavior is to **fail closed** (reject, serve 503 not 401) rather than fail open and accept unverified tokens. Cache TTL should survive short AS outages (5-60 min); retry once on an unknown `kid`, not aggressively.
 
@@ -242,7 +242,7 @@ Failure modes specific to one mechanism (e.g. TOTP phishing, mTLS PKI rotation) 
 
 **Setup:** JWTs with 1-hour expiry, refresh tokens in HttpOnly cookies, automatic client-side refresh. Users report random logouts, worse at peak hours.
 
-**Debugging order:** (1) Logouts at exactly the 1-hour mark → refresh is failing outright, check the refresh endpoint and cookie scope. (2) Logouts right after a successful refresh → a multi-tab race: two tabs both refresh near-simultaneously, the second presents an already-rotated token, reuse detection revokes the whole family. Fix with single-tab refresh coordination (`BroadcastChannel` or a mutex). (3) Intermittent, varies by instance → clock skew, check `exp` against the rejecting instance's clock. (4) Elevated 401s correlated with Redis metrics → session-store latency/pool exhaustion timing out lookups.
+**Debugging order:** (1) Logouts at exactly the 1-hour mark → refresh is failing outright, check the refresh endpoint and cookie scope. (2) Logouts right after a successful refresh → a multi-tab race: two tabs both refresh near-simultaneously, the second presents an already-rotated token, reuse detection revokes the whole family. Fix with single-tab refresh coordination (`BroadcastChannel` or a mutex). (3) Intermittent, varies by instance → clock skew, check `exp` against the rejecting instance's clock. (4) Elevated 401s correlated with Redis metrics → session-store <abbr>latency</abbr>/pool exhaustion timing out lookups.
 
 ### Scenario 3 - Suspended Account Still Has API Access
 

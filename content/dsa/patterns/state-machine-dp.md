@@ -123,7 +123,7 @@ Start: `HELD = -∞, SOLD = -∞, REST = 0` (haven't bought anything; REST is th
 | 3   | 0     | max(−1, 1−0) = **1**       | −1+0 = **−1**         | max(1, 2) = **2**                | Bought at 0 after cooldown cleared (REST→HELD); SOLD=2 is stale |
 | 4   | 2     | max(1, 2−2) = **1**        | 1+2 = **3**           | max(2, −1) = **2**               | Sold at 2 after buying at 0 → total profit 3 |
 
-Answer: `max(SOLD=3, REST=2) = 3`. The invariant holds at every step: HELD is only reachable from REST (never SOLD), so the cooldown constraint is enforced structurally.
+Answer: `max(SOLD=3, REST=2) = 3`. The <abbr>invariant</abbr> holds at every step: HELD is only reachable from REST (never SOLD), so the cooldown constraint is enforced structurally.
 
 **Why state machine DP and not plain DP?** The recurrence for `dp[i][HELD]` depends on whether you came from REST or SOLD - you cannot buy from SOLD. A plain `dp[i] = f(dp[i-1])` has no way to express this constraint. The state dimension carries the "memory" that makes the transition legal.
 
@@ -140,7 +140,7 @@ Answer: `max(SOLD=3, REST=2) = 3`. The invariant holds at every step: HELD is on
 
 **The S factor is constant:** since the number of states is fixed and small (2–5 in almost all interview problems), it drops out of the asymptotic analysis. O(n · S) = O(n) for fixed S.
 
-**Rolling-array optimization:** the recurrence only reads `dp[i-1][*]`, never earlier rows. Replace the n×S table with two S-length arrays (`prev`, `curr`). The amortized cost is O(S) additional space regardless of n - a factor of n saving over the full table. This is nearly always the right default for state machine DP.
+**Rolling-array optimization:** the recurrence only reads `dp[i-1][*]`, never earlier rows. Replace the n×S table with two S-length arrays (`prev`, `curr`). The <abbr>amortized</abbr> cost is O(S) additional space regardless of n - a factor of n saving over the full table. This is nearly always the right default for state machine DP.
 
 ---
 
@@ -157,11 +157,11 @@ Answer: `max(SOLD=3, REST=2) = 3`. The invariant holds at every step: HELD is on
 
 **Real-world usage:** Stock trading engines model "holding / not holding / in cooldown" as explicit state machines over time series data - the same HELD/SOLD/REST formulation runs in production risk systems. Game AI planners use state machine DP over player modes (attacking, defending, stunned) where mode transitions are constrained and cumulative score must be maximized. At scale: when the state count grows with input (not a fixed small S), the O(n · S) table becomes O(n²) - switch to a different DP formulation or approximate with beam search.
 
-**Cache behavior:** The rolling-array form of state machine DP accesses two S-length arrays (`prev`, `curr`) per iteration - for S ≤ 5, both fit in a single cache line and every access is a hit. The full `n × S` table form accesses row i of a 2D array sequentially, which is stride-1 and cache-friendly (row-major layout). The k-transaction variant with an `n × k × 2` table is cache-hostile when k is large - rolling to `k × 2` (two 1D arrays) eliminates the n-dimension traversal and keeps the working set in L1.
+**Cache behavior:** The rolling-array form of state machine DP accesses two S-length arrays (`prev`, `curr`) per iteration - for S ≤ 5, both fit in a single cache line and every access is a hit. The full `n × S` table form accesses row i of a 2D array sequentially, which is stride-1 and <abbr>cache-friendly</abbr> (row-major layout). The k-transaction variant with an `n × k × 2` table is cache-hostile when k is large - rolling to `k × 2` (two 1D arrays) eliminates the n-dimension traversal and keeps the working set in L1.
 
 **When NOT to use this pattern:**
 - The "state" is not a small finite set of named modes - it's a numeric quantity that varies from 0 to n. That's plain DP with an extra dimension, not a state machine.
-- The constraint is purely "no two adjacent" with no other history - consider greedy first (sometimes simpler).
+- The constraint is purely "no two adjacent" with no other history - consider <abbr>greedy</abbr> first (sometimes simpler).
 - k is unconstrained and large (k ≥ n/2 for buy/sell): collapse the state machine to just two states (held, cash) and run the unlimited-transactions O(n) solution.
 
 **The CP constraint-reading skill for this pattern:** look for a small vocabulary of named *modes* in the problem description, then count them. If there are 2–5 modes and the legality of each step depends on the current mode, reach for state machine DP. If the count of modes scales with n, it's a different DP formulation.
@@ -210,7 +210,7 @@ Then: enumerate every (prev_state → curr_state) edge, name the cost/gain on ea
 - [Dynamic Programming](../algorithms/dynamic-programming.md) - the foundational technique; state machine DP is a specialization with explicit transition constraints
 - [DP Patterns](./dp-patterns.md) - survey of DP pattern types; state machine DP is the "multiple explicit states" branch
 - [Bitmask DP](./bitmask-dp.md) - reach for when state count is exponential (subsets); state machine DP is for small, named, enumerable states
-- [Backtracking](./backtracking.md) - explores all transitions without memoization; state machine DP memoizes `(index, state)` pairs to avoid re-exploration
+- [Backtracking](./backtracking.md) - explores all transitions without <abbr>memoization</abbr>; state machine DP memoizes `(index, state)` pairs to avoid re-exploration
 
 ---
 

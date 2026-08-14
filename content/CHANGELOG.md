@@ -45,6 +45,8 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - 28 files across `dsa/data-structures/` and `dsa/algorithms/` - fixed dangling Big-O Notation prerequisite links now that the target article exists
 - 49 files across `dsa/data-structures/` and `dsa/patterns/` - restructured: merged `CP-primitives` section into Practice problems as full worked entries or duplicate-problems lines; section removed article-wide; all Practice-problem titles made technique-neutral (no longer name the solving approach)
 - `system-design/index.md` - fixed broken table rows for Session-Based Authentication, JWT, OAuth 2.0 & OIDC, MFA, Service-to-Service Authentication, mTLS - registered 6 already-written but unlisted articles
+- `data/glossary.json` - expanded from 30 to 55 terms (24 new CS/system-design terms added, e.g. monotonic stack, quorum, leader election, back-of-the-envelope)
+- 111 files across `dsa/**` and `system-design/**` - wrapped glossary terms in `<abbr>` where they appear in prose, per expanded glossary.json
 
 ## 2026-08-12
 - `dsa/index.md` - new section: "Learning Paths" - links the 3 existing track pages

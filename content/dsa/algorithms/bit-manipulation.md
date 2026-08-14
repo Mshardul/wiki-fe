@@ -161,7 +161,7 @@ Result = `2ᵖ` - a single-bit mask at exactly the lowest set bit of `n`. QED.
 
 ### XOR find-unique correctness
 
-**Invariant:** after processing elements `a₁, a₂, ..., aᵢ`, the accumulator holds the XOR of every element that has appeared an **odd** number of times so far.
+**<abbr>Invariant</abbr>:** after processing elements `a₁, a₂, ..., aᵢ`, the accumulator holds the XOR of every element that has appeared an **odd** number of times so far.
 
 Base case: accumulator = 0 (zero elements processed; nothing has appeared).
 
@@ -186,7 +186,7 @@ At termination: elements with even count are cancelled (`a ^ a = 0`). The unique
 | Bitmask DP over n items | O(2ⁿ · W) | O(2ⁿ) | 2ⁿ states; W = work per state (usually O(n)) |
 | Subset enumeration via `(sub-1) & mask` | O(3ⁿ) total | O(1) extra | Each bit in the n-bit universe has 3 fates relative to mask: not in mask / in mask but not in sub / in both. Product = 3ⁿ total iterations across all masks. Formally: summing the submask count over all masks gives Σ_{k=0}^{n} C(n,k)·2^k = (1+2)^n = 3^n by the binomial theorem. |
 
-**Cache behavior:** individual bit tricks operate on register values - no memory access, maximally cache-friendly. For 1D `dp[mask]`: 2²⁰ states × 4 bytes ≈ 4 MB - fits in L3 cache. For 2D `dp[mask][node]` (e.g., TSP): 2²⁰ × 20 entries × 4 bytes ≈ 80 MB - spills to RAM and becomes memory-bound. 2²⁵ (128 MB for 1D) does not fit - expect cache thrashing and wall-clock time ≫ operation count suggests.
+**Cache behavior:** individual bit tricks operate on register values - no memory access, maximally <abbr>cache-friendly</abbr>. For 1D `dp[mask]`: 2²⁰ states × 4 bytes ≈ 4 MB - fits in L3 cache. For 2D `dp[mask][node]` (e.g., TSP): 2²⁰ × 20 entries × 4 bytes ≈ 80 MB - spills to RAM and becomes memory-bound. 2²⁵ (128 MB for 1D) does not fit - expect cache thrashing and wall-clock time ≫ operation count suggests.
 
 **Signed vs unsigned:** Python integers are arbitrary precision and always sign-extend on right shift (`>>` is arithmetic). To simulate 32-bit unsigned behavior, apply `& 0xFFFFFFFF` after any op that could produce a negative or overflow. In C++/Java, `>>` on signed integers is implementation-defined (typically arithmetic, sign-extends); use `>>>` (Java) or `(unsigned)n >> k` (C++) for logical shift.
 

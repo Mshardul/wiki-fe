@@ -33,7 +33,7 @@
 
 A **deque** (double-ended queue, pronounced "deck") is a linear collection that supports **add and remove at _both_ ends - front and back - in O(1)**. It is the union of a [queue](./queue.md) (FIFO) and a [stack](./stack.md) (LIFO): use only the back and it's a stack; push the back and pop the front and it's a queue.
 
-Mental model: **a deck of cards you can deal from the top or the bottom, and add to either.** Nothing in the middle is reachable in O(1) - the power is strictly at the two ends, and that's exactly enough for sliding windows, BFS/DFS frontiers, and any "peek-or-drop from whichever end is stale" problem.
+Mental model: **a deck of cards you can deal from the top or the bottom, and add to either.** Nothing in the middle is reachable in O(1) - the power is strictly at the two ends, and that's exactly enough for <abbr>sliding window</abbr>s, BFS/DFS frontiers, and any "peek-or-drop from whichever end is stale" problem.
 
 > **Takeaway (say this out loud):** "A deque is a queue and a stack at once - O(1) add/remove at both ends. It's the engine behind sliding-window max/min and 0/1-BFS."
 
@@ -52,7 +52,7 @@ A deque exposes four O(1) end operations - `push_front`, `push_back`, `pop_front
 
 Two layouts deliver O(1) both ends (detailed in [Memory layout](#memory-layout)):
 
-- **Circular buffer** - `front` and `back` are indices that advance and **wrap** (`% capacity`); pushing front means `front = (front - 1) % cap`, pushing back means `back = (back + 1) % cap`. Nothing shifts. Cache-friendly, fixed capacity.
+- **Circular buffer** - `front` and `back` are indices that advance and **wrap** (`% capacity`); pushing front means `front = (front - 1) % cap`, pushing back means `back = (back + 1) % cap`. Nothing shifts. <abbr>Cache-friendly</abbr>, fixed capacity.
 - **Doubly linked list of blocks** - what Python's `collections.deque` uses: a linked list of fixed-size arrays. O(1) at both ends, unbounded growth, decent locality within a block.
 
 The deep idea: the deque doesn't add a new _capability_ over a queue so much as remove a _restriction_. A queue forbids touching the back's removal and the front's insertion; lift that and the same O(1)-ends machinery answers a whole class of "the useful element is at one end, the stale one at the other" problems - which is why the [monotonic deque](#1-sliding-window-maximum) and [0/1-BFS](#5-minimum-cost-to-make-at-least-one-valid-path-in-a-grid) live here and not on the queue page.
@@ -81,7 +81,7 @@ The deep idea: the deque doesn't add a new _capability_ over a queue so much as 
 | Peek (either end) | O(1) | O(1)    | O(1)                                        |
 | Index `dq[i]`     | O(1) | O(n)    | O(n) (walks from nearest end)               |
 
-**The `O(1)` push hides two different worst cases - know which layout you're on.** On a **block-linked deque** (`collections.deque`), a push that fills the end block triggers a single small block allocation, not a copy of the whole structure - so the worst case is genuinely O(blocksize) = O(1), and there is **no resize-pause spike** at all. On a **circular-buffer deque**, a push into a full ring forces an allocate-and-copy of every element - a true O(n) spike on that one push, amortized to O(1) only because the capacity doubles (the [dynamic-array argument](./dynamic-array.md#memory-layout)). The senior distinction: the block-linked form trades a worst-case *latency* spike for steady small allocations, which is exactly why a real-time or low-latency system prefers it over a doubling ring.
+**The `O(1)` push hides two different worst cases - know which layout you're on.** On a **block-linked deque** (`collections.deque`), a push that fills the end block triggers a single small block allocation, not a copy of the whole structure - so the worst case is genuinely O(blocksize) = O(1), and there is **no resize-pause spike** at all. On a **circular-buffer deque**, a push into a full ring forces an allocate-and-copy of every element - a true O(n) spike on that one push, <abbr>amortized</abbr> to O(1) only because the capacity doubles (the [dynamic-array argument](./dynamic-array.md#memory-layout)). The senior distinction: the block-linked form trades a worst-case *<abbr>latency</abbr>* spike for steady small allocations, which is exactly why a real-time or low-latency system prefers it over a doubling ring.
 
 The constants differ too: the block-linked form chases a pointer **between** blocks (a cache miss at each block boundary) even though it's contiguous **within** a block, so a full traversal is slower than a contiguous array despite both being "O(n)". The ring buffer has no such boundary misses - fully contiguous - which is why bounded, cache-sensitive workloads (embedded, streaming) pick it.
 
@@ -93,7 +93,7 @@ The constants differ too: the block-linked form chases a pointer **between** blo
 
 **Reach for a deque when:**
 
-- You need **O(1) access at both ends** - a sliding window that grows on the right and shrinks on the left, a work list you push/pop from either side, an undo/redo where both ends matter.
+- You need **O(1) access at both ends** - a <abbr>sliding window</abbr> that grows on the right and shrinks on the left, a work list you push/pop from either side, an undo/redo where both ends matter.
 - You're running a **[monotonic-deque](#1-sliding-window-maximum) sliding-window extremum** - window max/min in O(n), the deque's signature trick.
 - You want **one structure that is both a queue and a stack** - BFS uses it as FIFO, DFS as LIFO, with no second type.
 - You need **0/1-BFS** - shortest path on 0/1-weighted edges without Dijkstra's heap.
@@ -105,7 +105,7 @@ The constants differ too: the block-linked form chases a pointer **between** blo
 - **You need priority order, not positional order** → a [heap](./heap.md). "Most urgent next" is a heap; "leftmost / rightmost next" is a deque.
 - **You need the median or k-th element of the window** → a deque can't help (it only sees the ends); use two heaps or an ordered structure (see [practice problem 4](#4-sliding-window-median)).
 
-Rule of thumb: **deque = both ends are cheap, the middle is not.** If the useful element is always at one of the two ends, it's a deque; if it's the largest/smallest regardless of position, it's a heap.
+Rule of thumb: **deque = both ends are cheap, the middle is not.** If the useful element is always at one of the two ends, it's a deque; if it's the largest/smallest regardless of position, it's a <abbr>heap</abbr>.
 
 Real-world: `collections.deque` is the standard BFS frontier in Python, the backing store for bounded **sliding-window buffers** and **rate limiters** (drop stale entries from the front), the work-stealing **scheduler deques** in runtimes like Go and Java's ForkJoinPool (a worker pushes/pops its own end, thieves steal from the other), and the undo/redo ring in editors.
 
@@ -119,11 +119,13 @@ Real-world: `collections.deque` is the standard BFS frontier in Python, the back
 | Dynamic array         | O(1)\* back    | O(1) back, O(n) front | **O(1)** | by index    | contiguous, tight    | random access, iteration, append-heavy  |
 | Priority queue (heap) | O(log n)       | O(log n) min/max | no          | priority    | array, complete tree | "most urgent next", Dijkstra             |
 
-The deque's identity is **both ends in O(1), middle in O(n)** - it strictly generalizes queue and stack (each restricts the deque to one discipline) while giving up the array's O(1) random access. Reach past it to a dynamic array the moment you need indexing, to a heap the moment "best" means priority rather than position.
+The deque's identity is **both ends in O(1), middle in O(n)** - it strictly generalizes queue and stack (each restricts the deque to one discipline) while giving up the array's O(1) random access. Reach past it to a dynamic array the moment you need indexing, to a <abbr>heap</abbr> the moment "best" means priority rather than position.
+
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
 
 ## Variants
 
-- **Circular-buffer deque** - fixed-capacity ring with wrapping `front`/`back` indices; O(1) both ends, cache-friendly, no shifting. The bounded-capacity choice; built in [practice problem 2](#2-design-circular-deque).
+- **Circular-buffer deque** - fixed-capacity ring with wrapping `front`/`back` indices; O(1) both ends, <abbr>cache-friendly</abbr>, no shifting. The bounded-capacity choice; built in [practice problem 2](#2-design-circular-deque).
 - **Doubly-linked-list deque** - a node with prev/next pointers per element; O(1) both ends, unbounded, at pointer-overhead + cache-miss cost. The textbook unbounded form.
 - **Block-linked deque** - a linked list of fixed-size arrays (blocks), blending the two: O(1) ends, unbounded, with locality within a block. This is what `collections.deque` actually is.
 - **Bounded deque (`deque(maxlen=k)`)** - a ring that **evicts from the opposite end** on overflow. `deque(maxlen=k)`: appending to a full deque drops the front automatically. The one-liner sliding-window-of-last-k buffer, and a rate-limiter primitive.
@@ -149,7 +151,7 @@ push_back(2):  back = (front + size) % 6, write there, size++
 ```
 
 - **Cache-friendly** (contiguous), no per-element pointer overhead - the tightest layout when capacity is bounded (embedded, streaming, fixed windows).
-- Capacity is fixed; growing means allocate-and-copy, amortized O(1) like a [dynamic array](./dynamic-array.md#memory-layout).
+- Capacity is fixed; growing means allocate-and-copy, <abbr>amortized</abbr> O(1) like a [dynamic array](./dynamic-array.md#memory-layout).
 - The empty-vs-full ambiguity at `front == back` is resolved by tracking `size` explicitly (same trap as the [circular queue](./queue.md#memory-layout)).
 
 **The block-linked layout (scattered blocks, unbounded).** A doubly linked list of fixed-size arrays (blocks). Both ends point at a block; pushing appends within the end block, allocating a new block only when the end block fills. This is `collections.deque`'s real implementation.
@@ -167,7 +169,7 @@ block-linked deque (CPython's collections.deque):
 - **No resize spike** (a new block is one small allocation, not a copy of everything) - unbounded, with locality _within_ a block but pointer hops _between_ blocks.
 - This is why `collections.deque` is the reflexive Python choice: O(1) both ends, no capacity to manage, no `list.pop(0)` O(n) trap.
 
-**Which to pick:** `collections.deque` for essentially everything in Python; a circular-buffer deque when capacity is bounded and you want one contiguous cache-friendly array (and you're implementing it yourself, e.g. in C++ or for a `Design Circular Deque` problem).
+**Which to pick:** `collections.deque` for essentially everything in Python; a circular-buffer deque when capacity is bounded and you want one contiguous <abbr>cache-friendly</abbr> array (and you're implementing it yourself, e.g. in C++ or for a `Design Circular Deque` problem).
 
 ## Implementation
 
@@ -281,7 +283,7 @@ dq.rotate(k)         # rotate right by k - O(k), handy for cyclic problems
 - **Monotonic deque: indices vs values, and `<` vs `<=`.** Store **indices** (not values) so you can detect when the front slides out of the window. The comparison strictness (`<` vs `<=` when popping the back) decides duplicate handling - get it wrong and equal elements are dropped or double-counted. Same subtle bug as the [monotonic stack](./stack.md).
 - **Full ring buffer: empty vs full at `front == back`.** With wrapping indices, `front == back` is ambiguous (empty _or_ full). Track an explicit `size` count (as the implementation does) or leave one slot always empty - otherwise you silently drop or duplicate elements.
 - **`deque(maxlen=k)` evicts the _opposite_ end (CP-flavored trap).** Appending to a full bounded deque drops from the front; `appendleft` drops from the back. Convenient for last-k windows, but the silent eviction bites if you assumed it would refuse or grow.
-- **Reaching for a deque when a heap is needed.** A deque only sees its two ends - it cannot give you the window median or k-th largest. Sliding-window _max_ is a monotonic deque; sliding-window _median_ needs two heaps. Misreading "extremum" as "any order statistic" is the classic over-reach.
+- **Reaching for a deque when a <abbr>heap</abbr> is needed.** A deque only sees its two ends - it cannot give you the window median or k-th largest. Sliding-window _max_ is a monotonic deque; sliding-window _median_ needs two heaps. Misreading "extremum" as "any order statistic" is the classic over-reach.
 
 ## What the interviewer probes for
 
@@ -295,7 +297,7 @@ Five staples, each a **distinct** deque technique - no two solved the same way.
 
 ### 1. Sliding Window Maximum
 
-**Problem.** Given an array `nums` and window size `k`, return the maximum of each contiguous window. E.g. `nums=[1,3,-1,-3,5,3,6,7], k=3` → `[3,3,5,5,6,7]`. Constraints: `n ≤ 10⁵`, so O(n·k) brute force and even O(n log n) heaps are on the edge - O(n) is the intended bound.
+**Problem.** Given an array `nums` and window size `k`, return the maximum of each contiguous window. E.g. `nums=[1,3,-1,-3,5,3,6,7], k=3` → `[3,3,5,5,6,7]`. Constraints: `n ≤ 10⁵`, so O(n·k) brute force and even O(n log n) <abbr>heap</abbr>s are on the edge - O(n) is the intended bound.
 
 **Worked examples:**
 - **Example 1**
@@ -404,7 +406,7 @@ class MyCircularDeque:
 
 ### 3. Shortest Subarray with Sum at Least K (LC 862)
 
-**Problem.** Given an integer array `nums` (values may be **negative**) and integer `k`, return the length of the shortest non-empty contiguous subarray with sum ≥ `k`, or -1. Constraints: `n ≤ 10⁵`; negatives rule out the simple two-pointer sliding window that works for all-positive arrays.
+**Problem.** Given an integer array `nums` (values may be **negative**) and integer `k`, return the length of the shortest non-empty contiguous subarray with sum ≥ `k`, or -1. Constraints: `n ≤ 10⁵`; negatives rule out the simple <abbr>two-pointer</abbr> sliding window that works for all-positive arrays.
 
 **Worked examples:**
 - **Example 1**
@@ -415,7 +417,7 @@ class MyCircularDeque:
   - **Explanation:** the maximum possible sum (the whole array) is 3, which never reaches k = 4, so no valid subarray exists.
 - **Example 3**
   - **Input:** nums = [2,-1,2], k = 3 | **Output:** 3
-  - **Explanation:** prefix sums are [0,2,1,3]; the negative value makes the length-2 windows fail, but the deque finds that the full array (prefix[3]-prefix[0] = 3 ≥ k) is the shortest qualifying window, showing why negatives defeat plain two-pointer.
+  - **Explanation:** <abbr>prefix sum</abbr>s are [0,2,1,3]; the negative value makes the length-2 windows fail, but the deque finds that the full array (prefix[3]-prefix[0] = 3 ≥ k) is the shortest qualifying window, showing why negatives defeat plain two-pointer.
 
 **Constraints:** `1 ≤ nums.length ≤ 10⁵`, `-10⁵ ≤ nums[i] ≤ 10⁵`, `1 ≤ k ≤ 10⁹`.
 

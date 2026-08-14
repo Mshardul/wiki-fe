@@ -38,7 +38,7 @@ Mental model: **a queue of "still-relevant" candidates, front-to-back from most-
 
 - A contiguous window (fixed or variable size) slides over an array/string.
 - The question asks for an **extremum** (max or min) over the window, evaluated **repeatedly** as the window moves - not once.
-- Brute force is O(n·k) (rescan the window each time) or a heap gives O(n log k); the array is large enough (`n` up to `10^5`–`10^6`) that both are too slow or unnecessarily complex.
+- Brute force is O(n·k) (rescan the window each time) or a <abbr>heap</abbr> gives O(n log k); the array is large enough (`n` up to `10^5`–`10^6`) that both are too slow or unnecessarily complex.
 
 ### (c) Not to be confused with
 
@@ -76,7 +76,7 @@ Each index is pushed exactly once and popped at most once (from either end) acro
 
 ## Complexity
 
-**O(n) time, O(k) space** - each of the `n` indices is pushed once and popped at most once total (across both ends), so the amortized per-element work is O(1) despite the `while` loop. Space is bounded by the window size `k` since stale/dominated indices never accumulate.
+**O(n) time, O(k) space** - each of the `n` indices is pushed once and popped at most once total (across both ends), so the <abbr>amortized</abbr> per-element work is O(1) despite the `while` loop. Space is bounded by the window size `k` since stale/dominated indices never accumulate.
 
 ## Constraints & approach
 

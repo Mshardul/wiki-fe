@@ -52,7 +52,7 @@ A **monotonic stack** is a stack maintained so its elements are always in strict
 |---|---|
 | **Monotonic Queue (deque)** | Monotonic queue supports popping from **both ends**, used for sliding-window maximum/minimum where elements must expire from the *front* as the window moves. Monotonic stack only ever pops from one end (top) and has no notion of a "window" sliding past - it processes the whole sequence once, left to right. |
 | **Two Pointers** | Two pointers uses two explicit indices with O(1) extra space and a convergence argument. Monotonic stack uses an actual stack data structure (O(n) space worst case) to remember *all* not-yet-resolved candidates, because a later element might resolve several pending ones at once, not just the two nearest. |
-| **Sliding Window** | Sliding window maintains an aggregate (sum, count, frequency) over a maintained range `[L, R]`. Monotonic stack maintains an *ordering invariant* over candidates still awaiting resolution - it doesn't track a running aggregate over a contiguous range at all. |
+| **Sliding Window** | <abbr>Sliding window</abbr> maintains an aggregate (sum, count, frequency) over a maintained range `[L, R]`. Monotonic stack maintains an *ordering <abbr>invariant</abbr>* over candidates still awaiting resolution - it doesn't track a running aggregate over a contiguous range at all. |
 
 ---
 
@@ -105,7 +105,7 @@ and the popped element's answer is the element that broke it.
 
 ## Complexity
 
-Typical time: **O(n)** amortized - despite the nested loop, each element is pushed once and popped at most once across the entire run (see the amortized argument in How it works). Space: **O(n)** worst case - if the input is already strictly increasing (for "next greater"), no element ever gets popped until the very end, so the stack holds all n indices simultaneously.
+Typical time: **O(n)** <abbr>amortized</abbr> - despite the nested loop, each element is pushed once and popped at most once across the entire run (see the amortized argument in How it works). Space: **O(n)** worst case - if the input is already strictly increasing (for "next greater"), no element ever gets popped until the very end, so the stack holds all n indices simultaneously.
 
 ---
 
@@ -122,7 +122,7 @@ The signal that should push you *off* this pattern: if the problem needs element
 
 **Real-world usage:** compilers and calculators use a monotonic-stack-like discipline for operator-precedence parsing (resolving "next lower-or-equal-precedence operator" as tokens arrive), and stock/metrics dashboards use the "stock span" variant to compute running spans in O(1) amortized per new data point. **At-scale failure:** on adversarially-sorted input (e.g. a strictly increasing sequence for a "next greater" query, which never triggers a single pop until the end), the stack holds all n elements simultaneously - at n > 10⁷ this O(n) worst-case space, not just the O(n) time, is what can blow a memory budget in a streaming context.
 
-**Cache behavior:** a Python list-backed stack (or an array-backed stack in most languages) is contiguous, so push/pop at the tail is cache-friendly - sequential memory access, no pointer-chasing. This contrasts with a linked-list-backed stack implementation, where each push/pop touches a freshly (and non-contiguously) allocated node - the array-backed form is the one actually used in practice for exactly this reason.
+**Cache behavior:** a Python list-backed stack (or an array-backed stack in most languages) is contiguous, so push/pop at the tail is <abbr>cache-friendly</abbr> - sequential memory access, no <abbr>pointer chasing</abbr>. This contrasts with a linked-list-backed stack implementation, where each push/pop touches a freshly (and non-contiguously) allocated node - the array-backed form is the one actually used in practice for exactly this reason.
 
 ---
 
@@ -143,7 +143,7 @@ The signal that should push you *off* this pattern: if the problem needs element
 
 1. **Using `<=` instead of `<` (or vice versa) in the comparison, silently changing behavior on duplicates.** Whether to pop on strictly-less-than or less-than-or-equal changes how ties are resolved (which of two equal elements "wins" as the next-greater), and can cause double-counting in contribution-style problems (like sum-of-subarray-minimums) if not chosen deliberately and consistently between the left-scan and right-scan passes.
 
-2. **Forgetting to flush the stack after the main loop.** Elements still on the stack when the array ends have no "next greater/smaller" within the array - their answer should default to `-1` (or `n`, or whatever the problem's sentinel is), not be silently skipped. A common trick to avoid a separate flush step is appending a sentinel value (`0` for histogram problems, `-infinity` for next-greater problems) that forces every remaining stack element to resolve.
+2. **Forgetting to flush the stack after the main loop.** Elements still on the stack when the array ends have no "next greater/smaller" within the array - their answer should default to `-1` (or `n`, or whatever the problem's <abbr>sentinel</abbr> is), not be silently skipped. A common trick to avoid a separate flush step is appending a sentinel value (`0` for histogram problems, `-infinity` for next-greater problems) that forces every remaining stack element to resolve.
 
 3. **Storing values instead of indices when the answer needs position information.** If the problem needs "how far away" or "at what index," the stack must hold indices (and look up `arr[index]` for comparisons), not raw values - storing values only works when the problem needs just the resolving *value*, not its position.
 

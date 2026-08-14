@@ -1223,6 +1223,126 @@
   ],
   "./content/dsa/cheatsheets/data-structure-selection.md": [
     {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/dynamic-array.md",
+      "title": "Dynamic Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/circular-buffer.md",
+      "title": "Circular Buffer"
+    },
+    {
+      "path": "./content/dsa/data-structures/heap.md",
+      "title": "Heap"
+    },
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
+    },
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/data-structures/union-find.md",
+      "title": "Union-Find (DSU)"
+    },
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
+      "path": "./content/dsa/data-structures/bloom-filter.md",
+      "title": "Bloom Filter"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-plus-tree.md",
+      "title": "B-Plus Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/interval-tree.md",
+      "title": "Interval Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
+    },
+    {
       "path": "./content/dsa/cheatsheets/complexity-master.md",
       "title": "Complexity Master"
     }

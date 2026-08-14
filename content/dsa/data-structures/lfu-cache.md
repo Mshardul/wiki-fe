@@ -28,7 +28,7 @@ An **LFU (Least Frequently Used) cache** is a fixed-capacity key→value store t
 
 The mental model: **a leaderboard where every access bumps a key up one rank, and when you're out of room you drop whoever sits at the bottom.** Two keys tied at the bottom rank? The one nobody's touched in the longest time loses - so recency is the tie-breaker baked _inside_ each frequency level.
 
-The interview tension is identical to [LRU](./lru-cache.md): the obvious implementation ("find the min-frequency key") is O(n) or O(log n). Getting **both** `get` and `put` to true O(1) - eviction included - is the whole puzzle, and it needs more machinery than LRU.
+The interview tension is identical to [<abbr>LRU</abbr>](./lru-cache.md): the obvious implementation ("find the min-frequency key") is O(n) or O(log n). Getting **both** `get` and `put` to true O(1) - eviction included - is the whole puzzle, and it needs more machinery than LRU.
 
 > **Soundbite:** "An LFU cache evicts by hit-count, not recency - frequency buckets of LRU-ordered keys plus a `min_freq` pointer, so a touch is a bucket-hop and an eviction pops the front of the min bucket, all O(1)."
 
@@ -79,7 +79,7 @@ Why `min_freq` never needs a search: it only ever **increases by exactly 1** (wh
 | _evict_ (internal) | Pop the back of `buckets[min_freq]`, delete from all three maps                  | O(1)     | O(1)  |
 | `contains(key)`   | Membership only - must **not** bump frequency                                    | O(1) avg | O(1)  |
 
-Times are **average**, inheriting the hash maps' average-O(1) (worst-case O(n) only under adversarial hash collisions - see [hash table](./hash-table.md)). The bucket-list splices are **always** O(1).
+Times are **average**, inheriting the hash maps' average-O(1) (worst-case O(n) only under adversarial hash <abbr>collision</abbr>s - see [hash table](./hash-table.md)). The bucket-list splices are **always** O(1).
 
 **The O(1) hides a 2× constant vs LRU.** Every `get`/`put` does *two* bucket splices (remove from `buckets[f]`, add to `buckets[f+1]`) where LRU does one move-to-front - same O(1), roughly double the pointer work and double the cache misses ([Memory layout](#memory-layout)). And the `evict` cell hides a subtlety: it's O(1) **only because `min_freq` is cached**; the moment you compute the victim's bucket by scanning for the minimum frequency, `put` silently becomes O(distinct-frequencies). The cell is O(1) iff you never search for the min.
 
@@ -91,7 +91,7 @@ Times are **average**, inheriting the hash maps' average-O(1) (worst-case O(n) o
 | Average | O(1)                                   | O(capacity)  |
 | Worst   | O(n) - adversarial hash collisions only | O(capacity)  |
 
-**No amortization anywhere - best, average, and worst are all O(1) for the same reason.** Unlike a [dynamic array](./dynamic-array.md) whose O(1) is *amortized* (occasional O(n) resize spikes), LFU's per-op work is bounded by a fixed number of splices regardless of cache state - there is no "every k-th op is expensive" tail. The only variance is the hash maps' collision behavior, which is why worst-case degrades to O(n) and *nothing else does*.
+**No amortization anywhere - best, average, and worst are all O(1) for the same reason.** Unlike a [dynamic array](./dynamic-array.md) whose O(1) is *<abbr>amortized</abbr>* (occasional O(n) resize spikes), LFU's per-op work is bounded by a fixed number of splices regardless of cache state - there is no "every k-th op is expensive" tail. The only variance is the hash maps' collision behavior, which is why worst-case degrades to O(n) and *nothing else does*.
 
 **Space is O(capacity)** - at most `capacity` keys live across all buckets. Each key costs three map entries (value, freq, and its node inside a bucket list) **plus** the bucket-list node, so LFU's constant factor is **larger than LRU's** (~3× a plain dict vs LRU's ~2×) - the price of tracking frequency on top of recency. Concretely on 64-bit: ~4 words of bucket-list node + 3 map slots per key, vs LRU's ~4-word node + 1 slot. The extra word that bites in practice isn't the count itself (one int) - it's the third hash map's bucket array and the per-frequency list headers, which is exactly the overhead Window-TinyLFU deletes by swapping exact counts for a [Count-Min Sketch](#variants).
 
@@ -118,6 +118,8 @@ Times are **average**, inheriting the hash maps' average-O(1) (worst-case O(n) o
 
 The two rows that matter: the **heap LFU** gets you the same eviction policy in ~10 lines but at O(log n) - the `min_freq` + bucket design exists purely to drop that `log n`. And **LRU vs LFU** is the policy choice itself: recency vs popularity, ~2× vs ~3× memory.
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 - **LFU with aging (decay)** - periodically halve every count, or store `count` as `frequency / time_since_insert`, so yesterday's hot key doesn't squat forever. Fixes plain LFU's cache-pollution flaw at the cost of a decay pass.
@@ -129,7 +131,7 @@ The two rows that matter: the **heap LFU** gets you the same eviction policy in 
 
 ## Memory layout
 
-LFU's layout is **[LRU's layout, replicated per frequency**](./lru-cache.md#memory-layout), plus an outer map of buckets - so it inherits LRU's pointer-chasing cache behavior and adds one more level of indirection.
+LFU's layout is **[LRU's layout, replicated per frequency**](./lru-cache.md#memory-layout), plus an outer map of buckets - so it inherits LRU's <abbr>pointer chasing</abbr> cache behavior and adds one more level of indirection.
 
 **Three heap regions, joined by references.** The maps (`val`, `freq`, `buckets`) are contiguous bucket-arrays - cache-friendly on the hash lookup. But the actual key nodes are **scattered heap allocations** inside the per-frequency doubly linked lists, and `buckets[f]` itself holds a reference to *another* list head living elsewhere:
 
@@ -145,7 +147,7 @@ min_freq = 1   (an int - the whole reason eviction is O(1), no scan)
 
 **Cache-behavior consequence.** A `get` does: `freq_map` lookup (one bucket), then find the key's node inside `buckets[f]` (an arbitrary heap address → likely miss), splice it (chase `prev`/`next` → more misses), then splice into `buckets[f+1]`'s front (another scattered list → more misses). So LFU pays **more** pointer-chasing than LRU - two list operations per touch instead of one. This is exactly why Window-TinyLFU swaps exact per-key nodes for a flat **Count-Min Sketch array**: trading exactness for contiguous, cache-friendly memory.
 
-**Resize cost.** The bucket lists never resize (capped at `capacity` total, one node at a time). The three hash maps resize/rehash on load-factor overflow while filling toward capacity - amortized-O(1), at most O(log capacity) times total, then never again (same bound as [LRU](./lru-cache.md#memory-layout)). One extra subtlety: empty buckets are typically left in the `buckets` map (cheap) and skipped via `min_freq`, so the bucket map's size is bounded by the number of *distinct frequencies*, not keys.
+**Resize cost.** The bucket lists never resize (capped at `capacity` total, one node at a time). The three hash maps resize/rehash on <abbr>load factor</abbr> overflow while filling toward capacity - amortized-O(1), at most O(log capacity) times total, then never again (same bound as [LRU](./lru-cache.md#memory-layout)). One extra subtlety: empty buckets are typically left in the `buckets` map (cheap) and skipped via `min_freq`, so the bucket map's size is bounded by the number of *distinct frequencies*, not keys.
 
 ## Implementation
 
@@ -256,7 +258,7 @@ class LFUCache:
 
 ## What the interviewer probes for
 
-**What changes if the cache needs to hold 10⁹ keys across a fleet, not 10⁴ on one box?** - A single-process `buckets` hash table stops being the bottleneck concern; the real shift is that no one machine can hold the working set, so you shard by key hash across many LFU instances, each independently tracking frequency for its own slice. That breaks *global* frequency ranking (a key hot only on one shard looks cold fleet-wide), which is exactly why production systems like Redis and CDN caches use per-node approximate counters (aged 8-bit counters, Count-Min Sketch) rather than a fleet-synchronized exact count - synchronizing exact frequencies across machines on every access would dominate the cache's own latency budget.
+**What changes if the cache needs to hold 10⁹ keys across a fleet, not 10⁴ on one box?** - A single-process `buckets` hash table stops being the bottleneck concern; the real shift is that no one machine can hold the working set, so you shard by key hash across many LFU instances, each independently tracking frequency for its own slice. That breaks *global* frequency ranking (a key hot only on one shard looks cold fleet-wide), which is exactly why production systems like Redis and CDN caches use per-node approximate counters (aged 8-bit counters, Count-Min Sketch) rather than a fleet-synchronized exact count - synchronizing exact frequencies across machines on every access would dominate the cache's own <abbr>latency</abbr> budget.
 
 **Why not just use LRU instead of building this frequency machinery?** - LRU is simpler, cheaper (roughly 2x memory vs LFU's 3x per this article's Complexity summary), and correct for workloads with temporal locality. LFU earns its extra bucket-list and `min_freq` bookkeeping only when *popularity*, not recency, predicts reuse - a key hit constantly but with an occasional gap shouldn't be evicted just because a one-off scan streamed through. The Comparison table's tie-break column names the real cost: LFU also inherits LRU's ordering as its tie-breaker, so you're never getting LFU "instead of" LRU, only LRU plus a frequency axis on top.
 

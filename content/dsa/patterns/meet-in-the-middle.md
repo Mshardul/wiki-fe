@@ -23,7 +23,7 @@
 
 ## What it is
 
-**Meet in the Middle (MITM)** is a divide-and-conquer technique that cuts an exponential search space in half by splitting the input into two equal halves, exhaustively enumerating each half independently, then combining the two result sets - typically by sorting one half and binary-searching it.
+**Meet in the Middle (MITM)** is a <abbr>divide and conquer</abbr> technique that cuts an exponential search space in half by splitting the input into two equal halves, exhaustively enumerating each half independently, then combining the two result sets - typically by sorting one half and binary-searching it.
 
 **Mental model:** imagine two explorers starting from opposite ends of a maze; instead of one person walking the entire O(2ⁿ) path, both walk O(2^(n/2)) steps and meet somewhere in the middle.
 
@@ -130,7 +130,7 @@ Input A = [3, 1, 4, 1, 5, 9]   (n = 6)
 
 The combine step converts the naive O(2^(n/2) × 2^(n/2)) Cartesian scan into O(2^(n/2) · log(2^(n/2))) = O(2^(n/2) · n/2) by sorting once and probing with binary search.
 
-**Cache behavior:** the enumeration phase iterates over small arrays of size 2^(n/2) ≈ 10⁶ - these fit comfortably in L2/L3 cache. The sort is comparison-based and cache-friendly (sequential merges). The binary search has O(log(2^(n/2))) = O(n/2) cache misses per probe but only 2^(n/2) probes, so the total miss count is the same order as the sort. In practice MITM on n = 40 runs in under a second on modern hardware.
+**Cache behavior:** the enumeration phase iterates over small arrays of size 2^(n/2) ≈ 10⁶ - these fit comfortably in L2/L3 cache. The sort is comparison-based and <abbr>cache-friendly</abbr> (sequential merges). The binary search has O(log(2^(n/2))) = O(n/2) cache misses per probe but only 2^(n/2) probes, so the total miss count is the same order as the sort. In practice MITM on n = 40 runs in under a second on modern hardware.
 
 ## Complexity
 

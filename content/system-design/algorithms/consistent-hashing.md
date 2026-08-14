@@ -141,7 +141,7 @@ DynamoDB and Cassandra both use consistent hashing (with virtual nodes) as their
 
 **Rendezvous hashing (HRW - Highest Random Weight):** no ring at all. Each key is scored against every node via a combined hash `hash(key, node)`, and the key goes to the node with the highest score. Same `~1/N` remap-minimality property as consistent hashing, without virtual nodes or a sorted position structure - but every lookup is `O(N)` (score against all nodes) unless indexed, versus consistent hashing's `O(log N)`. Prefer HRW when node count is small and simplicity beats lookup speed; prefer consistent hashing when node count is large enough that `O(N)` scoring is the bottleneck.
 
-**Sharding with a remap table:** some systems avoid the `~1/N` remap cost entirely by keeping an explicit key-range-to-shard mapping table, updated by a coordinator on rebalance (not a hash function at all). This trades "moves are hash-determined and stateless" for "moves are coordinator-controlled and can be planned" - useful when rebalancing needs to be gradual and scheduled rather than immediate.
+**<abbr>Sharding</abbr> with a remap table:** some systems avoid the `~1/N` remap cost entirely by keeping an explicit key-range-to-shard mapping table, updated by a coordinator on rebalance (not a hash function at all). This trades "moves are hash-determined and stateless" for "moves are coordinator-controlled and can be planned" - useful when rebalancing needs to be gradual and scheduled rather than immediate.
 
 ---
 

@@ -53,7 +53,7 @@ PKI (Public Key Infrastructure) is the operational challenge of mTLS. Someone mu
 - **Certificate rotation:** Certs must be rotated before expiry without downtime. This requires the service to load the new cert and the CA to issue it ahead of expiry. Manual rotation does not scale.
 - **Revocation:** When a service is decommissioned or compromised, its certificate must be revoked. Two mechanisms:
   - **CRL (Certificate Revocation List):** CA publishes a list of revoked serial numbers. Verifiers download periodically - revocation is not instant.
-  - **OCSP (Online Certificate Status Protocol):** Verifier queries the CA in real-time for each cert. Instant revocation but adds latency and a dependency on the CA being reachable.
+  - **OCSP (Online Certificate Status Protocol):** Verifier queries the CA in real-time for each cert. Instant revocation but adds <abbr>latency</abbr> and a dependency on the CA being reachable.
 
 Without automation, PKI becomes a toil-intensive, error-prone operation. Manual cert rotation across hundreds of services is where mTLS deployments fail in practice.
 

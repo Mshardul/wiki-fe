@@ -44,7 +44,7 @@ Why is this O(n) and not O(n²)? The naive method computes each `Z[i]` by compar
 
 Suppose you've matched a prefix starting at some earlier position `l` that extends to `r` - call `[l, r]` the **Z-box**. Everything inside it, `S[l..r]`, equals a prefix `S[0..r-l]`. Now for a new position `i` inside the box, the character `S[i]` mirrors the character `S[i-l]` near the front of the string - and you _already computed_ `Z[i-l]`. So you can **copy** that value as a starting estimate for `Z[i]` instead of re-comparing from scratch. Only when the copied value would run past `r` (the edge of what you've verified) do you fall back to explicit character comparison - and every such comparison pushes `r` forward, which can only happen `n` times total.
 
-The senior framing: the Z-box is a **verified mirror of the prefix**. The algorithm is "reuse the mirror when `i` is inside it; extend the mirror by brute force only when you must." That reuse is what collapses O(n²) to O(n), and it's the same amortized "the work to extend `r` is bounded by `n`" argument that makes [KMP](./string-matching.md) linear.
+The senior framing: the Z-box is a **verified mirror of the prefix**. The algorithm is "reuse the mirror when `i` is inside it; extend the mirror by brute force only when you must." That reuse is what collapses O(n²) to O(n), and it's the same <abbr>amortized</abbr> "the work to extend `r` is bounded by `n`" argument that makes [KMP](./string-matching.md) linear.
 
 The one subtlety a junior conflates: inside the box there are **two** mirror outcomes, and only one is free. If the mirrored value `Z[i-l]` ends _strictly before_ the box edge `r`, it is exact - `Z[i] = Z[i-l]`, no comparison, because the mismatch that bounded `Z[i-l]` is itself inside the verified region and so applies identically at `i`. But if `Z[i-l]` reaches _to or past_ `r`, the mirror only proves the match up to `r`; the character at `r+1` was never verified against the prefix, so you **must** resume explicit comparison from there. Treating both cases as a free copy is the canonical Z-algorithm bug - it over-reports `Z[i]` by trusting unverified characters. That edge distinction is exactly the `min(r - i, z[i - l])` clamp in the code.
 
@@ -74,7 +74,7 @@ i=13: inside box [9,15]. mirror=4, Z[4]=4, but 13+4=17 > r=15
         then extend by explicit compare past r → Z[13]=3, box=[13,15]
 ```
 
-Two regimes drive every step: **`i > r`** (outside the box → compare from scratch, then open a new box) and **`i ≤ r`** (inside → copy `Z[i-l]`, but if it would reach past `r`, clamp and extend by comparison). Only the "extend by comparison" path moves `r`, and `r` only ever increases - that's the invariant doing the work.
+Two regimes drive every step: **`i > r`** (outside the box → compare from scratch, then open a new box) and **`i ≤ r`** (inside → copy `Z[i-l]`, but if it would reach past `r`, clamp and extend by comparison). Only the "extend by comparison" path moves `r`, and `r` only ever increases - that's the <abbr>invariant</abbr> doing the work.
 
 ## Correctness / invariant
 
@@ -100,7 +100,7 @@ Split the work into the two cases.
 total = O(n)  [O(1) copies]  +  O(n)  [comparisons, bounded by r's monotone rise]  =  O(n)
 ```
 
-This is the same **amortized / potential** argument as KMP: define the potential `Φ = r`. Comparisons that succeed raise `Φ` (total rise ≤ n); nothing lowers it below 0. So the comparison work is bounded by `n`, not multiplied by it - the nested-looking extension is linear, not quadratic.
+This is the same **<abbr>amortized</abbr> / potential** argument as KMP: define the potential `Φ = r`. Comparisons that succeed raise `Φ` (total rise ≤ n); nothing lowers it below 0. So the comparison work is bounded by `n`, not multiplied by it - the nested-looking extension is linear, not quadratic.
 
 Making the constant precise: each character comparison is one of two kinds. A **successful** comparison increments both `Z[i]` and (when it pushes past the old edge) `r` - and since `r` is monotone non-decreasing with ceiling `n - 1`, there are at most `n` of these across the _entire_ run, not per position. A **failing** comparison is the single mismatch that terminates one position's extension loop - at most one per `i`, so ≤ n total. Hence ≤ 2n comparisons exactly, and the bound is tight (the all-distinct string `"abc…"` does ≈ n failing comparisons; `"aaaa…"` does ≈ n successful ones). The senior point versus KMP: identical O(n) and the _same_ ≤ 2n comparison count, so the choice between them is constant-factor-neutral - it's about which invariant you can write bug-free, not speed. Space is O(n) for the Z-array; for pattern search add the O(n + m) concatenation `P + sep + T`.
 

@@ -32,7 +32,7 @@ A **frequency array** is an array of size `k` (the key range) indexed directly b
 
 Mental model: **a tally sheet with pre-labeled slots.** Instead of writing down each item and searching for it later, you have a slot numbered 0 to k-1 and you tick the right slot in one step. Looking up the count is equally instant - just read slot `v`.
 
-The senior insight: a frequency array is not "simpler than a hash map" - it's a **specialisation that trades space for a constant-factor speedup**. A `Counter` or `dict` hashes every key, handles collisions, and resizes; under the hood, each lookup may follow a pointer to a separate bucket list (chaining) or probe multiple slots (open addressing), both of which scatter memory accesses. A frequency array skips all of that because the key *is* the index - every increment is a single array write at a predictable address, and the whole array (k = 26 → 104 bytes) fits in one or two cache lines. In practice, for character-frequency problems, this gives ~5–10× throughput over a hash map on hot paths.
+The senior insight: a frequency array is not "simpler than a hash map" - it's a **specialisation that trades space for a constant-factor speedup**. A `Counter` or `dict` hashes every key, handles <abbr>collisions</abbr>, and resizes; under the hood, each lookup may follow a pointer to a separate bucket list (chaining) or probe multiple slots (open addressing), both of which scatter memory accesses. A frequency array skips all of that because the key *is* the index - every increment is a single array write at a predictable address, and the whole array (k = 26 → 104 bytes) fits in one or two cache lines. In practice, for character-frequency problems, this gives ~5–10× throughput over a hash map on hot paths.
 
 > **Takeaway (say this out loud):** "Frequency array - when keys are bounded integers or chars, skip the hash map and use the value as the index. O(1) everywhere, cache-friendly, and trivial to compare two distributions by subtracting arrays."
 
@@ -58,7 +58,7 @@ The senior insight: a frequency array is not "simpler than a hash map" - it's a 
 **(c) Not to be confused with:**
 
 - **Hash map counting (`Counter`, `dict`)** - use a hash map when key range is unknown, unbounded, or when keys are strings/tuples (non-integer). Frequency array is strictly for bounded integer / character keys; when the key range is large (k > 10⁷) the space cost outweighs the speed gain.
-- **Prefix sum** - prefix sums answer "how many values in range [l, r]?" built *on top of* a frequency array; the freq array is the raw count structure, prefix sum is a query layer over it.
+- **<abbr>Prefix sum</abbr>** - prefix sums answer "how many values in range [l, r]?" built *on top of* a frequency array; the freq array is the raw count structure, prefix sum is a query layer over it.
 - **Bucket sort** - bucket sort *uses* a frequency array to emit values in sorted order; recognizing the frequency array doesn't mean you're doing a sort.
 
 ## How it works
@@ -145,7 +145,7 @@ k = key range (26 for lowercase alpha, 128 for ASCII, n for [0,n]-bounded intege
 - **Delta array (increment A, decrement B, check all-zero):** checks distribution equality without comparing the two freq arrays element-by-element.
 - **Frequency of frequencies:** `freq_of_freq[c]` = how many distinct values appear exactly `c` times. Used in "one edit to make all frequencies equal" problems.
 - **Counting sort as a side-effect:** iterating the freq array left-to-right and emitting each value `freq[v]` times produces a sorted output - O(n + k), the same pass that built the array.
-- **Difference array for range increments:** a related-but-distinct structure where `diff[l] += x` and `diff[r+1] -= x` represents a range update; a prefix sum of `diff` recovers the actual values. Not a frequency array - use it for range-update, point-query problems.
+- **<abbr>Difference array</abbr> for range increments:** a related-but-distinct structure where `diff[l] += x` and `diff[r+1] -= x` represents a range update; a prefix sum of `diff` recovers the actual values. Not a frequency array - use it for range-update, point-query problems.
 
 ## Pitfalls
 

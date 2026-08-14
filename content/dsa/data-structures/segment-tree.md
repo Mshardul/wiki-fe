@@ -56,7 +56,7 @@ A range query `[l, r]` recursively visits a node: if the node's range is **entir
 
 A point update walks a single root-to-leaf path (O(log n) nodes) fixing the target leaf, then recombines every ancestor on the way back up: `parent.value = combine(left.value, right.value)`.
 
-**Cache behavior.** A segment tree is pointer-based when built with explicit node objects (hostile - each `left`/`right` hop is a scattered heap allocation, a cache miss per level), but the common **array-backed** implementation (`tree[2*node]`, `tree[2*node+1]` as shown below) stores all nodes contiguously, trading pointer-chasing for index arithmetic - friendlier than a pointer tree, though still not sequential like a flat array scan, since parent/child indices jump across the array rather than walking it in order.
+**Cache behavior.** A segment tree is pointer-based when built with explicit node objects (hostile - each `left`/`right` hop is a scattered heap allocation, a cache miss per level), but the common **array-backed** implementation (`tree[2*node]`, `tree[2*node+1]` as shown below) stores all nodes contiguously, trading <abbr>pointer chasing</abbr> for index arithmetic - friendlier than a pointer tree, though still not sequential like a flat array scan, since parent/child indices jump across the array rather than walking it in order.
 
 ## Operations
 
@@ -94,7 +94,7 @@ No amortization anywhere - every operation is a **hard O(log n)** in the worst c
 - The array is **static** (no updates after build) → a plain [prefix sum](../patterns/prefix-sum.md) array for sum queries (O(1) query, no tree at all), or a **sparse table** for static range min/max (O(1) query after O(n log n) preprocessing - segment tree's update capability is pure overhead if nothing ever changes).
 - You need **overlapping interval storage and stabbing queries** ("which intervals contain point p?") rather than array-range aggregates → an [interval tree](./interval-tree.md) - different problem shape entirely (intervals as data, not array positions).
 
-**Real-world usage:** segment trees back **range-aggregate dashboards** (e.g. "max latency in the last 5 minutes" over a sliding time-bucketed array) and are the standard tool behind **computational geometry sweep-line** algorithms (rectangle union area, skyline problem) where the sweep needs range-min/max over an active-interval set. At scale, the failure mode is **memory density**: a recursive array-backed segment tree conventionally over-allocates to `4n` nodes to guarantee no out-of-bounds child index, which becomes a real constant-factor cost at `n > 10⁸` - a **iterative/bottom-up segment tree** (array-only, `2n` nodes, no recursion) is the standard fix when memory or call-stack overhead matters at that scale.
+**Real-world usage:** segment trees back **range-aggregate dashboards** (e.g. "max <abbr>latency</abbr> in the last 5 minutes" over a sliding time-bucketed array) and are the standard tool behind **computational geometry sweep-line** algorithms (rectangle union area, skyline problem) where the sweep needs range-min/max over an active-interval set. At scale, the failure mode is **memory density**: a recursive array-backed segment tree conventionally over-allocates to `4n` nodes to guarantee no out-of-bounds child index, which becomes a real constant-factor cost at `n > 10⁸` - a **iterative/bottom-up segment tree** (array-only, `2n` nodes, no recursion) is the standard fix when memory or call-stack overhead matters at that scale.
 
 ## Comparison
 
@@ -105,17 +105,19 @@ No amortization anywhere - every operation is a **hard O(log n)** in the worst c
 | [Prefix sum array](../patterns/prefix-sum.md) | O(n) rebuild | **O(1)** - sum only          | n/a           | O(n)          | trivial           | array is **static** - no updates after build |
 | Sparse table                        | not supported (static) | **O(1)** - min/max/gcd (idempotent ops) | n/a | O(n log n)    | moderate          | static array + repeated range min/max queries, query-heavy workload |
 
+See the [Data Structure Selection cheatsheet](../cheatsheets/data-structure-selection.md) for the full cross-structure comparison.
+
 ## Variants
 
 - **Iterative (bottom-up) segment tree.** Store the tree as a flat array of size `2n` with leaves at indices `[n, 2n)` and each parent at `i/2` - no recursion, no pointers, smaller constant factor than the recursive `4n` version. Trades away easy lazy-propagation support (harder to implement correctly) for raw speed on point-update/range-query workloads.
 - **Persistent segment tree.** Every update creates O(log n) new nodes instead of mutating in place, sharing the unchanged subtrees with the previous version - lets you query **any historical version** of the array. Used for "k-th smallest in range `[l,r]` as of time `t`" and offline range-rank problems.
 - **Merge sort tree.** Each node stores its range as a **sorted list** instead of a scalar aggregate, built via merge sort's merge step. Answers "how many elements ≤ x in range `[l,r]`" in O(log²n) - full treatment in the [Range Frequency Query](#4-range-frequency-query) practice problem.
 - **2D segment tree (segment tree of segment trees).** Each node of the outer tree is itself a segment tree over the second dimension - O(log²n) point update / range query over a 2D grid, at O(n log n) space. Used for 2D range-max/range-sum with updates (e.g. live heatmaps).
-- **Segment tree beats (Ji Driver tree).** An advanced lazy-propagation variant supporting range chmin/chmax updates (clamp every element in a range to at most/at least x) in amortized O(log²n) - a competitive-programming specialization, rarely needed outside contests.
+- **Segment tree beats (Ji Driver tree).** An advanced lazy-propagation variant supporting range chmin/chmax updates (clamp every element in a range to at most/at least x) in <abbr>amortized</abbr> O(log²n) - a competitive-programming specialization, rarely needed outside contests.
 
 ## Traversal & invariant
 
-The entire structure rests on one invariant, maintained at every node: **`node.value == combine(a[node.lo..node.mid], a[node.mid+1..node.hi])`, recursively, all the way to the leaves.**
+The entire structure rests on one <abbr>invariant</abbr>, maintained at every node: **`node.value == combine(a[node.lo..node.mid], a[node.mid+1..node.hi])`, recursively, all the way to the leaves.**
 
 ### The coverage invariant
 
@@ -253,7 +255,7 @@ class SegmentTree:
 - **Identity element must match `combine` exactly.** Sum's identity is `0`; min's identity is `+∞`; max's identity is `-∞`; gcd's identity is `0` (since `gcd(x, 0) == x`). Using the wrong identity (e.g. `0` for a min-tree) silently makes every "no overlap" branch return a wrong answer that looks plausible - it often passes small test cases where 0 happens not to be the true minimum, then fails at scale.
 - **Overflow on accumulation.** A sum segment tree over `10⁵`-`10⁶` elements at `int32`-range values can overflow 32-bit accumulators well before the query even gets interesting - use 64-bit accumulators (`long` in C++/Java; Python ints are unbounded, which hides this bug until porting to another language).
 - **Forgetting to push down lazy markers before reading a child.** The single most common lazy-propagation bug: a query or update descends into a child whose parent has an un-pushed pending marker, reading a stale aggregate. The fix is mechanical but easy to skip - **every** recursive call that goes past a node with children must call push-down first, no exceptions, including inside `query`, not just `update`.
-- **At-scale: recursion depth and call-stack overhead.** A recursive segment tree over `n = 10⁷` elements has depth `~24`, which is safe, but the **constant-factor overhead of ~2n to 4n recursive calls per build**, each with Python function-call overhead, makes a recursive Python segment tree noticeably slower than an iterative bottom-up array version at that scale - the iterative variant (see [Variants](#variants)) is the standard mitigation when raw throughput matters.
+- **At-scale: recursion depth and call-stack overhead.** A recursive segment tree over `n = 10⁷` elements has depth `~24`, which is safe, but the **constant-factor overhead of ~2n to 4n recursive calls per build**, each with Python function-call overhead, makes a recursive Python segment tree noticeably slower than an iterative bottom-up array version at that scale - the iterative variant (see [Variants](#variants)) is the standard mitigation when raw <abbr>throughput</abbr> matters.
 
 ## What the interviewer probes for
 

@@ -90,9 +90,9 @@ Loop stops after p=5 because 7×7=49 > 30 - no unmarked number ≤ 30 can have
 its smallest prime factor exceed √30 ≈ 5.48.
 ```
 
-**Invariant check per step:** after processing prime `p`, every number ≤ `p²` that is unmarked is guaranteed prime (every composite ≤ `p²` has a prime factor ≤ `p`, and all such multiples have been struck by the time `p`'s pass completes).
+**<abbr>Invariant</abbr> check per step:** after processing prime `p`, every number ≤ `p²` that is unmarked is guaranteed prime (every composite ≤ `p²` has a prime factor ≤ `p`, and all such multiples have been struck by the time `p`'s pass completes).
 
-**Cache behavior:** the sieve is a **sequential scan over a flat boolean array** - each marking pass (`i, i+p, i+2p, ...`) strides through memory in fixed steps. For small `p` this is highly cache-friendly (short stride, hits the same cache lines repeatedly); for large `p` near `√n`, the stride grows and each mark increasingly touches a fresh cache line, but there are correspondingly fewer such primes to process, so the aggregate effect stays favorable. This contrasts sharply with pointer-chasing structures (a BST doing primality checks via repeated divisibility tests would have no such locality).
+**Cache behavior:** the sieve is a **sequential scan over a flat boolean array** - each marking pass (`i, i+p, i+2p, ...`) strides through memory in fixed steps. For small `p` this is highly <abbr>cache-friendly</abbr> (short stride, hits the same cache lines repeatedly); for large `p` near `√n`, the stride grows and each mark increasingly touches a fresh cache line, but there are correspondingly fewer such primes to process, so the aggregate effect stays favorable. This contrasts sharply with pointer-chasing structures (a BST doing primality checks via repeated divisibility tests would have no such locality).
 
 ---
 
@@ -104,7 +104,7 @@ its smallest prime factor exceed √30 ≈ 5.48.
 
 **Proof, reverse direction (prime ⟹ never marked):** A number `x` is only ever marked as a multiple of some `p ≤ √n` where `p < x` and `p` divides `x`. If `x` is prime, its only divisors are `1` and `x` itself - no `p < x` with `p ≠ 1` divides it. So a prime `x` is never marked.
 
-**Invariant (maintained across the outer loop):** *after processing all primes ≤ some threshold `t`, every marked number ≤ n has a prime factor ≤ t, and every unmarked number ≤ t² is prime.* This is why the loop can safely stop once `p² > n` - beyond that point, any remaining composite would need a smallest prime factor `> √n`, which is impossible by the argument above.
+**<abbr>Invariant</abbr> (maintained across the outer loop):** *after processing all primes ≤ some threshold `t`, every marked number ≤ n has a prime factor ≤ t, and every unmarked number ≤ t² is prime.* This is why the loop can safely stop once `p² > n` - beyond that point, any remaining composite would need a smallest prime factor `> √n`, which is impossible by the argument above.
 
 ---
 
