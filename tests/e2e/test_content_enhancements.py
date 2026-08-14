@@ -1734,6 +1734,49 @@ def test_table_sort_requires_whole_cell_numeric(page, base_url):
     assert "Alpha" in names[1:], f"1,024 must not sort as float 1 ahead of 2, got {names!r}"
 
 
+ARTICLE_WITH_COMPARISON_TABLE = """\
+# Compare
+
+## Comparison
+
+| Structure | Add | Remove |
+| --------- | --- | ------ |
+| Stack     | O(1) | O(1)   |
+| Queue     | O(1) | O(1)   |
+"""
+
+
+def test_comparison_table_gets_column_toggles(page, base_url):
+    """Tables under Comparison get show/hide column controls; other tables do not."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_COMPARISON_TABLE, slug="cmp-toggles")
+    page.wait_for_selector(".table-col-toggles", timeout=5_000)
+    labels = page.locator(".table-col-toggle").all_inner_texts()
+    assert labels == ["Add", "Remove"]
+
+    _load_mock_article(page, base_url, ARTICLE_WITH_TABLE, slug="cmp-not-every-table")
+    page.wait_for_selector("#markdown-body table", timeout=5_000)
+    assert page.locator(".table-col-toggles").count() == 0
+
+
+def test_comparison_column_toggle_hides_and_persists(page, base_url):
+    """Hiding a comparison column persists across a re-render of the same article."""
+    _load_mock_article(page, base_url, ARTICLE_WITH_COMPARISON_TABLE, slug="cmp-persist")
+    page.wait_for_selector(".table-col-toggle", timeout=5_000)
+    page.locator(".table-col-toggle", has_text="Remove").click()
+    page.wait_for_function(
+        """() => document.querySelectorAll('#markdown-body table .table-col-hidden').length > 0""",
+        timeout=5_000,
+    )
+    _load_mock_article(page, base_url, ARTICLE_WITH_COMPARISON_TABLE, slug="cmp-persist")
+    page.wait_for_selector(".table-col-toggles", timeout=5_000)
+    pressed = page.locator(".table-col-toggle", has_text="Remove").get_attribute("aria-pressed")
+    assert pressed == "false"
+    hidden = page.evaluate(
+        "() => document.querySelectorAll('#markdown-body table .table-col-hidden').length"
+    )
+    assert hidden > 0
+
+
 # ── Mermaid copy as SVG ─────────────────────────────────────────────────────────
 
 ARTICLE_WITH_MERMAID_FOR_COPY = """\
@@ -1780,7 +1823,7 @@ def test_mermaid_copy_btn_copies_svg(page, base_url):
         "() => window.__copyBtnRef && window.__copyBtnRef.isConnected",
         timeout=3_000,
     )
-    page.evaluate("() => window.__copyBtnRef.click()")
+    page.locator(".mermaid-copy-btn").click()
     page.wait_for_function("() => !!window.__svgCopied", timeout=5_000)
     copied = page.evaluate("() => window.__svgCopied")
     assert "<svg" in copied, f"Copied text does not look like SVG: {copied[:80]!r}"
@@ -3034,6 +3077,21 @@ def test_practice_problems_answers_hidden_by_default(page, base_url):
     assert problem_visible, "Problem statement paragraph must stay visible"
 
 
+def test_practice_eye_btn_matches_topbar_icon_scale(page, base_url):
+    """Practice eye control uses the primary icon-button box, not the old 20px spec."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-eye-size")
+    page.wait_for_selector(".practice-eye-btn", timeout=5_000)
+    size = page.evaluate(
+        """() => {
+            const r = document.querySelector('.practice-eye-btn').getBoundingClientRect();
+            return { width: r.width, height: r.height };
+        }"""
+    )
+    assert size["width"] >= 32, f"practice-eye-btn width too small: {size['width']}px"
+    assert size["height"] >= 32, f"practice-eye-btn height too small: {size['height']}px"
+
+
 def test_practice_eye_toggle_reveals_only_its_own_problem(page, base_url):
     """Clicking one problem's eye icon reveals only that problem's answer,
     leaving the other problem's answer hidden."""
@@ -3686,23 +3744,19 @@ def test_prerequisite_chip_link_navigates_and_has_no_title(page, base_url):
 
     chip = page.locator(".prereq-chip", has_text="Array").first
     assert chip.evaluate("el => el.tagName") == "A"
-    assert chip.get_attribute("href") == "./array.md"
+    href = chip.get_attribute("href") or ""
+    assert "array" in href
+    assert chip.get_attribute("target") == "_blank"
     assert not chip.get_attribute("title")
 
 
 def test_prerequisite_chip_navigation_uses_clean_title(page, base_url):
-    """Clicking a prereq chip navigates with the clean prereq title, not concatenated sibling-node text."""
+    """Prereq chips keep data-title as the clean name (not concatenated chip chrome)."""
     page.route("**/array.md", lambda r: r.fulfill(body="# Array\n\nSome content.\n"))
     _load_mock_article(page, base_url, ARTICLE_WITH_PREREQUISITES, slug="prereqs-clean-title")
 
     chip = page.locator(".prereq-chip", has_text="Array").first
-    chip.click()
-    page.wait_for_selector("#view-content.active", timeout=8_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=8_000,
-    )
-    assert page.locator("#topbar-title").inner_text().strip() == "Array"
+    assert chip.get_attribute("data-title") == "Array"
 
 
 def test_prerequisite_chip_link_shows_hover_preview_card(page, base_url):

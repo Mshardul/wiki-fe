@@ -1,5 +1,6 @@
 import { state } from "../state.js";
 import { recordReveal } from "../storage/read-tracking.js";
+import { getHiddenTableColumns, setHiddenTableColumns } from "../storage/table-columns.js";
 
 /* QUIZ-ME MODE FOR COMPLEXITY TABLES */
 
@@ -170,10 +171,68 @@ function addTableScrollCues(contentEl) {
   });
 }
 
+function _isComparisonTable(table) {
+  const h2 = table.closest(".section")?.querySelector(":scope > .section-title h2");
+  return /\bcomparison\b/i.test((h2?.textContent || "").replace(/[#]+$/g, ""));
+}
+
+function _setColumnHidden(table, colIdx, hidden) {
+  table.querySelectorAll("tr").forEach((row) => {
+    const cell = row.children[colIdx];
+    if (cell) cell.classList.toggle("table-col-hidden", hidden);
+  });
+}
+
+function addComparisonColumnToggles(contentEl) {
+  const wikiId = state.currentWikiId;
+  const articlePath = state.currentFilePath || "";
+  if (!wikiId) return;
+
+  contentEl.querySelectorAll("table").forEach((table) => {
+    if (!_isComparisonTable(table)) return;
+    const headerRow = table.querySelector("thead tr") || table.querySelector("tr");
+    const headers = [...(headerRow?.querySelectorAll("th") || [])];
+    if (headers.length < 2) return;
+
+    const names = headers.map((th) => th.textContent.trim());
+    const tableId = names.join("|");
+    const hidden = new Set(getHiddenTableColumns(wikiId, articlePath, tableId));
+
+    const bar = document.createElement("div");
+    bar.className = "table-col-toggles";
+    bar.setAttribute("role", "group");
+    bar.setAttribute("aria-label", "Visible comparison columns");
+
+    names.forEach((name, idx) => {
+      if (idx === 0) return;
+      const isHidden = hidden.has(name);
+      _setColumnHidden(table, idx, isHidden);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "table-col-toggle";
+      btn.textContent = name;
+      btn.setAttribute("aria-pressed", isHidden ? "false" : "true");
+      btn.addEventListener("click", () => {
+        const nextHidden = btn.getAttribute("aria-pressed") === "true";
+        btn.setAttribute("aria-pressed", nextHidden ? "false" : "true");
+        _setColumnHidden(table, idx, nextHidden);
+        if (nextHidden) hidden.add(name);
+        else hidden.delete(name);
+        setHiddenTableColumns(wikiId, articlePath, tableId, [...hidden]);
+      });
+      bar.appendChild(btn);
+    });
+
+    const wrap = table.closest(".table-scroll-wrap") || table;
+    wrap.parentNode.insertBefore(bar, wrap);
+  });
+}
+
 export {
   addQuizTables,
   QuizMode,
   addTableSort,
   addTableScrollCues,
+  addComparisonColumnToggles,
   extractComplexityTable,
 };

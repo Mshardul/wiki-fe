@@ -16,6 +16,7 @@ import {
   unlockBodyScroll,
 } from "./state.js";
 import { getBookmarks } from "./storage/bookmarks.js";
+import { getCompletedSet } from "./storage/completions.js";
 import { getRecents } from "./storage/recents.js";
 import { Sync } from "./storage/settings-theme.js";
 
@@ -47,15 +48,7 @@ function _authErrorMessage(e, fallback) {
 
 /* ANON -> LOGIN MIGRATION — One prompt on login if local anon data exists; never blocks login. — Dedicated modal, not a toast, since the shared queue could bury it. */
 function _hasLocalCompletions() {
-  for (const wiki of WIKIS) {
-    try {
-      const arr = JSON.parse(localStorage.getItem(`wiki-completed-${wiki.id}`) || "[]");
-      if (arr.length) return true;
-    } catch {
-      /* ignore */
-    }
-  }
-  return false;
+  return WIKIS.some((wiki) => getCompletedSet(wiki.id).size > 0);
 }
 
 function _hasLocalData() {

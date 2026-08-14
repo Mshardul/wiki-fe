@@ -529,6 +529,9 @@
 .data-clear-confirm.hidden {
   display: none;
 }
+.import-upload.hidden {
+  display: none;
+}
 .data-clear-confirm-text {
   font-size: var(--text-sm);
   color: var(--text-body);

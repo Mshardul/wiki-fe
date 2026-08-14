@@ -99,6 +99,12 @@
       "heading": "Algorithms & Concepts",
       "cards": [
         {
+          "title": "Consistency Models",
+          "path": "./content/system-design/algorithms/consistency-models.md",
+          "slug": "consistency-models",
+          "description": "Linearizability, causal consistency, read-your-writes, eventual consistency spectrum"
+        },
+        {
           "title": "Consistent Hashing",
           "path": "./content/system-design/algorithms/consistent-hashing.md",
           "slug": "consistent-hashing",

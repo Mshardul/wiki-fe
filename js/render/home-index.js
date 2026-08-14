@@ -13,7 +13,7 @@ import { isCompleted } from "../storage/completions.js";
 import { listCachedArticlePaths } from "../storage/offline.js";
 import { getLastOpened } from "../storage/read-tracking.js";
 import { renderRecentsSection } from "../storage/recents.js";
-import { toggleCollapse } from "../storage/scroll-collapse.js";
+import { getScrollPos, toggleCollapse } from "../storage/scroll-collapse.js";
 import { bindIndexCardSwipe, bindIndexPullToRefresh } from "./home-gestures.js";
 import { parseIndexMd, updateArticleCounts } from "./home-parse.js";
 import { destroyIndexGraph, renderIndexGraph } from "./index-graph.js";
@@ -121,7 +121,7 @@ async function renderIndex(wiki) {
 
   showView("view-index");
   // view-index is exempt from _applyView's scroll reset (restores saved position below), so a fresh visit with nothing saved must reset here to avoid leaking the previous view's scroll.
-  if (!localStorage.getItem(`wiki-index-scroll-${wiki.id}`)) {
+  if (!getScrollPos(`wiki-index-scroll-${wiki.id}`)) {
     window.scrollTo({ top: 0, behavior: "instant" });
   }
   bindIndexCardSwipe(wiki);
@@ -146,7 +146,7 @@ async function renderIndex(wiki) {
     _wireOfflineDimming();
     applyOfflineDimming(wiki);
 
-    const savedScroll = localStorage.getItem(`wiki-index-scroll-${wiki.id}`);
+    const savedScroll = getScrollPos(`wiki-index-scroll-${wiki.id}`);
     const targetY = savedScroll ? Number.parseInt(savedScroll, 10) : null;
 
     sectionsEl.classList.add("index-sections--loading");
@@ -200,15 +200,14 @@ function renderIndexSections(sections, wiki) {
                role="button" tabindex="0"
                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
             <div class="index-card-header">
-              <span class="index-card-title">${escHtml(card.title)}</span>
+              <span class="index-card-title">${escHtml(card.title)}<span class="index-card-read-dot ${
+                isCompleted(normalizePath(card.path), wiki.id) ? "visible" : ""
+              }" title="Completed"></span></span>
               <span class="index-card-arrow">→</span>
             </div>
             <p class="index-card-desc">${escHtml(card.description)}</p>
             <div class="index-card-meta">
               <span class="index-card-read-time" data-path="${escHtml(card.path)}">…</span>
-              <span class="index-card-read-dot ${
-                isCompleted(normalizePath(card.path), wiki.id) ? "visible" : ""
-              }" title="Completed"></span>
               <span class="index-card-updated-dot" title="Updated since you last read it"></span>
             </div>
             <span class="index-card-swipe-hint" aria-hidden="true"></span>

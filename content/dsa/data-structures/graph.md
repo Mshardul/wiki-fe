@@ -19,6 +19,7 @@
 - [Implementation](#implementation)
 - [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
 
 ## What it is
@@ -361,6 +362,14 @@ Bounds-checking before enqueuing is cleaner than try/except and avoids index err
 
 **6. Integer overflow in weighted graphs.**
 When summing path weights, the running total can exceed 32-bit int range. In Python this is not an issue (arbitrary precision), but in Java/C++, use `long`. In contests, initialize dist arrays to `float('inf')` in Python or `LLONG_MAX / 2` in C++ (not `LLONG_MAX`, or adding any weight overflows).
+
+## What the interviewer probes for
+
+**What changes when V reaches 10⁹?** - An adjacency matrix is dead on arrival at that scale - O(V²) is 10¹⁸ cells, far beyond any machine's memory - so the representation choice stops being a performance tuning decision and becomes a correctness constraint: only an adjacency list (O(V+E), paying only for edges that exist) or an implicit graph (compute neighbors on the fly, store nothing) survives. At that size even the adjacency list's per-node Python object overhead matters, so real systems fall back to flat arrays of indices (CSR-style: one big array of edges plus an offset array per vertex) to avoid per-node allocation.
+
+**Why not always use an adjacency list instead of a matrix?** - A list wins on memory and neighbor-iteration cost for any sparse graph, which is the overwhelming majority of real graphs, but it loses one thing a matrix gives for free: O(1) edge-existence lookup. Algorithms that check "is there an edge u→v?" in a hot inner loop - Floyd-Warshall's all-pairs DP is the canonical example - operate directly on the matrix and would pay O(degree(u)) per check on a list, so the matrix's O(V²) space is the correct trade once E approaches V² or edge-existence checks dominate the workload.
+
+**Does representation choice matter under concurrent modification?** - Yes, but differently per representation: an adjacency list's per-vertex neighbor list can be updated with a lock scoped to that one vertex (or a lock-free append), so concurrent edge insertions across different vertices don't contend; a shared adjacency matrix under concurrent writes to different cells has no such natural partition without row- or block-level locking, since a naive implementation risks torn writes if two threads resize or mutate the same backing array concurrently.
 
 ## Practice problems
 

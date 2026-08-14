@@ -1,5 +1,11 @@
 import { state } from "../state.js";
-import { getCollapsed, restoreTOCScroll, saveTOCScroll, toggleCollapse } from "../storage/scroll-collapse.js";
+import {
+  gcHeadingCollapseKeys,
+  getCollapsed,
+  restoreTOCScroll,
+  saveTOCScroll,
+  toggleCollapse,
+} from "../storage/scroll-collapse.js";
 
 /* TOC BUILDER */
 function buildTOC(contentEl, wikiId, articlePath) {
@@ -25,12 +31,9 @@ function buildTOC(contentEl, wikiId, articlePath) {
 
     a.addEventListener("click", (e) => {
       e.preventDefault();
-      h.scrollIntoView({ behavior: "smooth", block: "start" });
+      jumpToHeading(contentEl, h.id);
       h.classList.add("toc-heading-pulse");
       setTimeout(() => h.classList.remove("toc-heading-pulse"), 600);
-      const url = new URL(location.href);
-      url.searchParams.set("a", h.id);
-      history.replaceState(history.state, "", url.toString());
     });
 
     if (tag === "H2") {
@@ -144,8 +147,6 @@ function buildTOC(contentEl, wikiId, articlePath) {
     };
     tocNav.addEventListener("scroll", tocNav._tocScrollHandler);
   }
-
-  document.dispatchEvent(new CustomEvent("wiki:toc-updated"));
 }
 
 /* PER-HEADING COLLAPSE TOGGLES (H2 on content page) */
@@ -181,11 +182,16 @@ function _ensureHeadingId(h, index) {
 
 function injectHeadingCollapseToggles(contentEl, wikiId, articlePath) {
   const slugBase = articlePath.replace(/\//g, "-");
+  const liveIds = [];
   contentEl.querySelectorAll("h2").forEach((h2, index) => {
-    if (h2.querySelector(".heading-collapse-btn")) return;
+    if (h2.querySelector(".heading-collapse-btn")) {
+      if (h2.dataset.sectionId) liveIds.push(h2.dataset.sectionId);
+      return;
+    }
 
     const sectionId = _ensureHeadingId(h2, index);
     h2.dataset.sectionId = sectionId;
+    liveIds.push(sectionId);
     const key = `wiki-heading-collapsed-${wikiId}-${slugBase}-${sectionId}`;
 
     const btn = document.createElement("button");
@@ -207,6 +213,8 @@ function injectHeadingCollapseToggles(contentEl, wikiId, articlePath) {
       _syncTocGroup(sectionId, nowCollapsed);
     });
   });
+
+  gcHeadingCollapseKeys(wikiId, articlePath, liveIds);
 }
 
 /* STICKY CURRENT SECTION HEADER */
@@ -321,6 +329,71 @@ function expandAllSections(contentEl) {
   });
 }
 
+// github-slugger punctuation class — keep source md hashes GFM-preview-correct.
+const _GFM_PUNCT = /[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,./:;<=>?@[\]^`{|}~]/g;
+
+function _headingPlainText(h) {
+  const clone = h.cloneNode(true);
+  clone.querySelectorAll("button, a.anchor-btn").forEach((n) => n.remove());
+  return (clone.textContent || "").replace(/[#]+$/g, "").trim();
+}
+
+function _gfmSlug(text) {
+  return text
+    .replace(/<[^>]*>?/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(_GFM_PUNCT, "")
+    .replace(/\s/g, "-");
+}
+
+function _collapseHyphens(s) {
+  return s.replace(/-+/g, "-");
+}
+
+function resolveHeadingId(contentEl, fragment) {
+  if (!fragment) return null;
+  let raw = fragment;
+  try {
+    raw = decodeURIComponent(fragment);
+  } catch {
+    /* keep raw */
+  }
+  if (contentEl.querySelector(`[id="${CSS.escape(raw)}"]`)) return raw;
+  const collapsed = _collapseHyphens(raw);
+  const headings = [...contentEl.querySelectorAll("h2, h3, h4")];
+  for (const h of headings) {
+    if (!h.id) continue;
+    if (_collapseHyphens(h.id) === collapsed) return h.id;
+    const gfm = _gfmSlug(_headingPlainText(h));
+    if (gfm === raw || _collapseHyphens(gfm) === collapsed) return h.id;
+  }
+  return null;
+}
+
+function _revealHeading(target) {
+  const h2 =
+    target.tagName === "H2" ? target : target.closest(".section")?.querySelector("h2");
+  if (!h2?.classList.contains("section--collapsed")) return;
+  const sectionId = h2.dataset.sectionId || h2.id;
+  const key = `wiki-heading-collapsed-${state.currentWikiId}-${state.currentFilePath?.replace(/\//g, "-")}-${h2.id}`;
+  toggleCollapse(key, h2, false);
+  _setSectionCollapsed(h2, false);
+  if (sectionId) _syncTocGroup(sectionId, false);
+}
+
+function jumpToHeading(contentEl, fragment) {
+  const id = resolveHeadingId(contentEl, fragment);
+  const target = id && contentEl.querySelector(`[id="${CSS.escape(id)}"]`);
+  if (!target) return null;
+  _revealHeading(target);
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
+  const url = new URL(location.href);
+  url.searchParams.set("a", id);
+  history.replaceState(history.state, "", url.toString());
+  return id;
+}
+
 export {
   buildTOC,
   injectHeadingCollapseToggles,
@@ -329,4 +402,6 @@ export {
   initProgressRingScrollTop,
   updateProgressRing,
   expandAllSections,
+  resolveHeadingId,
+  jumpToHeading,
 };

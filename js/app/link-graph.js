@@ -1,3 +1,10 @@
+import {
+  createFocusTrap,
+  getFocusableIn,
+  markModalClosed,
+  markModalOpened,
+  registerModal,
+} from "../modal-registry.js";
 import { navigateToContent } from "../render/content-view.js";
 import { fetchPrebuiltBacklinks, fetchPrebuiltSearchIndex } from "../render/nav-utils.js";
 import { WIKIS } from "../state.js";
@@ -11,6 +18,7 @@ import {
 
 let _graph = null; // { nodes, edges } once built, across all wikis
 let _sim = null;
+let _focusTrapHandler = null;
 
 async function buildGraph() {
   if (_graph) return _graph;
@@ -66,6 +74,10 @@ async function openLinkGraph() {
     status.textContent = `${nodes.length} articles · ${edges.length} links`;
 
     _sim = createGraphSim(canvas, nodes, edges, { onNodeClick, colorForNode });
+
+    _focusTrapHandler = createFocusTrap(modal, () => getFocusableIn(modal));
+    modal.addEventListener("keydown", _focusTrapHandler);
+    markModalOpened(linkGraphModal);
   } finally {
     _opening = false;
   }
@@ -73,6 +85,12 @@ async function openLinkGraph() {
 
 function closeLinkGraph() {
   const modal = document.getElementById("link-graph-modal");
+  if (modal.classList.contains("hidden")) return;
+  markModalClosed(linkGraphModal);
+  if (_focusTrapHandler) {
+    modal.removeEventListener("keydown", _focusTrapHandler);
+    _focusTrapHandler = null;
+  }
   modal.classList.add("hidden");
   modal.setAttribute("aria-hidden", "true");
   destroyGraphSim(_sim);
@@ -83,6 +101,9 @@ function closeLinkGraph() {
 function isLinkGraphOpen() {
   return !document.getElementById("link-graph-modal").classList.contains("hidden");
 }
+
+const linkGraphModal = { isOpen: isLinkGraphOpen, close: closeLinkGraph };
+registerModal(linkGraphModal);
 
 document.getElementById("link-graph-backdrop").addEventListener("click", closeLinkGraph);
 document.getElementById("link-graph-close").addEventListener("click", closeLinkGraph);

@@ -137,6 +137,7 @@ def test_dashboard_drills_into_wiki_sections(page, base_url):
     page.locator(".dashboard-card-title", has_text="System Design").click()
     page.wait_for_selector("#view-dashboard.active", timeout=8_000)
     page.wait_for_function("() => location.hash === '#dashboard/system-design'")
+    page.wait_for_selector(".dashboard-card-title:text-is('Components')", timeout=5_000)
 
     titles = page.locator(".dashboard-card-title").all_inner_texts()
     assert titles == ["Components", "Learning Paths"]
@@ -151,6 +152,9 @@ def test_dashboard_drills_into_learning_paths(page, base_url):
 
     page.locator(".dashboard-card-title", has_text="Learning Paths").click()
     page.wait_for_function("() => location.hash === '#dashboard/system-design/paths'")
+    page.wait_for_selector(
+        ".dashboard-card-title:text-is('Components Foundation')", timeout=5_000
+    )
 
     titles = page.locator(".dashboard-card-title").all_inner_texts()
     assert titles == ["Components Foundation"]

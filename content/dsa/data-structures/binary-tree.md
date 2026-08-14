@@ -27,6 +27,7 @@
   - [Tree DP - answer from children](#tree-dp--answer-from-children)
   - [Array-embedded tree (no pointers)](#array-embedded-tree-no-pointers)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Maximum Depth of Binary Tree](#1-maximum-depth-of-binary-tree--dfs-recursion)
   - [Binary Tree Level Order Traversal](#2-binary-tree-level-order-traversal--bfs)
@@ -110,11 +111,11 @@ How a binary tree relates to the structures you'd weigh against it:
 
 | Structure       | Search        | Insert       | Ordered iteration  | Range / k-th | Memory                 | Pick it when…                      |
 | --------------- | ------------- | ------------ | ------------------ | ------------ | ---------------------- | ---------------------------------- |
-| **Binary tree** | O(n)          | O(1) at spot | no (unordered)     | no           | 2 ptrs/node, scattered | hierarchy, recursion base          |
-| BST (balanced)  | **O(log n)**  | **O(log n)** | **yes** (in-order) | **O(log n)** | 2 ptrs/node            | ordered keys + fast insert + range |
-| Heap            | O(n) (search) | O(log n)     | no                 | min/max only | array, complete tree   | top/min/max priority               |
-| Trie            | O(L) by char  | O(L)         | by prefix          | prefix       | child ptrs/node        | string keys, autocomplete          |
-| Hash table      | **O(1)** avg  | **O(1)** avg | no                 | no           | scattered + slack      | unordered key→value lookup         |
+| **Binary tree** | O(n)          | O(1) at spot | no (unordered)     | no           | 2 ptrs/node, scattered | the data is **inherently hierarchical** (an expression, a file system, a decision tree) - no key ordering to exploit, so paying for a BST's invariant buys nothing; wins whenever the shape of the tree *is* the answer, not a lookup-speed device |
+| BST (balanced)  | **O(log n)**  | **O(log n)** | **yes** (in-order) | **O(log n)** | 2 ptrs/node            | ordered keys need search **and** insert both faster than O(n) - crosses over from a plain binary tree the moment you also need lookup by key, not just traversal; crosses over from a sorted array the moment inserts/deletes happen after the initial build (array insert is O(n), BST is O(log n)) |
+| Heap            | O(n) (search) | O(log n)     | no                 | min/max only | array, complete tree   | you only ever need the **current extremum**, never an arbitrary key - beats a BST by skipping full-order maintenance for a guarantee it doesn't need; loses the moment anything but min/max is needed (a mid-range key search is O(n) on a heap vs O(log n) on a BST) |
+| Trie            | O(L) by char  | O(L)         | by prefix          | prefix       | child ptrs/node        | keys are **strings and prefix queries matter** - crosses over from a BST once "all keys starting with X" needs to beat the BST's O(k + log n) range-scan, at the cost of O(alphabet × nodes) memory a BST doesn't pay |
+| Hash table      | **O(1)** avg  | **O(1)** avg | no                 | no           | scattered + slack      | lookup speed matters and **order is irrelevant** - beats every tree here the instant "sorted"/"range"/"k-th smallest" isn't part of the problem; a tree wins back the trade the moment one of those three phrases appears |
 
 The plain binary tree's value is **structure and recursion**, not speed - its specialized children (BST, heap, trie) are where the O(log n)/O(1) guarantees live. A hash table beats them all on unordered lookup; trees win the moment _order_ enters.
 
@@ -299,6 +300,14 @@ tree:        (A)              array:  index: 0  1  2  3  4  5  6
 - **Height vs depth, and 0 vs 1 conventions.** Height (to deepest leaf) and depth (from root) are opposite directions, and whether a single node has height 0 or 1 varies by source. Pin the convention down before coding; off-by-one here is a classic bug.
 - **In-order on a non-BST isn't sorted.** In-order gives sorted output **only** on a [BST](./binary-search-tree.md). On a plain binary tree it's just left-node-right with no ordering meaning - don't assume sortedness from a generic tree.
 - **Mutating during traversal (Morris caveat).** O(1)-space Morris traversal temporarily rewires leaf pointers; if the walk aborts midway (an exception, an early return), the tree is left corrupted. Restore pointers or use the explicit stack unless O(1) space is genuinely required.
+
+## What the interviewer probes for
+
+**What breaks if this tree has 10⁹ nodes?** - Two separate things degrade: recursive traversal blows the call stack long before 10⁹ (Python's ~1000-frame default limit is the first wall, and even a raised limit hits the OS stack eventually on a skewed tree), so at that scale you switch to the iterative explicit-stack/queue forms shown in Implementation. Second, even with iteration fixed, pointer-chasing between scattered heap-allocated nodes means each traversal step is a likely cache miss - the same cost the Gotchas section's skew case hints at, just now hitting even a balanced tree because 10⁹ nodes can't fit in cache regardless of shape.
+
+**Why not always use a BST instead of a plain binary tree?** - A plain binary tree is the right choice when the data is **inherently hierarchical** and there's no key ordering to exploit - an expression tree, a file-system tree, a decision tree - the shape of the tree *is* the answer, not a lookup mechanism. Imposing a BST's ordering invariant on that data buys nothing since there's no "search by key" need. The Comparison table's crossover is explicit: reach for a BST the moment you also need fast lookup **by key**, not just structural traversal - at that point a plain binary tree is strictly worse (O(n) search vs the BST's O(log n)) for no benefit.
+
+**Why does the choice between DFS and BFS matter, and does it change at scale?** - Pre/in/post-order (DFS, O(h) space via the call stack) versus level-order (BFS, O(w) space via an explicit queue, where w is the widest level) is a space trade-off that flips depending on tree shape: a tall, narrow tree makes BFS's queue balloon to hold a wide level, while a short, bushy tree makes DFS's stack shallow. At large n with an unbalanced or very wide tree, the "wrong" choice can dominate memory - a senior answer picks the traversal based on the tree's expected shape, not habit.
 
 ## Practice problems
 

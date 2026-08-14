@@ -41,12 +41,19 @@ import {
 import { addPracticeAnswerToggles } from "../content/practice-toggle.js";
 import { wrapSectionsAndSubsections } from "../content/section-wrap.js";
 import { renderStructureViz } from "../content/structure-viz.js";
-import { QuizMode, addQuizTables, addTableScrollCues, addTableSort } from "../content/tables.js";
+import {
+  QuizMode,
+  addComparisonColumnToggles,
+  addQuizTables,
+  addTableScrollCues,
+  addTableSort,
+} from "../content/tables.js";
 import {
   addStickySection,
   buildTOC,
   cleanupStickySection,
   injectHeadingCollapseToggles,
+  jumpToHeading,
 } from "../content/toc.js";
 import { addVideoEmbeds } from "../content/video-embed.js";
 import {
@@ -70,6 +77,7 @@ import { renderNotesScratchpad } from "../storage/notes.js";
 import { updateOfflineBtn } from "../storage/offline.js";
 import { recordOpened } from "../storage/read-tracking.js";
 import { addToRecents } from "../storage/recents.js";
+import { getScrollPos } from "../storage/scroll-collapse.js";
 import {
   dirOf,
   fetchText,
@@ -87,6 +95,12 @@ import {
 } from "./related-articles.js";
 import { showView } from "./router.js";
 import { showToast } from "./toast.js";
+
+// Fails closed (returns null) instead of injecting raw markdown-derived HTML when the DOMPurify CDN script hasn't loaded.
+function sanitizeOrFail(rawHtml, opts) {
+  if (typeof DOMPurify === "undefined") return null;
+  return DOMPurify.sanitize(rawHtml, opts);
+}
 
 /* LOADING SKELETON */
 function buildLoadingSkeleton(fingerprint) {
@@ -226,6 +240,7 @@ function navigateToContent(wikiId, encodedPath, encodedTitle, slug) {
 async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) {
   const filePath = normalizePath(rawPath);
   const gen = ++_renderGen;
+  const pendingAnchor = new URLSearchParams(location.search).get("a");
 
   state.currentWikiId = wiki.id;
   state.currentFilePath = filePath;
@@ -325,14 +340,29 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       rawHtml = getMdConverter().makeHtml(stripInContentToc(markdown));
       cacheRenderedHtml(filePath, rawHtml);
     }
-    body.innerHTML =
-      typeof DOMPurify !== "undefined"
-        ? DOMPurify.sanitize(rawHtml, {
-            // Default allowlist rejects unknown URI schemes; add wiki:// for cross-wiki links.
-            ALLOWED_URI_REGEXP:
-              /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|wiki):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
-          })
-        : rawHtml;
+    const sanitized = sanitizeOrFail(rawHtml, {
+      // Default allowlist rejects unknown URI schemes; add wiki:// for cross-wiki links.
+      ALLOWED_URI_REGEXP:
+        /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|wiki):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    });
+    if (sanitized === null) {
+      body.innerHTML = `
+        <div class="content-stub">
+          <div class="content-stub-icon">✦</div>
+          <h2 class="content-stub-title">${escHtml(title)}</h2>
+          <p class="content-stub-msg">Couldn't render this article safely - a required security script failed to load.</p>
+        </div>`;
+      showToast(
+        "Article couldn't be rendered - security script failed to load.",
+        5000,
+        null,
+        undefined,
+        "error",
+      );
+      body.dataset.renderDone = "1";
+      return;
+    }
+    body.innerHTML = sanitized;
     wireImageErrorPlaceholders(body);
 
     if (typeof renderMathInElement !== "undefined") {
@@ -451,6 +481,7 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     run(() => addTableScrollCues(body));
     run(() => addPreOverflowDetection(body));
     run(() => addTableSort(body));
+    run(() => addComparisonColumnToggles(body));
     run(() => addLatexCopyButtons(body, () => showToast("Copy failed - clipboard access denied")));
     run(() => addFormulaToggle(body));
     run(() => addFootnotes(body));
@@ -500,19 +531,12 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
       }
     }
 
-    const anchor = new URLSearchParams(location.search).get("a");
-    if (anchor) {
-      const target = body.querySelector(`[id="${CSS.escape(anchor)}"]`);
-      if (target)
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() =>
-            target.scrollIntoView({ behavior: "smooth", block: "start" }),
-          ),
-        );
+    if (pendingAnchor) {
+      requestAnimationFrame(() => requestAnimationFrame(() => jumpToHeading(body, pendingAnchor)));
     }
 
-    if (!anchor) {
-      const _saved = localStorage.getItem(`scroll-${wiki.id}-${filePath}`);
+    if (!pendingAnchor) {
+      const _saved = getScrollPos(`wiki-scroll-${wiki.id}-${filePath}`);
       if (_saved) {
         const _targetY = Number.parseInt(_saved, 10);
         document.fonts.ready.then(() =>
@@ -555,6 +579,22 @@ window.addEventListener(
   { capture: true },
 );
 
+function _articlePageUrl(wikiId, filePath, fragment) {
+  const slug = filePath.split("/").pop().replace(/\.md$/, "");
+  const url = new URL(location.href);
+  url.hash = `${wikiId}/${slug}`;
+  if (fragment) url.searchParams.set("a", fragment);
+  else url.searchParams.delete("a");
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function _markArticleLink(link, wikiId, filePath, fragment) {
+  link.classList.add("wiki-link-article");
+  link.setAttribute("href", _articlePageUrl(wikiId, filePath, fragment));
+  link.setAttribute("target", "_blank");
+  link.setAttribute("rel", "noopener noreferrer");
+}
+
 function interceptMdLinks(contentEl, wiki, currentFilePath) {
   const baseDir = dirOf(currentFilePath);
   const previewEl = document.getElementById("hover-preview");
@@ -564,23 +604,17 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
     if (!href) return;
 
     if (href.startsWith("#")) {
+      link.classList.add("wiki-link-inpage");
+      const fragment = href.slice(1);
       link.addEventListener("click", (e) => {
         e.preventDefault();
-        const targetId = href.slice(1);
-
-        const target = document.querySelector(`[id="${CSS.escape(targetId)}"]`);
-        if (target) {
-          target.scrollIntoView({ behavior: "smooth", block: "start" });
-
-          const url = new URL(location.href);
-          url.searchParams.set("a", targetId);
-          history.replaceState(history.state, "", url.toString());
-        }
+        jumpToHeading(contentEl, fragment);
       });
       return;
     }
 
     if (href.startsWith("http")) {
+      link.classList.add("wiki-link-external");
       link.setAttribute("target", "_blank");
       link.setAttribute("rel", "noopener noreferrer");
       return;
@@ -590,16 +624,11 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
     if (href.startsWith("wiki://")) {
       const m = href.match(/^wiki:\/\/([^/]+)\/(.+?\.md)(#.*)?$/);
       if (!m) return;
-      const [, targetWikiId, targetRelPath] = m;
+      const [, targetWikiId, targetRelPath, hashPart] = m;
       const targetWiki = WIKIS.find((w) => w.id === targetWikiId);
       if (!targetWiki) return;
       const targetPath = `${dirOf(targetWiki.indexPath)}/${targetRelPath}`;
-
-      link.addEventListener("click", (e) => {
-        e.preventDefault();
-        const title = link.dataset.title || link.textContent.trim();
-        renderContent(targetWiki, targetPath, title);
-      });
+      _markArticleLink(link, targetWiki.id, targetPath, hashPart ? hashPart.slice(1) : "");
       return;
     }
 
@@ -607,16 +636,8 @@ function interceptMdLinks(contentEl, wiki, currentFilePath) {
     if (!href.split("#")[0].endsWith(".md")) return;
 
     const resolvedPath = resolvePath(baseDir, href).split("#")[0];
-
-    link.addEventListener("click", (e) => {
-      e.preventDefault();
-      const title = link.dataset.title || link.textContent.trim();
-      renderContent(wiki, resolvedPath, title);
-      if (previewEl) {
-        previewEl.classList.remove("visible");
-        previewEl.classList.add("hidden");
-      }
-    });
+    const fragment = href.includes("#") ? href.slice(href.indexOf("#") + 1) : "";
+    _markArticleLink(link, wiki.id, resolvedPath, fragment);
 
     link.addEventListener("mouseenter", () => {
       if (_lastPointerWasTouch) return;
@@ -818,7 +839,12 @@ async function showHoverPreview(link, path, { asSheet = false } = {}) {
     if (!extract) throw new Error("No summary");
 
     const rawHtml = getMdConverter().makeHtml(extract);
-    previewEl.innerHTML = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(rawHtml) : rawHtml;
+    const sanitized = sanitizeOrFail(rawHtml);
+    if (sanitized === null) {
+      previewEl.innerHTML = '<p style="color:var(--text-muted)">Preview not available.</p>';
+      return;
+    }
+    previewEl.innerHTML = sanitized;
 
     if (typeof renderMathInElement !== "undefined") {
       renderMathInElement(previewEl, {

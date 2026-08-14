@@ -22,6 +22,7 @@
   - [Sorted dynamic array + binary insertion - `bisect.insort`](#sorted-dynamic-array--binary-insertion--bisectinsort)
   - [Growable result buffer - build output in one O(n) pass](#growable-result-buffer--build-output-in-one-on-pass)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [1. Implement a Dynamic Array from Scratch - grow-and-shrink resize policy](#1-implement-a-dynamic-array-from-scratch--grow-and-shrink-resize-policy)
   - [2. O(1) Removal at an Arbitrary Index - swap-with-last-then-pop](#2-o1-removal-at-an-arbitrary-index--swap-with-last-then-pop)
@@ -288,6 +289,14 @@ def compact_evens(arr: list[int]) -> list[int]:
 - **Shrink at 1/4, not 1/2.** A naive "halve when half-empty" thrashes: push/pop right at the 1/2 boundary forces O(n) resize every operation, making the amortization collapse. Shrinking at 1/4 leaves hysteresis so each resize is "paid for" by enough cheap operations.
 - **Insertion in the middle is still O(n).** Growable ≠ cheap-to-splice. Inserting at index i shifts everything after it, same as a plain array. Dynamic only buys cheap _append_.
 - **Iterator invalidation.** Appending during iteration may trigger a resize that reallocates the backing block - references/iterators into the old block dangle (C++ `vector`) or raise (`RuntimeError` in Python if you mutate a `list` mid-loop). Snapshot or index explicitly.
+
+## What the interviewer probes for
+
+**What changes at n = 10⁹ appends?** - The amortized-O(1) argument still holds asymptotically (total copy work stays ~2n regardless of n), but the *constants* start to bite: a doubling resize at n = 10⁹ elements copies ~10⁹ elements in one call, which is a multi-second pause and a transient ~2× memory spike (potentially tens of GB) rather than a negligible blip. At that scale you'd pre-size to a known capacity to skip the resize path entirely, or pick a growth factor closer to 1.5× (less wasted slack per resize) if memory ceiling matters more than resize count.
+
+**Why not always over-allocate generously (say, 4× or start at capacity 10⁶) to avoid resizes altogether?** - Because the up-to-~2× memory slack after a doubling is already the cost side of this trade; over-allocating further wastes memory for collections that never grow that large, and most callers don't know the final size up front (that's the whole reason to reach for a dynamic array instead of a fixed one). The better lever is choosing the growth factor to match the workload's read/write and memory-vs-time priorities (see [Variants](#variants)), not blindly padding the initial capacity.
+
+**Why not use a linked list instead, since it never has a resize spike at all?** - A linked list trades away O(1) random access and cache locality to get that smoothness - every node is a separate heap allocation, so iteration is dominated by cache misses even though Big-O looks the same. The dynamic array's occasional O(n) resize is worse for worst-case *latency* but better for aggregate *throughput*; pick the list only when a single worst-case pause is unacceptable (real-time systems) and access is genuinely sequential, not random.
 
 ## Practice problems
 

@@ -15,17 +15,17 @@
 - **BEM-adjacent class naming** (block-element pattern).
 - **No inline styles** except dynamic values set via JS.
 - **Inline `onclick` handlers require a `window.*` global** (see `app.js` WINDOW GLOBALS block). Prefer the existing `data-action` delegation in `app.js` for new static buttons.
-- **Identity is NEVER cached in localStorage** - only `state.session` in memory; cookie/BE is the sole authority. (decisions/auth-integration.md → Session state)
-- **Writes are fire-and-forget** - write localStorage, async POST/DELETE, do not await, swallow transient failures (`.catch(()=>{})`); load-time pull reconciles. (decisions/auth-integration.md → API client)
+- **Identity is NEVER cached in localStorage** - only `state.session` in memory; cookie/BE is the sole authority. (docs/_meta/auth-integration.md → Session state)
+- **Writes are fire-and-forget** - write localStorage, async POST/DELETE, do not await, swallow transient failures (`.catch(()=>{})`); load-time pull reconciles. (docs/_meta/auth-integration.md → API client)
 - **Base path is `/api/v1`.** Cookie name `session`, httpOnly (JS cannot read it).
-- **Password rule (see Password policy in decisions/auth.md), all 5 must pass:** min 12 chars · ≥1 uppercase · ≥1 lowercase · ≥1 digit · ≥1 special (anything outside `[A-Za-z0-9]`). Hint set shown in UI: `! @ # $ % ^ & * ? - _`.
+- **Password rule (see Password policy in docs/_meta/auth.md), all 5 must pass:** min 12 chars · ≥1 uppercase · ≥1 lowercase · ≥1 digit · ≥1 special (anything outside `[A-Za-z0-9]`). Hint set shown in UI: `! @ # $ % ^ & * ? - _`.
 - **Service worker (`wiki-sw.js`) change ⇒ cache version bump.** This plan does NOT modify the SW (API calls bypass it); if that changes, bump the version.
 - **Tests are e2e only** through the UI via Playwright; never test JS functions directly. Read `tests/conftest.py` before writing any test. Never add new fixtures. **Never run tests** - write correct test code; the user runs them.
 - **Never commit secrets / real emails.** Test emails use `@example.com`.
 
 ## Backend contract (already built - reference, do not change)
 
-From the Auth flow + Sync endpoints in `decisions/auth.md` (BE side already built). All JSON, base `/api/v1`. Error envelope: `{"error":{"code","message","details?}}`.
+From the Auth flow + Sync endpoints in `docs/_meta/auth.md` (BE side already built). All JSON, base `/api/v1`. Error envelope: `{"error":{"code","message","details?}}`.
 
 ```
 POST /auth/register {email,password}        → 201 | 409 dup | 400 weak-password (details=failed rules)
@@ -525,7 +525,7 @@ import { state } from "./state.js";
 import { Sync } from "./storage.js";
 
 /* ═══════════════════════════════════════════════════════════════
-   PASSWORD POLICY - mirrors wiki-be; keep in sync via decisions/auth.md
+   PASSWORD POLICY - mirrors wiki-be; keep in sync via docs/_meta/auth.md
    ═══════════════════════════════════════════════════════════════ */
 const PW_RULES = [
   { id: "len", label: "At least 12 characters", test: (p) => p.length >= 12 },
@@ -1378,7 +1378,7 @@ git commit -m "docs: add auth/sync modules to FE file map"
 
 ## Self-Review notes (resolved inline)
 
-- **Spec coverage** (against decisions/auth-integration.md): API client → Task 2. state.session → Task 1. storage sync hooks (cache-through, fire-and-forget) → Task 3. password policy live checklist → Tasks 4/5/6. auth modal (login/register/verify-pending) → Tasks 5/6. topbar button → Task 5. 401 global handler + toast + reopen login → Tasks 2/8. anon→login migration → Task 7. logout B-lite flush → Task 6. boot GET /auth/me once → Task 8. Offline write-queue explicitly **out of scope** (v3, per the Offline note). Same-origin relative base **out of scope** (no domain yet).
+- **Spec coverage** (against docs/_meta/auth-integration.md): API client → Task 2. state.session → Task 1. storage sync hooks (cache-through, fire-and-forget) → Task 3. password policy live checklist → Tasks 4/5/6. auth modal (login/register/verify-pending) → Tasks 5/6. topbar button → Task 5. 401 global handler + toast + reopen login → Tasks 2/8. anon→login migration → Task 7. logout B-lite flush → Task 6. boot GET /auth/me once → Task 8. Offline write-queue explicitly **out of scope** (v3, per the Offline note). Same-origin relative base **out of scope** (no domain yet).
 - **Duplicate id fix:** verify-panel "back to login" id renamed `auth-verify-to-login` (Task 5 step 2 note + Task 6 wiring).
 - **Double-fire guard:** clears write localStorage directly to skip `saveBookmarks` diff (Task 3 step 3).
 - **Toast action-label limitation:** migration "Keep/Discard" currently rides the single-action toast (`onUndo`); flagged in Task 7 for optional upgrade. Acceptable for v0.

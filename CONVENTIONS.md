@@ -36,7 +36,7 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 | `state.js`         | App state object, WIKIS registry, shared caches, shared pure utilities                                           |
 | `content/`         | Post-markdown content processing (callouts, copy buttons, Mermaid, TOC, focus mode, glossary, footnotes, …)      |
 | `render/`          | Routing + view rendering (home grid, index sections, content pipeline, breadcrumbs, related articles, toast)     |
-| `search.js`        | ⌘K modal lifecycle, fuzzy scoring, result rendering                                                              |
+| `search/`          | ⌘K search domain - see `js/search/` subtable below                                                               |
 | `storage/`         | All `localStorage` access + cache-through backend sync hooks when logged in                                      |
 | `auth.js`          | Auth domain: password-rule validation, auth modal controller, login/register/logout/resend, anon→login migration |
 | `api.js`           | Single wrapper for all `wiki-be` calls (base-URL detect, credentials, `ApiError`, global 401)                    |
@@ -48,7 +48,7 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 | `zoom-lightbox.js`     | Zoom overlay (shared by image + diagram zoom), pinch/pan/swipe gestures          |
 | `code-blocks.js`       | Code block header, copy buttons, clipboard helper, line numbers, hljs theme sync |
 | `mermaid.js`           | Diagram render/re-render, node captions, step-through walkthrough                |
-| `tables.js`            | Column sort, quiz-me mode, table scroll cues                                     |
+| `tables.js`            | Column sort, quiz-me mode, table scroll cues, comparison column toggles |
 | `toc.js`               | TOC build, sticky section header, per-heading collapse, progress ring            |
 | `formatting.js`        | Callouts, prerequisites chips, anchor links, LaTeX toggle/copy, focus mode, tabbed code blocks, footnotes, in-article find |
 | `glossary-caveats.js`  | Inline caveat reveals, glossary popovers/expand, rendered-HTML session cache      |
@@ -77,6 +77,14 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 | `offline.js`          | Service-worker cache download/remove/check for offline articles      |
 | `settings-theme.js`   | Settings object, theme/background/accent/font data, `Settings`/`Theme`/`Sync`, multi-tab sync listener |
 | `scroll-collapse.js`  | Scroll-position cache, section collapse state, TOC scroll, recent searches |
+| `table-columns.js`    | Comparison-table hidden-column prefs                                       |
+
+#### `js/search/` - ⌘K search domain
+
+| File                  | Owns                                                                                                         |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `search.js`           | ⌘K modal: open/close lifecycle, search entry loading, fuzzy scoring, result rendering, section-filter mode (>)   |
+| `search-features.js`  | Search snippet extraction, recent-searches list, synonym cache use                                                |
 
 #### `js/app/` - bootstrap-adjacent behaviors
 
@@ -114,7 +122,7 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 - **Add a token before repeating a value.** If a CSS value (color, font-weight, z-index, transition duration, font-size) appears in more than one rule and no token exists yet, add the token to `tokens.css` first, then use `var(--token-name)` everywhere. Available token groups: `--fw-*` (font-weight), `--z-*` (z-index layers), `--text-*` (font-size scale - always prefer over raw rem/em values), `--color-*` (semantic status colors), `--overlay-*` (rgba scrim colors), `--t*` (transitions), `--s*` (spacing), `--r-*` (border-radius, including `--r-xs: 4px`), `--topbar-h` (topbar height - use in any `top`/`calc` offset that depends on topbar).
 - **BEM-adjacent naming** (block-element pattern).
 - **`wiki.css` is the aggregator** - it `@import`s the modules and **holds no rules of its own.**
-- **Theming via `data-theme`** - per-theme overrides live in `themes.css`, never scattered.
+- **Theming:** `data-theme` is binary `light`/`dark` for CSS-only overrides in `themes.css` (focus outline, shadows, code-block colors). Visual presets are JS-computed background entries in `settings-theme.js` that set `--bg`/`--surface`/`--text-heading`/`--accent` on `:root` — not extra `[data-theme="…"]` named themes.
 - View-specific rules live in `view-*.css` or a `view-*/` subfolder; shared components in `components/` (e.g. `components/auth.css`). Don't put view styles in the shared files or vice versa.
 - **`components/` and `view-content/` are split by sub-concern** (see the module map above for the JS equivalent). `components/topbar.css`, `search-modal.css`, `preferences-modal.css`, `toast.css`, `wiki-switcher.css`; `view-content/layout.css`, `code.css`, `mermaid.css`, `callouts-prereqs.css`, `interactive.css`, `glossary-related.css`. A new component/view rule set crossing ~400 lines gets its own file in the matching subfolder, imported from `wiki.css` in the same position.
 - **Responsive:** mobile-first. All new CSS must work at 320px. Breakpoints live in `responsive.css` - not `tokens.css`, not scattered in view files. No new breakpoints outside `responsive.css` without a deliberate decision.
@@ -140,7 +148,7 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 - **Scroll position stays local-only** - ephemeral, device-specific, never synced.
 
 For the full model and the *why*, see the decisions docs:
-[decisions/auth-integration.md](./docs/_meta/decisions/auth-integration.md) (caching, session state) and [decisions/auth.md](./docs/_meta/decisions/auth.md) (data model). This file states the *practice*; those docs hold the *contract values*.
+[auth-integration.md](./docs/_meta/auth-integration.md) (caching, session state) and [auth.md](./docs/_meta/auth.md) (data model). This file states the *practice*; those docs hold the *contract values*.
 
 ---
 
@@ -158,8 +166,8 @@ For the full model and the *why*, see the decisions docs:
   ```
 
 - **One global 401 handler** in the wrapper: any 401 → flip `state.session` to logged-out, emit `wiki:session-expired`. Callers never repeat 401 logic.
-- **`code` strings are a cross-repo contract** with the backend - switch on the same strings the BE emits; don't invent FE-local ones. The canonical list lives in [decisions/auth.md](./docs/_meta/decisions/auth.md) (Auth flow + Security guards) and the BE repo.
-- **Password validation runs on both FE and BE** - one rule, two implementations, kept in sync via the decisions doc. The FE does the live checklist; the BE is the backstop. The 5 rules' values are in [decisions/auth.md](./docs/_meta/decisions/auth.md) (Password policy), not duplicated here.
+- **`code` strings are a cross-repo contract** with the backend - switch on the same strings the BE emits; don't invent FE-local ones. The canonical list lives in [auth.md](./docs/_meta/auth.md) (Auth flow + Security guards) and the BE repo.
+- **Password validation runs on both FE and BE** - one rule, two implementations, kept in sync via the decisions doc. The FE does the live checklist; the BE is the backstop. The 5 rules' values are in [auth.md](./docs/_meta/auth.md) (Password policy), not duplicated here.
 
 ---
 

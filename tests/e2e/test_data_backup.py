@@ -165,6 +165,42 @@ def test_import_rejects_malformed_wiki_read_keys(page, base_url):
         os.unlink(tmp_path)
 
 
+def test_import_rejects_malformed_bookmarks_and_settings_shape(page, base_url):
+    """613: Backup where bookmarks/settings are strings that don't parse to the expected shape is rejected before write."""
+    import os
+    import tempfile
+
+    bad = {
+        "version": 1,
+        "bookmarks": json.dumps({"not": "an array"}),
+        "recents": None,
+        "settings": json.dumps(["not", "an", "object"]),
+    }
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+        json.dump(bad, tmp)
+        tmp_path = tmp.name
+
+    try:
+        page.goto(f"{base_url}/", wait_until="domcontentloaded")
+        page.wait_for_selector("#view-home.active", timeout=8_000)
+        page.evaluate("() => { localStorage.removeItem('wiki-bookmarks'); localStorage.removeItem('wiki-settings'); }")
+        _open_settings(page)
+
+        page.locator("#import-upload").set_input_files(tmp_path)
+        page.wait_for_selector("#wiki-toast.visible", timeout=3000)
+
+        toast_text = page.locator("#wiki-toast").inner_text()
+        assert "invalid" in toast_text.lower() or "failed" in toast_text.lower(), (
+            f"Expected invalid-backup toast, got: {toast_text}"
+        )
+        bookmarks_stored = page.evaluate("() => localStorage.getItem('wiki-bookmarks')")
+        settings_stored = page.evaluate("() => localStorage.getItem('wiki-settings')")
+        assert bookmarks_stored is None, "Malformed bookmarks shape must not be written to localStorage"
+        assert settings_stored is None, "Malformed settings shape must not be written to localStorage"
+    finally:
+        os.unlink(tmp_path)
+
+
 def _seed_local_data(page):
     """Seeds one localStorage key per clearable category, across two wikis."""
     page.evaluate(

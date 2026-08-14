@@ -385,6 +385,35 @@ def test_empty_section_hidden_when_no_matches(page, base_url):
     )
 
 
+def test_completion_dot_sits_after_title_not_in_meta(page, base_url):
+    """Completed-dot is inline after the card title; meta keeps read-time and updated-dot."""
+    _go_to_index(page, base_url)
+    page.wait_for_selector(
+        "#index-sections:not(.index-sections--loading)", timeout=15_000
+    )
+    layout = page.evaluate(
+        """() => {
+            const card = document.querySelector(
+                '.index-card:not(.index-card--unavailable)'
+            );
+            if (!card) return null;
+            const title = card.querySelector('.index-card-title');
+            const meta = card.querySelector('.index-card-meta');
+            return {
+                dotInTitle: !!title?.querySelector('.index-card-read-dot'),
+                dotInMeta: !!meta?.querySelector('.index-card-read-dot'),
+                timeInMeta: !!meta?.querySelector('.index-card-read-time'),
+                updatedInMeta: !!meta?.querySelector('.index-card-updated-dot'),
+            };
+        }"""
+    )
+    assert layout, "Expected at least one available index card"
+    assert layout["dotInTitle"], "Completed-dot must sit inside the title"
+    assert not layout["dotInMeta"], "Completed-dot must not remain in the meta row"
+    assert layout["timeInMeta"], "Read-time stays in the meta row"
+    assert layout["updatedInMeta"], "Updated-dot stays in the meta row"
+
+
 def test_incomplete_filter_hides_completed_cards(page, base_url):
     """Activating 'Incomplete only' hides cards already marked completed."""
     _go_to_index(page, base_url)

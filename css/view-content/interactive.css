@@ -272,7 +272,7 @@ body.sticky-header-visible .article-find {
    ═══════════════════════════════════════════════ */
 .markdown-body h2 {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--s2);
 }
 .heading-collapse-btn {
@@ -281,8 +281,8 @@ body.sticky-header-visible .article-find {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: var(--icon-btn-box);
+  height: var(--icon-btn-box);
   border: 1px solid var(--glass-border);
   border-radius: var(--r-xs);
   background: var(--glass-bg);
@@ -298,8 +298,8 @@ body.sticky-header-visible .article-find {
   color: var(--accent);
 }
 .heading-collapse-btn svg {
-  width: 12px;
-  height: 12px;
+  width: var(--icon-btn-glyph);
+  height: var(--icon-btn-glyph);
   transition: transform var(--t-fast);
 }
 .markdown-body h2.section--collapsed .heading-collapse-btn svg {
@@ -319,7 +319,7 @@ body.sticky-header-visible .article-find {
    ═══════════════════════════════════════════════ */
 .markdown-body h3:has(.practice-eye-btn) {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--s2);
 }
 .practice-eye-btn {
@@ -328,8 +328,8 @@ body.sticky-header-visible .article-find {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: var(--icon-btn-box);
+  height: var(--icon-btn-box);
   border: 1px solid var(--glass-border);
   border-radius: var(--r-xs);
   background: var(--glass-bg);
@@ -345,8 +345,8 @@ body.sticky-header-visible .article-find {
   color: var(--accent);
 }
 .practice-eye-btn svg {
-  width: 10px;
-  height: 10px;
+  width: var(--icon-btn-glyph);
+  height: var(--icon-btn-glyph);
 }
 .problem-answer {
   transition: opacity var(--t);

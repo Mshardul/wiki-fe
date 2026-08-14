@@ -61,13 +61,13 @@ graph LR
 
 ## Operations
 
-| Operation | Average | Worst case | Notes |
-| --- | --- | --- | --- |
-| Search | O(log n) | O(n) | Worst case only if randomization degenerates (see Gotchas) |
-| Insert | O(log n) | O(n) | Search to find position, then splice in a randomly-sized tower |
-| Delete | O(log n) | O(n) | Search to find node, then unsplice its tower at every level it appears |
-| Successor / predecessor | O(1) | O(1) | Bottom layer is a sorted doubly linked list - trivial once positioned |
-| Range query (k results) | O(log n + k) | O(n) | Locate the start in O(log n), then walk level-0 pointers for k steps |
+| Operation | Average | Worst case | Space | Notes |
+| --- | --- | --- | --- | --- |
+| Search | O(log n) | O(n) | O(1) | Worst case only if randomization degenerates (see Gotchas); no extra structures allocated during search |
+| Insert | O(log n) | O(n) | O(1) expected | Search to find position, then splice in a randomly-sized tower; the new tower itself costs expected `1/(1-p)` pointers, not counted against the search cost |
+| Delete | O(log n) | O(n) | O(1) | Search to find node, then unsplice its tower at every level it appears - no new allocation, only pointer rewiring |
+| Successor / predecessor | O(1) | O(1) | O(1) | Bottom layer is a sorted doubly linked list - trivial once positioned |
+| Range query (k results) | O(log n + k) | O(n) | O(k) | Locate the start in O(log n), then walk level-0 pointers for k steps, materializing k results |
 
 ## Complexity summary
 
@@ -101,6 +101,14 @@ Do not use a skip list when you need a **hard worst-case guarantee** - a balance
 ## Traversal & invariant
 
 **The search invariant**, maintained at every step of search/insert/delete: at the current position `(level, node)`, every node **before** `node` at every level `≤ level` has already been confirmed `< target`. This is what licenses "advance while the next node's key is `≤` target, else drop a level" - the search never needs to backtrack, because the invariant guarantees nothing skipped-over could have been the answer.
+
+**Base case.** Before the first step, the current position is `(MAX_LEVEL, head)` - the sentinel head node at the topmost level. No real node has been examined yet, so the invariant ("every node before the current position at every level ≤ current level is confirmed < target") holds **vacuously**: there is nothing before the head to falsify it.
+
+**Inductive step.** Assume the invariant holds at position `(level, node)`. The search does one of two things, and both preserve it:
+- **Advance right** (to `node.forward[level]`) only when `node.forward[level].key ≤ target` - so the new current node is itself confirmed `≤ target`, extending the "confirmed < target" prefix by exactly one node at this level. The invariant holds at the new position `(level, node.forward[level])`.
+- **Drop a level** (to `(level - 1, node)`) only when advancing right would overshoot (`node.forward[level].key > target` or `node.forward[level] = NIL`). The node itself was already confirmed `< target` (or is the head) at the level above, and since every node skipped by a level-`ℓ` pointer is also present at every level `< ℓ` (a node at level `k` participates in levels `0..k`), nothing new needs re-confirming - the invariant at the new lower level is a direct restriction of the invariant that already held one level up.
+
+Either move preserves the invariant, so by induction it holds at every position visited - including the final position where `target` is found or shown absent. This is what makes the "no backtracking" claim provable rather than just plausible: backtracking would only be needed if some skipped node could have been the answer, and the invariant is precisely the statement that this never happens.
 
 **Why expected O(log n): the layer-count argument.** With promotion probability `p`, the expected number of nodes at level `k` is `n·p^k` (each promotion is an independent coin flip, so surviving to level `k` requires `k` consecutive "heads"). The expected number of levels with at least one node is therefore `O(log_{1/p} n)` - solve `n·p^k = 1` for `k` to get `k = log_{1/p} n`. Each level of the search does O(1) expected work before dropping down (a geometric-distribution argument: the expected number of forward-hops per level before dropping is `O(1)`, since the chance of overshooting is constant per hop), giving `O(log_{1/p} n)` total expected work to traverse from top to a target - **O(log n)** with `p` treated as a constant. This is a genuine probabilistic argument, not an amortized one: no accounting/potential-function proof applies here because there's no worst-case-amortized-to-average trick - it's an expectation over the randomness of the coin flips themselves, and a specific unlucky sequence of flips (e.g., every node promoted to `MAX_LEVEL`) can still produce O(n) search, just with vanishing probability as `n` grows.
 

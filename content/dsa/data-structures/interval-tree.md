@@ -61,31 +61,38 @@ max_hi propagation (bottom-up):
 
 **Overlap query for range [q_lo, q_hi]:** two intervals `[a,b]` and `[c,d]` overlap iff `a ≤ d` and `c ≤ b`. At each node, check that condition, then use `left.max ≥ q_lo` to decide whether to descend left (right is always explored if the node doesn't match).
 
-**Max maintenance on insert/delete:** when a node is inserted or a rotation occurs, `max` is recomputed bottom-up: `node.max = max(node.hi, left.max if left else -∞, right.max if right else -∞)`. This is the O(log n) extra work per mutation.
+**Max maintenance on insert/delete:** when a node is inserted or a rotation occurs, `max` is recomputed bottom-up along the path from the mutation point to the root: `node.max = max(node.hi, left.max if left else -∞, right.max if right else -∞)`. This adds O(1) work per node on that path, so the total extra cost is proportional to the path length - O(log n) on a balanced tree, O(n) on a degenerate one (see the balancing caveat below).
+
+> ⚠️ **Warning / Gotcha**
+> **Every O(log n) claim on this page assumes a balanced tree - the plain BST insert/delete shown in [Implementation](#implementation) does not balance itself.** A vanilla BST degrades to a linked list (O(n) per operation) on sorted or adversarial insertion order, exactly like an unbalanced [BST](./binary-search-tree.md). To actually guarantee O(log n), augment an AVL or Red-Black tree with the `max` field and a `max` fixup on every rotation (see [Variants](#variants)) - this is what "interval tree" means in production (CLRS presents it as an augmented Red-Black tree, not a plain BST). The pseudocode and Python below show the augmentation logic on a plain BST for clarity; treat the O(log n) bounds throughout this page as conditional on pairing that logic with a real self-balancing tree.
 
 Cache note: interval trees are pointer-based BSTs - each node lookup is a pointer hop, so access is **cache-hostile**. At n > 10⁶ intervals the cache-miss rate is measurable; a sorted-array + binary-search hybrid can outperform for single-query workloads despite worse Big-O.
 
 ## Operations
 
-| Operation | Time | Space |
-|-----------|------|-------|
-| Insert interval | O(log n) | O(1) |
-| Delete interval | O(log n) | O(1) |
-| Stabbing query (one result) | O(log n) | O(1) |
-| Stabbing query (all k results) | O(log n + k) | O(k) |
-| Range overlap query (all k results) | O(log n + k) | O(k) |
-| Build from n intervals | O(n log n) | O(n) |
-| Space total | - | O(n) |
+All times below assume a **balanced** tree (AVL/Red-Black augmentation - see the balancing warning in [How it works](#how-it-works)). On the plain, unbalanced BST shown in [Implementation](#implementation), every O(log n) entry degrades to O(n) worst-case.
+
+| Operation | Time (balanced) | Time (unbalanced, worst-case) | Space |
+|-----------|------|------|-------|
+| Insert interval | O(log n) | O(n) | O(1) |
+| Delete interval | O(log n) | O(n) | O(1) |
+| Stabbing query (one result) | O(log n) | O(n) | O(1) |
+| Stabbing query (all k results) | O(log n + k) | O(n + k) | O(k) |
+| Range overlap query (all k results) | O(log n + k) | O(n + k) | O(k) |
+| Build from n intervals | O(n log n) | O(n²) | O(n) |
+| Space total | - | - | O(n) |
 
 ## Complexity summary
 
+Balanced-tree bounds (plain unbalanced BST worst-case in parentheses):
+
 | | Time | Space |
 |--|------|-------|
-| Best | O(log n) query (no overlap) | O(n) |
-| Average | O(log n + k) | O(n) |
-| Worst | O(n) query if all intervals overlap (k = n) | O(n) |
+| Best | O(log n) query, no overlap (O(1), root matches) | O(n) |
+| Average | O(log n + k) (BST insert order random) | O(n) |
+| Worst | O(n) query if all intervals overlap, k = n (O(n) per op if the tree is degenerate - sorted insertion order with no rebalancing) | O(n) |
 
-When k = n (every interval overlaps), the query is forced to visit every node - no pruning helps. This is the inherent lower bound, not a failure of the structure.
+When k = n (every interval overlaps) on a balanced tree, the query is forced to visit every node - no pruning helps. This is the inherent lower bound of the query itself, not a failure of the structure. The unbalanced-tree worst case is a separate, avoidable failure: a degenerate (linked-list-shaped) tree from adversarial insertion order, fixed by using a self-balancing variant.
 
 ## When to use / when not
 
@@ -107,7 +114,7 @@ When k = n (every interval overlaps), the query is forced to visit every node - 
 
 | Structure | Overlap query (one) | Overlap query (all k) | Update | Best when |
 |-----------|--------------------|-----------------------|--------|-----------|
-| **Interval tree** | O(log n) | O(log n + k) | O(log n) | Dynamic intervals, repeated queries |
+| **Interval tree** (balanced) | O(log n) | O(log n + k) | O(log n) | Dynamic intervals, repeated queries |
 | Sorted array + scan | O(log n) start, O(k) scan | O(log n + k) | O(n) | Static intervals, simple implementation |
 | Segment tree (coordinate-compressed) | O(log n) | O(log n + k) | O(log n) | Integer/discretizable endpoints, range aggregates needed |
 | Brute-force scan | O(n) | O(n) | O(1) append | n ≤ 1000, one-off query, no preprocessing budget |
@@ -134,7 +141,7 @@ An interval tree maintains **two simultaneous invariants**:
 1. **BST order on low endpoints:** `left subtree lo < node.lo ≤ right subtree lo` (standard BST).
 2. **Max-endpoint annotation:** `node.max = max(node.hi, left.max, right.max)` at every node.
 
-Invariant 2 is what makes the structure useful. It holds after every insert/delete by recomputing `max` bottom-up along the insertion/deletion path - O(log n) extra work, absorbed into the BST mutation cost.
+Invariant 2 is what makes the structure useful. It holds after every insert/delete by recomputing `max` bottom-up along the insertion/deletion path - O(path length) extra work, absorbed into the BST mutation cost. That's O(log n) on a balanced tree; on the plain unbalanced BST in [Implementation](#implementation) the path (and therefore this work) can reach O(n) - see the balancing warning in [How it works](#how-it-works).
 
 **Amortized behavior: n/a.** Insert and delete are strictly O(log n) worst-case per operation - no batching, no deferred work, no resize event. There is no amortized argument to make; every operation pays its cost immediately.
 
@@ -298,7 +305,7 @@ class IntervalTree:
 
 ## Gotchas / edge cases
 
-- **Touching intervals are not overlapping (unless you say so).** `[1, 3]` and `[3, 5]` share only a point. Decide up front whether your overlap condition is `a ≤ d and c ≤ b` (closed, touching = overlap) or `a < d and c < b` (open, touching = no overlap). Mixing conventions is the single most common bug.
+- **Touching intervals are not overlapping (unless you say so).** `[1, 3]` and `[3, 5]` share only a point. Decide up front whether your overlap condition is `a ≤ d and c ≤ b` (closed, touching = overlap - the convention used throughout this article's main implementation) or `a < d and c < b` (half-open, touching = no overlap - used in [My Calendar I](#1-my-calendar-i---single-booking-conflict-detection-interval-tree-approach) because that's what the problem defines). Mixing conventions **within the same codebase** is the single most common bug - pick one per problem and apply it consistently in every comparison.
 - **max_hi fixup after rotation is easy to forget.** If you balance the tree (AVL/RB), every rotation must recompute `max_hi` for both the rotated node and its new parent - bottom-up. Forgetting this silently corrupts all future queries without any obvious error.
 - **The "always go right" fallacy.** The standard single-overlap search goes left if `left.max ≥ q_lo`, else right. You cannot skip both subtrees after finding one match - for all-overlaps you must explore both branches, pruned only by `max_hi < q_lo`.
 - **CP trap - coordinate overflow.** When endpoints are given as timestamps (Unix epoch in milliseconds), they overflow a 32-bit int. Use `int` (Python arbitrary precision) or `long` in Java/C++; the comparison `node.lo <= q_hi` silently wraps in C++ `int`.
@@ -334,7 +341,9 @@ Design a calendar that rejects a new booking `[start, end)` if it overlaps any e
 
 **Constraints:** `0 ≤ start < end ≤ 10⁹`, up to 1000 calls to `book`.
 
-**Approach:** This is the canonical interval-tree use-case: dynamic inserts with overlap queries. Maintain an interval tree keyed on start. On each `book(start, end)`, run an overlap search for `[start, end)` - if any existing interval overlaps, return `False`; otherwise insert and return `True`. Each call is O(log n). For n ≤ 1000 a sorted list + `bisect` suffices, but the interval tree is the correct O(log n) solution for large n.
+**Approach:** This is the canonical interval-tree use-case: dynamic inserts with overlap queries. Maintain an interval tree keyed on start. On each `book(start, end)`, run an overlap search for `[start, end)` - if any existing interval overlaps, return `False`; otherwise insert and return `True`. Each call is O(log n) on a balanced tree (see the balancing warning in [How it works](#how-it-works)). For n ≤ 1000 a sorted list + `bisect` suffices, but the interval tree is the correct O(log n) solution for large n.
+
+**Overlap convention note:** the problem defines bookings as **half-open** `[start, end)` - back-to-back meetings like `[10, 20)` and `[20, 30)` do not conflict. This deliberately differs from the rest of this article, which uses the **closed** convention `a ≤ d and c ≤ b` (touching counts as overlap - see [Gotchas](#gotchas--edge-cases)). The code below uses strict `<` for exactly this reason: `node.lo < q_hi and q_lo < node.hi`. Always check which convention a problem statement actually implies before reusing overlap-check code from elsewhere in this article.
 
 ```python
 from __future__ import annotations

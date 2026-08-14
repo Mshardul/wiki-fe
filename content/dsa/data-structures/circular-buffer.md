@@ -12,10 +12,13 @@
 - [Operations](#operations)
 - [Complexity summary](#complexity-summary)
 - [When to use / when not](#when-to-use--when-not)
+- [Comparison](#comparison)
 - [Variants](#variants)
 - [Memory layout](#memory-layout)
 - [Implementation](#implementation)
+- [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
 
 ## What it is
@@ -100,6 +103,17 @@ No best/average/worst split for the core ops - that's the point. Unlike a [Dynam
 - **You want a simple growable stack/queue and don't care about latency spikes** → a plain dynamic array is less fiddly (no wraparound index math).
 
 Rule of thumb: **fixed capacity + FIFO + must-not-spike → ring buffer.** Unbounded growth → don't.
+
+## Comparison
+
+| Structure | Enqueue/Dequeue | Space | Resize spike | Ordering | Pick it when… |
+| --- | --- | --- | --- | --- | --- |
+| **Circular buffer** | O(1) worst-case, both ends | O(capacity), fixed | Never | FIFO | Fixed-capacity FIFO with hard latency bounds - crossover: any workload where a resize pause is unacceptable, regardless of size |
+| [Dynamic Array](./dynamic-array.md) (as queue via `.pop(0)`) | O(n) dequeue from front | O(n), grows | Yes - 2x transient during grow | FIFO (but O(n) dequeue) | Never for a queue - front-removal is O(n); only fine as a growable stack (`.append`/`.pop()` at the back) |
+| [Linked List](./linked-list.md)-backed queue | O(1) both ends | O(n), grows | No single spike, but per-node allocation overhead | FIFO | Unbounded growth needed and per-node allocation cost (~2-3x more memory per element than a packed array) is acceptable |
+| [Deque](./deque.md) (dynamic, e.g. `collections.deque`) | O(1) amortized both ends | O(n), grows in blocks | Smaller, chunked (block allocation, not doubling) | FIFO or LIFO | Need unbounded growth **and** O(1) both-end ops - the general-purpose default when capacity isn't known upfront |
+
+**Crossover condition:** a circular buffer beats a growable deque only when the **capacity ceiling is a real, known requirement** (bounded memory, bounded latency) - once growth is genuinely unbounded, a circular buffer's fixed capacity becomes a liability (drop-or-block policy needed) rather than a feature, and `collections.deque` wins on flexibility with only a small constant-factor cost from its block-based (not single-array) allocation.
 
 ## Variants
 
@@ -205,6 +219,30 @@ class CircularBuffer(Generic[T]):
 
 Note Python's standard library gives you this for free: `collections.deque(maxlen=N)` is a fixed-capacity ring buffer with overwrite-on-full - reach for it in real code, implement the above to show you understand the mechanism in an interview.
 
+## CP-primitives
+
+- **Fixed-window rolling aggregate.** Keep a ring buffer of the last `k` values plus a running sum/min/max maintained incrementally on enqueue/overwrite - turns "aggregate of the last k elements" from an O(k) rescan per step into O(1) amortized per step. The classic use: streaming moving average, or a fixed-size monotonic structure layered on top (see [Monotonic Queue](../patterns/monotonic-queue.md) for the sliding-window-max variant of this idea).
+
+  ```python
+  class RollingSum:
+      def __init__(self, k: int) -> None:
+          self.buf = CircularBuffer(k)
+          self.total = 0
+
+      def add(self, x: int) -> int:
+          if self.buf.is_full():
+              self.total -= self.buf.dequeue()   # evict oldest before adding
+          self.buf.enqueue(x)
+          self.total += x
+          return self.total
+  ```
+
+  **Why for CP:** collapses the naive "sum the last k elements every step" from O(n·k) total to O(n) total across a whole stream - the ring buffer's O(1) evict-oldest is what makes the running total maintainable incrementally.
+
+- **Two-buffer bit-reversal / rotation trick.** For problems needing a fixed-size circular scan starting at an arbitrary offset (e.g. "rotate array by k, then process"), index into the buffer via `(start + i) % capacity` instead of physically rotating the underlying array - avoids an O(n) rotation entirely when the buffer is already ring-shaped.
+
+  **Why for CP:** replaces an O(n) array-rotate-then-scan with O(1) offset arithmetic per access - relevant whenever a problem's "rotate the array" framing is really just "start scanning from a different logical origin."
+
 ## Gotchas / edge cases
 
 - **Full vs empty ambiguity.** Both can satisfy `head == tail`. Forgetting to disambiguate (via a count or a wasted slot) is _the_ classic ring-buffer bug - you'll dequeue from an empty buffer or silently drop a write. State your choice explicitly.
@@ -213,9 +251,187 @@ Note Python's standard library gives you this for free: `collections.deque(maxle
 - **`%` on negative indices.** If a variant decrements an index (deque on a ring), `-1 % capacity` is `capacity - 1` in Python but _implementation-defined / negative_ in C and Java. Add `capacity` before the modulo in those languages: `(i - 1 + capacity) % capacity`.
 - **Iteration order ≠ storage order.** Iterating the raw backing array gives physical order, which is meaningless. Always iterate logically from `head` for `count` steps.
 
+## What the interviewer probes for
+
+- **"Why not just use `collections.deque` with no `maxlen`?"** - Without `maxlen`, a deque grows unbounded, defeating the entire point of a ring buffer (bounded memory, no drop/overwrite policy needed). With `maxlen=N` set, Python's `deque` *is* a circular buffer under the hood - the interview signal is knowing when the fixed-capacity behavior is required by the problem (a rate limiter must bound memory) versus incidental.
+- **"What happens under concurrent producers and consumers?"** - The single-count-field version here isn't thread-safe (a race between `is_full()` check and `enqueue()`'s write is a classic TOCTOU bug). Production concurrent ring buffers use atomic CAS on head/tail (lock-free SPSC, see Variants) or a mutex around the whole structure for MPMC; interview answer should name the race, not just say "add a lock."
+- **"How would this scale to a 10 GB buffer that doesn't fit in one process's memory?"** - A single-process ring buffer caps out at available RAM; beyond that, the pattern generalizes to a **distributed ring** (Kafka partitions are conceptually a disk-backed, replicated circular buffer per partition, with head/tail becoming the consumer offset and the log-end offset). Naming Kafka's partition log as "ring buffer at scale" is the senior answer here.
+
 ## Practice problems
 
-- **Design Circular Queue** - _Design (LeetCode 622)_. Implement `enQueue`/`deQueue`/`isFull`/`isEmpty` on a fixed ring - the canonical version of this page. <!-- self-referential: this page's Implementation -->
-- **Design Hit Counter** - _Sliding window over a stream_. Ring buffer of timestamps for the last N seconds; overwrite as time advances. <!-- will cross-link to patterns/sliding-window once written -->
-- **Moving Average from Data Stream** - _Fixed-window aggregate_. A ring buffer of the last k values with a running sum, O(1) per update. <!-- will cross-link to patterns/sliding-window once written -->
-- **Design a Logger / Rate Limiter** - _Bounded recent history_. Fixed-capacity buffer of recent events; old ones age out by overwrite. <!-- will cross-link to system-design/components/rate-limiter once written -->
+### 1. Design Circular Queue
+
+**Problem.** Design a fixed-size circular queue supporting `enQueue(value)`, `deQueue()`, `Front()`, `Rear()`, `isEmpty()`, and `isFull()`, all in O(1), backed by a fixed-capacity array.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** `MyCircularQueue(3)`, `enQueue(1)`, `enQueue(2)`, `enQueue(3)`, `enQueue(4)`, `Rear()` | **Output:** `true, true, true, false, 3`
+  - **Explanation:** capacity 3 fills after three enqueues; the fourth `enQueue(4)` fails (`isFull()` is true), so `Rear()` still reports 3, the last successfully-inserted element.
+- **Example 2**
+  - **Input:** `MyCircularQueue(2)`, `enQueue(1)`, `enQueue(2)`, `deQueue()`, `enQueue(3)`, `Front()` | **Output:** `true, true, true, true, 3`
+  - **Explanation:** after dequeuing 1, one slot frees up; enqueuing 3 wraps into that freed slot, and `Front()` now reports 2's successor in the queue... concretely the remaining logical order is [2, 3], so `Front()` returns 2 - matches the head-pointer semantics traced in How it works.
+
+**Constraints:** `1 ≤ k ≤ 1000`, `0 ≤ value ≤ 1000`, at most `3000` calls to `enQueue`, `deQueue`, `Front`, `Rear`, `isEmpty`, `isFull` combined.
+
+**Approach:** Direct application of this page's `CircularBuffer` - `enQueue`/`deQueue` map straight to `enqueue`/`dequeue`, guarded by `isFull()`/`isEmpty()` instead of raising, since LeetCode's API returns a bool rather than throwing. This is the canonical version of the structure itself, so the "approach" *is* the article's Implementation section.
+
+```python
+class MyCircularQueue:
+    def __init__(self, k: int) -> None:
+        self.buf = CircularBuffer(k)
+
+    def enQueue(self, value: int) -> bool:
+        if self.buf.is_full():
+            return False
+        self.buf.enqueue(value)
+        return True
+
+    def deQueue(self) -> bool:
+        if self.buf.is_empty():
+            return False
+        self.buf.dequeue()
+        return True
+
+    def Front(self) -> int:
+        return -1 if self.buf.is_empty() else self.buf._data[self.buf._head]
+
+    def Rear(self) -> int:
+        if self.buf.is_empty():
+            return -1
+        last = (self.buf._tail - 1) % self.buf._capacity
+        return self.buf._data[last]
+
+    def isEmpty(self) -> bool:
+        return self.buf.is_empty()
+
+    def isFull(self) -> bool:
+        return self.buf.is_full()
+```
+
+**Complexity:** O(1) time for every operation, O(k) space.
+
+**Duplicate problems:**
+- Design Circular Deque (LC 641) - identical shape with insert/remove at both ends instead of just front/back; the Double-ended variant from Variants.
+- Design a Stack With Increment Operation (LC 1381) - different structure (stack, not ring), but the same "wrap a fixed-capacity array with bounds-checked ops" design pattern.
+
+### 2. Design Hit Counter
+
+**Problem.** Design a hit counter that counts hits received in the past 5 minutes (300 seconds). `hit(timestamp)` records a hit at the given second; `getHits(timestamp)` returns the number of hits in `[timestamp - 299, timestamp]`. Timestamps arrive in non-decreasing order across calls.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** `hit(1)`, `hit(2)`, `hit(3)`, `getHits(4)` | **Output:** `3`
+  - **Explanation:** all three hits (at 1, 2, 3) fall within `[4-299, 4] = [-295, 4]`, so the count is 3.
+- **Example 2**
+  - **Input:** `hit(1)`, `hit(2)`, `hit(3)`, `getHits(4)`, `hit(300)`, `getHits(300)`, `getHits(301)` | **Output:** `3, 4, 3`
+  - **Explanation:** at `getHits(300)`, hit at t=1 is still within `[1, 300]`, so all 4 hits count; at `getHits(301)`, the window becomes `[2, 301]` and the hit at t=1 ages out, leaving 3.
+
+**Constraints:** `1 ≤ timestamp ≤ 2 × 10⁹`, calls to `hit` are in non-decreasing timestamp order, at most `300` calls to `hit` and `getHits` combined.
+
+**Approach:** A ring buffer of size 300, indexed by `timestamp % 300`, storing `(timestamp, count)` per slot - each slot represents "the count of hits that landed on this second, the last time this second-of-cycle was used." On `hit`, if the slot's stored timestamp doesn't match the current timestamp, the slot is stale (from ≥300 seconds ago) and gets overwritten with count 1; otherwise increment. `getHits` sums every slot whose stored timestamp falls within the 300-second window - this is the overwriting-ring-buffer variant applied to a fixed time window rather than a fixed element count.
+
+```python
+class HitCounter:
+    def __init__(self) -> None:
+        self.window = 300
+        self.times = [0] * self.window
+        self.counts = [0] * self.window
+
+    def hit(self, timestamp: int) -> None:
+        idx = timestamp % self.window
+        if self.times[idx] != timestamp:
+            self.times[idx] = timestamp
+            self.counts[idx] = 1
+        else:
+            self.counts[idx] += 1
+
+    def getHits(self, timestamp: int) -> int:
+        total = 0
+        for i in range(self.window):
+            if timestamp - self.times[i] < self.window:
+                total += self.counts[i]
+        return total
+```
+
+**Complexity:** O(1) for `hit`, O(window) = O(300) = O(1) for `getHits` (fixed window size, not input-dependent), O(window) space.
+
+**Duplicate problems:**
+- Moving Average from Data Stream (below) - same fixed-window-over-a-stream shape, simpler because it tracks a raw value sum instead of per-second hit counts.
+- Logger Rate Limiter (LC 359) - same "has this key been seen in the last N seconds" ring-buffer-of-timestamps idea, keyed by message instead of aggregated globally.
+
+### 3. Moving Average from Data Stream
+
+**Problem.** Given a stream of integers and a window size `size`, calculate the moving average of all integers in the sliding window, one new value at a time.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** `MovingAverage(3)`, `next(1)`, `next(10)`, `next(3)`, `next(5)` | **Output:** `1.0, 5.5, 4.666..., 6.0`
+  - **Explanation:** window fills to `[1]` → avg 1.0, `[1,10]` → avg 5.5, `[1,10,3]` → avg 4.67; once full, `next(5)` evicts 1, window becomes `[10,3,5]` → avg 6.0.
+- **Example 2**
+  - **Input:** `MovingAverage(1)`, `next(5)`, `next(9)` | **Output:** `5.0, 9.0`
+  - **Explanation:** window size 1 means every `next` call immediately evicts the previous value - the "moving average" degenerates to "the last value seen."
+
+**Constraints:** `1 ≤ size ≤ 1000`, `-10⁵ ≤ val ≤ 10⁵`, at most `10⁴` calls to `next`.
+
+**Approach:** This is the [CP-primitives](#cp-primitives) rolling-sum ring buffer applied directly - maintain a fixed-capacity ring of the last `size` values plus a running `total`; on each `next`, evict-and-subtract the oldest value if the buffer is full, then enqueue-and-add the new one, and return `total / len(buffer)`. O(1) per call regardless of window size, versus O(size) if the window were rescanned every time.
+
+```python
+class MovingAverage:
+    def __init__(self, size: int) -> None:
+        self.buf = CircularBuffer(size)
+        self.total = 0
+
+    def next(self, val: int) -> float:
+        if self.buf.is_full():
+            self.total -= self.buf.dequeue()
+        self.buf.enqueue(val)
+        self.total += val
+        return self.total / len(self.buf)
+```
+
+**Complexity:** O(1) per `next` call, O(size) space.
+
+**Duplicate problems:**
+- Design Hit Counter (above) - same fixed-window-over-a-stream shape, generalized to per-second bucketing instead of a raw running sum.
+- Sliding Window Average of All Subarrays of Size K (variant framing) - identical mechanic applied to a static array instead of a live stream.
+
+### 4. Design a Rate Limiter
+
+**Problem.** Design a rate limiter that allows at most `N` requests per client within any rolling `T`-second window, rejecting requests over the limit. `allow(client_id, timestamp)` returns whether the request is permitted.
+
+**Worked examples:**
+- **Example 1**
+  - **Input:** N=2, T=10, `allow("A", 1)`, `allow("A", 3)`, `allow("A", 5)` | **Output:** `true, true, false`
+  - **Explanation:** first two requests at t=1,3 are within the limit; the third at t=5 would be the 3rd request within the last 10 seconds (all three fall in `[t-10, t]`), exceeding N=2, so it's rejected.
+- **Example 2**
+  - **Input:** N=1, T=5, `allow("A", 1)`, `allow("A", 7)` | **Output:** `true, true`
+  - **Explanation:** the request at t=7 looks back only to t=2 (`7-5`); the request at t=1 has already aged out of the window, so the client effectively has a fresh quota.
+
+**Constraints:** up to `10⁴` distinct clients, up to `10⁵` total `allow` calls, `1 ≤ N ≤ 1000`, `1 ≤ T ≤ 3600`.
+
+**Approach:** Per-client ring buffer of the last `N` request timestamps (sliding-window log algorithm). On each request, evict timestamps older than `timestamp - T` from the front of the ring (they're in sorted order since requests arrive in non-decreasing time per client), then check if the ring has room for one more within the window - if `len(ring) < N` after eviction, allow and enqueue; otherwise reject. This is a bounded-size variant of the general "sliding window log" rate-limiting algorithm, capped at O(N) memory per client instead of unbounded log growth.
+
+```python
+from collections import defaultdict
+
+class RateLimiter:
+    def __init__(self, n: int, window: int) -> None:
+        self.n = n
+        self.window = window
+        self.history: dict[str, CircularBuffer] = defaultdict(lambda: CircularBuffer(n))
+
+    def allow(self, client_id: str, timestamp: int) -> bool:
+        buf = self.history[client_id]
+        while not buf.is_empty() and timestamp - buf._data[buf._head] >= self.window:
+            buf.dequeue()
+        if len(buf) < self.n:
+            buf.enqueue(timestamp)
+            return True
+        return False
+```
+
+**Complexity:** O(1) amortized per `allow` call (each timestamp is enqueued once and dequeued at most once), O(N) space per client.
+
+**Duplicate problems:**
+- Design a Logger Rate Limiter (LC 359) - simpler single-timestamp-per-key version of the same eviction idea, no count threshold.
+- Design Hit Counter (above) - same bounded-recent-history shape, aggregated as a count rather than gated as an allow/reject decision.

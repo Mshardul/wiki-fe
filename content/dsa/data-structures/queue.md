@@ -24,6 +24,7 @@
   - [Monotonic deque - sliding-window max/min](#monotonic-deque--sliding-window-maxmin)
   - [0/1-BFS with a deque](#01-bfs-with-a-deque)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Implement Queue using Stacks](#1-implement-queue-using-stacks--amortized-transfer)
   - [Number of Recent Calls](#2-number-of-recent-calls--sliding-window-queue)
@@ -315,6 +316,14 @@ def zero_one_bfs(graph, source, n):       # graph[u] = [(v, w in {0,1}), ...]
 - **Forgetting the visited-set in BFS.** A queue-based BFS on a graph with cycles re-enqueues already-seen nodes forever (infinite loop / exponential blowup). Mark nodes visited **when you enqueue** them, not when you dequeue - marking on dequeue lets a node be enqueued multiple times before it's processed.
 - **Monotonic-deque: storing indices, and the `<` vs `<=`.** Store **indices** so you can detect when the front slides out of the window; the comparison strictness decides duplicate handling. As with the monotonic stack, the comparison direction is the subtle bug.
 - **Multi-source BFS seeding.** Problems like "rotting oranges" or "nearest gate" need **all** sources enqueued at distance 0 before the loop starts - a common miss is seeding only one source and getting wrong distances.
+
+## What the interviewer probes for
+
+**What changes when the queue holds 10⁹ items, or the producer is faster than the consumer forever?** - An unbounded queue under sustained producer/consumer imbalance grows without limit and eventually OOMs - the queue becomes the memory leak, not a buffer. At scale you bound the queue's capacity and decide an explicit **backpressure** policy for what happens when it's full: block the producer, drop the newest item, drop the oldest, or reject with an error - each is a real product decision (e.g. a message broker like Kafka persists to disk and lets consumers lag instead of blocking producers, trading memory pressure for disk I/O).
+
+**Why not always use an unbounded queue (or a plain linked-list queue) instead of a fixed-capacity ring buffer?** - An unbounded queue is simpler to reason about but has no ceiling, so it can't give latency or memory guarantees under load - a burst can grow it arbitrarily and page memory into swap. A bounded circular buffer trades that flexibility for predictability: fixed memory footprint, cache-friendly contiguous layout, and an explicit full/empty signal a caller can react to (retry, shed load) instead of silently consuming unbounded RAM. Pick bounded whenever the system needs a hard latency/memory SLA; pick unbounded (or a resizing one) when burst absorption matters more than a strict ceiling.
+
+**What changes under concurrent producers and consumers?** - A single-threaded queue implementation (like the plain circular buffer or linked-list queue on this page) is not safe for concurrent enqueue/dequeue - two producers can race on the same `back` slot, or a consumer can read mid-write. Concurrent queues need either a lock around both ends, separate locks per end (safe only when one producer and one consumer each, since the ends don't overlap), or a lock-free ring buffer using atomic compare-and-swap on the head/tail indices - the standard building block behind bounded channels in most concurrent runtimes.
 
 ## Practice problems
 

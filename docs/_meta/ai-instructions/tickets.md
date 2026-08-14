@@ -23,11 +23,11 @@ Same columns in both `tickets-backlog.md` and `tickets-archive.md`:
 | Impl. Date   | ISO date implemented; `-` if not done                                                                               |
 | Remarks      | ≤30 words - implementation notes, supersession info                                                                 |
 | Priority     | `p0` (critical) → `p1` (high) → `p2` (medium) → `p3` (low) → `p4` (very low)                                        |
-| Story Points | Sizing estimate - see `docs/_meta/decisions/story-points-estimation.md`                                             |
+| Story Points | Sizing estimate - see `docs/_meta/story-points-estimation.md`                                             |
 
 A few legacy rows in `tickets-archive.md` use `Skipped` or `Closed` instead of `Dropped`/`Done` - left as-is, treat both as archived/terminal.
 
-**Canonical Type values** (from `docs/_meta/decisions/tickets.md`):
+**Canonical Type values** (from `docs/_meta/tickets.md`):
 
 | Type       | When to use                                                                 |
 | ---------- | --------------------------------------------------------------------------- |
@@ -42,7 +42,7 @@ A few legacy rows in `tickets-archive.md` use `Skipped` or `Closed` instead of `
 
 Note: older tickets may use `security` or `cleanup` as types - these are acceptable in practice.
 
-**Canonical Component values** (from `docs/_meta/decisions/tickets.md`):
+**Canonical Component values** (from `docs/_meta/tickets.md`):
 
 | Component  | Covers                                                       |
 | ---------- | ------------------------------------------------------------ |
@@ -124,7 +124,7 @@ When user asks to add a ticket (or generating tickets in bulk, e.g. from an audi
 4. Summary: ≤7 words, imperative phrasing ("Add X", "Fix Y", "Improve Z").
 5. Description: ≤30 words - be specific enough to implement without asking.
 6. Status: `Backlog`. Impl. Date: `-`. Remarks: empty unless there's a known constraint.
-7. Story points: refer to `docs/_meta/decisions/story-points-estimation.md` for sizing.
+7. Story points: refer to `docs/_meta/story-points-estimation.md` for sizing.
 8. Add as a new row in `tickets-backlog.md` - maintain column alignment.
 
 If a duplicate slips through anyway and is caught later: never delete either row (see TICKET LIFECYCLE below) - drop the newer/redundant one to `tickets-archive.md` with Status `Dropped`, Remarks `Duplicate of WIKI-xxx`, and add a `Supersedes WIKI-xxx` note in the surviving ticket's Remarks.

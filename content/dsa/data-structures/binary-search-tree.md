@@ -26,6 +26,7 @@
   - [Predecessor / successor & range queries](#predecessor--successor--range-queries)
   - [Balanced BST via the standard library](#balanced-bst-via-the-standard-library)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Validate Binary Search Tree](#1-validate-binary-search-tree--bounded-recursion)
   - [Kth Smallest Element in a BST](#2-kth-smallest-element-in-a-bst--in-order-counting)
@@ -284,6 +285,15 @@ Most BST contest problems are really "I need an ordered multiset with O(log n) i
 - **Duplicate keys policy.** Decide up front: reject duplicates, store a per-node count, or always send equals to one side (consistently!). Inconsistent handling breaks search and in-order order. State your choice.
 - **Recursion depth on a tall tree.** Recursive search/insert/delete is O(height) stack frames - fine balanced, but a skewed tree overflows Python's ~1000-frame limit. Iterative search (shown above) avoids it; recursive insert/delete on adversarial input does not.
 - **In-order-sorted only holds for a _valid_ BST.** "Just do an in-order traversal to sort" assumes the tree already satisfies the invariant. If you're not certain it's a valid BST, in-order gives garbage order - validate first.
+- **At n > 10⁷ nodes, pointer-chasing dominates even on a balanced tree (at-scale trap).** Every level of descent follows a `left`/`right` pointer to a node allocated somewhere else on the heap - there's no locality between a parent and its children the way an array has between adjacent indices. At small n the whole tree fits in cache and this is invisible; at large n, each level of the O(log n) descent is a fresh cache miss, so wall-clock lookup time grows noticeably faster than the O(log n) comparison count alone suggests. This is the concrete reason database indexes use **B-trees**, not BSTs - a B-tree's high fan-out packs many keys per node so one cache-line/disk-page fetch resolves several comparisons at once, trading comparison count for far fewer pointer hops.
+
+## What the interviewer probes for
+
+**What happens to this BST at n = 10⁹ keys?** - Height stops being the concern if the tree is genuinely balanced (`log₂ 10⁹ ≈ 30`), but as the Gotchas section notes, pointer-chasing dominates at that scale: each level of descent is a fresh cache miss because parent and child nodes live at unrelated heap addresses, so wall-clock lookup grows faster than the comparison count suggests. At real 10⁹-key scale you also can't fit the tree in memory at all - this is precisely why database indexes switch to a **B-tree**, which packs many keys per node so one disk-page/cache-line fetch resolves several comparisons instead of one pointer hop per comparison.
+
+**Why not just keep the data in a sorted array and binary search it?** - For static data, a sorted array wins outright: same O(log n) lookup, better cache locality (contiguous memory, no pointer overhead), and no per-node allocation cost. The BST only earns its keep once the data **changes** - a sorted array pays O(n) to shift elements on every insert, while a balanced BST keeps insert at O(log n) alongside the same ordered search. The decision cue from this article's own When-to-use section: reach for the array when you build once and query many; reach for the BST the moment inserts/deletes are frequent and order still matters.
+
+**Why not use a plain (unbalanced) BST instead of always reaching for a self-balancing variant?** - A plain BST is simpler to implement and fine when insertion order is random or controlled, since expected height stays O(log n). But it has no defense against adversarial or already-sorted input - as the Traversal & invariant section shows, inserting 1,2,3,4,5 in order degenerates it into a height-n chain, a linked list wearing a tree costume, with every operation O(n). A senior answer names the crossover explicitly: use a hand-rolled plain BST only when you control insertion order; otherwise pay the rotation overhead of an AVL/red-black tree (or reach for a library ordered-set) to guarantee the bound.
 
 ## Practice problems
 

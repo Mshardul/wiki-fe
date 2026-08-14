@@ -336,6 +336,11 @@
   gap: var(--s2);
 }
 .index-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: 1;
+  min-width: 0;
   font-size: var(--text-base);
   font-weight: var(--fw-semibold);
   color: var(--text-heading);
@@ -363,7 +368,7 @@
 }
 
 /* ═══════════════════════════════════════════════
-   MARK AS READ - index card indicator
+   COMPLETED / UPDATED - index card indicators
    ═══════════════════════════════════════════════ */
 .index-card-read-dot {
   display: inline-block;

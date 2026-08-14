@@ -32,7 +32,7 @@ def test_scroll_position_saved_and_restored(page, base_url):
     assert file_path, "Could not read state.currentFilePath from app"
     assert wiki_id, "Could not read state.currentWikiId from app"
     page.evaluate(
-        "([wid, fp]) => localStorage.setItem('scroll-' + wid + '-' + fp, '600')",
+        "([wid, fp]) => localStorage.setItem('wiki-scroll-' + wid + '-' + fp, '600')",
         [wiki_id, file_path],
     )
 
@@ -69,7 +69,7 @@ def test_scroll_restored_after_bfcache_pageshow(page, base_url):
     assert file_path, "Could not read state.currentFilePath from app"
     assert wiki_id, "Could not read state.currentWikiId from app"
     page.evaluate(
-        "([wid, fp]) => localStorage.setItem('scroll-' + wid + '-' + fp, '600')",
+        "([wid, fp]) => localStorage.setItem('wiki-scroll-' + wid + '-' + fp, '600')",
         [wiki_id, file_path],
     )
 
@@ -118,6 +118,34 @@ def test_toc_scroll_position_tracked_in_eviction_manifest(page, base_url):
     )
 
 
+def test_article_scroll_position_tracked_in_eviction_manifest(page, base_url):
+    """613/623: article-body scroll position uses the wiki-scroll- prefix and is
+    tracked in the wiki-scroll-keys manifest, so it's covered by clearScrollPositions'
+    eviction/cleanup like the TOC-nav scroll key."""
+    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body pre", timeout=10_000)
+
+    file_path = page.evaluate(
+        "() => (typeof state !== 'undefined' ? state.currentFilePath : null)"
+    )
+    wiki_id = page.evaluate(
+        "() => (typeof state !== 'undefined' ? state.currentWikiId : null)"
+    )
+    assert file_path, "Could not read state.currentFilePath from app"
+    assert wiki_id, "Could not read state.currentWikiId from app"
+    scroll_key = f"wiki-scroll-{wiki_id}-{file_path}"
+
+    page.evaluate("() => window.scrollTo(0, 500)")
+    page.wait_for_timeout(500)  # debounce (400ms) + margin
+
+    manifest = page.evaluate(
+        "() => JSON.parse(localStorage.getItem('wiki-scroll-keys') || '[]')"
+    )
+    assert scroll_key in manifest, (
+        f"expected {scroll_key!r} in wiki-scroll-keys manifest, got: {manifest}"
+    )
+
+
 def test_toc_nav_reserves_scrollbar_gutter(page, base_url):
     """Regression: native (non-Firefox) scrollbar rendered directly over
     .toc-group-chevron's hit-zone with no gutter reserved, blocking clicks
@@ -145,7 +173,7 @@ def test_scroll_position_not_restored_with_anchor(page, base_url):
     assert file_path, "Could not read state.currentFilePath from app"
     assert wiki_id, "Could not read state.currentWikiId from app"
     page.evaluate(
-        "([wid, fp]) => localStorage.setItem('scroll-' + wid + '-' + fp, '600')",
+        "([wid, fp]) => localStorage.setItem('wiki-scroll-' + wid + '-' + fp, '600')",
         [wiki_id, file_path],
     )
 
@@ -206,7 +234,7 @@ def _save_scroll_and_revisit(page, base_url, slug, target_y):
     file_path = page.evaluate("() => state.currentFilePath")
     wiki_id = page.evaluate("() => state.currentWikiId")
     page.evaluate(
-        "([wid, fp, y]) => localStorage.setItem('scroll-' + wid + '-' + fp, String(y))",
+        "([wid, fp, y]) => localStorage.setItem('wiki-scroll-' + wid + '-' + fp, String(y))",
         [wiki_id, file_path, target_y],
     )
     _load_mock_article(page, base_url, _RESUME_CHIP_ARTICLE, slug=slug)

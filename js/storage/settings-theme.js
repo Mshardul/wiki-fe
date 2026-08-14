@@ -350,12 +350,6 @@ function initOsThemeListener() {
   });
 }
 
-const BACKUP_SCHEMA = {
-  bookmarks: (v) => v === null || typeof v === "string",
-  recents: (v) => v === null || typeof v === "string",
-  settings: (v) => v === null || typeof v === "string",
-};
-
 function _isValidCompletionsValue(val) {
   if (typeof val !== "string") return false;
   try {
@@ -365,6 +359,40 @@ function _isValidCompletionsValue(val) {
     return false;
   }
 }
+
+function _isValidEntryListValue(val) {
+  if (val === null) return true;
+  if (typeof val !== "string") return false;
+  try {
+    const parsed = JSON.parse(val);
+    return (
+      Array.isArray(parsed) &&
+      parsed.every(
+        (e) =>
+          e && typeof e === "object" && typeof e.wikiId === "string" && typeof e.path === "string",
+      )
+    );
+  } catch {
+    return false;
+  }
+}
+
+function _isValidSettingsValue(val) {
+  if (val === null) return true;
+  if (typeof val !== "string") return false;
+  try {
+    const parsed = JSON.parse(val);
+    return !!parsed && typeof parsed === "object" && !Array.isArray(parsed);
+  } catch {
+    return false;
+  }
+}
+
+const BACKUP_SCHEMA = {
+  bookmarks: _isValidEntryListValue,
+  recents: _isValidEntryListValue,
+  settings: _isValidSettingsValue,
+};
 
 function _validateBackup(data) {
   if (typeof data !== "object" || data === null) return false;

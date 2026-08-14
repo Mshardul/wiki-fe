@@ -203,6 +203,19 @@ def test_dompurify_strips_onerror_attributes(page, base_url):
     assert not fired, "onerror= handler executed - DOMPurify not stripping event attrs"
 
 
+def test_body_fails_closed_when_dompurify_missing(page, base_url):
+    """If the DOMPurify CDN script fails to load, raw HTML is never injected into the article body."""
+    page.route("**/dompurify/**", lambda route: route.abort())
+    _load_mock_article(
+        page, base_url, "# Test\n<script>window.__xss_fired = true;</script>Injected."
+    )
+
+    fired = page.evaluate("() => window.__xss_fired === true")
+    assert not fired, "raw unsanitized HTML was injected when DOMPurify failed to load"
+    stub = page.locator("#markdown-body .content-stub")
+    assert stub.count() == 1, "expected a fail-closed stub, not the raw markdown HTML"
+
+
 # ── KaTeX math ───────────────────────────────────────────────────────
 
 

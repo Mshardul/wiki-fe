@@ -24,6 +24,7 @@
   - [Polynomial rolling hash](#polynomial-rolling-hash)
   - [Two pointers / sliding window on characters](#two-pointers--sliding-window-on-characters)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Valid Anagram](#1-valid-anagram--character-count)
   - [Implement strStr / Find the Index](#2-implement-strstr--find-the-index--rolling-hash-rabinkarp)
@@ -276,6 +277,12 @@ def longest_unique(s: str) -> int:
 - **Encoding mismatches corrupt data.** Reading UTF-8 bytes as Latin-1 (or vice versa) produces mojibake or `UnicodeDecodeError`. Always decode/encode with an explicit charset; "it worked on my ASCII test" hides the bug until a non-ASCII character arrives.
 - **Comparing strings with `is` instead of `==`.** `is` checks object identity; it sometimes appears to work because the runtime **interns** literals, but it's not a guarantee - `a = "x"*1000; b = "x"*1000; a is b` is `False`. Always compare string _values_ with `==`.
 - **Off-by-one in substring bounds (CP trap).** Window/substring problems live and die on inclusive-vs-exclusive bounds (`s[i:j]` is `[i, j)` in Python) and the `i < n - m + 1` search loop limit. The classic bug is searching one position too few or slicing one char short.
+
+## What the interviewer probes for
+
+**What if you're building a 10⁹-character string incrementally - does immutability still cost you?** - Yes, catastrophically, if built with `+=` in a loop: each concatenation copies the whole accumulated string, so total work is 1+2+...+n = O(n²), which at n = 10⁹ is computationally infeasible. The fix is unchanged at any scale - accumulate into a mutable buffer (a list, `bytearray`, or `StringBuilder`) whose `append` is amortized O(1) via doubling, and materialize the immutable string once with a single O(n) join, exactly the [dynamic-array amortization argument](./dynamic-array.md#memory-layout) applied to text.
+
+**Why not always use a mutable buffer (`bytearray`/`list`) instead of a plain string, since it avoids the copy-on-edit cost entirely?** - Because most string use is read-only (parsing, comparison, hashing as a dict key), and immutability is what makes that safe and fast: an immutable string can be freely shared, interned, and used as a hashable key without defensive copying, none of which a mutable buffer supports. Reach for the mutable buffer only during the build phase, then convert once - using it as your permanent representation trades away hashability and safe sharing for no benefit once construction is done.
 
 ## Practice problems
 

@@ -24,6 +24,7 @@
   - [Monotonic deque - sliding-window max/min in O(n)](#monotonic-deque--sliding-window-maxmin-in-on)
   - [0/1-BFS - Dijkstra-free shortest path](#01-bfs--dijkstra-free-shortest-path)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Sliding Window Maximum](#1-sliding-window-maximum--monotonic-deque)
   - [Design Circular Deque](#2-design-circular-deque--ring-buffer-both-ends)
@@ -85,6 +86,8 @@ The deep idea: the deque doesn't add a new _capability_ over a queue so much as 
 **The `O(1)` push hides two different worst cases - know which layout you're on.** On a **block-linked deque** (`collections.deque`), a push that fills the end block triggers a single small block allocation, not a copy of the whole structure - so the worst case is genuinely O(blocksize) = O(1), and there is **no resize-pause spike** at all. On a **circular-buffer deque**, a push into a full ring forces an allocate-and-copy of every element - a true O(n) spike on that one push, amortized to O(1) only because the capacity doubles (the [dynamic-array argument](./dynamic-array.md#memory-layout)). The senior distinction: the block-linked form trades a worst-case *latency* spike for steady small allocations, which is exactly why a real-time or low-latency system prefers it over a doubling ring.
 
 The constants differ too: the block-linked form chases a pointer **between** blocks (a cache miss at each block boundary) even though it's contiguous **within** a block, so a full traversal is slower than a contiguous array despite both being "O(n)". The ring buffer has no such boundary misses - fully contiguous - which is why bounded, cache-sensitive workloads (embedded, streaming) pick it.
+
+**The accounting for the ring-buffer resize, shown on-page.** Charge every `push_front`/`push_back` 2 credits: 1 pays for writing its own slot, 1 is banked toward the next grow-and-copy. When the ring fills at capacity `c` (having last resized from `c/2`), the `c/2` pushes since then banked `c/2` credits - exactly covering the O(c) cost of copying all `c` elements (unwrapping the ring into a fresh, larger contiguous array) during the resize. Every push looks O(1) in credit terms; the one push that lands on a full ring and triggers the O(n) copy is paid for by credits banked by every push before it, not charged fresh in the moment. Summed over `n` pushes, total credit spend is O(n) → **O(1) amortized per push** - the block-linked form sidesteps this entire argument by never needing a full-structure copy at all, which is the senior distinction already drawn above.
 
 **Space:** O(n) for n elements. The block-linked-list form carries a small per-block pointer overhead but packs elements within a block for locality; a circular-buffer deque is a single contiguous array with two indices and a `size` count, the tightest option when capacity is bounded.
 
@@ -331,6 +334,12 @@ def zero_one_bfs(graph, source, n):       # graph[u] = [(v, w in {0, 1}), ...]
 - **Full ring buffer: empty vs full at `front == back`.** With wrapping indices, `front == back` is ambiguous (empty _or_ full). Track an explicit `size` count (as the implementation does) or leave one slot always empty - otherwise you silently drop or duplicate elements.
 - **`deque(maxlen=k)` evicts the _opposite_ end (CP-flavored trap).** Appending to a full bounded deque drops from the front; `appendleft` drops from the back. Convenient for last-k windows, but the silent eviction bites if you assumed it would refuse or grow.
 - **Reaching for a deque when a heap is needed.** A deque only sees its two ends - it cannot give you the window median or k-th largest. Sliding-window _max_ is a monotonic deque; sliding-window _median_ needs two heaps. Misreading "extremum" as "any order statistic" is the classic over-reach.
+
+## What the interviewer probes for
+
+**What changes at n = 10⁹ elements - does a circular-buffer deque still make sense?** - At that scale a fixed-capacity ring either needs a capacity you can't pre-size correctly or repeated allocate-and-copy resizes, each an O(n) pause on the unlucky push (see [Memory layout](#memory-layout)). A block-linked deque (`collections.deque`'s design) sidesteps this entirely: growth is one small block allocation, never a full-structure copy, so it has no resize-pause spike at any n - the reason it's the default for unbounded, high-volume workloads.
+
+**Why not always use a block-linked deque instead of a circular buffer, since it has no resize spike?** - Because the block-linked form pays a cache miss at every block boundary (pointer-chasing between blocks) even though it's contiguous within a block, so a full traversal is measurably slower than the ring buffer's fully-contiguous layout despite both being O(n). Pick the circular buffer when capacity is genuinely bounded and cache-tight iteration matters (embedded, streaming); pick block-linked (i.e. just use `collections.deque`) everywhere else.
 
 ## Practice problems
 

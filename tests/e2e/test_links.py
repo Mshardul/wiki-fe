@@ -79,6 +79,47 @@ def test_hover_preview_shows_summaries_json_entry(page, base_url):
     assert "Some prereq" not in preview_text
 
 
+def test_hover_preview_fails_closed_when_dompurify_missing(page, base_url):
+    """If DOMPurify becomes unavailable, the hover preview shows a safe placeholder, not raw HTML."""
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
+
+    page.route(
+        "**/data/summaries.json",
+        lambda r: r.fulfill(
+            content_type="application/json",
+            body=json.dumps({"content/system-design/linked.md": "<script>window.__xss_fired = true;</script>Summary."}),
+        ),
+    )
+    page.route("**/linked.md", lambda r: r.fulfill(body="# Linked\n"))
+    page.route("**/mock.md", lambda r: r.fulfill(body="# Main\n\n[Link](./linked.md)"))
+
+    page.evaluate("""() => navigateToContent(
+        'system-design',
+        encodeURIComponent('../content/system-design/mock.md'),
+        encodeURIComponent('Main'),
+        'mock'
+    )""")
+    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
+    page.wait_for_selector("a:has-text('Link')", timeout=5_000)
+
+    # Simulate the CDN script failing after the body already rendered - the
+    # hover preview does its own DOMPurify check on each render, independent of the body.
+    page.evaluate("() => { window.DOMPurify = undefined; }")
+    page.locator("a:has-text('Link')").dispatch_event("mouseenter")
+    page.wait_for_selector("#hover-preview.visible", timeout=5_000)
+
+    fired = page.evaluate("() => window.__xss_fired === true")
+    assert not fired, "raw unsanitized preview HTML was injected when DOMPurify failed to load"
+    preview_text = page.locator("#hover-preview").inner_text()
+    assert "not available" in preview_text.lower()
+
+
 def test_hover_preview_no_summary_entry_shows_fallback(page, base_url):
     """514: A link target with no data/summaries.json entry shows the
     'Preview not available' fallback instead of a markdown-scraped guess."""
@@ -125,6 +166,9 @@ def test_external_links_target_blank(page, base_url):
         page.locator("a:has-text('Google')").get_attribute("rel")
         == "noopener noreferrer"
     )
+    assert "wiki-link-external" in (
+        page.locator("a:has-text('Google')").get_attribute("class") or ""
+    )
 
 
 def test_cross_wiki_link_navigates_to_target_wiki(page, base_url):
@@ -145,16 +189,10 @@ def test_cross_wiki_link_navigates_to_target_wiki(page, base_url):
     link = page.locator("a:has-text('Hash Table')")
     page.wait_for_selector("a:has-text('Hash Table')", timeout=5_000)
 
-    # Not treated as external.
-    assert link.get_attribute("target") is None
-
-    link.click()
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-    assert "dsa/hash-table" in page.url
-    assert page.locator("#markdown-body h1").inner_text() == "Hash Table"
+    assert link.get_attribute("target") == "_blank"
+    assert "wiki-link-article" in (link.get_attribute("class") or "")
+    href = link.get_attribute("href") or ""
+    assert "dsa/hash-table" in href
 
 
 def test_anchor_links_scroll_and_update_url(page, base_url):
@@ -166,6 +204,9 @@ def test_anchor_links_scroll_and_update_url(page, base_url):
         slug="anchor",
     )
     page.wait_for_selector("a:has-text('Go down')", timeout=5_000)
+    assert "wiki-link-inpage" in (
+        page.locator("a:has-text('Go down')").get_attribute("class") or ""
+    )
 
     page.locator("a:has-text('Go down')").click()
     # history.replaceState doesn't trigger a Playwright navigation event; poll the URL directly.
@@ -410,3 +451,54 @@ def test_bridge_block_empty_when_no_bridge_entry(page, base_url):
         ],
     )
     assert page.locator("#bridge-block .related-card").count() == 0
+
+
+def test_gfm_preview_hash_resolves_to_heading(page, base_url):
+    """Author GFM hashes with collapsed hyphens still jump after Showdown ids differ."""
+    _load_mock_article(
+        page,
+        base_url,
+        "# Mock\n\n[jump](#monotonic-deque--sliding-window-maxmin)\n\n"
+        + "<br>\n" * 40
+        + "\n## Monotonic deque - sliding window max/min\n\nTarget body.\n",
+        slug="gfm-hash",
+    )
+    page.wait_for_selector("a:has-text('jump')", timeout=5_000)
+    page.locator("a:has-text('jump')").click()
+    page.wait_for_function(
+        "() => /[?&]a=/.test(location.search) && /monotonic-deque/.test(location.search)",
+        timeout=5_000,
+    )
+
+
+def test_inpage_hash_expands_collapsed_parent(page, base_url):
+    """Jumping to a nested heading expands a collapsed parent H2."""
+    _load_mock_article(
+        page,
+        base_url,
+        "# Mock\n\n[jump](#child)\n\n## Parent\n\nIntro.\n\n### Child\n\nNested.\n",
+        slug="hash-expand",
+    )
+    page.wait_for_selector(".heading-collapse-btn", timeout=5_000)
+    page.locator(".heading-collapse-btn").first.click()
+    page.wait_for_function(
+        "() => document.querySelector('#markdown-body h2')?.classList.contains('section--collapsed')",
+        timeout=5_000,
+    )
+    page.locator("a:has-text('jump')").click()
+    page.wait_for_function(
+        "() => !document.querySelector('#markdown-body h2')?.classList.contains('section--collapsed')",
+        timeout=5_000,
+    )
+
+
+def test_cross_article_md_link_opens_new_tab(page, base_url):
+    """Relative .md links are marked article links and open in a new tab."""
+    _load_mock_article(
+        page, base_url, "# Main\n\n[Other](./other.md)\n", slug="md-new-tab"
+    )
+    link = page.locator("#markdown-body a:has-text('Other')")
+    page.wait_for_selector("#markdown-body a:has-text('Other')", timeout=5_000)
+    assert link.get_attribute("target") == "_blank"
+    assert "wiki-link-article" in (link.get_attribute("class") or "")
+    assert "system-design/other" in (link.get_attribute("href") or "")

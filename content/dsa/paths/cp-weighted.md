@@ -34,7 +34,7 @@ See [DSA Learning Paths](../index.md#learning-paths) for the other tracks.
 | 6    | [Two Heaps](../patterns/two-heaps.md)                                     | Pattern   |                                  |
 | 7    | [Trie](../data-structures/trie.md)                                        | DS        | bitwise variant, max-XOR         |
 | 8    | [Fenwick Tree (BIT)](../data-structures/fenwick-tree.md)                  | DS        |                                  |
-| 8    | [Segment Tree](../data-structures/segment-tree.md)                        | DS        | *(stub)*                        |
+| 8    | [Segment Tree](../data-structures/segment-tree.md)                        | DS        |                                  |
 | 9    | [Skip List](../data-structures/skip-list.md)                              | DS        |                                  |
 | 10   | [String](../data-structures/string.md)                                    | DS        |                                  |
 | 10   | [String Hashing](../algorithms/string-hashing.md)                         | Algorithm |                                  |

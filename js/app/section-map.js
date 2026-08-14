@@ -1,3 +1,10 @@
+import {
+  createFocusTrap,
+  getFocusableIn,
+  markModalClosed,
+  markModalOpened,
+  registerModal,
+} from "../modal-registry.js";
 import { navigateToContent } from "../render/content-view.js";
 import { fetchPrebuiltBacklinks, fetchPrebuiltSearchIndex } from "../render/nav-utils.js";
 import { showToast } from "../render/toast.js";
@@ -12,6 +19,7 @@ import {
 } from "./graph-engine.js";
 
 let _sim = null;
+let _focusTrapHandler = null;
 
 function normalizeCardPath(path) {
   return path.startsWith("./") ? path : `./${path}`;
@@ -77,10 +85,20 @@ async function _openSectionMap() {
   const nodes = [...nodesByPath.values()];
 
   _sim = createGraphSim(canvas, nodes, edges, { onNodeClick, colorForNode });
+
+  _focusTrapHandler = createFocusTrap(overlay, () => getFocusableIn(overlay));
+  overlay.addEventListener("keydown", _focusTrapHandler);
+  markModalOpened(sectionMapModal);
 }
 
 function closeSectionMap() {
   const overlay = getOverlay();
+  if (overlay.classList.contains("hidden")) return;
+  markModalClosed(sectionMapModal);
+  if (_focusTrapHandler) {
+    overlay.removeEventListener("keydown", _focusTrapHandler);
+    _focusTrapHandler = null;
+  }
   overlay.classList.add("hidden");
   overlay.setAttribute("aria-hidden", "true");
   destroyGraphSim(_sim);
@@ -91,6 +109,9 @@ function closeSectionMap() {
 function isSectionMapOpen() {
   return !getOverlay().classList.contains("hidden");
 }
+
+const sectionMapModal = { isOpen: isSectionMapOpen, close: closeSectionMap };
+registerModal(sectionMapModal);
 
 function toggleSectionMap() {
   if (isSectionMapOpen()) closeSectionMap();

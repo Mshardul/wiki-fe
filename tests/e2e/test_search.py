@@ -472,14 +472,10 @@ def test_cmd_f_opens_scoped_search_with_wiki_selected(page, base_url):
 
     _open_scoped_search(page)
     page.wait_for_function(
-        "() => document.querySelector('.gsearch-dialog')?.classList.contains('scope-mode')",
+        "() => document.getElementById('gsearch-scope-select')?.value !== ''",
         timeout=5_000,
     )
 
-    dialog = page.locator(".gsearch-dialog")
-    assert "scope-mode" in (dialog.get_attribute("class") or ""), (
-        "Dialog must carry .scope-mode class when opened via ⌘F"
-    )
     assert page.locator("#gsearch-scope-select").input_value() != "", (
         "Scope select must show the active wiki, not 'All wikis'"
     )
@@ -503,25 +499,29 @@ def test_cmd_f_on_home_does_not_open_scoped_search(page, base_url):
     """⌘F on the home view has no wiki to scope to; app must not open scoped mode.
 
     (The browser's native find may run instead - we only assert our modal
-    does not enter scope-mode.)"""
+    stays closed or, if open, is unscoped.)"""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=5_000)
 
     page.keyboard.press("Meta+f")
     page.wait_for_function(
-        "() => !document.getElementById('global-search-modal').classList.contains('hidden')"
-        " || !document.querySelector('.gsearch-dialog')?.classList.contains('scope-mode')",
+        """() => {
+            const modal = document.getElementById('global-search-modal');
+            const hidden = modal.classList.contains('hidden');
+            const scope = document.getElementById('gsearch-scope-select')?.value || '';
+            return hidden || scope === '';
+        }""",
         timeout=3_000,
     )
 
-    dialog = page.locator(".gsearch-dialog")
-    assert "scope-mode" not in (dialog.get_attribute("class") or ""), (
+    modal_hidden = "hidden" in (page.locator("#global-search-modal").get_attribute("class") or "")
+    assert modal_hidden or page.locator("#gsearch-scope-select").input_value() == "", (
         "⌘F on home must not enter scoped search mode"
     )
 
 
 def test_scope_clears_on_close(page, base_url):
-    """Closing a scoped search drops scope-mode; reopening ⌘K is global again."""
+    """Closing a scoped search clears the wiki scope; reopening ⌘K is global again."""
     page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
     page.wait_for_selector("#view-index.active", timeout=10_000)
 
@@ -530,8 +530,7 @@ def test_scope_clears_on_close(page, base_url):
     page.wait_for_selector("#global-search-modal.hidden", state="attached")
 
     _open_search(page)
-    dialog = page.locator(".gsearch-dialog")
-    assert "scope-mode" not in (dialog.get_attribute("class") or ""), (
+    assert page.locator("#gsearch-scope-select").input_value() == "", (
         "⌘K after a scoped search must reopen in global (unscoped) mode"
     )
 
@@ -1135,8 +1134,11 @@ def test_scope_custom_dropdown(wiki_page):
     options = wiki_page.locator(".gsearch-scope-option")
     if options.count() > 1:
         options.nth(1).click()
-        wiki_page.locator(".gsearch-dialog.scope-mode").wait_for(state="visible", timeout=5_000)
-        assert "scope-mode" in (wiki_page.locator(".gsearch-dialog").get_attribute("class") or "")
+        wiki_page.wait_for_function(
+            "() => document.getElementById('gsearch-scope-select')?.value !== ''",
+            timeout=5_000,
+        )
+        assert wiki_page.locator("#gsearch-scope-select").input_value() != ""
 
 
 def test_scope_btn_44px_on_coarse_pointer(browser, base_url, cdn_cache):

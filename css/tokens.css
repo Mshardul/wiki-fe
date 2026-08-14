@@ -148,4 +148,8 @@
 
   /* FAB (floating action button) size - shared by scroll-top-btn and toc-mobile-btn */
   --fab-size: 42px;
+
+  /* Primary icon-button box + glyph (topbar, heading collapse, practice eye) */
+  --icon-btn-box: 34px;
+  --icon-btn-glyph: 15px;
 }

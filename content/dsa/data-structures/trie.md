@@ -23,6 +23,7 @@
   - [Prefix-count augmentation](#prefix-count-augmentation)
   - [Bitwise <abbr>trie</abbr> for max-XOR](#bitwise-trie-for-max-xor)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Implement a Trie](#1-implement-a-trie--insert-search-startswith)
   - [Word Search II](#2-word-search-ii--trie--dfs-on-a-grid)
@@ -111,11 +112,11 @@ How a trie relates to the structures you'd weigh against it for string keys:
 
 | Structure               | Exact lookup | Prefix query      | Sorted iteration    | Memory                           | Pick it when…                       |
 | ----------------------- | ------------ | ----------------- | ------------------- | -------------------------------- | ----------------------------------- |
-| **Trie**                | O(L)         | **O(p)**          | **yes** (pre-order) | heavy (alphabet × nodes)         | prefix queries, autocomplete        |
-| Hash table/set          | O(L) hash    | **no** (O(n))     | no                  | light                            | whole-key membership, no prefixes   |
-| BST (balanced)          | O(L·log n)   | range-ish         | yes                 | 2 ptrs/node                      | ordered keys, range over whole keys |
-| Sorted array + bisect   | O(L·log n)   | prefix via bisect | yes                 | tight                            | static dictionary, prefix-range     |
-| Compressed trie (radix) | O(L)         | **O(p)**          | yes                 | **much lighter** than plain trie | prefix queries, memory-conscious    |
+| **Trie**                | O(L)         | **O(p)**          | **yes** (pre-order) | heavy (alphabet × nodes)         | prefix queries dominate the workload - crosses over from a hash set the moment "starts with" appears, since a hash set's O(n) prefix scan loses to O(p) at any dataset large enough to matter |
+| Hash table/set          | O(L) hash    | **no** (O(n))     | no                  | light                            | only whole-key membership is needed, never a prefix - wins on memory and constant factor the instant prefix queries drop out of scope; the moment "autocomplete" or "starts with" enters the requirements, the trie's O(p) beats this O(n) scan regardless of dataset size |
+| BST (balanced)          | O(L·log n)   | range-ish         | yes                 | 2 ptrs/node                      | keys need lexicographic range queries over whole keys ("between 'cat' and 'dog'") rather than prefix matching - crosses over from a trie when the query shape is a key-range, not a shared-prefix set, since a trie has no native "next key after X" the way an in-order BST walk does |
+| Sorted array + bisect   | O(L·log n)   | prefix via bisect | yes                 | tight                            | the dictionary is static (built once, queried many times, no inserts) - crosses over from a trie when insert/delete cost doesn't matter and the tightest possible memory footprint does; the trie wins back the trade once the key set becomes dynamic, since re-sorting an array on every insert is O(n log n) vs the trie's O(L) |
+| Compressed trie (radix) | O(L)         | **O(p)**          | yes                 | **much lighter** than plain trie | the plain trie's memory becomes the bottleneck - crosses over once long shared-prefix chains (sparse branching, e.g. URLs or file paths) waste nodes on single-child runs; collapsing pays off once chains average more than ~2-3 nodes without branching, below which the merge/split bookkeeping isn't worth it |
 
 The trie's column is the only one with **O(p) prefix queries**. The hash table beats it on memory and whole-key lookup constant but can't do prefixes at all; the compressed trie keeps the prefix power while slashing the memory overhead.
 
@@ -265,6 +266,14 @@ class BitTrie:
 - **Delete must prune, not just unflag.** Removing a word should clear its `is_end` and then **delete now-childless, non-word nodes** up the path - otherwise dead branches leak memory. But stop pruning at any node that is another word's `is_end` or has other children.
 - **Case sensitivity and normalization.** "Cat" and "cat" are different paths; normalize case/encoding before insert and lookup, or queries silently miss. The same Unicode-normalization caveat as [strings](./string.md#gotchas--edge-cases) applies.
 - **Off-the-end walks.** A lookup whose path breaks partway (a character with no child) must return "not found" immediately - dereferencing a missing child is the crash. The `_walk` returning `None` on a broken path centralizes this.
+
+## What the interviewer probes for
+
+**What happens at a billion keys with a large alphabet (Unicode, not just lowercase)?** - An array-node trie over Unicode allocates a huge mostly-empty child array at every node, so memory blows up long before you reach a billion keys - O(n·L·alphabet) with `alphabet` in the tens of thousands is unusable. The fix is structural: switch to a hash-map-node trie (pay only for present edges) or, better, a compressed/radix trie that collapses single-child chains, cutting node count by an order of magnitude on real-world key sets like URLs or file paths.
+
+**Why not always use a hash set instead of a trie?** - A hash set is O(L) to hash and lookup with a far smaller constant and no per-node pointer overhead, so it wins on memory and raw lookup speed whenever the workload is pure membership. The trie earns its keep only when prefix queries ("starts with", autocomplete, longest-common-prefix) are actually in scope - trade the memory for O(p) prefix operations a hash set can't do at all (it would need an O(n) scan).
+
+**Does a trie hold up under concurrent writes?** - Insert and delete both mutate shared node state (creating children, flipping `is_end`, pruning dead branches), so naive concurrent access races on the same nodes near the root, which every key touches. Production tries either shard by first-character/first-byte (giving each shard its own subtree and lock) or use copy-on-write/RCU-style node replacement so readers never block on a concurrent writer.
 
 ## Practice problems
 

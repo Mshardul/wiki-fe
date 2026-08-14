@@ -41,18 +41,6 @@
       "title": "Topological Sort"
     }
   ],
-  "./content/dsa/data-structures/hash-set.md": [
-    {
-      "target": "./content/dsa/data-structures/path.md",
-      "title": "Hash Set"
-    }
-  ],
-  "./content/dsa/data-structures/segment-tree.md": [
-    {
-      "target": "./content/dsa/data-structures/path.md",
-      "title": "Segment Tree"
-    }
-  ],
   "./content/dsa/data-structures/union-find.md": [
     {
       "target": "./content/algorithms/minimum-spanning-tree.md",
@@ -93,12 +81,6 @@
     {
       "target": "./content/dsa/patterns/path.md",
       "title": "Subsets & Permutations"
-    }
-  ],
-  "./content/system-design/algorithms/cap-theorem.md": [
-    {
-      "target": "./content/system-design/algorithms/consistency-models.md",
-      "title": "CAP Theorem"
     }
   ],
   "./content/system-design/components/authentication.md": [

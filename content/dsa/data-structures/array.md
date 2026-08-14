@@ -23,6 +23,7 @@
   - [Difference array (range updates in O(1))](#difference-array-range-updates-in-o1)
   - [Array as a direct-address (frequency) map](#array-as-a-direct-address-frequency-map)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Trapping Rain Water](#1-trapping-rain-water--converging-two-pointers)
   - [Next Permutation](#2-next-permutation--in-place-index-manipulation)
@@ -339,6 +340,14 @@ When values are large but sparse, **coordinate-compress** first (map the distinc
 - **Insertion/deletion shifts - don't forget the cost.** Saying "I'll remove the element at index i" hides an O(n) shift. If asked to delete many elements, repeated `arr.pop(i)` is O(n²); build a new array (or use two pointers) in one O(n) pass instead.
 - **Iterating while mutating.** Removing items from an array as you loop over it skips elements or shifts indices underneath you. Iterate over a copy, iterate backwards, or build a fresh list.
 - **Fixed vs dynamic confusion.** A genuine fixed array can't grow; "append is O(1)" only holds for a dynamic array and only _amortized_. The one resize is O(n) - call that out if the problem cares about worst-case <abbr>latency</abbr>.
+
+## What the interviewer probes for
+
+**What if you need to store 10B entries?** - A single array is bounded by the index type - `Integer.MAX_VALUE` (~2.1B) in Java, and even in languages without that cap you'd hit physical RAM or address-space limits long before that count fits in one contiguous block. The fix is a chunked/segmented structure (an array of arrays, each capped) or a memory-mapped file that pages the data in from disk. Also flag that a dynamic array's resize doubles transiently, so at that scale you'd pre-size to the known capacity rather than let doubling walk you through a dozen full copies.
+
+**Why not always keep the array sorted so you get O(log n) binary search?** - Because keeping it sorted moves the cost from search to insert: every insert becomes O(n) to find-and-shift the right slot, whereas an unsorted array's insert-at-end is O(1) amortized. The right call depends on the read/write ratio - sorted-and-binary-search wins for read-heavy, rarely-mutated data (a static lookup table); unsorted (or a hash table) wins when inserts are frequent. Naming this trade-off, not just "sorted is better," is the senior answer.
+
+**What changes under concurrent access?** - A plain array has no built-in synchronization: concurrent writers to different indices are usually safe on hardware (no false sharing across a cache line boundary at the byte level for most types), but concurrent resize (on the dynamic-array layer) is not - a reader can observe a half-copied block or a reallocated pointer mid-read. Production concurrent code either locks around resize, uses a copy-on-write array (readers see a stable snapshot, writers swap the pointer), or picks a lock-free structure built for the access pattern.
 
 ## Practice problems
 

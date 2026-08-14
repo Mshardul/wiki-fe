@@ -10,6 +10,31 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 ```
 
 ## 2026-08-14
+- `dsa/data-structures/hash-set.md` - new article
+- `dsa/data-structures/hash-table.md` - fix-gate: added on-page amortized-accounting proof for resize; new section: "What the interviewer probes for"
+- `dsa/data-structures/deque.md` - fix-gate: added on-page amortized-accounting proof for ring-buffer resize; new section: "What the interviewer probes for"
+- `dsa/data-structures/stack.md` - fix-gate: added on-page amortized-accounting proof for array-backed resize; new section: "What the interviewer probes for"
+- `dsa/data-structures/heap.md` - add-section: at-scale Gotchas trap (cache-miss growth); new section: "What the interviewer probes for"
+- `dsa/data-structures/lfu-cache.md` - add-section: at-scale Gotchas trap (bucket-map rehash stall + Zipfian concentration); new section: "What the interviewer probes for"
+- `dsa/data-structures/binary-search-tree.md` - add-section: at-scale Gotchas trap (pointer-chasing depth); new section: "What the interviewer probes for"
+- `dsa/data-structures/binary-tree.md` - fix-gate: Comparison table crossover thresholds added; new section: "What the interviewer probes for"
+- `dsa/data-structures/trie.md` - fix-gate: Comparison table crossover thresholds added; new section: "What the interviewer probes for"
+- `dsa/data-structures/array.md` - new section: "What the interviewer probes for"
+- `dsa/data-structures/dynamic-array.md` - new section: "What the interviewer probes for"
+- `dsa/data-structures/linked-list.md` - new section: "What the interviewer probes for"
+- `dsa/data-structures/queue.md` - new section: "What the interviewer probes for"
+- `dsa/data-structures/string.md` - new section: "What the interviewer probes for"
+- `dsa/data-structures/graph.md` - new section: "What the interviewer probes for"
+- `dsa/data-structures/b-plus-tree.md` - new section: "What the interviewer probes for"
+- `dsa/data-structures/lru-cache.md` - new section: "What the interviewer probes for"
+- `system-design/algorithms/consistency-models.md` - new article
+- `dsa/data-structures/interval-tree.md` - fix-gate: qualified O(log n) claims throughout as balanced-tree-only with unbalanced worst-case noted; unified overlap convention mismatch between main implementation (closed) and My Calendar I practice problem (half-open)
+- `dsa/data-structures/lru-cache.md` - fix-gate: added duplicate-problems line to "LRU Cache" practice problem; expanded "Memory layout" with hashing/collisions depth and full amortized rehash accounting
+- `dsa/data-structures/linked-list.md` - expanded: "Implementation" - added `LIST-APPEND` and `LIST-INSERT-AFTER` pseudocode + `insert_after` Python method
+- `dsa/data-structures/skip-list.md` - expanded: "Operations" - added Space column; "Traversal & invariant" - added base case and inductive step to search invariant proof
+- `dsa/data-structures/segment-tree.md` - new article
+- `dsa/data-structures/circular-buffer.md` - expanded: "Comparison", "CP-primitives", "What the interviewer probes for" added; Practice problems rewritten as full worked entries
+- `dsa/data-structures/b-plus-tree.md` - expanded: "Leaf-split invariant proof (induction)" added under Traversal & invariant
 - `dsa/algorithms/big-o-notation.md` - new article
 - `dsa/data-structures/avl-tree.md` - restructured: DS spine (Operations, Complexity summary, Variants, CP-primitives added; Algo-shaped headings folded into family section)
 - `dsa/data-structures/b-tree.md` - restructured: DS spine (Operations, Complexity summary, Variants, CP-primitives added; Algo-shaped headings folded into family section)

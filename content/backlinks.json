@@ -161,6 +161,10 @@
       "title": "Hash Table"
     },
     {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
+    },
+    {
       "path": "./content/dsa/data-structures/lru-cache.md",
       "title": "LRU Cache"
     },
@@ -187,6 +191,10 @@
     {
       "path": "./content/dsa/data-structures/skip-list.md",
       "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
     },
     {
       "path": "./content/dsa/data-structures/fenwick-tree.md",
@@ -478,6 +486,10 @@
     }
   ],
   "./content/dsa/algorithms/divide-and-conquer.md": [
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
     {
       "path": "./content/dsa/algorithms/recursion.md",
       "title": "Recursion"
@@ -1271,6 +1283,10 @@
       "title": "Hash Table"
     },
     {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
+    },
+    {
       "path": "./content/dsa/data-structures/binary-tree.md",
       "title": "Binary Tree"
     },
@@ -1281,6 +1297,10 @@
     {
       "path": "./content/dsa/data-structures/avl-tree.md",
       "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
     },
     {
       "path": "./content/dsa/data-structures/fenwick-tree.md",
@@ -1623,6 +1643,10 @@
       "title": "Red-Black Tree"
     },
     {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
+    {
       "path": "./content/dsa/data-structures/union-find.md",
       "title": "Union-Find (DSU)"
     },
@@ -1656,6 +1680,10 @@
     }
   ],
   "./content/dsa/data-structures/bloom-filter.md": [
+    {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
+    },
     {
       "path": "./content/dsa/paths/senior-depth.md",
       "title": "Senior-depth"
@@ -1696,6 +1724,10 @@
     }
   ],
   "./content/dsa/data-structures/deque.md": [
+    {
+      "path": "./content/dsa/data-structures/circular-buffer.md",
+      "title": "Circular Buffer"
+    },
     {
       "path": "./content/dsa/algorithms/bfs.md",
       "title": "Breadth-First Search (BFS)"
@@ -1763,6 +1795,14 @@
       "title": "Hash Table"
     },
     {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
       "path": "./content/dsa/data-structures/lfu-cache.md",
       "title": "LFU Cache"
     },
@@ -1796,6 +1836,10 @@
     }
   ],
   "./content/dsa/data-structures/fenwick-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
     {
       "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
       "title": "Lowest Common Ancestor (LCA)"
@@ -1905,6 +1949,10 @@
     {
       "path": "./content/dsa/data-structures/string.md",
       "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
     },
     {
       "path": "./content/dsa/data-structures/lru-cache.md",
@@ -2063,6 +2111,10 @@
   ],
   "./content/dsa/data-structures/interval-tree.md": [
     {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
+    {
       "path": "./content/dsa/patterns/merge-intervals.md",
       "title": "Merge Intervals"
     },
@@ -2090,6 +2142,10 @@
     }
   ],
   "./content/dsa/data-structures/linked-list.md": [
+    {
+      "path": "./content/dsa/data-structures/circular-buffer.md",
+      "title": "Circular Buffer"
+    },
     {
       "path": "./content/dsa/data-structures/stack.md",
       "title": "Stack"
@@ -2427,6 +2483,10 @@
     {
       "path": "./content/dsa/data-structures/hash-table.md",
       "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
     },
     {
       "path": "./content/dsa/data-structures/binary-tree.md",
@@ -2871,8 +2931,16 @@
   ],
   "./content/dsa/patterns/monotonic-queue.md": [
     {
+      "path": "./content/dsa/data-structures/circular-buffer.md",
+      "title": "Circular Buffer"
+    },
+    {
       "path": "./content/dsa/data-structures/queue.md",
       "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
     },
     {
       "path": "./content/dsa/patterns/monotonic-stack.md",
@@ -2925,6 +2993,10 @@
     {
       "path": "./content/dsa/data-structures/deque.md",
       "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
     },
     {
       "path": "./content/dsa/data-structures/fenwick-tree.md",
@@ -3271,6 +3343,10 @@
   ],
   "./content/system-design/algorithms/acid-vs-base.md": [
     {
+      "path": "./content/system-design/algorithms/consistency-models.md",
+      "title": "Consistency Models"
+    },
+    {
       "path": "./content/system-design/algorithms/cap-theorem.md",
       "title": "CAP Theorem"
     },
@@ -3295,6 +3371,10 @@
       "title": "Caching"
     },
     {
+      "path": "./content/system-design/algorithms/consistency-models.md",
+      "title": "Consistency Models"
+    },
+    {
       "path": "./content/system-design/paths/hld-interview-loop.md",
       "title": "HLD Interview Loop"
     }
@@ -3313,6 +3393,12 @@
     {
       "path": "./content/system-design/paths/distributed-depth.md",
       "title": "Distributed Depth"
+    }
+  ],
+  "./content/system-design/algorithms/consistency-models.md": [
+    {
+      "path": "./content/system-design/algorithms/cap-theorem.md",
+      "title": "CAP Theorem"
     }
   ],
   "./content/system-design/algorithms/consistent-hashing.md": [
@@ -3355,6 +3441,10 @@
     {
       "path": "./content/system-design/components/caching.md",
       "title": "Caching"
+    },
+    {
+      "path": "./content/system-design/algorithms/consistency-models.md",
+      "title": "Consistency Models"
     },
     {
       "path": "./content/system-design/algorithms/cap-theorem.md",

@@ -1,5 +1,5 @@
-const SHELL_CACHE = "wiki-shell-v17";
-const ARTICLE_CACHE = "wiki-articles-v07f88bb3";
+const SHELL_CACHE = "wiki-shell-v18";
+const ARTICLE_CACHE = "wiki-articles-v0cac7b70";
 
 // Served for an uncached article request while offline; plain markdown (not HTML) so it renders through the normal content pipeline.
 const OFFLINE_FALLBACK_MD = `# You're offline
@@ -15,20 +15,19 @@ self.addEventListener("message", (e) => {
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches
-      .open(SHELL_CACHE)
-      .then((cache) =>
-        cache
-          .addAll([
-            "./index.html",
-            "./404.html",
-            "./manifest.json",
-            "./icon.svg",
-            "./js/app.js",
-            "./js/state.js",
-          ])
-          .catch(() => {}),
-      ),
+    caches.open(SHELL_CACHE).then((cache) =>
+      // Minimal boot shell — CSS/JS beyond app.js+state.js are runtime-cached on first fetch via the handler below, not precached.
+      cache
+        .addAll([
+          "./index.html",
+          "./404.html",
+          "./manifest.json",
+          "./icon.svg",
+          "./js/app.js",
+          "./js/state.js",
+        ])
+        .catch(() => {}),
+    ),
   );
 });
 

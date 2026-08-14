@@ -266,8 +266,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: var(--icon-btn-box);
+  height: var(--icon-btn-box);
   border-radius: var(--r-full);
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -276,8 +276,8 @@
   transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
 }
 .topbar-icon-btn svg {
-  width: 15px;
-  height: 15px;
+  width: var(--icon-btn-glyph);
+  height: var(--icon-btn-glyph);
 }
 .topbar-icon-btn:hover {
   color: var(--text-body);
@@ -312,8 +312,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: var(--icon-btn-box);
+  height: var(--icon-btn-box);
   border-radius: var(--r-full);
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -322,8 +322,8 @@
   transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
 }
 .topbar-overflow-item svg {
-  width: 15px;
-  height: 15px;
+  width: var(--icon-btn-glyph);
+  height: var(--icon-btn-glyph);
 }
 .topbar-overflow-item:hover {
   color: var(--text-body);

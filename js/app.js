@@ -1,3 +1,4 @@
+import { BACKEND_URL } from "./api.js";
 import { Auth, AuthModal } from "./auth.js";
 import "./app/home-parallax.js";
 import "./app/mobile-panels.js";
@@ -55,7 +56,7 @@ import {
   retryGlobalSearch,
   runSearchCommand,
   saveSearchQuery,
-} from "./search.js";
+} from "./search/search.js";
 import { WIKIS, escHtml, state } from "./state.js";
 import {
   Bookmarks,
@@ -66,7 +67,7 @@ import {
 } from "./storage/bookmarks.js";
 import { Offline, updateOfflineBtn } from "./storage/offline.js";
 import { addToRecents, clearRecents, getRecents, renderRecentsSection } from "./storage/recents.js";
-import { saveScrollPos } from "./storage/scroll-collapse.js";
+import { getScrollPos, saveScrollPos } from "./storage/scroll-collapse.js";
 import {
   Settings,
   applySettingsToDOM,
@@ -327,7 +328,8 @@ window.addEventListener(
       const _wikiAtScroll = state.currentWikiId;
       const _yAtScroll = window.scrollY;
       _scrollSaveTimer = setTimeout(() => {
-        if (_pathAtScroll) saveScrollPos(`scroll-${_wikiAtScroll}-${_pathAtScroll}`, _yAtScroll);
+        if (_pathAtScroll)
+          saveScrollPos(`wiki-scroll-${_wikiAtScroll}-${_pathAtScroll}`, _yAtScroll);
       }, 400);
     }
 
@@ -354,7 +356,10 @@ if ("onscrollend" in window) {
     () => {
       if (state.currentView === "content" && state.currentFilePath) {
         clearTimeout(_scrollSaveTimer);
-        saveScrollPos(`scroll-${state.currentWikiId}-${state.currentFilePath}`, window.scrollY);
+        saveScrollPos(
+          `wiki-scroll-${state.currentWikiId}-${state.currentFilePath}`,
+          window.scrollY,
+        );
       }
       if (state.currentView === "index" && state.currentWikiId) {
         clearTimeout(_indexScrollTimer);
@@ -370,9 +375,8 @@ document.getElementById("prefs-backdrop").addEventListener("click", () => Settin
 
 document.getElementById("auth-backdrop").addEventListener("click", () => AuthModal.close());
 
-// isAnyModalOpen adds link-graph/section-map (canvas overlays, not registry modals) so single-letter shortcuts don't fire through any open modal.
 function isAnyModalOpen() {
-  return isAnyRegisteredModalOpen() || isLinkGraphOpen() || isSectionMapOpen();
+  return isAnyRegisteredModalOpen();
 }
 
 document.addEventListener("keydown", (e) => {
@@ -512,7 +516,10 @@ document.addEventListener("keydown", (e) => {
     const tag = document.activeElement.tagName;
     const isInput =
       tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable;
-    if (!isInput && !e.metaKey && !e.ctrlKey && !isAnyRegisteredModalOpen()) {
+    // Own modal being open must not block its own toggle-closed press.
+    const blockingModalOpen =
+      isAnyRegisteredModalOpen() && !isLinkGraphOpen() && !isSectionMapOpen();
+    if (!isInput && !e.metaKey && !e.ctrlKey && !blockingModalOpen) {
       e.preventDefault();
       if (e.shiftKey) {
         toggleSectionMap();
@@ -575,6 +582,37 @@ document.addEventListener("wiki:themechange", () => {
   }
 });
 
+/* BE COLD-START WARMUP */
+const HEALTH_PING_INTERVAL_MS = 5 * 60 * 1000;
+let _healthPingTimer = null;
+
+function _pingHealth() {
+  fetch(`${BACKEND_URL}/health`).catch(() => {});
+}
+
+function _stopHealthPing() {
+  clearInterval(_healthPingTimer);
+  _healthPingTimer = null;
+}
+
+function _startHealthPing() {
+  if (_healthPingTimer) return;
+  _pingHealth();
+  _healthPingTimer = setInterval(_pingHealth, HEALTH_PING_INTERVAL_MS);
+}
+
+function initHealthPing() {
+  _startHealthPing();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      _pingHealth();
+      _startHealthPing();
+    } else {
+      _stopHealthPing();
+    }
+  });
+}
+
 /* HASH ROUTER EVENT WIRING */
 window.addEventListener("popstate", (e) => {
   const hash = e.state?.hash ?? location.hash.slice(1);
@@ -599,6 +637,7 @@ window.addEventListener("hashchange", () => {
   Auth.init();
   Auth.handleBootParams();
   initProgressRingScrollTop();
+  initHealthPing();
 
   if ("serviceWorker" in navigator) {
     // First install has no prior controller - a controllerchange there is the initial claim, not an update, and must not reload.
@@ -672,7 +711,7 @@ window.addEventListener("pageshow", (e) => {
     if (filePath) {
       setTimeout(() => {
         if (state.currentView !== "content" || state.currentFilePath !== filePath) return;
-        const saved = localStorage.getItem(`scroll-${wikiId}-${filePath}`);
+        const saved = getScrollPos(`wiki-scroll-${wikiId}-${filePath}`);
         if (saved) window.scrollTo({ top: Number.parseInt(saved, 10), behavior: "instant" });
       }, 60);
     }

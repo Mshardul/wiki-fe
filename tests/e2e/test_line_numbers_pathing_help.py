@@ -109,14 +109,10 @@ def test_multiline_highlight_span_not_corrupted(page, base_url):
 
 
 def test_link_with_fragment_is_intercepted(page, base_url):
-    """Internal .md links that include a #anchor suffix are intercepted (not ignored)."""
+    """Internal .md links with a #anchor suffix keep the article slug and ?a= fragment."""
     page.route(
         "**/source.md",
         lambda r: r.fulfill(body="# Source\n\n[Jump](./target.md#section-1)"),
-    )
-    page.route(
-        "**/target.md",
-        lambda r: r.fulfill(body="# Target\n\nContent."),
     )
 
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
@@ -134,13 +130,12 @@ def test_link_with_fragment_is_intercepted(page, base_url):
         timeout=10_000,
     )
 
-    # The link should trigger a fetch for target.md (not navigate away)
-    with page.expect_response("**/target.md") as resp_info:
-        page.locator("text='Jump'").click()
-
-    assert resp_info.value.status == 200, (
-        "Clicking .md#anchor link should fetch the .md file"
-    )
+    link = page.locator("#markdown-body a:has-text('Jump')")
+    assert "wiki-link-article" in (link.get_attribute("class") or "")
+    assert link.get_attribute("target") == "_blank"
+    href = link.get_attribute("href") or ""
+    assert "system-design/target" in href
+    assert "a=section-1" in href
 
 
 def test_excess_dotdot_does_not_crash(page, base_url):

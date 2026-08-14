@@ -55,6 +55,40 @@ def test_escape_closes_section_map(page, base_url):
     )
 
 
+def test_section_map_traps_focus(page, base_url):
+    """616: section map overlay traps Tab focus like other modals."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("Shift+G")
+    page.wait_for_selector("#section-map-overlay:not(.hidden)", timeout=3_000)
+
+    page.evaluate("""() => {
+        document.getElementById('section-map-search').focus();
+    }""")
+    page.keyboard.press("Tab")
+    focused_outside = page.evaluate("""() => {
+        const overlay = document.getElementById('section-map-overlay');
+        return !overlay.contains(document.activeElement);
+    }""")
+    assert not focused_outside, "Focus trap missing on section map overlay"
+
+
+def test_link_graph_traps_focus(page, base_url):
+    """616: link graph modal traps Tab focus like other modals."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("g")
+    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
+
+    page.evaluate("""() => {
+        document.getElementById('link-graph-close').focus();
+    }""")
+    page.keyboard.press("Tab")
+    focused_outside = page.evaluate("""() => {
+        const modal = document.getElementById('link-graph-modal');
+        return !modal.contains(document.activeElement);
+    }""")
+    assert not focused_outside, "Focus trap missing on link graph modal"
+
+
 def test_section_map_renders_canvas_with_status(page, base_url):
     """Section map draws a canvas and shows the current section heading as status."""
     _go_to_article(page, base_url)

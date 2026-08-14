@@ -34,6 +34,7 @@
   .related-articles,
   .skip-to-content,
   .copy-btn,
+  .table-col-toggles,
   .code-traffic-lights,
   .scroll-to-top,
   #global-search-modal,
@@ -128,6 +129,10 @@
     padding: 4px 8px !important;
     color: #000 !important;
     background: #fff !important;
+  }
+
+  .markdown-body .table-col-hidden {
+    display: table-cell !important;
   }
 
   .markdown-body thead th {

@@ -249,12 +249,12 @@ def test_scroll_position_restored_after_navigation(page, base_url):
 
     page.evaluate("() => window.scrollTo({ top: 600, behavior: 'instant' })")
     page.wait_for_function(
-        "() => localStorage.getItem('scroll-' + window.state.currentWikiId + '-' + window.state.currentFilePath) !== null",
+        "() => localStorage.getItem('wiki-scroll-' + window.state.currentWikiId + '-' + window.state.currentFilePath) !== null",
         timeout=5_000,
     )
 
     saved = page.evaluate(
-        "() => localStorage.getItem('scroll-' + window.state.currentWikiId + '-' + window.state.currentFilePath)"
+        "() => localStorage.getItem('wiki-scroll-' + window.state.currentWikiId + '-' + window.state.currentFilePath)"
     )
     assert saved is not None, "Scroll position not saved to localStorage"
     assert int(saved) > 0, f"Saved scroll should be > 0 (got {saved})"

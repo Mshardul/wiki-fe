@@ -1,22 +1,16 @@
-import { QuizMode } from "./content/tables.js";
+import { QuizMode } from "../content/tables.js";
 import {
   createFocusTrap,
   markModalClosed,
   markModalOpened,
   registerModal,
-} from "./modal-registry.js";
-import { getCurrentRenderGen, navigateToContent } from "./render/content-view.js";
-import { IndexFilter } from "./render/home-index.js";
-import { buildSearchEntriesForWiki } from "./render/home-parse.js";
-import { normalizePath } from "./render/nav-utils.js";
-import { navigate } from "./render/router.js";
-import { showToast } from "./render/toast.js";
-import {
-  expandQuery,
-  extractSnippet,
-  getFallbackSuggestions,
-  renderRecentSearches,
-} from "./search-features.js";
+} from "../modal-registry.js";
+import { getCurrentRenderGen, navigateToContent } from "../render/content-view.js";
+import { IndexFilter } from "../render/home-index.js";
+import { buildSearchEntriesForWiki } from "../render/home-parse.js";
+import { normalizePath } from "../render/nav-utils.js";
+import { navigate } from "../render/router.js";
+import { showToast } from "../render/toast.js";
 import {
   WIKIS,
   allSearchCache,
@@ -27,9 +21,15 @@ import {
   state,
   synonymCache,
   unlockBodyScroll,
-} from "./state.js";
-import { RecentSearches } from "./storage/scroll-collapse.js";
-import { Settings } from "./storage/settings-theme.js";
+} from "../state.js";
+import { RecentSearches } from "../storage/scroll-collapse.js";
+import { Settings } from "../storage/settings-theme.js";
+import {
+  expandQuery,
+  extractSnippet,
+  getFallbackSuggestions,
+  renderRecentSearches,
+} from "./search-features.js";
 
 /* GLOBAL SEARCH (⌘K) */
 const gSearchModal = document.getElementById("global-search-modal");
@@ -480,7 +480,7 @@ function closeGlobalSearch() {
   gSearchModal.classList.add("hidden");
   gSearchModal.setAttribute("aria-hidden", "true");
   _searchScope = null;
-  gSearchDialog?.classList.remove("scope-mode", "command-mode", "section-mode");
+  gSearchDialog?.classList.remove("command-mode", "section-mode");
   stopPlaceholderHints();
   if (_searchFocusTrapHandler) {
     gSearchModal.removeEventListener("keydown", _searchFocusTrapHandler);
@@ -583,7 +583,6 @@ function _syncModeBadge(raw) {
   const sectionMode = raw.startsWith(">");
   gSearchDialog?.classList.toggle("command-mode", commandMode);
   gSearchDialog?.classList.toggle("section-mode", sectionMode);
-  gSearchDialog?.classList.toggle("scope-mode", !!_searchScope);
 
   if (commandMode) {
     const q = raw.slice(1).toLowerCase();

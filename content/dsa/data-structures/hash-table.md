@@ -29,6 +29,7 @@
   - [Seen-set for O(1) complement lookup](#seen-set-for-o1-complement-lookup)
   - [Hashing tuples & frozensets as keys](#hashing-tuples--frozensets-as-keys)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Two Sum](#1-two-sum--complement-lookup)
   - [Group Anagrams](#2-group-anagrams--canonical-key)
@@ -182,6 +183,8 @@ The **load factor** α = entries / buckets is the dial that controls collision r
 
 Resize is **O(n)** - but it happens rarely (every doubling), so it amortizes to **O(1) per insert**, the same geometric argument as [dynamic-array doubling](./dynamic-array.md#memory-layout). This is why insert is "O(1) average/amortized, O(n) worst": the worst is a resize landing on your insert.
 
+**The accounting, shown on-page.** Charge every `insert` 3 credits: 1 pays for its own bucket write, 2 are banked toward a future resize. A resize triggers when the table has grown to `n` entries, having last resized at `n/2` - so the `n/2` inserts since then banked `2 × n/2 = n` credits, exactly enough to pay the O(n) cost of rehashing every one of the `n` entries into the new table. Every single `insert` is O(1) in banked-credit terms; the resize's real O(n) cost is paid out of credits accumulated earlier, never charged to any one insert on the spot. Summed over `n` inserts, total cost is O(n) → **O(1) amortized per insert**, and the O(n) figure that shows up on one unlucky insert is real wall-clock time, not a violation of the amortized bound - amortized means the *average* over a sequence, not a guarantee on any single call.
+
 ## Implementation
 
 A separate-chaining hash table with the core ops. Pseudocode states the contract; Python is the idiomatic reference (in real life you'd just use `dict` - this is to show the machinery).
@@ -321,6 +324,14 @@ groups: dict[str, list[str]] = {}       # key = "".join(sorted(word)) -> anagram
 - **Iteration order is not sorted.** CPython preserves _insertion_ order, but that is not sorted order and is not portable across languages. If you need sorted output, sort explicitly or use a tree - relying on dict order for sortedness is a classic bug.
 - **`==` and `hash` must agree (the contract).** Two keys equal by `==` must have the same hash, or lookup misses entries it should find. When you make a custom class a key, override **both** `__hash__` and `__eq__` consistently - overriding one without the other silently breaks the table.
 - **`float` keys and NaN.** `NaN != NaN`, so a `NaN` key can never be looked up again (it won't equal itself); float keys also suffer precision surprises. Avoid floats as keys; use a rounded/int representation.
+
+## What the interviewer probes for
+
+**What changes at n = 10⁹ entries - is O(1) lookup still true?** - The per-lookup cost stays O(1) average, but the *system* around it changes: a table that large won't fit in one machine's memory, so you shard across nodes ([consistent hashing](../../system-design/algorithms/consistent-hashing.md)), and even in-memory the O(n) resize/rehash pass becomes a multi-second stall that a live service can't absorb on the thread doing the insert. Production systems at that scale use incremental resizing (rehash a few buckets per operation instead of all at once) specifically to avoid that stall - "O(1) amortized" hides a real latency cliff that gets worse, not better, as n grows.
+
+**Why not always use open addressing instead of chaining, since it has better cache locality?** - Open addressing packs everything inline (no pointer chasing), which is why CPython's `dict` uses it, but it degrades sharply as load factor approaches 1 (probe sequences lengthen) and deletion needs tombstones or lookups break; chaining degrades more gracefully under high load and deletes trivially by unlinking, at the cost of pointer overhead and scattered chain memory. Pick open addressing when memory and cache locality dominate (CPython's choice); pick chaining when load factor is hard to bound in advance or deletions are frequent.
+
+**How would this work with concurrent writers from multiple threads?** - A single lock around the whole table serializes every operation, killing the O(1) win under contention. Java's `ConcurrentHashMap` instead shards the bucket array into independent segments, each with its own lock (or lock-free CAS on modern versions), so unrelated keys rarely contend - the same idea as [consistent hashing](../../system-design/algorithms/consistent-hashing.md) applied to a single process instead of a cluster.
 
 ## Practice problems
 

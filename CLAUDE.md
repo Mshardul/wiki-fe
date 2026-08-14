@@ -98,16 +98,14 @@ Do this before any file reads or skill invocations - every session:
 | `state.js`         | WIKIS registry, Showdown/Mermaid config, shared caches (readTimeCache, indexCache, allSearchCache), app state object, shared pure utilities (escHtml, fuzzyMatch)        |
 | `content/`         | Content post-processing after markdown→HTML - see subtable below                                                                                                        |
 | `render/`          | Routing + view rendering - see subtable below                                                                                                                            |
-| `search.js`        | ⌘K modal: open/close lifecycle, search entry loading, fuzzy scoring, result rendering, section-filter mode (>)                                                           |
+| `search/`          | ⌘K search domain - see subtable below                                                                                                                                    |
 | `auth.js`          | Auth domain: password-rule validation, auth modal controller (login/register/verify panels), login/register/logout/resend flows, anon→login migration |
 | `api.js`           | Single wrapper for all backend (`wiki-be`) calls: base-URL detect, credentials, `ApiError`, global 401 handler, typed endpoint helpers |
 | `storage/`         | All localStorage operations - see subtable below                                                                                                                         |
-| `search-features.js` | Search snippet extraction, recent-searches list, synonym cache use                                                                    |
 | `icon-sprite.js`   | Loads and inlines `sprite.svg` for the Tabler icon system                                                                              |
-| `toc-companion.js` | Standalone script for the sidecar TOC popup window (`toc-companion.html`) - receives BroadcastChannel payloads, renders nav, click-to-scroll |
 | `modal-registry.js` | Shared focus-trap + open-state tracking helpers reused by modal controllers (search, auth, bookmarks, wiki-switcher, etc.) |
 
-**Never read every file in a domain folder** (`content/`, `render/`, `storage/`, `app/`) - the subtables below say exactly which file owns which behavior.
+**Never read every file in a domain folder** (`content/`, `render/`, `storage/`, `app/`, `search/`) - the subtables below say exactly which file owns which behavior.
 
 #### `js/app/`
 
@@ -136,7 +134,7 @@ Do this before any file reads or skill invocations - every session:
 | `zoom-lightbox.js`    | Zoom overlay (image + diagram), pinch/pan/swipe gestures                            |
 | `code-blocks.js`      | Code block header, copy buttons, clipboard helper, line numbers, hljs theme sync     |
 | `mermaid.js`          | Diagram render/re-render, node hover captions, step-through walkthrough              |
-| `tables.js`           | Column sort, quiz-me mode, table scroll cues                                        |
+| `tables.js`           | Column sort, quiz-me mode, table scroll cues, comparison column toggles     |
 | `toc.js`              | TOC build, sticky section header, per-heading collapse, progress ring               |
 | `formatting.js`       | Callouts, prerequisites chips, anchor links, LaTeX toggle/copy, focus mode, tabbed code blocks, footnotes, in-article find |
 | `glossary-caveats.js` | Inline caveat reveals, glossary popovers/expand, rendered-HTML session cache          |
@@ -176,11 +174,19 @@ Do this before any file reads or skill invocations - every session:
 | `completions.js`     | Per-wiki-per-article completion Set (`wiki-completed-*`), sync via `api.completions` |
 | `offline.js`         | Offline cache download/remove/check, offline button state                     |
 | `settings-theme.js`  | Settings object + swatches, `Settings`/`Theme`/`Sync`, multi-tab sync listener |
-| `scroll-collapse.js` | Scroll-position cache, section collapse, TOC scroll, recent searches          |
+| `scroll-collapse.js` | Scroll-position cache, section collapse, TOC scroll, recent searches |
+| `table-columns.js`   | Comparison-table hidden-column prefs (`wiki-table-cols-*`)            |
 | `highlights.js`      | Per-article highlight/marker CRUD, keyed by wiki+article path                 |
 | `notes.js`           | Per-article notes scratchpad CRUD                                             |
 | `data-clear.js`      | "Clear my data" settings action - wipes bookmarks/highlights/notes/pinned-wikis |
 | `install-prompt.js`  | PWA iOS install-nudge dismissal state (localStorage flag read/write)          |
+
+#### `js/search/`
+
+| File                  | Owns                                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `search.js`           | ⌘K modal: open/close lifecycle, search entry loading, fuzzy scoring, result rendering, section-filter mode (>)     |
+| `search-features.js`  | Search snippet extraction, recent-searches list, synonym cache use                                                  |
 
 ### CSS (`css/`)
 
@@ -188,7 +194,7 @@ Do this before any file reads or skill invocations - every session:
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `tokens.css`            | ALL CSS custom properties: spacing scale, typography scale, colour tokens, border-radius, transition durations - **read this first for any CSS task** |
 | `base.css`              | Global reset and base styles: body, headings, inline code, scrollbar, text selection                                                                  |
-| `themes.css`            | Per-theme CSS token overrides for dark, light, matrix, terminal, amber-term via `data-theme` attribute                                                |
+| `themes.css`            | Binary `data-theme` light/dark CSS-only overrides (focus, shadows, code-block colors). Background presets (`--bg`/`--surface`/`--accent`/etc.) are computed in `settings-theme.js`, not named theme blocks |
 | `components/`           | Shared UI components - see subtable below                                                                                                              |
 | `components/auth.css`   | Auth modal + topbar auth button styles (tokens only)                                                                                              |
 | `view-home.css`         | Home view: background grid/glow, wiki card grid, home topbar, hero section                                                                            |
@@ -247,7 +253,16 @@ Do this before any file reads or skill invocations - every session:
 | `e2e/test_links.py`                     | Internal links, cross-references                                   |
 | `e2e/test_scroll_toc.py`                | TOC scroll tracking, active heading highlight                      |
 | `e2e/test_keyboard_scroll.py`           | Keyboard scroll shortcuts                                          |
-| `e2e/test_a11y_hotkeys.py`              | Accessibility, hotkeys                                             |
+| `e2e/test_a11y_hotkeys.py`              | Accessibility, hotkeys, focus trap, card Space activation          |
+| `e2e/test_admin.py`                     | Admin nav visibility by role, broken-links/backlinks reports       |
+| `e2e/test_changelog.py`                 | `#changelog` view, filename filter, filename→article links         |
+| `e2e/test_dashboard.py`                 | Progress dashboard cards, drill-down, learning-path bars           |
+| `e2e/test_navigation_polish.py`         | Index collapse/expand, arrow-key cards, W/G hotkeys, list/graph    |
+| `e2e/test_notes_scratchpad.py`          | Per-article notes persist, collapse, terminal restyle              |
+| `e2e/test_offline_shelf.py`             | `#offline` shelf, dimming, evict, download-all                     |
+| `e2e/test_structure_viz.py`             | Inline ` ```viz ` fenced-block SVG render + fallback               |
+| `e2e/test_toc_overhaul.py`              | Heading collapse storage, TOC/notes rail layout                    |
+| `e2e/test_touch_gestures.py`            | Index-card swipe, long-press peek, edge swipe-back                 |
 | `e2e/test_ux_hotkeys_errors.py`         | UX hotkeys, error states                                           |
 | `e2e/test_read_toggle.py`               | Reading mode toggle                                                |
 | `e2e/test_index_ux.py`                  | Index / sidebar UX interactions                                    |
@@ -273,9 +288,9 @@ Do this before any file reads or skill invocations - every session:
 | `docs/_meta/ai-instructions/sd-rater.md`           | Rating / publish-gate for system design articles                                        |
 | `docs/_meta/ai-instructions/dsa-writer.md`         | Writing / fixing DSA articles (after content-backlog or Content task)                    |
 | `docs/_meta/ai-instructions/dsa-rater.md`          | Rating / publish-gate for DSA articles                                                   |
-| `docs/_meta/decisions/ui-ux.md`                    | UI / UX decision needed                                                                 |
-| `docs/_meta/decisions/auth.md`                     | Auth/personal-layer decisions - product model, tech, DB schema, password/session/error contracts |
-| `docs/_meta/decisions/auth-integration.md`         | [Archive] How auth wires into the FE SPA - reference only; superseded by implemented code |
+| `docs/_meta/ui-ux.md`                              | UI / UX decision needed                                                                 |
+| `docs/_meta/auth.md`                                | Auth/personal-layer decisions - product model, tech, DB schema, password/session/error contracts |
+| `docs/_meta/auth-integration.md`                    | [Archive] How auth wires into the FE SPA - reference only; superseded by implemented code |
 | `docs/_meta/plans/fe-be-integration.md` | Step-by-step plan for the FE auth+sync integration work                          |
 | `docs/tasks.md`                                    | Context on recently completed work or implementation notes                              |
 | `docs/changelog.md`                                | [removed — use `content/CHANGELOG.md` and `docs/tickets-archive.md`]                    |
@@ -286,7 +301,7 @@ Do this before any file reads or skill invocations - every session:
 
 | Task                      | Read these only                                                                                 |
 | ------------------------- | ----------------------------------------------------------------------------------------------- |
-| Search bug                | `js/search.js`, `js/state.js`                                                                   |
+| Search bug                | `js/search/search.js`, `js/state.js`                                                            |
 | Rendering / markdown bug  | `js/render/content-view.js` (pipeline) or the specific `js/content/*.js` file for the enhancement in question |
 | Navigation / routing bug  | `js/render/router.js`, `js/state.js`                                                            |
 | Bookmark / recents bug    | `js/storage/bookmarks.js` or `js/storage/recents.js`, `js/state.js`                             |

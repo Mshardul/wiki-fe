@@ -24,6 +24,7 @@
   - [In-place reversal of pointers](#in-place-reversal-of-pointers)
   - [Fast/slow pointers - cycle, middle, k-from-end](#fastslow-pointers--cycle-middle-k-from-end)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Reverse a Linked List](#1-reverse-a-linked-list--iterative-pointer-rewiring)
   - [Linked List Cycle II](#2-linked-list-cycle-ii--floyds-tortoise-and-hare)
@@ -161,7 +162,7 @@ The array pays **zero** per-element overhead. The singly list pays one pointer p
 
 ## Implementation
 
-A singly linked list with the operations that actually carry interview weight: `push_front`, `append` (with a tail pointer for O(1)), and `delete_value`. Pseudocode states the pointer-rewiring contract; Python is the idiomatic reference.
+A singly linked list with the operations that actually carry interview weight: `push_front`, `append` (with a tail pointer for O(1)), `insert_after` (splice given a node reference), and `delete_value`. Pseudocode states the pointer-rewiring contract; Python is the idiomatic reference.
 
 **Pseudocode (CLRS-style contract):**
 
@@ -173,6 +174,25 @@ LIST-PUSH-FRONT(L, x)
 4   L.head    = node
 5   if L.tail == NIL             ▷ list was empty
 6       L.tail = node
+
+LIST-APPEND(L, x)                ▷ O(1) given a tail pointer - no traversal
+1   node = ALLOCATE-NODE()
+2   node.val  = x
+3   node.next = NIL
+4   if L.tail == NIL             ▷ list was empty
+5       L.head = node
+6       L.tail = node
+7   else
+8       L.tail.next = node       ▷ splice onto the current tail
+9       L.tail = node
+
+LIST-INSERT-AFTER(L, node, x)    ▷ splice a new node right after a given node - O(1), no search
+1   new = ALLOCATE-NODE()
+2   new.val  = x
+3   new.next = node.next
+4   node.next = new
+5   if node == L.tail            ▷ inserted after the old tail - new node is the tail now
+6       L.tail = new
 
 LIST-DELETE-VALUE(L, x)
 1   prev = NIL
@@ -223,6 +243,12 @@ class LinkedList(Generic[T]):
         else:
             self.tail.next = node
             self.tail = node
+
+    def insert_after(self, node: Node[T], x: T) -> None:
+        new = Node(x, node.next)
+        node.next = new
+        if node is self.tail:                   # inserted after the old tail
+            self.tail = new
 
     def delete_value(self, x: T) -> bool:
         prev: Optional[Node[T]] = None
@@ -312,6 +338,14 @@ while fast and fast.next:
 - **Null / empty-list dereference.** `cur.next` when `cur` is null throws. Every traversal loop guards `while cur is not None`, and <abbr>two-pointer</abbr> loops must guard **both** `fast and fast.next` before the double hop - dropping the second check throws on even-length lists.
 - **Cycle turns traversal into an infinite loop.** A `while cur` loop never terminates if the list has a cycle. If cycles are possible, detect with fast/slow before any length-counting or full traversal - never assume a `next` chain ends.
 - **Pointer overhead and cache cost (the senior trap).** Reaching for a linked list "because inserts are O(1)" while the actual hot path is iteration is a classic mistake - the per-node allocation, pointer overhead, and cache misses ([Memory layout](#memory-layout)) routinely make a dynamic array faster end-to-end despite the worse Big-O for inserts. Justify a list by a _named_ O(1)-splice requirement, not reflex.
+
+## What the interviewer probes for
+
+**What changes at n = 10⁹ nodes spread across a traversal?** - The per-hop cost stops being "O(1) pointer dereference" in practice and becomes "likely cache miss, ~100× a hit" because nodes are scattered across the heap with no locality; a full traversal at that scale can be an order of magnitude slower wall-clock than an array scan with identical O(n) complexity. At that size you'd also be paying real memory tax - one 8-byte pointer (or two, doubly) plus allocator header per node, which can double or triple total footprint versus a packed array of the same values.
+
+**Why not always use a linked list, since insert/delete is O(1)?** - That O(1) is conditional on already holding the node (or its predecessor for a singly list); getting there in the first place is an O(n) walk, so "insert at position i" is not actually O(1) end-to-end. Combined with the cache-miss cost above, a dynamic array frequently wins in wall-clock time even for workloads with heavy middle-insertion, because the traversal to find the insertion point thrashes the cache more than the array's shift costs. Reach for the list only when the problem hands you the node reference directly (an LRU cache, a splice given a pointer) rather than by position.
+
+**What changes under concurrent access?** - An unsynchronized linked list is unsafe the moment one thread walks `next` while another rewires it - a reader can dereference a node mid-unlink and either skip a live node or follow a dangling pointer into freed memory. Lock-free variants exist (using compare-and-swap on `next`, e.g. the classic Michael-Scott queue), but they're substantially harder to get right than locking the whole structure or using per-node fine-grained locks, and the pointer-chasing cache cost above only gets worse when cache lines are also being invalidated by other cores writing nearby.
 
 ## Practice problems
 

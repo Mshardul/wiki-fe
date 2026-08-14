@@ -20,6 +20,7 @@
 - [Implementation](#implementation)
 - [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
 
 ## What it is
@@ -282,6 +283,15 @@ val, freq, buckets = {}, {}, defaultdict(OrderedDict)
 - **Capacity 0.** `put` must no-op (don't seed a freq-1 key into a zero-capacity cache, or the next eviction underflows). Guard at the top.
 - **Empty buckets must be removed (or skipped).** If you leave an empty `buckets[f]` in the map and later read its back to evict, you get a wrong/None victim. Either `del` the bucket when it empties, or guarantee `min_freq` only ever points at a non-empty one.
 - **Plain LFU never forgets - the pollution trap.** Counts only grow; a once-popular key keeps a huge count and is effectively un-evictable even when cold. This is LFU's defining weakness and the reason production caches use **aging / Window-TinyLFU** ([Variants](#variants)). A senior answer names this unprompted.
+- **At n > 10⁷ entries, the frequency-bucket map itself becomes the bottleneck (at-scale trap).** `buckets: freq → LRU-list` is a hash table keyed by frequency, so it inherits [hash table's rehash-stall risk](./hash-table.md#load-factor--resize) under a write-heavy `put` burst - a resize landing mid-burst stalls every concurrent cache access, not just one key's operation. Layered on top is LFU-specific: at huge n, the frequency distribution tends to concentrate (a small set of keys accumulate enormous counts under Zipfian access patterns typical of real caches), so `min_freq` rarely moves and the bucket at frequency 1 becomes a hot, high-churn structure - the opposite of the flat, evenly-spread access the design assumes at small n.
+
+## What the interviewer probes for
+
+**What changes if the cache needs to hold 10⁹ keys across a fleet, not 10⁴ on one box?** - A single-process `buckets` hash table stops being the bottleneck concern; the real shift is that no one machine can hold the working set, so you shard by key hash across many LFU instances, each independently tracking frequency for its own slice. That breaks *global* frequency ranking (a key hot only on one shard looks cold fleet-wide), which is exactly why production systems like Redis and CDN caches use per-node approximate counters (aged 8-bit counters, Count-Min Sketch) rather than a fleet-synchronized exact count - synchronizing exact frequencies across machines on every access would dominate the cache's own latency budget.
+
+**Why not just use LRU instead of building this frequency machinery?** - LRU is simpler, cheaper (roughly 2x memory vs LFU's 3x per this article's Complexity summary), and correct for workloads with temporal locality. LFU earns its extra bucket-list and `min_freq` bookkeeping only when *popularity*, not recency, predicts reuse - a key hit constantly but with an occasional gap shouldn't be evicted just because a one-off scan streamed through. The Comparison table's tie-break column names the real cost: LFU also inherits LRU's ordering as its tie-breaker, so you're never getting LFU "instead of" LRU, only LRU plus a frequency axis on top.
+
+**Does LFU need locking under concurrent access?** - Yes, more than LRU does. A single `get` touches three structures (`val`, `freq`, `buckets`) across two bucket-list splices, so a naive global lock serializes every cache access; the `min_freq` pointer update on a lock-free design is a genuine race (two threads emptying the same min bucket simultaneously could both try to increment it, or a delete could race an increment). Production implementations typically shard the cache into N independently-locked partitions by key hash rather than attempt fine-grained locking on the bucket structure itself.
 
 ## Practice problems
 

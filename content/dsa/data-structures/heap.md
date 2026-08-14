@@ -21,6 +21,7 @@
 - [Implementation](#implementation)
 - [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [Kth Largest Element in a Stream](#1-kth-largest-element-in-a-stream--bounded-min-<abbr>heap</abbr>)
   - [Top K Frequent Elements](#2-top-k-frequent-elements--heap-of-size-k)
@@ -212,6 +213,15 @@ Contest tools the heap unlocks (advisory for the Tree/heap family, but heaps are
 - **No `decrease-key` in `heapq`** - you can't efficiently update an element's priority. Use **lazy deletion** (push the new value, skip outdated pops) or an indexed heap. This bites in Dijkstra implementations - the naive "update in place" doesn't exist.
 - **Tuple comparison ties** - pushing `(priority, item)` fails if two priorities tie and `item` isn't comparable (`TypeError: '<' not supported`). Add a tiebreaker: push `(priority, count, item)` with a monotonic `count`.
 - **Build-heap direction** - heapify must go **bottom-up** (`n//2 - 1` downto 0). Top-down sift-down doesn't establish the invariant and silently produces a non-heap - and loses the O(n) build, since you'd be back to O(n log n).
+- **At n > 10⁷, cache misses dominate over the log n bound (at-scale trap).** A heap's array is flat and contiguous, but sift-up/sift-down jump by index arithmetic (`2i+1`, `2i+2`, `(i-1)//2`) that scatters across the array as `i` grows - parent and children drift further apart in memory the deeper the tree gets, so each sift step increasingly misses cache even though the array itself is contiguous. At large n, wall-clock time on push/pop grows faster than the O(log n) op count alone predicts, because each of those O(log n) comparisons pays a cache-miss penalty that a small heap doesn't. This is why production priority queues at extreme scale (external-memory heaps, cache-oblivious variants) restructure the layout rather than trust the asymptotic bound.
+
+## What the interviewer probes for
+
+**What breaks first if this heap holds 10⁹ elements, not 10⁴?** - The height (`log₂ 10⁹ ≈ 30`) barely moves, so the *comparison count* stays cheap; what actually degrades is cache behavior. As noted in Gotchas, `2i+1`/`2i+2` index jumps scatter further apart in memory as the tree deepens, so each sift step increasingly misses cache - wall-clock time grows faster than the O(log n) bound alone predicts. At that scale, production systems reach for external-memory or cache-oblivious heap variants rather than trust the asymptotics, or shard the priority queue across machines so no single heap holds the full 10⁹.
+
+**Why not just keep the array sorted instead of using a heap?** - A sorted array gives O(1) peek too, and sorted iteration for free, which a heap can't. But insertion into a sorted array is O(n) (shift elements), while a heap's push is O(log n). The heap trades away full ordering - it only guarantees the root is extreme, nothing about sibling order - to buy fast insert. If you never need to see anything but the current min/max, and inserts are frequent, that trade wins; if the data is mostly static or you need range queries, a sorted structure or BST wins instead.
+
+**Does concurrent access change the design?** - Yes: a heap's sift-up/sift-down mutate multiple array slots across a root-to-leaf path, so naive concurrent push/pop needs a lock around the whole operation (fine-grained locking is hard because swaps can touch any level). High-throughput systems either shard into multiple heaps with a dispatcher, or use a lock-free skip-list-based priority queue instead, since skip lists tolerate concurrent modification far more gracefully than an array-backed heap.
 
 ## Practice problems
 

@@ -2,7 +2,7 @@ import { AuthModal } from "../auth.js";
 import { rerenderMermaidDiagrams } from "../content/mermaid.js";
 import { closeZoomOverlay } from "../content/zoom-lightbox.js";
 import { navigate } from "../render/router.js";
-import { closeGlobalSearch } from "../search.js";
+import { closeGlobalSearch } from "../search/search.js";
 import { state } from "../state.js";
 import { Settings } from "../storage/settings-theme.js";
 import { closeBookmarksModal, isBookmarksModalOpen } from "./bookmarks-modal.js";
@@ -13,7 +13,7 @@ import { closeSectionMap, isSectionMapOpen } from "./section-map.js";
 import { closeWikiSwitcher, isWikiSwitcherOpen } from "./wiki-switcher.js";
 
 const tocMobileBtn = document.getElementById("toc-mobile-btn");
-const tocMobileOverlay = document.getElementById("toc-mobile-backdrop");
+const tocMobileBackdrop = document.getElementById("toc-mobile-backdrop");
 const tocSidebar = document.getElementById("toc-sidebar");
 
 document.getElementById("toc-collapse").addEventListener("click", () => {
@@ -21,7 +21,7 @@ document.getElementById("toc-collapse").addEventListener("click", () => {
 });
 
 tocMobileBtn.addEventListener("click", () => openMobileToc());
-tocMobileOverlay.addEventListener("click", () => closeMobileToc());
+tocMobileBackdrop.addEventListener("click", () => closeMobileToc());
 document.getElementById("toc-nav").addEventListener("click", (e) => {
   if (e.target.closest(".toc-item")) closeMobileToc();
 });
@@ -34,13 +34,13 @@ function openMobileToc() {
   if (document.getElementById("toc-sidebar").style.display === "none") return;
   if (!document.querySelector("#toc-nav .toc-item")) return;
   tocSidebar.classList.add("mobile-open");
-  tocMobileOverlay.classList.remove("hidden");
+  tocMobileBackdrop.classList.remove("hidden");
   document.body.classList.add("toc-open");
 }
 
 function closeMobileToc() {
   tocSidebar.classList.remove("mobile-open");
-  tocMobileOverlay.classList.add("hidden");
+  tocMobileBackdrop.classList.add("hidden");
   document.body.classList.remove("toc-open");
 }
 

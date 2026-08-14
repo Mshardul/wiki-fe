@@ -22,8 +22,9 @@
 - [CP-primitives](#cp-primitives)
   - [Monotonic stack - next greater/smaller element](#monotonic-stack---next-greatersmaller-element)
   - [Paren/bracket matching \& expression parsing](#parenbracket-matching--expression-parsing)
-  - [Explicit stack to flatten <abbr>recursion</abbr>](#explicit-stack-to-flatten-recursion)
+  - [Explicit stack to flatten recursion](#explicit-stack-to-flatten-recursion)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
   - [1. Valid Parentheses - _matching with a stack_](#1-valid-parentheses---matching-with-a-stack)
   - [2. Daily Temperatures - _monotonic stack_](#2-daily-temperatures---monotonic-stack)
@@ -44,14 +45,14 @@ Mental model: **a stack of plates.** You add a plate to the top and take one off
 A stack exposes exactly three core operations, all at the **top**: **push** (add), **pop** (remove and return), **peek** (read without removing). There is no indexing, no search, no insert-in-the-middle - the LIFO restriction is the whole point, and it's what buys the O(1) guarantee.
 
 ```
-|  push(3)  |  push(7)  |  push(2)  | pop() → 2   | peek() → 7 |
-|-----------+-----------+-----------+-------------+------------|
-| top→ │ │  | top→│3│   | top→│2│   |   top→│7│   |   top→│7│  |
-|      │ │  |     │ │   |     │7│   |       │3│   |       │3│  |
-|      │3│  |     │7│   |     │3│   |       │ │   |       │ │  |
-|      └─┘  |     │3│   |     │7│   |       └─┘   |       └─┘  |
-|           |     └─┘   |     │3│   |             |            |
-|           |           |     └─┘   |             |            |
+|  push(3)  |  push(7)  |  push(3)  |  push(7)  |  push(2)  | pop() → 2   | peek() → 7 |
+|-----------+-----------|-----------+-----------+-----------+-------------+------------|
+| top→ │3│  | top→│7│   | top→│3│   | top→│7│   | top→│2│   |   top→│7│   |   top→│7│  |
+|      └─┘  |     │3│   |     │7│   |     │3│   |     │7│   |       │3│   |       │3│  |
+|           |     └─┘   |     │3│   |     │7│   |     │3│   |       │7│   |       │7│  |
+|           |           |     └─┘   |     │3│   |     │7│   |       │3│   |       │3│  |
+|           |           |           |     └─┘   |     │3│   |       └─┘   |       └─┘  |
+|           |           |           |           |     └─┘   |             |            |
 ```
 
 Two backings give the same O(1) interface (see [Memory layout](#memory-layout)):
@@ -142,6 +143,7 @@ index:  0   1   2   3   4   5     capacity 6, size 4
 
 - **Cache-friendly** - sequential memory, the prefetcher loves it; iteration and repeated push/pop hit cache.
 - **Resize spike** - when full, push triggers an O(n) copy into a 2× block (the [dynamic-array doubling](./dynamic-array.md#memory-layout) argument), so push is _amortized_ O(1) with occasional O(n) pauses, and footprint carries up to ~2× slack.
+- **The accounting, shown on-page.** Charge every `push` 2 credits: 1 pays for its own append, 1 is banked toward the next resize. When the array fills at capacity `c` (having last resized from `c/2`), the `c/2` pushes since then banked `c/2` credits - covering exactly the O(c) cost of copying all `c` elements into the doubled array. Every `push` looks like O(1) in credit terms; the one push that happens to trigger the O(n) copy is paid for by credits every prior push already set aside, not charged fresh on the spot. Total credits spent across `n` pushes is O(n), so amortized cost per push is O(1) - the O(n) spike on one push is real time, not a broken bound; amortized is an average over the sequence, not a per-call promise.
 
 **Linked-list-backed (scattered).** Each element is a node; the top is the head. Push prepends a node, pop unlinks the head.
 
@@ -302,6 +304,12 @@ def dfs_iterative(root) -> list[int]:
 - **Monotonic-stack direction & strictness.** Increasing vs decreasing, and `<` vs `<=`, decide whether you get next-greater vs next-greater-or-equal and how ties/duplicates are handled. Getting the comparison wrong is the subtle monotonic-stack bug - pin down the exact requirement (strict? from which side?) before coding.
 - **Storing indices vs values.** Monotonic-stack problems usually need to store **indices**, not values, so you can compute distances/widths (histogram, daily-temperatures gap) and still read the value via `nums[idx]`. Pushing values when you needed indices silently loses the position information.
 - **Order of pushing children in iterative DFS.** To visit left-first, push **right then left** (LIFO reverses them). Reversing the push order silently changes the traversal - a quiet correctness bug, not a crash.
+
+## What the interviewer probes for
+
+**What happens if the input recurses to a depth of 10⁹, and you're using the call stack implicitly?** - The runtime call stack is bounded (commonly ~1-8 MB, a few thousand to a few hundred thousand frames depending on frame size), so implicit recursion at that depth overflows and crashes well before you reach 10⁹. The fix is exactly the [explicit-stack conversion](#explicit-stack-to-flatten-recursion) covered above: move the frames from the bounded call stack to a heap-allocated `list`, which scales with available memory instead of a fixed OS limit.
+
+**Why not always use a linked-list-backed stack instead of array-backed, since it has no resize spike?** - Because locality wins in practice: an array-backed stack is one contiguous block the prefetcher loves, while a linked-list-backed stack scatters nodes across the heap and pays a cache miss on nearly every push/pop despite both being "O(1)". Pick linked-list-backed only when a hard-real-time system genuinely cannot tolerate the array's occasional O(n) amortized-resize pause - the two are the same array-vs-list trade-off applied to one end, covered in [Memory layout](#memory-layout).
 
 ## Practice problems
 

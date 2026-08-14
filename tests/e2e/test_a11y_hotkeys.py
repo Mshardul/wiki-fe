@@ -162,7 +162,7 @@ def test_content_scroll_restored_after_navigation(page, base_url):
         window.scrollTo({ top: Math.floor(max * 0.5), behavior: 'instant' });
     }""")
     page.wait_for_function(
-        "() => localStorage.getItem('scroll-' + window.state.currentWikiId + '-' + window.state.currentFilePath) !== null",
+        "() => localStorage.getItem('wiki-scroll-' + window.state.currentWikiId + '-' + window.state.currentFilePath) !== null",
         timeout=5_000,
     )
 

@@ -20,6 +20,10 @@ function clearScrollPositions(wikiId) {
   }
 }
 
+function getScrollPos(key) {
+  return localStorage.getItem(key);
+}
+
 function saveScrollPos(key, value) {
   let keys;
   try {
@@ -51,6 +55,18 @@ function toggleCollapse(key, el, collapsed) {
 
 function getCollapsed(key) {
   return !!localStorage.getItem(key);
+}
+
+// Prunes heading-collapse keys for an article whose heading id no longer exists (renderer id changed/removed).
+function gcHeadingCollapseKeys(wikiId, articlePath, liveIds) {
+  const prefix = `wiki-heading-collapsed-${wikiId}-${articlePath.replace(/\//g, "-")}-`;
+  const liveSet = new Set(liveIds);
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(prefix) && !liveSet.has(key.slice(prefix.length))) {
+      localStorage.removeItem(key);
+    }
+  }
 }
 
 /* TOC SCROLL PERSISTENCE */
@@ -95,8 +111,10 @@ const RecentSearches = {
 
 export {
   saveScrollPos,
+  getScrollPos,
   toggleCollapse,
   getCollapsed,
+  gcHeadingCollapseKeys,
   saveTOCScroll,
   restoreTOCScroll,
   RecentSearches,

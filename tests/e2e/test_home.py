@@ -110,6 +110,15 @@ def test_no_active_card_on_fresh_load(page, base_url):
     assert active_count == 0
 
 
+def test_health_ping_fires_on_load(page, base_url):
+    """boot fires a fire-and-forget GET to BE /health to warm a cold start."""
+    hits = []
+    page.route("**/health", lambda route: (hits.append(1), route.fulfill(status=200, body="ok")))
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    assert len(hits) >= 1, "expected a GET /health ping on load"
+
+
 # ── Home hero parallax ──────────────────────────────────────────────
 
 

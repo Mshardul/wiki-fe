@@ -42,14 +42,11 @@ def test_title_updates_on_content(page, base_url):
 
 
 def test_deep_path_resolution(page, base_url):
-    """Internal links with ../../ resolve correctly and fetch the right file."""
-    # Mock a deep relative link: ../../target.md
+    """Internal links with ../../ resolve to the target article slug (new tab)."""
     page.route(
         "**/mock.md", lambda r: r.fulfill(body="# Mock\n\n[Deep Link](../../target.md)")
     )
-    page.route("**/target.md", lambda r: r.fulfill(body="# Target Article\n\nContent."))
 
-    # Navigate to mock article
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
     page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
@@ -58,14 +55,16 @@ def test_deep_path_resolution(page, base_url):
         encodeURIComponent('../content/system-design/mock.md'),
         'Mock', 'mock')""")
     page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_function(
+        "() => !!document.querySelector('#markdown-body[data-render-done]')",
+        timeout=10_000,
+    )
 
-    # Click link and verify the fetch hits the resolved target
-    with page.expect_response("**/target.md") as resp_info:
-        page.locator("text='Deep Link'").click()
-
-    assert resp_info.value.status == 200
-    page.wait_for_selector("#markdown-body h1", timeout=5_000)
-    assert "Target Article" in page.locator("#markdown-body h1").inner_text()
+    link = page.locator("#markdown-body a:has-text('Deep Link')")
+    assert "wiki-link-article" in (link.get_attribute("class") or "")
+    assert link.get_attribute("target") == "_blank"
+    href = link.get_attribute("href") or ""
+    assert "system-design/target" in href
 
 
 # ── 404 History Fallback ───────────────────────────────────────────

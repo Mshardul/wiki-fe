@@ -20,6 +20,7 @@
 - [Implementation](#implementation)
 - [CP-primitives](#cp-primitives)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
 
 ## What it is
@@ -134,7 +135,14 @@ hash map (contiguous buckets)          DLL nodes (scattered heap allocations)
 
 **Cache-behavior consequence.** Every `get` does: hash the key (touch one bucket - cheap), follow the reference to a node **at an arbitrary address** (likely cache miss), then chase `prev`/`next` to re-link (more arbitrary addresses, more misses). So while the cache is O(1) in operation _count_, each operation can incur **multiple cache misses** from pointer-chasing - the same tax a plain linked list pays. This is why high-performance caches sometimes use an **array-indexed intrusive list** (node indices into a flat array instead of heap pointers): same O(1), far better locality.
 
-**Resize cost.** The list never resizes - it's capped at `capacity` and grows/shrinks one node at a time, no amortized doubling. The hash map _does_ resize/rehash if it ever exceeds its load factor while filling toward capacity, paying the [hash table](./hash-table.md)'s amortized-O(1) resize tax - but since the cache is capacity-bounded, this happens at most O(log capacity) times total, then never again.
+**Hashing & collisions (the map half).** The `key → node` map is an ordinary [hash table](./hash-table.md#hashing--collisions): keys hash to buckets, collisions resolve via chaining or open addressing, and lookup degrades from O(1) average to O(n) worst-case only in the pathological all-collisions case. Nothing about the LRU composition changes this - the map's collision behavior is exactly the hash table's, the DLL half is untouched by it. What LRU adds on top is that the map's *value* is a node reference, not the cached value itself - so a collision-heavy bucket slows down finding the node, but once found, the splice into the DLL is still O(1) regardless of how the map got there.
+
+**Resize cost - full amortized accounting.** The list never resizes - it's capped at `capacity` and grows/shrinks one node at a time, no amortized doubling. The hash map is the one piece that can resize, and only while the cache is still filling toward capacity (once at `capacity`, every `put` either updates an existing key or evicts before inserting, so the map's entry count never grows past `capacity` - no further resize is ever triggered again). While filling:
+
+1. **Which operation pays.** `put` on a new key, while `len(map) < capacity`, is the only operation that can trigger a rehash.
+2. **The accounting.** Same geometric argument as a [dynamic array's doubling](./dynamic-array.md#memory-layout) or a [hash table's resize](./hash-table.md#hashing--collisions): the map doubles its bucket array when the load factor crosses its threshold, and a resize touches every existing entry once (O(current size) to rehash). Charging 2 "credits" to every insert (1 to insert the new entry, 1 pre-paid toward a future entry's share of the next resize) covers the cost - summed over the fill-up to `capacity`, total resize work is O(capacity), so each `put` is O(1) amortized over that fill phase.
+3. **Worst-case single-op cost.** A `put` that happens to trigger the resize is O(capacity) for that one call, not O(1) - amortized-O(1) is a guarantee on the *average* over a sequence, not on any individual call. A latency-sensitive system that cannot tolerate an occasional O(capacity) spike must pre-size the map to `capacity` up front (most hash-map constructors accept an initial-capacity hint) to skip resizing entirely.
+4. **Bound on total resizes.** Because the map only grows while under `capacity`, it resizes at most O(log capacity) times total across the cache's entire lifetime, then never again - unlike an unbounded hash table, which keeps resizing for as long as the caller keeps inserting new keys.
 
 ## Implementation
 
@@ -292,6 +300,14 @@ pos = {}                  # value → its node/index in the ordered structure
 - **Singly linked list is a trap.** You _can't_ do O(1) move-to-front with a singly list - finding `prev` is O(n). If an interviewer lets you use a singly list "to save a pointer," the O(1) claim quietly breaks. Insist on doubly (or `OrderedDict`).
 - **Thread-safety is not free.** The two-structure invariant (map and list agree on contents) is only consistent _between_ operations. Concurrent `get`/`put` without a lock can splice a node mid-relink and corrupt both - production caches wrap the whole op in a lock or use a concurrent variant (segmented/striped). Interviewers love this follow-up.
 
+## What the interviewer probes for
+
+**What changes if the cache has to serve millions of QPS?** - A single lock around the map+DLL composition becomes the bottleneck long before the O(1) operations themselves do, since every `get` also mutates the list (moving the touched node to the front) and so can't be made read-only. The standard fix is **sharding**: split the keyspace across N independent LRU instances by `hash(key) % N`, each with its own lock, so contention drops by roughly N× - at the cost of the global eviction order becoming approximate (a key hot in one shard doesn't protect a cold key in another from being evicted, even if the second key is globally "more recent").
+
+**Why not just use a plain hash table with no eviction, or LFU instead?** - A plain hash table is simpler and uses half the memory, but only works if the working set is bounded by something other than the cache itself - once memory is the constraint, something has to decide what to throw away, and LRU's "recently touched stays" heuristic is the best default with zero knowledge of access patterns. LFU is the alternative when frequency, not recency, predicts reuse (a key hit constantly then briefly quiet shouldn't lose to a one-off scan) - but it costs an extra dimension of bookkeeping (frequency buckets plus a min-frequency pointer) for a win that only pays off on workloads with a real popularity skew.
+
+**Where's the actual lock contention, precisely?** - It's not the hash map lookup - it's the doubly linked list pointer updates. Every `get`, not just every `put`, mutates `prev`/`next` pointers to move the touched node to the front, so even a read-heavy workload serializes on the list splice. This is why some high-throughput caches relax strict LRU to an **approximate** scheme (e.g. CLOCK/second-chance, which uses a reference bit instead of a full reorder) - it trades exact recency ordering for lock-free or near-lock-free reads.
+
 ## Practice problems
 
 Three problems, each exercising a **distinct** technique that the LRU design teaches - no two solved the same way, and every entry genuinely depends on the map→node + doubly-linked-list splice mechanism this article is about.
@@ -326,6 +342,10 @@ class LRUCache:
 ```
 
 **Complexity:** O(1) per op, O(capacity) space.
+
+**Duplicate problems:**
+- Design In-Memory File System with LRU eviction (variant, no canonical LC number) - same map→node→splice mechanism applied to file handles instead of key/value pairs; the eviction and reorder logic is identical.
+- All O(1) Data Structure (LC 432) - a different data shape (needs both max and min in O(1)), but shares this problem's core insight of a hash map pointing into a doubly linked structure instead of storing values directly.
 
 ---
 

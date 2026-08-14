@@ -136,6 +136,27 @@ def test_toc_and_content_collapse_share_one_storage_key(page, base_url):
     assert both["toc"] and both["content"], f"both controls must restore collapsed after reload: {both}"
 
 
+def test_stale_heading_collapse_key_pruned_on_render(page, base_url):
+    """A heading-collapse key for an id no longer in the article is removed on next render."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _go_to_article(page, base_url)
+    page.wait_for_selector(".heading-collapse-btn", timeout=5_000)
+
+    stale_key = page.evaluate("""() => {
+        const wikiId = state.currentWikiId;
+        const slugBase = (state.currentFilePath || '').replace(/\\//g, '-');
+        const key = `wiki-heading-collapsed-${wikiId}-${slugBase}-no-longer-a-real-heading`;
+        localStorage.setItem(key, '1');
+        return key;
+    }""")
+
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector(".heading-collapse-btn", timeout=8_000)
+
+    value = page.evaluate("(k) => localStorage.getItem(k)", stale_key)
+    assert value is None, f"stale key {stale_key!r} must be pruned on next render, got {value!r}"
+
+
 # ── Breathing TOC states ─────────────────────────────────────────────
 
 def test_toc_current_class_applied(page, base_url):
@@ -181,6 +202,21 @@ def test_toc_passed_class_applied_after_scroll(page, base_url):
 
 
 # ── Per-heading collapse on content page ──────────────────────────────
+
+def test_heading_collapse_btn_matches_topbar_icon_scale(page, base_url):
+    """Desktop heading-collapse control uses the primary icon-button box, not the old 22px spec."""
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _go_to_article(page, base_url)
+    page.wait_for_selector(".heading-collapse-btn", timeout=8_000)
+    size = page.evaluate(
+        """() => {
+            const r = document.querySelector('.heading-collapse-btn').getBoundingClientRect();
+            return { width: r.width, height: r.height };
+        }"""
+    )
+    assert size["width"] >= 32, f"heading-collapse-btn width too small: {size['width']}px"
+    assert size["height"] >= 32, f"heading-collapse-btn height too small: {size['height']}px"
+
 
 def test_heading_collapse_btn_exists(page, base_url):
     """Each H2 in article body has a .heading-collapse-btn."""

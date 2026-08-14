@@ -23,8 +23,15 @@
 - [Comparison](#comparison)
 - [Variants](#variants)
 - [Traversal & invariant](#traversal--invariant)
+  - [The invariants](#the-invariants)
+  - [Ordering and search correctness](#ordering-and-search-correctness)
+  - [Why the copy-up (not move-up) on leaf splits matters](#why-the-copy-up-not-move-up-on-leaf-splits-matters)
+  - [Leaf-split invariant proof (induction)](#leaf-split-invariant-proof-induction)
+  - [Height derivation](#height-derivation)
+  - [What breaks if an invariant is violated](#what-breaks-if-an-invariant-is-violated)
 - [Implementation](#implementation)
 - [Gotchas / edge cases](#gotchas--edge-cases)
+- [What the interviewer probes for](#what-the-interviewer-probes-for)
 - [Practice problems](#practice-problems)
 
 ## What it is
@@ -197,6 +204,26 @@ The routing keys partition the key space at each level: descending child `cᵢ` 
 ### Why the copy-up (not move-up) on leaf splits matters
 
 In a B-tree, the median of a full node moves up and disappears from the child. In a B+ tree, the smallest key of the new right leaf is **copied** up - it stays at the leaf (that's where the data lives). Consequence: deleting a key from a leaf never requires updating an internal routing key, even if that key is a routing key. The internal key remains valid as a routing label. This asymmetry simplifies deletion and is the reason B+ trees are structurally cleaner for deletion-heavy workloads than B-trees.
+
+### Leaf-split invariant proof (induction)
+
+**Claim:** after any sequence of inserts, every leaf-split operation preserves all five invariants above - specifically, "all leaves at the same depth" and "all values at leaves."
+
+**Base case.** An empty B+ tree is a single leaf node at depth 0 - trivially, all (one) leaves are at the same depth, and all values (zero of them) are at that leaf. Both invariants hold vacuously.
+
+**Inductive hypothesis.** Assume a B+ tree of height `h` satisfies all five invariants: every leaf is at depth `h`, every value lives at a leaf, the leaf linked list is intact, every node's key count is within `[t-1, 2t-1]`, and the routing invariant holds at every internal node.
+
+**Inductive step - leaf split.** An insert that overflows a leaf `L` at depth `h` triggers `Split-Child`: `L`'s `2t` keys (after the new key is added) divide into a left half (`t` keys, stays as `L` at depth `h`) and a right half (`t-1` keys, becomes new leaf `L'` at depth `h`, linked immediately after `L`). Check each invariant:
+
+1. **Same depth.** `L` and `L'` are both at depth `h` - the split created a sibling at the *same* depth, not a new level. The only way depth changes is if the *parent* also overflows and the split cascades to the root (handled below). So depth-equality is preserved locally by construction.
+2. **All values at leaves.** The split moves the right half's key-value pairs from `L` into `L'` - both are leaves. Nothing is promoted to the parent except a **copy** of `L'`'s smallest key (the routing key). The actual value stays at the leaf. Invariant preserved by the copy-not-move rule.
+3. **Leaf linked list.** `L'.next = L.next; L.next = L'` splices `L'` into the list in O(1) - the list remains a valid sorted chain, since `L'`'s keys are exactly `L`'s largest keys (sorted split), so `L < L' < L.old_next` in key order.
+4. **Key counts.** `L` retains `t` keys (within `[t-1, 2t-1]` for `t ≥ 1`), `L'` gets `t-1` keys (exactly the floor, valid). Both satisfy the bound by construction of the split point.
+5. **Routing invariant.** The parent gains one new key (`L'`'s smallest key, call it `k`) and one new child pointer (to `L'`), inserted at the position that keeps `[..., k_prev, k, k_next, ...]` sorted. Since `k` is by definition the smallest key that moved to `L'`, every key in `L` is `< k` and every key in `L'` is `≥ k` - the partition property holds for the new child pair exactly as it held for the old single child.
+
+**Cascading case (parent also overflows).** If the parent's key count exceeds `2t-1` after gaining the routing key, the parent splits too - by the *same argument*, one level up: an internal-node split moves its median key up (not copies, since internal nodes carry no data invariant to preserve) and produces two siblings at the parent's depth, preserving the same-depth invariant at that level. If the cascade reaches the root, a **new root** is created one level higher, and by construction every leaf's depth increases by exactly 1 **simultaneously** (every root-to-leaf path passes through the old root, which is now one level deeper) - so "all leaves at the same depth" is preserved globally even though the tree height itself increased.
+
+**Conclusion.** Each split - leaf or internal, cascading or not - preserves all five invariants at the level it touches, and the simultaneous-depth-increase argument at the root handles the one case where height changes. By induction over the sequence of inserts, the invariants hold after any number of splits. ∎
 
 ### Height derivation
 
@@ -535,6 +562,14 @@ class BPlusTree:
 **5. Concurrent write contention on upper levels.** The top 2–3 internal levels are hot under concurrent writes. A naive global tree lock is a throughput bottleneck. Production systems use **lock coupling** (acquire child lock before releasing parent lock) or **optimistic latching** (validate no split happened after descending). For interviews: know that B+ tree concurrency is non-trivial and that B-link trees solve part of it by adding right-sibling pointers.
 
 **6. At-scale: write amplification.** Every insert that splits a leaf writes a new leaf node and updates the parent - even for a single-key insert. At `10⁷` inserts/sec on HDDs, split cascades cause bursts of random writes. SSDs mitigate this (faster random writes), but at very high insert rates, log-structured merge trees (LSM trees, as in RocksDB/LevelDB) outperform B+ trees on write throughput by converting random writes to sequential. The tradeoff: LSM read amplification vs B+ tree write amplification.
+
+## What the interviewer probes for
+
+**What happens when the table grows to a trillion rows?** - The tree stays remarkably shallow: with a realistic disk fan-out of `t ≈ 500`, height is `O(log_t n)` ≈ 4 even at 10¹² records, so the descent cost barely changes. What *does* change at that scale is where the bottleneck moves - it's no longer tree depth but (a) write throughput on monotonically-increasing keys, which serializes all inserts onto the single rightmost leaf and caps out around 10⁵ inserts/sec on one table, and (b) whether the top 2-3 levels still fit in the buffer pool; if they don't, every descent costs a cold I/O instead of one.
+
+**Why not just use a balanced BST (red-black tree) instead of a B+ tree?** - A red-black tree is O(log n) with two pointers per node, which is fine entirely in RAM, but on disk each node is a separate random I/O - a red-black tree over a billion keys needs ~30 levels, meaning ~30 disk seeks per lookup. A B+ tree's high fan-out (hundreds to thousands of keys per node) packs each level into one page, so the same billion keys need only 3-4 disk reads. The B+ tree is really "a BST reshaped so each node read amortizes one expensive disk I/O over hundreds of keys," not a fundamentally different search structure.
+
+**Does the B+ tree hold up under high-concurrency writes?** - The top few internal levels (root and its immediate children) are touched by every insert and become a latch-contention hotspot, since a naive implementation would need to hold a lock on the root while descending. Production systems use lock coupling (grab the child's lock before releasing the parent's, so only the active path is ever locked) or optimistic latching (descend without locking, then re-validate no split occurred), and B-link trees add right-sibling pointers specifically so a reader can recover from a concurrent split without ever blocking on the root.
 
 ## Practice problems
 

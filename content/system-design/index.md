@@ -40,6 +40,7 @@ Core algorithms and distributed systems concepts that appear across multiple HLD
 
 | Topic                                                                | Description                                                     |
 | -------------------------------------------------------------------- | --------------------------------------------------------------- |
+| [Consistency Models](./algorithms/consistency-models.md)             | Linearizability, causal consistency, read-your-writes, eventual consistency spectrum |
 | [Consistent Hashing](./algorithms/consistent-hashing.md)             | Ring-based key distribution, virtual nodes, rebalancing         |
 | [Bloom Filter](./algorithms/bloom-filter.md)                         | Probabilistic set membership, false positives, space trade-offs |
 | [CAP Theorem](./algorithms/cap-theorem.md)                           | Consistency, availability, partition tolerance trade-offs       |
