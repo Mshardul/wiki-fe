@@ -296,12 +296,12 @@ Always verify: "what exactly does the recursive call return, and does my combine
 
 ```
 function DIVIDE_AND_CONQUER(A, lo, hi)
-1.  if hi - lo ≤ THRESHOLD then
-2.      return BASE_CASE(A, lo, hi)
-3.  mid ← lo + ⌊(hi - lo) / 2⌋
-4.  left  ← DIVIDE_AND_CONQUER(A, lo, mid)
-5.  right ← DIVIDE_AND_CONQUER(A, mid + 1, hi)
-6.  return COMBINE(left, right)
+    if hi - lo ≤ THRESHOLD then
+        return BASE_CASE(A, lo, hi)
+    mid ← lo + ⌊(hi - lo) / 2⌋
+    left  ← DIVIDE_AND_CONQUER(A, lo, mid)
+    right ← DIVIDE_AND_CONQUER(A, mid + 1, hi)
+    return COMBINE(left, right)
 ```
 
 ### Concrete: Count Inversions (augmented merge sort)
@@ -312,21 +312,21 @@ This is the paradigm in non-trivial form. The combine step does real work - coun
 
 ```
 function MERGE_COUNT(A, lo, hi) → (sorted_array, count)
-1.  if lo ≥ hi then
-2.      return ⟨[A[lo]], 0⟩               ▷ singleton: sorted, 0 inversions
-3.  mid ← lo + ⌊(hi - lo) / 2⌋
-4.  ⟨L, lc⟩ ← MERGE_COUNT(A, lo, mid)
-5.  ⟨R, rc⟩ ← MERGE_COUNT(A, mid + 1, hi)
-6.  ▷ Merge L and R, counting cross-inversions
-7.  merged ← [], cross ← 0, i ← 1, j ← 1
-8.  while i ≤ |L| and j ≤ |R| do
-9.      if L[i] ≤ R[j] then
-10.         append L[i] to merged; i ← i + 1
-11.     else
-12.         cross ← cross + (|L| − i + 1)  ▷ all remaining L[i..] beat R[j]
-13.         append R[j] to merged; j ← j + 1
-14. append remaining L[i..] and R[j..] to merged
-15. return ⟨merged, lc + rc + cross⟩
+    if lo ≥ hi then
+        return ⟨[A[lo]], 0⟩               ▷ singleton: sorted, 0 inversions
+    mid ← lo + ⌊(hi - lo) / 2⌋
+    ⟨L, lc⟩ ← MERGE_COUNT(A, lo, mid)
+    ⟨R, rc⟩ ← MERGE_COUNT(A, mid + 1, hi)
+    ▷ Merge L and R, counting cross-inversions
+    merged ← [], cross ← 0, i ← 1, j ← 1
+    while i ≤ |L| and j ≤ |R| do
+        if L[i] ≤ R[j] then
+            append L[i] to merged; i ← i + 1
+        else
+            cross ← cross + (|L| − i + 1)  ▷ all remaining L[i..] beat R[j]
+            append R[j] to merged; j ← j + 1
+    append remaining L[i..] and R[j..] to merged
+    return ⟨merged, lc + rc + cross⟩
 ```
 
 **Python:**

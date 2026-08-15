@@ -12,6 +12,8 @@ Foundational building blocks. Each page covers mechanics, trade-offs, failure mo
 | ------------------------------------------------------------------------------ | ---------------------------------------------------------------- | -------------------------------------------------------------- | --- |
 | [Message Queues](./components/message-queues.md)                               | Async messaging, delivery semantics, backpressure, partitioning  |
 | [DNS](./components/dns.md)                                                     | Domain resolution, record types, caching, propagation            |
+| [Logging](./components/logging.md)                                            | Structured logging, aggregation pipeline, storage/indexing trade-offs |
+| [Metrics](./components/metrics.md)                                             | Counters/gauges/histograms, push vs pull, cardinality cost            |
 | [Load Balancer](./components/load-balancer.md)                                 | Traffic distribution, algorithms, health checks, L4 vs L7        |
 | [CDN](./components/cdn.md)                                                     | Edge caching, cache invalidation, origin offload                 |
 | [Caching](./components/caching.md)                                             | In-memory caching, eviction policies, distributed cache patterns |
@@ -51,6 +53,7 @@ Core algorithms and distributed systems concepts that appear across multiple HLD
 | [Circuit Breaker](./algorithms/circuit-breaker.md)                   | Failure detection, states, fallback strategies                  |
 | [Consensus (Raft / Paxos)](./algorithms/consensus-raft-paxos.md)     | Leader election, log replication, split-brain prevention        |
 | [Saga Pattern](./algorithms/saga-pattern.md)                         | Distributed transactions, choreography vs orchestration         |
+| [Idempotency](./algorithms/idempotency.md)                           | Safe retries, dedup keys, natural vs key-based vs server-derived |
 
 ---
 
@@ -72,8 +75,8 @@ End-to-end system design walkthroughs. Each page includes prerequisites, a TLDR,
 | [Ticketmaster / Booking](./hld/ticketmaster-booking.md)           | Inventory locking, concurrency, seat reservation           |
 | [Distributed Cache](./hld/distributed-cache.md)                   | Consistent hashing, eviction, replication, thundering herd |
 | [Payment System](./hld/payment-system.md)                         | Idempotency, exactly-once, ledger design, fraud detection  |
-| [Distributed ID Generator](./hld/distributed-id-generator.md)     | Snowflake IDs, clock skew, monotonicity                    |
-| [Key-Value Store](./hld/key-value-store.md)                       | LSM tree, compaction, replication, consistency             |
+| [Distributed ID Generator](./hld/distributed-id-generator.md)     | Snowflake IDs, worker ID leasing, clock skew               |
+| [Key-Value Store](./hld/key-value-store.md)                       | LSM-tree vs B-tree, quorum consistency, conflict resolution |
 
 ---
 

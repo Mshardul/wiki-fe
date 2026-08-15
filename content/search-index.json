@@ -16,6 +16,18 @@
           "description": "Domain resolution, record types, caching, propagation"
         },
         {
+          "title": "Logging",
+          "path": "./content/system-design/components/logging.md",
+          "slug": "logging",
+          "description": "Structured logging, aggregation pipeline, storage/indexing trade-offs"
+        },
+        {
+          "title": "Metrics",
+          "path": "./content/system-design/components/metrics.md",
+          "slug": "metrics",
+          "description": "Counters/gauges/histograms, push vs pull, cardinality cost"
+        },
+        {
           "title": "Load Balancer",
           "path": "./content/system-design/components/load-balancer.md",
           "slug": "load-balancer",
@@ -199,6 +211,12 @@
           "path": "./content/system-design/algorithms/saga-pattern.md",
           "slug": "saga-pattern",
           "description": "Distributed transactions, choreography vs orchestration"
+        },
+        {
+          "title": "Idempotency",
+          "path": "./content/system-design/algorithms/idempotency.md",
+          "slug": "idempotency",
+          "description": "Safe retries, dedup keys, natural vs key-based vs server-derived"
         }
       ]
     },
@@ -281,13 +299,13 @@
           "title": "Distributed ID Generator",
           "path": "./content/system-design/hld/distributed-id-generator.md",
           "slug": "distributed-id-generator",
-          "description": "Snowflake IDs, clock skew, monotonicity"
+          "description": "Snowflake IDs, worker ID leasing, clock skew"
         },
         {
           "title": "Key-Value Store",
           "path": "./content/system-design/hld/key-value-store.md",
           "slug": "key-value-store",
-          "description": "LSM tree, compaction, replication, consistency"
+          "description": "LSM-tree vs B-tree, quorum consistency, conflict resolution"
         }
       ]
     },
@@ -509,6 +527,12 @@
           "path": "./content/dsa/algorithms/big-o-notation.md",
           "slug": "big-o-notation",
           "description": "Growth-rate analysis: count operations, keep the dominant term, drop constants - Master theorem for recurrences, arithmetic series for loops."
+        },
+        {
+          "title": "Amortized Analysis",
+          "path": "./content/dsa/algorithms/amortized-analysis.md",
+          "slug": "amortized-analysis",
+          "description": "Bound the average cost over a worst-case sequence - aggregate, accounting, and potential-function proofs for why an occasional O(n) op is still O(1) on average."
         },
         {
           "title": "Binary Search",
@@ -952,6 +976,12 @@
           "path": "./content/dsa/patterns/top-k-elements.md",
           "slug": "top-k-elements",
           "description": "A size-k heap over a stream. K largest/smallest/most-frequent in O(n log k) without sorting everything."
+        },
+        {
+          "title": "Problem-Solving Framework",
+          "path": "./content/dsa/patterns/problem-solving-framework.md",
+          "slug": "problem-solving-framework",
+          "description": "Clarify → plan → code → verify → optimize - the repeatable loop for an unseen problem, plus escape hatches when stuck."
         }
       ]
     },

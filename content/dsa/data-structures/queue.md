@@ -237,7 +237,7 @@ class CircularQueue(Generic[T]):
 from collections import deque
 
 q = deque()
-q.append(x)
+q.append(42)
 front = q[0]       # peek front (guard `if q`)
 val = q.popleft()  # NOT list.pop(0), which is O(n)
 ```

@@ -306,7 +306,8 @@ def build_matrix(
 **1. Disconnected graphs - not every node is reachable from the source.**
 BFS/DFS from a single source only visits the source's connected component. To visit all nodes, wrap the traversal in a loop over all vertices:
 ```python
-for start in range(n):
+visited = set()
+for start in range(len(graph)):
     if start not in visited:
         dfs(graph, start, visited)
 ```

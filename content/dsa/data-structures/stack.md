@@ -218,7 +218,7 @@ class Stack(Generic[T]):
 
 ```python
 st = []
-st.append(x)
+st.append(42)
 top = st[-1]     # peek (guard `if st` first)
 val = st.pop()
 if not st: ...   # empty check

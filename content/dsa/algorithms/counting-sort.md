@@ -161,11 +161,11 @@ COUNTING-SORT(A, k)                       ▷ keys in 0..k-1
 let C[0..k-1] and B[1..A.length] be new arrays
 for v ← 0 to k − 1
     C[v] ← 0
-for i ← 1 to A.length                 ▷ Step 1: tally occurrences
+for i ← 1 to A.length                 ▷ tally occurrences
     C[A[i]] ← C[A[i]] + 1
-for v ← 1 to k − 1                     ▷ Step 2: prefix sum → #elements ≤ v
+for v ← 1 to k − 1                     ▷ prefix sum → #elements ≤ v
     C[v] ← C[v] + C[v − 1]
-for i ← A.length downto 1             ▷ Step 3: place, right-to-left ⇒ STABLE
+for i ← A.length downto 1             ▷ place, right-to-left ⇒ STABLE
     B[C[A[i]]] ← A[i]
     C[A[i]] ← C[A[i]] − 1
 return B

@@ -201,6 +201,10 @@
       "title": "Fenwick Tree (BIT)"
     },
     {
+      "path": "./content/dsa/algorithms/amortized-analysis.md",
+      "title": "Amortized Analysis"
+    },
+    {
       "path": "./content/dsa/algorithms/binary-search.md",
       "title": "Binary Search"
     },
@@ -1601,6 +1605,10 @@
   ],
   "./content/dsa/data-structures/b-plus-tree.md": [
     {
+      "path": "./content/system-design/hld/key-value-store.md",
+      "title": "Key-Value Store"
+    },
+    {
       "path": "./content/dsa/data-structures/b-tree.md",
       "title": "B-Tree"
     },
@@ -1943,6 +1951,10 @@
     {
       "path": "./content/dsa/algorithms/big-o-notation.md",
       "title": "Big-O Notation"
+    },
+    {
+      "path": "./content/dsa/algorithms/amortized-analysis.md",
+      "title": "Amortized Analysis"
     },
     {
       "path": "./content/dsa/algorithms/string-matching.md",
@@ -3139,6 +3151,12 @@
       "title": "CP-weighted"
     }
   ],
+  "./content/dsa/patterns/pattern-selection-cheatsheet.md": [
+    {
+      "path": "./content/dsa/patterns/problem-solving-framework.md",
+      "title": "Problem-Solving Framework"
+    }
+  ],
   "./content/dsa/patterns/prefix-sum.md": [
     {
       "path": "./content/dsa/data-structures/deque.md",
@@ -3485,6 +3503,10 @@
   ],
   "./content/system-design/algorithms/acid-vs-base.md": [
     {
+      "path": "./content/system-design/components/databases.md",
+      "title": "Databases"
+    },
+    {
       "path": "./content/system-design/algorithms/consistency-models.md",
       "title": "Consistency Models"
     },
@@ -3493,11 +3515,19 @@
       "title": "CAP Theorem"
     },
     {
+      "path": "./content/system-design/algorithms/saga-pattern.md",
+      "title": "Saga Pattern"
+    },
+    {
       "path": "./content/system-design/paths/hld-interview-loop.md",
       "title": "HLD Interview Loop"
     }
   ],
   "./content/system-design/algorithms/bloom-filter.md": [
+    {
+      "path": "./content/system-design/hld/key-value-store.md",
+      "title": "Key-Value Store"
+    },
     {
       "path": "./content/system-design/paths/distributed-depth.md",
       "title": "Distributed Depth"
@@ -3517,11 +3547,35 @@
       "title": "Consistency Models"
     },
     {
+      "path": "./content/system-design/algorithms/acid-vs-base.md",
+      "title": "ACID vs BASE"
+    },
+    {
+      "path": "./content/system-design/algorithms/replication-strategies.md",
+      "title": "Replication Strategies"
+    },
+    {
+      "path": "./content/system-design/algorithms/consensus-raft-paxos.md",
+      "title": "Consensus (Raft / Paxos)"
+    },
+    {
+      "path": "./content/system-design/algorithms/idempotency.md",
+      "title": "Idempotency"
+    },
+    {
+      "path": "./content/system-design/hld/key-value-store.md",
+      "title": "Key-Value Store"
+    },
+    {
       "path": "./content/system-design/paths/hld-interview-loop.md",
       "title": "HLD Interview Loop"
     }
   ],
   "./content/system-design/algorithms/circuit-breaker.md": [
+    {
+      "path": "./content/system-design/hld/distributed-cache.md",
+      "title": "Distributed Cache"
+    },
     {
       "path": "./content/system-design/paths/hld-interview-loop.md",
       "title": "HLD Interview Loop"
@@ -3533,6 +3587,22 @@
       "title": "Message Queues"
     },
     {
+      "path": "./content/system-design/components/blob-object-storage.md",
+      "title": "Blob / Object Storage"
+    },
+    {
+      "path": "./content/system-design/components/distributed-file-system.md",
+      "title": "Distributed File System"
+    },
+    {
+      "path": "./content/system-design/algorithms/replication-strategies.md",
+      "title": "Replication Strategies"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-id-generator.md",
+      "title": "Distributed ID Generator"
+    },
+    {
       "path": "./content/system-design/paths/distributed-depth.md",
       "title": "Distributed Depth"
     }
@@ -3541,12 +3611,24 @@
     {
       "path": "./content/system-design/algorithms/cap-theorem.md",
       "title": "CAP Theorem"
+    },
+    {
+      "path": "./content/system-design/algorithms/acid-vs-base.md",
+      "title": "ACID vs BASE"
+    },
+    {
+      "path": "./content/system-design/algorithms/replication-strategies.md",
+      "title": "Replication Strategies"
     }
   ],
   "./content/system-design/algorithms/consistent-hashing.md": [
     {
       "path": "./content/system-design/components/load-balancer.md",
       "title": "Load Balancer"
+    },
+    {
+      "path": "./content/system-design/components/cdn.md",
+      "title": "CDN"
     },
     {
       "path": "./content/system-design/components/caching.md",
@@ -3557,12 +3639,46 @@
       "title": "Rate Limiter"
     },
     {
+      "path": "./content/system-design/components/blob-object-storage.md",
+      "title": "Blob / Object Storage"
+    },
+    {
+      "path": "./content/system-design/algorithms/sharding-strategies.md",
+      "title": "Sharding Strategies"
+    },
+    {
+      "path": "./content/system-design/hld/url-shortener.md",
+      "title": "URL Shortener"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-cache.md",
+      "title": "Distributed Cache"
+    },
+    {
+      "path": "./content/system-design/hld/key-value-store.md",
+      "title": "Key-Value Store"
+    },
+    {
       "path": "./content/system-design/paths/hld-interview-loop.md",
       "title": "HLD Interview Loop"
     },
     {
       "path": "./content/dsa/data-structures/hash-table.md",
       "title": "Hash Table"
+    }
+  ],
+  "./content/system-design/algorithms/idempotency.md": [
+    {
+      "path": "./content/system-design/algorithms/circuit-breaker.md",
+      "title": "Circuit Breaker"
+    },
+    {
+      "path": "./content/system-design/algorithms/consensus-raft-paxos.md",
+      "title": "Consensus (Raft / Paxos)"
+    },
+    {
+      "path": "./content/system-design/algorithms/saga-pattern.md",
+      "title": "Saga Pattern"
     }
   ],
   "./content/system-design/algorithms/rate-limiting-algorithms.md": [
@@ -3585,12 +3701,48 @@
       "title": "Caching"
     },
     {
+      "path": "./content/system-design/components/databases.md",
+      "title": "Databases"
+    },
+    {
+      "path": "./content/system-design/components/blob-object-storage.md",
+      "title": "Blob / Object Storage"
+    },
+    {
+      "path": "./content/system-design/components/distributed-file-system.md",
+      "title": "Distributed File System"
+    },
+    {
+      "path": "./content/system-design/components/search.md",
+      "title": "Search"
+    },
+    {
       "path": "./content/system-design/algorithms/consistency-models.md",
       "title": "Consistency Models"
     },
     {
       "path": "./content/system-design/algorithms/cap-theorem.md",
       "title": "CAP Theorem"
+    },
+    {
+      "path": "./content/system-design/algorithms/acid-vs-base.md",
+      "title": "ACID vs BASE"
+    },
+    {
+      "path": "./content/system-design/algorithms/sharding-strategies.md",
+      "title": "Sharding Strategies"
+    },
+    {
+      "path": "./content/system-design/algorithms/consensus-raft-paxos.md",
+      "title": "Consensus (Raft / Paxos)"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-cache.md",
+      "title": "Distributed Cache"
+    },
+    {
+      "path": "./content/system-design/hld/key-value-store.md",
+      "title": "Key-Value Store"
     },
     {
       "path": "./content/system-design/paths/distributed-depth.md",
@@ -3603,11 +3755,31 @@
       "title": "Message Queues"
     },
     {
+      "path": "./content/system-design/algorithms/sharding-strategies.md",
+      "title": "Sharding Strategies"
+    },
+    {
       "path": "./content/system-design/paths/distributed-depth.md",
       "title": "Distributed Depth"
     }
   ],
   "./content/system-design/algorithms/sharding-strategies.md": [
+    {
+      "path": "./content/system-design/components/distributed-file-system.md",
+      "title": "Distributed File System"
+    },
+    {
+      "path": "./content/system-design/components/search.md",
+      "title": "Search"
+    },
+    {
+      "path": "./content/system-design/algorithms/replication-strategies.md",
+      "title": "Replication Strategies"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-id-generator.md",
+      "title": "Distributed ID Generator"
+    },
     {
       "path": "./content/system-design/paths/distributed-depth.md",
       "title": "Distributed Depth"
@@ -3620,6 +3792,10 @@
     }
   ],
   "./content/system-design/components/authentication.md": [
+    {
+      "path": "./content/system-design/components/api-gateway.md",
+      "title": "API Gateway"
+    },
     {
       "path": "./content/system-design/components/session-auth.md",
       "title": "Session-Based Authentication"
@@ -3651,14 +3827,42 @@
   ],
   "./content/system-design/components/blob-object-storage.md": [
     {
+      "path": "./content/system-design/components/distributed-file-system.md",
+      "title": "Distributed File System"
+    },
+    {
       "path": "./content/system-design/paths/components-foundation.md",
       "title": "Components Foundation"
     }
   ],
   "./content/system-design/components/caching.md": [
     {
+      "path": "./content/system-design/components/dns.md",
+      "title": "DNS"
+    },
+    {
+      "path": "./content/system-design/components/cdn.md",
+      "title": "CDN"
+    },
+    {
+      "path": "./content/system-design/components/api-gateway.md",
+      "title": "API Gateway"
+    },
+    {
       "path": "./content/system-design/components/rate-limiter.md",
       "title": "Rate Limiter"
+    },
+    {
+      "path": "./content/system-design/components/search.md",
+      "title": "Search"
+    },
+    {
+      "path": "./content/system-design/hld/url-shortener.md",
+      "title": "URL Shortener"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-cache.md",
+      "title": "Distributed Cache"
     },
     {
       "path": "./content/system-design/paths/components-foundation.md",
@@ -3679,17 +3883,29 @@
       "title": "Caching"
     },
     {
+      "path": "./content/system-design/components/blob-object-storage.md",
+      "title": "Blob / Object Storage"
+    },
+    {
       "path": "./content/system-design/paths/components-foundation.md",
       "title": "Components Foundation"
     }
   ],
   "./content/system-design/components/databases.md": [
     {
+      "path": "./content/system-design/hld/url-shortener.md",
+      "title": "URL Shortener"
+    },
+    {
       "path": "./content/system-design/paths/components-foundation.md",
       "title": "Components Foundation"
     }
   ],
   "./content/system-design/components/distributed-file-system.md": [
+    {
+      "path": "./content/system-design/components/blob-object-storage.md",
+      "title": "Blob / Object Storage"
+    },
     {
       "path": "./content/system-design/paths/components-foundation.md",
       "title": "Components Foundation"
@@ -3699,6 +3915,10 @@
     {
       "path": "./content/system-design/components/load-balancer.md",
       "title": "Load Balancer"
+    },
+    {
+      "path": "./content/system-design/components/cdn.md",
+      "title": "CDN"
     },
     {
       "path": "./content/system-design/paths/components-foundation.md",
@@ -3721,6 +3941,14 @@
   ],
   "./content/system-design/components/load-balancer.md": [
     {
+      "path": "./content/system-design/components/dns.md",
+      "title": "DNS"
+    },
+    {
+      "path": "./content/system-design/components/api-gateway.md",
+      "title": "API Gateway"
+    },
+    {
       "path": "./content/system-design/components/rate-limiter.md",
       "title": "Rate Limiter"
     },
@@ -3729,11 +3957,31 @@
       "title": "Consistent Hashing"
     },
     {
+      "path": "./content/system-design/algorithms/circuit-breaker.md",
+      "title": "Circuit Breaker"
+    },
+    {
       "path": "./content/system-design/paths/components-foundation.md",
       "title": "Components Foundation"
     }
   ],
   "./content/system-design/components/message-queues.md": [
+    {
+      "path": "./content/system-design/components/logging.md",
+      "title": "Logging"
+    },
+    {
+      "path": "./content/system-design/components/metrics.md",
+      "title": "Metrics"
+    },
+    {
+      "path": "./content/system-design/algorithms/saga-pattern.md",
+      "title": "Saga Pattern"
+    },
+    {
+      "path": "./content/system-design/algorithms/idempotency.md",
+      "title": "Idempotency"
+    },
     {
       "path": "./content/system-design/paths/components-foundation.md",
       "title": "Components Foundation"
@@ -3763,6 +4011,10 @@
   ],
   "./content/system-design/components/proxies.md": [
     {
+      "path": "./content/system-design/components/api-gateway.md",
+      "title": "API Gateway"
+    },
+    {
       "path": "./content/system-design/paths/components-foundation.md",
       "title": "Components Foundation"
     }
@@ -3771,6 +4023,14 @@
     {
       "path": "./content/system-design/components/load-balancer.md",
       "title": "Load Balancer"
+    },
+    {
+      "path": "./content/system-design/components/api-gateway.md",
+      "title": "API Gateway"
+    },
+    {
+      "path": "./content/system-design/algorithms/rate-limiting-algorithms.md",
+      "title": "Rate Limiting Algorithms"
     },
     {
       "path": "./content/system-design/paths/components-foundation.md",
@@ -3788,6 +4048,14 @@
     }
   ],
   "./content/system-design/components/service-discovery.md": [
+    {
+      "path": "./content/system-design/components/metrics.md",
+      "title": "Metrics"
+    },
+    {
+      "path": "./content/system-design/components/api-gateway.md",
+      "title": "API Gateway"
+    },
     {
       "path": "./content/system-design/paths/components-foundation.md",
       "title": "Components Foundation"
@@ -3816,6 +4084,10 @@
     }
   ],
   "./content/system-design/hld/distributed-cache.md": [
+    {
+      "path": "./content/system-design/hld/url-shortener.md",
+      "title": "URL Shortener"
+    },
     {
       "path": "./content/system-design/paths/hld-interview-loop.md",
       "title": "HLD Interview Loop"
@@ -3850,6 +4122,10 @@
     }
   ],
   "./content/system-design/hld/payment-system.md": [
+    {
+      "path": "./content/system-design/algorithms/idempotency.md",
+      "title": "Idempotency"
+    },
     {
       "path": "./content/system-design/paths/distributed-depth.md",
       "title": "Distributed Depth"

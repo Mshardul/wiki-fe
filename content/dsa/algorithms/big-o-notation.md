@@ -79,6 +79,7 @@ Each family grows strictly faster than the one before it - not just "usually fas
 **Deriving O(n²) from a nested loop, precisely.** Consider:
 
 ```python
+n = len(arr)  # n is the input size being analyzed
 total = 0
 for i in range(n):
     for j in range(i, n):

@@ -52,6 +52,7 @@ Procedures with correctness intuition. Each page covers the worked example, the 
 | Algorithm                                                                       | Description                                                                                                                                                 |
 | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Big-O Notation](./algorithms/big-o-notation.md)                                | Growth-rate analysis: count operations, keep the dominant term, drop constants - Master theorem for recurrences, arithmetic series for loops.               |
+| [Amortized Analysis](./algorithms/amortized-analysis.md)                        | Bound the average cost over a worst-case sequence - aggregate, accounting, and potential-function proofs for why an occasional O(n) op is still O(1) on average. |
 | [Binary Search](./algorithms/binary-search.md)                                  | Halve a sorted search space each step - O(log n). Generalizes to any monotonic predicate, the basis of "binary search on the answer".                       |
 | [Sorting](./algorithms/sorting.md)                                              | Comparison sorts bottom out at O(n log n) (merge/quick/heap); counting & radix break it to O(n) on bounded keys. Stability, the lower bound.                |
 | [Merge Sort](./algorithms/merge-sort.md)                                        | Divide in half, sort each, merge. Guaranteed O(n log n) in all cases and stable, at O(n) space - the safe choice and the basis of external sort.            |
@@ -135,6 +136,7 @@ Recognition and transfer. Each page covers trigger phrases, structural cues, a r
 | [Graph Coloring](./patterns/graph-coloring.md)                              | Assign colors to nodes so no two adjacent nodes match. 2-coloring (bipartite check) in O(V + E); k-coloring for k ≥ 3 is NP-complete - backtracking for small n, bitmask DP for n ≤ 20. |
 | [Meet in the Middle](./patterns/meet-in-the-middle.md)                      | Split an exponential search space in half, enumerate each independently (2^(n/2) each), sort one, binary-search from the other. Turns O(2ⁿ) into O(2^(n/2) · n) - the go-to for n ≤ 40 subset-sum problems. |
 | [Top-K Elements](./patterns/top-k-elements.md)                              | A size-k heap over a stream. K largest/smallest/most-frequent in O(n log k) without sorting everything.                        |
+| [Problem-Solving Framework](./patterns/problem-solving-framework.md)       | Clarify → plan → code → verify → optimize - the repeatable loop for an unseen problem, plus escape hatches when stuck.         |
 
 ---
 
@@ -183,6 +185,5 @@ Rollout tracking + known gaps: `docs/_meta/plans/dsa-cheatsheets-rollout.md`.
 - Fibonacci Heap - one sentence in dijkstra.md suffices
 - Memoization Table - technique inside dynamic-programming.md, not a standalone DS
 - Adjacency List / Matrix - covered in graph.md (Representations section)
-- Problem-Solving Framework - meta article, non-standard format; pending
 
 ---

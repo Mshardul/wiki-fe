@@ -9,7 +9,34 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-08-16
+- `system-design/hld/distributed-id-generator.md` - filled stub: Snowflake bit layout, worker ID leasing, clock skew handling, generation strategy trade-offs
+- `system-design/hld/key-value-store.md` - filled stub: LSM-tree vs B-tree, consistent hashing + quorum consistency, LWW vs vector clocks, compaction deep-dive
+- `system-design/components/metrics.md` - filled stub: metric types, push vs pull collection, cardinality cost, aggregation trade-offs
+- `system-design/algorithms/sharding-strategies.md` - filled stub: range/hash/directory-based sharding, rebalancing cost per strategy, cross-shard operations, shard key selection
+- `system-design/components/distributed-file-system.md` - filled stub: metadata/data split, metadata federation, rack-aware placement, HDFS HA failover mechanics
+- `system-design/components/search.md` - filled stub: inverted index mechanics, TF-IDF/BM25 ranking, distributed scatter-gather search, indexing freshness
+- `system-design/algorithms/consensus-raft-paxos.md` - filled stub: Paxos two-phase protocol, Raft leader election/log replication, quorum safety, split-brain vs stale-leader-read distinction
+- `system-design/algorithms/rate-limiting-algorithms.md` - filled stub: token/leaky bucket, fixed/sliding window mechanics, complexity comparison, boundary spike problem
+- `system-design/components/blob-object-storage.md` - filled stub: immutable-object model, multipart upload, erasure coding vs replication, storage-class selection
+
 ## 2026-08-15
+- `system-design/components/dns.md` - filled stub: record types, resolution hierarchy, DNS as a traffic-steering layer, TTL failover limits
+- `system-design/hld/distributed-cache.md` - filled stub: consistent-hash partitioning, async replication, eviction, rebalancing without a stampede
+- `system-design/hld/url-shortener.md` - filled stub: distributed short-code generation, key-value storage, redirect-path caching
+- `system-design/components/logging.md` - filled stub: structured logging, aggregation pipeline, storage/indexing trade-offs
+- `system-design/algorithms/circuit-breaker.md` - filled stub: three-state failure detection, half-open recovery, fallback strategies
+- `system-design/algorithms/replication-strategies.md` - filled stub: sync vs async replication, single/multi-leader/leaderless topologies, quorum reads/writes
+- `system-design/components/databases.md` - filled stub: SQL vs NoSQL, B-tree vs LSM-tree storage engines, indexing, isolation levels
+- `system-design/algorithms/acid-vs-base.md` - filled stub: ACID transaction guarantees vs BASE eventual-consistency model, isolation levels, real-world usage
+- `system-design/algorithms/saga-pattern.md` - filled stub: distributed transactions via compensating actions, choreography vs orchestration
+- `system-design/components/api-gateway.md` - filled stub: edge routing/auth/rate-limiting/transformation layer, gateway vs load balancer vs mesh
+- `system-design/components/cdn.md` - filled stub: edge PoP topology, anycast/GeoDNS routing, cache invalidation propagation, origin offload
+- `dsa/patterns/problem-solving-framework.md` - new article (cheatsheet): the clarify/plan/code/verify/optimize loop for an unseen interview problem
+- `system-design/algorithms/idempotency.md` - new article: natural/key-based/server-derived idempotency, retriable vs idempotent, exactly-once vs idempotent consumers
+- `dsa/algorithms/amortized-analysis.md` - new article: aggregate/accounting/potential-method proofs, worked dynamic-array doubling derivation
+- `dsa/algorithms/divide-and-conquer.md`, `dsa/algorithms/counting-sort.md` - hygiene: stripped manual CLRS step numbers from pseudocode
+- `dsa/data-structures/stack.md`, `dsa/data-structures/queue.md`, `dsa/data-structures/hash-set.md`, `dsa/algorithms/big-o-notation.md`, `dsa/data-structures/graph.md` - hygiene: replaced undefined snippet placeholder variables with literals/bound values
 - `dsa/data-structures/queue.md` - restructure: removed duplicate "Design Circular Queue" worked Practice entry (already canonical on circular-buffer.md); merged duplicate Variants entries for circular buffer/queue naming
 - 29 files across `dsa/data-structures/` - added cross-link to the Data Structure Selection cheatsheet at the end of each local Comparison section
 - `dsa/data-structures/dynamic-array.md` - hygiene: fixed missing blank line between Prerequisites and Table of Contents headings

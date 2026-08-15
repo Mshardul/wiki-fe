@@ -194,9 +194,9 @@ class HashSet(Generic[T]):
 
 ```python
 seen: set[int] = set()
-seen.add(x)
-x in seen                     # O(1) membership
-seen.discard(x)                # remove without KeyError if absent
+seen.add(42)
+42 in seen                     # O(1) membership
+seen.discard(42)                # remove without KeyError if absent
 
 a, b = {1, 2, 3}, {2, 3, 4}
 a & b, a | b, a - b            # intersection, union, difference - all near-linear
