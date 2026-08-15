@@ -2654,7 +2654,10 @@ def test_progress_ring_advances_on_scroll(page, base_url):
         "() => parseFloat(document.querySelector('.scroll-top-ring-fill')?.getAttribute('stroke-dashoffset') ?? '999')"
     )
     page.evaluate("() => window.scrollTo({ top: 2000, behavior: 'instant' })")
-    page.wait_for_timeout(200)
+    page.wait_for_function(
+        f"() => parseFloat(document.querySelector('.scroll-top-ring-fill')?.getAttribute('stroke-dashoffset') ?? '999') !== {offset_before}",
+        timeout=3_000,
+    )
     offset_after = page.evaluate(
         "() => parseFloat(document.querySelector('.scroll-top-ring-fill')?.getAttribute('stroke-dashoffset') ?? '999')"
     )

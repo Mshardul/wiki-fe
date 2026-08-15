@@ -169,8 +169,3 @@
   border-color: var(--border);
   background: var(--surface-2);
 }
-@media (max-width: 768px) {
-  .markdown-body blockquote.callout--collapsible {
-    max-height: 120px;
-  }
-}

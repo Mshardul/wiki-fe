@@ -383,12 +383,6 @@
   opacity: 1;
   pointer-events: auto;
 }
-@media (max-width: 640px) {
-  .topbar-title {
-    display: none;
-  }
-}
-
 /* ═══════════════════════════════════════════════
    ICON TOOLTIP (header icon buttons)
    ═══════════════════════════════════════════════ */

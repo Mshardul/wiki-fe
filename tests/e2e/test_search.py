@@ -1085,7 +1085,10 @@ def test_search_modal_resizes_when_visual_viewport_shrinks(wiki_page):
     # Shrinking the actual viewport approximates what visualViewport.height does
     # when a keyboard opens (dvh-based layout would not react to this on a real device).
     wiki_page.set_viewport_size({"width": 390, "height": 500})
-    wiki_page.wait_for_timeout(200)
+    wiki_page.wait_for_function(
+        f"() => document.querySelector('.gsearch-dialog').getBoundingClientRect().height < {full_height}",
+        timeout=3_000,
+    )
 
     shrunk_height = wiki_page.evaluate(
         "() => document.querySelector('.gsearch-dialog').getBoundingClientRect().height"
@@ -1156,7 +1159,7 @@ def test_scope_btn_44px_on_coarse_pointer(browser, base_url, cdn_cache):
             page.route(url, _make_cdn_fulfill_handler(body, content_type))
 
         page.goto(f"{base_url}/", wait_until="domcontentloaded")
-        page.wait_for_timeout(200)
+        page.wait_for_selector("#view-home.active", timeout=8_000)
         page.keyboard.press("Meta+k")
         page.wait_for_selector("#global-search-modal:not(.hidden)")
         page.fill("#gsearch-input", "array")

@@ -184,6 +184,7 @@ For the full model and the *why*, see the decisions docs:
 - **Prefer plain functions + event delegation on a stable parent** over attaching listeners to individual elements.
 - **No classes** unless per-instance state must outlive the handler lifecycle. That case is rare - prefer a closure or a data attribute.
 - **No Custom Elements** - the app doesn't use that API.
+- **Boolean UI-mode state** (focus mode, distraction-free, study mode, etc.): module-level `let` + mirrored DOM class is the default shape. Use an exported singleton object only when the API surface is multi-method (e.g. `ArticleFind`). DOM-class-only (no JS-side flag) is fine only for a pure CSS drawer already owned by layout.
 
 ---
 

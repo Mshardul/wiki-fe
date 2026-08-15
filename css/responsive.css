@@ -478,3 +478,176 @@
     min-height: 44px;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   COMPONENT / VIEW BREAKPOINTS (moved from source files)
+   ═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .markdown-body blockquote.callout--collapsible {
+    max-height: 120px;
+  }
+}
+
+@media (min-width: 640px) {
+  .index-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .index-card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1024px) and (min-width: 641px) {
+  .prefs-dialog {
+    inset: 8%;
+  }
+  .prefs-general-grid {
+    grid-template-columns: 1fr;
+  }
+  .prefs-shortcuts-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar-title {
+    display: none;
+  }
+
+  .wiki-switcher-modal {
+    align-items: flex-end;
+  }
+  .wiki-switcher-dialog {
+    width: 100%;
+    border-radius: 12px 12px 0 0;
+    animation: slideUpSheet 0.2s ease forwards;
+  }
+  .wiki-switcher-drag-handle {
+    display: block;
+  }
+  .wiki-switcher-hint {
+    display: none;
+  }
+  .wiki-switcher-list {
+    max-height: 60vh;
+    padding-bottom: calc(var(--s3) + env(safe-area-inset-bottom));
+  }
+
+  .prefs-dialog {
+    inset: auto 0 0;
+    width: 100%;
+    height: 70vh;
+    max-height: 70vh;
+    border-radius: 12px 12px 0 0;
+    animation: slideUpSheet 0.2s ease forwards;
+  }
+  .prefs-drag-handle {
+    display: block;
+  }
+  .prefs-general-grid {
+    grid-template-columns: 1fr;
+  }
+  .settings-bg-row {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .data-clear-checklist {
+    grid-template-columns: 1fr;
+  }
+
+  .bookmarks-modal {
+    align-items: flex-end;
+  }
+  .bookmarks-modal-dialog {
+    width: 100%;
+    max-height: 80vh;
+    border-radius: 12px 12px 0 0;
+    animation: slideUpSheet 0.2s ease forwards;
+  }
+  .bookmarks-modal-drag-handle {
+    display: block;
+  }
+  .bookmarks-modal-hint {
+    display: none;
+  }
+  .bookmarks-modal-list {
+    padding-bottom: calc(var(--s3) + env(safe-area-inset-bottom));
+  }
+
+  .gsearch-modal {
+    /* --gsearch-vvh tracks actual visible area once a software keyboard is up */
+    --gsearch-vh: var(--gsearch-vvh, 100dvh);
+    padding: var(--s3) var(--s2) var(--s2);
+    align-items: flex-start;
+  }
+  .gsearch-dialog {
+    height: calc(var(--gsearch-vh) - var(--s3) - var(--s2) - 1px);
+    max-height: calc(var(--gsearch-vh) - var(--s3) - var(--s2) - 1px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .gsearch-results {
+    flex: 1 1 0;
+    max-height: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .gsearch-scope-select {
+    display: none;
+  }
+  .gsearch-scope-custom {
+    display: block;
+  }
+  .gsearch-esc-key {
+    display: none;
+  }
+
+  .topbar-auth-btn {
+    width: 34px;
+    padding: 0;
+  }
+  .topbar-auth-btn .auth-btn-label {
+    display: none;
+  }
+  .auth-modal {
+    align-items: flex-end;
+  }
+  .auth-dialog {
+    width: 100%;
+    max-width: none;
+    max-height: 85vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: max(env(safe-area-inset-bottom), var(--s6));
+    animation: slideUpSheet 0.2s ease forwards;
+  }
+  .auth-drag-handle {
+    display: block;
+  }
+  .migrate-modal {
+    align-items: flex-end;
+  }
+  .migrate-dialog {
+    width: 100%;
+    max-width: none;
+    max-height: 85vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: max(env(safe-area-inset-bottom), var(--s6));
+  }
+}
+
+@media (max-width: 480px) {
+  .wiki-grid {
+    grid-template-columns: repeat(2, 1fr);
+    justify-content: stretch;
+  }
+}

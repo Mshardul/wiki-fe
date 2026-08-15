@@ -1340,7 +1340,7 @@ def test_verify_link_boot_param_calls_verify_and_strips_url(page, base_url):
 
     page.route("**/api/v1/auth/verify*", _handle_verify)
     page.goto(f"{base_url}?mode=verify&token=xyz789")
-    page.wait_for_timeout(200)
+    page.wait_for_function("() => !location.href.includes('mode=')", timeout=3_000)
     assert verify_called["hit"], "expected verify endpoint to be called from boot params"
     assert "mode=" not in page.url
     assert "token=" not in page.url

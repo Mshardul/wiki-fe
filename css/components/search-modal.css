@@ -385,39 +385,3 @@
 .gsearch-suggestion-btn:hover {
   color: var(--accent);
 }
-
-@media (max-width: 640px) {
-  .gsearch-modal {
-    /* --gsearch-vvh tracks actual visible area once a software keyboard is up */
-    --gsearch-vh: var(--gsearch-vvh, 100dvh);
-    padding: var(--s3) var(--s2) var(--s2);
-    align-items: flex-start;
-  }
-
-  .gsearch-dialog {
-    height: calc(var(--gsearch-vh) - var(--s3) - var(--s2) - 1px);
-    max-height: calc(var(--gsearch-vh) - var(--s3) - var(--s2) - 1px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .gsearch-results {
-    flex: 1 1 0;
-    max-height: none;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .gsearch-scope-select {
-    display: none;
-  }
-
-  .gsearch-scope-custom {
-    display: block;
-  }
-
-  .gsearch-esc-key {
-    display: none;
-  }
-}

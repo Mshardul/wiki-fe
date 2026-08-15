@@ -213,17 +213,6 @@
   overflow: hidden;
   transition: height var(--t);
 }
-@media (min-width: 640px) {
-  .index-card-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (min-width: 1024px) {
-  .index-card-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 .index-card {
   position: relative;
   background: var(--surface);

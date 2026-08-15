@@ -90,13 +90,6 @@
   gap: var(--s5);
 }
 
-@media (max-width: 480px) {
-  .wiki-grid {
-    grid-template-columns: repeat(2, 1fr);
-    justify-content: stretch;
-  }
-}
-
 .wiki-card {
   position: relative;
   background: var(--surface);

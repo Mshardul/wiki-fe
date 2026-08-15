@@ -427,45 +427,6 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* Tablet: single column */
-@media (max-width: 1024px) and (min-width: 641px) {
-  .prefs-dialog {
-    inset: 8%;
-  }
-  .prefs-general-grid {
-    grid-template-columns: 1fr;
-  }
-  .prefs-shortcuts-list {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Mobile: bottom sheet */
-@media (max-width: 640px) {
-  .prefs-dialog {
-    inset: auto 0 0;
-    width: 100%;
-    height: 70vh;
-    max-height: 70vh;
-    border-radius: 12px 12px 0 0;
-    animation: slideUpSheet 0.2s ease forwards;
-  }
-  .prefs-drag-handle {
-    display: block;
-  }
-  .prefs-general-grid {
-    grid-template-columns: 1fr;
-  }
-  .settings-bg-row {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-  }
-  .data-clear-checklist {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* ═══════════════════════════════════════════════
    SELECTIVE DATA CLEAR (Advanced tab)
    ═══════════════════════════════════════════════ */

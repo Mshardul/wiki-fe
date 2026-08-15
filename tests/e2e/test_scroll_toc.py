@@ -584,14 +584,19 @@ def test_mobile_toc_drawer_stays_onscreen_after_view_animation(page, base_url):
     """Drawer stays pinned to viewport top after scroll, not offset by a stale transform."""
     page.set_viewport_size({"width": 375, "height": 812})
     _load_mock_article(page, base_url, _RESUME_CHIP_ARTICLE, slug="toc-drawer-onscreen")
-    page.wait_for_timeout(400)
     page.evaluate("() => window.scrollTo(0, 200)")
 
     page.locator("#toc-mobile-btn").click()
     page.wait_for_function(
         "() => document.getElementById('toc-sidebar').classList.contains('mobile-open')"
     )
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        """() => {
+        const el = document.getElementById('toc-sidebar');
+        return el.getAnimations().every(a => a.playState === 'finished');
+    }""",
+        timeout=3_000,
+    )
     box = page.locator("#toc-sidebar").bounding_box()
     assert box["x"] >= 0 and box["x"] + box["width"] <= page.viewport_size["width"]
     assert box["y"] == 0, f"expected drawer pinned to viewport top, got y={box['y']}"

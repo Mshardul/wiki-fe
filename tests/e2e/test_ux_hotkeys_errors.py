@@ -487,7 +487,7 @@ def test_escape_prompts_confirm_dialog_when_mode_active(page, base_url):
     page.on("dialog", lambda d: dialogs.append(d) or d.dismiss())
 
     page.keyboard.press("Escape")
-    page.wait_for_timeout(200)
+    page.wait_for_timeout(200)  # dialog callback is Python-side, no DOM signal to poll
 
     assert len(dialogs) == 1, "Escape should trigger the reset confirm when a mode is active"
     # Dismissed - focus mode must NOT have been cleared, and we must still be on the article.
