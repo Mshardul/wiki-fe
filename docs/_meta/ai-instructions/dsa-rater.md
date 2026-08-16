@@ -99,10 +99,13 @@ A few params have a hard cap regardless of how good the rest reads - apply these
 - **DS8 (comparison table) crossover condition** - a rival row that states O() but omits the practical crossover condition (the threshold or workload where the rival actually wins) **caps the row's contribution at 6**. A table where every rival row is missing the crossover caps DS8 at **5** (→ blocker).
 - **DS5 (variants) ↔ Practice problems boundary - do not double-penalize.** Per the writer, DS5 lists CP-relevant variants as **one-line structural entries** and defers the technique/diagram to a full worked entry in Practice problems. A variant named in DS5 with its depth in Practice problems is **full credit** - do **not** score DS5 down for "could go deeper on the CP variant" when that depth correctly lives in Practice problems. DS5 is judged on naming the structural shapes; Practice problems is judged on wielding them.
 - **U14 (section layering)** - advisory, so never a blocker. Score it: **9–10** if adjacent sections demonstrably add a new layer (U1 = definition, `## How it works` opens at the mechanism without re-defining; AL1 = why-it-works, AL2 opens with a trace not an explanation). **6–8** if there's minor restatement but the deeper content is there. **3–5** if `## How it works` (DS) or `## How it works` (AL) opens by re-defining the thing U1 or AL1 just said. **0–2** if sections are copy-pastes of each other.
-- **U6 (practice problems) - duplicate-problems gate.** Each worked problem should include a `**Duplicate problems:**` line (title + 1 sentence per entry). **If not a single worked problem has one**, cap U6 at **5** (→ blocker). Having duplicate-problems lists on 3–5 problems raises the score ceiling to 9–10 (advisory); having it on at least 1 is the gated floor. Do not penalize if a problem genuinely has no close duplicates - an n/a with justification is acceptable on individual problems, but at least one problem in the section must carry the list.
+- **U25 (duplicate problems)** - each worked problem should include a `**Duplicate problems:**` line (title + 1 sentence per entry). **If not a single worked problem has one**, cap U25 at **5** (→ blocker). Having duplicate-problems lists on 3–5 problems raises the score ceiling to 9–10 (advisory); having it on at least 1 is the gated floor. Do not penalize if a problem genuinely has no close duplicates - an n/a with justification is acceptable on individual problems, but at least one problem in the section must carry the list.
 - **U20 (misconceptions)** - advisory, never a blocker. Score it: **9–10** if bullets correct plausible wrong beliefs (not just edge cases or bugs) and each is something a candidate could genuinely hold going in. **6–8** if present but the "misconceptions" listed are really gotchas (implementation bugs) rather than wrong mental models. **3–5** if only one bullet and it's shallow. **0–2** if absent. An explicit n/a with justification ("no plausible misconceptions for this topic") is full credit - do not require filler.
-- **U6 (practice problems) - title neutrality.** A title must not leak the technique or approach that solves the problem (e.g. "Next Greater Element", not "Next Greater Element via Monotonic Stack"). A title that gives away the solution **caps U6 at 5** (→ blocker) regardless of how well the entry itself is written.
-- **U6 (practice problems) - contest-tool coverage, DS/Patterns.** For DS articles in the **Linear family** or **Graph**, and for all **Patterns**, at least one worked Practice entry must be a genuine contest-tool problem (the article's structure/pattern applied at CP scale - prefix sums, difference array, monotonic stack, monotonic-deque window-max, meet-in-the-middle, etc.), not just interview staples. Its absence on these families/Patterns **caps U6 at 5** (→ blocker). Advisory elsewhere - credit it when present, don't require it.
+- **U22 (title/statement neutrality) - title.** A title must not leak the technique or approach that solves the problem (e.g. "Next Greater Element", not "Next Greater Element via Monotonic Stack"). A title that gives away the solution **caps U22 at 5** (→ blocker) regardless of how well the entry itself is written.
+- **U22 (title/statement neutrality) - statement.** The same leak check applies to the **Problem statement** text (and its Examples/Explanation lines) - it must describe only the task, never name the data structure/algorithm/pattern that solves it (e.g. a statement that calls itself "the two-pointer workhorse" before Approach has been reached). A leaking statement **caps U22 at 5** (→ blocker), same as a leaking title - check both, independently, per problem, and let the worse of the two set U22's score.
+- **U26 (stdlib scope restriction) - stdlib-shortcut-hides-the-mechanic.** A practice-problem solution must not import a stdlib call that *is* the exact mechanic the problem asks for (e.g. `itertools.permutations` on a permutations problem, `sorted()` on a sorting problem, `bisect` on a from-scratch binary-search problem). If any worked problem's Solution does this, **cap U26 at 5** (→ blocker) and name the offending problem + import in NOTE. Incidental stdlib use unrelated to the tested mechanic (e.g. `Counter` inside a two-pointer solution) is fine and not a violation. This check also covers the writer's `## Implementation`-section stdlib ban (same param, different location in the article) - flag either violation under U26.
+- **U23 (contest-tool coverage), DS/Patterns.** For DS articles in the **Linear family** or **Graph**, and for all **Patterns**, at least one worked Practice entry must be a genuine contest-tool problem (the article's structure/pattern applied at CP scale - prefix sums, difference array, monotonic stack, monotonic-deque window-max, meet-in-the-middle, etc.), not just interview staples. Its absence on these families/Patterns **caps U23 at 5** (→ blocker). Advisory elsewhere - credit it when present, don't require it.
+- **U24 (distinct technique per entry)** - score **9–10** if every worked problem in the section solves via a genuinely different core mechanic; **3–5** if two problems share the same core invariant/mechanic under different surface framing and both got a full entry (the weaker one should have been a duplicate-problems line under U25 instead); **0–2** if the section is padded with 2+ same-mechanic problems.
 
 ### Weights
 
@@ -110,15 +113,15 @@ A few params have a hard cap regardless of how good the rest reads - apply these
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **3**   | PA1 Recognition signals (pattern)                                                                                                                                                 |
 | **2**   | AL4 Complexity derivation · AL1 Intuition · U5 Pseudocode ≠ Python · FB Family block · AL10 Constraints & approach · PA10 Constraints & approach · DS9a Amortized proof · V1 Complexity re-derivation · V2 Pseudocode/code correctness · V6 Invariant inductive proof · V9 Recursion stack space honesty |
-| **1**   | All other section-core params + U1 def · U2 complexity · U3 when-to-use · U4 Python · U6 practice · U12 links · DS8 / AL9 Comparison · DS9 Interviewer probes |
-| **0.5** | U8 Title↔filename · U9 Prerequisites format · U10 TOC · U11 Filename convention · U13 soundbite · U14 section layering · U17 real-world + at-scale · U18 cache behavior · U20 misconceptions · advisory params · V3 Worked example fidelity · V4 Comparison table accuracy · V5 Edge case coverage · V7 Diagram-text agreement · V8 Terminology precision · V10 Duplicate-problems relevance · V11 Prerequisite necessity · V13 Probe answer correctness · V14 General factual accuracy |
+| **1**   | All other section-core params + U1 def · U2 complexity · U3 when-to-use · U4 Python · U6 practice-problems entry format · U12 links · U22 title/statement neutrality · U23 contest-tool coverage · U25 duplicate problems (gated floor - see below) · U26 stdlib scope restriction · DS8 / AL9 Comparison · DS9 Interviewer probes |
+| **0.5** | U8 Title↔filename · U9 Prerequisites format · U10 TOC · U11 Filename convention · U13 soundbite · U14 section layering · U17 real-world + at-scale · U18 cache behavior · U20 misconceptions · U21 code-block language tags · U24 distinct technique per entry (advisory) · U27 Prerequisites dependency/tier correctness · advisory params · V3 Worked example fidelity · V4 Comparison table accuracy · V5 Edge case coverage · V7 Diagram-text agreement · V8 Terminology precision · V10 Duplicate-problems relevance · V11 Prerequisite necessity · V13 Probe answer correctness · V14 General factual accuracy |
 
 ### Gate per param
 
 | Gate            | Params                                                                                                                                                                                                                                                                                                                                                                    |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **gated**       | U1–U8, U11, U12 · all DS except DS5, DS9, DS9a · DS8 · all AL except AL8 · AL9, AL10 · PA1–PA4, PA7, PA8, PA10 · FB · V1, V2, V6, V9                                                                                                                                                                                                                               |
-| **advisory**    | U9, U10, U13, U14, U17, U18, U20 · DS5 · DS9 · AL8 · PA5, PA9 · V3, V4, V5, V7, V8, V10, V11, V13, V14                                                                                                                                                                                                                                                                    |
+| **gated**       | U1–U8, U11, U12, U22, U23, U25, U26 · all DS except DS5, DS9, DS9a · DS8 · all AL except AL8 · AL9, AL10 · PA1–PA4, PA7, PA8, PA10 · FB · V1, V2, V6, V9                                                                                                                                                                                                                               |
+| **advisory**    | U9, U10, U13, U14, U17, U18, U20, U21, U24, U27 · DS5 · DS9 · AL8 · PA5, PA9 · V3, V4, V5, V7, V8, V10, V11, V13, V14                                                                                                                                                                                                                                                                    |
 | **conditional** | **DS9a (Amortized proof, DS only)** - **gated** when family is **Linear** (dynamic array) or **Hash-based**; **advisory** when family is **Tree/heap**; **n/a** for Graph and fixed arrays (mark n/a with justification). State which applies in the NOTE. |
 | **conditional** | **U18 (Cache behavior, DS only)** - **advisory for Graph** (often already covered by DS8's comparison table - don't double-penalize), **advisory but expected** for Linear/Hash-based/Tree-heap (writer treats it as required by default for these three; rater still scores it as advisory-weight, per [dsa-writer.md's per-family table](./dsa-writer.md#at-scale-trap-ds7-and-cache-behavior-u18---per-family-applicability), but a missing U18 on Linear/Hash-based/Tree-heap should read as a real gap in NOTE, not a shrug). |
 | **manual**      | **V12 (Cross-article consistency)** - no score, no gate contribution; NOTE-only flag for human/agent follow-up. |
@@ -136,7 +139,9 @@ Everything above (U/DS/AL/PA/FB/H) scores whether required content is *present, 
 
 ### Triggering the expensive checks (V1, V2, V6, V9)
 
-These four are the costliest - full re-derivation, full hand-trace, full inductive proof, full recursion audit. Running them at maximum rigor on every claim in every article is wasteful when most claims are unremarkable. **Scope effort to suspicion, not to a fixed size threshold:**
+These four are the costliest - full re-derivation, full hand-trace, full inductive proof, full recursion audit. Running them at maximum rigor on every claim in every article is wasteful when most claims are unremarkable. **Scope effort to suspicion, not to a fixed size threshold** - with one exception below.
+
+**V2 exception - practice-problem solutions are always hand-traced, never suspicion-gated.** Every `## Practice problems` Solution code block gets a full hand-trace on at least one of its own stated Examples, every rate, regardless of whether it "looks off" on skim. These are graded, copy-paste-ready contest solutions presented as correct with no caveat - a wrong one teaches the reader a broken answer with full confidence, the same failure mode V10 in sd-rater.md exists to catch for numeric claims. Skim-first-then-verify still applies to V1/V6/V9 and to the `## Implementation` section's code; it does not apply to Practice-problems Solutions.
 
 1. **Fast skim first.** Read the complexity claims, pseudocode, invariant statement, and space-complexity claim once, quickly - the way a reviewer eyeballs a page before deciding what to double-check.
 2. **Flag what looks off.** An unusual or surprising complexity claim, an `O(1)` space claim next to visible recursion, a pseudocode block that looks too short for what it claims to do, an invariant stated in one line with no visible justification, a comparison-table number that doesn't match common knowledge.
@@ -150,7 +155,7 @@ This keeps cost proportional to risk instead of applying uniform maximum effort 
 | #   | Check                          | Verifies                                                                                                                                                  | Targets (writer rule)     | Gate |
 | --- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ---- |
 | V1  | Complexity re-derivation        | Independently re-derive the stated time/space complexity from the pseudocode/algorithm logic shown - solve the recurrence or count steps yourself. Mismatch vs the article's claim → fail. | U2, DS3, AL4, PA4                | gate |
-| V2  | Pseudocode/code correctness     | Hand-trace the pseudocode (and the Python, if logic differs) on a small concrete input. Wrong output, infinite loop, off-by-one → fail.                    | U5, U4, AL7            | gate |
+| V2  | Pseudocode/code correctness     | Hand-trace the pseudocode (and the Python, if logic differs) on a small concrete input. Wrong output, infinite loop, off-by-one → fail.                    | U5, U4, U26, AL7            | gate |
 | V3  | Worked example fidelity         | Re-trace the worked example's stated steps against the algorithm's actual logic - does the described trace actually happen?                                | AL2, DS1, PA2                | adv  |
 | V4  | Comparison table accuracy       | Independently verify each rival row's stated Big-O in the comparison table - not from the article's own claim.                                            | DS8, AL9 - **n/a for Patterns** (no PA comparison-table param exists) | adv  |
 | V5  | Edge case coverage              | Check the article's edge cases are the ones **actually relevant to its family** (per [dsa-writer.md's AL6 family-menu note](./dsa-writer.md#section-block---algorithms) - e.g. negative-key/adversarial-clustering for Distribution, not a copy-pasted "empty/duplicates/cycles" list that doesn't fit), and that the stated complexity still holds for each one handled. | DS2, AL6, pseudocode        | adv  |
@@ -158,8 +163,8 @@ This keeps cost proportional to risk instead of applying uniform maximum effort 
 | V7  | Diagram-text agreement          | Check the diagram's node/step count and values match the prose walkthrough exactly (per writer's diagram-fidelity rule).                                  | DS1, AL2, PA2                | adv  |
 | V8  | Terminology precision           | Flag loose/incorrect use of near-synonyms: "stable" sort claims, "in-place" claims, "balanced" vs "self-balancing", etc.                                    | all                          | adv  |
 | V9  | Recursion stack space honesty   | For any recursive algorithm, check the space complexity includes the call-stack term (per writer's U2 rule) unless tail-call/iterative conversion is stated. | U2                          | gate |
-| V10 | Duplicate-problems relevance    | For each `**Duplicate problems:**` entry (U6), check it genuinely shares the core solving mechanic, not just topic adjacency.                              | U6                          | adv  |
-| V11 | Prerequisite necessity          | For each prerequisite (U9), check it's a genuine concept dependency, not a merely-related topic (per writer's U9 rule).                                    | U9                          | adv  |
+| V10 | Duplicate-problems relevance    | For each `**Duplicate problems:**` entry (U25), check it genuinely shares the core solving mechanic, not just topic adjacency.                              | U25                          | adv  |
+| V11 | Prerequisite necessity          | For each prerequisite (U9), check it's a genuine concept dependency, not a merely-related topic (per writer's U27 rule).                                    | U27                          | adv  |
 | V12 | Cross-article consistency       | Spot-check this article's claims (U1 definition, U3/DS4/AL5 decision cues, DS8/AL9 comparison rows) against 1-2 sibling articles in the same family for contradictions. Requires reading sibling files. | U1, U3, DS4/AL5, DS8/AL9     | manual |
 | V13 | Interviewer-probe answer correctness | For each DS9/AL8 follow-up question, check the 2–3 sentence answer sketch is itself factually correct - not just present and well-formatted.          | DS9, AL8 - **n/a for Patterns** (no PA interviewer-probes param exists - PA9 "First 30 seconds" is a recognition script, not a probe/answer pair) | adv  |
 | V14 | General factual accuracy (residual sweep) | A bounded, secondary sweep of the remaining prose (U1 definition, U3 decision cues, gotchas, misconceptions - anything not already covered by V1–V13) for plain factual errors. **Explicitly secondary**: do not re-verify what V1–V13 already checked, and do not turn this into an unbounded audit - flag only clear, confident errors encountered while reading, not a hunt. | all (residual)              | adv  |
@@ -185,13 +190,18 @@ U1 def + mental model         9/10    1    gate   clean one-liner + analogy
 U5 pseudocode present/≠py     4/10    2    gate   pseudocode is just python with comments - BLOCKER
 DS2 operations table          9/10    1    gate   all ops have O(); space col present
 DS8 comparison table          8/10    1    gate   table vs linked-list/hash; missing BST row - BLOCKER
-U6 practice problems          5/10    1    gate   Linear family → contest-tool entry required; only 1 problem is CP-flavored + no duplicate list - BLOCKER
+U6 practice-problems format   9/10    1    gate   all 3 entries follow the statement/examples/constraints/approach/solution/complexity order
+U22 title/statement neutrality 9/10   1    gate   titles and statements clean, no technique named before Approach
+U23 contest-tool coverage     5/10    1    gate   Linear family → contest-tool entry required; only 1 problem is CP-flavored - BLOCKER
+U25 duplicate problems        5/10    1    gate   no worked problem carries a Duplicate problems line - BLOCKER
+U24 distinct technique        9/10   0.5   adv    all 3 entries solve via distinct core mechanics
 FB memory layout              9/10    2    gate   covers cache, resize cost, amortized argument
 U17 real-world + at-scale     9/10   0.5   adv    real-world system named; at-scale failure stated
 U18 cache behavior            9/10   0.5   adv    cache-friendly vs hostile contrast present
 DS9 interviewer probes        8/10    1    adv    2 probes present; missing scale probe
 DS9a amortized proof          5/10    2    cond   Linear family → gated; asserts O(1) amort. but no accounting argument - BLOCKER
 U9 prerequisites format       9/10   0.5   adv    all prereqs have [Must read], name + tier only
+U27 prereq dependency/tier    9/10   0.5   adv    both listed prereqs are genuine dependencies; tiers match load-bearing-ness
 AL10 constraints & approach   n/a     -     -     (DS article - AL10 is algorithms/patterns only)
 PA1 recognition signals       n/a     -     -     (not a pattern article)
 V1 complexity re-derivation   9/10    2    gate   re-derived from pseudocode: T(n)=2T(n/2)+O(n) → O(n log n), matches claim
@@ -201,11 +211,13 @@ V4 comparison table accuracy  8/10   0.5   adv    rival "hash table O(1) worst-c
 V12 cross-article consistency n/a     -     -     no sibling articles yet in this family - not checked
 --------------------------------------------------------------------------------
 
-GATE: NO-SHIP - 2 gated params below 9 (1 structural, 1 content verification).
+GATE: NO-SHIP - 4 gated params below 9 (3 structural, 1 content verification).
 
 BLOCKERS (gated, score ≤8 - fix before publish):
 - U5: rewrite pseudocode in CLRS form (for i = 1 to n; ▷ comment; swap A[i] A[j])
 - V2: fix off-by-one in the swap on the last pass - pseudocode produces wrong output on [3,1,4]
+- U23: add a contest-tool worked entry (Linear family requires one) - currently only 1 of 3 problems is CP-flavored
+- U25: add a `**Duplicate problems:**` line to at least one worked problem
 
 FIXES (ranked, highest-impact first = score-gain × weight):
 1. ...
@@ -246,7 +258,18 @@ grep -rL 'Constraints & approach' content/dsa/algorithms/*.md
 grep -rL 'First 30 seconds' content/dsa/patterns/*.md
 
 # Articles with broken .md links (run from wiki-fe/)
-./scripts/dsa-check.sh content/dsa/**/*.md
+./scripts/dsa-check.sh $(find content/dsa -name '*.md')
+
+# Articles with a Practice problems section but zero Duplicate problems lines (U25 gated-floor signal)
+find content/dsa -name '*.md' | xargs grep -L 'Duplicate problems:'
+
+# Articles using the literal "Technique: **X**" label inside a problem statement (U22 leak signal) -
+# this is the known repeatable authoring pattern (every problem in backtracking.md leaked this way) -
+# not exhaustive for prose-shaped leaks (e.g. "this is the two-pointer workhorse..."), which need a
+# manual read, but this catches the fixed-label case cheaply.
+find content/dsa -name '*.md' | xargs grep -l 'Technique:\s*\*\*'
 ```
+
+Note: these use `find` rather than a `**` glob (which needs bash's `globstar` shopt, not guaranteed on in every shell) - portable across any POSIX shell.
 
 These don't gate any article individually - they help prioritize which advisory sections to add next across the board.

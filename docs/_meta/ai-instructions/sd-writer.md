@@ -2,13 +2,14 @@
 
 The **source of truth** for writing a system design article (`content/system-design/**/*.md`). Given a topic, this file tells you what to write, in what shape, and in what order. Replaces `_base.md` + `components.md` + `algorithms.md` + `hld.md` + `devops-tools.md` + `devops-cheatsheets.md` - those six files are superseded by this one and [sd-rater.md](./sd-rater.md).
 
-**Purpose: make the reader interview-ready** - the mental model, the mechanics, and the trade-off reasoning. The bar is not "is the article complete?" but "could a candidate walk into a system design interview with only this page and defend every decision on it?" Passing [sd-rater.md](./sd-rater.md) is the _check_ that you hit that bar - not the goal itself.
+**Purpose: make the reader interview-ready** - the mental model, the mechanics, and the trade-off reasoning a senior needs to defend this topic. Completeness is required **inside** this named mechanism and forbidden **across** sibling topics (see [Topic boundary](#topic-boundary-owns-vs-does-not-own)). The bar is "could a candidate walk into a system design interview with this page (plus linked siblings that own extracted facets) and defend every decision **on this topic**?" Passing [sd-rater.md](./sd-rater.md) is the _check_ that you hit that bar - not the goal itself.
 
 This file **owns the rules**. The rater scores against the param IDs defined here (U1, CO2, AL3, HL5, …); it does not redefine them. If a rule changes, change it here.
 
-Companion file:
+Companion files:
 
 - [sd-rater.md](./sd-rater.md) - scores a finished draft against these params, checks for redundancy/bloat, and gates ship / no-ship.
+- [scripts/sd-check.sh](../../../scripts/sd-check.sh) - deterministic check for U8 / U9.
 
 ---
 
@@ -24,7 +25,7 @@ Before anything else, decide which **kind** of article you're writing. The kind 
 
     **A hub still owns:** U7/U8/U9/U10/U11 (format spine, title↔filename, prerequisites, TOC, working links), U1 (what the family is + mental model), a member list with one working link per member (or plain-text name until the member page exists - never a broken `.md` link), and any genuinely family-level content (the comparison table, the shared theory, the "which one when" prose, a Quick Decision Guide routing to the right member). It is judged on _those_, not on the per-member depth params.
 
-    **When to split into a hub + members vs. one specific article:** if a single page would have to trace **two or more genuinely different mechanisms** at full interview depth to be complete (an "Authentication" page that fully teaches session mechanics, JWT internals, all four OAuth grant types, AND MFA is a family), it's a hub + member pages. If one mechanism with variants covers it (a single OAuth grant type with its edge cases), it's one specific article. **When an existing article has ballooned past this line, the fix is to split it into a hub + members, not just trim prose** - see [Scope management & stub pages](#scope-management--stub-pages).
+    **When to split into a hub + members vs. one specific article:** follow [Topic boundary](#topic-boundary-owns-vs-does-not-own) **rule A**. Extract one ballooned sibling first; the parent stays specific. Convert the parent to a hub **only if**, after extract, this page would still teach **two or more genuinely different mechanisms** at full interview depth (an "Authentication" page that fully teaches session mechanics, JWT internals, all four OAuth grant types, AND MFA is a family). If one mechanism with variants covers it (a single OAuth grant type with its edge cases), it stays one specific article. Do not "fix" length by trimming in-scope senior material, and do not convert to a hub merely because the page is long.
 
 - **Cheatsheet article** - a lookup table or fast-recall reference for a DevOps tool's commands/flags, distinct from the tool's conceptual article. Lives in `content/system-design/devops-tools/cheatsheets/`. It is **not** a specific conceptual article (no mental model, no mechanics, no interview scenario bank) and is **not scored against CO/AL/HL/DV section params**. It exists to serve a different reading mode: on-call/interview fast recall in under 10 seconds, not learning.
 
@@ -73,8 +74,9 @@ Before anything else, decide which **kind** of article you're writing. The kind 
 4. **PHASE 1 - index only.** Generate ONLY the index (plain text, hierarchical dashes, no markdown code blocks - see [Index format rules](#index-format-rules)). Stop. Wait for user confirmation.
 5. **PHASE 2 - content, one section at a time.** Upon "Proceed", generate one H2 section per response, stop, wait for "Continue". Resolve `(→ filename.md)` markers into real inline links when the concept first appears.
 6. **Fill every param.** Apply universal params + the section block for your type. Each param below says exactly what "present at interview depth" means.
-7. **Write, then self-rate.** Run the article through [sd-rater.md](./sd-rater.md) yourself. Fix every **blocker** (gated param scoring ≤8) and re-rate. Do not hand off a draft that reads NO-SHIP. Iterate writer → rater until SHIP.
-8. **Register in the index - first draft only.** A new article is invisible to the app until it's listed in `content/system-design/index.md`. First time only - skip on revisions.
+7. **Write, then rate independently - never self-rate.** The agent/process that wrote the draft must not also grade it - that context is invested in its own choices and reads its own work generously. Once the draft exists, a **separate process with no memory of why any decision in the draft was made** reads [sd-rater.md](./sd-rater.md) and rates the file cold, producing the actual score table in [sd-rater.md's output format](./sd-rater.md#output-format) - not a summary, not "looks good," the real per-param table with every row. In an agentic session, this means spawning a fresh Agent for the rating pass rather than rating in the same context that wrote it (see [.prompts/fe-write-content.md](../../../../.prompts/fe-write-content.md) for the reference flow). Show this table. Fix every **blocker** (gated param scoring ≤8), then re-rate with **another fresh, independent process** - not the same one that produced the prior verdict, and not the writer that just fixed it - showing the updated table each pass. Do not hand off a draft that reads NO-SHIP, and do not declare SHIP without having displayed the table that says so - an unshown rate is unverifiable and does not count as having been done. Iterate write-fix → independent-rate until SHIP.
+8. **Run the filesystem check** before declaring done: `../../../scripts/sd-check.sh <article.md>` - fix any U8/U9 FAIL.
+9. **Register in the index - first draft only.** A new article is invisible to the app until it's listed in `content/system-design/index.md`. First time only - skip on revisions.
 
 ---
 
@@ -92,6 +94,9 @@ Before anything else, decide which **kind** of article you're writing. The kind 
 - Include full function or class implementations in code blocks - pseudocode or prose only; full implementations belong in dedicated pages
 - Use standards-body URNs, IANA identifiers, or proprietary strings in examples - use simple readable placeholders instead
 - **Restate the same comparison, table, or trade-off in more than one section** - see U14 below. If two sections both want to explain stateful-vs-stateless (or any X-vs-Y), one states it in full and the other links back to it.
+- **Fully teach an adjacent extractable sibling** (full mechanics / gotchas / scenario bank) on this page - intro + link only; the sibling owns the depth (U21/R8).
+- **Invent a syllabus** beyond this filename's mechanism - owns is senior facets of *this* topic, not everything a related encyclopedia page would include.
+- **Add a `## Scope` heading or owns/does-not-own lists to article files** - that contract lives in this file and the rater only.
 - **(DevOps only)** Include full production-grade configs or scripts, real hostnames/IPs/secrets, or duplicate content that belongs in the companion cheatsheet.
 - **(Algorithms/Concepts only)** Include formal notation, ε-δ proofs, or full inductive proofs.
 
@@ -171,11 +176,14 @@ Never use real hostnames, IPs, credentials, tokens, or standards-body identifier
 | U12 | Failure modes - two-level pattern   | Failure modes appear inline as H3s within their relevant parent H2 **and** are consolidated in one dedicated summary H2 (`## Production Failure Modes & Gotchas`). Always present. Primary interview revision target. |
 | U13 | Vendor examples                     | Core explanation stays generic. Mention 1-2 well-known real implementations as examples, no deep comparison, no proprietary internals. |
 | U14 | No duplicate content across sections (gated) | Every comparison, table, or trade-off explanation appears **fully stated exactly once** in the article. If a second section needs it, it links back (`see [Stateful vs Stateless](#stateful-vs-stateless)`) rather than re-explaining. This is the single highest-leverage anti-bloat rule - **check it explicitly before publishing**: list every X-vs-Y comparison in the draft and confirm each appears in exactly one place. |
-| U15 | Section length proportionality (gated) | Depth follows conceptual complexity, not a desire for completeness. See [Length ceiling](#length-ceiling--when-to-split) - if a single sub-concept is consuming more space than the rest of the article combined, it has exceeded scope and belongs on its own page (see Scope management), not in a longer section here. |
-| U16 | One consolidated Interview Lens section (gated) | Interview Lens (Q/Ideal answer/Common trap/Next question format) appears **once per article**, as a single dedicated `## Interview Scenario Bank` section near the end, covering the article's 3-6 highest-value opening questions - **not once per H2 section, and not as a second standalone section**. Individual H2 sections may reference "see Interview Scenario Bank" but must not embed their own Q&A block. Each entry's `**Next question:**` field(s) carry the follow-up-probe content - a genuine **follow-up after a design choice is made**, probing the choice not the topic ("you chose consistent hashing - what happens when node count doubles overnight?"), distinct in kind from the opening Q&A. Use multiple `**Next question:**` lines per entry when there's more than one genuine follow-up (never cram two questions into one field). If a probe doesn't map cleanly onto any single entry, add a short trailing subgroup inside the same section (e.g. `### Additional Probes`) rather than a new top-level H2 - there is no separate `## What the Interviewer Probes For` section. See [NEVER](#never-all-article-types). |
+| U15 | Section length proportionality (gated) | Depth follows conceptual complexity of **this topic**. Completeness is required inside the topic ([U21](#universal-params---every-specific-article)) and forbidden across sibling topics (R8 in the rater). Length is a *why* check: restatement (U14) vs nested depth of one mechanism (fine) vs a sub-concept that belongs on its own page (see [Topic boundary](#topic-boundary-owns-vs-does-not-own)). If a single sub-concept consumes more space than the rest of the article combined, extract it - do not pad or cut in-scope senior material to hit a line count. |
+| U16 | One consolidated Interview Lens section (gated) | Interview Lens (Q/Ideal answer/Common trap/Next question format) appears **once per article**, as a single dedicated `## Interview Scenario Bank` section near the end, covering the article's 3-6 highest-value opening questions - **not once per H2 section, and not as a second standalone section**. Individual H2 sections may reference "see Interview Scenario Bank" but must not embed their own Q&A block. If a probe doesn't map cleanly onto any single entry, add a short trailing subgroup inside the same section (e.g. `### Additional Probes`) rather than a new top-level H2 - there is no separate `## What the Interviewer Probes For` section. See [NEVER](#never-all-article-types). |
+| U22 | Interview Scenario Bank - follow-up probe content | Each entry's `**Next question:**` field(s) carry the follow-up-probe content - a genuine **follow-up after a design choice is made**, probing the choice not the topic ("you chose consistent hashing - what happens when node count doubles overnight?"), distinct in kind from the opening Q&A. Use multiple `**Next question:**` lines per entry when there's more than one genuine follow-up (never cram two questions into one field). |
+| U23 | Interview Scenario Bank - Q/probe leak | **Neither the `Q:` field nor a `**Next question:**` field may name the mechanism/technique that answers it** - the reader must produce the answer, not receive it pre-stated in the question (bad: "why does consistent hashing use virtual nodes to fix ring imbalance?"; good: "one node keeps getting 2x the keys of others - what's your fix, and why does it work?"). |
 | U17 | Real-world usage + at-scale failure (advisory) | **2-3 sentences**, folded into an existing section (Quick Decision Guide / When to use / vendor-examples area) - no new heading. Name a real system where this is a workhorse (may reuse U13's vendor example), **then go past U13**: one sentence on what actually breaks at scale - the failure mode that only shows up past a real threshold or under production load (consistent hashing's ring imbalance past thousands of nodes; a cache's thundering herd at high QPS on a hot key). This is the bridge a senior candidate walks when asked "how does this hold up 10x bigger?" |
 | U19 | Common misconceptions (advisory) | **1-3 bullets**, folded into Production Failure Modes & Gotchas (or a `### Common Misconceptions` sub-heading within it) - no new top-level H2. Each corrects a **wrong mental model**, not an implementation bug: "eventual consistency means data is wrong for a while" (no - it means no staleness bound is guaranteed, could resolve immediately or never under partition), "sharding and partitioning are the same thing" (partitioning is the general concept, sharding is horizontal partitioning across servers specifically), "a load balancer makes a system infinitely scalable" (it distributes load, it doesn't remove the shared-state bottleneck behind it). Distinction from Gotchas: gotchas = "you designed it right but missed this failure mode"; misconceptions = "you reached for this tool with a false belief about what it guarantees." Skip if no genuine misconceptions exist - do not manufacture filler. |
 | U20 | First 30 seconds - interview framing script (HLD gated, Component/DevOps advisory) | **2-4 sentences**, placed as the opening of `## Interview Scenario Bank` or immediately before it, marked as a distinct callout/blockquote. The literal script a candidate says out loud in the first 1-2 minutes to frame scope before diving in - not a summary of the article, the actual opening move (e.g. "I'd clarify read/write ratio and consistency requirements first, since that decides SQL vs NoSQL here. Assuming read-heavy and eventual consistency is acceptable, the core challenge becomes..."). For HLD this maps naturally onto scoping the requirements-gathering opening; for Component/DevOps it's the opening framing when the topic comes up as a sub-question inside a larger design. **Gated for HLD** (the framing opener is make-or-break for HLD interviews); **advisory for Component/Algorithm/DevOps**. |
+| U21 | In-scope coverage (gated) | Every senior-interview facet of **this filename's mechanism** is on this page, or introduced in 2-3 sentences with a link to the sibling that owns it. Infer owns from the named topic + the matching section block (CO/AL/HL/DV) + follow-ups still about *this* tool - do not invent an encyclopedia syllabus. A hole is a missing facet of this topic with no owning sibling link. HLD pages own the *system's* composition, capacity, and trade-offs; component/algorithm mechanics they use are intro + link (see [Topic boundary](#topic-boundary-owns-vs-does-not-own)). Paths/cheatsheets: n/a. |
 
 ---
 
@@ -206,33 +214,71 @@ The `**Next question:**` field IS the interviewer-probe content - it is not a st
 
 ## Length ceiling & when to split
 
-There is no hard word-count cap - depth must still track complexity - but the following are **explicit trim/split signals**, checked at write time and re-checked by the rater:
+There is no hard word-count cap - depth must still track complexity of **this topic** - but the following are **explicit trim/split signals**, checked at write time and re-checked by the rater:
 
-- **Per-section soft target:** a single H2 section (TLDR-equivalent framing + mechanics + callouts, excluding a dedicated deep-dive that's structurally expected like HLD's Data Model) should rarely exceed **~150-250 lines**. A section past this is very likely restating something (check U14) or covering a sub-concept that deserves its own page (see Scope management below).
-- **Per-article soft target:** a specific article covering one component/algorithm/system/tool should land in the **~400-700 line** range at senior depth. An article past **~900 lines** is a strong signal it is actually hub-shaped (covers 2+ genuinely distinct mechanisms) and should be split - see [Article kinds](#article-kinds---specific-vs-hub-vs-cheatsheet).
-- **The check that actually matters:** not the line count itself, but *why* it's long. A 900-line article that is one deeply-nested mechanism with no repetition can be correct. A 900-line article restating the same trade-off table three times in different framings (Quick Decision Guide, a Decision Framework callout, and a dedicated Comparison section) is not - fix via U14, not by cutting content wholesale.
+- **Per-section soft target:** a single H2 section (TLDR-equivalent framing + mechanics + callouts, excluding a dedicated deep-dive that's structurally expected like HLD's Data Model) should rarely exceed **~150-250 lines**. A section past this is very likely restating something (check U14) or covering a sibling that deserves its own page (see [Topic boundary](#topic-boundary-owns-vs-does-not-own)).
+- **Per-article soft target:** a specific article covering one component/algorithm/system/tool should land in the **~400-700 line** range at senior depth. An article past **~900 lines** is a strong signal it is actually hub-shaped (covers 2+ genuinely distinct mechanisms) **or** is teaching siblings in-place - see rule A below.
+- **The check that actually matters:** not the line count itself, but *why* it's long. A 900-line article that is one deeply-nested mechanism with no repetition can be correct. A 900-line article restating the same trade-off three times is U14. A 900-line article that fully teaches two mechanisms is R4/hub, not a trim.
 
 ---
 
-## Scope management & stub pages
+## Topic boundary (owns vs does not own)
 
-A specific article covers its topic at the right depth - enough to understand it fully and make trade-off decisions, not enough to implement it, and not enough to also fully teach an adjacent mechanism that deserves its own page.
+This contract lives **only** in this file and [sd-rater.md](./sd-rater.md). **Do not** add a `## Scope` heading or owns/does-not-own lists to article files. The rater infers the split from the filename's mechanism, the body, and links.
 
-**Signal that a section (or the whole article) has exceeded scope:**
+**Purpose:** a senior candidate can defend every decision *on this topic* from this page, plus linked siblings that own extracted facets. Adjacent topics are named and linked, not re-taught.
 
-- More than ~2 H2 sections' worth of content on a single sub-concept (e.g. JWT internals inside an Authentication article)
-- Content that is equally valuable as a standalone article
-- Deep implementation details (algorithm internals, PKI operations, cryptographic parameters, full operational runbooks)
-- The article has grown past the [length ceiling](#length-ceiling--when-to-split) and the cause is a genuinely distinct sub-mechanism, not repetition
+| | On this page | Not on this page |
+| --- | --- | --- |
+| **Owns** | Senior-interview facets of **this filename's mechanism** (section-block depth + follow-ups still about this tool) | — |
+| **Does not own** | Intro (2–3 sentences) + link | Full mechanics / gotchas / scenario bank for an **extractable sibling** (existing `*.md` or a page that should exist) |
+| **Refused layers** | Never (see [NEVER](#never-all-article-types)) | Implementations, vendor runbooks, PKI internals, encyclopedia adjacency - these are not "does not own" siblings |
 
-**What to do:**
+**Do not invent a syllabus.** `caching.md` owns cache problems (TTL, eviction, stampede, invalidation). It does not own CDN or Redis-as-primary-store.
 
-1. Create a dedicated stub file (e.g. `jwt.md`, `oauth.md`) seeded with the content that was there.
-2. Add a prerequisite back-link in the stub: `**[Parent](./parent.md)** [Must read]`.
+**HLD composition:** an HLD page always names cache, hash, DB, queues, etc. That is in-scope as **intro + link**. Fully teaching any of those (the component/algorithm article's job) is out-of-scope teaching (R8). The HLD owns the system's requirements, capacity, composition, bottleneck, and trade-off log.
+
+**Split rule A:**
+
+1. One sub-concept ballooned or is itself a specific-article topic → extract to a sibling page; parent keeps intro + link; parent stays **specific**.
+2. Convert the parent to a **hub** only if, after extract, this page would still teach **2+ distinct mechanisms** at full interview depth.
+
+### Worked examples
+
+**Component - `caching.md`**
+
+| | Example | Why |
+| --- | --- | --- |
+| Include | Cache-aside vs write-through, TTL, eviction, stampede/hot key, invalidation, what breaks at 10× QPS | These are the decisions a senior defends when the interviewer says "add a cache." |
+| Intro + link only | CDN, Redis persistence/cluster, load-balancer algorithms, consistent hashing as a placement scheme | Other components/algorithms; naming the layer is enough. |
+| Separate file | `cdn.md`, DB/Redis-as-store if that is the topic, `consistent-hashing.md` | Each is its own interview topic; teaching them here is a second article. |
+
+**Component family - `authentication.md`**
+
+| | Example | Why |
+| --- | --- | --- |
+| Include (if still specific) | Exactly one remaining mechanism at full depth, plus intro+link to extracted members | Specific = one mechanism. |
+| Intro + link only | JWT internals, OAuth grants, MFA, session-store details once those pages exist | Siblings own that depth. |
+| Separate file / hub | `jwt.md`, `oauth-oidc.md`, `mfa.md`, `session-auth.md`; parent becomes a hub **only if** it would still fully teach 2+ of these after extract | Family survey + routing is a hub; one leftover mechanism is still a specific page. |
+
+**HLD - `url-shortener.md` (or any Design: page)**
+
+| | Example | Why |
+| --- | --- | --- |
+| Include | Requirements/NFRs with a stated winner, capacity, where cache/hash/DB sit, the system's bottleneck, trade-off log, 30-second framing | The interview is the *system*, not a component class. |
+| Intro + link only | Caching, encoding/hashing, databases, rate limiting | HLD always composes components; those pages own mechanics. |
+| Separate file | Do not fork `caching-for-url-shortener.md` - link `caching.md` | One component page; per-system forks duplicate the sibling. |
+
+### Extracting a sibling (stub pages)
+
+When rule A step 1 fires:
+
+1. Create a dedicated file (e.g. `jwt.md`) seeded with the content that was there.
+2. Add a prerequisite back-link in the sibling: `**[Parent](./parent.md)** [Must read]`.
 3. Add `<!-- Partial article - seeded from parent.md. Sections to be completed. -->` in the stub's TOC.
 4. In the parent, replace the deep content with a 2-3 sentence summary + link to the new page.
 5. In `index.md`, add the stub as a commented-out row until the article is complete.
-6. **If this pushes the parent past 2+ remaining full-depth sub-mechanisms**, convert the parent itself into a **hub article** (see [Article kinds](#article-kinds---specific-vs-hub-vs-cheatsheet)) rather than leaving it as an oversized specific article with some content extracted.
+6. If the parent still traces **2+ remaining full-depth mechanisms**, convert it to a **hub article** (see [Article kinds](#article-kinds---specific-vs-hub-vs-cheatsheet)).
 
 Don't discard written content - seed it into the appropriate dedicated page.
 
@@ -347,7 +393,7 @@ The mandatory spine each article must contain. Sections between TLDR and Failure
 ## TLDR
 ... (Core Mechanisms, Quick Decision Guide, and other chosen sections - see Suggested section starting points) ...
 ## Production Failure Modes & Gotchas   (U12 - consolidated, inline H3s elsewhere feed into this; U19 misconceptions fold in as a sub-heading)
-## Interview Scenario Bank              (U16 - consolidated Interview Lens entries, 3-6, Next question fields carry follow-up probes; U20 opening framing script, advisory)
+## Interview Scenario Bank              (U16/U22/U23 - consolidated Interview Lens entries, 3-6, Next question fields carry follow-up probes, no Q/probe leaks; U20 opening framing script, advisory)
 ## Appendices
 ```
 
@@ -412,8 +458,9 @@ If all true → output index → STOP. Wait for user confirmation.
 - **Key Takeaway / soundbite sticky-note test:** would a candidate write this on a post-it? If longer than 2 sentences or repeats the TLDR verbatim - compress.
 - **Code block whiteboard test:** would you write this on a whiteboard in the interview? If not - cut it.
 - **Duplication check (U14):** does this section restate a comparison/table already fully stated elsewhere in the article? If yes - link back instead of re-explaining.
-- **Scope check (U15):** is this section's length starting to rival the rest of the article? If yes - apply [Scope management](#scope-management--stub-pages).
-- **Probe distinction check (U16):** does each `**Next question:**` field (or trailing probes subgroup) ask a genuine follow-up to a design choice already made, or does it just repeat its own entry's `Q:` in different words? If the latter - rewrite or cut.
+- **Scope check (U15 / U21 / R8):** is this section still *this* mechanism at senior depth, or is it a sibling's full article / an invented syllabus / restatement? If a sibling - intro + link and extract. If a hole in *this* topic - write it here (or link the owner). If length rivals the rest of the article because of a sub-concept - apply [Topic boundary](#topic-boundary-owns-vs-does-not-own) rule A.
+- **Probe distinction check (U22):** does each `**Next question:**` field (or trailing probes subgroup) ask a genuine follow-up to a design choice already made, or does it just repeat its own entry's `Q:` in different words? If the latter - rewrite or cut.
+- **Q leak check (U23):** does the `Q:` field itself already name the mechanism/technique that answers it, so the reader doesn't have to produce it? ("Why does consistent hashing use virtual nodes to fix ring imbalance?" leaks - "one node keeps getting 2x the keys of others, what's your fix and why does it work?" doesn't.) Same check applies to `**Next question:**` fields - a follow-up phrased around the answer's key term isn't a genuine open probe. If the question pre-states its own answer, rewrite it as a scenario/symptom the reader has to diagnose.
 - **Misconception check (U19):** is each bullet a wrong belief about what the tool/pattern guarantees, or is it secretly a gotcha (implementation bug) in disguise? If the latter - move it to Gotchas proper.
 - **Framing script check (U20):** would this actually be said out loud in the first 2 minutes of an interview, or does it read like a summary of the article? If the latter - rewrite as a spoken opening move, not a recap.
 - Algorithms only - **proof sketch test:** does the proof sketch illuminate a design insight, or is it just formalism? If the latter, cut it.

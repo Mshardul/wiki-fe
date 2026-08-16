@@ -6,6 +6,10 @@ __pycache__/
 tests/.pytest_cache/
 tests/.cdn-cache/
 
+# SD rater cost-control caches (see docs/_meta/ai-instructions/sd-rater.md)
+content/system-design/**/.v9-cache.json
+content/system-design/**/.rating-cache.json
+
 # OS
 .DS_Store
 

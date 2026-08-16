@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
-"""Deterministic pre-check for DSA rater params U8, U11, U12, U21.
+"""Deterministic pre-check for SD rater params U8, U9.
 
 These params are filesystem/text facts, not LLM judgment - they must not vary
 run-to-run. This script resolves them once and prints a human-readable report
-the rater pastes in, instead of the model guessing whether files exist.
+the rater pastes in, instead of the model guessing whether files/links exist.
 
-  U8  - H1 title matches the slugified filename (case-insensitive, hyphens).
-  U11 - filename is lowercase, hyphen-separated, .md.
-  U12 - every relative [text](./path.md) link resolves to a real file.
-  U21 - every fenced code block declares a language tag (no bare ``` fences).
+  U8 - filename is lowercase, hyphen-separated, .md.
+  U9 - every relative [text](./path.md) link resolves to a real file.
+
+Unlike DSA's title↔filename check, SD has no H1-must-slugify-to-filename rule
+(sd-writer.md's U8 only requires the filename convention itself - title format
+differs by type: "# [Name]" vs HLD's "# Design: [System Name]") - so this
+script does not check H1 against the filename.
 
 Usage:
-  python3 dsa_check.py <article.md> [<article.md> ...]
+  python3 sd_check.py <article.md> [<article.md> ...]
 
 Content root is inferred as the nearest ancestor dir named "content"; relative
 links resolve against the article's own directory, as the app loads them.
+Pending links inside HTML comments (<!-- ... -->) are skipped - not live links.
 """
 
 import re
@@ -23,15 +27,7 @@ from pathlib import Path
 
 # [text](target) - capture target. Skip images ![..](..) via the negative lookbehind.
 LINK_RE = re.compile(r"(?<!\!)\[[^\]]*\]\(([^)]+)\)")
-H1_RE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
 HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
-FENCE_RE = re.compile(r"^(```+)(\S*)\s*$", re.MULTILINE)
-
-
-def slugify(text: str) -> str:
-    """Lowercase, non-alphanumerics → hyphens, collapse and trim."""
-    s = re.sub(r"[^a-z0-9]+", "-", text.lower())
-    return s.strip("-")
 
 
 def find_content_root(path: Path) -> Path | None:
@@ -55,18 +51,6 @@ def check_filename(path: Path) -> tuple[bool, str]:
     return True, f"{name}: ok"
 
 
-def check_title(path: Path, text: str) -> tuple[bool, str]:
-    m = H1_RE.search(text)
-    if not m:
-        return False, "no H1 (# Title) found"
-    title = m.group(1)
-    expected = path.name[:-3] if path.name.endswith(".md") else path.name
-    got = slugify(title)
-    if got == expected.lower():
-        return True, f'H1 "{title}" → {got} matches filename'
-    return False, f'H1 "{title}" → {got} != filename {expected}'
-
-
 def check_links(path: Path, text: str) -> tuple[bool, list[str]]:
     broken = []
     base = path.resolve().parent
@@ -85,17 +69,6 @@ def check_links(path: Path, text: str) -> tuple[bool, list[str]]:
     return (len(broken) == 0), broken
 
 
-def check_fence_langs(text: str) -> tuple[bool, list[str]]:
-    """Every opening ``` fence must carry a language tag; closers are untagged by convention."""
-    fences = FENCE_RE.findall(text)
-    bare = []
-    for i, (_, lang) in enumerate(fences):
-        opening = i % 2 == 0
-        if opening and not lang:
-            bare.append(i // 2 + 1)
-    return (len(bare) == 0), bare
-
-
 def report_one(path: Path) -> bool:
     lines = [f"FILE: {path}"]
     if not path.is_file():
@@ -108,36 +81,18 @@ def report_one(path: Path) -> bool:
 
     fn_ok, fn_msg = check_filename(path)
     ok &= fn_ok
-    lines.append(
-        f"  U11 filename convention   {'PASS' if fn_ok else 'FAIL'}  - {fn_msg}"
-    )
-
-    t_ok, t_msg = check_title(path, text)
-    ok &= t_ok
-    lines.append(f"  U8  title ↔ filename      {'PASS' if t_ok else 'FAIL'}  - {t_msg}")
+    lines.append(f"  U8 filename convention   {'PASS' if fn_ok else 'FAIL'}  - {fn_msg}")
 
     l_ok, broken = check_links(path, text)
     ok &= l_ok
     if l_ok:
-        lines.append("  U12 links resolve         PASS  - all .md links resolve")
+        lines.append("  U9 links resolve         PASS  - all .md links resolve")
     else:
-        lines.append(f"  U12 links resolve         FAIL  - {len(broken)} broken:")
+        lines.append(f"  U9 links resolve         FAIL  - {len(broken)} broken:")
         lines.extend(f"        {b}" for b in broken)
 
-    f_ok, bare = check_fence_langs(text)
-    ok &= f_ok
-    if f_ok:
-        lines.append("  U21 fence language tags   PASS  - all code fences tagged")
-    else:
-        lines.append(
-            f"  U21 fence language tags   FAIL  - {len(bare)} bare fence(s): "
-            f"block #{', #'.join(str(b) for b in bare)}"
-        )
-
     if find_content_root(path) is None:
-        lines.append(
-            "  WARN: no 'content' ancestor - links resolved against file dir only"
-        )
+        lines.append("  WARN: no 'content' ancestor - links resolved against file dir only")
 
     print("\n".join(lines))
     return ok
@@ -155,7 +110,7 @@ def main() -> int:
     print(
         "RESULT: all checks PASS"
         if all_ok
-        else "RESULT: failures above - fix before relying on U8/U11/U12 as PASS"
+        else "RESULT: failures above - fix before relying on U8/U9 as PASS"
     )
     return 0 if all_ok else 1
 

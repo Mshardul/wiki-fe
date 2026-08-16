@@ -198,6 +198,52 @@ jobs:
           args: --offline --no-progress --root-dir . './**/*.md' './**/*.html' --exclude-path content
           fail: true
 
+  dsa-sd-check:
+    runs-on: ubuntu-latest
+    steps:
+      # depth 2 = current commit + its parent, enough to diff a push. PR base is fetched on-demand below.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # Scoped to changed DSA/SD articles only - full-corpus checks belong to the rater's rating cache, not CI.
+      - name: Find changed DSA/SD articles
+        id: changed
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            git fetch origin "$PR_BASE_SHA" --depth=1
+            base="$PR_BASE_SHA"
+          else
+            base="$BEFORE_SHA"
+            # all-zeros on first push to a new ref
+            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+              base="HEAD~1"
+            fi
+          fi
+          dsa_files="$(git diff --name-only --diff-filter=ACMR "$base" HEAD -- 'content/dsa/**/*.md' | tr '\n' ' ')"
+          sd_files="$(git diff --name-only --diff-filter=ACMR "$base" HEAD -- 'content/system-design/**/*.md' | tr '\n' ' ')"
+          echo "dsa_files=$dsa_files" >> "$GITHUB_OUTPUT"
+          echo "sd_files=$sd_files" >> "$GITHUB_OUTPUT"
+      - name: Run dsa-check.sh on changed DSA articles
+        if: steps.changed.outputs.dsa_files != ''
+        env:
+          DSA_FILES: ${{ steps.changed.outputs.dsa_files }}
+        run: printf '%s' "$DSA_FILES" | xargs -r ./scripts/dsa-check.sh
+      - name: Run sd-check.sh on changed SD articles
+        if: steps.changed.outputs.sd_files != ''
+        env:
+          SD_FILES: ${{ steps.changed.outputs.sd_files }}
+        run: printf '%s' "$SD_FILES" | xargs -r ./scripts/sd-check.sh
+      - name: No DSA/SD articles changed
+        if: steps.changed.outputs.dsa_files == '' && steps.changed.outputs.sd_files == ''
+        run: echo "No DSA or SD articles changed in this push/PR - skipping."
+
   bridges:
     runs-on: ubuntu-latest
     steps:
