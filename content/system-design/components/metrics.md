@@ -58,7 +58,7 @@ Each metric type supports a different query shape - picking the wrong one means 
 | --- | --- | --- |
 | How | Collector polls a `/metrics` endpoint on a schedule | Service actively sends data to a collector |
 | Canonical system | Prometheus | StatsD, OpenTelemetry push exporter |
-| Service discovery | Collector needs to know all scrape targets (via [Service Discovery](./service-discovery.md)) | Service just needs the collector's address |
+| Service discovery | Collector needs to know all scrape targets | Service just needs the collector's address |
 | Short-lived / batch jobs | Poor fit - a job that finishes before the next scrape interval is never collected | Natural fit - the job pushes on completion regardless of lifetime |
 | Network posture | Collector needs inbound network access to every service | Service only needs outbound access - friendlier to strict firewall/NAT setups |
 | Debuggability | `curl` the `/metrics` endpoint directly to see exactly what a service is reporting | Harder to inspect in isolation - the data is already in flight to the collector |

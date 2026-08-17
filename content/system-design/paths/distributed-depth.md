@@ -14,10 +14,8 @@ See [SD Learning Paths](../index.md#learning-paths) for the other tracks.
 | 1     | [Sharding Strategies](../algorithms/sharding-strategies.md)             | Algorithm |                              |
 | 2     | [Consensus (Raft / Paxos)](../algorithms/consensus-raft-paxos.md)       | Algorithm |                              |
 | 2     | [Saga Pattern](../algorithms/saga-pattern.md)                           | Algorithm |                              |
-| 3     | [Bloom Filter](../algorithms/bloom-filter.md)                           | Algorithm |                              |
 | 4     | [Key-Value Store](../hld/key-value-store.md)                            | HLD       | LSM tree, compaction        |
 | 4     | [Distributed ID Generator](../hld/distributed-id-generator.md)          | HLD       | Snowflake IDs, clock skew   |
-| 5     | [Payment System](../hld/payment-system.md)                              | HLD       | idempotency, exactly-once   |
 | 6     | [Distributed Cache](../hld/distributed-cache.md)                        | HLD       | revisited at depth          |
 
 ---

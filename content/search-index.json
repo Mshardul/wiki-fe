@@ -64,24 +64,6 @@
           "description": "Throttling strategies, distributed rate limiting"
         },
         {
-          "title": "Proxies",
-          "path": "./content/system-design/components/proxies.md",
-          "slug": "proxies",
-          "description": "Forward vs reverse proxy, use cases, TLS termination"
-        },
-        {
-          "title": "Service Discovery",
-          "path": "./content/system-design/components/service-discovery.md",
-          "slug": "service-discovery",
-          "description": "Client-side vs server-side, health registration, DNS-based"
-        },
-        {
-          "title": "WebSockets / SSE / Long Polling",
-          "path": "./content/system-design/components/websockets-sse-long-polling.md",
-          "slug": "websockets-sse-long-polling",
-          "description": "Real-time communication patterns, trade-offs"
-        },
-        {
           "title": "Blob / Object Storage",
           "path": "./content/system-design/components/blob-object-storage.md",
           "slug": "blob-object-storage",
@@ -159,12 +141,6 @@
           "description": "Ring-based key distribution, virtual nodes, rebalancing"
         },
         {
-          "title": "Bloom Filter",
-          "path": "./content/system-design/algorithms/bloom-filter.md",
-          "slug": "bloom-filter",
-          "description": "Probabilistic set membership, false positives, space trade-offs"
-        },
-        {
           "title": "CAP Theorem",
           "path": "./content/system-design/algorithms/cap-theorem.md",
           "slug": "cap-theorem",
@@ -230,70 +206,16 @@
           "description": "Hashing, redirects, analytics, scaling reads"
         },
         {
-          "title": "Twitter / News Feed",
-          "path": "./content/system-design/hld/twitter-news-feed.md",
-          "slug": "twitter-news-feed",
-          "description": "Fan-out, timeline generation, celebrity problem"
-        },
-        {
-          "title": "WhatsApp / Chat System",
-          "path": "./content/system-design/hld/whatsapp-chat-system.md",
-          "slug": "whatsapp-chat-system",
-          "description": "WebSockets, message ordering, delivery guarantees"
-        },
-        {
           "title": "YouTube / Video Streaming",
           "path": "./content/system-design/hld/youtube-video-streaming.md",
           "slug": "youtube-video-streaming",
           "description": "Chunked upload, transcoding, CDN, adaptive bitrate"
         },
         {
-          "title": "Uber / Ride Sharing",
-          "path": "./content/system-design/hld/uber-ride-sharing.md",
-          "slug": "uber-ride-sharing",
-          "description": "Geo-indexing, real-time matching, surge pricing"
-        },
-        {
-          "title": "Google Drive / File Storage",
-          "path": "./content/system-design/hld/google-drive-file-storage.md",
-          "slug": "google-drive-file-storage",
-          "description": "Chunking, deduplication, sync conflict resolution"
-        },
-        {
-          "title": "Web Crawler",
-          "path": "./content/system-design/hld/web-crawler.md",
-          "slug": "web-crawler",
-          "description": "BFS/DFS, politeness, deduplication, scheduling"
-        },
-        {
-          "title": "Search Autocomplete",
-          "path": "./content/system-design/hld/search-autocomplete.md",
-          "slug": "search-autocomplete",
-          "description": "Trie, top-k, personalization, latency"
-        },
-        {
-          "title": "Notification System",
-          "path": "./content/system-design/hld/notification-system.md",
-          "slug": "notification-system",
-          "description": "Push/pull, fan-out, delivery guarantees, retries"
-        },
-        {
-          "title": "Ticketmaster / Booking",
-          "path": "./content/system-design/hld/ticketmaster-booking.md",
-          "slug": "ticketmaster-booking",
-          "description": "Inventory locking, concurrency, seat reservation"
-        },
-        {
           "title": "Distributed Cache",
           "path": "./content/system-design/hld/distributed-cache.md",
           "slug": "distributed-cache",
           "description": "Consistent hashing, eviction, replication, thundering herd"
-        },
-        {
-          "title": "Payment System",
-          "path": "./content/system-design/hld/payment-system.md",
-          "slug": "payment-system",
-          "description": "Idempotency, exactly-once, ledger design, fraud detection"
         },
         {
           "title": "Distributed ID Generator",

@@ -23,3 +23,4 @@ Updated automatically as the last step of `.prompts/fe-run-audit.md` and `docs/_
 | 2026-08-14 | mobile-ux-audit | `mobile-ux-audit - 20260814.md` |
 | 2026-08-14 | security-audit | `security-audit - 20260814.md` |
 | 2026-08-16 | dsa-sd-rater-content-audit-sd-components | `dsa-sd-rater-content-audit-sd-components - 20260816.md` |
+| 2026-08-18 | dsa-sd-rater-content-audit-sd-algorithms | `dsa-sd-rater-content-audit-sd-algorithms - 20260818.md` |

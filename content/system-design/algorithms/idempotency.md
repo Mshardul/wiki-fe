@@ -88,7 +88,7 @@ This is the pattern **[Message Queues](../components/message-queues.md)** uses f
 
 ## Real-World Applications
 
-**[Payment processing](../hld/payment-system.md)** is the canonical idempotency use case: Stripe's API requires an `Idempotency-Key` on every charge-creation call specifically because a client timing out on a charge request has no way to know if the charge succeeded before the timeout - retrying blindly without the key risks a double-charge. **At scale**, the dedup table itself becomes a bottleneck and a growth liability: a naive unbounded `processed_requests` table grows forever, so production systems TTL-expire dedup records after a bounded retry window (Stripe: 24 hours) and accept that a retry arriving after expiry is (correctly, by then) treated as a new request.
+**Payment processing** is the canonical idempotency use case: Stripe's API requires an `Idempotency-Key` on every charge-creation call specifically because a client timing out on a charge request has no way to know if the charge succeeded before the timeout - retrying blindly without the key risks a double-charge. **At scale**, the dedup table itself becomes a bottleneck and a growth liability: a naive unbounded `processed_requests` table grows forever, so production systems TTL-expire dedup records after a bounded retry window (Stripe: 24 hours) and accept that a retry arriving after expiry is (correctly, by then) treated as a new request.
 
 ## Common Misapplications & Gotchas
 

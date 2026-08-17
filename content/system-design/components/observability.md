@@ -4,7 +4,6 @@
 
 - **[Caching](./caching.md)** [Should read]
 - **[Message Queues](./message-queues.md)** [Should read]
-- **[Service Discovery](./service-discovery.md)** [Should read]
 
 ## Table of Contents
 
@@ -252,7 +251,7 @@ Two models for getting telemetry from services into a backend:
 | ---------------- | -------------------------------------------------------------------- | ------------------------------- |
 | How              | Collector polls `/metrics` endpoint                                  | Service sends to collector      |
 | Model            | Prometheus                                                           | StatsD, OpenTelemetry push      |
-| Discovery        | Via service registry (→ [Service Discovery](./service-discovery.md)) | Service knows collector address |
+| Discovery        | Via service registry | Service knows collector address |
 | Short-lived jobs | Poor fit - job may die before scrape                                 | Natural fit                     |
 | Firewall / NAT   | Collector needs network access to service                            | Service initiates outbound only |
 

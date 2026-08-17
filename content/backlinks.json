@@ -3523,16 +3523,6 @@
       "title": "HLD Interview Loop"
     }
   ],
-  "./content/system-design/algorithms/bloom-filter.md": [
-    {
-      "path": "./content/system-design/hld/key-value-store.md",
-      "title": "Key-Value Store"
-    },
-    {
-      "path": "./content/system-design/paths/distributed-depth.md",
-      "title": "Distributed Depth"
-    }
-  ],
   "./content/system-design/algorithms/cap-theorem.md": [
     {
       "path": "./content/system-design/components/message-queues.md",
@@ -4009,16 +3999,6 @@
       "title": "Authentication"
     }
   ],
-  "./content/system-design/components/proxies.md": [
-    {
-      "path": "./content/system-design/components/api-gateway.md",
-      "title": "API Gateway"
-    },
-    {
-      "path": "./content/system-design/paths/components-foundation.md",
-      "title": "Components Foundation"
-    }
-  ],
   "./content/system-design/components/rate-limiter.md": [
     {
       "path": "./content/system-design/components/load-balancer.md",
@@ -4047,20 +4027,6 @@
       "title": "Components Foundation"
     }
   ],
-  "./content/system-design/components/service-discovery.md": [
-    {
-      "path": "./content/system-design/components/metrics.md",
-      "title": "Metrics"
-    },
-    {
-      "path": "./content/system-design/components/api-gateway.md",
-      "title": "API Gateway"
-    },
-    {
-      "path": "./content/system-design/paths/components-foundation.md",
-      "title": "Components Foundation"
-    }
-  ],
   "./content/system-design/components/service-to-service-auth.md": [
     {
       "path": "./content/system-design/components/authentication.md",
@@ -4075,12 +4041,6 @@
     {
       "path": "./content/system-design/components/authentication.md",
       "title": "Authentication"
-    }
-  ],
-  "./content/system-design/components/websockets-sse-long-polling.md": [
-    {
-      "path": "./content/system-design/paths/components-foundation.md",
-      "title": "Components Foundation"
     }
   ],
   "./content/system-design/hld/distributed-cache.md": [
@@ -4103,71 +4063,13 @@
       "title": "Distributed Depth"
     }
   ],
-  "./content/system-design/hld/google-drive-file-storage.md": [
-    {
-      "path": "./content/system-design/paths/hld-interview-loop.md",
-      "title": "HLD Interview Loop"
-    }
-  ],
   "./content/system-design/hld/key-value-store.md": [
     {
       "path": "./content/system-design/paths/distributed-depth.md",
       "title": "Distributed Depth"
     }
   ],
-  "./content/system-design/hld/notification-system.md": [
-    {
-      "path": "./content/system-design/paths/hld-interview-loop.md",
-      "title": "HLD Interview Loop"
-    }
-  ],
-  "./content/system-design/hld/payment-system.md": [
-    {
-      "path": "./content/system-design/algorithms/idempotency.md",
-      "title": "Idempotency"
-    },
-    {
-      "path": "./content/system-design/paths/distributed-depth.md",
-      "title": "Distributed Depth"
-    }
-  ],
-  "./content/system-design/hld/search-autocomplete.md": [
-    {
-      "path": "./content/system-design/paths/hld-interview-loop.md",
-      "title": "HLD Interview Loop"
-    }
-  ],
-  "./content/system-design/hld/ticketmaster-booking.md": [
-    {
-      "path": "./content/system-design/paths/hld-interview-loop.md",
-      "title": "HLD Interview Loop"
-    }
-  ],
-  "./content/system-design/hld/twitter-news-feed.md": [
-    {
-      "path": "./content/system-design/paths/hld-interview-loop.md",
-      "title": "HLD Interview Loop"
-    }
-  ],
-  "./content/system-design/hld/uber-ride-sharing.md": [
-    {
-      "path": "./content/system-design/paths/hld-interview-loop.md",
-      "title": "HLD Interview Loop"
-    }
-  ],
   "./content/system-design/hld/url-shortener.md": [
-    {
-      "path": "./content/system-design/paths/hld-interview-loop.md",
-      "title": "HLD Interview Loop"
-    }
-  ],
-  "./content/system-design/hld/web-crawler.md": [
-    {
-      "path": "./content/system-design/paths/hld-interview-loop.md",
-      "title": "HLD Interview Loop"
-    }
-  ],
-  "./content/system-design/hld/whatsapp-chat-system.md": [
     {
       "path": "./content/system-design/paths/hld-interview-loop.md",
       "title": "HLD Interview Loop"

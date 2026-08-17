@@ -20,9 +20,6 @@ Foundational building blocks. Each page covers mechanics, trade-offs, failure mo
 | [Databases](./components/databases.md)                                         | SQL vs NoSQL, indexing, replication, consistency models          |
 | [API Gateway](./components/api-gateway.md)                                     | Routing, auth, rate limiting, request transformation             |
 | [Rate Limiter](./components/rate-limiter.md)                                   | Throttling strategies, distributed rate limiting                 |
-| [Proxies](./components/proxies.md)                                             | Forward vs reverse proxy, use cases, TLS termination             |
-| [Service Discovery](./components/service-discovery.md)                         | Client-side vs server-side, health registration, DNS-based       |
-| [WebSockets / SSE / Long Polling](./components/websockets-sse-long-polling.md) | Real-time communication patterns, trade-offs                     |
 | [Blob / Object Storage](./components/blob-object-storage.md)                   | Binary storage, chunking, multipart upload, durability           |
 | [Distributed File System](./components/distributed-file-system.md)             | Block storage, metadata management, fault tolerance              |
 | [Search](./components/search.md)                                               | Inverted index, relevance ranking, distributed search            |
@@ -44,7 +41,6 @@ Core algorithms and distributed systems concepts that appear across multiple HLD
 | -------------------------------------------------------------------- | --------------------------------------------------------------- |
 | [Consistency Models](./algorithms/consistency-models.md)             | Linearizability, causal consistency, read-your-writes, eventual consistency spectrum |
 | [Consistent Hashing](./algorithms/consistent-hashing.md)             | Ring-based key distribution, virtual nodes, rebalancing         |
-| [Bloom Filter](./algorithms/bloom-filter.md)                         | Probabilistic set membership, false positives, space trade-offs |
 | [CAP Theorem](./algorithms/cap-theorem.md)                           | Consistency, availability, partition tolerance trade-offs       |
 | [ACID vs BASE](./algorithms/acid-vs-base.md)                         | Transaction guarantees, eventual consistency                    |
 | [Replication Strategies](./algorithms/replication-strategies.md)     | Leader-follower, multi-leader, leaderless                       |
@@ -64,17 +60,8 @@ End-to-end system design walkthroughs. Each page includes prerequisites, a TLDR,
 | System                                                            | Key Themes                                                 |
 | ----------------------------------------------------------------- | ---------------------------------------------------------- |
 | [URL Shortener](./hld/url-shortener.md)                           | Hashing, redirects, analytics, scaling reads               |
-| [Twitter / News Feed](./hld/twitter-news-feed.md)                 | Fan-out, timeline generation, celebrity problem            |
-| [WhatsApp / Chat System](./hld/whatsapp-chat-system.md)           | WebSockets, message ordering, delivery guarantees          |
 | [YouTube / Video Streaming](./hld/youtube-video-streaming.md)     | Chunked upload, transcoding, CDN, adaptive bitrate         |
-| [Uber / Ride Sharing](./hld/uber-ride-sharing.md)                 | Geo-indexing, real-time matching, surge pricing            |
-| [Google Drive / File Storage](./hld/google-drive-file-storage.md) | Chunking, deduplication, sync conflict resolution          |
-| [Web Crawler](./hld/web-crawler.md)                               | BFS/DFS, politeness, deduplication, scheduling             |
-| [Search Autocomplete](./hld/search-autocomplete.md)               | Trie, top-k, personalization, latency                      |
-| [Notification System](./hld/notification-system.md)               | Push/pull, fan-out, delivery guarantees, retries           |
-| [Ticketmaster / Booking](./hld/ticketmaster-booking.md)           | Inventory locking, concurrency, seat reservation           |
 | [Distributed Cache](./hld/distributed-cache.md)                   | Consistent hashing, eviction, replication, thundering herd |
-| [Payment System](./hld/payment-system.md)                         | Idempotency, exactly-once, ledger design, fraud detection  |
 | [Distributed ID Generator](./hld/distributed-id-generator.md)     | Snowflake IDs, worker ID leasing, clock skew               |
 | [Key-Value Store](./hld/key-value-store.md)                       | LSM-tree vs B-tree, quorum consistency, conflict resolution |
 

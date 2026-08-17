@@ -3,7 +3,6 @@
 ## Prerequisites
 
 - **[Load Balancer](./load-balancer.md)** [Must read]
-- **[Proxies](./proxies.md)** [Should read]
 - **[Authentication](./authentication.md)** [Should read]
 
 ## Table of Contents
@@ -28,7 +27,7 @@ An API gateway is the single entry point that sits between clients and a microse
 
 **Mental model:** a hotel concierge desk - every guest request goes through the desk first; the desk verifies who you are, decides which department handles it, and sometimes assembles an answer from three departments before you ever see it. The desk doesn't do housekeeping or room service itself.
 
-An API gateway is an L7 reverse proxy (see [Proxies](./proxies.md)) specialized for API traffic: it terminates the client connection, inspects the request, and applies a pipeline of edge-level policies before forwarding to a backend service. What distinguishes it from a plain [load balancer](./load-balancer.md) is the pipeline - a load balancer's job ends at "which healthy backend gets this connection"; a gateway's job is everything that happens to the request *before* that routing decision, and often after the response comes back too.
+An API gateway is an L7 reverse proxy specialized for API traffic: it terminates the client connection, inspects the request, and applies a pipeline of edge-level policies before forwarding to a backend service. What distinguishes it from a plain [load balancer](./load-balancer.md) is the pipeline - a load balancer's job ends at "which healthy backend gets this connection"; a gateway's job is everything that happens to the request *before* that routing decision, and often after the response comes back too.
 
 ### Request Pipeline
 
@@ -56,7 +55,7 @@ The gateway inspects the request path, host header, or method and maps it to a b
 /payments/**   → payment-service  (also gets stricter rate limits + mTLS to backend)
 ```
 
-**Path-based** routing (`/users/*` → user-service) is the default for REST-style APIs. **Header/host-based** routing supports multi-tenant SaaS (`tenant-a.api.example.com` → tenant-a's isolated backend pool) or API versioning (`Accept: application/vnd.api.v2+json`). Once matched, the gateway proxies to the target service's own load balancer or service-discovery endpoint - the gateway routes to a *service*, the service's own LB or [service discovery](./service-discovery.md) layer routes to a specific *instance*.
+**Path-based** routing (`/users/*` → user-service) is the default for REST-style APIs. **Header/host-based** routing supports multi-tenant SaaS (`tenant-a.api.example.com` → tenant-a's isolated backend pool) or API versioning (`Accept: application/vnd.api.v2+json`). Once matched, the gateway proxies to the target service's own load balancer or service-discovery endpoint - the gateway routes to a *service*, the service's own LB or service discovery layer routes to a specific *instance*.
 
 ### Authentication & Authorization at the Edge
 
