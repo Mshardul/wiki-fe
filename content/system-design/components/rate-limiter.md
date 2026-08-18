@@ -22,7 +22,7 @@
 
 ## TLDR
 
-A rate limiter caps request volume per identity (IP, user, API key) within a time window, protecting services from abuse, cost overruns, and cascading failures. The key architectural choice is enforcement placement: API gateway (centralized, default) vs per-service (granular, no cross-service coordination). At scale, shared Redis counters trade perfect accuracy for availability - every multi-node deployment must decide how much counter drift is acceptable. Stripe, GitHub, and Cloudflare all run gateway-level limiting at this scale; the failure mode that shows up past a few hundred thousand RPS is rarely the algorithm - it's a single Redis shard saturating from a hot identifier (see [Hot Partition](#hot-partition---shard-saturation)).
+A rate limiter caps request volume per identity (IP, user, API key) per window, protecting services from abuse and cascading failures. Key choice: enforcement placement - gateway vs per-service. At scale, shared Redis counters trade accuracy for availability; failures past a few hundred thousand RPS trace to a saturated shard, not the algorithm.
 
 ## Core Functions & Protection Goals
 

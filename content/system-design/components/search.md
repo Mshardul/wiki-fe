@@ -26,7 +26,7 @@
 
 ## TLDR
 
-A search system answers "which documents match this query, ranked by relevance" over a large, frequently-changing corpus - a fundamentally different problem from a database's "find the row matching this exact key," which is why it's built on an inverted index (word → list of documents containing it) rather than a B-tree keyed on primary key. The core design decision is trading write-time cost for read-time speed: every document write fans out to update postings lists for every term it contains, so that a query touches only the (usually small) set of relevant postings lists instead of scanning the corpus. At scale, the corpus and index are sharded across nodes and every query becomes scatter-gather - fan out to every shard, merge and re-rank partial results - making tail latency, not average latency, the operational metric that actually matters.
+A search system ranks documents by relevance to a query, built on an inverted index (word → documents) rather than a B-tree on primary key. Writes update postings lists, so a query touches only relevant lists, not the whole corpus. At scale, queries scatter-gather across shards, making tail latency the operative metric.
 
 ---
 

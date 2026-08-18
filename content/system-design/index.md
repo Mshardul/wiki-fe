@@ -14,6 +14,7 @@ Foundational building blocks. Each page covers mechanics, trade-offs, failure mo
 | [DNS](./components/dns.md)                                                     | Domain resolution, record types, caching, propagation            |
 | [Logging](./components/logging.md)                                            | Structured logging, aggregation pipeline, storage/indexing trade-offs |
 | [Metrics](./components/metrics.md)                                             | Counters/gauges/histograms, push vs pull, cardinality cost            |
+| [Proxies](./components/proxies.md)                                             | Forward vs reverse proxy, termination vs tunneling, header rewriting |
 | [Load Balancer](./components/load-balancer.md)                                 | Traffic distribution, algorithms, health checks, L4 vs L7        |
 | [CDN](./components/cdn.md)                                                     | Edge caching, cache invalidation, origin offload                 |
 | [Caching](./components/caching.md)                                             | In-memory caching, eviction policies, distributed cache patterns |
@@ -30,6 +31,7 @@ Foundational building blocks. Each page covers mechanics, trade-offs, failure mo
 | [Multi-Factor Authentication](./components/mfa.md)                             | TOTP, WebAuthn/Passkeys, SMS OTP weaknesses, step-up auth       |
 | [Service-to-Service Authentication](./components/service-to-service-auth.md)   | API keys, mTLS, JWT service accounts, SPIFFE/SPIRE             |
 | [mTLS](./components/mtls.md)                                                   | Handshake, PKI management, certificate lifecycle, service mesh |
+| [Service Discovery](./components/service-discovery.md)                        | Registration, health checking, resolution, registry consistency trade-offs |
 
 ---
 
@@ -50,6 +52,7 @@ Core algorithms and distributed systems concepts that appear across multiple HLD
 | [Consensus (Raft / Paxos)](./algorithms/consensus-raft-paxos.md)     | Leader election, log replication, split-brain prevention        |
 | [Saga Pattern](./algorithms/saga-pattern.md)                         | Distributed transactions, choreography vs orchestration         |
 | [Idempotency](./algorithms/idempotency.md)                           | Safe retries, dedup keys, natural vs key-based vs server-derived |
+| [Bloom Filter](./algorithms/bloom-filter.md)                         | Probabilistic membership, false positives, k hash functions, LSM-tree use |
 
 ---
 

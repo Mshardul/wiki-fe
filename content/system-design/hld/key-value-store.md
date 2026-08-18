@@ -27,7 +27,7 @@
 
 ## TLDR
 
-A distributed key-value store is a sharded, replicated cluster exposing `get(key)`/`put(key, value)` with no joins or range-scan requirements beyond the key itself - the core architectural challenge is that this simplicity at the API layer hides real complexity underneath: choosing a storage engine that keeps writes fast as data grows past memory (LSM-tree vs B-tree), and choosing how far to relax consistency in exchange for availability during a partition, since CAP forces that choice explicitly rather than letting you have both.
+A distributed key-value store is a sharded, replicated cluster exposing `get`/`put` with no joins or range scans. Its core challenge: pick a storage engine that keeps writes fast as data outgrows memory (see [LSM-tree vs B-tree](#storage-engine-lsm-tree-vs-b-tree)), and decide how far to trade consistency for availability during a partition, since CAP forces that choice explicitly.
 
 ## Requirements & Scope
 
@@ -46,7 +46,7 @@ A distributed key-value store is a sharded, replicated cluster exposing `get(key
 
 ## Capacity Estimation
 
-**Users:** 200M keys, average value size 1KB, replication factor 3 · **Read/Write ratio:** 10:1 (read-heavy, typical for a config/session/profile store) · **Peak QPS:** ~30K reads/sec, ~3K writes/sec at peak · **Storage:** 200M keys × 1KB × 3 replicas ≈ 600GB total cluster storage, comfortably split across 10-20 mid-size nodes · **Bandwidth:** 30K QPS × 1KB ≈ 30MB/s read egress at peak, well within single-NIC capacity per node · **Key constraint:** write amplification from the storage engine, not raw storage capacity - an LSM-tree's background compaction (see [Deep-Dive](#deep-dive-compaction-without-stalling-writes)) can consume more disk I/O than the actual write traffic itself if compaction falls behind, which is the real ceiling on sustained write throughput, not the 3K/sec figure alone.
+**Assumptions:** 50M DAU, ~57 key operations/user/day on average (typical for a config/session/profile store backing several services per session), read/write ratio 10:1 → ~52 reads + ~5 writes per user/day. **Derived QPS:** 50M × 57 ≈ 2.85B ops/day ÷ 86,400s ≈ 33K ops/sec average, split 10:1 into ~30K reads/sec and ~3K writes/sec average; applying a ~1.5-2x peak-over-average multiplier for the diurnal traffic curve gives **~45-60K reads/sec and ~4.5-6K writes/sec at peak** - the figure the storage engine and cluster sizing below are provisioned against. **Data volume:** 200M keys, average value size 1KB, replication factor 3 · **Storage:** 200M keys × 1KB × 3 replicas ≈ 600GB total cluster storage, comfortably split across 10-20 mid-size nodes · **Bandwidth:** ~50K QPS × 1KB ≈ 50MB/s read egress at peak, well within single-NIC capacity per node · **Key constraint:** write amplification from the storage engine, not raw storage capacity - an LSM-tree's background compaction (see [Deep-Dive](#deep-dive-compaction-without-stalling-writes)) can consume more disk I/O than the actual write traffic itself if compaction falls behind, which is the real ceiling on sustained write throughput, not the derived QPS figure alone.
 
 ## High-Level Architecture
 
@@ -162,7 +162,7 @@ Mitigation is rate-limiting compaction to a bounded fraction of available I/O (s
 > "I'd confirm the read/write ratio and whether the workload needs range queries or secondary indexes, since a pure key lookup workload is what this design targets. Assuming a read-heavy, key-only access pattern with tolerance for tunable consistency - the core tension is choosing a storage engine suited to the write volume, and deciding how much consistency to trade for availability, since CAP means I can't have both during a partition. I'll size the cluster, then build up from partitioning and replication through consistency."
 
 > 🎯 **Interview Lens**
-> **Q:** Design a key-value store handling 30K reads/sec and 3K writes/sec with sub-10ms latency. Walk through the storage engine choice.
+> **Q:** Design a key-value store handling ~50K reads/sec and ~5K writes/sec at peak with sub-10ms latency. Walk through the storage engine choice.
 > **Ideal answer:** An LSM-tree-based engine (memtable + sorted on-disk segments + background compaction) fits the write-throughput profile better than a B-tree's in-place random writes; bloom filters keep read cost low despite checking multiple segments, and compaction is rate-limited to avoid stalling foreground traffic.
 > **Common trap:** Defaulting to "use a B-tree, it's simpler" without weighing the random-write-I/O cost against this workload's actual write volume.
 > **Next question:** Your compaction process starts falling behind sustained write traffic. What happens to read latency, and how do you detect it before it becomes a customer-visible incident?

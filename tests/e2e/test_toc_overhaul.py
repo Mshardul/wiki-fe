@@ -295,7 +295,17 @@ def test_toc_nav_capped_at_70_percent_of_rail(page, base_url):
 def test_notes_fills_remaining_space_when_toc_is_short(page, base_url):
     """A short article's TOC doesn't stretch to fill the rail - Notes gets the remainder."""
     page.set_viewport_size({"width": 1280, "height": 800})
-    _go_to_article(page, base_url, slug="system-design/cdn")
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#view-home.active", timeout=8_000)
+    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
+    content = "# Short Article\n\n## Only Heading\n\nJust one short section.\n"
+    page.route("**/short-toc-fixture.md", lambda r: r.fulfill(body=content))
+    page.evaluate("""() => navigateToContent(
+        'system-design',
+        encodeURIComponent('../content/system-design/short-toc-fixture.md'),
+        encodeURIComponent('Short Article'),
+        'short-toc-fixture'
+    )""")
     page.evaluate("() => localStorage.removeItem(`wiki-notes-collapsed-${state.currentWikiId}`)")
     page.reload()
     page.wait_for_function(

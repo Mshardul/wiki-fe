@@ -24,7 +24,7 @@
 
 ## TLDR
 
-A distributed ID generator produces unique, roughly-ordered identifiers across many independent nodes with no synchronous coordination on the hot path - the interesting problem isn't uniqueness in isolation, it's uniqueness *without a shared counter*, since any design that makes every node check in with a central authority per ID reintroduces the exact single-point bottleneck the system exists to avoid. The core architectural challenge of Distributed ID Generator is trusting each node's local clock and a pre-assigned identity to compose a globally-unique ID with zero coordination per request, and handling the one case where local clocks lie: clock skew.
+A distributed ID generator produces unique, roughly-ordered IDs across many nodes with zero hot-path coordination. The core architectural challenge of Distributed ID Generator is trusting each node's clock and a pre-assigned identity to compose a globally-unique ID with no per-request coordination, handling the case where clocks lie: clock skew.
 
 ## Requirements & Scope
 
@@ -78,12 +78,20 @@ The critical design choice is visible directly in the diagram: the coordination 
 
 Three broad approaches, each trading off a different axis:
 
-1. **Centralized auto-increment counter (single DB sequence)** - trivially unique and strictly ordered, but every ID request is a synchronous round-trip to one database row, capping throughput at that single counter's write rate and making it a single point of failure.
-2. **UUID (v4, random)** - fully decentralized, zero coordination, generated in-process with no state at all. But 128-bit random UUIDs are not time-sortable (insertion into a B-tree-indexed primary key causes random-order page writes, hurting index locality) and are 2-4x larger than a 64-bit integer ID, costing storage and index size at scale.
-3. **Snowflake-style composite ID (timestamp + worker ID + sequence)** - a single 64-bit integer built from a timestamp prefix (roughly sortable), a worker ID (uniqueness across nodes), and a per-millisecond sequence counter (uniqueness within one node in the same millisecond). Zero coordination per request, roughly time-ordered, compact. The trade-off is a one-time worker-ID assignment dependency and exposure to clock skew.
+1. **Centralized auto-increment counter (single DB sequence)** - a synchronous round-trip to one database row per ID.
+2. **UUID (v4, random)** - fully decentralized, generated in-process with no shared state.
+3. **Snowflake-style composite ID (timestamp + worker ID + sequence)** - a single 64-bit integer built from a timestamp prefix, a worker ID, and a per-millisecond sequence counter.
+
+| Dimension | Centralized counter | UUID (v4) | Snowflake composite |
+| --- | --- | --- | --- |
+| Uniqueness guarantee | Single source of truth (DB row) | Probabilistic (birthday-bound collision odds, negligible in practice) | Structural (worker ID + clock + sequence composed, no overlap possible) |
+| Ordering | Strictly ordered | Not sortable (random) | Roughly time-ordered (per-node exact, cross-node approximate) |
+| Size | Compact (32/64-bit int) | Large (128-bit) | Compact (64-bit int) |
+| Collision risk | None (serialized by DB) | Near-zero but non-zero at massive scale | None if worker IDs are structurally unique |
+| Coordination need | Per-request (synchronous DB round-trip) | None, ever | One-time, at node startup only (worker-ID lease) |
 
 > ⚖️ **Decision Framework**
-> The centralized counter and Snowflake both give rough time-ordering, but the counter pays a synchronous network round-trip per ID (capping throughput at one database's write capacity) while Snowflake pays that cost exactly once, at node startup. UUIDs remove all coordination but sacrifice sortability and compactness. Almost every production system at ID-generation scale (Twitter's original Snowflake, Instagram, Discord) converges on the composite-ID approach specifically because it's the only option that is simultaneously coordination-free per request, compact, and sortable.
+> See the comparison table above: the counter and Snowflake both give rough-to-strict time-ordering, but the counter pays its coordination cost per request while Snowflake pays it once, at startup. UUIDs remove all coordination but sacrifice sortability and compactness. Almost every production system at ID-generation scale (Twitter's original Snowflake, Instagram, Discord) converges on the composite-ID approach specifically because it's the only option that is simultaneously coordination-free per request, compact, and sortable.
 
 ## Snowflake Deep-Dive: Bit Layout & Clock Skew
 

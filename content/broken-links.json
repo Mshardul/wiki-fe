@@ -17,12 +17,6 @@
       "title": "Standard SWE"
     }
   ],
-  "./content/system-design/components/databases.md": [
-    {
-      "target": "./content/system-design/components/bloom-filter.md",
-      "title": "Databases"
-    }
-  ],
   "./content/system-design/components/logging.md": [
     {
       "target": "./content/system-design/components/observability.md",

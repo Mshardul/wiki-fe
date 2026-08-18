@@ -3777,6 +3777,10 @@
   ],
   "./content/system-design/components/api-gateway.md": [
     {
+      "path": "./content/system-design/components/proxies.md",
+      "title": "Proxies"
+    },
+    {
       "path": "./content/system-design/paths/components-foundation.md",
       "title": "Components Foundation"
     }
@@ -3831,6 +3835,10 @@
       "title": "DNS"
     },
     {
+      "path": "./content/system-design/components/proxies.md",
+      "title": "Proxies"
+    },
+    {
       "path": "./content/system-design/components/cdn.md",
       "title": "CDN"
     },
@@ -3869,6 +3877,10 @@
   ],
   "./content/system-design/components/cdn.md": [
     {
+      "path": "./content/system-design/components/proxies.md",
+      "title": "Proxies"
+    },
+    {
       "path": "./content/system-design/components/caching.md",
       "title": "Caching"
     },
@@ -3903,12 +3915,20 @@
   ],
   "./content/system-design/components/dns.md": [
     {
+      "path": "./content/system-design/components/proxies.md",
+      "title": "Proxies"
+    },
+    {
       "path": "./content/system-design/components/load-balancer.md",
       "title": "Load Balancer"
     },
     {
       "path": "./content/system-design/components/cdn.md",
       "title": "CDN"
+    },
+    {
+      "path": "./content/system-design/components/service-discovery.md",
+      "title": "Service Discovery"
     },
     {
       "path": "./content/system-design/paths/components-foundation.md",
@@ -3935,12 +3955,20 @@
       "title": "DNS"
     },
     {
+      "path": "./content/system-design/components/proxies.md",
+      "title": "Proxies"
+    },
+    {
       "path": "./content/system-design/components/api-gateway.md",
       "title": "API Gateway"
     },
     {
       "path": "./content/system-design/components/rate-limiter.md",
       "title": "Rate Limiter"
+    },
+    {
+      "path": "./content/system-design/components/service-discovery.md",
+      "title": "Service Discovery"
     },
     {
       "path": "./content/system-design/algorithms/consistent-hashing.md",
@@ -3991,6 +4019,10 @@
     {
       "path": "./content/system-design/components/service-to-service-auth.md",
       "title": "Service-to-Service Authentication"
+    },
+    {
+      "path": "./content/system-design/components/service-discovery.md",
+      "title": "Service Discovery"
     }
   ],
   "./content/system-design/components/oauth-oidc.md": [

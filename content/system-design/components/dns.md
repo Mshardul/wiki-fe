@@ -60,10 +60,12 @@ Each hop's answer is cached for the record's **TTL** (Time To Live, in seconds).
 
 ## Quick Decision Guide
 
-- **Need active health-check-based failover in seconds, not minutes** - DNS alone is too slow (TTL + resolver caching lag); put a load balancer or global traffic manager in front and keep DNS TTLs short only as a secondary lever.
-- **Need to route users to the nearest region** - GeoDNS / latency-based routing at the DNS layer, resolved once per client-resolver cache window, not per-request.
-- **Need per-request routing decisions (path, header, cookie-based)** - DNS can't see any of that; it only resolves a name to an IP before the request is even made. That's an L7 load balancer's job (see [Load Balancer](./load-balancer.md)).
-- **Rolling out a new IP for existing infra** - lower the TTL *ahead of time* (e.g. a day before the change), let the low TTL propagate, then make the change, then raise the TTL back once stable.
+| Need | Choice | Caveat |
+| --- | --- | --- |
+| Health-check-based failover in seconds, not minutes | Load balancer or global traffic manager in front; DNS TTL is a secondary lever only | DNS alone is too slow - TTL + resolver caching lag |
+| Route users to the nearest region | GeoDNS / latency-based routing at the DNS layer | Resolved once per client-resolver cache window, not per-request |
+| Per-request routing (path, header, cookie-based) | L7 load balancer (see [Load Balancer](./load-balancer.md)) | DNS can't see any of that - it resolves a name to an IP before the request is even made |
+| Rolling out a new IP for existing infra | Lower the TTL ahead of time, let it propagate, make the change, then raise TTL back | e.g. a day's lead time before the change |
 
 ## DNS as a Load-Balancing and Traffic-Steering Layer
 

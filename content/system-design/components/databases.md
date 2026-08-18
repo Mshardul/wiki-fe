@@ -92,7 +92,7 @@ An index is a separate, ordered data structure pointing back to full rows/docume
 
 **Hash index:** O(1) equality lookups, no range scan support at all. Rarely the default because the range-scan capability B-tree gives up is usually worth more than the marginal speed gain on pure equality lookups.
 
-**Bloom filter (used inside LSM-tree engines, not a queryable index itself):** a probabilistic structure answering "might this SSTable contain this key?" with no false negatives but a tunable false-positive rate. Lets an LSM-tree read skip SSTables that provably don't contain the key, without eliminating the need to check ones that might. See [Bloom Filter](./bloom-filter.md) <!-- link: bloom-filter.md --> for the full mechanics.
+**Bloom filter (used inside LSM-tree engines, not a queryable index itself):** a probabilistic structure answering "might this SSTable contain this key?" with no false negatives but a tunable false-positive rate. Lets an LSM-tree read skip SSTables that provably don't contain the key, without eliminating the need to check ones that might. See **Bloom Filter** <!-- link: bloom-filter.md --> for the full mechanics.
 
 **Composite index:** an index on multiple columns together, ordered by column order in the index definition - a query filtering on the first column (or first N columns as a prefix) can use it, but a query filtering only on the second column cannot, because the index isn't sorted by that column independently.
 

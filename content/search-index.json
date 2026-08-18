@@ -28,6 +28,12 @@
           "description": "Counters/gauges/histograms, push vs pull, cardinality cost"
         },
         {
+          "title": "Proxies",
+          "path": "./content/system-design/components/proxies.md",
+          "slug": "proxies",
+          "description": "Forward vs reverse proxy, termination vs tunneling, header rewriting"
+        },
+        {
           "title": "Load Balancer",
           "path": "./content/system-design/components/load-balancer.md",
           "slug": "load-balancer",
@@ -122,6 +128,12 @@
           "path": "./content/system-design/components/mtls.md",
           "slug": "mtls",
           "description": "Handshake, PKI management, certificate lifecycle, service mesh"
+        },
+        {
+          "title": "Service Discovery",
+          "path": "./content/system-design/components/service-discovery.md",
+          "slug": "service-discovery",
+          "description": "Registration, health checking, resolution, registry consistency trade-offs"
         }
       ]
     },
@@ -193,6 +205,12 @@
           "path": "./content/system-design/algorithms/idempotency.md",
           "slug": "idempotency",
           "description": "Safe retries, dedup keys, natural vs key-based vs server-derived"
+        },
+        {
+          "title": "Bloom Filter",
+          "path": "./content/system-design/algorithms/bloom-filter.md",
+          "slug": "bloom-filter",
+          "description": "Probabilistic membership, false positives, k hash functions, LSM-tree use"
         }
       ]
     },

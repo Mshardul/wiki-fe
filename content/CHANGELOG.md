@@ -9,6 +9,16 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-08-18
+- `system-design/components/rate-limiter.md` - trimmed TLDR to Component word cap
+- `system-design/components/search.md` - trimmed TLDR to Component word cap
+- `system-design/components/databases.md` - fixed broken bloom-filter.md link to plain-text + pending-link comment
+- `system-design/components/dns.md` - restructured Quick Decision Guide from bullet list to table
+- `system-design/algorithms/bloom-filter.md` - filled stub: FP/FN mechanics, sizing formulas, variants (Counting/Cuckoo/Scalable/Blocked), LSM/SSTable usage
+- `system-design/components/proxies.md` - filled stub: forward vs reverse, termination/tunneling/re-encryption, header rewriting, WebSocket upgrade, deployment contexts
+- `system-design/components/jwt.md` - filled partial stub: mental model, Quick Decision Guide, Comparison Matrix, key-rotation mermaid diagram, Production Failure Modes, Interview Scenario Bank
+- `system-design/components/service-discovery.md` - filled empty stub: registration/health-checking/resolution mechanics, registry consistency trade-offs, Comparison Matrix, Interview Scenario Bank
+
 ## 2026-08-16
 - `system-design/hld/distributed-id-generator.md` - filled stub: Snowflake bit layout, worker ID leasing, clock skew handling, generation strategy trade-offs
 - `system-design/hld/key-value-store.md` - filled stub: LSM-tree vs B-tree, consistent hashing + quorum consistency, LWW vs vector clocks, compaction deep-dive
