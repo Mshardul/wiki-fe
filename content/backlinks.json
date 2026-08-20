@@ -3755,6 +3755,10 @@
   ],
   "./content/system-design/algorithms/sharding-strategies.md": [
     {
+      "path": "./content/system-design/components/databases.md",
+      "title": "Databases"
+    },
+    {
       "path": "./content/system-design/components/distributed-file-system.md",
       "title": "Distributed File System"
     },

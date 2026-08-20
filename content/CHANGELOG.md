@@ -9,6 +9,12 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-08-20
+- `system-design/components/rate-limiter.md` - expanded: "Quick Decision Guide" (placement + algorithm axes), fixed reject-vs-degrade restatement, added Scenario Bank next-questions
+- `system-design/components/search.md` - new section: "Typo Tolerance (Fuzzy Matching)"; new section: "Vector / Semantic Search (Hybrid Retrieval)"; new section: "Faceted Filtering & Aggregation Cost"; expanded: "Quick Decision Guide" (cost trade-off)
+- `system-design/components/dns.md` - new section: "Cache Poisoning & DNSSEC"; new section: "Split-Horizon DNS"; new section: "DoH/DoT"; restructured failure modes into two H3 sub-groups
+- `system-design/components/databases.md` - new section: "Normalization & Denormalization"; expanded: "Resilience & Failure Handling" (connection pool exhaustion); trimmed TLDR to 50-word cap
+
 ## 2026-08-18
 - `system-design/components/rate-limiter.md` - trimmed TLDR to Component word cap
 - `system-design/components/search.md` - trimmed TLDR to Component word cap

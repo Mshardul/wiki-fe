@@ -26,7 +26,7 @@ A rate limiter caps request volume per identity (IP, user, API key) per window, 
 
 ## Core Functions & Protection Goals
 
-> **Interviewer TL;DR:** Rate limiting hard-rejects requests above a threshold; throttling degrades them (delays, reduced quality). The distinction matters because they require different client-handling strategies and serve different protection goals.
+> **Interviewer TL;DR:** Rate limiting and throttling differ in failure mode, not enforcement mechanism (see [Throttling vs Rate Limiting](#throttling-vs-rate-limiting) below) - and that distinction drives different protection goals.
 
 _Mental model: a bouncer counting entries per hour per person - turns away anyone over the limit regardless of how long they've waited._
 
@@ -109,13 +109,7 @@ Blends the current and previous fixed windows, weighted by how far into the curr
 
 > ⚖️ **Decision Framework**
 >
-> | Need                                             | Algorithm              |
-> | ------------------------------------------------ | ---------------------- |
-> | Burst tolerance, most APIs                       | Token Bucket           |
-> | Smooth downstream output                         | Leaky Bucket           |
-> | Absolute simplicity, low traffic                 | Fixed Window Counter   |
-> | Strictest accuracy, memory not a concern         | Sliding Window Log     |
-> | Default production - accuracy + memory efficient | Sliding Window Counter |
+> The choice comes down to burst tolerance, memory cost, and boundary accuracy - see the full [Selection Matrix](#selection-matrix) in Appendices for the side-by-side comparison across all five algorithms.
 
 **Key Takeaway:** Token bucket handles most API use cases. Default to sliding window counter when boundary spikes are unacceptable. Use leaky bucket only when downstream uniformity is a hard requirement - it will frustrate users with bursty-but-legitimate usage patterns.
 
@@ -329,11 +323,7 @@ X-RateLimit-Burst-Remaining: 0  (burst exhausted - current rejection reason)
 
 ### Hard Reject vs Soft Throttle Trade-offs
 
-_The choice here is the user experience of the rate limiter._
-
-**Hard reject** - 429 returned immediately. Server does no work for the rejected request. Clean semantics; client must implement retry handling.
-
-**Soft throttle** - request is accepted but artificially delayed, or returns a degraded response (fewer results, lower-resolution output, background-queued processing). Transparent to the client; no retry logic needed. The cost: server still processes the request, so resources are consumed.
+_Applying the [reject-vs-degrade distinction](#throttling-vs-rate-limiting) to the response contract specifically - which one determines what the client has to build._
 
 **Warn before reject** - send `X-RateLimit-Remaining: N` for the last few requests before cutoff. Clients that read headers can self-throttle. Doesn't help unaware clients or attackers.
 
@@ -430,7 +420,7 @@ A university campus, corporate office, or mobile carrier NAT can funnel thousand
 
 ### Common Misconceptions
 
-**"Rate limiting and throttling are the same thing."** No - rate limiting hard-rejects (429, no server work); throttling degrades gracefully (delay, reduced quality, still a response). Reaching for one when the requirement calls for the other produces the wrong client-facing contract even if the underlying counting logic is identical.
+**"Rate limiting and throttling are the same thing."** No - see [Throttling vs Rate Limiting](#throttling-vs-rate-limiting): different failure modes. Reaching for one when the requirement calls for the other produces the wrong client-facing contract even if the underlying counting logic is identical.
 
 **"A tighter limit is always safer."** No - over-tight limits on legitimate traffic (especially NAT-shared IPs) cause real user-facing outages that look identical to a working defense. A rate limiter that blocks paying customers is a self-inflicted incident, not a security win.
 
@@ -494,6 +484,8 @@ When tracing a 429 complaint from a specific client: pull their identifier, quer
 
 ## Quick Decision Guide
 
+_Three independent axes - identifier, placement, and algorithm are each chosen separately, per [Starting the Design Cold](#starting-the-design-cold)._
+
 ### Which Identifier?
 
 | Traffic type                | Primary identifier             | Caveat                                |
@@ -503,6 +495,14 @@ When tracing a 429 complaint from a specific client: pull their identifier, quer
 | Unauthenticated / anonymous | IP address                     | Bypassable; NAT over-blocking risk    |
 | Single sensitive endpoint   | Composite (user ID + endpoint) | Higher memory; use selectively        |
 | Global DDoS defence         | Global counter                 | Coarse; last resort                   |
+
+### Where to Place It?
+
+Default to the API gateway as the first line of enforcement; add per-service middleware only for auth/payment endpoints or when cross-service quota logic needs full application context. See [Placement in the Stack](#gateway-vs-per-service---enforcement-boundary) for the full trade-off table and when CDN/Edge or Service Mesh placement fits instead.
+
+### Which Algorithm?
+
+Default to token bucket for burst-tolerant APIs; reach for sliding window counter when boundary spikes are unacceptable, and leaky bucket only when downstream output must be perfectly smooth. See the [Selection Matrix](#selection-matrix) in Appendices for the full comparison across all five algorithms.
 
 ## Interview Scenario Bank
 
@@ -536,6 +536,7 @@ When tracing a 429 complaint from a specific client: pull their identifier, quer
 > **Q:** Your 429 rate suddenly drops to near-zero, but traffic volume hasn't changed. What do you check?
 > **Ideal answer:** First check for a Redis failover - a promoted replica starts counters at zero, so every client effectively gets a fresh window and looks "under limit" until counters rebuild. Second, check for a gateway bypass - a network path that reaches services without passing through the enforcing gateway.
 > **Common trap:** Reading a 429 drop as good news ("traffic normalized") without correlating it against Redis failover events or gateway bypass signals - enforcement can lapse silently in a way that looks identical to legitimate traffic calming down.
+> **Next question:** "How would you alert on this automatically instead of relying on someone noticing?" → correlate 429 rate against Redis failover events and gateway-bypass detection (request counts at services vs at the gateway) as a single alert condition - a 429 drop alone is not actionable, a 429 drop coinciding with either signal is.
 
 ### Handling a Motivated Adversary
 
@@ -543,6 +544,7 @@ When tracing a 429 complaint from a specific client: pull their identifier, quer
 > **Q:** An attacker is rotating through thousands of residential IPs, one request per IP. Your rate limiter is IP-based. What now?
 > **Ideal answer:** IP-based limiting provides zero protection here - each IP individually stays under the limit. Require authentication for the targeted endpoint and rate limit by user ID or API key instead. For unauthenticated flows, combine IP with TLS fingerprint, HTTP/2 stream patterns, or behavioral signals, and add a CAPTCHA for high-value unauthenticated actions.
 > **Common trap:** Tightening the IP-based limit further - it punishes legitimate users behind shared NATs while doing nothing to slow an attacker with a large enough IP pool.
+> **Next question:** "What if the endpoint can't require authentication at all?" → fall back to composite signals (TLS fingerprint + behavioral timing) since IP alone is exhausted, and accept that unauthenticated defense is inherently weaker - CAPTCHA becomes the primary lever, not a supplement.
 
 ---
 

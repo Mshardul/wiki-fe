@@ -16,6 +16,7 @@
 - [Indexing](#indexing)
 - [NoSQL Data Models](#nosql-data-models)
 - [Transactions & Isolation Levels](#transactions--isolation-levels)
+- [Normalization & Denormalization](#normalization--denormalization)
 - [Quick Decision Guide](#quick-decision-guide)
 - [Comparison / Selection Matrix](#comparison--selection-matrix)
 - [Security & Hardening](#security--hardening)
@@ -29,7 +30,7 @@
 
 ## TLDR
 
-A database is the system of record - durable, queryable storage that survives process restarts and enforces the invariants the application relies on. The core decision isn't "SQL or NoSQL" as a label, it's which guarantees the workload actually needs: strict schema and multi-row transactions point to relational; flexible schema, horizontal write scale, or a specific access pattern (key-value, wide-column, document) point to a NoSQL model built around that pattern. PostgreSQL and MySQL dominate relational workloads; DynamoDB and Cassandra dominate massive-scale key-value/wide-column workloads. The failure mode that shows up past a few thousand QPS on a single relational primary isn't usually storage capacity - it's write throughput and connection contention, which is what pushes systems toward read replicas, sharding, or a NoSQL model with distributed writes.
+A database is durable, queryable storage enforcing the app's invariants. The real decision isn't "SQL or NoSQL" - it's which guarantees the workload needs: multi-row transactions and enforced schema point relational; write scale or an access pattern points NoSQL. Past a few thousand QPS the bottleneck is usually write throughput.
 
 ---
 
@@ -50,7 +51,7 @@ A database is the system of record - durable, queryable storage that survives pr
 **NoSQL:** an umbrella term for databases that relax one or more of the relational guarantees - typically the fixed schema, multi-row transactions, or both - in exchange for horizontal scalability or a data model matching a specific access pattern more directly than tables ever could (see [NoSQL Data Models](#nosql-data-models)).
 
 > ⚖️ **Decision Framework**
-> Choose relational when the data has genuine relational structure (orders reference customers reference addresses) and the application needs to enforce that structure's integrity at the database level - not re-implement foreign-key checking in application code. Choose NoSQL when the access pattern is dominated by a single, known query shape (fetch by key, append to a time-series, traverse a graph) and forcing that pattern into normalized relational tables would mean expensive joins on every read, or when write throughput needs to scale past what a single relational primary can sustain without heavy sharding investment.
+> Choose relational when the data has genuine relational structure (orders reference customers reference addresses) and the application needs to enforce that structure's integrity at the database level - not re-implement foreign-key checking in application code. Choose NoSQL when the access pattern is dominated by a single, known query shape (fetch by key, append to a time-series, traverse a graph) and forcing that pattern into normalized relational tables would mean expensive joins on every read, or when write throughput needs to scale past what a single relational primary can sustain without heavy [sharding](../algorithms/sharding-strategies.md) investment.
 >
 > **Cost angle:** managed relational (RDS, Cloud SQL) and managed NoSQL (DynamoDB, Cosmos DB) both abstract operational cost, but relational's vertical-scaling ceiling means cost grows step-wise with instance size, while NoSQL's horizontal model means cost grows closer to linearly with load - relevant when traffic projections are uncertain and cost predictability matters.
 
@@ -63,6 +64,17 @@ The common failure mode: treating this as a permanent, system-wide choice rather
 **Interviewer TL;DR:** Almost every database's storage engine is built on one of two data structures - B-trees or LSM-trees - and the choice determines whether the engine is optimized for reads or for write throughput.
 
 **B-tree (PostgreSQL, MySQL InnoDB, most relational engines):** data stored in a balanced tree of fixed-size pages on disk, kept sorted, updated in place. A write locates the correct page and modifies it directly. Reads are fast and predictable (`O(log n)` page lookups); writes require locating and rewriting the page in place, which costs random I/O on spinning disks and, on SSDs, contributes to write amplification (see [Common Misapplications & Gotchas](#common-misapplications--gotchas)).
+
+```
+B-tree write path:
+  Write → Locate page (tree traversal)
+              │
+              ▼
+        Modify page in place (on disk)
+              │
+              ▼
+  Cost: random I/O / write amplification
+```
 
 **LSM-tree (Log-Structured Merge-tree - Cassandra, RocksDB, LevelDB, and most write-optimized NoSQL engines):** writes go to an in-memory structure (a memtable) and an append-only write-ahead log first, both fast, sequential operations. When the memtable fills, it's flushed to disk as an immutable sorted file (an SSTable). Reads may need to check the memtable and multiple SSTables, merging results - slower than a B-tree's single lookup unless mitigated (see [Indexing](#indexing)'s bloom filter note). A background **compaction** process periodically merges SSTables to bound how many files a read must check and reclaim space from overwritten/deleted keys.
 
@@ -149,6 +161,21 @@ This is the ACID "I" (Isolation) made concrete and tunable - see [ACID vs BASE](
 
 ---
 
+## Normalization & Denormalization
+
+**Interviewer TL;DR:** Normalization eliminates redundant data by splitting it across related tables, trading read-time joins for write-time integrity; denormalization reintroduces redundancy deliberately to make specific reads cheap by removing joins from the hot path.
+
+**Normalization** organizes data so each fact lives in exactly one place, related via foreign keys. Third normal form (3NF) - the practical target for most relational schemas - requires every non-key column depend on the whole primary key and nothing but the key, which in practice means: no repeating groups (1NF), no partial dependencies on a composite key (2NF), and no column depending on another non-key column (3NF, e.g. storing both `city` and `zip_code` on an `orders` row when `zip_code` alone determines `city`). The payoff is that an update touches exactly one row - renaming a customer updates one `customers` row, not every `orders` row that happens to carry a denormalized copy of the name.
+
+**Denormalization** deliberately duplicates data - a pre-joined column, a materialized aggregate, a full copy of a related row embedded in a document - to avoid the join or aggregation cost on a hot read path. The cost shifts from read-time computation to write-time complexity: every write that touches duplicated data must update every copy, or accept staleness until a background job reconciles them.
+
+> ⚖️ **Decision Framework**
+> Normalize by default for the transactional core, where write correctness and avoiding update anomalies matter more than shaving joins off an already-fast query. Denormalize a specific hot read path once profiling shows the join cost is the actual bottleneck - a product listing page assembling data from six normalized tables on every request is a common candidate for a denormalized read model (see [Storage Engine Internals](#storage-engine-internals) for how NoSQL document models often denormalize by default, embedding related data rather than joining it). Never denormalize speculatively before a measured read-latency problem exists - it trades a real, ongoing write-complexity cost for a read-cost saving that may not have been needed.
+>
+> **What breaks at scale:** past a few denormalized copies of the same fact, keeping them consistent becomes its own distributed-writes problem - either every write fans out synchronously to every copy (write latency grows with copy count) or copies are updated asynchronously and briefly disagree, which is the same staleness trade-off as [replication lag](../algorithms/replication-strategies.md#replication-lag) applied to redundant columns instead of redundant nodes.
+
+---
+
 ## Quick Decision Guide
 
 | Need | Choice |
@@ -172,6 +199,7 @@ This is the ACID "I" (Isolation) made concrete and tunable - see [ACID vs BASE](
 | Horizontal write scale | Hard (needs sharding) | Native | Native (varies) | Native (best-in-class) | Hard |
 | Best query pattern | Joins, aggregates | Fetch by key | Nested-field queries | Row-key range scans | Multi-hop traversal |
 | Storage engine (typical) | B-tree | LSM-tree or B-tree | Varies | LSM-tree | Varies |
+| **Pick it when** | Joins/aggregates over related entities, enforced integrity | Simple key lookups at massive scale | Flexible/nested schema, query on document fields | Extremely high write throughput, time-series/event data | Traversal-heavy queries (social graphs, recommendations) |
 
 ---
 
@@ -199,7 +227,9 @@ A database's failure handling is largely the replication and failover mechanics 
 
 **Backup vs replica distinction:** see [Replication Strategies → Often Confused With](../algorithms/replication-strategies.md#often-confused-with) - a live replica does not substitute for point-in-time backups, since a bad write (application bug, bad migration, malicious `DELETE`) replicates to every live replica within the normal replication lag window.
 
-**Connection pool exhaustion:** a database has a hard ceiling on concurrent connections; every application instance opening its own unbounded connection pool can collectively exceed that ceiling long before query load itself is the bottleneck - see [Production Failure Modes & Gotchas](#production-failure-modes--gotchas).
+### Connection Pool Exhaustion
+
+A database has a hard ceiling on concurrent connections (`max_connections` in PostgreSQL, similar in MySQL) that every application instance's connection pool contributes to collectively - see [Connection Pool Exhaustion](#production-failure-modes--gotchas) for the mechanism and mitigation.
 
 ---
 

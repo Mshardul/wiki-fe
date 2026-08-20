@@ -71,6 +71,17 @@ The modern practical default, refining TF-IDF with two corrections: **term frequ
 
 Past a certain scale/maturity, systems replace or augment BM25 with a machine-learned ranking model trained on click/engagement data (a document clicked and not immediately bounced from is a positive relevance signal) - blending textual match score with business signals (popularity, recency, personalization, price) that pure term-frequency statistics can't capture. This trades BM25's transparency and zero-training-data requirement for materially better relevance at the cost of a training pipeline and feedback-loop infrastructure.
 
+### Typo Tolerance (Fuzzy Matching)
+
+Exact postings-list lookup fails outright on a misspelled query term ("resturant" has no postings list - it isn't a term anyone indexed), so typo tolerance is a distinct mechanism layered on top of the inverted index, not a ranking tweak. The standard approach computes **edit distance** (Levenshtein distance - the minimum number of single-character insertions, deletions, or substitutions to turn one string into another) between the query term and candidate terms in the index's term dictionary, then treats any term within a small distance threshold (typically 1-2 edits) as a fuzzy match. Brute-force edit distance against every indexed term doesn't scale, so production systems narrow the candidate set first - commonly a **BK-tree** (a metric tree keyed on edit distance that prunes distant terms in one traversal instead of computing distance against every term) or an **n-gram/trigram index** (index terms by their character n-grams, so a misspelled query shares enough n-grams with the correct term to be found as a candidate, then edit distance confirms the match). Elasticsearch's `fuzzy` query and Algolia's typo-tolerance both work this way: narrow via a precomputed structure, confirm via edit distance, then rank fuzzy matches below exact matches so a correctly-spelled query never loses to a coincidentally-close misspelling.
+
+### Vector / Semantic Search (Hybrid Retrieval)
+
+Lexical retrieval (postings lists, TF-IDF/BM25) matches on shared terms, so it structurally misses a relevant document that describes the same concept with different words ("automobile" vs "car") - a distinct, non-optional senior follow-up once BM25/Learning-to-Rank is on the table is how to catch that class of miss, and the answer is **vector/semantic search**, not a bigger inverted index. Each document is embedded into a dense vector (via a trained embedding model) that captures meaning rather than exact tokens, and a query is embedded the same way at search time; retrieval becomes "find the documents whose vectors are closest to the query's vector" instead of "find documents sharing the query's terms." Brute-force nearest-neighbor search (compute distance to every document vector) doesn't scale past a small corpus, so production systems build an **approximate nearest-neighbor (ANN) index** over the vectors - **HNSW** (Hierarchical Navigable Small World, a layered graph of vectors that lets a query navigate to its nearest neighbors in roughly logarithmic hops instead of a linear scan) is the standard choice, trading a small, tunable amount of recall for large speedups at query time. Critically, this is layered **on top of**, not instead of, lexical BM25 retrieval: production systems run **hybrid search** - both the inverted-index lexical path and the ANN vector path execute per query, and their result sets are blended (commonly via **Reciprocal Rank Fusion**, which combines each result's rank across both lists rather than trying to normalize incomparable BM25 and cosine-similarity scores directly) - because pure vector search alone tends to lose exact-match precision (a product SKU or an exact error code is still best found lexically) while pure lexical search alone misses paraphrase/synonym matches, so neither replaces the other. A related, distinct query-time mechanism worth naming separately is **autocomplete/typeahead** - suggesting completions as the user types, typically served by a **prefix index** or **edge n-grams** (each term indexed by its prefixes, e.g. `"search"` also indexed under `"s"`, `"se"`, `"sea"`, ...) rather than by the full-term inverted index or the ANN index above, since it's optimized for prefix-match speed at keystroke latency, not relevance ranking over complete terms.
+
+> ⚖️ **Decision Framework**
+> Adding a vector/ANN path is a real infrastructure and latency cost (a second index to build, store, and keep in sync with the corpus, plus embedding-model inference on every write and every query), so it's justified when queries plausibly use different words than the documents (natural-language or conversational queries, cross-lingual search) - not a default upgrade over BM25 for every search feature. A product-catalog search where users type near-exact product names gets little from semantic search and pays the full infrastructure cost for it.
+
 ---
 
 ## Distributed Search
@@ -111,6 +122,10 @@ Free-text or fuzzy-match queries, relevance ranking beyond exact-match, faceted 
 - **Strongly consistent, transactional reads of the same data being written** - most search indexes are near-real-time, not immediately consistent (see [Indexing Pipeline & Freshness](#indexing-pipeline--freshness)); don't use a search index as the system of record for data requiring read-your-writes guarantees.
 - **Small, static, low-query-volume datasets** - the inverted-index infrastructure and its operational cost (cluster management, reindexing) isn't worth it below a scale where a database's `LIKE`/full-text extension (e.g. Postgres `tsvector`) suffices.
 
+### Managed (Algolia) vs Self-Hosted (Elasticsearch/OpenSearch) Cost Trade-off
+
+Algolia bills per-record and per-query, so cost scales directly and predictably with corpus size and traffic - no cluster to size, but the bill grows linearly with usage in a way a self-hosted cluster's cost doesn't. A self-hosted Elasticsearch/OpenSearch cluster instead has a cost floor (nodes running whether or not they're heavily queried) but the marginal cost of additional queries or documents past that floor is far lower, so the crossover point is usage-dependent: low-to-moderate volume favors managed (no idle infrastructure to pay for), high sustained volume favors self-hosted (the fixed cluster cost amortizes below Algolia's per-unit pricing) - the same build-vs-buy shape as most managed-vs-self-hosted trade-offs, except here the "build" side also carries real engineering-time cost (cluster tuning, shard sizing, upgrades) that a per-query bill doesn't.
+
 ---
 
 ## Comparison / Selection Matrix
@@ -135,6 +150,10 @@ New or updated documents don't appear in search results instantly - they flow th
 
 **Segment merging:** internally, an inverted index is typically built as many small immutable **segments** (each refresh cycle creates a new segment) that are periodically merged into larger segments in the background - avoiding the cost of restructuring one giant index on every write, at the cost of background merge I/O and, transiently, more segments to search per query before a merge catches up.
 
+### Reindexing at Scale
+
+A tokenization/analysis config change (new stemming rule, new indexed field) forces a full corpus reprocess, not an incremental update, because the inverted index's structure is derived from the analysis config at build time - full mechanics and mitigation in [Production Failure Modes & Gotchas](#reindexing-at-scale).
+
 ---
 
 ## Performance & Optimization
@@ -147,11 +166,23 @@ Popular or repeated queries (a trending search term, a common filter combination
 
 Some relevance/filtering work can be pushed to index time (compute and store a field once, at write time) instead of query time (recompute on every query) - e.g. precomputing a popularity score and storing it as an indexed field, rather than joining against a live popularity table on every search request. This trades index-time write cost and storage for materially faster queries, the same "pay once at write, cheap at read" trade-off underlying the inverted index itself.
 
+### Faceted Filtering & Aggregation Cost
+
+A facet ("category: Electronics (1,204)", "brand: Sony (312)") isn't a separate lookup against the document store - it's computed by aggregating over the same postings lists the query already touched, bucketing matching documents by the values of a designated facet field and counting documents per bucket. Search engines keep a dedicated per-field data structure for this - Elasticsearch/Lucene use **doc values** (a column-oriented, uninverted store mapping document → field value, the inverse direction of the postings list, built specifically because bucketing "which documents have value X" from a term-to-document postings list is fine, but summing counts per value across the whole result set needs the fast per-document field-value scan doc values provide instead). Critically, facet computation runs over the **filtered result set the free-text query already matched**, not a separate pass over the whole corpus - facets and the query combine as one execution: the query narrows the candidate documents via the inverted index, then aggregation buckets and counts within that already-narrowed set, so adding facets to a query is closer to "one more pass over the matched set" than "another full-corpus query."
+
+Facet cost scales with **cardinality**, not corpus size directly: a low-cardinality field (`in_stock: true/false`, a handful of `category` values) produces a handful of buckets regardless of how many documents match, cheap to compute and cheap to return. A high-cardinality field (`seller_id` with tens of thousands of distinct sellers, or a near-unique field like `sku`) forces the aggregation to track a bucket per distinct value seen in the result set - memory and CPU scale with the number of *distinct values encountered*, not with a fixed bucket count, which is why faceting on a near-unique field is a classic way to accidentally turn a cheap query into an expensive one. Production systems bound this with a `size` cap on returned buckets (return only the top-N by document count) and approximate cardinality-aware aggregation, rather than materializing every distinct value's exact count.
+
+> ⚠️ **Warning / Gotcha** - combining multiple facets in one query (filter by category AND brand AND price range, each showing live counts for the others) multiplies the aggregation work per facet field, and a naive implementation recomputes every facet's counts as if the other facets weren't applied yet (to show "what would this look like if I also picked Sony" counts) - which is more aggregation passes than a single filtered result set, not fewer, and is a common place hidden latency creeps into an otherwise fast search.
+
 ---
 
 ## Resilience & Failure Handling
 
 A shard replica failure is masked by routing queries to a surviving replica (see [Distributed Search](#distributed-search)) - transparent to the client, at the cost of that shard's remaining replicas absorbing more query load until the failed replica is replaced. A full shard loss (all replicas of one shard gone) is more serious: since search results are typically an aggregate top-K across all shards, a missing shard silently produces incomplete results (missing documents that happen to live on that shard) rather than an obvious error - unlike a database query that would fail loudly on a missing partition, a search query "succeeds" with quietly wrong results unless the system explicitly surfaces partial-result status to the caller.
+
+### Hot Shard from Skewed Term Distribution
+
+Query load can concentrate on specific shards even with even document-count distribution, because scatter-gather traffic follows which shards happen to hold matches for popular query terms rather than following document count - full mechanics and mitigation in [Production Failure Modes & Gotchas](#hot-shard-from-skewed-term-distribution).
 
 ---
 
