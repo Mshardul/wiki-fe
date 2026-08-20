@@ -311,8 +311,9 @@ async function renderContent(wiki, rawPath, title, pushNav = true, slug = null) 
     recordOpened(filePath);
 
     if (readTimeBadge) {
+      const isStub = readTimeCache[filePath] === null;
       readTimeBadge.textContent = readTimeCache[filePath] || readingTime(markdown);
-      readTimeCache[filePath] = readTimeBadge.textContent;
+      if (!isStub) readTimeCache[filePath] = readTimeBadge.textContent;
     }
 
     const bodyContent = markdown

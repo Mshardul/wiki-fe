@@ -17,7 +17,7 @@
   },
   {
     "a": "./content/dsa/data-structures/trie.md",
-    "b": "./content/system-design/hld/search-autocomplete.md"
+    "b": "./content/system-design/components/search.md"
   },
   {
     "a": "./content/dsa/data-structures/skip-list.md",
@@ -26,9 +26,5 @@
   {
     "a": "./content/dsa/data-structures/b-tree.md",
     "b": "./content/system-design/components/databases.md"
-  },
-  {
-    "a": "./content/dsa/algorithms/bfs.md",
-    "b": "./content/system-design/hld/web-crawler.md"
   }
 ]

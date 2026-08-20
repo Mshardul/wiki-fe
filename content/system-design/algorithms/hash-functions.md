@@ -134,7 +134,7 @@ Hash functions are the load-bearing primitive underneath several other system-de
 
 - **[Consistent Hashing](./consistent-hashing.md)** - places both nodes and keys on a hash ring using a fast, uniform, avalanche-having hash function; the properties above are exactly what make ring position assignment behave predictably under key churn.
 - **Sharding** - a hash function's output (often via `hash(key) % shard_count` or consistent hashing) decides which physical shard owns a key; uniformity here directly determines whether shards carry balanced load.
-- **[Bloom Filters](./bloom-filters.md)** - use several independent hash functions per inserted item to set bits in a bit array; uniformity and independence between the hash functions directly determine the filter's false-positive rate. <!-- link: ./bloom-filters.md -->
+- **[Bloom Filters](./bloom-filter.md)** - use several independent hash functions per inserted item to set bits in a bit array; uniformity and independence between the hash functions directly determine the filter's false-positive rate. <!-- link: ./bloom-filter.md -->
 - **Deduplication / content-addressable storage** - a cryptographic hash (or a large-output non-cryptographic one) of content becomes its identity; two objects with the same hash are treated as the same object, which is why collision resistance at the birthday bound matters here specifically.
 
 > 🧠 **Thought Process**
