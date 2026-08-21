@@ -4083,6 +4083,10 @@
     {
       "path": "./content/system-design/components/authentication.md",
       "title": "Authentication"
+    },
+    {
+      "path": "./content/system-design/components/mfa.md",
+      "title": "Multi-Factor Authentication"
     }
   ],
   "./content/system-design/components/observability.md": [

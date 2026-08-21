@@ -27,6 +27,8 @@
 
 Consistent hashing maps both nodes and keys onto a hash ring, assigning each key to the nearest node clockwise. Adding or removing a node remaps only `~1/N` of keys, versus `(N-1)/N` for plain modulo hashing (`hash(key) % N`) - which reshuffles nearly every key on any pool-size change. The mechanism alone produces uneven load (some nodes own larger ring arcs than others); virtual nodes fix this by placing each physical node at many ring positions.
 
+**Interview soundbite:** Consistent hashing's real contribution isn't the ring - it's turning "which node owns this key" from a function of pool size into a function of position, so the answer barely changes when the pool does.
+
 ---
 
 ## What It Is

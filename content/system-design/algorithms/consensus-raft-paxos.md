@@ -30,6 +30,8 @@
 
 Consensus is how a cluster of unreliable nodes agrees on a single value - who's leader, what the next log entry is - even when some nodes crash or messages get delayed, by requiring every decision to win a majority quorum before it's considered final. The core insight is that overlapping majorities can never disagree: any two quorums share at least one node, so a stale minority can't silently commit a conflicting decision. Raft and Paxos both deliver this guarantee; Raft trades Paxos's generality for understandability by making leader election and log replication explicit, separable steps. The trap: consensus guarantees agreement on **committed** entries, not liveness during a partition - a minority partition simply stalls, it doesn't diverge.
 
+**Interview soundbite:** Consensus isn't about getting nodes to agree - a single node with no peers "agrees" with itself trivially - it's about guaranteeing that no two disjoint quorums can ever commit conflicting values, which is what turns "probably agree" into "provably can't disagree."
+
 ---
 
 ## Mental Model

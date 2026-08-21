@@ -113,9 +113,7 @@ _Partitions are not edge cases - they are routine events in any distributed syst
 
 Even within a single data centre: NIC failures, misconfigured switches, GC pauses that cause missed heartbeats, rolling restarts, asymmetric routing. Across data centres or regions: the failure rate is higher still.
 
-A system that doesn't tolerate partitions must guarantee the network never partitions. That guarantee is impossible to make over any real network. The only system that avoids partitions entirely is a single node - which is not a distributed system.
-
-This is why "CA" is a theoretical category, not a real design choice. Claiming CA means claiming your network is perfect. The moment you have two nodes, you must decide what happens when they can't talk.
+A system that doesn't tolerate partitions must guarantee the network never partitions. That guarantee is impossible to make over any real network. The only system that avoids partitions entirely is a single node - which is not a distributed system - which is exactly why CA isn't a real design choice (see [Why CA Doesn't Exist at Scale](#why-ca-doesnt-exist-at-scale)). The moment you have two nodes, you must decide what happens when they can't talk.
 
 > 🧠 **Thought Process**
 > When a candidate says "we'll pick CA for our database", the right follow-up is: "what happens when a network switch between your two nodes fails for 30 seconds?" If the answer is "we block all writes" - that's CP. If the answer is "we serve stale reads" - that's AP. There is no third answer.

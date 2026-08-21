@@ -196,8 +196,8 @@ Netflix's Hystrix was the reference implementation that popularized this pattern
 > **Next question:** "Your reset timeout is 30 seconds but the dependency actually takes 5 minutes to recover from this failure class. What happens?" → The breaker cycles Open → Half-Open → Open every 30 seconds, sending a small trial-call trickle the whole time - mostly harmless but not actively helpful; tune the timeout empirically per dependency and failure class, not once, generically, up front.
 
 > 🎯 **Interview Lens**
-> **Q:** What's a breaker storm, and how would you prevent one?
-> **Ideal answer:** When one shared dependency degrades, every caller's breaker trips at roughly the same time (they're all observing the same failure signal), and the resulting simultaneous shift to fallback paths (cache lookups, degraded-mode calls, alerting) becomes a load spike in its own right - sometimes worse than the original degradation. Mitigations: jitter on reset timeouts so callers don't all retry the trial call in the same instant, and making sure the fallback path itself has capacity headroom sized for "every caller uses it at once," not just occasional use.
+> **Q:** A shared dependency degrades for 10 seconds. Right after, your monitoring shows every one of 200 dependent services spiking CPU and cache traffic at once - worse than the original degradation. What happened, and how would you prevent it?
+> **Ideal answer:** Every caller's breaker is observing the same failure signal, so they all trip to Open at roughly the same time, and the resulting simultaneous shift to fallback paths (cache lookups, degraded-mode calls, alerting) becomes a load spike in its own right. Mitigations: jitter on reset timeouts so callers don't all retry the trial call in the same instant, and making sure the fallback path itself has capacity headroom sized for "every caller uses it at once," not just occasional use.
 > **Common trap:** Treating each caller's circuit breaker as an isolated concern and not considering what happens when hundreds of them react to the same signal simultaneously.
 
 ---

@@ -86,7 +86,7 @@ lowest availability                                    highest availability
 
 _Strongest practical model: reads always reflect the most recent write, globally, in real time._
 
-Every operation behaves as if it executed atomically at a single instant, and that instant respects real-time order across every client. This is CAP's C - see [CAP Theorem](./cap-theorem.md) for the full impossibility argument. Achieved via consensus protocols (Raft, Paxos) or a single-writer architecture. The cost: every write must be acknowledged by a quorum, and every read must confirm it has the latest value - both add latency, and availability drops when a quorum can't be reached.
+Every operation behaves as if it executed atomically at a single instant, and that instant respects real-time order across every client. This is CAP's C - see [CAP Theorem](./cap-theorem.md) for the full impossibility argument. Achieved via consensus protocols (Raft, Paxos) or a single-writer architecture. The cost: every write must be acknowledged by a quorum, and every read must confirm it has the latest value - both add latency, and availability drops when a quorum can't be reached. Concretely, a same-region quorum write typically costs a low single-digit-ms round trip on top of local write latency; a cross-region linearizable write (waiting on a quorum spread across continents) can cost 50-150ms instead of the ~1ms a local, non-coordinated write would take - that gap is the real, felt cost of buying linearizability.
 
 ### Sequential Consistency
 

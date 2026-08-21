@@ -17,6 +17,12 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `system-design/components/mtls.md` - new stub: full article filled from partial stub (TLDR, full spine, Quick Decision Guide, Production Failure Modes, Interview Scenario Bank)
 - `system-design/hld/distributed-cache.md` - expanded: "Data Partitioning & Rebalancing" (consolidated trade-off, comparison table), new section: "Key & TTL Schema"; re-derived capacity estimation
 - `system-design/algorithms/leader-election.md` - new article: bully algorithm, ring algorithm, failure detection, split-brain
+- `system-design/components/oauth-oidc.md` - expanded: partial stub completed - added TLDR, Comparison/Selection Matrix table, Token Revocation & Refresh Token Rotation (linked to authentication.md hub for shared lifecycle content), inline + consolidated Production Failure Modes & Gotchas, consolidated Interview Scenario Bank, Appendices
+- `system-design/algorithms/circuit-breaker.md` - hygiene: reworded breaker-storm interview question to diagnose-not-define
+- `system-design/algorithms/cap-theorem.md` - hygiene: consolidated duplicated at-scale CA claim
+- `system-design/algorithms/consistency-models.md` - hygiene: added concrete latency numbers to linearizability trade-off
+- `system-design/algorithms/consensus-raft-paxos.md` - hygiene: added interview soundbite line
+- `system-design/algorithms/consistent-hashing.md` - hygiene: added interview soundbite line
 
 ## 2026-08-20
 - `system-design/components/rate-limiter.md` - expanded: "Quick Decision Guide" (placement + algorithm axes), fixed reject-vs-degrade restatement, added Scenario Bank next-questions

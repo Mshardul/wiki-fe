@@ -83,7 +83,7 @@ def test_enter_navigates_to_article(wiki_page):
 def test_visited_stub_excluded_from_search(wiki_page, base_url):
     """A stub becomes excludable once visited (readTimeCache marks it null)."""
     # Visit the known stub so its readTimeCache entry is set to null.
-    wiki_page.goto(f"{base_url}/#system-design/api-gateway", wait_until="domcontentloaded")
+    wiki_page.goto(f"{base_url}/#system-design/youtube-video-streaming", wait_until="domcontentloaded")
     wiki_page.wait_for_function(
         "() => !!document.querySelector('#markdown-body[data-render-done]')",
         timeout=10_000,
@@ -92,14 +92,14 @@ def test_visited_stub_excluded_from_search(wiki_page, base_url):
     wiki_page.wait_for_selector("#view-home.active", timeout=5_000)
 
     _open_search(wiki_page)
-    wiki_page.fill("#gsearch-input", "api gateway")
+    wiki_page.fill("#gsearch-input", "youtube video streaming")
     wiki_page.wait_for_function(
         "() => document.querySelectorAll('.gsearch-result').length > 0 || document.querySelector('.gsearch-no-results')",
         timeout=8_000,
     )
 
     titles = [r.inner_text() for r in wiki_page.locator(".gsearch-result").all()]
-    assert all("api gateway" not in t.lower() for t in titles), (
+    assert all("youtube" not in t.lower() for t in titles), (
         f"Visited stub still appeared in results: {titles}"
     )
 

@@ -342,7 +342,7 @@ async function loadAllSearchEntries() {
   if (allSearchCache.loaded || allSearchCache.loading) return;
   allSearchCache.loading = true;
   gSearchResults.innerHTML = '<div class="gsearch-loading">Loading…</div>';
-  loadSynonyms();
+  const synonymsReady = loadSynonyms();
 
   try {
     let anySucceeded = false;
@@ -352,6 +352,8 @@ async function loadAllSearchEntries() {
         anySucceeded = true;
       } catch {}
     }
+    // Wait for synonyms so the first render already reflects the full match set - otherwise result counts can silently grow on a later re-search once the fetch lands.
+    await synonymsReady;
 
     if (!anySucceeded) {
       gSearchResults.innerHTML =
