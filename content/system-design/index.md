@@ -17,7 +17,10 @@ Foundational building blocks. Each page covers mechanics, trade-offs, failure mo
 | [Observability](./components/observability.md)                                 | Three pillars, instrumentation strategy, sampling & cost trade-offs, alerting |
 | [Distributed Tracing](./components/tracing.md)                                 | Spans, context propagation, sampling strategies, trace-based debugging   |
 | [Proxies](./components/proxies.md)                                             | Forward vs reverse proxy, termination vs tunneling, header rewriting |
-| [Load Balancer](./components/load-balancer.md)                                 | Traffic distribution, algorithms, health checks, L4 vs L7        |
+| [Load Balancer](./components/load-balancer.md)                                 | L4/L7 classification, health checks, session persistence, performance, failure modes |
+| [Load Balancer Traffic Distribution Algorithms](./components/load-balancer-algorithms.md) | Round robin, least connections, IP/consistent hashing, algorithm cheat sheet |
+| [Load Balancer TLS Handling](./components/load-balancer-tls.md)                | Termination, passthrough, re-encryption, certificate rotation, mTLS at the LB |
+| [Load Balancer High Availability](./components/load-balancer-high-availability.md) | Active-active vs active-passive, floating IPs/VRRP, split-brain prevention |
 | [CDN](./components/cdn.md)                                                     | Edge caching, cache invalidation, origin offload                 |
 | [Caching](./components/caching.md)                                             | In-memory caching, eviction policies, distributed cache patterns |
 | [Databases](./components/databases.md)                                         | SQL vs NoSQL, indexing, replication, consistency models          |

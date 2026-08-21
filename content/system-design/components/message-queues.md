@@ -22,7 +22,7 @@
 - [Wire Protocol & Framing Patterns](#wire-protocol--framing-patterns)
 - [Security & Hardening](#security--hardening)
 - [Observability & Operational Debugging](#observability--operational-debugging)
-- [Production Failure Modes & Recovery](#production-failure-modes--recovery)
+- [Production Failure Modes & Gotchas](#production-failure-modes--gotchas)
 - [Performance Tuning & Capacity Planning](#performance-tuning--capacity-planning)
 - [Advanced Architectural Patterns](#advanced-architectural-patterns)
 - [Interview Scenario Bank](#interview-scenario-bank)
@@ -32,7 +32,7 @@
 
 ## TLDR
 
-A message queue decouples producers and consumers temporally (they don't need to be online simultaneously), spatially (they don't need to know each other's addresses), and by load (producers can burst without overwhelming consumers). The core choice is between a **work queue** (message consumed once, then deleted), a **log/stream** (append-only, offset-tracked, replayable by multiple independent consumers), and **pub/sub** (broadcast, no persistence). Kafka and Pulsar are logs; RabbitMQ and SQS are queues. Delivery semantics - at-most-once, at-least-once, exactly-once - are the hardest trade-off: exactly-once is achievable but expensive, and only necessary for use cases like financial ledgers where both loss and duplication are unacceptable. In production, the leading failure modes are consumer lag cascades, unclean <abbr>leader elections</abbr> causing data loss, and poison messages blocking partitions in infinite retry loops.
+A message queue decouples producers and consumers temporally, spatially, and by load. The core choice is **work queue** (consumed once) vs **log/stream** (replayable, multiple consumers) vs **pub/sub** (broadcast). The hardest trade-off is delivery semantics - exactly-once is achievable but expensive, worth it only when loss and duplication are both unacceptable.
 
 ---
 
@@ -45,7 +45,7 @@ Adding a message queue introduces a broker to deploy, monitor, and operate - plu
 - **You need synchronous request/reply** - if the caller blocks waiting for a response, you've built HTTP with extra latency and an extra operational dependency. Use gRPC or HTTP directly.
 - **There is exactly one consumer and no decoupling is needed** - a direct function call, goroutine channel, or in-process queue is simpler and faster with no broker dependency.
 - **The payload is large binary data (images, video)** - store blobs in object storage (S3/GCS); put only a reference (URL or object key) in the message. Queues are for coordination metadata, not bulk data transfer.
-- **You need strict global ordering across all messages** - a single-partition topic caps throughput at ~10-50MB/s and limits you to one active consumer. Probe whether per-entity ordering (achievable with key partitioning at full throughput) satisfies the requirement before accepting this constraint.
+- **You need strict global ordering across all messages** - a single-partition topic caps throughput severely (see [Ordering Guarantees](#ordering-guarantees)) and limits you to one active consumer. Probe whether per-entity ordering (achievable with key partitioning at full throughput) satisfies the requirement before accepting this constraint.
 - **Message volume is very low and latency is tight** - at low throughput (< ~100 msgs/min), a database-backed job queue (Postgres `SKIP LOCKED`, Redis list) is simpler and avoids broker operational overhead entirely.
 - **Your consumer can't be made <abbr>idempotent</abbr> and you need exactly-once to an external system** - Kafka's exactly-once only covers Kafka-to-Kafka flows. Without idempotent writes or an outbox pattern, a message queue won't deliver the guarantee you need.
 
@@ -579,7 +579,7 @@ Kafka ACLs scoped to: topic, consumer group, cluster, transactional ID. Principl
 
 **Consumer lag in time** is more actionable than offset lag for SLOs. "We process within 5 minutes" → time-based lag > 5 min = SLO breach, regardless of offset count.
 
-**Under-replicated partitions** are a pre-failure signal. With `acks=all`, producers fail when URP > 0. Seeing any URP means a broker is struggling - act before producers start failing.
+**Under-replicated partitions** are a pre-failure signal - once the in-sync replica count for a partition drops below `min.insync.replicas`, producers using `acks=all` start failing. Seeing any URP means a broker is struggling; act before `min.insync.replicas` is actually breached.
 
 ### Trace Context Propagation
 
@@ -601,7 +601,7 @@ Message queues break distributed traces - the producer's trace context must be c
 
 ---
 
-## Production Failure Modes & Recovery
+## Production Failure Modes & Gotchas
 
 **Interviewer TL;DR:** Know the detection signal and recovery action for each: unclean leader election (data loss), thundering herd on cache warmup, disk full (silent write rejection), GC pauses (ISR shrink), and offset corruption (mass reprocessing).
 
@@ -656,7 +656,7 @@ The `__consumer_offsets` internal topic stores committed offsets. Corruption cau
 - **"Kafka is a message queue"** - it's a distributed log; conflating it with RabbitMQ misses the defining property (retained, replayable, independently-read-by-multiple-groups).
 - **"A DLQ means you've handled the error"** - it's a parking lot, not a resolution; without monitoring and a replay process it silently fills up.
 - **"Rebalancing is just a brief pause"** - for large consumer groups under eager rebalancing it can pause consumption for 30+ seconds, a measurable outage under a real-time SLO. Cooperative rebalancing and static membership are the mitigations.
-- **"Kafka guarantees message ordering"** - only within a single partition; global ordering requires a single partition, capping throughput at ~10-50MB/s. Per-entity ordering via key-based partitioning is almost always what's actually needed.
+- **"Kafka guarantees message ordering"** - only within a single partition; global ordering requires a single partition, capping throughput severely (see [Ordering Guarantees](#ordering-guarantees)). Per-entity ordering via key-based partitioning is almost always what's actually needed.
 
 **Key Takeaway:** Unclean leader election = data loss; disk full = silent write rejection; offset corruption = mass reprocessing. Each has a specific config-level prevention and a specific recovery procedure - know all three.
 
@@ -698,7 +698,7 @@ net.ipv4.tcp_wmem = 4096 65536 67108864
 
 **Metadata overhead:** ZooKeeper-based Kafka struggles beyond ~200,000 total partitions in a cluster. KRaft removes this ceiling but metadata overhead still grows linearly.
 
-**Sizing rule:** `num_partitions ≥ desired_throughput_MB/s ÷ single_partition_throughput_MB/s`. A single Kafka partition sustains ~10-50MB/s depending on replication and compression. Start at `num_expected_consumers × 2`; increase based on observed throughput. You cannot decrease partition count without recreating the topic.
+**Sizing rule:** `num_partitions ≥ desired_throughput_MB/s ÷ single_partition_throughput_MB/s` - see [Ordering Guarantees](#ordering-guarantees) for the per-partition ceiling this divides by. Start at `num_expected_consumers × 2`; increase based on observed throughput. You cannot decrease partition count without recreating the topic.
 
 **Key Takeaway:** Compression (LZ4 or Zstd) + batching (`linger.ms` + `batch.size`) give the biggest throughput gains. Partition count is a one-way door - set it based on throughput and max consumer parallelism at topic creation.
 
@@ -716,33 +716,11 @@ Queues are one-way by default. Request-reply requires the requester to create a 
 
 ### Competing Consumers vs Partitioned Work Queues
 
-Competing consumers (any consumer takes any message, natural load balancing, no ordering) is the queue model; partitioned work queues (Kafka consumer groups, each partition owned by exactly one consumer, per-key ordering preserved) is the log model. This is the same [Queue, Log, or Pub/Sub?](#queue-log-or-pubsub) decision from the Quick Decision Guide, applied to consumer-side parallelism specifically.
+The same [queue vs log](#queue-vs-log-vs-pubsub) choice, applied specifically to consumer-side parallelism: competing consumers is the queue model, partitioned work queues (Kafka consumer groups) is the log model.
 
 ### Choreography vs Orchestration (Saga Pattern)
 
-**Choreography:** Each service listens for events and reacts. No central coordinator. Simple to deploy, emergent behavior - the workflow is implicit in the event topology.
-
-**Orchestration:** A central orchestrator commands each step, waits for confirmation, handles failures explicitly. Easier to trace; orchestrator is a bottleneck and SPOF if not made HA.
-
-```
-Choreography (implicit flow):
-  OrderService     → publishes "OrderCreated"
-  PaymentService   → reacts to "OrderCreated", publishes "PaymentProcessed"
-  InventoryService → reacts to "PaymentProcessed", publishes "StockReserved"
-
-Orchestration (explicit flow):
-  OrderSaga → commands PaymentService, awaits "PaymentProcessed"
-            → commands InventoryService, awaits "StockReserved"
-```
-
-**Failure mode contrast:**
-
-| Scenario                   | Choreography                                                                                                                                                 | Orchestration                                                                                                                                |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Step 3 of 5 fails          | Each upstream service must listen for a failure event and emit its own compensating event. If any service is down, its compensation silently doesn't happen. | Orchestrator detects failure, explicitly invokes compensating commands in reverse order. Failures in compensation are visible and retryable. |
-| New step added to workflow | Add a subscriber and emit the right event - easy to add, hard to see the full flow.                                                                          | Update the orchestrator - the full flow is visible and auditable in one place.                                                               |
-| Debugging a failed saga    | Reconstruct the flow by correlating events across multiple service logs using a shared correlation ID.                                                       | Inspect orchestrator state - it tracks every step, its outcome, and current position.                                                        |
-| Partial failure visibility | Implicit - requires distributed tracing to detect that a downstream service never reacted to an event.                                                       | Explicit - orchestrator knows which step is pending, for how long, and can alert or retry.                                                   |
+Message queues are the transport for a saga - a multi-service write that stays consistent without cross-service locks by chaining local transactions with compensating rollbacks. **Choreography** routes each step as an event other services react to, with no central coordinator; **orchestration** routes each step as a command from a central orchestrator that waits for confirmation and drives compensation explicitly on failure. The full mechanics, the failure-mode trade-offs between the two styles, and the compensating-transaction design rules belong to the saga pattern itself, not to message-queue mechanics.
 
 🔗 Deep-Dive: [Saga Pattern](../algorithms/saga-pattern.md)
 
@@ -830,6 +808,8 @@ Orchestration (explicit flow):
 > **Q:** How many partitions should a topic have?
 > **Ideal answer:** Three constraints - required throughput ÷ per-partition throughput; expected consumer count (for parallelism); operational limits (file handles, metadata overhead). Start conservative; you can increase later, never decrease without recreating the topic.
 > **Next question:** "Is there a downside to too many partitions?" → Longer rebalances, more file handles, higher metadata and replication overhead, slightly higher end-to-end latency since each partition flushes and replicates independently.
+
+**Interview soundbite:** A message queue's real design question isn't "queue or log" in the abstract - it's "what happens to this message if the consumer never comes back," and every delivery-semantics, ordering, and DLQ decision downstream is just an answer to that.
 
 ---
 

@@ -13,6 +13,10 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `system-design/algorithms/consensus-raft-paxos.md` - expanded: "Linearizable Reads Without a Log Append"
 - `system-design/components/mfa.md` - fixed gate failures: diagram, Appendices, failure-mode coverage, prereq fix
 - `system-design/components/session-auth.md` - completed partial stub: TLDR, Mental Model, Quick Decision Guide, consolidated Interview Scenario Bank, Production Failure Modes & Gotchas, Appendices
+- `system-design/components/load-balancer.md` - hub-split restructure: extracted Traffic Distribution Algorithms, SSL/TLS Handling, and High Availability & Resilience into sibling pages, replaced with summary + link
+- `system-design/components/load-balancer-algorithms.md` - new article: Traffic Distribution Algorithms extracted from load-balancer.md
+- `system-design/components/load-balancer-tls.md` - new article: SSL/TLS Handling extracted from load-balancer.md
+- `system-design/components/load-balancer-high-availability.md` - new article: High Availability & Resilience extracted from load-balancer.md
 - `system-design/components/service-to-service-auth.md` - completed partial stub: TLDR, Quick Decision Guide, Comparison Matrix, consolidated Interview Scenario Bank, Production Failure Modes & Gotchas, Appendices
 
 ## 2026-08-21

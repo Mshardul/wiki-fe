@@ -3621,8 +3621,8 @@
   ],
   "./content/system-design/algorithms/consistent-hashing.md": [
     {
-      "path": "./content/system-design/components/load-balancer.md",
-      "title": "Load Balancer"
+      "path": "./content/system-design/components/load-balancer-algorithms.md",
+      "title": "Load Balancer Traffic Distribution Algorithms"
     },
     {
       "path": "./content/system-design/components/cdn.md",
@@ -3861,10 +3861,6 @@
       "title": "DNS"
     },
     {
-      "path": "./content/system-design/components/observability.md",
-      "title": "Observability"
-    },
-    {
       "path": "./content/system-design/components/proxies.md",
       "title": "Proxies"
     },
@@ -3953,6 +3949,10 @@
       "title": "Load Balancer"
     },
     {
+      "path": "./content/system-design/components/load-balancer-high-availability.md",
+      "title": "Load Balancer High Availability"
+    },
+    {
       "path": "./content/system-design/components/cdn.md",
       "title": "CDN"
     },
@@ -3979,6 +3979,24 @@
       "title": "Service-to-Service Authentication"
     }
   ],
+  "./content/system-design/components/load-balancer-algorithms.md": [
+    {
+      "path": "./content/system-design/components/load-balancer.md",
+      "title": "Load Balancer"
+    }
+  ],
+  "./content/system-design/components/load-balancer-high-availability.md": [
+    {
+      "path": "./content/system-design/components/load-balancer.md",
+      "title": "Load Balancer"
+    }
+  ],
+  "./content/system-design/components/load-balancer-tls.md": [
+    {
+      "path": "./content/system-design/components/load-balancer.md",
+      "title": "Load Balancer"
+    }
+  ],
   "./content/system-design/components/load-balancer.md": [
     {
       "path": "./content/system-design/components/dns.md",
@@ -3987,6 +4005,18 @@
     {
       "path": "./content/system-design/components/proxies.md",
       "title": "Proxies"
+    },
+    {
+      "path": "./content/system-design/components/load-balancer-algorithms.md",
+      "title": "Load Balancer Traffic Distribution Algorithms"
+    },
+    {
+      "path": "./content/system-design/components/load-balancer-tls.md",
+      "title": "Load Balancer TLS Handling"
+    },
+    {
+      "path": "./content/system-design/components/load-balancer-high-availability.md",
+      "title": "Load Balancer High Availability"
     },
     {
       "path": "./content/system-design/components/api-gateway.md",
@@ -4070,6 +4100,10 @@
     }
   ],
   "./content/system-design/components/mtls.md": [
+    {
+      "path": "./content/system-design/components/load-balancer-tls.md",
+      "title": "Load Balancer TLS Handling"
+    },
     {
       "path": "./content/system-design/components/service-to-service-auth.md",
       "title": "Service-to-Service Authentication"

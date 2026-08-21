@@ -13,11 +13,11 @@
 
 - [Conceptual Foundations & Mental Models](#conceptual-foundations--mental-models)
 - [Classification & Variants](#classification--variants)
-- [Traffic Distribution Algorithms](#traffic-distribution-algorithms)
+- [Traffic Distribution Algorithms](#traffic-distribution-algorithms) (→ [full article](./load-balancer-algorithms.md))
 - [Health Checks & Backend Management](#health-checks--backend-management)
 - [Session Persistence](#session-persistence)
-- [SSL/TLS Handling](#ssltls-handling)
-- [High Availability & Resilience](#high-availability--resilience)
+- [SSL/TLS Handling](#ssltls-handling) (→ [full article](./load-balancer-tls.md))
+- [High Availability & Resilience](#high-availability--resilience) (→ [full article](./load-balancer-high-availability.md))
 - [Quick Decision Guide](#quick-decision-guide)
 - [Performance & Optimization](#performance--optimization)
 - [Advanced Patterns](#advanced-patterns)
@@ -136,108 +136,9 @@ In practice, the line is blurred. nginx is both a reverse proxy and an LB. Envoy
 
 **Interviewer TL;DR:** Round Robin for uniform workloads; Least Connections for variable ones; <abbr>Consistent Hashing</abbr> when backend affinity and pool stability both matter.
 
-**Mental model:** The algorithm answers one question: _given N healthy backends, which one gets this request?_ The right answer depends on whether your requests are uniform (same cost) or variable (some are cheap, some are expensive).
+The algorithm answers one question: _given N healthy backends, which one gets this request?_ Round Robin and Least Connections cover uniform vs variable request cost; Deterministic IP Hashing and Consistent Hashing add backend affinity, with Consistent Hashing solving the reshuffle problem plain modulo hashing has when the pool resizes.
 
-### Round Robin & Weighted Round Robin
-
-**Round Robin:** Requests are distributed sequentially across backends. Backend 1 gets request 1, Backend 2 gets request 2, cycling back to Backend 1.
-
-```python
-backends = ["server1", "server2", "server3"]
-current = 0
-
-def get_backend():
-    global current
-    backend = backends[current % len(backends)]
-    current += 1
-    return backend
-```
-
-**Weighted Round Robin:** Backends receive proportional traffic. A backend with weight 3 gets 3x more requests than one with weight 1. Used when backends have different capacities.
-
-**Trade-offs:** Works well when requests are uniform in cost and backends are homogeneous. Breaks down when some requests are expensive (long-running queries) and others are cheap - a busy backend receives new requests at the same rate as an idle one.
-
-### Least Connections & Weighted Least Connections
-
-Routes each new request to the backend with the fewest active connections at that moment.
-
-**Why it's better for variable workloads:** If one backend is processing 10 slow requests and another is idle, round robin sends the next request to the busy backend by rotation. Least connections sends it to the idle one.
-
-**Weighted Least Connections:** Normalizes by backend capacity: `score = active_connections / weight`. Prevents a weaker backend from being treated as equivalent to a stronger one.
-
-### Deterministic IP Hashing
-
-Routes requests from the same client IP to the same backend every time using a hash of the source IP.
-
-```python
-import hashlib
-
-def get_backend(client_ip, backends):
-    hash_val = int(hashlib.md5(client_ip.encode()).hexdigest(), 16)
-    return backends[hash_val % len(backends)]
-```
-
-**Use case:** When backend affinity matters for performance (warm caches) but you don't want the overhead of explicit session tracking.
-
-**Critical limitation:** Adding or removing a backend reshuffles all assignments because `% len(backends)` changes. Use consistent hashing to avoid this. (→ [Consistent Hashing](../algorithms/consistent-hashing.md))
-
-> ⚖️ **Decision Framework**
-> Use IP hashing only when: (1) you need backend affinity, (2) your backend pool is stable, and (3) client IP diversity is high. If clients come from behind a NAT (thousands of users sharing one public IP), IP hashing creates severe hot spots. Prefer cookie-based stickiness in that case ([Cookie-Based Persistence](#cookie-based-persistence)).
-
-### Least Response Time
-
-Routes to the backend with the lowest combination of active connections and response latency. More sophisticated than least connections because it accounts for actual backend speed, not just queue depth.
-
-Requires the LB to measure and track response times per backend. Used in HAProxy's `leastconn` + response time mode and Envoy's `LEAST_REQUEST` policy.
-
-**Herding risk:** If one backend is momentarily faster (e.g., a cache warm-up completes), all new requests pile onto it - making it suddenly the slowest. The algorithm then shifts all traffic to the next fastest backend, which also gets overwhelmed. This oscillation ("herding") can cause worse load distribution than round robin under bursty traffic. Mitigation: add a small amount of randomness or jitter to the selection (Envoy's power-of-two-choices: sample 2 backends randomly, pick the faster one - reduces herding while retaining load-awareness).
-
-### Consistent Hashing
-
-**The problem it solves:** Simple modulo hashing (`hash(key) % N`) breaks every time N changes. Add one backend to a pool of 10 and ~90% of all key-to-backend mappings change - invalidating affinity for nearly every client at once.
-
-**The mechanism:** Place both backends and keys on a virtual ring of hash values (0 to 2³²). Each key is assigned to the first backend clockwise from it on the ring. When a backend is added or removed, only the keys between it and its nearest neighbour on the ring are remapped - roughly `1/N` of all keys, versus `(N-1)/N` for modulo hashing.
-
-```
-Ring (simplified):
-
-    0
-    │
-  [B1] ← keys in this arc go to B1
-    │
-  [B2] ← keys in this arc go to B2
-    │
-  [B3] ← keys in this arc go to B3
-    │
-   2³²
-```
-
-**Virtual nodes:** A single backend placed once on the ring creates uneven arc sizes - one backend may own 40% of the ring, another 10%. Virtual nodes fix this: each physical backend is hashed to many positions on the ring (e.g., 150 virtual nodes per backend). The arcs average out to roughly equal distribution.
-
-**In load balancing context:** The key is typically a session ID, user ID, or request attribute - not the source IP (which collapses behind NAT). Consistent hashing is the right choice when you need backend affinity _and_ your pool changes frequently (autoscaling, rolling deploys).
-
-🔗 Deep-Dive: [Consistent Hashing](../algorithms/consistent-hashing.md) - Ring math, virtual node tuning, rebalancing impact, and bounded load extensions.
-
-### Resource-Based / Adaptive Routing
-
-The LB queries each backend for current resource utilization (CPU, memory, queue depth) and routes to the least loaded. Requires backends to expose a metrics endpoint.
-
-Used in sophisticated service meshes and internal LBs where backends have heterogeneous workloads. Adds periodic polling overhead and operational complexity. Rarely seen at the internet edge.
-
-### Algorithm Cheat Sheet
-
-| Algorithm                  | Core Mechanism                                   | Best For                               | Key Weakness                                                                                     | LB State Required            |
-| -------------------------- | ------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------- |
-| Round Robin                | Sequential cycling across backends               | Uniform requests, homogeneous backends | Ignores in-flight load - busy and idle backends get equal traffic                                | None                         |
-| Weighted Round Robin       | Sequential cycling with proportional weights     | Mixed-capacity backends                | Still ignores in-flight load                                                                     | Weight config only           |
-| Least Connections          | Route to backend with fewest open connections    | Variable request cost                  | 1 slow connection = 1 fast connection - doesn't reflect actual load                              | Per-backend counter          |
-| Weighted Least Connections | Least connections normalized by backend capacity | Mixed capacity + variable cost         | Same blind spot as least connections                                                             | Counter + weights            |
-| Deterministic IP Hash      | `hash(source IP) % N` to pick backend            | Backend affinity, stable pools         | NAT collapses many users to one IP → hot spots; pool resize reshuffles all assignments           | None                         |
-| Consistent Hashing         | Key mapped to virtual ring; nearest node wins    | Affinity + dynamic pool (adds/removes) | Requires a good key (avoid IP for NAT clients); virtual node tuning needed for even distribution | Ring state                   |
-| Least Response Time        | Fewest connections + lowest observed latency     | Heterogeneous backend speed            | Measurement overhead; can overreact to transient latency spikes                                  | Per-backend latency tracking |
-| Resource-Based / Adaptive  | Route based on backend-reported CPU/memory/queue | Heterogeneous internal workloads       | Requires backends to expose metrics; polling adds lag; rarely worth complexity at the edge       | External metrics poll        |
-
-**Key Takeaway:** Round Robin for uniform workloads; Least Connections when request cost varies; Consistent Hashing when you need affinity and the pool changes. IP Hash is a trap behind NAT - cookie-based stickiness is almost always safer.
+🔗 Deep-Dive: [Load Balancer Traffic Distribution Algorithms](./load-balancer-algorithms.md) - Round Robin, Least Connections, IP Hashing, Consistent Hashing, Least Response Time, Resource-Based routing, and the full algorithm cheat sheet.
 
 ---
 
@@ -340,7 +241,7 @@ The LB inserts a cookie (e.g., `SERVERID=backend-2`) in the first response. On s
 
 ### IP-Hash-Based Persistence
 
-Covered in [Deterministic IP Hashing](#deterministic-ip-hashing). Routes based on source IP hash. Simpler but breaks behind NATs and when clients change IPs.
+Covered in [Deterministic IP Hashing](./load-balancer-algorithms.md#deterministic-ip-hashing). Routes based on source IP hash. Simpler but breaks behind NATs and when clients change IPs.
 
 ### Risks: Uneven Load Distribution & Failure Stickiness
 
@@ -371,70 +272,9 @@ PROXY TCP4 192.168.1.1 10.0.0.1 56324 443\r\n
 
 **Interviewer TL;DR:** Terminate at the LB for simplicity; re-encrypt if compliance demands E2E encryption - but you're paying two TLS handshakes per request.
 
-**Mental model:** TLS is computationally expensive. The question is _where_ you pay that cost - at the LB, at the backend, or both.
+TLS is computationally expensive, and the LB sits at the exact point where you decide who pays that cost: terminate at the LB (simple, backends stay dumb, but LB→backend is plaintext), passthrough (full E2E encryption but L4-only, no L7 routing), or re-encrypt (both L7 routing and E2E encryption, at the cost of two handshakes per request).
 
-**Why this exists:** TLS (Transport Layer Security) encrypts traffic between two parties and verifies identity via certificates. Before any data flows, the client and server perform a **handshake**: they exchange cryptographic keys, the server presents its certificate, and they agree on a cipher. This handshake takes 1–2 network round trips and is CPU-intensive - especially the asymmetric key exchange (RSA or ECDHE).
-
-The LB sits in the middle of every connection. This creates a fundamental question: does the LB decrypt the traffic, or does it pass the encrypted stream through untouched? The answer determines what the LB can and can't do:
-
-| Mode                | Who decrypts         | LB can do L7 routing? | Backend needs TLS config? | E2E encrypted?             |
-| ------------------- | -------------------- | --------------------- | ------------------------- | -------------------------- |
-| **Terminate at LB** | LB                   | Yes                   | No                        | No (LB → backend is plain) |
-| **Passthrough**     | Backend              | No (L4 only)          | Yes                       | Yes                        |
-| **Re-encrypt**      | LB, then re-encrypts | Yes                   | Yes                       | Yes                        |
-
-The right choice depends on your security posture and routing needs. Most systems use termination at LB - it's simpler and fast. Regulated environments (PCI-DSS, HIPAA) often require re-encryption.
-
-### Termination at LB (Offload)
-
-The LB handles the TLS handshake with the client. Traffic between the LB and backend is unencrypted (or travels over a trusted internal network).
-
-**Advantages:** Backends are simpler - no TLS config needed. LB can inspect HTTP content (required for L7 routing, sticky sessions). TLS termination is hardware-accelerated on dedicated LBs.
-
-**Disadvantages:** LB → backend traffic is unencrypted. Acceptable in a trusted VPC; unacceptable in zero-trust or regulated environments.
-
-### SSL Passthrough
-
-The LB forwards the encrypted TCP stream directly to the backend without decrypting it. The backend handles TLS.
-
-**Advantages:** End-to-end encryption. LB doesn't need access to certificates.
-
-**Disadvantages:** LB operates at L4 only - cannot inspect HTTP content, implement cookie-based stickiness, or route based on URL or headers.
-
-### Re-encryption (LB to Backend TLS)
-
-The LB terminates TLS from the client (to inspect and route), then opens a _new_ TLS connection to the backend.
-
-**Advantages:** Full L7 inspection capability + end-to-end encryption.
-
-**Disadvantages:** Two TLS handshakes per request. Certificate management at both LB and backend. Performance cost.
-
-**Use case:** PCI-DSS, HIPAA, or other regulated environments where data must be encrypted in transit even on internal networks.
-
-### Certificate Management & Rotation at Scale
-
-At scale, certificates must be rotated without downtime:
-
-- Use ACME protocol (Let's Encrypt) for automated renewal.
-- Store certificates in a secrets manager (Vault, AWS Secrets Manager).
-- LBs must support hot certificate reload without dropping connections.
-- SNI (Server Name Indication) enables one LB to serve multiple domains with separate certificates on a single IP.
-
-### Mutual TLS (mTLS)
-
-In standard TLS, only the server presents a certificate - the client is anonymous. In mTLS, **both** parties present certificates. The LB validates the client's certificate before forwarding the request, and the client validates the LB's. Identity is proven at the network layer, not the application layer.
-
-**Why it matters at the LB:** In a zero-trust architecture, the LB enforces mTLS for all inter-service communication. A service without a valid certificate cannot connect - regardless of whether it's inside the VPC. This replaces perimeter security ("trusted because it's internal") with identity-based security ("trusted because it proved who it is").
-
-**Common deployments:**
-
-- **Service mesh (Istio, Linkerd):** mTLS is automatic between all sidecars. The LB (ingress gateway) terminates external TLS, then initiates mTLS to backends using SPIFFE-issued short-lived certificates.
-- **B2B API gateway:** validates partner client certificates before routing their requests.
-- **Zero-trust internal networks:** replaces VPN-based access with per-connection identity verification.
-
-**Certificate management burden:** Every client needs a cert, and rotation must be coordinated across all services. Service meshes solve this with automatically-rotated short-lived certificates (typically 24-hour TTL), so a compromised cert is self-healing.
-
-**Key Takeaway:** Terminate at LB for simplicity; re-encrypt when compliance demands E2E; passthrough loses all L7 capability. mTLS shifts trust from network perimeter to per-connection identity - essential in zero-trust architectures, where VPC membership proves nothing.
+🔗 Deep-Dive: [Load Balancer TLS Handling](./load-balancer-tls.md) - Termination, passthrough, re-encryption, certificate management/rotation, and mTLS at the LB.
 
 ---
 
@@ -442,49 +282,9 @@ In standard TLS, only the server presents a certificate - the client is anonymou
 
 **Interviewer TL;DR:** An LB without HA is itself a SPOF - always deploy in an HA pair with a floating VIP; active-active is preferred but requires stateless LBs.
 
-**Mental model:** The load balancer eliminates the backend as a SPOF, but the LB itself is a SPOF unless made HA. Every LB deployment needs an HA strategy.
+The LB eliminates backends as a SPOF, but the LB itself becomes one unless deployed with its own HA strategy - a floating VIP shared between nodes, with VRRP (or a cloud equivalent) transferring ownership on failure detection. Active-Passive is simple with a failover gap; Active-Active needs stateless LBs or synchronized state.
 
-### Active-Active vs Active-Passive LB Pairs
-
-**Active-Passive:** One LB handles all traffic (primary), the other is on standby. Failover is triggered when the primary fails. Simple but wastes capacity and has a failover window during which new connections fail.
-
-**Active-Active:** Both LBs handle traffic simultaneously, typically via DNS round robin or Anycast. Better utilization. One LB going down reduces capacity rather than causing a full outage.
-
-**Trade-off:** Active-active requires stateless LBs (or synchronized state), which complicates sticky sessions and connection tracking.
-
-### Floating IPs & VRRP
-
-A **floating IP** (Virtual IP / VIP) is an IP address that can be reassigned between nodes. In Active-Passive HA:
-
-1. Both LBs share a VIP. DNS points to the VIP.
-2. Primary "owns" the VIP (responds to ARP for that IP).
-3. On primary failure, secondary claims the VIP using VRRP (Virtual Router Redundancy Protocol - a standard that lets two nodes share a virtual IP, with the standby taking ownership automatically when the primary stops responding).
-
-VRRP broadcasts heartbeats. If the primary misses N consecutive heartbeats, the secondary takes over. Failover is typically sub-second once detection completes.
-
-**Cloud-native equivalent:** VRRP is an on-prem/bare-metal pattern - cloud providers don't expose L2 networking needed for gratuitous ARP. In AWS, HA is achieved by remapping an Elastic IP to the standby instance via API call on failure detection. In GCP, regional forwarding rules are reassigned. The mechanism differs but the concept is identical: one VIP, two nodes, automatic ownership transfer. Managed LBs (AWS ALB, GCP LB) handle HA internally - you never configure VRRP for them.
-
-### Split-Brain Prevention
-
-**<abbr>Split-brain</abbr>:** Both LBs simultaneously believe they are the primary and both claim the VIP. Causes duplicate responses, routing inconsistencies, and state corruption.
-
-Prevention strategies:
-
-- VRRP priority + preemption settings (only one node has higher priority)
-- External quorum (a 3rd node breaks ties)
-- Network fencing (STONITH - Shoot The Other Node In The Head): the losing node forcibly powers itself off, guaranteeing only one node can own the VIP at a time
-
-### Cascading Failure Under Backend Loss
-
-When multiple backends fail simultaneously, remaining backends absorb all traffic. If they're near capacity, they too start failing - a cascade.
-
-Mitigations:
-
-- Circuit breaker at LB: stop sending traffic to backends returning 5xx above a threshold
-- Load shedding: return 503 to some clients rather than overloading backends
-- Capacity planning: maintain N+2 backend capacity (tolerate losing 2 nodes without cascade)
-
-**Key Takeaway:** The LB eliminates backends as a SPOF but becomes one itself - always deploy HA pairs with a floating VIP. Prefer active-active but only if the LB can be stateless; split-brain is worse than a brief failover gap.
+🔗 Deep-Dive: [Load Balancer High Availability](./load-balancer-high-availability.md) - Active-Active vs Active-Passive, floating IPs & VRRP, split-brain prevention, and cascading failure under backend loss.
 
 ---
 
@@ -498,9 +298,9 @@ Need HTTP-aware routing (URL, headers, cookies, gRPC)?
   │            │
   │            ▼
   │          SSL strategy?
-  │            ├─ Compliance requires E2E encryption ──▶ Re-encryption mode (→ Re-encryption)
-  │            ├─ Standard web traffic ──▶ Terminate at LB (→ Termination at LB)
-  │            └─ Cannot decrypt (mTLS passthrough) ──▶ SSL Passthrough (→ SSL Passthrough)
+  │            ├─ Compliance requires E2E encryption ──▶ Re-encryption mode (→ ./load-balancer-tls.md#re-encryption-lb-to-backend-tls)
+  │            ├─ Standard web traffic ──▶ Terminate at LB (→ ./load-balancer-tls.md#termination-at-lb-offload)
+  │            └─ Cannot decrypt (mTLS passthrough) ──▶ SSL Passthrough (→ ./load-balancer-tls.md#ssl-passthrough)
   │
   └─ NO ──▶ Use L4 LB (AWS NLB, HAProxy TCP mode)
                │
@@ -525,14 +325,14 @@ Are request costs uniform AND backends homogeneous?
                     │
                     ▼
                   Clients behind NAT or frequently changing IPs?
-                    ├─ YES ──▶ Cookie-based stickiness (→ Cookie-Based Persistence)
+                    ├─ YES ──▶ Cookie-based stickiness (→ #cookie-based-persistence)
                     │
                     └─ NO
                          │
                          ▼
                        Backend pool stable (rare adds/removes)?
-                         ├─ YES ──▶ Consistent Hashing (→ Consistent Hashing)
-                         └─ NO  ──▶ Cookie-based stickiness (→ Cookie-Based Persistence)
+                         ├─ YES ──▶ Consistent Hashing (→ ./load-balancer-algorithms.md#consistent-hashing)
+                         └─ NO  ──▶ Cookie-based stickiness (→ #cookie-based-persistence)
 ```
 
 ### HA Strategy?
@@ -540,10 +340,10 @@ Are request costs uniform AND backends homogeneous?
 ```
 Traffic criticality?
   ├─ High (any downtime is unacceptable)
-  │    └──▶ Active-Active pair + Anycast or DNS LB (→ Active-Active vs Active-Passive LB Pairs)
+  │    └──▶ Active-Active pair + Anycast or DNS LB (→ ./load-balancer-high-availability.md#active-active-vs-active-passive-lb-pairs)
   │
   └─ Moderate (seconds of failover acceptable)
-       └──▶ Active-Passive pair + VRRP Floating VIP (→ Floating IPs & VRRP)
+       └──▶ Active-Passive pair + VRRP Floating VIP (→ ./load-balancer-high-availability.md#floating-ips--vrrp)
                 │
                 ▼
               Need in-flight connections to survive failover?
@@ -807,7 +607,7 @@ LB access logs are the ground truth. Key fields:
 
 ## Production Failure Modes
 
-**Interviewer TL;DR:** Five failure modes that cause real outages - thundering herd, hot spots from bad hash keys, drain timeouts on long-lived connections, SSL CPU saturation, and VIP handoff gaps.
+**Interviewer TL;DR:** Two failure modes that cause real outages on this page's own topic - thundering herd on backend restart and drain timeouts on long-lived connections. Algorithm hot spots, SSL CPU saturation, and HA failover gaps are covered on their respective sibling pages.
 
 **Mental model:** These are the scenarios that cause real outages. Know the cause, detection signal, and fix for each.
 
@@ -825,20 +625,6 @@ LB access logs are the ground truth. Key fields:
 > - **Trap:** Deploying all backends simultaneously because "it's faster." **Recovery:** Always enforce rolling deploys via deploy tooling, not discipline.
 > - **Trap:** Health check passes (process is up) but service is still initializing. **Recovery:** Health endpoint must validate readiness (DB connection pool initialized, caches loaded), not just liveness.
 
-### Hot Spots from Poor Hash Key Selection
-
-**Scenario:** IP hashing with clients behind corporate NAT. Thousands of users share one public IP → all routed to one backend → that backend is overwhelmed while others are idle.
-
-**Detection:** Severe backend connection imbalance. One backend at 100% CPU, others near-idle.
-
-**Fix:** Switch to cookie-based stickiness or consistent hashing with a better key (session ID, user ID instead of IP).
-
-> **⚠️ Common Traps & How to Recover**
->
-> - **Trap:** Only monitoring connection counts per backend - one backend looks "normal" in connections but is CPU-maxed. **Recovery:** Add per-backend RPS and CPU metrics to your dashboard.
-> - **Trap:** Assuming IP diversity is high because your users are geographically spread. **Recovery:** Check actual unique source IPs in LB access logs - corporate NAT collapses thousands of users to one IP.
-> - **Trap:** Switching hash keys mid-traffic without a migration plan. **Recovery:** Gradually shift to cookie-based stickiness first; remap sessions during low-traffic window.
-
 ### Long-Lived Connection Drain Timeouts (WebSockets, SSE)
 
 **Scenario:** Deploy triggers connection drain. WebSocket connections don't close voluntarily. Drain timeout (30s) expires and the LB forcibly closes them. Clients receive unexpected disconnects mid-session.
@@ -853,54 +639,13 @@ LB access logs are the ground truth. Key fields:
 > - **Trap:** Treating all connection types the same in drain logic - HTTP and WebSocket need different handling. **Recovery:** Use protocol-aware drain: HTTP waits for in-flight request, WebSocket needs an explicit close frame.
 > - **Trap:** Clients not implementing reconnection logic, assuming the connection is always stable. **Recovery:** Client-side exponential backoff + reconnect is non-negotiable for any long-lived connection system.
 
-### SSL Handshake CPU Saturation at Scale
-
-**Scenario:** Traffic spike causes a surge in new TLS connections. TLS handshakes are CPU-intensive (RSA key exchange especially). LB CPU saturates → handshakes queue → connection timeouts → clients retry → more handshakes → death spiral.
-
-**Detection:** LB CPU at 100% correlating with new connection rate spike. TLS handshake latency P99 climbing.
-
-**Fix:** TLS session resumption (clients reuse session tickets → no full handshake). ECDHE cipher suites (faster than RSA). Prefer TLS 1.3 (fewer round trips). Hardware TLS acceleration. Scale out LB instances horizontally.
-
-**TLS 1.3 0-RTT (Early Data):** TLS 1.3 introduces 0-RTT resumption - a returning client can send application data in the very first packet, with zero additional round trips. This is the maximum CPU saving on resumption. However, 0-RTT data is **replayable** - an attacker who captures the first packet can replay it to trigger the same server action again. This makes 0-RTT unsafe for any non-<abbr>idempotent</abbr> request (POST, payment submissions, state-changing API calls). Only enable 0-RTT for genuinely idempotent, replay-safe endpoints (e.g., GET requests for public content). Most LBs allow 0-RTT to be configured per-route.
-
-> **⚠️ Common Traps & How to Recover**
->
-> - **Trap:** Scaling out backend servers when LB CPU is the bottleneck - adds capacity where it isn't needed. **Recovery:** Check LB CPU first; scale LB instances before touching backends.
-> - **Trap:** Not enabling TLS session resumption - leaving the biggest CPU win on the table. **Recovery:** Enable session tickets in LB config; verify with `openssl s_client -reconnect` that resumption is working.
-> - **Trap:** Using RSA 4096 for "extra security" - 4x the CPU cost of RSA 2048 with negligible security gain. **Recovery:** Switch to ECDHE (P-256) which is faster and more secure than RSA 2048.
-
-### HA Failover Timing Gaps & VIP Handoff Delays
-
-**Scenario:** Primary LB fails. VRRP detects failure and secondary claims the VIP. During the detection + handoff window (typically 1-3 seconds), all new connections fail.
-
-**Contributing factors:**
-
-- VRRP heartbeat interval (default 1s) × failure threshold (default 3 missed = 3s detection time)
-- ARP cache on upstream router takes time to update after VIP moves to secondary
-- Conntrack state not synchronized between primary and secondary → in-flight connections drop at failover
-
-**Fixes:**
-
-- Tune VRRP to sub-second heartbeats (at the cost of more false positives on transient network blips)
-- Send gratuitous ARP (an unsolicited broadcast that tells all network devices "this MAC address now owns this IP" - forces immediate ARP cache refresh across the network) immediately on VIP takeover
-- Use conntrackd (a daemon that synchronizes the conntrack table between two nodes in real time) for state sync between LB nodes to preserve in-flight connections
-- Design clients to retry on connection failure (most HTTP clients do this automatically)
-
-> **⚠️ Common Traps & How to Recover**
->
-> - **Trap:** Assuming "sub-second VRRP" means zero downtime - forgetting that the upstream router's ARP cache still points to the old LB MAC. **Recovery:** Always send a gratuitous ARP on VIP takeover; verify with `arping` from the router.
-> - **Trap:** Only testing failover in staging - ARP cache TTLs and network topology differ from production. **Recovery:** Run regular failover drills in production during low-traffic windows.
-> - **Trap:** Not synchronizing conntrack state - in-flight TCP connections drop on failover even though the VIP moves cleanly. **Recovery:** Deploy conntrackd for state sync, or design clients to retry on RST (most do).
-
 ### Common Misconceptions
 
 - **"Sticky sessions are always an anti-pattern"** - wrong for WebSocket/SSE, where the connection itself *is* the session; stickiness there is architecturally required, not a crutch.
 - **"Low DNS TTL means fast failover"** - browsers, JVM `InetAddress` (caches indefinitely by default), OS resolvers, and intermediate caches all ignore TTL independently; expect a 10-20 minute long tail on old IPs regardless of a 30s TTL.
-- **"Adding more backends fixes the performance problem"** - not if the LB itself is the bottleneck (SNAT exhaustion, conntrack limits, SSL CPU). Profile the LB before scaling backends.
-- **"Active-Active HA means zero downtime"** - conntrack state isn't automatically synced between nodes; in-flight connections to a failed node still drop and must be retried client-side.
-- **"mTLS is only for external traffic"** - the actual point of mTLS in zero-trust is east-west traffic; external-only mTLS leaves internal lateral movement wide open.
+- **"Adding more backends fixes the performance problem"** - not if the LB itself is the bottleneck (SNAT exhaustion, conntrack limits, SSL CPU - see [Load Balancer TLS Handling](./load-balancer-tls.md)). Profile the LB before scaling backends.
 
-**Key Takeaway:** Each failure mode has a distinct detection signal - thundering herd (saw-tooth errors at deploy), hot spots (severe backend imbalance), drain gaps (WebSocket disconnects at deploy), SSL CPU saturation (handshake latency spike), VIP handoff (connection failures at failover). Knowing the signal is half the fix.
+**Key Takeaway:** Each failure mode has a distinct detection signal - thundering herd (saw-tooth errors at deploy), drain gaps (WebSocket disconnects at deploy). Knowing the signal is half the fix. Algorithm hot spots, SSL CPU saturation, and HA failover gaps have their own detection signals on their respective sibling pages.
 
 ---
 
@@ -913,13 +658,6 @@ LB access logs are the ground truth. Key fields:
 > **Ideal answer:** L4 for raw throughput and low latency (gaming servers, financial tick data, large file transfers), when you don't need to inspect application payload, or to avoid SSL termination overhead at the LB. L7 for any HTTP-based routing, SSL offload, or content-based decisions.
 > **Common trap:** "L7 is always better because it's smarter" - ignores the latency and complexity cost of two TCP handshakes per request.
 > **Next question:** "Your system has both gRPC microservices and HTTP/1.1 REST APIs - one LB or two?" → one L7 LB routing on `Content-Type: application/grpc` vs everything else avoids running and coordinating two separate load-balancing tiers.
-
-### Algorithm Selection Under Variable Load
-
-> 🎯 **Interview Lens**
-> **Q:** When does least connections outperform round robin?
-> **Ideal answer:** When request processing time varies significantly (some queries take 1ms, others 500ms) - round robin ignores in-flight load, least connections is load-aware.
-> **Common trap:** Assuming least connections is always correct - a backend with 1 connection that's a slow 30-second query still gets new requests routed to it, since it counts connections, not actual load. Least response time fixes this by factoring in observed latency.
 
 ### Health Check Design
 
@@ -934,21 +672,6 @@ LB access logs are the ground truth. Key fields:
 > **Q:** How do you rate-limit by client IP when all traffic comes through a load balancer?
 > **Ideal answer:** Use X-Forwarded-For or Proxy Protocol to pass the real client IP through. Trust only the last XFF value your own LB appended - earlier values can be client-spoofed. Strip any incoming XFF header at your outermost LB before appending the real IP.
 > **Common trap:** Trusting the first or any client-supplied XFF value without stripping - lets an attacker inject a fake IP to bypass rate limiting entirely.
-
-### Securing Service-to-Service Traffic
-
-> 🎯 **Interview Lens**
-> **Q:** How do you secure service-to-service communication in a microservices architecture?
-> **Ideal answer:** mTLS at the service mesh layer - each service has a short-lived identity (e.g. SPIFFE), the sidecar enforces caller authentication before forwarding. Identity-based trust at every hop, not perimeter-based.
-> **Common trap:** "Use a private network / VPC" - perimeter security only; once inside, any compromised service can call any other. mTLS stops that lateral movement.
-
-### Making the LB Itself Highly Available
-
-> 🎯 **Interview Lens**
-> **Q:** How do you make a load balancer itself highly available?
-> **Ideal answer:** Two LBs sharing a floating VIP - Active-Passive (VRRP on-prem, Elastic IP reassignment on AWS) for simplicity, or Active-Active for better utilization. DNS points to the VIP; clients never see the failover.
-> **Common trap:** Designing HA for backends but leaving a single LB in front - always ask "what fails if this component goes down?"
-> **Next question:** "In active-active HA, how does a sticky-session client always hit the same LB?" → either synchronize session state between LB nodes (real complexity), consistent-hash at the DNS/Anycast layer so a client always lands on the same LB, or remove the need entirely by making backends stateless.
 
 ### Diagnosing Silent Connection Failures
 

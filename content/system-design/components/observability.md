@@ -2,7 +2,6 @@
 
 ## Prerequisites
 
-- **[Caching](./caching.md)** [Should read]
 - **[Message Queues](./message-queues.md)** [Should read]
 
 ## Table of Contents
@@ -328,6 +327,25 @@ Metrics are cheap per data point - but cost scales with the number of unique lab
 The cardinality wall is the most common reason metrics backends become expensive or degrade. The rule: labels should have bounded, low-cardinality values - status codes, service names, endpoints, regions. Never user IDs, request IDs, or session tokens.
 
 Deep dive: **[Metrics](./metrics.md)**
+
+### Cost Allocation & Chargeback
+
+> _Once observability infra has a real bill, "whose spend is this" becomes a design question, not a finance afterthought._
+
+At small scale, observability cost is one line item nobody argues about. Past a few dozen teams sharing one metrics backend, log pipeline, and tracing collector, the question flips: which team's cardinality, log volume, or trace sampling is driving the bill, and how do you make that visible before a platform team silently eats it.
+
+**Allocation dimensions** - the three cost drivers each need their own attribution key:
+
+- **Metrics cardinality cost** - tag every metric with a `service` or `team` label at emission time (not retrofitted later); cost-per-team falls out of summing time-series count × retention tier by that label. A single team's unbounded label (see [Cardinality Cost](#cardinality-cost)) should show up as a cost spike on their line, not the shared platform's.
+- **Log storage cost** - attribute by source (service/namespace) at ingestion; storage cost scales with volume × retention × index tier, so a chatty DEBUG-heavy service should carry its own storage line rather than being absorbed into an org-wide average.
+- **Trace sampling cost** - attribute by the sampling rate and span volume each service contributes; a service running 100% sampling when its neighbors run 5% should show up as an outsized share of the tracing bill, not get cross-subsidized.
+
+**Chargeback vs showback:** **showback** reports each team's estimated cost without moving money - visibility only, low friction, no behavior guarantee. **Chargeback** actually bills the cost back to the team's budget - it changes incentives (teams tune their own cardinality/retention/sampling because it now hits their number), but it requires attribution accurate enough to survive a dispute, and it adds organizational overhead most platform teams underestimate before they build it.
+
+> ⚖️ **Decision Framework**
+> Small org, single platform team owns the whole bill → showback is enough; the goal is awareness, not behavior change. Multiple teams with independent budgets and a history of cost surprises (see [Observability Cost Surprise](#observability-cost-surprise)) → chargeback, because showback alone doesn't stop a team from shipping an unbounded label when someone else's budget absorbs it.
+
+> 🧠 **Thought Process:** The instinct is to attribute cost after the fact by querying the metrics/log backend's own usage stats. That works for a first pass, but the durable fix is attribution at the source - required `service`/`team` labels enforced at the SDK or middleware layer, the same enforcement point used for cardinality limits. Retrofitting attribution onto already-ingested, unlabeled telemetry is close to impossible.
 
 ### Log Verbosity in Production
 

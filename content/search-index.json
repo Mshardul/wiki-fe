@@ -49,7 +49,25 @@
           "title": "Load Balancer",
           "path": "./content/system-design/components/load-balancer.md",
           "slug": "load-balancer",
-          "description": "Traffic distribution, algorithms, health checks, L4 vs L7"
+          "description": "L4/L7 classification, health checks, session persistence, performance, failure modes"
+        },
+        {
+          "title": "Load Balancer Traffic Distribution Algorithms",
+          "path": "./content/system-design/components/load-balancer-algorithms.md",
+          "slug": "load-balancer-algorithms",
+          "description": "Round robin, least connections, IP/consistent hashing, algorithm cheat sheet"
+        },
+        {
+          "title": "Load Balancer TLS Handling",
+          "path": "./content/system-design/components/load-balancer-tls.md",
+          "slug": "load-balancer-tls",
+          "description": "Termination, passthrough, re-encryption, certificate rotation, mTLS at the LB"
+        },
+        {
+          "title": "Load Balancer High Availability",
+          "path": "./content/system-design/components/load-balancer-high-availability.md",
+          "slug": "load-balancer-high-availability",
+          "description": "Active-active vs active-passive, floating IPs/VRRP, split-brain prevention"
         },
         {
           "title": "CDN",
