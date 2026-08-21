@@ -28,6 +28,18 @@
           "description": "Counters/gauges/histograms, push vs pull, cardinality cost"
         },
         {
+          "title": "Observability",
+          "path": "./content/system-design/components/observability.md",
+          "slug": "observability",
+          "description": "Three pillars, instrumentation strategy, sampling & cost trade-offs, alerting"
+        },
+        {
+          "title": "Distributed Tracing",
+          "path": "./content/system-design/components/tracing.md",
+          "slug": "tracing",
+          "description": "Spans, context propagation, sampling strategies, trace-based debugging"
+        },
+        {
           "title": "Proxies",
           "path": "./content/system-design/components/proxies.md",
           "slug": "proxies",
@@ -211,6 +223,12 @@
           "path": "./content/system-design/algorithms/bloom-filter.md",
           "slug": "bloom-filter",
           "description": "Probabilistic membership, false positives, k hash functions, LSM-tree use"
+        },
+        {
+          "title": "Leader Election",
+          "path": "./content/system-design/algorithms/leader-election.md",
+          "slug": "leader-election",
+          "description": "Bully algorithm, ring algorithm, failure detection, split-brain"
         }
       ]
     },
@@ -246,6 +264,12 @@
           "path": "./content/system-design/hld/key-value-store.md",
           "slug": "key-value-store",
           "description": "LSM-tree vs B-tree, quorum consistency, conflict resolution"
+        },
+        {
+          "title": "Distributed Task Scheduler",
+          "path": "./content/system-design/hld/distributed-task-scheduler.md",
+          "slug": "distributed-task-scheduler",
+          "description": "Leader election, at-least-once + idempotency, DAG dependencies"
         }
       ]
     },

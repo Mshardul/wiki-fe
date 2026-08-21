@@ -9,6 +9,15 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-08-21
+- `system-design/hld/distributed-task-scheduler.md` - new article: leader-based scheduling, at-least-once + idempotency, DAG dependencies, multi-tenant fairness
+- `system-design/components/tracing.md` - new stub: full article filled from empty stub (span propagation, sampling strategies, storage at scale, Interview Scenario Bank)
+- `dsa/patterns/pattern-selection-cheatsheet.md` - hygiene: fixed stale pending-articles note (added Merge Intervals, Tree & Graph Traversal links; corrected remaining unfilled list)
+- `system-design/index.md` - hygiene: added missing Observability row to Components table
+- `system-design/components/mtls.md` - new stub: full article filled from partial stub (TLDR, full spine, Quick Decision Guide, Production Failure Modes, Interview Scenario Bank)
+- `system-design/hld/distributed-cache.md` - expanded: "Data Partitioning & Rebalancing" (consolidated trade-off, comparison table), new section: "Key & TTL Schema"; re-derived capacity estimation
+- `system-design/algorithms/leader-election.md` - new article: bully algorithm, ring algorithm, failure detection, split-brain
+
 ## 2026-08-20
 - `system-design/components/rate-limiter.md` - expanded: "Quick Decision Guide" (placement + algorithm axes), fixed reject-vs-degrade restatement, added Scenario Bank next-questions
 - `system-design/components/search.md` - new section: "Typo Tolerance (Fuzzy Matching)"; new section: "Vector / Semantic Search (Hybrid Retrieval)"; new section: "Faceted Filtering & Aggregation Cost"; expanded: "Quick Decision Guide" (cost trade-off)

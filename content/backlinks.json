@@ -3589,8 +3589,16 @@
       "title": "Replication Strategies"
     },
     {
+      "path": "./content/system-design/algorithms/leader-election.md",
+      "title": "Leader Election"
+    },
+    {
       "path": "./content/system-design/hld/distributed-id-generator.md",
       "title": "Distributed ID Generator"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-task-scheduler.md",
+      "title": "Distributed Task Scheduler"
     },
     {
       "path": "./content/system-design/paths/distributed-depth.md",
@@ -3669,6 +3677,16 @@
     {
       "path": "./content/system-design/algorithms/saga-pattern.md",
       "title": "Saga Pattern"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-task-scheduler.md",
+      "title": "Distributed Task Scheduler"
+    }
+  ],
+  "./content/system-design/algorithms/leader-election.md": [
+    {
+      "path": "./content/system-design/hld/distributed-task-scheduler.md",
+      "title": "Distributed Task Scheduler"
     }
   ],
   "./content/system-design/algorithms/rate-limiting-algorithms.md": [
@@ -3725,6 +3743,10 @@
     {
       "path": "./content/system-design/algorithms/consensus-raft-paxos.md",
       "title": "Consensus (Raft / Paxos)"
+    },
+    {
+      "path": "./content/system-design/algorithms/leader-election.md",
+      "title": "Leader Election"
     },
     {
       "path": "./content/system-design/hld/distributed-cache.md",
@@ -3837,6 +3859,10 @@
     {
       "path": "./content/system-design/components/dns.md",
       "title": "DNS"
+    },
+    {
+      "path": "./content/system-design/components/observability.md",
+      "title": "Observability"
     },
     {
       "path": "./content/system-design/components/proxies.md",
@@ -3987,6 +4013,12 @@
       "title": "Components Foundation"
     }
   ],
+  "./content/system-design/components/logging.md": [
+    {
+      "path": "./content/system-design/components/observability.md",
+      "title": "Observability"
+    }
+  ],
   "./content/system-design/components/message-queues.md": [
     {
       "path": "./content/system-design/components/logging.md",
@@ -3997,6 +4029,14 @@
       "title": "Metrics"
     },
     {
+      "path": "./content/system-design/components/observability.md",
+      "title": "Observability"
+    },
+    {
+      "path": "./content/system-design/components/tracing.md",
+      "title": "Distributed Tracing"
+    },
+    {
       "path": "./content/system-design/algorithms/saga-pattern.md",
       "title": "Saga Pattern"
     },
@@ -4005,12 +4045,22 @@
       "title": "Idempotency"
     },
     {
+      "path": "./content/system-design/hld/distributed-task-scheduler.md",
+      "title": "Distributed Task Scheduler"
+    },
+    {
       "path": "./content/system-design/paths/components-foundation.md",
       "title": "Components Foundation"
     },
     {
       "path": "./content/dsa/data-structures/queue.md",
       "title": "Queue"
+    }
+  ],
+  "./content/system-design/components/metrics.md": [
+    {
+      "path": "./content/system-design/components/observability.md",
+      "title": "Observability"
     }
   ],
   "./content/system-design/components/mfa.md": [
@@ -4033,6 +4083,20 @@
     {
       "path": "./content/system-design/components/authentication.md",
       "title": "Authentication"
+    }
+  ],
+  "./content/system-design/components/observability.md": [
+    {
+      "path": "./content/system-design/components/logging.md",
+      "title": "Logging"
+    },
+    {
+      "path": "./content/system-design/components/metrics.md",
+      "title": "Metrics"
+    },
+    {
+      "path": "./content/system-design/components/tracing.md",
+      "title": "Distributed Tracing"
     }
   ],
   "./content/system-design/components/rate-limiter.md": [
@@ -4077,6 +4141,12 @@
     {
       "path": "./content/system-design/components/authentication.md",
       "title": "Authentication"
+    }
+  ],
+  "./content/system-design/components/tracing.md": [
+    {
+      "path": "./content/system-design/components/observability.md",
+      "title": "Observability"
     }
   ],
   "./content/system-design/hld/distributed-cache.md": [

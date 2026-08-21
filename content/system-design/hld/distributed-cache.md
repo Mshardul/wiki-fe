@@ -13,6 +13,7 @@
 - [Capacity Estimation](#capacity-estimation)
 - [High-Level Architecture](#high-level-architecture)
 - [Data Partitioning & Rebalancing](#data-partitioning--rebalancing)
+- [Key & TTL Schema](#key--ttl-schema)
 - [Replication & Consistency](#replication--consistency)
 - [Eviction & Memory Management](#eviction--memory-management)
 - [Reliability & Fault Tolerance](#reliability--fault-tolerance)
@@ -26,7 +27,7 @@
 
 ## TLDR
 
-A distributed cache is a cluster of in-memory nodes that together hold far more data than one machine can, using consistent hashing to shard keys and replication to survive node loss. The core architectural challenge is that a cache's entire value proposition is speed, so every mechanism protecting availability or consistency (replication, rebalancing, coordination) has to cost almost nothing on the read path - unlike a database, you cannot trade latency for durability here without defeating the point of the system.
+A distributed cache is a cluster of in-memory nodes holding more data than one machine can, sharded via consistent hashing and replicated against node loss. The core challenge: every availability/consistency mechanism must cost almost nothing on the read path, or the cache stops being faster than the database it fronts.
 
 ## Requirements & Scope
 
@@ -45,7 +46,7 @@ A distributed cache is a cluster of in-memory nodes that together hold far more 
 
 ## Capacity Estimation
 
-**Users:** 50M DAU on the upstream service · **Read/Write ratio:** 20:1 (cache-heavy read workload) · **Peak QPS:** ~40K reads/sec, ~2K writes/sec at peak (3x average) · **Storage:** 10M hot keys × ~2KB average value = ~20GB working set · **Bandwidth:** 40K QPS × 2KB ≈ 80MB/s peak egress · **Key constraint:** memory capacity per node, not CPU or network - a distributed cache is provisioned for RAM headroom first; 20GB working set fits comfortably split across even 4-6 mid-size nodes with room for replication overhead, but a working set that outgrows available cluster RAM causes evictions to outpace hit rate regardless of node count added carelessly (see [Deep-Dive](#deep-dive-rebalancing-without-a-stampede)).
+**Users:** 50M DAU on the upstream service, each averaging ~20 cacheable reads/day → 1B reads/day total · **Read/Write ratio:** 20:1 (cache-heavy read workload) → ~50M writes/day · **Peak QPS:** 1B reads/day ÷ 86,400s ≈ 11.6K reads/sec average; ×3 for peak-hour skew ≈ **~35K reads/sec peak**, ~1.75K writes/sec peak (same 3x factor) · **Storage:** 10M hot keys × ~2KB average value = ~20GB working set · **Bandwidth:** 35K QPS × 2KB ≈ 70MB/s peak egress · **Key constraint:** memory capacity per node, not CPU or network - a distributed cache is provisioned for RAM headroom first; 20GB working set fits comfortably split across even 4-6 mid-size nodes with room for replication overhead, but a working set that outgrows available cluster RAM causes evictions to outpace hit rate regardless of node count added carelessly (see [Deep-Dive](#deep-dive-rebalancing-without-a-stampede)).
 
 ## High-Level Architecture
 
@@ -78,8 +79,29 @@ Two dominant client-routing models: a **smart client** (app-side library holds t
 
 Keys are distributed using [consistent hashing](../algorithms/consistent-hashing.md) rather than `hash(key) % N` - the modulo approach remaps nearly every key when `N` changes, causing a near-total cache wipe on every scale event. Consistent hashing with virtual nodes bounds remapping to roughly `1/N` of keys per node added or removed.
 
+| | Consistent hashing (virtual nodes) | Static hash-slot sharding |
+| --- | --- | --- |
+| Rebalance on scale event | Automatic, ~1/N keys remap | Explicit coordinated slot-migration step |
+| Operational predictability | Lower - ring topology shifts implicitly | Higher - explicit slot-to-node mapping, easier manual capacity planning |
+| Typical adopter | Homegrown Memcached-style clusters (lower operational overhead) | Redis Cluster (16384 fixed hash slots, predictability over automation) |
+
 > ⚖️ **Decision Framework**
-> Consistent hashing (virtual nodes) vs. static sharding (fixed key ranges per shard, e.g. Redis Cluster's 16384 hash slots): consistent hashing rebalances automatically and gradually; static hash-slot sharding gives predictable, explicit control over which keys live where (useful for manual capacity planning) at the cost of a coordinated resharding step to move slot ownership. Redis Cluster picks the static-slot model specifically for that predictability; most homegrown Memcached-style clusters pick consistent hashing for its lower operational overhead.
+> Consistent hashing rebalances automatically and gradually, trading away explicit control over key placement; static hash-slot sharding gives predictable, explicit ownership at the cost of a coordinated resharding step. This is the article's canonical partitioning trade-off - referenced, not re-argued, in [Trade-off Summary](#trade-off-summary).
+
+## Key & TTL Schema
+
+A distributed cache's "schema" is a naming and expiration convention, not a relational model - every entry is a flat key mapping to an opaque value plus metadata:
+
+```
+Key:    {namespace}:{entity}:{id}[:{field}]   e.g. user:profile:8842, session:tok:9f2e1a
+Value:  serialized blob (JSON/binary) - schema owned by the calling service, opaque to the cache
+TTL:    base_ttl + random(0, jitter_window)   -- see thundering-herd gotcha below
+Meta:   version/etag (optional, for invalidation checks), last-write timestamp (optional, for staleness debugging)
+```
+
+Namespacing by entity type keeps key collisions impossible across services sharing one cluster and makes bulk invalidation by prefix pattern operationally tractable (flush all `session:*` keys on a security event, for example).
+
+**Invalidation strategy** is what actually determines how stale a hit can be - TTL alone only bounds staleness, it doesn't guarantee freshness on write. Choosing between TTL-only expiry, explicit delete-on-write, and write-through population is a property of the invalidation strategy layered on top of this schema; [Caching](../components/caching.md) owns the full invalidation-strategy trade-off (cache-aside vs write-through vs write-around) and is the reference for choosing one, not re-argued here.
 
 ## Replication & Consistency
 
@@ -140,10 +162,10 @@ Two mitigations, usually combined:
 
 | Decision | Options Considered | Choice | Why |
 | --- | --- | --- | --- |
-| Partitioning scheme | Modulo hashing, static hash-slot sharding, consistent hashing | Consistent hashing (virtual nodes) | Bounds remapping to ~1/N of keys on scale events; avoids full-cluster wipe modulo hashing causes |
+| Partitioning scheme | Modulo hashing, static hash-slot sharding, consistent hashing | Consistent hashing (virtual nodes) | See [Data Partitioning & Rebalancing](#data-partitioning--rebalancing) for the full comparison |
 | Replication mode | Synchronous, asynchronous | Asynchronous | Cache correctness tolerates a lost write (backing store is source of truth); sync replication would add write latency for a durability guarantee not needed here |
 | Consistency model | Strong, eventual | Eventual (AP) | Cache's job is speed and availability; strict consistency isn't required since the backing store remains authoritative |
-| Client routing | Smart client, proxy layer | Smart client | Avoids the extra network hop a proxy adds at 40K QPS peak; accepted cost is routing-logic duplication across app services |
+| Client routing | Smart client, proxy layer | Smart client | Avoids the extra network hop a proxy adds at 35K QPS peak; accepted cost is routing-logic duplication across app services |
 | Eviction policy | LRU, LFU | LRU (default), LFU where hot-set is stable | LRU is the safer general default; LFU chosen only where a bursty one-off read pattern would otherwise evict the genuinely hot set |
 | Rebalancing strategy | Atomic ring flip, gradual shift + pre-warm | Gradual shift + pre-warm | Atomic flip creates an instant stampede of misses on the new node; gradual shift trades rebalance duration for avoiding backing-store overload |
 
@@ -153,7 +175,7 @@ Two mitigations, usually combined:
 > "Before I design this, I'd confirm: is this a general-purpose cache in front of a database, or a specific workload (session store, rate-limiter counters)? Assuming general-purpose read-through caching with a large working set - the core tension is that everything protecting availability or consistency here has to cost almost nothing on the read path, or the cache stops being faster than just hitting the database. I'll size the working set, then build up partitioning, replication, and eviction from that."
 
 > 🎯 **Interview Lens**
-> **Q:** Design a distributed cache for a service doing 40K reads/sec. Walk through the architecture.
+> **Q:** Design a distributed cache for a service doing 35K reads/sec. Walk through the architecture.
 > **Ideal answer:** Start from requirements (latency-first, availability over strict consistency), size the working set, then build up: consistent hashing for partitioning, async replication for fault tolerance without write-latency cost, smart client for routing, LRU eviction with jittered TTLs, and explicit fallback-to-backing-store behavior in the app layer for when the cache is unavailable.
 > **Common trap:** Jumping straight to "use Redis Cluster" without justifying the partitioning/replication/consistency trade-offs that make it the right choice, or over-engineering strong consistency into a system that doesn't need it.
 > **Next question:** A single key is suddenly getting 10x the traffic of any other key. What happens, and how do you fix it?
@@ -189,8 +211,4 @@ Two mitigations, usually combined:
 
 ### Selection Matrix
 
-| | Consistent Hashing | Static Hash-Slot Sharding |
-| --- | --- | --- |
-| Rebalance cost on scale event | ~1/N keys remap automatically | Explicit slot-migration step required |
-| Operational predictability | Lower - ring topology shifts implicitly | Higher - explicit slot-to-node mapping |
-| Example | Homegrown Memcached fleets | Redis Cluster (16384 fixed hash slots) |
+See [Data Partitioning & Rebalancing](#data-partitioning--rebalancing) for the consistent-hashing vs static hash-slot sharding comparison table - stated once there, not repeated here.

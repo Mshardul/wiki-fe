@@ -17,18 +17,6 @@
       "title": "Standard SWE"
     }
   ],
-  "./content/system-design/components/logging.md": [
-    {
-      "target": "./content/system-design/components/observability.md",
-      "title": "Logging"
-    }
-  ],
-  "./content/system-design/components/metrics.md": [
-    {
-      "target": "./content/system-design/components/observability.md",
-      "title": "Metrics"
-    }
-  ],
   "./content/system-design/paths/components-foundation.md": [
     {
       "target": "./content/system-design/index.md",
