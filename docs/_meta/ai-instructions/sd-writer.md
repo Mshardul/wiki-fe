@@ -10,6 +10,11 @@ Companion files:
 
 - [sd-rater.md](./sd-rater.md) - scores a finished draft against these params, checks for redundancy/bloat, and gates ship / no-ship.
 - [scripts/sd-check.sh](../../../scripts/sd-check.sh) - deterministic check for U8 / U9.
+- **Category files** - this file covers everything shared across every specific article (universal params, NEVER, format conventions, callouts, length ceiling, topic boundary, self-check). Each category's own section block, headings list, suggested sections, and category-specific self-check bullet live in a dedicated file - read **only the one matching your target folder**, never all four:
+  - [sd-writer-component.md](./sd-writer-component.md) - `components/`
+  - [sd-writer-algorithm.md](./sd-writer-algorithm.md) - `algorithms/`
+  - [sd-writer-hld.md](./sd-writer-hld.md) - `hld/`
+  - [sd-writer-devops.md](./sd-writer-devops.md) - `devops-tools/` (not `cheatsheets/`)
 
 ---
 
@@ -62,14 +67,14 @@ Before anything else, decide which **kind** of article you're writing. The kind 
 
 ## How to write one
 
-1. **Pick section + family.** Section from the target folder; family from the tables below.
-   - `content/system-design/components/…` → **Component**
-   - `content/system-design/algorithms/…` → **Algorithm/Concept**
-   - `content/system-design/hld/…` → **HLD**
-   - `content/system-design/devops-tools/…` (not `cheatsheets/`) → **DevOps tool**
-   - `content/system-design/devops-tools/cheatsheets/…` → **Cheatsheet** (self-contained format above, skip the rest of this file)
-   - `content/system-design/paths/…` → **Path** (self-contained format above, skip the rest of this file)
-2. **Create the file.** Create a new `.md` file at the target path (lowercase, hyphen-separated slug). Write from scratch using the **Headings list** for your section (at the bottom of this file) as a starting menu, not a mandatory fixed order - see [Structure guidelines](#structure-guidelines).
+1. **Pick section + family, then open only that category file.** Section from the target folder; family from the tables below.
+   - `content/system-design/components/…` → **Component** → also read [sd-writer-component.md](./sd-writer-component.md)
+   - `content/system-design/algorithms/…` → **Algorithm/Concept** → also read [sd-writer-algorithm.md](./sd-writer-algorithm.md)
+   - `content/system-design/hld/…` → **HLD** → also read [sd-writer-hld.md](./sd-writer-hld.md)
+   - `content/system-design/devops-tools/…` (not `cheatsheets/`) → **DevOps tool** → also read [sd-writer-devops.md](./sd-writer-devops.md)
+   - `content/system-design/devops-tools/cheatsheets/…` → **Cheatsheet** (self-contained format above, skip the rest of this file and every category file)
+   - `content/system-design/paths/…` → **Path** (self-contained format above, skip the rest of this file and every category file)
+2. **Create the file.** Create a new `.md` file at the target path (lowercase, hyphen-separated slug). Write from scratch using the **Headings list** in your category file as a starting menu, not a mandatory fixed order - see [Structure guidelines](#structure-guidelines).
 3. **PHASE 0 (HLD only).** Before writing the index, complete this sentence internally: _"The core architectural challenge of [System] is ___."_ Let that thesis drive which section gets the deepest nesting, and ensure it appears explicitly in the TLDR.
 4. **PHASE 1 - index only.** Generate ONLY the index (plain text, hierarchical dashes, no markdown code blocks - see [Index format rules](#index-format-rules)). Stop. Wait for user confirmation.
 5. **PHASE 2 - content, one section at a time.** Upon "Proceed", generate one H2 section per response, stop, wait for "Continue". Resolve `(→ filename.md)` markers into real inline links when the concept first appears.
@@ -284,68 +289,9 @@ Don't discard written content - seed it into the appropriate dedicated page.
 
 ---
 
-## Section block - Components
+## Section blocks (per category)
 
-Write these in addition to the universal params.
-
-**Goal & audience:** interview prep (trade-offs, debugging, scenario design) + production-grade conceptual mastery. Persona: senior system design educator. Audience: engineers with adjacent knowledge, self-contained article. Approach: progressive disclosure - intuitive mental models → technical mechanics → production trade-offs & interview scenarios.
-
-| #   | Param | What to write |
-| --- | ----- | -------------- |
-| CO1 | Core mechanics | How the component works internally - the mechanism, not a restated definition (see U14/layering). |
-| CO2 | Quick Decision Guide | Placed **after** Core Mechanisms, not before - readers understand trade-offs better once they understand the mechanics. When to use, when not to, how to choose between variants. **Where $ cost genuinely differentiates the options** (managed service vs self-hosted, over-provisioning vs autoscaling, storage tier pricing), name it as one of the deciding factors - not every component has a real cost angle, don't force one. |
-| CO3 | Comparison / Selection Matrix | Table comparing this component + real rivals across key dimensions, with a "pick it when…" style takeaway. Only if genuinely multiple meaningful variants exist. |
-| CO4 | Resilience & failure handling | How the component fails and degrades, feeding into the consolidated Failure Modes section (U12). |
-
----
-
-## Section block - Algorithms & Concepts
-
-Write these in addition to the universal params.
-
-**Goal & audience:** interview prep (trade-offs, application to system design, reasoning under constraints) + deep conceptual mastery. Approach: intuition-first - mental model → formal definition → mechanics → variants → real-world application → production trade-offs & interview scenarios.
-
-| #   | Param | What to write |
-| --- | ----- | -------------- |
-| AL1 | Analogy | For abstract theorems/formal concepts, lead with one concrete real-world analogy before the mental model, mapping directly to the key trade-off - not just the name. ✅ "CAP = a bank branch during a network outage: stop serving customers (CP) or serve with possibly stale balances (AP)." ❌ "CAP is like choosing between different priorities." |
-| AL2 | Formal definition | State the formal definition in plain English. If there's a canonical statement, quote then restate plainly. 1 sentence preferred, ≤3 max, ≤30 words, no notation. |
-| AL3 | Proof sketch (conditional) | Include **only** when the argument itself is the insight - when knowing _why_ the result holds changes how you design systems (CAP's partition-forces-a-choice argument). Skip when the mechanism matters more than the proof. If included: intuitive only, no formal notation/induction, one paragraph max, framed as "why this must be true." |
-| AL4 | Assumptions & preconditions | For theorems/formal concepts: what must be true for this to hold, and what breaks when violated. Distinct from failure modes - these are the concept's own boundary conditions. |
-| AL5 | Often confused with | Direct disambiguation for commonly-conflated concepts (CAP vs PACELC, ACID vs BASE), placed after core mechanics, before variants. Table if 3+ dimensions differ. Frame as "X focuses on **_, Y focuses on _**", not as a correction. |
-| AL6 | Variants & extensions | Only variants with distinct design implications - not an exhaustive list. Table if 3+ dimensions. Common case first, then extensions/edge cases. |
-| AL7 | Complexity & formal properties | Where meaningful (time, space, error bounds, false-positive rates): state bounds plainly in prose or a small table, no derivations, always connect to the practical system-design implication. |
-
----
-
-## Section block - HLD (system design)
-
-Write these in addition to the universal params.
-
-**Goal & audience:** interview prep (end-to-end walkthrough, trade-offs, scaling decisions, failure modes) + production-grade architectural mastery. Persona: senior system design interviewer.
-
-| #   | Param | What to write |
-| --- | ----- | -------------- |
-| HL1 | System thesis (PHASE 0) | Before the index: complete "The core architectural challenge of [System] is ___" internally. Drives which section gets the deepest nesting; must appear explicitly in the TLDR. |
-| HL2 | Requirements & scope | Functional, non-functional, explicitly out of scope. **Non-functional requirements must carry the trade-off reasoning, not just the list**: for each NFR that conflicts with another (consistency vs availability, latency vs cost), state which one wins **for this specific feature** and one sentence why - not "the system should be highly available and strongly consistent" left unresolved. **Security is a first-class NFR, not an optional add-on** - every HLD article states, at minimum, authn/authz approach (who can call this, how is identity verified) and one sentence on protecting data at rest or in transit where the system handles anything sensitive. Skipping security by default is a junior tell; explicitly scoping it out ("auth is out of scope, assume an upstream gateway handles it") is an acceptable senior move - silence is not. |
-| HL3 | Capacity estimation | Fixed order: **DAU → QPS → Storage → Bandwidth**, ending in a stated dominant constraint. Rough is fine (±1 order of magnitude) - the goal is identifying the bottleneck, not precision. Format: `**Users:** ... **Read/Write ratio:** ... **Peak QPS:** ... **Storage:** ... **Bandwidth:** ... **Key constraint:** ...` |
-| HL4 | High-level architecture | Component diagram, read path, write path. **At least one of the read/write paths must be a sequence-style diagram** (mermaid `sequenceDiagram` or numbered-arrow ASCII showing caller → component → component → response, in time order) - distinct from the static component-box diagram. A component diagram alone shows what talks to what, not the order of calls, timeouts, or where a request can fail mid-flight - the sequence view is what candidates are actually expected to draw when asked to "walk through what happens when a user does X." |
-| HL5 | Data model & storage | Schema, storage engine choice, sharding strategy. |
-| HL6 | Trade-off Summary (gated) | Dedicated H2, placed **before Appendices**. A decision log, not prose - one row per major architectural decision: `Decision \| Options Considered \| Choice \| Why (one sentence)`. Only decisions where the rejected option was genuinely reasonable. **Where cost is a real factor in the decision** (over-provisioning vs autoscaling, cross-region replication egress, managed vs self-hosted), name it in the Why cell - a senior answer weighs $ alongside latency/consistency, not just the technical axes. Not every row needs a cost angle; force it only where it's genuinely part of why the rejected option lost. |
-
----
-
-## Section block - DevOps tools
-
-Write these in addition to the universal params.
-
-**Goal & audience:** conceptual mastery of internals, design decisions, and trade-offs, bridged with practical examples. **Scope boundary: this article explains _why_; the companion cheatsheet covers _how_ (commands). Never replicate command lists here.**
-
-| #   | Param | What to write |
-| --- | ----- | -------------- |
-| DV1 | Architecture & internals | How the tool actually works under the hood - the mechanism a config file or CLI hides. |
-| DV2 | Practical examples (🔧) | Minimal, illustrative snippets only - enough to show the concept, not a working config. Annotate the _why_, not the _what_, inline. Ask: "does this snippet make the concept click faster than prose?" If not, cut it. |
-| DV3 | Cheatsheet boundary | Any command list, full flag reference, or step-by-step procedure belongs in the companion cheatsheet, not here - link to it instead of duplicating. |
-| DV4 | Key Config Reference (optional appendix) | Only if a config file is central to the tool. Table: `Key/Flag \| Default \| What it controls \| When to change`. ≤10 rows - full reference lives in the cheatsheet. |
+Each category's params (CO/AL/HL/DV) live in its own file, not here - open only the one matching your target folder: [sd-writer-component.md](./sd-writer-component.md), [sd-writer-algorithm.md](./sd-writer-algorithm.md), [sd-writer-hld.md](./sd-writer-hld.md), [sd-writer-devops.md](./sd-writer-devops.md).
 
 ---
 
@@ -366,76 +312,7 @@ Always at the end (HLD: after Trade-off Summary). Include only relevant sub-sect
 - Depth reflects conceptual complexity - the more layered and nuanced a concept, the deeper it nests. Unbalanced tree by design.
 - **Interview Scenario Bank is one consolidated section** (per U16), not scattered per-H2 Interview Lens callouts.
 
-### Suggested section starting points
-
-Pick, merge, and reorder based on the topic. Omit inapplicable sections - never include empty placeholders.
-
-**Components:** Quick Decision Guide (after mechanics) · Conceptual Foundations & Mental Models (optional - see NEVER on symmetric depth; skip if it would just restate the TLDR) · Core Mechanisms · Resilience & Failure Handling · Security & Hardening · Performance & Optimization · Deployment Contexts · Observability & Debugging · Production Failure Modes & Gotchas (U19 misconceptions fold in) · Interview Scenario Bank (U20 opening script, advisory) · Appendices
-
-**Algorithms/Concepts:** Mental Model & Intuition · Formal Definition · Assumptions & Preconditions · Core Mechanics · Often Confused With · Variants & Extensions · When This Applies · Real-World Applications · Performance & Complexity · Common Misapplications & Gotchas (U19 misconceptions fold in) · Interview Scenario Bank (U20 opening script, advisory) · Appendices
-
-**HLD:** Requirements & Scope (HL2 - NFR trade-offs resolved, not just listed) · Capacity Estimation · High-Level Architecture · Data Model & Storage · Core Service Design · Reliability & Fault Tolerance · Scalability & Performance · Deep-Dive: [Most Interview-Critical Subsystem] · Observability · Trade-off Summary · Common Interview Gotchas (U19 misconceptions fold in) · Interview Scenario Bank (U20 opening framing script - gated for HLD) · Appendices
-
-**DevOps tools:** Architecture Overview & Mental Model · Core Primitives & Abstractions · Internals Deep-Dive · Configuration Model & Patterns · Networking & Communication · Storage & Persistence · Security Model & Hardening · Observability & Debugging · Integration with Other Tools · Scaling & Performance · Production Failure Modes & Gotchas (U19 misconceptions fold in) · Interview Scenario Bank (U20 opening script, advisory) · Appendices
-
----
-
-## Headings list per section
-
-The mandatory spine each article must contain. Sections between TLDR and Failure Modes are chosen from the suggested list above per-topic, not fixed.
-
-### Components
-
-```
-# Title
-## Prerequisites
-## Table of Contents
-## TLDR
-... (Core Mechanisms, Quick Decision Guide, and other chosen sections - see Suggested section starting points) ...
-## Production Failure Modes & Gotchas   (U12 - consolidated, inline H3s elsewhere feed into this; U19 misconceptions fold in as a sub-heading)
-## Interview Scenario Bank              (U16/U22/U23 - consolidated Interview Lens entries, 3-6, Next question fields carry follow-up probes, no Q/probe leaks; U20 opening framing script, advisory)
-## Appendices
-```
-
-### Algorithms & Concepts
-
-```
-# Title
-## Prerequisites
-## Table of Contents
-## TLDR
-... (Mental Model, Formal Definition, Assumptions, Mechanics, Variants, etc. - see Suggested section starting points) ...
-## Common Misapplications & Gotchas    (U19 misconceptions fold in as a sub-heading)
-## Interview Scenario Bank             (U20 opening framing script, advisory)
-## Appendices
-```
-
-### HLD
-
-```
-# Design: [System Name]
-## Prerequisites
-## Table of Contents
-## TLDR
-... (Requirements, Capacity Estimation, Architecture, Data Model, etc. - see Suggested section starting points) ...
-## Production Failure Modes & Gotchas  (U19 misconceptions fold in as a sub-heading)
-## Trade-off Summary               (HL6 - decision log, before Appendices)
-## Interview Scenario Bank         (U20 opening framing script - GATED for HLD, see U20)
-## Appendices
-```
-
-### DevOps tools
-
-```
-# Title
-## Prerequisites
-## Table of Contents
-## TLDR
-... (Architecture, Internals, Config Model, etc. - see Suggested section starting points) ...
-## Production Failure Modes & Gotchas  (U19 misconceptions fold in as a sub-heading)
-## Interview Scenario Bank             (U20 opening framing script, advisory)
-## Appendices                       (may include Key Config Reference)
-```
+**Suggested section starting points and the mandatory headings list are per-category** - see the "Headings list" and "Suggested section starting points" sections in your category file ([sd-writer-component.md](./sd-writer-component.md), [sd-writer-algorithm.md](./sd-writer-algorithm.md), [sd-writer-hld.md](./sd-writer-hld.md), or [sd-writer-devops.md](./sd-writer-devops.md)).
 
 ---
 
@@ -463,8 +340,7 @@ If all true → output index → STOP. Wait for user confirmation.
 - **Q leak check (U23):** does the `Q:` field itself already name the mechanism/technique that answers it, so the reader doesn't have to produce it? ("Why does consistent hashing use virtual nodes to fix ring imbalance?" leaks - "one node keeps getting 2x the keys of others, what's your fix and why does it work?" doesn't.) Same check applies to `**Next question:**` fields - a follow-up phrased around the answer's key term isn't a genuine open probe. If the question pre-states its own answer, rewrite it as a scenario/symptom the reader has to diagnose.
 - **Misconception check (U19):** is each bullet a wrong belief about what the tool/pattern guarantees, or is it secretly a gotcha (implementation bug) in disguise? If the latter - move it to Gotchas proper.
 - **Framing script check (U20):** would this actually be said out loud in the first 2 minutes of an interview, or does it read like a summary of the article? If the latter - rewrite as a spoken opening move, not a recap.
-- Algorithms only - **proof sketch test:** does the proof sketch illuminate a design insight, or is it just formalism? If the latter, cut it.
-- DevOps only - **snippet whiteboard test + cheatsheet boundary check:** would you sketch this on a whiteboard? Does this section contain command lists or step-by-step procedures that belong in the cheatsheet instead?
+- **Category-specific checks** - Algorithms and DevOps each add one more self-check bullet; see the "Self-check addition" section in [sd-writer-algorithm.md](./sd-writer-algorithm.md) or [sd-writer-devops.md](./sd-writer-devops.md).
 
 ### Path self-check (paths/ only, skip all of the above)
 

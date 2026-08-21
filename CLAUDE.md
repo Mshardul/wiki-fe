@@ -284,9 +284,16 @@ Do this before any file reads or skill invocations - every session:
 | `docs/content-backlog.md`                           | DSA-xxx / SD-xxx / content-backlog intent - active content rows                          |
 | `docs/content-archive.md`                           | Content-backlog Done/Dropped history                                                     |
 | `docs/_meta/ai-instructions/content-backlog.md`     | Content-backlog intent - schema + rules (not tickets)                                    |
-| `docs/_meta/ai-instructions/sd-writer.md`          | Writing / fixing system design articles (components / algorithms / HLD / devops-tools / cheatsheets) |
+| `docs/_meta/ai-instructions/sd-writer.md`          | Writing / fixing system design articles - hub file (universal params, NEVER, format, cheatsheets/paths); read alongside the one matching category file below |
+| `docs/_meta/ai-instructions/sd-writer-component.md` | Category file - Component articles (`components/`) |
+| `docs/_meta/ai-instructions/sd-writer-algorithm.md` | Category file - Algorithm/Concept articles (`algorithms/`) |
+| `docs/_meta/ai-instructions/sd-writer-hld.md`       | Category file - HLD articles (`hld/`) |
+| `docs/_meta/ai-instructions/sd-writer-devops.md`    | Category file - DevOps tool articles (`devops-tools/`, not `cheatsheets/`) |
 | `docs/_meta/ai-instructions/sd-rater.md`           | Rating / publish-gate for system design articles                                        |
-| `docs/_meta/ai-instructions/dsa-writer.md`         | Writing / fixing DSA articles (after content-backlog or Content task)                    |
+| `docs/_meta/ai-instructions/dsa-writer.md`         | Writing / fixing DSA articles - hub file (universal params, format, depth bar); read alongside the one matching category file below |
+| `docs/_meta/ai-instructions/dsa-writer-ds.md`       | Category file - Data Structures articles (`data-structures/`) |
+| `docs/_meta/ai-instructions/dsa-writer-algorithm.md` | Category file - Algorithm articles (`algorithms/`) |
+| `docs/_meta/ai-instructions/dsa-writer-pattern.md`  | Category file - Pattern articles (`patterns/`) |
 | `docs/_meta/ai-instructions/dsa-rater.md`          | Rating / publish-gate for DSA articles                                                   |
 | `docs/_meta/ui-ux.md`                              | UI / UX decision needed                                                                 |
 | `docs/_meta/auth.md`                                | Auth/personal-layer decisions - product model, tech, DB schema, password/session/error contracts |

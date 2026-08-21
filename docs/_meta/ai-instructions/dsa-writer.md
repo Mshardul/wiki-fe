@@ -10,6 +10,10 @@ Companion files:
 
 - [dsa-rater.md](./dsa-rater.md) - scores a finished draft against these params and gates ship / no-ship.
 - [scripts/dsa-check.sh](../../../scripts/dsa-check.sh) - deterministic check for U8 / U11 / U12.
+- **Category files** - this file covers everything shared across every specific article (universal params, format conventions, depth bar). Each category's own section block, family blocks, and headings list live in a dedicated file - read **only the one matching your target folder**, never all three:
+  - [dsa-writer-ds.md](./dsa-writer-ds.md) - `data-structures/`
+  - [dsa-writer-algorithm.md](./dsa-writer-algorithm.md) - `algorithms/`
+  - [dsa-writer-pattern.md](./dsa-writer-pattern.md) - `patterns/`
 
 ---
 
@@ -43,11 +47,11 @@ Before anything else, decide which **kind** of article you're writing. The kind 
 
 ## How to write one
 
-1. **Pick section + family.** Section from the target folder; family from the tables below (DS / Algorithm only - Patterns have none).
-   - `content/dsa/data-structures/…` → **DS**
-   - `content/dsa/algorithms/…` → **Algorithm**
-   - `content/dsa/patterns/…` → **Pattern**
-2. **Create the file.** Create a new `.md` file at the target path (lowercase, hyphen-separated slug). No skeleton to copy - write from scratch using the **Headings list** for your section (at the bottom of this file) as the structural spine, and fill every param in that order.
+1. **Pick section + family, then open only that category file.** Section from the target folder; family from the tables in that file (DS / Algorithm only - Patterns have none).
+   - `content/dsa/data-structures/…` → **DS** → also read [dsa-writer-ds.md](./dsa-writer-ds.md)
+   - `content/dsa/algorithms/…` → **Algorithm** → also read [dsa-writer-algorithm.md](./dsa-writer-algorithm.md)
+   - `content/dsa/patterns/…` → **Pattern** → also read [dsa-writer-pattern.md](./dsa-writer-pattern.md)
+2. **Create the file.** Create a new `.md` file at the target path (lowercase, hyphen-separated slug). No skeleton to copy - write from scratch using the **Headings list** in your category file as the structural spine, and fill every param in that order.
 3. **Fill every section.** Apply three tiers of params: universal (every article) + the section block + the one family block. Each param below says exactly what "present at interview depth" means. **Advisory params must still be written** - they don't gate publish but they still belong in the article. Write them. The rater scores them; missing advisory content lowers the /100 score and shows up in FIXES.
 4. **Write, then rate independently - never self-rate.** The agent/process that wrote the draft must not also grade it - that context is invested in its own choices and reads its own work generously. Once the draft exists, a **separate process with no memory of why any decision in the draft was made** reads [dsa-rater.md](./dsa-rater.md) and rates the file cold, the way an independent reviewer would. In an agentic session, this means spawning a fresh Agent for the rating pass rather than rating in the same context that wrote it (see `.prompts/fe-write-content.md` in the root wiki repo for the reference flow). Fix every **blocker** (gated param scoring ≤5), then re-rate with **another fresh, independent process** - not the same one that produced the prior verdict, and not the writer that just fixed it. Do not hand off a draft that reads NO-SHIP. Iterate write-fix → independent-rate until SHIP.
 5. **Run the filesystem check** before declaring done: `../../../scripts/dsa-check.sh <article.md>` - fix any U8/U11/U12 FAIL.
@@ -134,165 +138,13 @@ Write all of these regardless of section.
 
 ---
 
-## Section block - Data Structures
+## Section blocks & family blocks (per category)
 
-Write these in addition to the universal params + the DS family block.
-
-| #   | Param                       | What to write                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| --- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DS1 | How it works + diagram      | Explain the internal layout, with a **real diagram** (mermaid or ASCII).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| DS2 | Operations table            | An `## Operations` table - each op (insert / find / delete where applicable) with its **individual time/space O()**. Every op gets a complexity cell.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| DS3 | Complexity summary          | A `## Complexity summary` - time/space broken into best / average / worst where they differ.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| DS4 | When-to-use vs alternatives | Decision cues naming sibling structures (e.g. array vs linked-list). **Prose** - the "reach for X when…" narrative. The scannable rival table is DS8, not here; DS4 is the reasoning, DS8 is the lookup.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| DS5 | Variants                    | A `## Variants` section with ≥1 real variant (array → dynamic array; tree → balanced). **Include CP-relevant variants where they exist**: **DS5 lists the _structural shape_ as a one-liner** (the variant exists; what it is; a pointer onward) - **the _technique_ that wields it, with diagram + complexity, gets its full treatment as a worked entry in Practice problems.** E.g. "difference array" gets a one-line DS5 entry ("an array of deltas - range-update trick, see Practice problems") **and** its full worked-problem treatment in Practice problems. That's a pointer + payload, not duplication. A variant named in DS5 and deferred to Practice problems for depth is **full credit**, not a gap. |
-| DS8 | Comparison table            | A `## Comparison` table placed **after `## When to use / when not`**: rows = this structure + its real rivals, columns = key ops' time/space + the distinguishing trade-off (ordering? contiguity? lookup?) + a **"Pick it when…"** column. Scannable at a glance - the thing a candidate eyeballs mid-interview. Complements DS4 (prose), does not duplicate it. **Each rival row must include a one-line crossover condition** in the "Pick it when…" cell: the specific threshold or workload where the rival actually wins in practice, not just in Big-O (e.g. "linked list beats array for front-insert only when n is small enough that pointer overhead fits in L2 - at large n, cache misses negate O(1)"). A table row without a crossover condition scores as shallow. **Gated.**                                                                                                                                                                                                                                                                        |
-| DS6 | Implementation              | An `## Implementation` - structure definition + core ops, in the U4/U26 (Python) / U5 (pseudocode) shape.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| DS7 | Gotchas / edge cases        | A `## Gotchas / edge cases` section listing **≥2 interview traps**, **including ≥1 CP-flavored trap where relevant** (overflow on accumulation, 1-vs-0 indexing, fast I/O, modular arithmetic) **and ≥1 at-scale trap**: a failure mode that only surfaces when n > 10⁷ or under concurrent/production load (e.g. array: `int` index overflow at ~2.1B elements, transient 2× memory during resize causing OOM mid-copy; hash table: rehash stall under write-heavy traffic; heap: cache miss rate climbing as n grows because `2i+1` children drift out of L2). The at-scale trap is where seniority shows - it's the answer to "what breaks if this gets 10× bigger?" **Per-family strength for the at-scale trap - see the table below**; the ≥2-traps-total floor never drops, only whether one of them must be at-scale-flavored. |
-| DS9 | Interviewer probes (advisory) | A `## What the interviewer probes for` section mirroring AL8: **≥2 follow-up questions a senior interviewer asks about this structure**, each with a 2–3 sentence answer sketch. Cover: (a) a **scale probe** ("what changes at n = 10⁹?"), (b) a **design-choice probe** ("why not always use X instead?"), and optionally (c) a **concurrency probe** where relevant. Format each as a bolded question followed by the answer. Example - Array: _"What if you need to store 10B entries? - A single array is bounded by the index type (~2.1B for Java `int`); beyond that, use a chunked structure or memory-mapped file. Also, the resize doubles transiently, so pre-size to the known capacity when possible."_ |
-| DS9a | Amortized proof (conditional) | Where the structure has **amortized behavior** (dynamic array, hash table, heap with lazy deletion, disjoint-set union-find), include a **step-by-step amortized argument** inside `## Memory layout` / `## Hashing & collisions` / `## Traversal & invariant` (whichever family block applies) - no new heading. The argument must: (1) state which operation has amortized cost, (2) show the accounting or potential-function reasoning (not just assert "doubling gives O(1)"), (3) state the worst-case single-op cost so the reader knows when amortized ≠ latency-safe. For fixed structures with no amortized behavior, mark **n/a** with a one-line justification. **Trigger**: required when DS family is Linear (dynamic array) or Hash-based; advisory for Tree/heap; n/a for Graph and fixed arrays. |
-
-### At-scale trap (DS7) and cache behavior (U18) - per-family applicability
-
-Explicit per-family defaults, matching the precedent set by DS9a:
-
-| DS family  | At-scale trap (DS7)                                                                                   | Cache behavior (U18)                                                                                          |
-| ---------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Linear     | **Required.** Natural fit for every member - array resize/overflow, linked-list pointer-chasing at scale, stack/queue backing-store limits. | **Required.** Contiguous (array, string) vs pointer-chasing (linked-list) is the textbook contrast - always applicable. |
-| Hash-based | **Required.** Rehash stall under write-heavy load is the canonical hash-table at-scale trap.               | **Required.** Bucket/slot layout vs chaining pointer-chasing is directly cache-relevant.                        |
-| Tree/heap  | **Required**, but the trap looks different per member: heap = flat-array cache miss growth (see U18); BST/AVL/red-black/trie = pointer-chasing depth growth, rebalancing cost at scale. Pick the one that's real for the specific member, don't force the heap example onto a trie. | **Required.** Heap (flat array) = friendly; BST/trie/pointer-based trees = hostile. The contrast is the point - always applicable. |
-| Graph      | **Required**, but scale bites differently by representation: adjacency **matrix** = O(V²) memory wall (unusable past V ~ 10⁴-10⁵); adjacency **list** = pointer-chasing during traversal at scale. State which representation the article assumes. | **Advisory.** Cache behavior depends heavily on representation (matrix = friendly/sequential, list = hostile/pointer-chasing) and is often already covered under DS8's comparison table - don't force a redundant restatement if DS8 already made the point. |
-
-This table governs DS7's at-scale sub-requirement and U18 specifically - it does not change DS7's own ≥2-traps-total floor (still gated), and does not make U18 gated anywhere (it stays advisory per the Gate table in the rater).
-
----
-
-## Section block - Algorithms
-
-Write these in addition to the universal params + the Algorithm family block.
-
-| #    | Param                           | What to write                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ---- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AL1  | Intuition                       | Plain-language _why it works_, separate from the walkthrough. Use an analogy if it helps.                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| AL2  | Worked example + diagram        | A step-by-step trace on a concrete input, with a **real diagram**. Best if it points back to the invariant ("the invariant still holds after this step").                                                                                                                                                                                                                                                                                                                                                             |
-| AL3  | Correctness / invariant         | State the loop/recurrence invariant or correctness argument explicitly - the "prove it" prompt. **The proof shape follows the family**: Search/divide and Traversal use a literal loop/recurrence invariant (holds before/after each iteration or recursive call); Recursive/build uses the recursion's correctness argument (base case + inductive step, or the state-space covers every case); Bit/greedy uses **either** the exchange-argument (greedy) **or** a bit-identity proof (why the bit trick does what it claims) - whichever the family block (below) already covers; Distribution's correctness argument is usually "every key lands in the range it's counted/bucketed for" - a placement proof, not a loop invariant. Pick the shape that's real for the family - don't force a loop-invariant template onto an algorithm that doesn't have one.                                                                                                                                                                                                                                                                                                                       |
-| AL4  | Complexity derivation           | Show _why_ the O - solve the recurrence, or count steps/space. Not a hand-wavy "it's O(n)".                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| AL10 | Constraints & approach          | A `## Constraints & approach` section placed **after `## Complexity derivation`** - the CP cornerstone. A table mapping **input size → expected complexity → which approach**: `n ≤ 20 → O(2ⁿ)/bitmask`, `n ≤ 500 → O(n³)`, `n ≤ 10⁵ → O(n log n)`, `n ≤ 10⁹ → O(log n)/O(1)`. State what the constraint _rules out_ and what it _invites_. This is the single most-tested CP reading skill - "the constraint tells you the algorithm." **Gated. Algorithms (and patterns, as PA10) only - n/a for data structures.** **Table can legitimately collapse to 1-2 rows for algorithms with a near-fixed complexity regardless of n** (e.g. most greedy algorithms run O(n log n) whether n is 10³ or 10⁹ - there's no tier where a different approach becomes viable). A short table is correct there, not a gap - what's still required is stating *why* it doesn't change (no smaller-n shortcut, no larger-n forcing a different technique), not padding to 4 rows with artificial tiers. |
-| AL5  | When-to-use vs alternatives     | Decision cues vs ≥1 competing algorithm. **Prose**; the scannable rival table is AL9.                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| AL9  | Comparison table                | A `## Comparison` table placed **after `## When to use / when not`**: rows = this algorithm + competing algorithms, columns = time/space + the key constraint each assumes (sorted input? non-negative weights? etc.). Complements AL5 (prose), does not duplicate it. **Gated.**                                                                                                                                                                                                                                     |
-| AL6  | Edge cases                      | **≥3**, drawn from whichever list actually applies to the family - the fixed menu (empty, single element, duplicates, overflow, cycles) is a **Traversal/Search-divide-flavored default, not a universal checklist**: for **Distribution** (counting/radix/bucket-sort), swap in negative-key / out-of-declared-range values (breaks counting sort's index-by-key unless offset) and adversarial-clustering (bucket sort degrades to O(n²) when keys cluster into one bucket) - "cycles" and "duplicates" rarely apply; for **Bit/greedy**, swap in all-zero / all-one bitmask, negative-number two's-complement behavior (bit tricks), or the greedy-fails-here counterexample (why this problem's exchange argument holds but a superficially similar one doesn't); for **Recursive/build**, swap in max-recursion-depth / stack-overflow risk and the state-space-explosion case (backtracking/DP without memoization). Handle each in the Python where natural (`if not arr: return`). **Include ≥1 CP-flavored trap where relevant**: integer overflow (`int` vs `long`, product overflow), off-by-one in binary-search bounds, modular arithmetic (`% (10⁹+7)`), 1-vs-0 indexing, fast I/O. The senior-depth trap lives here.                                                                                                                              |
-| AL7  | Implementation                  | Pseudocode (per U5) + Python (per U4/U26).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| AL8  | What the interviewer probes for | After the correctness argument, list the typical follow-ups - **each as a question + a 2–3 sentence answer sketch** (e.g. Dijkstra: _"Negative weights? - No; a finalized node can later be reached more cheaply via a negative edge. Use Bellman-Ford, O(VE)."_). Whenever you recommend a choice, cover the probe on that choice.                                                                                                                                                                                   |
-
----
-
-## Section block - Patterns
-
-Write these in addition to the universal params. **Patterns have no family block.**
-
-| #    | Param                   | What to write                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ---- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PA1  | **Recognition signals** | The heart of the vertical - write it most carefully. **Three labeled parts**, each concrete: **(a) Trigger phrases** - **≥2** literal, quoted problem-statement snippets ("longest substring with at most K distinct characters", "next greater element"), not "when dealing with arrays". **(b) Structural cues** - input shape + output property regardless of wording. **(c) Not to be confused with** - name ≥1 neighbor pattern and state the distinction in one crisp sentence. |
-| PA2  | How it works + diagram  | The mechanic, with a **real diagram**. Examples are **generic - no LC/problem names**: describe the trace by its mechanic ("pair summing to a target", "maximize `min(a,b) * width` over a height array"), not by the LC problem it happens to resemble. Same numbers/arrays/diagram steps as always, just nameless framing. This keeps How-it-works structurally unable to duplicate a Practice-problems entry by name.                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| PA4  | Complexity              | Typical time/space of the pattern.                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| PA5  | Variations              | Common twists on the pattern.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| PA10 | Constraints & approach  | A `## Constraints & approach` section: **input size → reach for this pattern (or not)**. The CP reading skill at the pattern level - `n ≤ 10⁵ and "contiguous subarray" → sliding window, not O(n²) brute force`; when the constraint pushes you _off_ this pattern to another. Patterns are CP-heavy, so this is **gated**. Contest tricks/variants of the mechanic (sliding window → monotonic-deque for window-max; two pointers → meet-in-the-middle; binary-search-on-answer) get their full worked-problem treatment in Practice problems, per U6/U23.                                  |
-| PA7  | Pitfalls                | **≥2** common misapplications.                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| PA8  | Related                 | Cross-links to the DS/algo it leans on + sibling patterns.                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| PA9  | First 30 seconds        | The exact 2–3 sentences a candidate says out loud the moment they spot the pattern (e.g. _"This is a sliding window - longest contiguous subarray satisfying a constraint. Two pointers, expand right, contract left on a hashmap of counts."_). Distinct from PA1: PA1 is how to _recognize_; this is the _script_ once recognized - structure, why, approach in one breath.                                                                                                         |
-
----
-
-## Family blocks
-
-Pick the one family matching the article. Write its block under the **expected heading**, covering every listed point at depth. The rater scores this as one param (FB), weight 2, gated.
+Each category's params (DS/AL/PA) and family blocks live in its own file, not here - open only the one matching your target folder: [dsa-writer-ds.md](./dsa-writer-ds.md), [dsa-writer-algorithm.md](./dsa-writer-algorithm.md), [dsa-writer-pattern.md](./dsa-writer-pattern.md). Each category file also carries its own **Headings list** - the ordered structural spine for that article type.
 
 **Family choice - primary subject, not techniques touched in passing.** Sorting is **Search/divide** even though heap-sort references a heap; Backtracking is **Recursive/build** even though it recurses. When genuinely split, pick the family whose block you cover at most depth.
 
-### DS families
-
-| Family     | Members                                  | Heading + must-cover                                                                   |
-| ---------- | ---------------------------------------- | -------------------------------------------------------------------------------------- |
-| Linear     | array, string, linked-list, stack, queue | `## Memory layout` - contiguous vs pointer, cache behavior, resize cost.               |
-| Hash-based | hash-table, hash-set                     | `## Hashing & collisions` - hash fn, chaining vs open-addressing, load factor, resize. |
-| Tree/heap  | binary-tree, BST, heap, trie             | `## Traversal & invariant` - orderings, the ordering/heap invariant, balancing.        |
-| Graph      | graph                                    | `## Representations` - matrix vs list, directed/weighted, tradeoff table.              |
-
-### Algorithm families
-
-| Family          | Members                                            | Heading + must-cover                                                                                                                                                              |
-| --------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Search/divide   | binary-search, sorting, divide & conquer           | `## Loop/recurrence invariant` - search-space shrink; recurrence → Master theorem.                                                                                                |
-| Traversal       | BFS, DFS, topological-sort, Dijkstra, Bellman-Ford | `## Graph/tree assumptions` - visited-state, directed/weighted, queue vs stack vs PQ.                                                                                             |
-| Recursive/build | recursion, backtracking, DP                        | `## State & recurrence` - state def, base case, memo vs tabulation, state-space size.                                                                                             |
-| Bit/greedy      | bit-manipulation, greedy                           | `## Greedy-choice proof` (exchange argument) OR `## Bit-tricks table`.                                                                                                            |
-| Distribution    | counting-sort, radix-sort, bucket-sort             | `## Key & distribution` - what the key is, the key range `k` (or digit count `d` / bucket count), why it sidesteps the comparison lower bound, and the space cost the range buys. |
-
-**Non-comparison / no-clean-fit algorithms.** A few algorithms don't sit in any family above - non-comparison sorts (counting/radix/bucket) and iterative loop-invariant sorts (insertion/selection). Two rules:
+**Non-comparison / no-clean-fit algorithms.** A few algorithms don't sit in any family listed in dsa-writer-algorithm.md - non-comparison sorts (counting/radix/bucket) and iterative loop-invariant sorts (insertion/selection). Two rules:
 
 - **Non-comparison sorts** use the **Distribution** family block (`## Key & distribution`) - they genuinely share a mechanism (index/bucket by key value, not compare), so it's a real family, not a dumping ground.
 - **Anything still without a fit** (e.g. insertion sort's incremental loop) picks the **nearest** family, repurposes its heading to the algorithm's actual structure (loop state, not a recurrence), and **flags the stretch in a `> Family note` blockquote** in the article so the rater doesn't penalize a forced fit. The depth must live somewhere real (the invariant, the cost analysis) - the family label is bookkeeping, not the substance.
-
----
-
-## Headings list per section
-
-The ordered headings each article must contain. Write these headings in this order - they are the structural spine of every article.
-
-### Data Structures
-
-```
-# Title
-## Prerequisites
-## Table of Contents
-## What it is              (U1, U13)
-## How it works            (DS1 - diagram; builds on U1, does not restate it)   ← U14 check: opens at the mechanism, not the definition
-## Operations              (DS2)
-## Complexity summary      (DS3)
-## When to use / when not  (DS4 - prose; U17 one-line real-world usage folds in here)
-## Comparison              (DS8 - scannable this-vs-rivals table)
-## Variants                (DS5 - include CP-relevant variants)
-## <family heading>        (FB - one of Memory layout / Hashing & collisions / Traversal & invariant / Representations)
-## Implementation          (DS6 - pseudocode + Python)
-## Gotchas / edge cases    (DS7 - ≥1 CP-flavored trap + ≥1 at-scale trap)
-## What the interviewer probes for  (DS9 - advisory; ≥2 follow-ups with answer sketches; WRITE IT)
-## Practice problems        (U6/U22-25 - favor canonical staples; gated contest-tool entry for Linear family/Graph)
-```
-
-### Algorithms
-
-```
-# Title
-## Prerequisites
-## Table of Contents
-## What it is              (U1, U13)
-## Intuition               (AL1)
-## How it works            (AL2 - worked example + diagram; shows the intuition, does not restate it)   ← U14 check: trace, not re-explanation
-## Correctness / invariant (AL3)
-## Complexity derivation   (AL4)
-## Constraints & approach  (AL10 - input size → expected complexity → approach)
-## When to use / when not  (AL5 - prose; U17 one-line real-world usage folds in here)
-## Comparison              (AL9 - scannable this-vs-rivals table)
-## <family heading>        (FB - Loop/recurrence invariant / Graph-tree assumptions / State & recurrence / Greedy-proof or Bit-tricks)
-## Edge cases              (AL6 - include ≥1 CP-flavored trap)
-## Implementation          (AL7 - pseudocode + Python)
-## What the interviewer probes for  (AL8 - advisory; WRITE IT)
-## Practice problems        (U6/U22-25 - favor canonical staples)
-```
-
-### Patterns
-
-```
-# Title
-## Prerequisites
-## Table of Contents
-## What it is              (U1, U13)
-## Recognition signals     (PA1 - trigger phrases / structural cues / not to be confused with)
-## How it works            (PA2 - diagram, generic/nameless examples)
-## Complexity              (PA4)
-## Constraints & approach  (PA10 - input size → reach for this pattern or not)
-## Variations              (PA5)
-## Pitfalls                (PA7)
-## First 30 seconds        (PA9 - advisory; WRITE IT)
-## Related                 (PA8)
-## Practice problems        (U6/U22-25 - favor canonical staples, full worked entries; gated contest-tool entry)
-```

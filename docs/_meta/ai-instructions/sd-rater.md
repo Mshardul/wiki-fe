@@ -166,6 +166,8 @@ Everything above scores whether required content is *present, in shape, at depth
 
 V9 exhaustiveness is the single most expensive check in this rater - naive exhaustive comparison in a folder of *n* articles costs O(n²) full-file reads across a full-folder batch run. This cache makes exhaustive affordable by extracting each file's checkable claims **once**, then reusing the extraction for every other article's V9 pass against it, instead of re-reading full prose per comparison.
 
+**Mechanical pre-seed:** `numeric` and `comparison_rows` claims (regex-extractable: latencies, complexities, O(...) notation, percentages, throughput figures, and every markdown table with its heading) can be pre-filled by `../../../scripts/extract_claims.py <folder>` instead of an LLM full-read. Run it before rating a folder whose `.v9-cache.json` is missing or stale for the siblings being compared against - it writes/refreshes only the `numeric`/`comparison_rows` fields (never touches `definitions`/`terminology`, and never overwrites those fields if a prior LLM-filled entry exists for an unchanged file). The LLM's job for a script-seeded entry is to **verify** the pre-extracted candidates during the comparison (judge magnitude/contradiction) and to **independently extract** `definitions` and `terminology` claims, which stay LLM-only - the script does not attempt semantic judgment.
+
 **What's cached, per folder:** one JSON file at `content/system-design/<folder>/.v9-cache.json` (same folder V9 already scopes comparisons to - components/, algorithms/, hld/, devops-tools/). One entry per article:
 
 ```json
@@ -182,7 +184,7 @@ V9 exhaustiveness is the single most expensive check in this rater - naive exhau
 }
 ```
 
-- **Extraction is a byproduct of rating, not extra work.** When V9 runs on an article normally (reading it, checking its claims against siblings), the claims it needed to state in the NOTE are exactly the cache entry - write them out as this article's cache entry as part of that same pass. No separate extraction step.
+- **Extraction is a byproduct of rating, not extra work** for `definitions`/`terminology`. When V9 runs on an article normally (reading it, checking its claims against siblings), the claims it needed to state in the NOTE are exactly the cache entry - write them out as this article's cache entry as part of that same pass. `numeric`/`comparison_rows` may already be present from the script pre-seed above - verify rather than re-derive those.
 - **Reuse rule:** before running V9 for article A against sibling B, check B's cache entry. If present and `mtime` matches B's current file mtime, use the cached claims - do not re-read B's full file. If missing or stale (B edited since cached), read B fully once, run the comparison, and refresh B's cache entry.
 - **First rating of a fresh/uncached folder still pays full cost once** - every file gets fully read to seed its cache entry. The saving is on the **second and later** article rated in the same run/folder, and on **later runs entirely** (persisted cache survives across sessions).
 - **Invalidation is mtime-based, not content-hash-based** - simpler, and edits always bump mtime. If a file's mtime changed since its cache entry, treat the entry as stale and re-extract, regardless of whether the actual claims changed.
