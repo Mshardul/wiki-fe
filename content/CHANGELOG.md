@@ -9,6 +9,12 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-08-22
+- `system-design/algorithms/consensus-raft-paxos.md` - expanded: "Linearizable Reads Without a Log Append"
+- `system-design/components/mfa.md` - fixed gate failures: diagram, Appendices, failure-mode coverage, prereq fix
+- `system-design/components/session-auth.md` - completed partial stub: TLDR, Mental Model, Quick Decision Guide, consolidated Interview Scenario Bank, Production Failure Modes & Gotchas, Appendices
+- `system-design/components/service-to-service-auth.md` - completed partial stub: TLDR, Quick Decision Guide, Comparison Matrix, consolidated Interview Scenario Bank, Production Failure Modes & Gotchas, Appendices
+
 ## 2026-08-21
 - `system-design/hld/distributed-task-scheduler.md` - new article: leader-based scheduling, at-least-once + idempotency, DAG dependencies, multi-tenant fairness
 - `system-design/components/tracing.md` - new stub: full article filled from empty stub (span propagation, sampling strategies, storage at scale, Interview Scenario Bank)

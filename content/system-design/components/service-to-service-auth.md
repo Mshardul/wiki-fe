@@ -2,29 +2,38 @@
 
 ## Prerequisites
 
-- **[Authentication](./authentication.md)** [Must read] - service identity is a distinct problem from user identity; the hub covers why the human-in-the-loop assumption breaks down here.
-- **[mTLS](./mtls.md)** [Should read] - one of the primary mechanisms covered in depth here; this page covers when to reach for it vs. alternatives.
+- **[Authentication](./authentication.md)** [Must read]
+- **[mTLS](./mtls.md)** [Should read]
+- **[JWT](./jwt.md)** [Should read]
 
 ---
 
 ## Table of Contents
 
-<!-- Partial article - seeded from authentication.md. Sections to be completed. -->
-
+- [Core Mechanisms](#core-mechanisms)
 - [API Keys](#api-keys)
 - [mTLS](#mtls)
 - [JWT with Service Accounts](#jwt-with-service-accounts)
 - [SPIFFE / SPIRE](#spiffe--spire)
+- [Quick Decision Guide](#quick-decision-guide)
+- [Comparison Matrix](#comparison-matrix)
+- [Production Failure Modes & Gotchas](#production-failure-modes--gotchas)
+- [Interview Scenario Bank](#interview-scenario-bank)
+- [Appendices](#appendices)
 
 ---
 
 ## TLDR
 
-<!-- To be written when this article is fully developed. -->
+Service-to-service auth answers a different question than user auth: not "who is this person" but "which workload is calling, and can I prove it without a human typing a password." The four workhorse mechanisms - API keys, mTLS, JWT service accounts, and SPIFFE/SPIRE - trade off setup cost against credential lifetime and blast radius on leak. The real decision isn't which mechanism is "best," it's how much long-lived secret material you're willing to have sitting in a config file. **Soundbite:** the mechanisms aren't ranked, they're layered - external partners get API keys, your mesh gets mTLS, and the hard part is never the crypto, it's who rotates the secret before someone else does.
 
 ---
 
-## API Keys
+## Core Mechanisms
+
+Four mechanisms cover the overwhelming majority of service-identity problems in practice, each solving a different trust topology.
+
+### API Keys
 
 An API key is a shared secret the client includes in every request. The server looks it up against a store to identify and authorize the caller.
 
@@ -57,9 +66,7 @@ def verify_api_key(raw_key):
 
 **Limitations:** No built-in expiry, no cryptographic proof of who is calling (only that they have the key), no fine-grained identity beyond what the key record says. Appropriate for third-party external integrations and webhook endpoints. Not appropriate for internal service mesh traffic where better options exist.
 
----
-
-## mTLS
+### mTLS
 
 Standard TLS authenticates the server to the client - the server presents a certificate and the client verifies it. mTLS (mutual TLS) adds the reverse: the client also presents a certificate, and the server verifies it. Both sides prove their identity during the TLS handshake.
 
@@ -81,9 +88,7 @@ The server validates the client certificate against its trusted CA. The certific
 > ⚖️ **Decision Framework**
 > mTLS is the right choice when: you control both sides of the connection, you're operating a service mesh or can add one, and you want transport-level identity without application-layer token management. Without automation (cert-manager, Istio), manual cert rotation across many services is the failure mode - the operational burden defeats the security benefit.
 
----
-
-## JWT with Service Accounts
+### JWT with Service Accounts
 
 Service accounts are non-human identities tied to a service or workload. A service authenticates by presenting a signed JWT that asserts its identity, which an authorization server or target service validates. (See [JWT](./jwt.md) for token structure and signing algorithm trade-offs - not repeated here.)
 
@@ -119,9 +124,7 @@ The token is automatically rotated by the kubelet. Services read it and present 
 
 The key pattern: no long-lived secrets embedded in the process. Credentials are short-lived, rotated automatically by the platform, and tightly scoped.
 
----
-
-## SPIFFE / SPIRE
+### SPIFFE / SPIRE
 
 _Platform-agnostic workload identity: each service gets a cryptographic SVID automatically, rotated continuously, with no secrets in config files._
 
@@ -170,10 +173,106 @@ Target fetches SPIFFE bundle (public keys) from SPIRE and validates
 - No secrets in environment variables or config files - credentials delivered via local socket
 - Integrates with Envoy, Istio, and AWS/GCP workload identity
 
+---
+
+## Quick Decision Guide
+
+Choose based on **who controls the other side of the connection** and **how dynamic the fleet is** - not on which mechanism sounds most modern.
+
+- **External third party, webhook, or partner integration** → API keys. You don't control their infrastructure, so certificate-based or platform-native identity isn't an option - a scoped, revocable shared secret is the only mechanism both sides can implement without coordination.
+- **Internal traffic inside a single service mesh you operate** → mTLS via the mesh's sidecar (Istio, Linkerd). The mesh automates PKI; you get transport-level identity for free without touching application code.
+- **Calling a specific cloud provider's managed API (Cloud Storage, Pub/Sub, a managed queue)** → JWT service accounts / workload identity federation (Workload Identity on GCP, IRSA on AWS). The provider already expects this exact mechanism, and it eliminates key files in favor of platform-issued short-lived credentials.
+- **Heterogeneous or multi-cloud fleet** (mix of Kubernetes, VMs, bare metal, serverless) where no single mesh spans everything → SPIFFE/SPIRE. It's the only option here that isn't tied to one platform's identity model.
+- **Not sure yet / early-stage system with one or two services** → start with API keys for simplicity, but budget for migration once service count or blast-radius concerns grow - retrofitting mTLS or SPIFFE across dozens of already-deployed services is materially harder than starting with one.
+
+**Cost is a secondary factor, not a primary one, here.** Running your own CA (mTLS without a mesh) or a SPIRE Server/Agent deployment costs operational effort more than dollars - the "cost" that actually differentiates these options is engineering time spent on PKI lifecycle and rotation automation, not a cloud bill line item.
+
+**Real-world usage and scale:** Google's internal ALTS and Netflix's use of mTLS-via-mesh are workhorse examples of transport-level service identity at large fleet scale. What breaks past a few thousand services isn't the crypto - it's CA availability: a mesh-wide cert rotation event that coincides with a CA outage can lock out an entire fleet from re-authenticating simultaneously, which is why production mTLS deployments run redundant CAs and stagger rotation windows rather than rotating the whole fleet at once.
+
+---
+
+## Comparison Matrix
+
+| Dimension | API Keys | mTLS | JWT Service Accounts | SPIFFE/SPIRE |
+| --- | --- | --- | --- | --- |
+| Trust model | Shared secret | Certificate (PKI) | Signed token, platform-issued | Cryptographic identity (SVID) |
+| Credential lifetime | Long-lived (manual rotation) | Short-lived if automated | Short-lived (platform-rotated) | Short-lived (hours), auto-rotated |
+| Setup cost | Very low | High without a mesh; low with one | Low if platform-native (GCP/AWS) | High (SPIRE Server/Agent deployment) |
+| Cross-platform | Yes, trivially | Tied to whoever runs the mesh | Tied to the issuing cloud platform | Yes, by design |
+| Blast radius on leak | High - full access until manually revoked | Low - narrow validity window | Low - narrow validity window | Very low - hours-long window, auto-revoked |
+| Best fit | External partners, webhooks | Internal mesh traffic | Calls to a specific cloud provider's APIs | Heterogeneous/multi-cloud fleets |
+
+**Pick it when:** reach for API keys only where you don't control both ends of the connection; everything internal that can run a mesh or SPIRE should not still be using shared secrets in year two.
+
+---
+
+## Production Failure Modes & Gotchas
+
+- **API key sprawl with no owner.** Keys get generated for a one-off integration and never revoked when the integration is decommissioned. Without a scoped, tagged key registry, dead keys become permanent unmonitored attack surface.
+- **mTLS cert expiry cascades.** If cert rotation isn't automated (cert-manager, mesh-managed), certs expire silently and take down every dependent service at once - usually discovered in production, not staging, because staging traffic is lighter and masks the expiry window.
+- **CA outage during a rotation window.** A mesh-wide rotation that coincides with CA unavailability can lock services out of re-authenticating simultaneously - see the at-scale note in the Quick Decision Guide.
+- **JWT service account key files committed to source control.** The GCP/AWS key-file pattern is a long-lived secret exactly like an API key if it's exported to a file instead of using Workload Identity/IRSA federation - a common accidental regression.
+- **SPIRE workload attestation misconfiguration.** If attestation rules are too permissive (e.g. matching on namespace alone, not label + service account + namespace together), a compromised pod in the same namespace can obtain another workload's SVID.
+- **Clock skew breaking JWT validation.** Short-lived tokens (JWT service accounts, JWT-SVIDs) are exquisitely sensitive to clock drift between issuer and verifier - a few minutes of skew produces spurious "expired" or "not yet valid" rejections that look like an auth bug but are actually an NTP problem.
+
+### Common Misconceptions
+
+- **"mTLS means the traffic is authorized."** mTLS proves *identity* (this connection came from certificate X) - it says nothing about *authorization* (whether X is allowed to call this specific endpoint). Authorization is a separate policy layer on top.
+- **"API keys and JWTs are interchangeable as long as both are 'tokens'."** An API key is an opaque shared secret verified by lookup; a JWT is a self-contained signed claim verified by signature. The failure modes are different - a leaked API key is usable until revoked in the store, a leaked JWT is usable until its `exp` passes, no revocation required (or possible, without a denylist).
+- **"SPIFFE/SPIRE replaces mTLS."** SPIFFE is an identity framework; X.509-SVIDs are still presented *via* mTLS. SPIRE issues and rotates the certificates that mTLS then uses - it's not a competing mechanism, it's what feeds mTLS in a platform-agnostic way.
+
+---
+
+## Interview Scenario Bank
+
+> The first 30 seconds: "Before picking a mechanism, I'd ask who's on the other end of this connection - a third party I don't control, or infrastructure I own. That decides whether this is an API-key problem or a mesh/workload-identity problem, and it's the fork everything else hangs off."
+
 > 🎯 **Interview Lens**
 > **Q:** How do you authenticate services in a microservices system without sharing long-lived secrets?
-> **Ideal answer:** Two options depending on complexity tolerance. For a service mesh environment: mTLS with automatic cert rotation via Istio or Linkerd - identity is in the certificate, rotation is automated, no application-layer token management. For heterogeneous or multi-cloud: SPIFFE/SPIRE - platform-agnostic workload identity, short-lived X.509 SVIDs rotated automatically, no secrets in config. Both avoid the core problem with API keys: a long-lived secret that leaks silently and is painful to rotate.
-> **Common trap:** "Use API keys per service." Follow-up: "How do you rotate them without downtime?" and "What happens if one is leaked?" The candidate then describes a manual process that doesn't scale past a few services.
-> **Next question:** "How does a newly deployed pod prove its identity to SPIRE before it has any credentials?" → This is workload attestation. SPIRE Agent uses platform-specific evidence (Kubernetes pod UID, node metadata, service account projection) to verify the workload's claimed identity before issuing any SVID. The agent has a trusted channel to the SPIRE Server; the workload only communicates with the local agent via Unix socket.
+> **Ideal answer:** It depends on who controls the other side. For a service mesh you operate: mTLS with automatic cert rotation via Istio or Linkerd - identity is in the certificate, rotation is automated, no application-layer token management. For heterogeneous or multi-cloud infrastructure: SPIFFE/SPIRE - platform-agnostic workload identity, short-lived X.509 SVIDs rotated automatically, no secrets in config. Both avoid the core problem with a naive shared-secret approach: a long-lived credential that leaks silently and is painful to rotate.
+> **Common trap:** "Use API keys per service" as the universal answer, without distinguishing internal mesh traffic from external partner traffic.
+> **Next question:** How do you rotate a credential across a fleet with zero downtime, without ever having both old and new fully invalid at the same time?
+> **Next question:** What happens if the store or CA that issues these credentials becomes unavailable mid-rotation?
 
-**Key Takeaway:** API keys are the right choice for external integrations - simple, immediately revocable. For internal service mesh: mTLS with automated rotation removes long-lived secrets from the picture. SPIFFE/SPIRE is the answer when you need workload identity across heterogeneous infrastructure without per-platform credential management.
+> 🎯 **Interview Lens**
+> **Q:** A newly deployed pod needs to call another service - how does it prove its identity before it holds any credential at all?
+> **Ideal answer:** This is workload attestation. An agent running on the node (e.g. SPIRE Agent) verifies platform-specific evidence about the calling process - pod UID, namespace, service account, node metadata - through a trusted channel it already has to the platform, and only then issues a credential to the workload over a local, unauthenticated-by-design channel (a Unix socket the workload alone can reach).
+> **Common trap:** Assuming the workload itself presents some pre-existing secret to bootstrap trust - the whole point is that it doesn't have one yet; trust comes from the platform's own attestation of *what* the workload is, not anything the workload possesses.
+> **Next question:** If the attestation rule matches on namespace alone, what does a compromised neighbor pod in that namespace gain?
+
+> 🎯 **Interview Lens**
+> **Q:** Your service calls a managed cloud API (object storage, a managed queue) - what's the credential, and why not just use an API key here too?
+> **Ideal answer:** Use the platform's native workload identity federation (Workload Identity on GCP, IRSA on AWS) rather than a downloaded service-account key file. The workload's platform-native identity (its Kubernetes service account, its instance identity) gets federated to a cloud IAM role, so the credential is short-lived and platform-rotated instead of a static key file that behaves exactly like a leaked API key if exfiltrated.
+> **Common trap:** Downloading and embedding the service-account JSON key file because it "just works" in a tutorial, then accidentally committing it or baking it into an image layer.
+> **Next question:** If the key file did end up in source control history, what's the actual blast radius, and how would you detect it happened?
+
+> 🎯 **Interview Lens**
+> **Q:** Why is mTLS not sufficient on its own to say a request is allowed?
+> **Ideal answer:** mTLS authenticates the connection's identity at the transport layer - it proves which certificate, and therefore which workload, is on the other end. It does not encode or enforce what that identity is permitted to do. Authorization is a separate policy decision (an AuthorizationPolicy in the mesh, an ACL, a scope check) layered on top of the proven identity.
+> **Common trap:** Treating "the handshake succeeded" as equivalent to "this call is allowed," which conflates authentication with authorization.
+> **Next question:** Where would you enforce that policy - at the sidecar, at the application, or both, and what's the trade-off?
+
+---
+
+## Appendices
+
+### Acronyms & Abbreviations
+
+| Acronym | Full Form | One-line meaning |
+| --- | --- | --- |
+| mTLS | Mutual Transport Layer Security | Both client and server present certificates during the TLS handshake |
+| JWT | JSON Web Token | Signed, self-contained token asserting claims about an identity |
+| SPIFFE | Secure Production Identity Framework For Everyone | CNCF standard for automatic workload identity |
+| SPIRE | SPIFFE Runtime Environment | Reference implementation of SPIFFE |
+| SVID | SPIFFE Verifiable Identity Document | The credential (X.509 or JWT) encoding a SPIFFE ID |
+| PKI | Public Key Infrastructure | The CA, cert issuance, and revocation machinery behind certificate-based auth |
+| IRSA | IAM Roles for Service Accounts | AWS mechanism federating a Kubernetes service account to a cloud IAM role |
+| CRL | Certificate Revocation List | List of certificates a CA has revoked before their expiry |
+| OCSP | Online Certificate Status Protocol | Real-time alternative to CRL for checking certificate revocation status |
+
+### Anti-patterns
+
+- Embedding a downloaded service-account key file in a container image or committing it to source control - use workload identity federation instead, which issues no static file at all.
+- Running mTLS certificate rotation manually across more than a handful of services - the operational burden guarantees an eventual expiry outage; automate via a mesh or cert-manager before scaling past a few services.
+- Treating API keys as suitable for internal service mesh traffic because they're "simple" - internal traffic is exactly the case where a better, short-lived mechanism is available and worth the setup cost.
+- Configuring SPIRE workload attestation on a single loose attribute (namespace only) - combine namespace, service account, and pod labels so a neighboring compromised workload can't inherit another's identity.

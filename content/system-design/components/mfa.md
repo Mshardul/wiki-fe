@@ -3,12 +3,13 @@
 ## Prerequisites
 
 - **[Authentication](./authentication.md)** [Must read] - MFA is a hardening layer on top of primary authentication (session or token based); the hub covers where it fits in the overall flow.
-- **[OAuth 2.0 & OIDC](./oauth-oidc.md)** [Should read] - Step-up authentication expresses factor strength via OIDC's `acr`/`amr` claims; this page assumes the ID token and claim-validation mechanics covered there.
+- **[OAuth 2.0 & OIDC](./oauth-oidc.md)** [Should read] - MFA and OAuth/OIDC are parallel authentication layers, not a strict dependency chain; this page's Step-Up Authentication section reads factor-strength claims off an ID token, so general ID token structure and validation (covered there) is useful background for that one section.
 
 ---
 
 ## Table of Contents
 
+- [MFA Verification Flow](#mfa-verification-flow)
 - [TOTP - How It Works](#totp--how-it-works)
 - [WebAuthn / Passkeys](#webauthn--passkeys)
 - [SMS OTP - Why It's Weak](#sms-otp--why-its-weak)
@@ -17,12 +18,44 @@
 - [Step-Up Authentication](#step-up-authentication)
 - [Production Failure Modes & Gotchas](#production-failure-modes--gotchas)
 - [Interview Scenario Bank](#interview-scenario-bank)
+- [Appendices](#appendices)
 
 ---
 
 ## TLDR
 
 MFA hardens login by requiring a second factor from a distinct category - something you have or are, on top of something you know - so a leaked password alone isn't enough to take over an account. The real design decision isn't whether to add MFA, it's which factor: TOTP is the practical default, WebAuthn/passkeys are the only phishing-resistant option because the credential is cryptographically bound to the origin, and SMS/push each carry a distinct real-world attack (SIM swap; prompt bombing) that a senior candidate must name unprompted. Step-up authentication extends that same factor check beyond login to sensitive in-session actions.
+
+---
+
+## MFA Verification Flow
+
+_The shape every factor below shares: primary credential first, then a second, independently-verified factor, before a session is issued._
+
+```
+User                  App Server              Verification Backend         Second-Factor Channel
+ │                        │                            │                            │
+ │── username+password ──▶│                            │                            │
+ │                        │── check credentials ──────▶│                            │
+ │                        │◀── valid, mfa_required ────│                            │
+ │                        │                            │                            │
+ │◀── prompt for 2nd factor (pending session) ──────────                            │
+ │                        │                            │                            │
+ │   [TOTP/WebAuthn]                                    │                            │
+ │── submits code/assertion ─────────────────────────▶ │                            │
+ │                        │── verify(code, secret) ────▶│                            │
+ │                        │◀── valid / invalid ─────────│                            │
+ │                        │                            │                            │
+ │   [Push]                                             │                            │
+ │                        │── create pending challenge ─────────────────────────────▶│
+ │                        │                            │      push notification ────▶│(device)
+ │                        │                            │◀──── approve/deny signed ───│
+ │                        │◀── signature verified ──────│                            │
+ │                        │                            │                            │
+ │◀── session token issued (amr includes 2nd factor) ───│                            │
+```
+
+Every factor below (TOTP, WebAuthn, SMS OTP, push) is a different implementation of the "second, independently-verified factor" step in this diagram - the primary-credential and session-issuance steps around it don't change. The Verification Backend is drawn as a separate box deliberately: it's the component that can fail independently of the app server itself (see [Verification-Backend Outage](#verification-backend-outage) below), and for push it hands off to a Second-Factor Channel (APNs/FCM/vendor push infra) that can independently fail too (see [Push-Notification-Delivery Outage](#push-notification-delivery-outage)).
 
 ---
 
@@ -238,7 +271,25 @@ Step-up tokens for sensitive operations should carry a tighter `exp` than the ba
 
 ## Production Failure Modes & Gotchas
 
-MFA's failure modes aren't primarily about uptime - they're about the system's behavior on the edges: enrollment, recovery, and the second factor itself becoming unavailable or actively targeted.
+MFA's failure modes aren't primarily about uptime - they're about the system's behavior on the edges: enrollment, recovery, and the second factor itself becoming unavailable or actively targeted. Two of those edges are components with their own uptime, and they fail like any other backend dependency: the verification backend and, for push, the notification-delivery channel.
+
+### Verification-Backend Outage
+
+The verification backend (the service holding TOTP secrets / WebAuthn public keys and running the actual `verify()` call in the [flow diagram above](#mfa-verification-flow)) is a hard dependency on the login critical path once MFA is enabled - if it's down or unreachable, no user who has MFA enabled can complete login, even though their password check against the primary auth store succeeded. This is a stricter failure mode than most backend dependencies: a cache outage degrades to a slower path, but a verification-backend outage with no fallback is a full login outage for every MFA-enrolled user, while non-enrolled users are unaffected - the blast radius is asymmetric and easy to miss in a generic "auth service is down" runbook.
+
+- **Fail closed, not open.** The tempting fix under incident pressure - "verification backend is down, just let MFA-enrolled users through on password alone" - silently drops the account back to single-factor security for the outage's duration, which is exactly the compromise MFA exists to prevent. Treat "cannot verify" as "not verified," not as "verified, trust the primary factor."
+- **Isolate verification from credential storage.** If TOTP secrets and WebAuthn public keys live in the same datastore/service as password hashes, a single outage takes down both factors at once and there's no independent path left. Running verification as a separately deployed, separately scaled service (even if it shares infrastructure) means a bad deploy or capacity issue in one doesn't necessarily take the other down with it.
+- **Give users a fallback that doesn't depend on the same backend.** Backup codes (see [TOTP § Backup codes](#totp--how-it-works)), if stored in a datastore independent of the live verification path, let a subset of locked-out users recover during the outage without support-queue load spiking to unmanageable levels.
+- **Alert on verification latency and error rate as a first-class login SLO**, not just as a component sub-metric - a slow-but-not-fully-down verification backend degrades login success rate gradually, and that gradual failure is easy to miss if the only alert is "service returned 5xx."
+
+### Push-Notification-Delivery Outage
+
+Push MFA depends on a third party outside the app's own infrastructure - APNs (Apple), FCM (Google), or the MFA vendor's own push relay (Duo, Okta Verify) - to actually deliver the challenge to the user's device. When that delivery channel degrades or goes down, the app server can still create the pending challenge correctly, but the user never sees the prompt, and from the user's perspective login just hangs or times out with no visible error to explain why.
+
+- **This is a silent failure by default.** Unlike a verification-backend outage (which the app server can detect from a failed `verify()` call), the app server generally has no reliable signal that a push notification failed to reach the device - delivery is fire-and-forget from the app's point of view once handed to the push provider. Treat delivery confirmation (or its absence past a timeout) as a metric to track explicitly, not something to infer from user complaints.
+- **Time out and offer a fallback factor, don't leave the user stuck waiting on a prompt that will never arrive.** A pending push challenge should have a visible countdown and, on timeout, a clearly offered alternative (TOTP code entry, another enrolled factor) rather than a spinner with no escape.
+- **A regional or provider-wide push outage affects every user who enrolled push as their only factor at once** - this is the argument for requiring at least one non-push factor enrolled per account (see [Interview Scenario Bank](#interview-scenario-bank) for the hardware-key-loss scenario, which is the same structural problem: a single point of failure in factor availability, not in the crypto).
+- **Don't conflate "push not delivered" with "push denied."** A provider outage and a user actively rejecting a fraudulent prompt look identical from a naive "no approval received" check; logging and alerting need to distinguish delivery failure from an explicit deny to avoid burying real prompt-bombing signals under routine outage noise.
 
 - **Second-factor unavailability is a designed-for case, not an edge case.** A user's phone dies, is lost, or has no signal - the system needs a recovery path that doesn't quietly become a bypass. Pre-issued, single-use backup codes (see [TOTP § Backup codes](#totp--how-it-works)) are the standard answer; the failure mode is treating account-recovery support as an unauthenticated backdoor (see below).
 - **Prompt bombing is an availability-of-judgment failure, not a system outage** - see [MFA Fatigue / Prompt Bombing](#mfa-fatigue--prompt-bombing) above. The system stays "up" the whole time; what fails is the assumption that a human will always make the correct security decision under repeated interruption. Rate limiting and number matching are the resilience controls here, functionally identical in spirit to backoff/circuit-breaking for any other repeated-request abuse pattern.
@@ -287,3 +338,27 @@ This feeds into the same class of failure as any auth boundary: a strong primiti
 > **Next question:** "A remote employee loses their only enrolled hardware key while traveling - what's the immediate and long-term fix?" → Immediate: a pre-verified backup factor or admin-assisted re-enrollment gated by strong identity proof, never a bare support-ticket override. Long-term: require at least two enrolled factors per high-privilege account so losing one doesn't lock the user out or force a weak recovery path.
 
 **Key Takeaway:** TOTP is the practical default; WebAuthn/Passkeys are the correct long-term answer for phishing resistance. SMS OTP is a fallback with known weaknesses - acceptable as an option, not as a primary MFA method. Step-up authentication is the pattern that extends MFA coverage beyond login to sensitive in-session operations.
+
+---
+
+## Appendices
+
+### Acronyms & Abbreviations
+
+| Acronym | Full Form | One-line meaning |
+| --- | --- | --- |
+| MFA | Multi-Factor Authentication | Requiring two or more distinct factor categories to authenticate |
+| TOTP | Time-based One-Time Password | RFC 6238 algorithm deriving a 6-digit code from a shared secret and the current time window |
+| HOTP | HMAC-based One-Time Password | RFC 4226 counter-based OTP algorithm TOTP is built on |
+| WebAuthn | Web Authentication | W3C spec for origin-bound public-key authentication |
+| SS7 | Signaling System 7 | Legacy telecom signaling protocol with no inter-carrier authentication, exploitable to intercept SMS |
+| ACR | Authentication Context Class Reference | OIDC claim asserting how strongly a user was authenticated |
+| AMR | Authentication Methods References | OIDC claim listing which methods contributed to an authentication event |
+
+### Anti-patterns
+
+- **Bare approve/deny push with no number matching** - trivially defeated by prompt bombing; require number matching before treating push as a credible factor.
+- **Treating verification-backend downtime as a reason to fall back to password-only** - silently drops the account to single-factor security for the outage's duration; fail closed and offer an independent fallback (backup codes) instead.
+- **Storing TOTP secrets or backup codes unencrypted/unhashed** - a single datastore leak compromises every enrolled user's second factor at once.
+- **Recovery flows gated only by email access or a support call with weak identity verification** - makes the recovery path the actual point of compromise regardless of how strong the primary factor is.
+- **Using SMS OTP as the only available MFA option** - SS7 interception, SIM swap, and phishing relay all defeat it; offer TOTP or WebAuthn alongside it.
