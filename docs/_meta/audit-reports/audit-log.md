@@ -25,3 +25,5 @@ Updated automatically as the last step of `.prompts/fe-run-audit.md` and `docs/_
 | 2026-08-16 | dsa-sd-rater-content-audit-sd-components | `dsa-sd-rater-content-audit-sd-components - 20260816.md` |
 | 2026-08-18 | dsa-sd-rater-content-audit-sd-algorithms | `dsa-sd-rater-content-audit-sd-algorithms - 20260818.md` |
 | 2026-08-18 | dsa-sd-rater-content-audit-sd-hld | `dsa-sd-rater-content-audit-sd-hld - 20260818.md` |
+| 2026-08-30 | auth-ux-audit | `auth-ux-audit - 20260830.md` |
+| 2026-08-31 | dsa-algorithms-content-audit | `dsa-algorithms-content-audit - 20260831.md` |
