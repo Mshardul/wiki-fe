@@ -1,6 +1,6 @@
 # App Skeleton + Deploy Pipeline Proof — Phase File (spec Sub-spec 2)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Phases in order, inline, stop for review at each boundary. `- [ ]` checkboxes. Read [`overview.md`](./overview.md) first — its **Global Constraints** bind every step (no git steps; TDD red-green for units; pnpm; Node 22; stack versions). `content-foundation.md` must be at **exit-criteria green** before this file starts — `lib/content/` is imported here unchanged.
+> **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Phases in order, inline, stop for review at each boundary. `- [ ]` checkboxes. Read [`overview.md`](./overview.md) first — its **Global Constraints** bind every step (no git steps; TDD red-green for units; pnpm; Node 24; stack versions). `content-foundation.md` must be at **exit-criteria green** before this file starts — `lib/content/` is imported here unchanged.
 
 **Maps to:** spec [`../nextjs-migration-design.md`](../nextjs-migration-design.md) §5 Sub-spec 2, §4, §8.
 
@@ -96,7 +96,7 @@ Add a local hook block that runs all three. These become authoritative gates alo
       - run: pnpm lint
       - run: pnpm test
 ```
-`node-version-file: .nvmrc` pins the exact patch (overview.md — no floating `22`). This job runs on every push/PR. It does NOT build or deploy — the `build` job is Phase 6, and there is no deploy job until the cutover.
+`node-version-file: .nvmrc` pins the exact patch (overview.md — no floating `24`). This job runs on every push/PR. It does NOT build or deploy — the `build` job is Phase 6, and there is no deploy job until the cutover.
 
 - [ ] **Step 5: Confirm the job definition is valid**
 
@@ -416,6 +416,10 @@ const sprite = readFileSync("sprite.svg", "utf8");
 - [ ] **Step 9: Add the chrome placeholder + SW registration to the layout**
 
 Add an empty `<header className="topbar" />` placeholder (filled by a `cutover.md` island) and a small inline script that registers `/wiki-fe/sw.js` with scope `/wiki-fe/` — guarded by `"serviceWorker" in navigator`. The actual SW file is Phase 5.
+
+- [ ] **Step 9a: Publish the build-time generated JSON as static assets**
+
+`content-foundation.md`'s `buildContent()` writes `search-index.json`, `backlinks.json`, `broken-links.json`, `bridges.json`, `previews.json`, `complexity-tables.json` to `lib/content/generated/` (server-readable). The client islands (`cutover.md` search, hover-previews; `post-cutover.md` comparator, admin) need them served under `/wiki-fe/data/`. Wire a `prebuild` npm script (or a step at the top of `next.config.js`'s build) that runs `buildContent()` then copies `lib/content/generated/*.json` into `public/data/`. Confirm `pnpm build` produces `out/wiki-fe/data/search-index.json` etc. `manifest.json` stays server-only (large, RSC reads it directly — not copied). Add `public/data/` to `.gitignore` (regenerated each build).
 
 - [ ] **Step 10: Build the whole tree**
 

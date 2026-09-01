@@ -32,6 +32,24 @@ repos:
         # content/ already excluded via biome.json's files.ignore.
         additional_dependencies: ["@biomejs/biome@1.9.4"]
 
+  # ── TS toolchain (Next migration - lib/, app/, components/, tests/) ─────────
+  - repo: local
+    hooks:
+      - id: ts-typecheck
+        name: pnpm typecheck
+        language: system
+        entry: pnpm typecheck
+        files: '\.(ts|tsx)$'
+        exclude: '^(js/|tests/e2e/)'
+        pass_filenames: false
+      - id: ts-lint
+        name: pnpm lint (eslint + biome)
+        language: system
+        entry: pnpm lint
+        files: '\.(ts|tsx|css)$'
+        exclude: '^(js/|tests/e2e/)'
+        pass_filenames: false
+
   # ── Dead links (lychee - requires: brew install lychee) ─────────────────────
   - repo: local
     hooks:
@@ -100,6 +118,7 @@ repos:
       - id: check-json
       - id: check-added-large-files
         args: ["--maxkb=500"]
+        exclude: '^pnpm-lock\.yaml$'
       - id: check-merge-conflict
       - id: check-case-conflict
       - id: check-symlinks

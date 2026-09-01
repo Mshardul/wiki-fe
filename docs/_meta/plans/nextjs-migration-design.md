@@ -50,7 +50,7 @@ The stated long-term vision is a **multi-user product**: accounts at scale, comm
 | Hosting | **GitHub Pages**, project subpath `mshardul.github.io/wiki-fe/` | `basePath: '/wiki-fe'`, `assetPrefix` set, service-worker scope `/wiki-fe/`. Custom domain deferred (§2). |
 | Language | **TypeScript** | Supersedes `fe-no-node-phase1`. Content model, API client, and components are typed. |
 | Package manager | **pnpm** via `corepack` | Pinned to an exact version (`corepack prepare pnpm@<x.y.z>`), not `@latest`. Lighter `node_modules`, faster CI, strict resolution. |
-| Node | **22 LTS, exact** | Same exact version in `.nvmrc`, `package.json` `engines`, and `setup-node` — not a floating `22`. |
+| Node | **24 LTS, exact** | Same exact version in `.nvmrc`, `package.json` `engines`, and `setup-node` — not a floating `24`. |
 | Schema validation | **zod** | Validates `data/*.json` on load and the build-time `manifest.json`. |
 | Styling | **Faithful CSS port** | Existing `css/**` moved nearly as-is, imported in the root layout. `tokens.css` unchanged (one addition: `--diagram-*` tokens for §7). No Tailwind, no CSS Modules, no CSS-in-JS. UI/UX revamp is a separate later effort. |
 | Markdown | **In-house content layer + `unified` (remark/rehype) plugins** | §6. |

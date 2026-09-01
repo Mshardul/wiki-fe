@@ -51,8 +51,8 @@ Every step in every phase file implicitly includes this section. Values are copi
 | Build output | `output: 'export'` | static `.html` + hashed assets, no Node server in prod |
 | Hosting | GitHub Pages, project subpath | `basePath: '/wiki-fe'`, `assetPrefix` set, SW scope `/wiki-fe/` |
 | Language | TypeScript | strict |
-| Package manager | pnpm via `corepack` | pinned to an **exact** version (`corepack prepare pnpm@9.12.0 --activate`), matched in `packageManager`. Never `@latest`. |
-| Node | 22 LTS, **exact** | the same exact version (e.g. `22.14.0` — use the current 22 LTS at execution) in `.nvmrc`, `package.json` `engines`, and `setup-node`. Not a floating `22`. |
+| Package manager | pnpm via `corepack` | pinned to an **exact** version (`corepack prepare pnpm@10.34.5 --activate`), matched in `packageManager`. Never `@latest`. |
+| Node | 24 LTS, **exact** | the same exact version (e.g. `24.8.0` — use the current 24 LTS at execution) in `.nvmrc`, `package.json` `engines`, and `setup-node`. Not a floating `24`. (Was 22 in an earlier draft; 24 is the current active LTS as of execution and nothing in the stack caps below it.) |
 | Schema validation | zod | validates `data/*.json` on load and the build-time `manifest.json` |
 | Trailing slash | `trailingSlash: true` | static-export default; canonical URLs carry the slash (spec §4) |
 | Styling | faithful CSS port | `css/**` moved nearly as-is, `tokens.css` unchanged bar an appended `--diagram-*` token block, imported in root layout. No Tailwind, no CSS Modules, no CSS-in-JS. |

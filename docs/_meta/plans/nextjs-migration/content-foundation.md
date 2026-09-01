@@ -111,12 +111,12 @@ export interface RelatedRef { path: string; title: string; slug: string[]; }
 
 - [ ] **Step 1: Pin Node exactly and enable corepack**
 
-Find the current Node 22 LTS patch version (`nvm ls-remote --lts | grep v22` or nodejs.org). Create `.nvmrc` with that exact version, e.g.:
+Find the current Node 24 LTS patch version (`node --version` if already on 24, `nvm ls-remote --lts | grep v24`, or nodejs.org). Create `.nvmrc` with that exact version, e.g.:
 ```
-22.14.0
+24.8.0
 ```
-Run: `corepack enable && corepack prepare pnpm@9.12.0 --activate` — an **exact** version, never `@latest`.
-Expected: `pnpm --version` prints exactly `9.12.0`.
+Run: `corepack enable && corepack prepare pnpm@10.34.5 --activate` — an **exact** version, never `@latest`.
+Expected: `pnpm --version` prints exactly `10.34.5`.
 
 - [ ] **Step 2: Create `package.json`**
 
@@ -125,8 +125,8 @@ Expected: `pnpm --version` prints exactly `9.12.0`.
   "name": "wiki-fe",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@9.12.0",
-  "engines": { "node": "22.x" },
+  "packageManager": "pnpm@10.34.5",
+  "engines": { "node": "24.x" },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
@@ -136,7 +136,7 @@ Expected: `pnpm --version` prints exactly `9.12.0`.
   }
 }
 ```
-`packageManager` must match the exact version prepared in Step 1. `engines.node` is `22.x`; the exact patch lives in `.nvmrc` and the CI `setup-node`.
+`packageManager` must match the exact version prepared in Step 1. `engines.node` is `24.x`; the exact patch lives in `.nvmrc` and the CI `setup-node`.
 
 - [ ] **Step 3: Install TypeScript + Vitest**
 

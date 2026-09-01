@@ -1,7 +1,17 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "files": {
-    "ignore": ["content/**", ".venv/**", ".pytest_cache/**", "data/**", "**/*.min.js"]
+    "ignore": [
+      "content/**",
+      ".venv/**",
+      ".pytest_cache/**",
+      "data/**",
+      "node_modules/**",
+      "out/**",
+      ".next/**",
+      "js/**",
+      "**/*.min.js"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -12,10 +22,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
-      "complexity": {
-        "noForEach": "off"
-      },
+      "recommended": false,
       "suspicious": {
         "noConsole": "error"
       }
@@ -25,15 +32,10 @@
     "formatter": {
       "quoteStyle": "double",
       "semicolons": "always"
-    },
-    "globals": ["Showdown", "mermaid", "hljs"]
+    }
   },
   "css": {
-    "formatter": {
-      "enabled": true
-    },
-    "linter": {
-      "enabled": true
-    }
+    "formatter": { "enabled": true },
+    "linter": { "enabled": true }
   }
 }

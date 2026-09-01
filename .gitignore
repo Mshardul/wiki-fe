@@ -1,3 +1,11 @@
+# Node / build
+node_modules/
+coverage/
+.next/
+out/
+lib/content/generated/
+public/data/
+
 # Test / Python
 .venv/
 __pycache__/

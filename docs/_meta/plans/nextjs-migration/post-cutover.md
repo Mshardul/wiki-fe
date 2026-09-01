@@ -128,12 +128,9 @@ Port `renderNotesScratchpad` from `js/storage/notes.js` — a panel (`.notes-scr
 
 Port `extractComplexityTable` (from `js/content/tables.js`) + the matrix merge from `js/app/complexity-compare.js`: given N parsed complexity tables, produce one matrix (rows = operations, columns = structures, cells = Big-O). `MAX_PICKS = 4`. Test: two tables with overlapping + distinct operations → merged matrix with the union of rows, blanks where a structure lacks an operation.
 
-- [ ] **Step 2: Decide the data source for structure complexity tables**
+- [ ] **Step 2: Load the complexity-table data**
 
-Vanilla fetched each article's markdown and re-parsed client-side (`getMdConverter().makeHtml`). In Next, the article HTML is a build artifact. Options:
-- (a) `getArticle(slug).html` client-side, parse the `[data-comparison]` table out of it
-- (b) `content-foundation.md`'s build emits a `complexity-tables.json` (structure slug → parsed table)
-Lean **(b)** — deterministic, no client parsing, precacheable. Add it to `buildContent()` in `content-foundation.md` Phase 7's scope (a small addition — one more generator over the DS section's articles). If `content-foundation.md` is already done, add the generator here and note the retro-addition.
+`complexity-tables.json` is emitted by `content-foundation.md` Phase 7 Step 13b (`buildComplexityTables()`) and served at `/wiki-fe/data/complexity-tables.json` (`app-skeleton.md` Phase 4 Step 9a). Load it via `loadDataJson("complexity-tables")` with a zod schema: `Record<slug, { operations: string[], cells: Record<string, string> }>`. No client-side markdown parsing.
 
 - [ ] **Step 3: Run Step 1's test, confirm failure, implement `complexity-matrix.ts`, run, confirm pass.**
 
@@ -278,6 +275,8 @@ Test: seeded broken-links data → correct row count; an article with zero backl
 ---
 
 ## Phase 8 — Retire the Python generators + CI final form
+
+> **CI-gate note (from `content-foundation.md` Phase 0 Step 13):** `pnpm typecheck` + `pnpm lint` + `pnpm test` must be an authoritative CI gate. Local `.pre-commit-config.yaml` already runs `ts-typecheck` / `ts-lint` local hooks (added in Phase 0); `app-skeleton.md` Phase 1 added the `frontend` CI job + the `.pre-commit-config.ci.yaml` block. This phase only confirms they are wired and removes the now-dead script hooks.
 
 **Goal:** one `next build` produces manifest + search-index + backlinks + broken-links + bridges + previews + complexity-tables. The four Python scripts and their CI jobs are removed. CI reaches its final shape.
 

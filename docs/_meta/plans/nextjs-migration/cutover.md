@@ -117,7 +117,7 @@ Test: `set(key, value)` round-trips through `localStorage`, `subscribe(key, cb)`
 
 - [ ] **Step 10: Failing test — `lib/storage/data-json.ts`**
 
-Test: `loadDataJson("glossary")` fetches `${BASE_PATH}/data/glossary.json`, validates against a zod schema, caches the result, returns `{}` (not throw) on fetch failure. One schema per file (`glossary`, `synonyms`, `shortcuts`, `summaries`).
+Test: `loadDataJson("glossary")` fetches `${BASE_PATH}/data/glossary.json`, validates against a zod schema, caches the result, returns `{}` (not throw) on fetch failure. One schema per file: hand-authored `glossary`, `synonyms`, `shortcuts`, `summaries`; build-generated `search-index`, `backlinks`, `previews`, `complexity-tables` (the last two consumed in later phases / `post-cutover.md` — register the schemas now).
 
 - [ ] **Step 11: Run, confirm failure. Move `data/*.json` to `public/data/`, implement the loader, run, confirm pass.**
 
