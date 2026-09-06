@@ -21,16 +21,14 @@ repos:
         # atmost = atMost(k) sliding-window helper name in plan docs
         # allone = AllOne LeetCode data structure name
         exclude: '^(content/|\.venv/|\.pytest_cache/)'
-        args: ["--skip", "*.min.js,data,manifest.json", "--ignore-words-list", "pres,couldn,ths,atmost,allone"]
+        args: ["--skip", "*.min.js,data,manifest.json,pnpm-lock.yaml", "--ignore-words-list", "pres,couldn,ths,atmost,allone"]
 
   # ── JS/CSS lint + format (Biome - standalone binary, no node_modules) ───────
   - repo: https://github.com/biomejs/pre-commit
     rev: v0.6.1
     hooks:
       - id: biome-check
-        # Lints + formats JS/CSS, applies safe fixes in place (review unstaged).
-        # content/ already excluded via biome.json's files.ignore.
-        additional_dependencies: ["@biomejs/biome@1.9.4"]
+        additional_dependencies: ["@biomejs/biome@2.5.11"]
 
   # ── TS toolchain (Next migration - lib/, app/, components/, tests/) ─────────
   - repo: local

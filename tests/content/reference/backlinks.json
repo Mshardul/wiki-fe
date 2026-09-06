@@ -1,0 +1,4254 @@
+{
+  "./content/dsa/algorithms/aho-corasick.md": [
+    {
+      "path": "./content/dsa/algorithms/string-matching.md",
+      "title": "String Matching (KMP)"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    },
+    {
+      "path": "./content/dsa/algorithms/rabin-karp.md",
+      "title": "Rabin-Karp"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+      "title": "String Algorithm Decision"
+    }
+  ],
+  "./content/dsa/algorithms/backtracking.md": [
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/dynamic-programming.md",
+      "title": "Dynamic Programming"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    }
+  ],
+  "./content/dsa/algorithms/bellman-ford.md": [
+    {
+      "path": "./content/dsa/algorithms/dijkstra.md",
+      "title": "Dijkstra"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/bfs.md": [
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/dijkstra.md",
+      "title": "Dijkstra"
+    },
+    {
+      "path": "./content/dsa/algorithms/aho-corasick.md",
+      "title": "Aho-Corasick"
+    },
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/algorithms/edmonds-karp.md",
+      "title": "Edmonds-Karp"
+    },
+    {
+      "path": "./content/dsa/algorithms/dinic.md",
+      "title": "Dinic"
+    },
+    {
+      "path": "./content/dsa/algorithms/bipartite-matching.md",
+      "title": "Bipartite Matching"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/graph-coloring.md",
+      "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/big-o-notation.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/dynamic-array.md",
+      "title": "Dynamic Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/heap.md",
+      "title": "Heap"
+    },
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/algorithms/amortized-analysis.md",
+      "title": "Amortized Analysis"
+    },
+    {
+      "path": "./content/dsa/algorithms/binary-search.md",
+      "title": "Binary Search"
+    },
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/merge-sort.md",
+      "title": "Merge Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/quicksort.md",
+      "title": "Quicksort"
+    },
+    {
+      "path": "./content/dsa/algorithms/insertion-sort.md",
+      "title": "Insertion Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/counting-sort.md",
+      "title": "Counting Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/radix-sort.md",
+      "title": "Radix Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/algorithms/divide-and-conquer.md",
+      "title": "Divide and Conquer"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-matching.md",
+      "title": "String Matching (KMP)"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    }
+  ],
+  "./content/dsa/algorithms/binary-search.md": [
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/merge-sort.md",
+      "title": "Merge Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
+      "title": "Longest Increasing Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/modular-arithmetic.md",
+      "title": "Modular Arithmetic"
+    },
+    {
+      "path": "./content/dsa/patterns/binary-search-on-answer.md",
+      "title": "Binary Search on Answer"
+    },
+    {
+      "path": "./content/dsa/patterns/modified-binary-search.md",
+      "title": "Modified Binary Search"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    }
+  ],
+  "./content/dsa/algorithms/bipartite-matching.md": [
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/algorithms/dinic.md",
+      "title": "Dinic"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/bit-manipulation.md": [
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+      "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/algorithms/number-theory.md",
+      "title": "Number Theory"
+    },
+    {
+      "path": "./content/dsa/algorithms/modular-arithmetic.md",
+      "title": "Modular Arithmetic"
+    },
+    {
+      "path": "./content/dsa/algorithms/modular-exponentiation.md",
+      "title": "Modular Exponentiation"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/bitmask-dp.md",
+      "title": "Bitmask DP"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/bit-manipulation-tricks.md",
+      "title": "Bit Manipulation Tricks"
+    }
+  ],
+  "./content/dsa/algorithms/bucket-sort.md": [
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
+    }
+  ],
+  "./content/dsa/algorithms/counting-sort.md": [
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/radix-sort.md",
+      "title": "Radix Sort"
+    },
+    {
+      "path": "./content/dsa/patterns/frequency-array.md",
+      "title": "Frequency Array"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
+    }
+  ],
+  "./content/dsa/algorithms/dfs.md": [
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+      "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/algorithms/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/algorithms/strongly-connected-components.md",
+      "title": "Strongly Connected Components"
+    },
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/algorithms/ford-fulkerson.md",
+      "title": "Ford-Fulkerson"
+    },
+    {
+      "path": "./content/dsa/algorithms/dinic.md",
+      "title": "Dinic"
+    },
+    {
+      "path": "./content/dsa/algorithms/bipartite-matching.md",
+      "title": "Bipartite Matching"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/graph-coloring.md",
+      "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/dijkstra.md": [
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/dinic.md": [
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/divide-and-conquer.md": [
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/recursion.md",
+      "title": "Recursion"
+    },
+    {
+      "path": "./content/dsa/algorithms/bit-manipulation.md",
+      "title": "Bit Manipulation"
+    },
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    }
+  ],
+  "./content/dsa/algorithms/dynamic-programming.md": [
+    {
+      "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+      "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/algorithms/recursion.md",
+      "title": "Recursion"
+    },
+    {
+      "path": "./content/dsa/algorithms/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
+      "title": "Longest Increasing Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-common-subsequence.md",
+      "title": "Longest Common Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/bit-manipulation.md",
+      "title": "Bit Manipulation"
+    },
+    {
+      "path": "./content/dsa/algorithms/greedy.md",
+      "title": "Greedy"
+    },
+    {
+      "path": "./content/dsa/algorithms/kadane.md",
+      "title": "Kadane"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    },
+    {
+      "path": "./content/dsa/patterns/state-machine-dp.md",
+      "title": "State Machine DP"
+    },
+    {
+      "path": "./content/dsa/patterns/bitmask-dp.md",
+      "title": "Bitmask DP"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
+      "title": "Input Size → Complexity Lookup"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/complexity-growth-reference.md",
+      "title": "Complexity Growth Reference"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/greedy-vs-dp-disambiguator.md",
+      "title": "Greedy vs DP Disambiguator"
+    }
+  ],
+  "./content/dsa/algorithms/edmonds-karp.md": [
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/algorithms/ford-fulkerson.md",
+      "title": "Ford-Fulkerson"
+    },
+    {
+      "path": "./content/dsa/algorithms/dinic.md",
+      "title": "Dinic"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/euclidean-gcd.md": [
+    {
+      "path": "./content/dsa/algorithms/number-theory.md",
+      "title": "Number Theory"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/number-theory-reference.md",
+      "title": "Number Theory Reference"
+    }
+  ],
+  "./content/dsa/algorithms/floyd-warshall.md": [
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/ford-fulkerson.md": [
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/algorithms/edmonds-karp.md",
+      "title": "Edmonds-Karp"
+    },
+    {
+      "path": "./content/dsa/algorithms/dinic.md",
+      "title": "Dinic"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/greedy.md": [
+    {
+      "path": "./content/dsa/algorithms/dynamic-programming.md",
+      "title": "Dynamic Programming"
+    },
+    {
+      "path": "./content/dsa/patterns/binary-search-on-answer.md",
+      "title": "Binary Search on Answer"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/greedy-vs-dp-disambiguator.md",
+      "title": "Greedy vs DP Disambiguator"
+    }
+  ],
+  "./content/dsa/algorithms/heapsort.md": [
+    {
+      "path": "./content/dsa/data-structures/heap.md",
+      "title": "Heap"
+    },
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
+    }
+  ],
+  "./content/dsa/algorithms/insertion-sort.md": [
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
+    }
+  ],
+  "./content/dsa/algorithms/kadane.md": [
+    {
+      "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
+      "title": "Longest Increasing Subsequence"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    }
+  ],
+  "./content/dsa/algorithms/longest-common-subsequence.md": [
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    }
+  ],
+  "./content/dsa/algorithms/longest-increasing-subsequence.md": [
+    {
+      "path": "./content/dsa/algorithms/longest-common-subsequence.md",
+      "title": "Longest Common Subsequence"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    }
+  ],
+  "./content/dsa/algorithms/manacher-algorithm.md": [
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+      "title": "String Algorithm Decision"
+    }
+  ],
+  "./content/dsa/algorithms/maximum-flow.md": [
+    {
+      "path": "./content/dsa/algorithms/ford-fulkerson.md",
+      "title": "Ford-Fulkerson"
+    },
+    {
+      "path": "./content/dsa/algorithms/edmonds-karp.md",
+      "title": "Edmonds-Karp"
+    },
+    {
+      "path": "./content/dsa/algorithms/bipartite-matching.md",
+      "title": "Bipartite Matching"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/merge-sort.md": [
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/quicksort.md",
+      "title": "Quicksort"
+    },
+    {
+      "path": "./content/dsa/algorithms/insertion-sort.md",
+      "title": "Insertion Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/counting-sort.md",
+      "title": "Counting Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/radix-sort.md",
+      "title": "Radix Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/patterns/k-way-merge.md",
+      "title": "K-Way Merge"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
+    }
+  ],
+  "./content/dsa/algorithms/minimum-spanning-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/union-find.md",
+      "title": "Union-Find (DSU)"
+    },
+    {
+      "path": "./content/dsa/algorithms/greedy.md",
+      "title": "Greedy"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/modular-arithmetic.md": [
+    {
+      "path": "./content/dsa/algorithms/number-theory.md",
+      "title": "Number Theory"
+    },
+    {
+      "path": "./content/dsa/algorithms/modular-exponentiation.md",
+      "title": "Modular Exponentiation"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/number-theory-reference.md",
+      "title": "Number Theory Reference"
+    }
+  ],
+  "./content/dsa/algorithms/modular-exponentiation.md": [
+    {
+      "path": "./content/dsa/algorithms/number-theory.md",
+      "title": "Number Theory"
+    },
+    {
+      "path": "./content/dsa/algorithms/euclidean-gcd.md",
+      "title": "Euclidean GCD"
+    },
+    {
+      "path": "./content/dsa/algorithms/sieve-of-eratosthenes.md",
+      "title": "Sieve of Eratosthenes"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/number-theory-reference.md",
+      "title": "Number Theory Reference"
+    }
+  ],
+  "./content/dsa/algorithms/number-theory.md": [
+    {
+      "path": "./content/dsa/algorithms/modular-arithmetic.md",
+      "title": "Modular Arithmetic"
+    },
+    {
+      "path": "./content/dsa/algorithms/modular-exponentiation.md",
+      "title": "Modular Exponentiation"
+    },
+    {
+      "path": "./content/dsa/algorithms/euclidean-gcd.md",
+      "title": "Euclidean GCD"
+    },
+    {
+      "path": "./content/dsa/algorithms/sieve-of-eratosthenes.md",
+      "title": "Sieve of Eratosthenes"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/number-theory-reference.md",
+      "title": "Number Theory Reference"
+    }
+  ],
+  "./content/dsa/algorithms/quickselect.md": [
+    {
+      "path": "./content/dsa/patterns/top-k-elements.md",
+      "title": "Top-K Elements"
+    }
+  ],
+  "./content/dsa/algorithms/quicksort.md": [
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/merge-sort.md",
+      "title": "Merge Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/insertion-sort.md",
+      "title": "Insertion Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/counting-sort.md",
+      "title": "Counting Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/radix-sort.md",
+      "title": "Radix Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
+    }
+  ],
+  "./content/dsa/algorithms/rabin-karp.md": [
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/aho-corasick.md",
+      "title": "Aho-Corasick"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+      "title": "String Algorithm Decision"
+    }
+  ],
+  "./content/dsa/algorithms/radix-sort.md": [
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/counting-sort.md",
+      "title": "Counting Sort"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
+    }
+  ],
+  "./content/dsa/algorithms/recursion.md": [
+    {
+      "path": "./content/dsa/algorithms/big-o-notation.md",
+      "title": "Big-O Notation"
+    },
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/divide-and-conquer.md",
+      "title": "Divide and Conquer"
+    },
+    {
+      "path": "./content/dsa/algorithms/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/algorithms/dynamic-programming.md",
+      "title": "Dynamic Programming"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-common-subsequence.md",
+      "title": "Longest Common Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/number-theory.md",
+      "title": "Number Theory"
+    },
+    {
+      "path": "./content/dsa/algorithms/euclidean-gcd.md",
+      "title": "Euclidean GCD"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    }
+  ],
+  "./content/dsa/algorithms/selection-sort.md": [
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
+    }
+  ],
+  "./content/dsa/algorithms/sieve-of-eratosthenes.md": [
+    {
+      "path": "./content/dsa/algorithms/number-theory.md",
+      "title": "Number Theory"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/number-theory-reference.md",
+      "title": "Number Theory Reference"
+    }
+  ],
+  "./content/dsa/algorithms/sorting.md": [
+    {
+      "path": "./content/dsa/algorithms/binary-search.md",
+      "title": "Binary Search"
+    },
+    {
+      "path": "./content/dsa/algorithms/merge-sort.md",
+      "title": "Merge Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/quicksort.md",
+      "title": "Quicksort"
+    },
+    {
+      "path": "./content/dsa/algorithms/insertion-sort.md",
+      "title": "Insertion Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/counting-sort.md",
+      "title": "Counting Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/radix-sort.md",
+      "title": "Radix Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/algorithms/greedy.md",
+      "title": "Greedy"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/merge-intervals.md",
+      "title": "Merge Intervals"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/sorting-comparison.md",
+      "title": "Sorting Comparison"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
+      "title": "Input Size → Complexity Lookup"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/complexity-growth-reference.md",
+      "title": "Complexity Growth Reference"
+    }
+  ],
+  "./content/dsa/algorithms/string-hashing.md": [
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+      "title": "String Algorithm Decision"
+    }
+  ],
+  "./content/dsa/algorithms/string-matching.md": [
+    {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    },
+    {
+      "path": "./content/dsa/algorithms/aho-corasick.md",
+      "title": "Aho-Corasick"
+    },
+    {
+      "path": "./content/dsa/algorithms/rabin-karp.md",
+      "title": "Rabin-Karp"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+      "title": "String Algorithm Decision"
+    }
+  ],
+  "./content/dsa/algorithms/strongly-connected-components.md": [
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/topological-sort.md": [
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/strongly-connected-components.md",
+      "title": "Strongly Connected Components"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/graph-algorithms-decision.md",
+      "title": "Graph Algorithms Decision"
+    }
+  ],
+  "./content/dsa/algorithms/z-algorithm.md": [
+    {
+      "path": "./content/dsa/algorithms/aho-corasick.md",
+      "title": "Aho-Corasick"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/string-algorithm-decision.md",
+      "title": "String Algorithm Decision"
+    }
+  ],
+  "./content/dsa/cheatsheets/data-structure-selection.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/dynamic-array.md",
+      "title": "Dynamic Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/circular-buffer.md",
+      "title": "Circular Buffer"
+    },
+    {
+      "path": "./content/dsa/data-structures/heap.md",
+      "title": "Heap"
+    },
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
+    },
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/data-structures/union-find.md",
+      "title": "Union-Find (DSU)"
+    },
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
+      "path": "./content/dsa/data-structures/bloom-filter.md",
+      "title": "Bloom Filter"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-plus-tree.md",
+      "title": "B-Plus Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/interval-tree.md",
+      "title": "Interval Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/complexity-master.md",
+      "title": "Complexity Master"
+    }
+  ],
+  "./content/dsa/cheatsheets/sorting-comparison.md": [
+    {
+      "path": "./content/dsa/cheatsheets/complexity-master.md",
+      "title": "Complexity Master"
+    }
+  ],
+  "./content/dsa/cheatsheets/string-algorithm-decision.md": [
+    {
+      "path": "./content/dsa/cheatsheets/complexity-master.md",
+      "title": "Complexity Master"
+    }
+  ],
+  "./content/dsa/data-structures/array.md": [
+    {
+      "path": "./content/dsa/data-structures/dynamic-array.md",
+      "title": "Dynamic Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/circular-buffer.md",
+      "title": "Circular Buffer"
+    },
+    {
+      "path": "./content/dsa/data-structures/heap.md",
+      "title": "Heap"
+    },
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
+      "path": "./content/dsa/data-structures/bloom-filter.md",
+      "title": "Bloom Filter"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/binary-search.md",
+      "title": "Binary Search"
+    },
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/merge-sort.md",
+      "title": "Merge Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/quicksort.md",
+      "title": "Quicksort"
+    },
+    {
+      "path": "./content/dsa/algorithms/insertion-sort.md",
+      "title": "Insertion Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/counting-sort.md",
+      "title": "Counting Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/radix-sort.md",
+      "title": "Radix Sort"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/algorithms/recursion.md",
+      "title": "Recursion"
+    },
+    {
+      "path": "./content/dsa/algorithms/divide-and-conquer.md",
+      "title": "Divide and Conquer"
+    },
+    {
+      "path": "./content/dsa/algorithms/dynamic-programming.md",
+      "title": "Dynamic Programming"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
+      "title": "Longest Increasing Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-common-subsequence.md",
+      "title": "Longest Common Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-matching.md",
+      "title": "String Matching (KMP)"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    },
+    {
+      "path": "./content/dsa/algorithms/manacher-algorithm.md",
+      "title": "Manacher Algorithm"
+    },
+    {
+      "path": "./content/dsa/algorithms/sieve-of-eratosthenes.md",
+      "title": "Sieve of Eratosthenes"
+    },
+    {
+      "path": "./content/dsa/algorithms/kadane.md",
+      "title": "Kadane"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/prefix-sum.md",
+      "title": "Prefix Sum"
+    },
+    {
+      "path": "./content/dsa/patterns/difference-array.md",
+      "title": "Difference Array"
+    },
+    {
+      "path": "./content/dsa/patterns/merge-intervals.md",
+      "title": "Merge Intervals"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-stack.md",
+      "title": "Monotonic Stack"
+    },
+    {
+      "path": "./content/dsa/patterns/modified-binary-search.md",
+      "title": "Modified Binary Search"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/frequency-array.md",
+      "title": "Frequency Array"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/avl-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
+    },
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/b-plus-tree.md": [
+    {
+      "path": "./content/system-design/hld/key-value-store.md",
+      "title": "Key-Value Store"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/b-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-plus-tree.md",
+      "title": "B-Plus Tree"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/balanced-bst.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-plus-tree.md",
+      "title": "B-Plus Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/interval-tree.md",
+      "title": "Interval Tree"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/binary-search-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
+    },
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/interval-tree.md",
+      "title": "Interval Tree"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/binary-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/union-find.md",
+      "title": "Union-Find (DSU)"
+    },
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
+      "path": "./content/dsa/data-structures/interval-tree.md",
+      "title": "Interval Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+      "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/bloom-filter.md": [
+    {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/circular-buffer.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/dynamic-array.md",
+      "title": "Dynamic Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/deque.md": [
+    {
+      "path": "./content/dsa/data-structures/circular-buffer.md",
+      "title": "Circular Buffer"
+    },
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/dynamic-array.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/circular-buffer.md",
+      "title": "Circular Buffer"
+    },
+    {
+      "path": "./content/dsa/data-structures/heap.md",
+      "title": "Heap"
+    },
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/algorithms/big-o-notation.md",
+      "title": "Big-O Notation"
+    },
+    {
+      "path": "./content/dsa/algorithms/amortized-analysis.md",
+      "title": "Amortized Analysis"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-matching.md",
+      "title": "String Matching (KMP)"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/fenwick-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
+      "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+      "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/graph.md": [
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/union-find.md",
+      "title": "Union-Find (DSU)"
+    },
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/strongly-connected-components.md",
+      "title": "Strongly Connected Components"
+    },
+    {
+      "path": "./content/dsa/algorithms/maximum-flow.md",
+      "title": "Maximum Flow"
+    },
+    {
+      "path": "./content/dsa/algorithms/ford-fulkerson.md",
+      "title": "Ford-Fulkerson"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/graph-coloring.md",
+      "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/hash-set.md": [
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/bloom-filter.md",
+      "title": "Bloom Filter"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    }
+  ],
+  "./content/dsa/data-structures/hash-table.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/red-black-tree.md",
+      "title": "Red-Black Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
+      "path": "./content/dsa/data-structures/bloom-filter.md",
+      "title": "Bloom Filter"
+    },
+    {
+      "path": "./content/dsa/algorithms/rabin-karp.md",
+      "title": "Rabin-Karp"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/prefix-sum.md",
+      "title": "Prefix Sum"
+    },
+    {
+      "path": "./content/dsa/patterns/state-machine-dp.md",
+      "title": "State Machine DP"
+    },
+    {
+      "path": "./content/dsa/patterns/frequency-array.md",
+      "title": "Frequency Array"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/heap.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
+    },
+    {
+      "path": "./content/dsa/algorithms/sorting.md",
+      "title": "Sorting"
+    },
+    {
+      "path": "./content/dsa/algorithms/heapsort.md",
+      "title": "Heapsort"
+    },
+    {
+      "path": "./content/dsa/algorithms/dijkstra.md",
+      "title": "Dijkstra"
+    },
+    {
+      "path": "./content/dsa/algorithms/greedy.md",
+      "title": "Greedy"
+    },
+    {
+      "path": "./content/dsa/patterns/merge-intervals.md",
+      "title": "Merge Intervals"
+    },
+    {
+      "path": "./content/dsa/patterns/top-k-elements.md",
+      "title": "Top-K Elements"
+    },
+    {
+      "path": "./content/dsa/patterns/two-heaps.md",
+      "title": "Two Heaps"
+    },
+    {
+      "path": "./content/dsa/patterns/k-way-merge.md",
+      "title": "K-Way Merge"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/interval-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
+    {
+      "path": "./content/dsa/patterns/merge-intervals.md",
+      "title": "Merge Intervals"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/lfu-cache.md": [
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/linked-list.md": [
+    {
+      "path": "./content/dsa/data-structures/array.md",
+      "title": "Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/dynamic-array.md",
+      "title": "Dynamic Array"
+    },
+    {
+      "path": "./content/dsa/data-structures/circular-buffer.md",
+      "title": "Circular Buffer"
+    },
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-search-tree.md",
+      "title": "Binary Search Tree (BST)"
+    },
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-plus-tree.md",
+      "title": "B-Plus Tree"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/fast-slow-pointers.md",
+      "title": "Fast & Slow Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/in-place-reversal.md",
+      "title": "In-place Reversal of a Linked List"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/lru-cache.md": [
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/queue.md": [
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/aho-corasick.md",
+      "title": "Aho-Corasick"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/red-black-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
+    },
+    {
+      "path": "./content/dsa/data-structures/balanced-bst.md",
+      "title": "Balanced BST"
+    },
+    {
+      "path": "./content/dsa/data-structures/skip-list.md",
+      "title": "Skip List"
+    },
+    {
+      "path": "./content/dsa/data-structures/avl-tree.md",
+      "title": "AVL Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-tree.md",
+      "title": "B-Tree"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/segment-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/data-structures/interval-tree.md",
+      "title": "Interval Tree"
+    },
+    {
+      "path": "./content/dsa/patterns/difference-array.md",
+      "title": "Difference Array"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    }
+  ],
+  "./content/dsa/data-structures/skip-list.md": [
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/data-structures/treap.md",
+      "title": "Treap"
+    },
+    {
+      "path": "./content/dsa/data-structures/b-plus-tree.md",
+      "title": "B-Plus Tree"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/stack.md": [
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/recursion.md",
+      "title": "Recursion"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-stack.md",
+      "title": "Monotonic Stack"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/string.md": [
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-matching.md",
+      "title": "String Matching (KMP)"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    },
+    {
+      "path": "./content/dsa/algorithms/manacher-algorithm.md",
+      "title": "Manacher Algorithm"
+    },
+    {
+      "path": "./content/dsa/algorithms/rabin-karp.md",
+      "title": "Rabin-Karp"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/suffix-tree.md": [
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/trie.md": [
+    {
+      "path": "./content/dsa/data-structures/string.md",
+      "title": "String"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-set.md",
+      "title": "Hash Set"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/suffix-tree.md",
+      "title": "Suffix Tree"
+    },
+    {
+      "path": "./content/dsa/algorithms/aho-corasick.md",
+      "title": "Aho-Corasick"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/data-structures/union-find.md": [
+    {
+      "path": "./content/dsa/data-structures/graph.md",
+      "title": "Graph"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/data-structure-selection.md",
+      "title": "Data Structure Selection"
+    }
+  ],
+  "./content/dsa/paths/cp-weighted.md": [
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    }
+  ],
+  "./content/dsa/paths/senior-depth.md": [
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    }
+  ],
+  "./content/dsa/paths/standard-swe.md": [
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    }
+  ],
+  "./content/dsa/patterns/backtracking.md": [
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    },
+    {
+      "path": "./content/dsa/patterns/state-machine-dp.md",
+      "title": "State Machine DP"
+    },
+    {
+      "path": "./content/dsa/patterns/bitmask-dp.md",
+      "title": "Bitmask DP"
+    },
+    {
+      "path": "./content/dsa/patterns/graph-coloring.md",
+      "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/backtracking-shapes.md",
+      "title": "Backtracking Shapes"
+    }
+  ],
+  "./content/dsa/patterns/binary-search-on-answer.md": [
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/modified-binary-search.md",
+      "title": "Modified Binary Search"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/patterns/two-heaps.md",
+      "title": "Two Heaps"
+    },
+    {
+      "path": "./content/dsa/patterns/k-way-merge.md",
+      "title": "K-Way Merge"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    }
+  ],
+  "./content/dsa/patterns/bitmask-dp.md": [
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    },
+    {
+      "path": "./content/dsa/patterns/state-machine-dp.md",
+      "title": "State Machine DP"
+    },
+    {
+      "path": "./content/dsa/patterns/graph-coloring.md",
+      "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
+      "title": "Input Size → Complexity Lookup"
+    }
+  ],
+  "./content/dsa/patterns/cyclic-sort.md": [
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    }
+  ],
+  "./content/dsa/patterns/difference-array.md": [
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/patterns/prefix-sum.md",
+      "title": "Prefix Sum"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    }
+  ],
+  "./content/dsa/patterns/dp-patterns.md": [
+    {
+      "path": "./content/dsa/algorithms/dynamic-programming.md",
+      "title": "Dynamic Programming"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-increasing-subsequence.md",
+      "title": "Longest Increasing Subsequence"
+    },
+    {
+      "path": "./content/dsa/algorithms/longest-common-subsequence.md",
+      "title": "Longest Common Subsequence"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    },
+    {
+      "path": "./content/dsa/patterns/state-machine-dp.md",
+      "title": "State Machine DP"
+    },
+    {
+      "path": "./content/dsa/patterns/bitmask-dp.md",
+      "title": "Bitmask DP"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    }
+  ],
+  "./content/dsa/patterns/fast-slow-pointers.md": [
+    {
+      "path": "./content/dsa/data-structures/linked-list.md",
+      "title": "Linked List"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/patterns/in-place-reversal.md",
+      "title": "In-place Reversal of a Linked List"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    }
+  ],
+  "./content/dsa/patterns/frequency-array.md": [
+    {
+      "path": "./content/dsa/patterns/top-k-elements.md",
+      "title": "Top-K Elements"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    }
+  ],
+  "./content/dsa/patterns/graph-coloring.md": [
+    {
+      "path": "./content/dsa/algorithms/bipartite-matching.md",
+      "title": "Bipartite Matching"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    }
+  ],
+  "./content/dsa/patterns/in-place-reversal.md": [
+    {
+      "path": "./content/dsa/patterns/fast-slow-pointers.md",
+      "title": "Fast & Slow Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    }
+  ],
+  "./content/dsa/patterns/interval-dp.md": [
+    {
+      "path": "./content/dsa/algorithms/manacher-algorithm.md",
+      "title": "Manacher Algorithm"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    }
+  ],
+  "./content/dsa/patterns/k-way-merge.md": [
+    {
+      "path": "./content/dsa/data-structures/heap.md",
+      "title": "Heap"
+    },
+    {
+      "path": "./content/dsa/patterns/top-k-elements.md",
+      "title": "Top-K Elements"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    }
+  ],
+  "./content/dsa/patterns/matrix-traversal.md": [
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/patterns/tree-graph-traversal.md",
+      "title": "Tree & Graph Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    }
+  ],
+  "./content/dsa/patterns/meet-in-the-middle.md": [
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
+      "title": "Input Size → Complexity Lookup"
+    }
+  ],
+  "./content/dsa/patterns/merge-intervals.md": [
+    {
+      "path": "./content/dsa/algorithms/greedy.md",
+      "title": "Greedy"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    }
+  ],
+  "./content/dsa/patterns/modified-binary-search.md": [
+    {
+      "path": "./content/dsa/patterns/binary-search-on-answer.md",
+      "title": "Binary Search on Answer"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    }
+  ],
+  "./content/dsa/patterns/monotonic-queue.md": [
+    {
+      "path": "./content/dsa/data-structures/circular-buffer.md",
+      "title": "Circular Buffer"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-stack.md",
+      "title": "Monotonic Stack"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    }
+  ],
+  "./content/dsa/patterns/monotonic-stack.md": [
+    {
+      "path": "./content/dsa/data-structures/stack.md",
+      "title": "Stack"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-matching.md",
+      "title": "String Matching (KMP)"
+    },
+    {
+      "path": "./content/dsa/algorithms/z-algorithm.md",
+      "title": "Z-Algorithm"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    }
+  ],
+  "./content/dsa/patterns/pattern-selection-cheatsheet.md": [
+    {
+      "path": "./content/dsa/patterns/problem-solving-framework.md",
+      "title": "Problem-Solving Framework"
+    }
+  ],
+  "./content/dsa/patterns/prefix-sum.md": [
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/data-structures/segment-tree.md",
+      "title": "Segment Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/fenwick-tree.md",
+      "title": "Fenwick Tree (BIT)"
+    },
+    {
+      "path": "./content/dsa/algorithms/lowest-common-ancestor.md",
+      "title": "Lowest Common Ancestor (LCA)"
+    },
+    {
+      "path": "./content/dsa/algorithms/string-hashing.md",
+      "title": "String Hashing"
+    },
+    {
+      "path": "./content/dsa/algorithms/kadane.md",
+      "title": "Kadane"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/difference-array.md",
+      "title": "Difference Array"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/patterns/interval-dp.md",
+      "title": "Interval DP"
+    },
+    {
+      "path": "./content/dsa/patterns/frequency-array.md",
+      "title": "Frequency Array"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/two-pointers-vs-window-vs-prefix-sum.md",
+      "title": "Two Pointers vs Sliding Window vs Prefix Sum"
+    }
+  ],
+  "./content/dsa/patterns/sliding-window.md": [
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/patterns/two-pointers.md",
+      "title": "Two Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/prefix-sum.md",
+      "title": "Prefix Sum"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/patterns/two-heaps.md",
+      "title": "Two Heaps"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/frequency-array.md",
+      "title": "Frequency Array"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/input-size-complexity-lookup.md",
+      "title": "Input Size → Complexity Lookup"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/two-pointers-vs-window-vs-prefix-sum.md",
+      "title": "Two Pointers vs Sliding Window vs Prefix Sum"
+    }
+  ],
+  "./content/dsa/patterns/state-machine-dp.md": [
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/dp-recognition.md",
+      "title": "DP Recognition"
+    }
+  ],
+  "./content/dsa/patterns/subsets-permutations.md": [
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/algorithms/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/patterns/bitmask-dp.md",
+      "title": "Bitmask DP"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/backtracking-shapes.md",
+      "title": "Backtracking Shapes"
+    }
+  ],
+  "./content/dsa/patterns/top-k-elements.md": [
+    {
+      "path": "./content/dsa/data-structures/deque.md",
+      "title": "Deque"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/patterns/two-heaps.md",
+      "title": "Two Heaps"
+    },
+    {
+      "path": "./content/dsa/patterns/k-way-merge.md",
+      "title": "K-Way Merge"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    }
+  ],
+  "./content/dsa/patterns/tree-graph-traversal.md": [
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    },
+    {
+      "path": "./content/dsa/data-structures/binary-tree.md",
+      "title": "Binary Tree"
+    },
+    {
+      "path": "./content/dsa/data-structures/trie.md",
+      "title": "Trie"
+    },
+    {
+      "path": "./content/dsa/algorithms/bfs.md",
+      "title": "Breadth-First Search (BFS)"
+    },
+    {
+      "path": "./content/dsa/algorithms/dfs.md",
+      "title": "Depth-First Search (DFS)"
+    },
+    {
+      "path": "./content/dsa/patterns/backtracking.md",
+      "title": "Backtracking"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/patterns/matrix-traversal.md",
+      "title": "Matrix Traversal"
+    },
+    {
+      "path": "./content/dsa/patterns/graph-coloring.md",
+      "title": "Graph Coloring"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    }
+  ],
+  "./content/dsa/patterns/two-heaps.md": [
+    {
+      "path": "./content/dsa/patterns/monotonic-queue.md",
+      "title": "Monotonic Queue"
+    },
+    {
+      "path": "./content/dsa/patterns/top-k-elements.md",
+      "title": "Top-K Elements"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/patterns/in-place-reversal.md",
+      "title": "In-place Reversal of a Linked List"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/paths/cp-weighted.md",
+      "title": "CP-weighted"
+    }
+  ],
+  "./content/dsa/patterns/two-pointers.md": [
+    {
+      "path": "./content/dsa/algorithms/manacher-algorithm.md",
+      "title": "Manacher Algorithm"
+    },
+    {
+      "path": "./content/dsa/patterns/sliding-window.md",
+      "title": "Sliding Window"
+    },
+    {
+      "path": "./content/dsa/patterns/prefix-sum.md",
+      "title": "Prefix Sum"
+    },
+    {
+      "path": "./content/dsa/patterns/fast-slow-pointers.md",
+      "title": "Fast & Slow Pointers"
+    },
+    {
+      "path": "./content/dsa/patterns/merge-intervals.md",
+      "title": "Merge Intervals"
+    },
+    {
+      "path": "./content/dsa/patterns/monotonic-stack.md",
+      "title": "Monotonic Stack"
+    },
+    {
+      "path": "./content/dsa/patterns/binary-search-on-answer.md",
+      "title": "Binary Search on Answer"
+    },
+    {
+      "path": "./content/dsa/patterns/modified-binary-search.md",
+      "title": "Modified Binary Search"
+    },
+    {
+      "path": "./content/dsa/patterns/pattern-selection-cheatsheet.md",
+      "title": "Pattern Selection Cheat Sheet"
+    },
+    {
+      "path": "./content/dsa/patterns/k-way-merge.md",
+      "title": "K-Way Merge"
+    },
+    {
+      "path": "./content/dsa/patterns/in-place-reversal.md",
+      "title": "In-place Reversal of a Linked List"
+    },
+    {
+      "path": "./content/dsa/patterns/meet-in-the-middle.md",
+      "title": "Meet in the Middle"
+    },
+    {
+      "path": "./content/dsa/paths/standard-swe.md",
+      "title": "Standard SWE"
+    },
+    {
+      "path": "./content/dsa/paths/senior-depth.md",
+      "title": "Senior-depth"
+    },
+    {
+      "path": "./content/dsa/cheatsheets/two-pointers-vs-window-vs-prefix-sum.md",
+      "title": "Two Pointers vs Sliding Window vs Prefix Sum"
+    }
+  ],
+  "./content/system-design/algorithms/acid-vs-base.md": [
+    {
+      "path": "./content/system-design/components/databases.md",
+      "title": "Databases"
+    },
+    {
+      "path": "./content/system-design/algorithms/consistency-models.md",
+      "title": "Consistency Models"
+    },
+    {
+      "path": "./content/system-design/algorithms/cap-theorem.md",
+      "title": "CAP Theorem"
+    },
+    {
+      "path": "./content/system-design/algorithms/saga-pattern.md",
+      "title": "Saga Pattern"
+    },
+    {
+      "path": "./content/system-design/paths/hld-interview-loop.md",
+      "title": "HLD Interview Loop"
+    }
+  ],
+  "./content/system-design/algorithms/cap-theorem.md": [
+    {
+      "path": "./content/system-design/components/message-queues.md",
+      "title": "Message Queues"
+    },
+    {
+      "path": "./content/system-design/components/caching.md",
+      "title": "Caching"
+    },
+    {
+      "path": "./content/system-design/algorithms/consistency-models.md",
+      "title": "Consistency Models"
+    },
+    {
+      "path": "./content/system-design/algorithms/acid-vs-base.md",
+      "title": "ACID vs BASE"
+    },
+    {
+      "path": "./content/system-design/algorithms/replication-strategies.md",
+      "title": "Replication Strategies"
+    },
+    {
+      "path": "./content/system-design/algorithms/consensus-raft-paxos.md",
+      "title": "Consensus (Raft / Paxos)"
+    },
+    {
+      "path": "./content/system-design/algorithms/idempotency.md",
+      "title": "Idempotency"
+    },
+    {
+      "path": "./content/system-design/hld/key-value-store.md",
+      "title": "Key-Value Store"
+    },
+    {
+      "path": "./content/system-design/paths/hld-interview-loop.md",
+      "title": "HLD Interview Loop"
+    }
+  ],
+  "./content/system-design/algorithms/circuit-breaker.md": [
+    {
+      "path": "./content/system-design/hld/distributed-cache.md",
+      "title": "Distributed Cache"
+    },
+    {
+      "path": "./content/system-design/paths/hld-interview-loop.md",
+      "title": "HLD Interview Loop"
+    }
+  ],
+  "./content/system-design/algorithms/consensus-raft-paxos.md": [
+    {
+      "path": "./content/system-design/components/message-queues.md",
+      "title": "Message Queues"
+    },
+    {
+      "path": "./content/system-design/components/blob-object-storage.md",
+      "title": "Blob / Object Storage"
+    },
+    {
+      "path": "./content/system-design/components/distributed-file-system.md",
+      "title": "Distributed File System"
+    },
+    {
+      "path": "./content/system-design/algorithms/replication-strategies.md",
+      "title": "Replication Strategies"
+    },
+    {
+      "path": "./content/system-design/algorithms/leader-election.md",
+      "title": "Leader Election"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-id-generator.md",
+      "title": "Distributed ID Generator"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-task-scheduler.md",
+      "title": "Distributed Task Scheduler"
+    },
+    {
+      "path": "./content/system-design/paths/distributed-depth.md",
+      "title": "Distributed Depth"
+    }
+  ],
+  "./content/system-design/algorithms/consistency-models.md": [
+    {
+      "path": "./content/system-design/algorithms/cap-theorem.md",
+      "title": "CAP Theorem"
+    },
+    {
+      "path": "./content/system-design/algorithms/acid-vs-base.md",
+      "title": "ACID vs BASE"
+    },
+    {
+      "path": "./content/system-design/algorithms/replication-strategies.md",
+      "title": "Replication Strategies"
+    }
+  ],
+  "./content/system-design/algorithms/consistent-hashing.md": [
+    {
+      "path": "./content/system-design/components/load-balancer-algorithms.md",
+      "title": "Load Balancer Traffic Distribution Algorithms"
+    },
+    {
+      "path": "./content/system-design/components/cdn.md",
+      "title": "CDN"
+    },
+    {
+      "path": "./content/system-design/components/caching.md",
+      "title": "Caching"
+    },
+    {
+      "path": "./content/system-design/components/rate-limiter.md",
+      "title": "Rate Limiter"
+    },
+    {
+      "path": "./content/system-design/components/blob-object-storage.md",
+      "title": "Blob / Object Storage"
+    },
+    {
+      "path": "./content/system-design/algorithms/sharding-strategies.md",
+      "title": "Sharding Strategies"
+    },
+    {
+      "path": "./content/system-design/hld/url-shortener.md",
+      "title": "URL Shortener"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-cache.md",
+      "title": "Distributed Cache"
+    },
+    {
+      "path": "./content/system-design/hld/key-value-store.md",
+      "title": "Key-Value Store"
+    },
+    {
+      "path": "./content/system-design/paths/hld-interview-loop.md",
+      "title": "HLD Interview Loop"
+    },
+    {
+      "path": "./content/dsa/data-structures/hash-table.md",
+      "title": "Hash Table"
+    }
+  ],
+  "./content/system-design/algorithms/idempotency.md": [
+    {
+      "path": "./content/system-design/algorithms/circuit-breaker.md",
+      "title": "Circuit Breaker"
+    },
+    {
+      "path": "./content/system-design/algorithms/consensus-raft-paxos.md",
+      "title": "Consensus (Raft / Paxos)"
+    },
+    {
+      "path": "./content/system-design/algorithms/saga-pattern.md",
+      "title": "Saga Pattern"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-task-scheduler.md",
+      "title": "Distributed Task Scheduler"
+    }
+  ],
+  "./content/system-design/algorithms/leader-election.md": [
+    {
+      "path": "./content/system-design/hld/distributed-task-scheduler.md",
+      "title": "Distributed Task Scheduler"
+    }
+  ],
+  "./content/system-design/algorithms/rate-limiting-algorithms.md": [
+    {
+      "path": "./content/system-design/components/rate-limiter.md",
+      "title": "Rate Limiter"
+    },
+    {
+      "path": "./content/system-design/paths/hld-interview-loop.md",
+      "title": "HLD Interview Loop"
+    }
+  ],
+  "./content/system-design/algorithms/replication-strategies.md": [
+    {
+      "path": "./content/system-design/components/message-queues.md",
+      "title": "Message Queues"
+    },
+    {
+      "path": "./content/system-design/components/caching.md",
+      "title": "Caching"
+    },
+    {
+      "path": "./content/system-design/components/databases.md",
+      "title": "Databases"
+    },
+    {
+      "path": "./content/system-design/components/blob-object-storage.md",
+      "title": "Blob / Object Storage"
+    },
+    {
+      "path": "./content/system-design/components/distributed-file-system.md",
+      "title": "Distributed File System"
+    },
+    {
+      "path": "./content/system-design/components/search.md",
+      "title": "Search"
+    },
+    {
+      "path": "./content/system-design/algorithms/consistency-models.md",
+      "title": "Consistency Models"
+    },
+    {
+      "path": "./content/system-design/algorithms/cap-theorem.md",
+      "title": "CAP Theorem"
+    },
+    {
+      "path": "./content/system-design/algorithms/acid-vs-base.md",
+      "title": "ACID vs BASE"
+    },
+    {
+      "path": "./content/system-design/algorithms/sharding-strategies.md",
+      "title": "Sharding Strategies"
+    },
+    {
+      "path": "./content/system-design/algorithms/consensus-raft-paxos.md",
+      "title": "Consensus (Raft / Paxos)"
+    },
+    {
+      "path": "./content/system-design/algorithms/leader-election.md",
+      "title": "Leader Election"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-cache.md",
+      "title": "Distributed Cache"
+    },
+    {
+      "path": "./content/system-design/hld/key-value-store.md",
+      "title": "Key-Value Store"
+    },
+    {
+      "path": "./content/system-design/paths/distributed-depth.md",
+      "title": "Distributed Depth"
+    }
+  ],
+  "./content/system-design/algorithms/saga-pattern.md": [
+    {
+      "path": "./content/system-design/components/message-queues.md",
+      "title": "Message Queues"
+    },
+    {
+      "path": "./content/system-design/algorithms/sharding-strategies.md",
+      "title": "Sharding Strategies"
+    },
+    {
+      "path": "./content/system-design/paths/distributed-depth.md",
+      "title": "Distributed Depth"
+    }
+  ],
+  "./content/system-design/algorithms/sharding-strategies.md": [
+    {
+      "path": "./content/system-design/components/databases.md",
+      "title": "Databases"
+    },
+    {
+      "path": "./content/system-design/components/distributed-file-system.md",
+      "title": "Distributed File System"
+    },
+    {
+      "path": "./content/system-design/components/search.md",
+      "title": "Search"
+    },
+    {
+      "path": "./content/system-design/algorithms/replication-strategies.md",
+      "title": "Replication Strategies"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-id-generator.md",
+      "title": "Distributed ID Generator"
+    },
+    {
+      "path": "./content/system-design/paths/distributed-depth.md",
+      "title": "Distributed Depth"
+    }
+  ],
+  "./content/system-design/components/api-gateway.md": [
+    {
+      "path": "./content/system-design/components/proxies.md",
+      "title": "Proxies"
+    },
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    }
+  ],
+  "./content/system-design/components/authentication.md": [
+    {
+      "path": "./content/system-design/components/api-gateway.md",
+      "title": "API Gateway"
+    },
+    {
+      "path": "./content/system-design/components/session-auth.md",
+      "title": "Session-Based Authentication"
+    },
+    {
+      "path": "./content/system-design/components/jwt.md",
+      "title": "JWT"
+    },
+    {
+      "path": "./content/system-design/components/oauth-oidc.md",
+      "title": "OAuth 2.0 & OIDC"
+    },
+    {
+      "path": "./content/system-design/components/mfa.md",
+      "title": "Multi-Factor Authentication"
+    },
+    {
+      "path": "./content/system-design/components/service-to-service-auth.md",
+      "title": "Service-to-Service Authentication"
+    },
+    {
+      "path": "./content/system-design/components/mtls.md",
+      "title": "mTLS"
+    },
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    }
+  ],
+  "./content/system-design/components/blob-object-storage.md": [
+    {
+      "path": "./content/system-design/components/distributed-file-system.md",
+      "title": "Distributed File System"
+    },
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    }
+  ],
+  "./content/system-design/components/caching.md": [
+    {
+      "path": "./content/system-design/components/dns.md",
+      "title": "DNS"
+    },
+    {
+      "path": "./content/system-design/components/proxies.md",
+      "title": "Proxies"
+    },
+    {
+      "path": "./content/system-design/components/cdn.md",
+      "title": "CDN"
+    },
+    {
+      "path": "./content/system-design/components/api-gateway.md",
+      "title": "API Gateway"
+    },
+    {
+      "path": "./content/system-design/components/rate-limiter.md",
+      "title": "Rate Limiter"
+    },
+    {
+      "path": "./content/system-design/components/search.md",
+      "title": "Search"
+    },
+    {
+      "path": "./content/system-design/hld/url-shortener.md",
+      "title": "URL Shortener"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-cache.md",
+      "title": "Distributed Cache"
+    },
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    },
+    {
+      "path": "./content/dsa/data-structures/lru-cache.md",
+      "title": "LRU Cache"
+    },
+    {
+      "path": "./content/dsa/data-structures/lfu-cache.md",
+      "title": "LFU Cache"
+    }
+  ],
+  "./content/system-design/components/cdn.md": [
+    {
+      "path": "./content/system-design/components/proxies.md",
+      "title": "Proxies"
+    },
+    {
+      "path": "./content/system-design/components/caching.md",
+      "title": "Caching"
+    },
+    {
+      "path": "./content/system-design/components/blob-object-storage.md",
+      "title": "Blob / Object Storage"
+    },
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    }
+  ],
+  "./content/system-design/components/databases.md": [
+    {
+      "path": "./content/system-design/hld/url-shortener.md",
+      "title": "URL Shortener"
+    },
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    }
+  ],
+  "./content/system-design/components/distributed-file-system.md": [
+    {
+      "path": "./content/system-design/components/blob-object-storage.md",
+      "title": "Blob / Object Storage"
+    },
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    }
+  ],
+  "./content/system-design/components/dns.md": [
+    {
+      "path": "./content/system-design/components/proxies.md",
+      "title": "Proxies"
+    },
+    {
+      "path": "./content/system-design/components/load-balancer.md",
+      "title": "Load Balancer"
+    },
+    {
+      "path": "./content/system-design/components/load-balancer-high-availability.md",
+      "title": "Load Balancer High Availability"
+    },
+    {
+      "path": "./content/system-design/components/cdn.md",
+      "title": "CDN"
+    },
+    {
+      "path": "./content/system-design/components/service-discovery.md",
+      "title": "Service Discovery"
+    },
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    }
+  ],
+  "./content/system-design/components/jwt.md": [
+    {
+      "path": "./content/system-design/components/authentication.md",
+      "title": "Authentication"
+    },
+    {
+      "path": "./content/system-design/components/oauth-oidc.md",
+      "title": "OAuth 2.0 & OIDC"
+    },
+    {
+      "path": "./content/system-design/components/service-to-service-auth.md",
+      "title": "Service-to-Service Authentication"
+    }
+  ],
+  "./content/system-design/components/load-balancer-algorithms.md": [
+    {
+      "path": "./content/system-design/components/load-balancer.md",
+      "title": "Load Balancer"
+    }
+  ],
+  "./content/system-design/components/load-balancer-high-availability.md": [
+    {
+      "path": "./content/system-design/components/load-balancer.md",
+      "title": "Load Balancer"
+    }
+  ],
+  "./content/system-design/components/load-balancer-tls.md": [
+    {
+      "path": "./content/system-design/components/load-balancer.md",
+      "title": "Load Balancer"
+    }
+  ],
+  "./content/system-design/components/load-balancer.md": [
+    {
+      "path": "./content/system-design/components/dns.md",
+      "title": "DNS"
+    },
+    {
+      "path": "./content/system-design/components/proxies.md",
+      "title": "Proxies"
+    },
+    {
+      "path": "./content/system-design/components/load-balancer-algorithms.md",
+      "title": "Load Balancer Traffic Distribution Algorithms"
+    },
+    {
+      "path": "./content/system-design/components/load-balancer-tls.md",
+      "title": "Load Balancer TLS Handling"
+    },
+    {
+      "path": "./content/system-design/components/load-balancer-high-availability.md",
+      "title": "Load Balancer High Availability"
+    },
+    {
+      "path": "./content/system-design/components/api-gateway.md",
+      "title": "API Gateway"
+    },
+    {
+      "path": "./content/system-design/components/rate-limiter.md",
+      "title": "Rate Limiter"
+    },
+    {
+      "path": "./content/system-design/components/service-discovery.md",
+      "title": "Service Discovery"
+    },
+    {
+      "path": "./content/system-design/algorithms/consistent-hashing.md",
+      "title": "Consistent Hashing"
+    },
+    {
+      "path": "./content/system-design/algorithms/circuit-breaker.md",
+      "title": "Circuit Breaker"
+    },
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    }
+  ],
+  "./content/system-design/components/logging.md": [
+    {
+      "path": "./content/system-design/components/observability.md",
+      "title": "Observability"
+    }
+  ],
+  "./content/system-design/components/message-queues.md": [
+    {
+      "path": "./content/system-design/components/logging.md",
+      "title": "Logging"
+    },
+    {
+      "path": "./content/system-design/components/metrics.md",
+      "title": "Metrics"
+    },
+    {
+      "path": "./content/system-design/components/observability.md",
+      "title": "Observability"
+    },
+    {
+      "path": "./content/system-design/components/tracing.md",
+      "title": "Distributed Tracing"
+    },
+    {
+      "path": "./content/system-design/algorithms/saga-pattern.md",
+      "title": "Saga Pattern"
+    },
+    {
+      "path": "./content/system-design/algorithms/idempotency.md",
+      "title": "Idempotency"
+    },
+    {
+      "path": "./content/system-design/hld/distributed-task-scheduler.md",
+      "title": "Distributed Task Scheduler"
+    },
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    }
+  ],
+  "./content/system-design/components/metrics.md": [
+    {
+      "path": "./content/system-design/components/observability.md",
+      "title": "Observability"
+    }
+  ],
+  "./content/system-design/components/mfa.md": [
+    {
+      "path": "./content/system-design/components/authentication.md",
+      "title": "Authentication"
+    }
+  ],
+  "./content/system-design/components/mtls.md": [
+    {
+      "path": "./content/system-design/components/load-balancer-tls.md",
+      "title": "Load Balancer TLS Handling"
+    },
+    {
+      "path": "./content/system-design/components/service-to-service-auth.md",
+      "title": "Service-to-Service Authentication"
+    },
+    {
+      "path": "./content/system-design/components/service-discovery.md",
+      "title": "Service Discovery"
+    }
+  ],
+  "./content/system-design/components/oauth-oidc.md": [
+    {
+      "path": "./content/system-design/components/authentication.md",
+      "title": "Authentication"
+    },
+    {
+      "path": "./content/system-design/components/mfa.md",
+      "title": "Multi-Factor Authentication"
+    }
+  ],
+  "./content/system-design/components/observability.md": [
+    {
+      "path": "./content/system-design/components/logging.md",
+      "title": "Logging"
+    },
+    {
+      "path": "./content/system-design/components/metrics.md",
+      "title": "Metrics"
+    },
+    {
+      "path": "./content/system-design/components/tracing.md",
+      "title": "Distributed Tracing"
+    }
+  ],
+  "./content/system-design/components/rate-limiter.md": [
+    {
+      "path": "./content/system-design/components/load-balancer.md",
+      "title": "Load Balancer"
+    },
+    {
+      "path": "./content/system-design/components/api-gateway.md",
+      "title": "API Gateway"
+    },
+    {
+      "path": "./content/system-design/algorithms/rate-limiting-algorithms.md",
+      "title": "Rate Limiting Algorithms"
+    },
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    },
+    {
+      "path": "./content/dsa/data-structures/queue.md",
+      "title": "Queue"
+    }
+  ],
+  "./content/system-design/components/search.md": [
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    }
+  ],
+  "./content/system-design/components/service-to-service-auth.md": [
+    {
+      "path": "./content/system-design/components/authentication.md",
+      "title": "Authentication"
+    },
+    {
+      "path": "./content/system-design/components/oauth-oidc.md",
+      "title": "OAuth 2.0 & OIDC"
+    }
+  ],
+  "./content/system-design/components/session-auth.md": [
+    {
+      "path": "./content/system-design/components/authentication.md",
+      "title": "Authentication"
+    }
+  ],
+  "./content/system-design/components/tracing.md": [
+    {
+      "path": "./content/system-design/components/observability.md",
+      "title": "Observability"
+    }
+  ],
+  "./content/system-design/hld/distributed-cache.md": [
+    {
+      "path": "./content/system-design/hld/url-shortener.md",
+      "title": "URL Shortener"
+    },
+    {
+      "path": "./content/system-design/paths/hld-interview-loop.md",
+      "title": "HLD Interview Loop"
+    },
+    {
+      "path": "./content/system-design/paths/distributed-depth.md",
+      "title": "Distributed Depth"
+    }
+  ],
+  "./content/system-design/hld/distributed-id-generator.md": [
+    {
+      "path": "./content/system-design/paths/distributed-depth.md",
+      "title": "Distributed Depth"
+    }
+  ],
+  "./content/system-design/hld/key-value-store.md": [
+    {
+      "path": "./content/system-design/paths/distributed-depth.md",
+      "title": "Distributed Depth"
+    }
+  ],
+  "./content/system-design/hld/url-shortener.md": [
+    {
+      "path": "./content/system-design/paths/hld-interview-loop.md",
+      "title": "HLD Interview Loop"
+    }
+  ],
+  "./content/system-design/hld/youtube-video-streaming.md": [
+    {
+      "path": "./content/system-design/paths/hld-interview-loop.md",
+      "title": "HLD Interview Loop"
+    }
+  ],
+  "./content/system-design/paths/components-foundation.md": [
+    {
+      "path": "./content/system-design/paths/distributed-depth.md",
+      "title": "Distributed Depth"
+    }
+  ],
+  "./content/system-design/paths/distributed-depth.md": [
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    },
+    {
+      "path": "./content/system-design/paths/hld-interview-loop.md",
+      "title": "HLD Interview Loop"
+    }
+  ],
+  "./content/system-design/paths/hld-interview-loop.md": [
+    {
+      "path": "./content/system-design/paths/components-foundation.md",
+      "title": "Components Foundation"
+    },
+    {
+      "path": "./content/system-design/paths/distributed-depth.md",
+      "title": "Distributed Depth"
+    }
+  ]
+}

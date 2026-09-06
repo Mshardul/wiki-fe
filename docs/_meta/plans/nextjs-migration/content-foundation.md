@@ -246,20 +246,28 @@ export default tseslint.config(
 ```
 `eslint-config-prettier` last disables every stylistic ESLint rule — Biome owns formatting, ESLint owns correctness, zero overlap (overview.md decision).
 
-- [ ] **Step 10: Retarget `biome.json`**
+- [ ] **Step 10: Bump + retarget `biome.json`**
 
-Change `biome.json` so `formatter` and the CSS section stay, but `linter` is scoped to not fight ESLint. Set:
+Bump Biome to 2.x (`pnpm add -D @biomejs/biome@2`), run `pnpm exec biome migrate --write`, then set the config so it only touches code we own (Biome 1.9.4's walker silently skips files carrying macOS Sequoia's `com.apple.provenance` xattr, which the sandboxed editor applies to every file it writes — 2.x fixes this). Positive `includes`, not `ignore`; `js/**` simply isn't included (frozen vanilla). CSS stays under the linter but is excluded from the formatter via an `override` (Biome 2.x's CSS formatter differs from hand-written CSS — faithful-port wins):
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "files": { "ignore": ["content/**", ".venv/**", ".pytest_cache/**", "data/**", "node_modules/**", "out/**", ".next/**", "js/**", "**/*.min.js"] },
+  "$schema": "https://biomejs.dev/schemas/2.5.11/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    "includes": [
+      "lib/**/*.{ts,tsx,js,jsx,json}", "app/**/*.{ts,tsx,css}", "components/**/*.{ts,tsx,css}",
+      "css/**/*.css", "*.{ts,js,json}",
+      "!**/node_modules/**", "!**/generated/**", "!**/*.min.*"
+    ]
+  },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
-  "linter": { "enabled": true, "rules": { "recommended": false, "suspicious": { "noConsole": "error" } } },
+  "linter": { "enabled": true, "rules": { "preset": "none", "suspicious": { "noConsole": "error" } } },
   "javascript": { "formatter": { "quoteStyle": "double", "semicolons": "always" } },
-  "css": { "formatter": { "enabled": true }, "linter": { "enabled": true } }
+  "css": { "formatter": { "enabled": true }, "linter": { "enabled": true } },
+  "overrides": [{ "includes": ["css/**/*.css"], "formatter": { "enabled": false } }]
 }
 ```
-`js/**` moves to `ignore` — the vanilla JS is frozen, not reformatted. `noConsole` stays as the one retained Biome lint rule (matches the repo's existing standard and `CONVENTIONS.md`).
+`noConsole` is the one retained Biome lint rule; ESLint also carries `no-console` for `lib/**`, so `console.*` is double-covered. `lint` script: `eslint --no-error-on-unmatched-pattern 'lib/**/*.ts' 'tests/**/*.ts' 'app/**/*.{ts,tsx}' 'components/**/*.{ts,tsx}' && biome lint .` (ESLint 9 hard-errors on an all-ignored glob, so target dirs explicitly). `test` script: `vitest run --passWithNoTests` (Vitest exits 1 on no files until Phase 1's real tests land).
 
 - [ ] **Step 11: Run the full toolchain, confirm green**
 
@@ -278,7 +286,9 @@ Add to `.pre-commit-config.yaml` a local hook that runs `pnpm lint` and `pnpm ty
 
 ---
 
-## Phase 1 — Mermaid CSS-variable theming spike (gate)
+## Phase 1 — Mermaid CSS-variable theming spike (gate) — ✅ DONE 2026-09-01
+
+> **COMPLETE — result: NOT CLEANLY GREEN → client-island fallback.** Full record in `mermaid-spike-result.md`. Do not re-run. The steps below are the historical record of what the spike did. Consequences are already applied to Phase 4 (Task 4k `remark-mermaid`, markup-only), Phase 7 Step 15 (SVG cache = N/A), `app-skeleton.md` (no Chromium in CI, `--diagram-*` tokens for the island), `cutover.md` Phase 3 (`MermaidDiagrams.tsx` + `mermaid` client dep).
 
 **Goal:** answer two questions before anything depends on them — (a) can the current Mermaid version's SVG output be fully recoloured by CSS variables, so build-time inline SVGs re-theme with the app and no diagram JS ships? and (b) is the full-corpus build cost acceptable?
 
@@ -687,8 +697,11 @@ Add a one-line note to `docs/_meta/plans/nextjs-migration/shiki-dark-css.md` (ke
 | `rehype-glossary-caveat-markers` | `js/content/glossary-caveats.js` (marker creation only) | `[?caveat text]` → `<span class="caveat-marker">` + hidden `.caveat-body`; `<abbr>` matching a glossary key → `.glossary-term` | popover / reveal behaviour |
 | `rehype-comparison-table` | `js/content/tables.js` (markup + column metadata only) | detect a comparison/complexity table → add `data-comparison`, per-column `data-col-key`, mark numeric columns | sort, column-toggle, scroll-cue |
 | `rehype-code-header` | `js/content/code-blocks.js` (markup only) | wrap each `<pre>` with a header element (traffic lights, lang label, copy-button placeholder), add `data-code-origin` (the `from: <title> · <wiki>` string), split lines into `.code-line` spans + `has-line-numbers` class | copy-to-clipboard wiring |
+| `remark-mermaid` | new (spike-fallback path — see `mermaid-spike-result.md`) | ` ```mermaid ` fence → `<pre class="mermaid" data-mermaid-src="<escaped raw source>">` (raw source kept as text content, HTML-escaped). **Markup only — no build-time render, no Chromium.** | `mermaid.run()` on mount + re-run on theme change (`MermaidDiagrams.tsx` island, `cutover.md` Phase 3) |
 
 **Do NOT port** the ~600 runtime lines of `formatting.js` (LaTeX `αβ` toggle, focus mode, study/hide-reveal, in-article find) — those are `cutover.md` islands.
+
+**Mermaid — client-island fallback (spike NOT CLEANLY GREEN, `mermaid-spike-result.md`):** the spike found `themeCSS` re-themes flowcharts (26/32 blocks) but not sequence / gantt / xychart (baked presentation attributes). Decision: build-time SVG is **not** used. `remark-mermaid` here is markup-only; `mermaid` (the library, ~500 KB) becomes a **client** dependency added in `cutover.md`, precached by Serwist as shell. `rehype-mermaid` / `playwright` / Chromium-in-CI are **not** part of this migration.
 
 **Files:**
 - Create: `lib/content/plugins/<name>.ts` — one file per plugin
@@ -701,7 +714,7 @@ Add a one-line note to `docs/_meta/plans/nextjs-migration/shiki-dark-css.md` (ke
 - Produces: each plugin as a `unified` plugin; `pipeline.ts` updated so `renderMarkdown` emits the full app dialect
 
 **Plugin ordering (critical — from `content-view.js` pipeline order):**
-1. `remark-*` phase: `remark-video-embed` → `remark-viz` → `remark-tabbed-code` → `remark-callouts` → `remark-practice-answer` → `remark-section-wrap` (LAST in remark — it wraps everything the others produced; `renderPrerequisites`, practice-answer, study-mode all rely on `.section-body`/`.subsection-body` existing)
+1. `remark-*` phase: `remark-mermaid` → `remark-video-embed` → `remark-viz` → `remark-tabbed-code` → `remark-callouts` → `remark-practice-answer` → `remark-section-wrap` (LAST in remark — it wraps everything the others produced; `renderPrerequisites`, practice-answer, study-mode all rely on `.section-body`/`.subsection-body` existing). `remark-mermaid` runs first — it just swaps the fenced `code[lang=mermaid]` node for a `<pre class="mermaid">` html node so nothing downstream tries to highlight it as code.
 2. `remark-rehype` boundary
 3. `rehype-*` phase: `rehype-prerequisites` → `rehype-comparison-table` → `rehype-code-header` → `rehype-glossary-caveat-markers` (after slug/autolink, before stringify)
 
@@ -845,7 +858,15 @@ Expected: all green.
 - [ ] **Step 4: Wire into `pipeline.ts` (rehype phase, last before stringify), run, confirm pass.**
 - [ ] **Step 5: Full suite green.**
 
-### Task 4k: footnotes decision
+### Task 4k: `remark-mermaid` (spike-fallback, markup only)
+
+- [ ] **Step 1: Failing fixture test** — `fixtures/mermaid.md` with a flowchart block and a sequence block. Assert each ` ```mermaid ` fence becomes `<pre class="mermaid" data-mermaid-src="…">` with the **raw diagram source** as the (HTML-escaped) text content, and that it is NOT run through `rehype-shiki` (no `.shiki` class, no `<code>` highlight spans). Assert a non-mermaid ` ```js ` block is untouched.
+- [ ] **Step 2: Run, confirm failure.**
+- [ ] **Step 3: Implement `plugins/mermaid.ts`** — a remark plugin: `unist-util-visit` for `code` nodes with `lang === "mermaid"`, replace each with an mdast `html` node `<pre class="mermaid" data-mermaid-src="{escaped}">{escaped}</pre>` (source in both the attribute and the body — the island reads whichever is convenient; keeping the body lets it work before hydration as plain text). No browser, no `rehype-mermaid`, no SVG. Per `mermaid-spike-result.md`.
+- [ ] **Step 4: Wire into `pipeline.ts` FIRST in the remark phase** (before anything else touches code fences), run, confirm pass.
+- [ ] **Step 5: Full suite green** — confirm `rehype-shiki` skips the mermaid `<pre>` (it is now an html node, not a `code` node).
+
+### Task 4l: footnotes decision
 
 - [ ] **Step 1: Check whether `remark-gfm` covers real footnote usage**
 
@@ -1087,11 +1108,11 @@ describe("search-index equivalence", () => {
 
 - [ ] **Step 14: Implement `buildContent()` in `build.ts`** — runs, in order: discovery → per-article render → `buildManifest` → `buildSearchIndex` → `buildBacklinks` → `buildBrokenLinks` → `validateBridges` → `buildPreviews` → `buildComplexityTables` → `validateLinks` (throws / non-zero exit on link errors). Writes all JSON to `lib/content/generated/`. This is the single function `next build` and CI invoke.
 
-- [ ] **Step 15: Per-diagram SVG cache (spec §7, overview.md CI-cost section)** — add a content-hash cache keyed on `hash(mermaidBlockSource + mermaidVersion + themeCSS)` → rendered SVG, persisted under `lib/content/generated/.mermaid-cache/`. `remark-viz` is deterministic and needs no browser; this cache is for the Phase 4/`app-skeleton` **mermaid** plugin (build-time Chromium render). On a build, unchanged diagram blocks are cache hits. Test: render twice, assert the second run does zero browser launches.
+- [ ] **Step 15: Per-diagram SVG cache — N/A (spike fallback taken).** `mermaid-spike-result.md` recorded NOT CLEANLY GREEN → no build-time Chromium render, so there is no SVG to cache. `remark-mermaid` (Task 4k) is markup-only and deterministic. `remark-viz` is likewise deterministic string templating. Skip this step; note "no build-time diagram render — client-island path" in `build.ts`.
 
 - [ ] **Step 16: Regenerate the committed baseline** — run `buildContent()`, copy its `search-index.json` / `backlinks.json` / `broken-links.json` / `bridges.json` over the committed `content/*.json`. These Node-generated files are the new baseline (spec §12). The Python scripts stay in `scripts/` as the reference until `post-cutover.md` retires them.
 
-**Exit criteria:** `buildContent()` produces all seven outputs (manifest + search-index + backlinks + broken-links + bridges + previews + complexity-tables). Every equivalence test passes (normalized deep-compare, not byte-diff). `previews.json` + `complexity-tables.json` schema-checked. `validateLinks` fails the build on a broken cross-link. Mermaid SVG cache proven to skip unchanged diagrams. `pnpm test` fully green.
+**Exit criteria:** `buildContent()` produces all seven outputs (manifest + search-index + backlinks + broken-links + bridges + previews + complexity-tables). Every equivalence test passes (normalized deep-compare, not byte-diff). `previews.json` + `complexity-tables.json` schema-checked. `validateLinks` fails the build on a broken cross-link. `pnpm test` fully green. (No Mermaid SVG cache — client-island path, `mermaid-spike-result.md`.)
 
 ---
 

@@ -290,7 +290,7 @@ Test: seeded broken-links data → correct row count; an article with zero backl
 
 - [ ] **Step 2: Delete the five Python scripts + their `__pycache__` entries.**
 
-- [ ] **Step 3: Remove the five CI jobs from `ci.yml`.** Confirm the remaining jobs: `hooks`, `tests-light` (swept e2e), `tests-heavy` (swept e2e), `frontend` (typecheck + lint + test), `build` (pnpm install → Chromium install *only if build-time Mermaid* → `next build` incl. `buildContent()` + link-check gate), `deploy` (`out/` → Pages, added in `cutover.md` Phase 14), `dead-links` (lychee — fold into `validateLinks` so this job goes too), `dsa-sd-check` (content quality, unrelated — keep), `semgrep` (keep).
+- [ ] **Step 3: Remove the five CI jobs from `ci.yml`.** Confirm the remaining jobs: `hooks`, `tests-light` (swept e2e), `tests-heavy` (swept e2e), `frontend` (typecheck + lint + test), `build` (pnpm install → `next build` incl. `buildContent()` + link-check gate — **no Chromium step**, client-island Mermaid per `mermaid-spike-result.md`), `deploy` (`out/` → Pages, added in `cutover.md` Phase 14), `dead-links` (lychee — fold into `validateLinks` so this job goes too), `dsa-sd-check` (content quality, unrelated — keep), `semgrep` (keep).
 
 - [ ] **Step 4: Update `.pre-commit-config*.yaml`** — drop deleted-script hooks; ensure `pnpm typecheck && pnpm lint && pnpm test` is an authoritative CI gate.
 
@@ -299,6 +299,16 @@ Test: seeded broken-links data → correct row count; an article with zero backl
 - [ ] **Step 6: Run `pnpm build` + the e2e suite + `pnpm test`** — everything green with no Python generator in the loop.
 
 **Exit criteria:** the four generators + `bump_cache_version.py` gone; CI at final form (one build job produces all derived data, one deploy job); no manual regeneration steps in `CLAUDE.md`.
+
+---
+
+## Phase 8b — `lib/content` build/read split (own epic)
+
+**Raised** `app-skeleton.md` Phase 7. `lib/content` renders markdown on import, so `getArticle` is both renderer and accessor and `next build` re-runs the whole pipeline `content:build` already ran (~25 s of a ~66 s build). The fix is architectural, not a cache: split `lib/content` into a `build/` renderer (dev/CI-only) and a `read/` pure accessor over `generated/`, one render, `next build` a pure emit step. Hardens migration principle #7 (isolate content logic from framework).
+
+**Full write-up + scope + rationale for deferral:** [`content-lib-split.md`](./content-lib-split.md). It needs its own short spec before code (the `generated/` artifact schema + version, the two API surfaces, the test-migration list). Land it here as a Part B phase, or spin it out as a standalone ticket — either way, after cutover, in isolation, not alongside it.
+
+**Exit criteria:** `content-lib-split.md` executed; full build drops to ~40 s; `read/` has zero `unified` dependency; the `Article` shape `getArticle` returns is byte-identical to today (fixture-pinned); all existing `lib/content` + `app/` + `tests/content/` tests green.
 
 ---
 

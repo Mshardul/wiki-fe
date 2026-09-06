@@ -3,6 +3,8 @@ node_modules/
 coverage/
 .next/
 out/
+next-env.d.ts
+*.tsbuildinfo
 lib/content/generated/
 public/data/
 

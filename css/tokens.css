@@ -152,4 +152,13 @@
   /* Primary icon-button box + glyph (topbar, heading collapse, practice eye) */
   --icon-btn-box: 34px;
   --icon-btn-glyph: 15px;
+
+  /* Mermaid diagram theming (read by the MermaidDiagrams island via getComputedStyle) */
+  --diagram-bg: var(--surface);
+  --diagram-text: var(--text-body);
+  --diagram-node-fill: var(--surface-2);
+  --diagram-node-stroke: var(--border-2);
+  --diagram-edge: var(--text-muted);
+  --diagram-cluster-fill: var(--surface-3);
+  --diagram-cluster-stroke: var(--border);
 }

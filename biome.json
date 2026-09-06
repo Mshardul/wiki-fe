@@ -1,16 +1,22 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.11/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
-    "ignore": [
-      "content/**",
-      ".venv/**",
-      ".pytest_cache/**",
-      "data/**",
-      "node_modules/**",
-      "out/**",
-      ".next/**",
-      "js/**",
-      "**/*.min.js"
+    "includes": [
+      "lib/**/*.{ts,tsx,js,jsx,json}",
+      "app/**/*.{ts,tsx,css}",
+      "components/**/*.{ts,tsx,css}",
+      "css/**/*.css",
+      "*.{ts,js,json}",
+      "!**/node_modules/**",
+      "!**/generated/**",
+      "!**/*.min.*",
+      "!tsconfig*.json",
+      "!next-env.d.ts"
     ]
   },
   "formatter": {
@@ -22,7 +28,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": false,
+      "preset": "none",
       "suspicious": {
         "noConsole": "error"
       }
@@ -37,5 +43,11 @@
   "css": {
     "formatter": { "enabled": true },
     "linter": { "enabled": true }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["css/**/*.css"],
+      "formatter": { "enabled": false }
+    }
+  ]
 }

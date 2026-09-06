@@ -25,6 +25,8 @@ The spec (§5) defines **five serial sub-specs**. This plan groups them into **f
 
 **Ordering** comes from the sub-spec sequence above, not from filenames. Do not start a phase file until the previous one's exit criteria are met and reviewed.
 
+**Follow-on epic (not a sub-spec):** [`content-lib-split.md`](./content-lib-split.md) — split `lib/content` into a `build/` renderer and a `read/` pure accessor over `generated/`, so the corpus renders once instead of twice per build and the read path carries no `unified` dependency. Raised during `app-skeleton.md` Phase 7; zero user-facing change; deferred to post-cutover (`post-cutover.md` Phase 8b) so it lands in isolation, not alongside the cutover.
+
 ---
 
 ## Execution model
@@ -59,10 +61,10 @@ Every step in every phase file implicitly includes this section. Values are copi
 | Markdown | in-house `lib/content/` + `unified` plugins | see `content-foundation.md` |
 | Syntax highlighting | Shiki (build-time) | replaces highlight.js; no client highlighting JS |
 | Math | `remark-math` + `rehype-katex` (build-time) | replaces the custom `$$` Showdown extension in `js/state.js` |
-| Diagrams | `rehype-mermaid` (build-time SVG) preferred; client-island fallback pre-authorised | spike-gated — see below |
+| Diagrams | **client-island `mermaid`** (spike taken the fallback — `mermaid-spike-result.md`) | pipeline emits `<pre class="mermaid">` raw source; `MermaidDiagrams.tsx` renders + re-themes client-side |
 | Offline / PWA | `@serwist/next`, `injectManifest` mode | Workbox under the hood; replaces hand-rolled `wiki-sw.js` |
 | Lint (correctness) | ESLint flat config | `@typescript-eslint`, `eslint-plugin-react`, `eslint-plugin-react-hooks`, `@next/eslint-plugin-next`, `eslint-plugin-jsx-a11y` |
-| Format + style + CSS lint | Biome (retargeted to TS/TSX) | already in repo at 1.9.4; `noConsole: error` stays; ESLint owns correctness, Biome owns style — zero rule overlap |
+| Format + style + CSS lint | Biome 2.5.11 (retargeted to TS/TSX) | was 1.9.4 in the repo; bumped at Phase 0 because 1.9.4's directory walker silently skips files carrying macOS Sequoia's `com.apple.provenance` xattr (auto-applied to sandbox-written files). Config migrated to the 2.x `includes`/`preset` schema. `noConsole: error` stays; ESLint owns correctness, Biome owns format + CSS lint. **CSS is under Biome's linter but excluded from its formatter** (2.x reformats hand-written CSS differently — the faithful-port principle wins). |
 | e2e | pytest + Playwright (Python) through the migration | selector/URL updates only; TS port is a post-migration epic (spec §10, §14) |
 | Unit / integration tests | Vitest | see the testing rule below |
 | CI | GitHub Actions | a `frontend` (typecheck+lint+test) job + a `build` job; **no deploy job until cutover** |
@@ -92,7 +94,7 @@ The **Python e2e suite stays user-run manually** — never run the full suite fr
 
 - URL shape `/{vertical}/{...slug}` — slug is the article path under the vertical, minus `.md`. `content/dsa/patterns/sliding-window.md` → `/dsa/patterns/sliding-window`.
 - **No hash routing.** Today's `/#dsa` / `/#/system-design/load-balancer` URLs break and are **not** redirected — no redirect shim is built. (No users but the author; an accepted decision, not an accident.)
-- `trailingSlash: true` in `next.config.js`.
+- `trailingSlash: true` in `next.config.ts` (Next 16 native TS config).
 - `app/not-found.tsx` → static export emits `404.html`, which GitHub Pages serves for any unmatched path.
 - Every internal link and asset resolves under `/wiki-fe` via `next/link` and `assetPrefix`-aware helpers — never hand-built absolute paths.
 - **Per-page metadata is for the reader, not crawlers:** each route gets a `<title>` and a description (browser tabs, bookmarks, history, link-sharing) and a canonical link. **No sitemap. `robots` is `Disallow: /`.** No SEO metric is an exit gate. Full SEO is the public-launch epic (spec §14).
@@ -141,16 +143,20 @@ The spec §13 lists these as "resolve during implementation, not blockers." This
 
 ---
 
-## Mermaid — spike-gated, fallback pre-authorised (spec §7)
+## Mermaid — client-island render (spike RESOLVED, `mermaid-spike-result.md`)
 
 **Hard requirement:** diagrams must re-theme with the app (text colour, background, border, node fill, edge lines) instantly, no reload.
 
-**First task of `content-foundation.md` (Phase 1) is a spike:** confirm the current Mermaid version's SVG output can be fully driven by CSS variables through `themeCSS` / `themeVariables` referencing `var(--diagram-*)` tokens, **and** that the full-corpus build cost is acceptable.
+**Spike outcome (`content-foundation.md` Phase 1, executed 2026-09-01):** build-time SVG with a `themeCSS` block **NOT CLEANLY GREEN** — flowcharts (26/32 corpus blocks) re-theme, but sequence / gantt / xychart bake presentation attributes on text and bars that CSS cannot reach, so they are unreadable in dark mode. `themeVariables` bakes one theme at render time. The pre-authorised fallback is taken.
 
-- **Clean pass + acceptable build cost** → `rehype-mermaid` renders each ` ```mermaid ` block to SVG at build time (headless Chromium), SVG inlined in the page HTML, zero client rendering JS, no load flash, works offline. `--diagram-*` tokens in `tokens.css` drive theming; inlined SVGs inherit new values with no JavaScript. The rest of the plan assumes this path.
-- **Spike not cleanly green, OR build-time cost / CI flake is high** → **repo-wide shared `mermaid.js` client island**: mermaid.js added to the app-shell precache (~500 KB, one-time, cached after the first diagram page), diagrams render client-side on mount and re-theme by re-render. **Pre-authorised — not a failure.** The site is not public, so the build-time path's SEO benefit does not apply; the theming requirement is met either way. This is **one paragraph** in the phase file, not a full step branch; if the fallback is taken, resume planning it then.
+**The path (all phase files updated):**
 
-**Do not treat Chromium-in-CI as a hard blocker.** If the build-time path is chosen, CI installs and caches Chromium before `next build` and reuses one browser instance across all diagrams; build-time cost is measured once locally on the full corpus in `app-skeleton.md` and a ceiling recorded; CI renders diagrams only for **changed** articles via a per-diagram SVG content-hash cache built in `content-foundation.md`. If any of that proves troublesome, switch to the client-island fallback without ceremony.
+- Pipeline (`content-foundation.md` Phase 4, `remark-mermaid`) emits ` ```mermaid ` → `<pre class="mermaid" data-mermaid-src="…">` with the raw source. **No build-time render, no Chromium, no `rehype-mermaid`.**
+- `mermaid` (the library) is a **client** dependency, added in `cutover.md` Phase 3, dynamically imported by `components/reader/MermaidDiagrams.tsx`. Its hashed chunk is precached as shell by Serwist (`app-skeleton.md` Phase 5) — one-time ~800 KB gzipped, works offline thereafter.
+- `MermaidDiagrams` runs `mermaid.run()` on mount with `themeVariables` computed from the live `--diagram-*` CSS custom properties (`getComputedStyle`), and **re-runs on theme change** (restoring source from `data-mermaid-src`) — this is how the "instant, no reload" bar is met.
+- `--diagram-*` tokens still land in `tokens.css` (`app-skeleton.md` Phase 3) — the island reads them; they are token-derived so correct in both themes.
+- Diagram bodies are **not** in the pre-rendered HTML. Acceptable — the site is not public.
+- No CI Chromium step anywhere. No per-diagram SVG cache (nothing rendered at build). The `app-skeleton.md` Phase 7 benchmark measures the pipeline (Shiki/KaTeX) cost, not a diagram cost.
 
 ---
 
@@ -186,7 +192,7 @@ Where each spec section is carried out:
 | §5 Sub-spec 2 | `app-skeleton.md` — local proof, no deploy |
 | §5 Sub-spec 3 / §9 shipped-at-cutover | `cutover.md` — first real Pages deploy |
 | §5 Sub-specs 4 + 5 / §9 deferred | `post-cutover.md` |
-| §7 Mermaid | `content-foundation.md` Phase 1 (spike) + Phase 4; `app-skeleton.md` Phase 3 (tokens), build-cost benchmark |
+| §7 Mermaid | Spike RESOLVED → client-island (`mermaid-spike-result.md`). `content-foundation.md` Phase 4 (`remark-mermaid`, markup only); `cutover.md` Phase 3 (`MermaidDiagrams.tsx` render + re-theme, `mermaid` client dep); `app-skeleton.md` Phase 3 (`--diagram-*` tokens) + Phase 5 (precache the chunk) |
 | §8 offline / PWA | `app-skeleton.md` Phase 5; `cutover.md` Phase 11 |
 | §9 dropped | no steps in any phase file — see Global Constraints "Dropped" above |
 | §10 testing | Python e2e sweep in `cutover.md` Phase 13 + `post-cutover.md`; Vitest per the testing rule above |

@@ -1,0 +1,49 @@
+{
+  "id": "/wiki-fe/",
+  "name": "Wiki",
+  "short_name": "Wiki",
+  "description": "Fast, offline-capable reference wiki for System Design and DSA interview prep.",
+  "start_url": "/wiki-fe/",
+  "scope": "/wiki-fe/",
+  "display": "standalone",
+  "background_color": "#06070e",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/wiki-fe/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/wiki-fe/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/wiki-fe/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "System Design",
+      "url": "/wiki-fe/system-design/",
+      "icons": [{ "src": "/wiki-fe/icons/shortcut-system-design.png", "type": "image/png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Data Structures & Algorithms",
+      "short_name": "DSA",
+      "url": "/wiki-fe/dsa/",
+      "icons": [{ "src": "/wiki-fe/icons/shortcut-dsa.png", "type": "image/png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Search",
+      "url": "/wiki-fe/",
+      "icons": [{ "src": "/wiki-fe/icons/shortcut-search.png", "type": "image/png", "sizes": "96x96" }]
+    }
+  ]
+}

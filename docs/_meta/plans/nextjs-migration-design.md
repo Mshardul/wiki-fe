@@ -239,6 +239,8 @@ Exit criteria: docs match shipped code; CI green end to end; the `wiki-be` ticke
 
 ## 7. Mermaid — build-time render preferred, client-island fallback pre-authorised
 
+> **RESOLVED (spike executed 2026-09-01, `nextjs-migration/mermaid-spike-result.md`):** the preferred build-time-SVG path is **NOT** used. `theme: "base"` + a `themeCSS` block re-themes flowcharts (26 of 32 corpus blocks) but not sequence / gantt / xychart-beta — those bake presentation attributes on text and bars that CSS can't override, unreadable in dark mode. The **pre-authorised client-island fallback is taken**: the pipeline emits `<pre class="mermaid">` raw source, `components/reader/MermaidDiagrams.tsx` renders it client-side with `mermaid.run()` and re-themes on theme change via `themeVariables` read from the live `--diagram-*` tokens. `mermaid` is a precached client dependency. No Chromium anywhere. The §12 risk row and all `nextjs-migration/*` phase files reflect this. The rest of this section is the original design rationale, kept for context.
+
 **Requirement (hard):** diagrams must re-theme with the app — text colour, background, border colour, node fill, edge lines — instantly, no reload.
 
 **Preferred approach (build-time SVG):**
@@ -365,14 +367,14 @@ No `wiki-be` spec for this pass (user decision).
 
 | Risk | Mitigation |
 | --- | --- |
-| Mermaid SVG can't be CSS-variable-themed in the current version | Spike is the first task of Sub-spec 1; documented fallback to a diagram-only client island. |
+| Mermaid SVG can't be CSS-variable-themed in the current version | **REALISED** (spike 2026-09-01, `nextjs-migration/mermaid-spike-result.md`): `themeCSS` re-themes flowcharts but not sequence/gantt/xychart. Fallback taken — client-island `mermaid` render + re-theme (`MermaidDiagrams.tsx`), library precached as shell. No build-time render, no Chromium. |
 | Custom `$$` math extension has content that `remark-math`/KaTeX renders differently | Sub-spec 1 renders **every** article and diffs math output; discrepancies fixed in content or via a small compat remark plugin. |
 | Sub-spec 3 cutover is still sizeable even reduced | Split from feature-parity-everything (§5); the implementation plan has internal checkpoints (skeleton proven in Sub-spec 2 → reader → nav → search → auth/sync → offline → cutover). User reviews between plan phases and can resume in a fresh thread. |
 | `search-index.json` / `backlinks.json` data drift when moving generation from Python to Node | Sub-spec 1 exit criterion is **semantic equivalence** (parse both, deep-compare objects, key order normalised) — not `git diff` / byte match, which Python vs Node will never satisfy. Python scripts stay as the reference until Sub-spec 5 retires them; Node output becomes the new committed baseline. |
 | Interim live site (post-cutover, pre-Sub-spec-4) is missing features users may notice | Accepted, user-confirmed — not in production, deploy-on-merge understood. Sub-spec 4 ordered highest-value-first. |
 | `basePath` / SW-scope misconfiguration breaks all asset loading | Verified against a real Pages deploy as the whole point of Sub-spec 2, before any feature port. |
 | `formatting.js` (823 lines) is half markup, half runtime behaviour — wrong to port wholesale as pipeline plugins | Explicit build-time-markup / runtime-island split in §6: ~200 lines become remark/rehype transforms, the rest become React islands in Sub-spec 3. Each transform gets a fixture test before app code depends on it. |
-| Mermaid render fails in CI (no browser on a fresh runner) | CI installs Chromium (`playwright install --with-deps chromium`, cached) before `next build` — spec'd in §5 Sub-spec 2 and §7. Reuse one browser instance across diagrams to bound build time. |
+| Mermaid render fails in CI (no browser on a fresh runner) | **MOOT** — client-island fallback taken (see above), CI does no diagram render, no Chromium in any job. |
 | Static export + App Router edge cases (`generateStaticParams`, no route handlers) | Known constraint; the design uses only build-time data fetching and client-direct API calls, which export supports. |
 | CI build becomes a new point of deploy failure, and deploy-on-merge puts each state live | Frozen lockfile, pinned Node, link-check + Mermaid + semantic-JSON checks as explicit gates; a failed build blocks deploy rather than shipping broken. Not in production, so a bad deploy is low-stakes. |
 

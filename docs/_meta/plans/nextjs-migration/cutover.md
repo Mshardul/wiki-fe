@@ -204,8 +204,9 @@ Port `toggleFocusMode` / `cleanupFocusMode` from `js/content/formatting.js` — 
 **Goal:** the in-body interactive layer — every runtime half of the `content-foundation.md` Phase 4 plugins.
 
 **Files:**
-- Create: `components/reader/CalloutCollapse.tsx`, `LatexToggle.tsx`, `TabbedCode.tsx`, `ArticleFind.tsx`, `GlossaryPopover.tsx`, `CaveatReveal.tsx`, `CodeCopy.tsx`, `LineNumbers.tsx` (may be markup-only from the plugin — verify), `ComparisonTable.tsx`, `ZoomLightbox.tsx`, `PracticeAnswerToggle.tsx`, `PrereqStatus.tsx`
+- Create: `components/reader/CalloutCollapse.tsx`, `LatexToggle.tsx`, `TabbedCode.tsx`, `ArticleFind.tsx`, `GlossaryPopover.tsx`, `CaveatReveal.tsx`, `CodeCopy.tsx`, `LineNumbers.tsx` (may be markup-only from the plugin — verify), `ComparisonTable.tsx`, `ZoomLightbox.tsx`, `PracticeAnswerToggle.tsx`, `PrereqStatus.tsx`, `MermaidDiagrams.tsx`
 - Modify: `components/reader/ReaderIslands.tsx` — add these
+- Add dep: `mermaid` (client — `pnpm add mermaid`; the spike-fallback render path, `mermaid-spike-result.md`)
 - Tests: co-located, each mounting on the plugin's emitted markup
 
 For each island: **failing test on the plugin's real emitted markup → run → implement → run → full reader suite green.** Repeat all steps per island.
@@ -232,9 +233,16 @@ For each island: **failing test on the plugin's real emitted markup → run → 
 
 - [ ] **Task 3k — `PrereqStatus`**: on `.prereq-chip[data-prereq-path]` (emitted by `rehype-prerequisites`), add the completed/not class by looking up `lib/storage` completions for that path. Port `appendChipStatus` state half from `js/content/formatting.js` `renderPrerequisites`. Test: mark a prereq path complete → chip gets the done class on mount.
 
-- [ ] **Step (final): typecheck + lint + test + local visual sweep** of a content-heavy real article — every interaction works.
+- [ ] **Task 3l — `MermaidDiagrams`** (spike-fallback render, `mermaid-spike-result.md`): on `pre.mermaid[data-mermaid-src]` (emitted by `remark-mermaid`), render each block client-side.
+  - On mount: `const mermaid = (await import("mermaid")).default;` — dynamic import so it is a separate chunk (precached as shell, `app-skeleton.md` Phase 5). Read the `--diagram-*` custom properties via `getComputedStyle(document.documentElement)`, map them to `mermaid.initialize({ startOnLoad: false, theme: "base", themeVariables: { background, primaryColor, primaryTextColor, primaryBorderColor, lineColor, secondaryColor, tertiaryColor, ... } })`, then `await mermaid.run({ nodes: [...pre.mermaid elements] })`. Mermaid replaces each `<pre>` body with an `<svg>`.
+  - On theme change: re-read `--diagram-*`, `mermaid.initialize` again, restore each block's original source from `data-mermaid-src`, `mermaid.run` again. Subscribe to the same theme-change signal `ThemeControls` / `settings.ts` emits (`cutover.md` Phase 9 — this island may need a small event or a `useSettings` hook; if Phase 9 isn't done yet, listen for a `wiki:theme-changed` custom event and have Phase 9 dispatch it).
+  - Parse-error handling: if `mermaid.run` throws for a block, leave the raw source visible (do not blank it) + a one-line "diagram failed to render" note. Port the spirit of `js/content/mermaid.js` error handling.
+  - `js/content/mermaid.js` also had node-hover captions + a step-through walkthrough — **check** whether those are used in real content; if niche, drop them (they were decoration, and the UI/UX revamp will revisit). Keep the core render + re-theme.
+  - Test (jsdom + mocked `mermaid`): a `pre.mermaid` block → `mermaid.run` called with it; a `wiki:theme-changed` event → `initialize` + `run` called again.
 
-**Exit criteria:** the full in-body interactive layer works on real articles. Quiz-me explicitly absent. `ReaderIslands.tsx` composes all reader islands.
+- [ ] **Step (final): typecheck + lint + test + local visual sweep** of a content-heavy real article — every interaction works; diagrams render and re-theme on a light/dark toggle with no reload.
+
+**Exit criteria:** the full in-body interactive layer works on real articles. Mermaid diagrams render client-side and re-theme instantly on theme change (spec §7 requirement met via the client-island path). Quiz-me explicitly absent. `ReaderIslands.tsx` composes all reader islands.
 
 ---
 
@@ -534,7 +542,7 @@ Port the `bindSwipeGestures` IIFE from `js/app/mobile-panels.js`: constants `SWI
 
 - [ ] **Step 6: Run, confirm failure, implement, run, confirm pass.**
 
-- [ ] **Step 7: `ViewportHandler`** — port the resize handler from `js/app/mobile-panels.js`: debounced 150ms, closes mobile TOC + search on a significant width change, clears stale hover-preview position, re-renders Mermaid on width change **if** the spike-fail client-island path is in use (if build-time SVG, Mermaid re-renders via CSS and needs no JS here — note the branch). Also `visualViewport` handling for the mobile keyboard. Test: fire a resize crossing the breakpoint with the TOC open → TOC closed.
+- [ ] **Step 7: `ViewportHandler`** — port the resize handler from `js/app/mobile-panels.js`: debounced 150ms, closes mobile TOC + search on a significant width change, clears stale hover-preview position. Mermaid: the client-island path is in use (`mermaid-spike-result.md`) — dispatch a `wiki:diagram-relayout` event on a significant width change so `MermaidDiagrams` can re-run `mermaid.run` (SVG text-wrapping is width-sensitive); debounce it with the resize handler. Also `visualViewport` handling for the mobile keyboard. Test: fire a resize crossing the breakpoint with the TOC open → TOC closed; a width change → the diagram-relayout event fires.
 
 - [ ] **Step 8: Run, confirm failure, implement, run, confirm pass.**
 
@@ -670,8 +678,6 @@ Test: for a real slug, returns `title` = `"<article title> · <vertical> · Wiki
           node-version-file: .nvmrc
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      # match the build job's Mermaid choice
-      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm build
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -679,7 +685,7 @@ Test: for a real slug, returns `title` = `"<article title> · <vertical> · Wiki
       - id: deployment
         uses: actions/deploy-pages@v4
 ```
-(If the client-island Mermaid fallback is in use, drop the `playwright install` line.)
+No Chromium step — client-island Mermaid (`mermaid-spike-result.md`), no build-time render.
 
 - [ ] **Step 6: Update the rest of `ci.yml`** — remove the `cache-version` job. Point `tests-light` / `tests-heavy` at the swept suite, consuming the `build` job's `out/` artifact (or running `next dev`).
 
