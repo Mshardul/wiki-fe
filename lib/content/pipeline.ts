@@ -9,6 +9,7 @@ import remarkMath from "remark-math";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import { type Processor, unified } from "unified";
+import { rehypeArticleLinks } from "./plugins/article-links";
 import { rehypeCallouts } from "./plugins/callouts";
 import { rehypeCodeHeader } from "./plugins/code-header";
 import { rehypeComparisonTable } from "./plugins/comparison-table";
@@ -47,6 +48,7 @@ export function createProcessor(ctx: RenderContext): Processor {
     .use(rehypePrerequisites, ctx)
     .use(rehypePracticeAnswer)
     .use(rehypeComparisonTable)
+    .use(rehypeArticleLinks, ctx)
     .use(rehypeShiki, {
       themes: { light: "github-light", dark: "github-dark" },
       fallbackLanguage: "text",

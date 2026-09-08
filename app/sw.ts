@@ -29,7 +29,7 @@ const serwist = new Serwist({
   fallbacks: {
     entries: [
       {
-        url: "/wiki-fe/offline/",
+        url: "/wiki-fe/offline/index.html",
         matcher: ({ request }) => request.destination === "document",
       },
     ],

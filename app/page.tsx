@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { WikiCardsKeyNav } from "@/components/home/WikiCardsKeyNav";
 import { getVerticals } from "@/lib/content";
 
 export default function Home() {
   const verticals = getVerticals();
   return (
     <main className="home-main">
+      <WikiCardsKeyNav />
       <header className="home-header">
         <p className="home-eyebrow">Reference</p>
         <h1 className="home-title">Wiki</h1>

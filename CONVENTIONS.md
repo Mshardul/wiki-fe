@@ -116,6 +116,34 @@ Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do
 
 ---
 
+## Components (`components/`)
+
+The Next migration puts every runtime client island under `components/`, one folder per feature (mirrors the `js/` domain layout). Server-rendered markup comes from the build pipeline (`lib/content/`); an island never re-parses markdown or re-renders the article body.
+
+- **Per-feature folders** - `components/<feature>/`, one folder per runtime island. Shared modal/focus-trap/portal shells live in `components/common/`; app chrome (topbar, toast host, tooltips, breadcrumb, wiki-switcher, scroll-to-top) in `components/chrome/`.
+- **`"use client"` only where behaviour needs it.** Prefer server components; add the directive at the island boundary, not on every leaf.
+- Planned folders:
+  ```
+  components/
+    common/     Modal, useFocusTrap, modalRegistry, Portal
+    chrome/     Topbar, ToastHost, IconTooltip, ScrollToTop, Breadcrumb, WikiSwitcher, BookmarksModal
+    reader/     Toc, ProgressRing, StickyHeader, HeadingCollapse, HoverPreview, PrereqStatus,
+                RelatedArticles, MentionedBy, CalloutCollapse, AnchorScroll, LatexToggle,
+                TabbedCode, ArticleFind, GlossaryPopover, CaveatReveal, CodeCopy, LineNumbers,
+                ComparisonTable, ZoomLightbox, ReadTracker, StubTreatment, FocusMode, MermaidDiagrams
+    home/       WikiCards, IndexSections, IndexCardSwipe, PullToRefresh, KeyNav, LearningPathBars
+    search/     SearchModal, useSearchIndex
+    auth/       AuthModal, PasswordChecklist
+    settings/   PreferencesModal, ThemeControls, DistractionFree, PrintTrigger, ClearData
+    sync/       (hooks, not visual)
+    mobile/     TocDrawer, SwipeGestures, PanelCloseRegistry, ViewportHandler
+    pwa/        SaveOffline, InstallPrompt, IosNudge
+  ```
+- **`lib/storage/`** owns all `localStorage` access + the cache-through sync half; **`lib/api.ts`** is the single `wiki-be` client (framework-agnostic, no Next coupling); **`lib/toast.ts`** owns the toast queue. Components call these, never touch `localStorage` or `fetch` a backend directly.
+- Comments follow the JavaScript rules above - sparse, one line, `why` not `what`, no ticket IDs.
+
+---
+
 ## CSS
 
 - **`tokens.css` is the single source of every value** - spacing, type scale, colours, radius, transitions. **Read it first for any CSS task.** Never hardcode a value that a token already expresses; never duplicate a token's value in another file.

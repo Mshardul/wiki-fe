@@ -41,6 +41,19 @@ Signed off 2026-09-06. The Next.js App Router project, the skeleton route tree r
 - `tsconfig.sw.json` typechecks `app/sw.ts` separately (`lib: ["ESNext","WebWorker"]` conflicts with the app's `DOM`). `pnpm typecheck` runs both. ESLint has a dedicated `app/sw.ts` block.
 - Full browser verification (SW register/activate/offline-reload cycle, visual rendering) is **not done** — playwright MCP was unavailable this session. Everything checkable headless (route shapes, asset 200s, precache-manifest scope, titles, canonical, `basePath`) passes. `cutover.md` Phase 13 (e2e sweep) is the browser pass.
 
+### Browser verification — done 2026-09-06 (skeleton-fixup pass, playwright MCP)
+
+Served `out/` under `/wiki-fe/` (symlink → `python3 -m http.server`), Chrome-for-Testing via playwright MCP. All four cutover-blocking checks pass:
+
+| Check | Result |
+| --- | --- |
+| SW registers, scope `/wiki-fe/`, controls the page | ✅ `navigator.serviceWorker.controller` = `/wiki-fe/sw.js`, scope `/wiki-fe/`, `clientsClaim` |
+| Article renders styled — dark bg, Shiki themed, KaTeX math | ✅ body bg `#06070e` (always-on dark, faithful); Shiki light by default, dark-swaps to `#24292e` bg / `#F97583` token under `[data-theme="dark"]` and `@media (prefers-color-scheme: dark)` — the `--shiki-dark-bg` / `--shiki-dark` inline vars the pipeline emits are wired to the `code.css` +15 rule; KaTeX HTML-rendered with `KaTeX_Main` @font-face live |
+| Offline reload of a visited article → served from cache | ✅ 200 from `wiki-articles` SWR cache, full article body |
+| Offline nav to an unvisited article → `/offline/` shelf | ✅ **after a fix** — shows the "You're offline / this article hasn't been downloaded" shelf |
+
+**Bug found + fixed:** `app/sw.ts` `fallbacks.entries[0].url` was `/wiki-fe/offline/` but the precache key serwist writes (from `globPatterns: "offline/index.html"` + `modifyURLPrefix`) is `/wiki-fe/offline/index.html`. The fallback lookup is an exact precache-URL match → not found → offline nav to an uncached article hit `net::ERR_FAILED` (raw browser error page), not the shelf. Changed the fallback `url` to `/wiki-fe/offline/index.html`. Rebuilt; typecheck (main + sw) ✅, lint ✅ (99 files), `pnpm test` ✅ 145/145, `pnpm build` ✅ (SW 69 URLs / 1.53 MB). Re-verified all four checks green. No other skeleton fix needed.
+
 ## Public surface consumed from `content-foundation.md` — confirmed sufficient
 
 All of the following were called from real route files and returned usable data; no gap found:

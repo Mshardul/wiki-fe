@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { IndexIslands } from "@/components/home/IndexIslands";
 import { CANONICAL_BASE } from "@/lib/config";
 import { getVertical, getVerticalIndex, getVerticals } from "@/lib/content";
 
@@ -36,6 +37,9 @@ export default async function VerticalIndex({ params }: { params: Promise<{ vert
           <p className="page-subtitle">{v.description}</p>
         </div>
       </div>
+
+      <IndexIslands wikiId={vertical} tracks={index.learningPaths} />
+
       <div className="index-sections">
         {index.sections.map((s) => (
           <section key={s.heading} className="index-section">
@@ -44,17 +48,25 @@ export default async function VerticalIndex({ params }: { params: Promise<{ vert
               <span className="section-count">{s.articles.length}</span>
             </div>
             <div className="index-card-grid">
-              {s.articles.map((a) => (
-                <Link
-                  key={a.path}
-                  href={`/${vertical}/${a.slug.join("/")}`}
-                  className={a.isStub ? "index-card index-card--unavailable" : "index-card"}
-                >
-                  <div className="index-card-header">
-                    <span className="index-card-title">{a.title}</span>
-                  </div>
-                </Link>
-              ))}
+              {s.articles.map((a) => {
+                const articlePath = `content/${vertical}/${a.slug.join("/")}.md`;
+                return (
+                  <Link
+                    key={a.path}
+                    href={`/${vertical}/${a.slug.join("/")}/`}
+                    className={a.isStub ? "index-card index-card--unavailable" : "index-card"}
+                    data-article-path={articlePath}
+                  >
+                    <div className="index-card-header">
+                      <span className="index-card-title">
+                        {a.title}
+                        <span className="index-card-read-dot" aria-hidden="true" />
+                      </span>
+                      <span className="index-card-arrow">→</span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </section>
         ))}

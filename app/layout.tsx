@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { BookmarksModal } from "@/components/chrome/BookmarksModal";
+import { IconTooltip } from "@/components/chrome/IconTooltip";
+import { ToastHost } from "@/components/chrome/ToastHost";
+import { SearchModal } from "@/components/search/SearchModal";
+import { SessionInit } from "@/components/sync/SessionInit";
 import "../css/wiki.css";
 import "katex/dist/katex.min.css";
 
@@ -41,8 +47,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <div hidden dangerouslySetInnerHTML={{ __html: sprite }} />
-        <header className="topbar" />
         {children}
+        <SessionInit />
+        <BookmarksModal />
+        <AuthModal />
+        <SearchModal />
+        <ToastHost />
+        <IconTooltip />
         <script dangerouslySetInnerHTML={{ __html: swRegister }} />
       </body>
     </html>
