@@ -2,12 +2,6 @@ import type { Element, ElementContent, Properties, Root } from "hast";
 import { visit } from "unist-util-visit";
 import type { RenderContext } from "../types";
 
-// Faithful port of the markup half of js/content/code-blocks.js: each <pre> gets a
-// .code-header (traffic lights, language label, copy-button placeholder), a
-// data-code-origin string, and — for 3+ line blocks — .code-line spans plus a
-// has-line-numbers class. Copy-to-clipboard wiring is a cutover.md island.
-// Runs AFTER Shiki (addLanguageClass:true), which emits `class` as a plain string.
-
 function classList(props: Properties | undefined): string[] {
   const c = props?.className ?? props?.class;
   if (Array.isArray(c)) return c.map(String);

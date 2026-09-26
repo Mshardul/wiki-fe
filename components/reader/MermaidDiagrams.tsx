@@ -2,9 +2,6 @@
 
 import { useEffect } from "react";
 
-// Client-island render for pre.mermaid[data-mermaid-src] (spike fallback, mermaid-spike-result.md).
-// Reads --diagram-* tokens for theme, renders on mount, re-renders on theme change — no build-time render.
-
 function readThemeVariables(): Record<string, string> {
   const cs = getComputedStyle(document.documentElement);
   const v = (name: string) => cs.getPropertyValue(name).trim();

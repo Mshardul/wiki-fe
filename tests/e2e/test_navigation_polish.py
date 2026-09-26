@@ -1,192 +1,112 @@
-"""
-Navigation polish tests:
-- Index collapse-all / expand-all controls
-- Arrow key navigation on index cards
-- Wiki switcher hotkey (W)
-- Link graph hotkey (G)
-- Index view List/Graph toggle
-"""
+# Dropped: index collapse-all/expand-all (dead per test_index_ux.py's sweep — no producing control), link-graph g/G hotkey + list/graph view toggle (dropped per migration spec §9, confirmed via grep — no link-graph-modal/index-graph string in app/ or components/), mobile bottom-sheet switcher (.wiki-switcher-dialog/-drag-handle/-hint are orphaned CSS, WikiSwitcher.tsx never renders those elements). Arrow-key next/prev-within-section already covered by test_index_ux.py, not duplicated here.
 
 import pytest
 
 
-def _go_to_index(page, base_url):
-    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-index.active", timeout=20_000)
-    page.wait_for_selector(
-        "#index-sections:not(.index-sections--loading)", timeout=25_000
-    )
+def _go_to_index(page, base_url, slug="system-design"):
+    page.goto(f"{base_url}/{slug}/", wait_until="domcontentloaded")
+    page.wait_for_selector(".index-card:not(.index-card--unavailable)", timeout=10_000)
 
 
-def _go_to_article(page, base_url, slug="system-design/caching"):
-    page.goto(f"{base_url}/#{slug}", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
+def _go_to_article(page, base_url, path="system-design/components/caching/"):
+    page.goto(f"{base_url}/{path}", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
 
 
-# ── Collapse-all / Expand-all ────────────────────────────────────────────────
+def _go_home(page, base_url):
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector(".wiki-card", timeout=8_000)
 
-@pytest.mark.flaky(reruns=2, reruns_delay=1)
-def test_index_controls_rendered(page, base_url):
-    """Collapse-all and expand-all buttons appear on the index view."""
+
+SWITCHER_DIALOG = '[role="dialog"][aria-label="Switch wiki"]'
+
+
+# ── Arrow key navigation (boundary + reverse-direction cases not already covered) ──
+
+def test_arrow_down_stops_at_last_card_in_section(page, base_url):
     _go_to_index(page, base_url)
-    assert page.locator("#index-collapse-all").count() == 1
-    assert page.locator("#index-expand-all").count() == 1
-
-
-def test_collapse_all_collapses_every_section(page, base_url):
-    """Clicking collapse-all collapses all index sections."""
-    _go_to_index(page, base_url)
-    page.locator("#index-collapse-all").click()
-    page.wait_for_function(
-        "() => [...document.querySelectorAll('.index-section')].every(s => s.classList.contains('section--collapsed'))",
-        timeout=5_000,
-    )
-
-    all_collapsed = page.evaluate("""() => {
-        const sections = [...document.querySelectorAll('.index-section')];
-        return sections.every(s => s.classList.contains('section--collapsed'));
-    }""")
-    assert all_collapsed, "All sections must be collapsed after clicking collapse-all"
-
-
-def test_expand_all_expands_every_section(page, base_url):
-    """Clicking expand-all after collapse-all expands all sections."""
-    _go_to_index(page, base_url)
-    page.locator("#index-collapse-all").click()
-    page.wait_for_function(
-        "() => [...document.querySelectorAll('.index-section')].every(s => s.classList.contains('section--collapsed'))",
-        timeout=5_000,
-    )
-    page.locator("#index-expand-all").click()
-    page.wait_for_function(
-        "() => [...document.querySelectorAll('.index-section')].every(s => !s.classList.contains('section--collapsed'))",
-        timeout=5_000,
-    )
-
-    all_expanded = page.evaluate("""() => {
-        const sections = [...document.querySelectorAll('.index-section')];
-        return sections.every(s => !s.classList.contains('section--collapsed'));
-    }""")
-    assert all_expanded, "All sections must be expanded after clicking expand-all"
-
-
-# ── Arrow key navigation ─────────────────────────────────────────────────────
-
-def test_arrow_down_moves_focus_to_next_card(page, base_url):
-    """↓ arrow moves focus from first card to second within same section."""
-    _go_to_index(page, base_url)
-
-    page.evaluate("() => document.querySelectorAll('.index-card')[0].focus()")
+    cards = page.locator(".index-section").first.locator(".index-card")
+    last_idx = cards.count() - 1
+    cards.nth(last_idx).focus()
     page.keyboard.press("ArrowDown")
+    focused_title = page.evaluate(
+        "() => document.activeElement.querySelector('.index-card-title')?.textContent?.trim()"
+    )
+    last_title = cards.nth(last_idx).locator(".index-card-title").inner_text().strip()
+    assert focused_title == last_title
 
-    focused_idx = page.evaluate("""() => {
-        const cards = [...document.querySelectorAll('.index-card')];
-        return cards.indexOf(document.activeElement);
-    }""")
-    assert focused_idx == 1, f"Expected second card focused (idx 1), got idx {focused_idx}"
 
-
-def test_arrow_up_moves_focus_to_previous_card(page, base_url):
-    """↑ arrow moves focus from second card to first."""
+def test_arrow_up_moves_to_previous_card(page, base_url):
     _go_to_index(page, base_url)
-
-    page.evaluate("() => document.querySelectorAll('.index-card')[1].focus()")
+    cards = page.locator(".index-section").first.locator(".index-card")
+    cards.nth(1).focus()
     page.keyboard.press("ArrowUp")
-
-    focused_idx = page.evaluate("""() => {
-        const cards = [...document.querySelectorAll('.index-card')];
-        return cards.indexOf(document.activeElement);
-    }""")
-    assert focused_idx == 0, f"Expected first card focused (idx 0), got idx {focused_idx}"
-
-
-def test_arrow_down_stops_at_section_boundary(page, base_url):
-    """↓ arrow on last card in a section does not move to next section."""
-    _go_to_index(page, base_url)
-
-    last_in_section = page.evaluate("""() => {
-        const section = document.querySelector('.index-section');
-        const cards = [...section.querySelectorAll('.index-card:not(.index-card--unavailable)')];
-        if (cards.length === 0) return null;
-        cards[cards.length - 1].focus();
-        return cards.length - 1;
-    }""")
-    if last_in_section is None:
-        return
-
-    page.keyboard.press("ArrowDown")
-
-    still_in_section = page.evaluate("""() => {
-        const section = document.querySelector('.index-section');
-        return section.contains(document.activeElement);
-    }""")
-    assert still_in_section, "Focus must not cross section boundary on ↓ at last card"
+    focused_title = page.evaluate(
+        "() => document.activeElement.querySelector('.index-card-title')?.textContent?.trim()"
+    )
+    first_title = cards.first.locator(".index-card-title").inner_text().strip()
+    assert focused_title == first_title
 
 
 def test_enter_on_focused_card_navigates(page, base_url):
-    """Enter on a focused index card navigates to its content view."""
+    """Cards are real anchors, so Enter on a focused card is native browser navigation."""
     _go_to_index(page, base_url)
-    page.evaluate("""() => {
-        const card = document.querySelector('.index-card:not(.index-card--unavailable)');
-        if (card) card.focus();
-    }""")
+    card = page.locator(".index-card:not(.index-card--unavailable)").first
+    card.focus()
     page.keyboard.press("Enter")
-    page.wait_for_selector("#view-content.active", timeout=8_000)
+    page.wait_for_selector("#markdown-body", timeout=8_000)
 
 
-# ── Wiki switcher hotkey ─────────────────────────────────────────────────────
+# ── Wiki switcher hotkey (W) ─────────────────────────────────────────────────
 
 def test_w_hotkey_opens_switcher_from_content(page, base_url):
-    """W hotkey opens wiki switcher modal from content view."""
     _go_to_article(page, base_url)
     page.keyboard.press("w")
-    page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
+    page.wait_for_selector(SWITCHER_DIALOG, timeout=3_000)
 
 
 def test_w_hotkey_opens_switcher_from_index(page, base_url):
-    """W hotkey opens wiki switcher modal from index view."""
     _go_to_index(page, base_url)
     page.keyboard.press("w")
-    page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
+    page.wait_for_selector(SWITCHER_DIALOG, timeout=3_000)
 
 
-def test_w_hotkey_inactive_on_home(page, base_url):
-    """W hotkey does nothing on home view."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=5_000)
+def test_w_hotkey_opens_switcher_from_home(page, base_url):
+    """W has no isArticle gate in lib/hotkeys.ts, so it also opens from the home view."""
+    _go_home(page, base_url)
     page.keyboard.press("w")
-    page.wait_for_timeout(100)
-    modal_visible = page.locator("#wiki-switcher-modal").is_visible()
-    assert not modal_visible, "Wiki switcher must not open on home view"
+    page.wait_for_selector(SWITCHER_DIALOG, timeout=3_000)
+
+
+def test_w_hotkey_toggles_switcher_closed(page, base_url):
+    """WikiSwitcherHost flips open state on every dispatch, so a second W press closes it."""
+    _go_to_article(page, base_url)
+    page.keyboard.press("w")
+    page.wait_for_selector(SWITCHER_DIALOG, timeout=3_000)
+    page.keyboard.press("w")
+    page.wait_for_selector(SWITCHER_DIALOG, state="detached", timeout=2_000)
 
 
 def test_escape_closes_switcher(page, base_url):
-    """Escape closes the wiki switcher modal."""
     _go_to_article(page, base_url)
     page.keyboard.press("w")
-    page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
+    page.wait_for_selector(SWITCHER_DIALOG, timeout=3_000)
     page.keyboard.press("Escape")
-    page.wait_for_selector("#wiki-switcher-modal.hidden", state="attached", timeout=2_000)
+    page.wait_for_selector(SWITCHER_DIALOG, state="detached", timeout=2_000)
 
 
 def test_wiki_switcher_shows_wiki_cards(page, base_url):
-    """Wiki switcher modal lists available wikis as cards."""
     _go_to_article(page, base_url)
     page.keyboard.press("w")
-    page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
+    page.wait_for_selector(SWITCHER_DIALOG, timeout=3_000)
     card_count = page.locator(".wiki-switcher-card").count()
     assert card_count > 0, "Wiki switcher must show at least one wiki card"
 
 
 def test_wiki_switcher_card_names_not_undefined(page, base_url):
-    """Wiki switcher cards must render the wiki's title, not literal 'undefined'."""
     _go_to_article(page, base_url)
     page.keyboard.press("w")
-    page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
+    page.wait_for_selector(SWITCHER_DIALOG, timeout=3_000)
     names = page.locator(".wiki-switcher-card-name").all_inner_texts()
     assert names, "Wiki switcher must render at least one card name"
     assert all(n.strip() and n.strip() != "undefined" for n in names), (
@@ -194,188 +114,29 @@ def test_wiki_switcher_card_names_not_undefined(page, base_url):
     )
 
 
+def test_wiki_switcher_marks_current_vertical_active(page, base_url):
+    _go_to_article(page, base_url)
+    page.keyboard.press("w")
+    page.wait_for_selector(SWITCHER_DIALOG, timeout=3_000)
+    active = page.locator(".wiki-switcher-card--active")
+    assert active.count() == 1
+    assert "System Design" in active.inner_text()
+
+
+def test_wiki_switcher_card_click_navigates(page, base_url):
+    _go_to_article(page, base_url)
+    page.keyboard.press("w")
+    page.wait_for_selector(SWITCHER_DIALOG, timeout=3_000)
+    other_card = page.locator(".wiki-switcher-card:not(.wiki-switcher-card--active)").first
+    other_card.click()
+    page.wait_for_selector(SWITCHER_DIALOG, state="detached", timeout=3_000)
+    page.wait_for_url(lambda url: "/system-design" not in url, timeout=5_000)
+
+
 def test_overlay_click_closes_switcher(page, base_url):
-    """Clicking the backdrop closes the wiki switcher."""
+    """Root-cause fix: WikiSwitcher.tsx had className/backdropClassName swapped, so the dialog card covered the full viewport and no backdrop click could ever land outside it."""
     _go_to_article(page, base_url)
     page.keyboard.press("w")
-    page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
-    page.locator("#wiki-switcher-backdrop").click(position={"x": 5, "y": 5})
-    page.wait_for_selector("#wiki-switcher-modal.hidden", state="attached", timeout=2_000)
-
-
-# ── Link graph hotkey (G) ────────────────────────────────────────────────────
-
-def test_g_hotkey_opens_link_graph_from_content(page, base_url):
-    """G hotkey opens the link graph modal from content view."""
-    _go_to_article(page, base_url)
-    page.keyboard.press("g")
-    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
-
-
-def test_g_hotkey_opens_link_graph_from_index(page, base_url):
-    """G hotkey opens the link graph modal from index view."""
-    _go_to_index(page, base_url)
-    page.keyboard.press("g")
-    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
-
-
-def test_g_hotkey_opens_link_graph_from_home(page, base_url):
-    """G hotkey opens the link graph modal from home view."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=5_000)
-    page.keyboard.press("g")
-    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
-
-
-def test_g_hotkey_toggles_link_graph_closed(page, base_url):
-    """Pressing G again while the link graph is open closes it."""
-    _go_to_article(page, base_url)
-    page.keyboard.press("g")
-    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
-    page.keyboard.press("g")
-    page.wait_for_selector("#link-graph-modal.hidden", state="attached", timeout=2_000)
-
-
-def test_escape_closes_link_graph(page, base_url):
-    """Escape closes the link graph modal."""
-    _go_to_article(page, base_url)
-    page.keyboard.press("g")
-    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
-    page.keyboard.press("Escape")
-    page.wait_for_selector("#link-graph-modal.hidden", state="attached", timeout=2_000)
-
-
-def test_link_graph_renders_canvas_with_status(page, base_url):
-    """Link graph modal draws a canvas and shows an article/link count status."""
-    _go_to_article(page, base_url)
-    page.keyboard.press("g")
-    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
-    page.wait_for_function(
-        "() => document.querySelector('#link-graph-status').textContent.includes('articles')",
-        timeout=5_000,
-    )
-    assert page.locator("#link-graph-canvas").is_visible()
-
-
-def test_link_graph_concurrent_open_while_loading(page, base_url):
-    """Rapid re-open while the graph is still loading must not leak a second simulation."""
-    _go_to_article(page, base_url)
-    page.evaluate(
-        """async () => {
-            const m = await import('/js/app/link-graph.js');
-            await Promise.all([m.openLinkGraph(), m.openLinkGraph()]);
-        }"""
-    )
-    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=5_000)
-    page.wait_for_function(
-        "() => document.querySelector('#link-graph-status').textContent.includes('articles')",
-        timeout=15_000,
-    )
-    page.keyboard.press("Escape")
-    page.wait_for_selector("#link-graph-modal.hidden", state="attached", timeout=5_000)
-
-    page.evaluate("() => import('/js/app/link-graph.js').then((m) => m.openLinkGraph())")
-    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=5_000)
-    page.wait_for_function(
-        "() => document.querySelector('#link-graph-status').textContent.includes('articles')",
-        timeout=15_000,
-    )
-
-
-def test_link_graph_search_locates_node(page, base_url):
-    """Typing a matching title in the graph search box locates that node."""
-    _go_to_article(page, base_url)
-    page.keyboard.press("g")
-    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
-    page.wait_for_function(
-        "() => document.querySelector('#link-graph-status').textContent.includes('articles')",
-        timeout=5_000,
-    )
-    page.locator("#link-graph-search").fill("Caching")
-    page.wait_for_function(
-        "() => (document.getElementById('link-graph-canvas').dataset.locatedTitle || '').length > 0",
-        timeout=3_000,
-    )
-
-
-def test_overlay_click_closes_link_graph(page, base_url):
-    """Clicking the backdrop closes the link graph modal."""
-    _go_to_article(page, base_url)
-    page.keyboard.press("g")
-    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
-    page.locator("#link-graph-backdrop").click(position={"x": 5, "y": 5})
-    page.wait_for_selector("#link-graph-modal.hidden", state="attached", timeout=2_000)
-
-
-def test_close_button_closes_link_graph(page, base_url):
-    """Clicking the close button closes the link graph modal."""
-    _go_to_article(page, base_url)
-    page.keyboard.press("g")
-    page.wait_for_selector("#link-graph-modal:not(.hidden)", timeout=3_000)
-    page.locator("#link-graph-close").click()
-    page.wait_for_selector("#link-graph-modal.hidden", state="attached", timeout=2_000)
-
-
-# ── Index graph view toggle ──────────────────────────────────────────────────
-
-def test_index_view_toggle_rendered(page, base_url):
-    """List/Graph toggle button appears alongside collapse/expand controls."""
-    _go_to_index(page, base_url)
-    assert page.locator("#index-view-toggle").count() == 1
-
-
-def test_index_view_toggle_switches_to_graph_mode(page, base_url):
-    """Clicking the view toggle hides the section list and shows the graph canvas."""
-    _go_to_index(page, base_url)
-    page.locator("#index-view-toggle").click()
-    page.wait_for_selector("#index-graph-wrap:not(.hidden)", timeout=3_000)
-    page.wait_for_selector("#index-sections.hidden", state="attached", timeout=3_000)
-    assert page.locator("#index-graph-canvas").is_visible()
-
-
-def test_index_view_toggle_switches_back_to_list_mode(page, base_url):
-    """Clicking the view toggle twice returns to the section list."""
-    _go_to_index(page, base_url)
-    page.locator("#index-view-toggle").click()
-    page.wait_for_selector("#index-graph-wrap:not(.hidden)", timeout=3_000)
-    page.locator("#index-view-toggle").click()
-    page.wait_for_selector("#index-sections:not(.hidden)", timeout=3_000)
-    page.wait_for_selector("#index-graph-wrap.hidden", state="attached", timeout=3_000)
-
-
-def test_index_graph_mode_persists_across_reload(page, base_url):
-    """Graph view mode is remembered via localStorage across a reload."""
-    _go_to_index(page, base_url)
-    page.locator("#index-view-toggle").click()
-    page.wait_for_selector("#index-graph-wrap:not(.hidden)", timeout=3_000)
-    page.reload(wait_until="domcontentloaded")
-    page.wait_for_selector("#view-index.active", timeout=10_000)
-    page.wait_for_selector("#index-graph-wrap:not(.hidden)", timeout=5_000)
-
-
-def test_leaving_index_tears_down_graph(page, base_url):
-    """Navigating away from the index view while in graph mode doesn't leave the sim running."""
-    _go_to_index(page, base_url)
-    page.locator("#index-view-toggle").click()
-    page.wait_for_selector("#index-graph-wrap:not(.hidden)", timeout=3_000)
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=5_000)
-
-
-def test_wiki_switcher_is_bottom_sheet_on_mobile(page, base_url):
-    """On narrow viewports the switcher docks to the bottom edge with a drag handle."""
-    page.set_viewport_size({"width": 390, "height": 800})
-    _go_to_article(page, base_url)
-    page.keyboard.press("w")
-    page.wait_for_selector("#wiki-switcher-modal:not(.hidden)", timeout=3_000)
-    dialog_box = page.locator(".wiki-switcher-dialog").bounding_box()
-    viewport_height = page.viewport_size["height"]
-    assert dialog_box["y"] + dialog_box["height"] >= viewport_height - 2, (
-        "Wiki switcher dialog should be docked to the bottom edge on mobile"
-    )
-    assert page.locator(".wiki-switcher-drag-handle").is_visible(), (
-        "Drag handle should be visible on mobile"
-    )
-    assert not page.locator(".wiki-switcher-hint").is_visible(), (
-        "Keyboard shortcut hint should be hidden on mobile"
-    )
+    page.wait_for_selector(SWITCHER_DIALOG, timeout=3_000)
+    page.locator(".wiki-switcher-modal").click(force=True, position={"x": 5, "y": 5})
+    page.wait_for_selector(SWITCHER_DIALOG, state="detached", timeout=2_000)

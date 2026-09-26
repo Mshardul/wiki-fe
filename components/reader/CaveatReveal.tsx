@@ -2,8 +2,6 @@
 
 import { useEffect } from "react";
 
-// Reveals the .caveat-body inside a .caveat-marker (emitted by rehypeGlossaryCaveatMarkers) on click / Enter / Space.
-// Ported from js/content/glossary-caveats.js addInlineCaveats reveal half.
 export function CaveatReveal() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

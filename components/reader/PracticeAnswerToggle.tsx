@@ -5,8 +5,6 @@ import { useEffect } from "react";
 const EYE_OFF = '<svg class="icon" aria-hidden="true"><use href="#icon-eye-off"></use></svg>';
 const EYE = '<svg class="icon" aria-hidden="true"><use href="#icon-eye"></use></svg>';
 
-// Adds an eye toggle to each .problem-answer (emitted by rehypePracticeAnswer).
-// Ported from js/content/practice-toggle.js _wireProblem / _setAnswerHidden.
 export function PracticeAnswerToggle() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

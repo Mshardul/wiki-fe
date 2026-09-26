@@ -6,8 +6,6 @@ const COLLAPSE_LINES_DESKTOP = 10;
 const COLLAPSE_LINES_MOBILE = 5;
 const APPROX_LINE_HEIGHT_PX = 24;
 
-// Adds a Show more / Show less toggle to tall or explicitly-collapsed callouts.
-// Ported from js/content/formatting.js addCollapsibleCallouts. Markup from rehypeCallouts.
 export function CalloutCollapse() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

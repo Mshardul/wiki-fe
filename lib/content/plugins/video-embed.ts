@@ -1,9 +1,7 @@
 import type { Html, Paragraph, Root } from "mdast";
 import { visit } from "unist-util-visit";
 
-// Faithful port of js/content/video-embed.js: a paragraph that is nothing but a
-// bare YouTube/Vimeo URL becomes a responsive iframe embed. A URL inside prose
-// is left untouched.
+// A paragraph that is nothing but a bare YouTube/Vimeo URL becomes a responsive iframe embed; a URL inside prose is left untouched.
 
 const YOUTUBE_RE =
   /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=([\w-]+)(?:&\S*)?|youtu\.be\/([\w-]+))\/?$/;

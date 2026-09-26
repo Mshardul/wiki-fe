@@ -23,12 +23,7 @@ import { remarkVideoEmbed } from "./plugins/video-embed";
 import { remarkViz } from "./plugins/viz";
 import type { RenderContext } from "./types";
 
-// Custom-plugin order mirrors js/render/content-view.js. Remark phase handles
-// fenced-block / paragraph transforms before remark-rehype; rehype phase does
-// section-wrap first so prerequisites and practice-answer can target
-// .section-body / .subsection-body, then code-header after Shiki so it can wrap
-// the highlighted output. Footnotes are left to remark-gfm's native support
-// (no article uses the syntax, and GFM output is the standard).
+// Order matters: section-wrap must run before prerequisites/practice-answer (they target .section-body/.subsection-body), code-header must run after Shiki (it wraps the highlighted output).
 export function createProcessor(ctx: RenderContext): Processor {
   return unified()
     .use(remarkParse)
@@ -43,7 +38,17 @@ export function createProcessor(ctx: RenderContext): Processor {
     .use(rehypeSectionWrap)
     .use(rehypeKatex)
     .use(rehypeSlug)
-    .use(rehypeAutolinkHeadings, { behavior: "append" })
+    .use(rehypeAutolinkHeadings, {
+      behavior: "append",
+      content: {
+        type: "element",
+        tagName: "svg",
+        properties: { className: ["icon"], ariaHidden: "true" },
+        children: [
+          { type: "element", tagName: "use", properties: { href: "#icon-anchor" }, children: [] },
+        ],
+      },
+    })
     .use(rehypeCallouts)
     .use(rehypePrerequisites, ctx)
     .use(rehypePracticeAnswer)

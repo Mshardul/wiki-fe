@@ -9,8 +9,6 @@ function langOf(pre: HTMLElement): string {
   return cls ? (cls[1] ?? "text") : "text";
 }
 
-// Builds a tab widget over the .tabbed-code wrapper emitted by remarkTabbedCode.
-// Ported from js/content/formatting.js _buildTabWidget + addTabbedCodeBlocks.
 export function TabbedCode() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

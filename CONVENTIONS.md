@@ -137,9 +137,9 @@ The Next migration puts every runtime client island under `components/`, one fol
     settings/   PreferencesModal, ThemeControls, DistractionFree, PrintTrigger, ClearData
     sync/       (hooks, not visual)
     mobile/     TocDrawer, SwipeGestures, PanelCloseRegistry, ViewportHandler
-    pwa/        SaveOffline, InstallPrompt, IosNudge
+    pwa/        SaveOffline, InstallPrompt, IosNudge, OfflineShelf
   ```
-- **`lib/storage/`** owns all `localStorage` access + the cache-through sync half; **`lib/api.ts`** is the single `wiki-be` client (framework-agnostic, no Next coupling); **`lib/toast.ts`** owns the toast queue. Components call these, never touch `localStorage` or `fetch` a backend directly.
+- **`lib/storage/`** owns all `localStorage` access + the cache-through sync half; **`lib/api.ts`** is the single `wiki-be` client (framework-agnostic, no Next coupling); **`lib/toast.ts`** owns the toast queue; **`lib/pwa/`** owns Cache Storage ops (`article-cache.ts`) + install-prompt helpers. Components call these, never touch `localStorage`, `caches`, or `fetch` a backend directly.
 - Comments follow the JavaScript rules above - sparse, one line, `why` not `what`, no ticket IDs.
 
 ---

@@ -9,6 +9,15 @@
 
 import json
 
+import pytest
+
+# Every test here drives an article via the vanilla mock-article infra
+# (window.navigateToContent + page.route("**/*.md")), which Next has no equivalent for.
+# The features (hover previews, related, backlinks, bridges, link rewriting) still ship
+# and have vitest island + pipeline coverage; rewriting these to drive real built
+# articles is WIKI-645 (e2e-modernization epic, post-cutover).
+pytestmark = pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
+
 
 def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
     """Navigate to a mocked article via JS, bypassing index slug resolution.

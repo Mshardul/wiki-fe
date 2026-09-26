@@ -5,8 +5,6 @@ import { loadDataJson } from "@/lib/storage/data-json";
 
 const DELAY_MS = 400;
 
-// Positions a preview card on internal-link hover, from the build-time previews.json.
-// Ported from js/render/content-view.js hover-preview wiring.
 export function HoverPreview() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

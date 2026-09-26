@@ -22,7 +22,7 @@ const listeners = new Set<Listener>();
 let current: ActiveToast | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
-// Higher priority jumps ahead of queued lower-priority toasts (stable among equal). Ported from js/render/toast.js.
+// Higher priority jumps ahead of queued lower-priority toasts (stable among equal).
 export function showToast(message: string, opts: ToastOptions = {}): void {
   const entry: ActiveToast = {
     message,

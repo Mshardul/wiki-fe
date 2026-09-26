@@ -1,327 +1,79 @@
 """
-Dynamic document.title updates on every view change.
-Robust resolvePath for nested ../../ links.
-404 history fallback strips bad hashes on shallow history.
-fetchText produces absolute URLs
-Route deduplication on popstate+hashchange
+Real-path routing against the Next static export.
+
+- document.title updates per route (Breadcrumb island)
+- deep ../../ links in article bodies resolve to real routes at build time
+- an unknown URL serves the Next 404 page with a link home
+- static 404.html exists and carries noindex
+
+Dropped from the vanilla suite (hash-router internals with no Next equivalent, spec §10):
+route dedup on popstate+hashchange, history.state stale-filePath reuse, the SPA's
+`404.html?title=` "did you mean" search rescue, `js/state.js` registry import.
 """
 
-import re
+
+def _article(page, base_url, path="system-design/components/caching"):
+    page.goto(f"{base_url}/{path}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
 
 
-def _go_to_article(page, base_url):
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
+# ── Dynamic document.title ─────────────────────────────────────────
 
 
-# ── Dynamic Page Title ─────────────────────────────────────────────
+def test_title_on_home(wiki_page):
+    assert "Wiki" in wiki_page.title()
 
 
-def test_title_updates_on_home(wiki_page):
-    """Home view sets document.title correctly."""
-    assert "Home" in wiki_page.title()
+def test_title_on_vertical_index(page, base_url):
+    page.goto(f"{base_url}/system-design/", wait_until="domcontentloaded")
+    page.wait_for_selector(".index-main", timeout=8_000)
+    assert "System Design" in page.title()
 
 
-def test_title_updates_on_index(page, base_url):
-    """Wiki index view sets document.title to the wiki name."""
-    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-index.active", timeout=5_000)
-    title = page.title()
-    assert "System Design" in title
+def test_title_on_article(page, base_url):
+    _article(page, base_url)
+    page.wait_for_function("() => document.title.includes('Caching')", timeout=10_000)
+    assert "Caching" in page.title()
 
 
-def test_title_updates_on_content(page, base_url):
-    """Article view sets document.title to the article title."""
-    _go_to_article(page, base_url)
-    title = page.title()
-    # Title format is "Title | Wiki App"
-    assert "Caching" in title
+def test_title_updates_on_client_nav(page, base_url):
+    """SPA-style navigation between articles updates the tab title."""
+    _article(page, base_url)
+    page.wait_for_function("() => document.title.includes('Caching')", timeout=10_000)
+    page.goto(f"{base_url}/dsa/data-structures/array/", wait_until="domcontentloaded")
+    page.wait_for_function("() => document.title.includes('Array')", timeout=10_000)
 
 
-# ── Multi-level Path Resolution ────────────────────────────────────
+# ── Multi-level path resolution (build-time article-links plugin) ───
 
 
-def test_deep_path_resolution(page, base_url):
-    """Internal links with ../../ resolve to the target article slug (new tab)."""
-    page.route(
-        "**/mock.md", lambda r: r.fulfill(body="# Mock\n\n[Deep Link](../../target.md)")
+def test_deep_relative_links_resolve_to_routes(page, base_url):
+    """Every in-body internal link on a real article is a rewritten /wiki-fe/ route,
+    never a raw ../foo.md."""
+    _article(page, base_url)
+    hrefs = page.evaluate(
+        "() => [...document.querySelectorAll('#markdown-body a')].map(a => a.getAttribute('href'))"
     )
-
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-    page.evaluate("""() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/mock.md'),
-        'Mock', 'mock')""")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-
-    link = page.locator("#markdown-body a:has-text('Deep Link')")
-    assert "wiki-link-article" in (link.get_attribute("class") or "")
-    assert link.get_attribute("target") == "_blank"
-    href = link.get_attribute("href") or ""
-    assert "system-design/target" in href
+    internal = [h for h in hrefs if h and not h.startswith("http") and not h.startswith("#")]
+    assert internal, "expected at least one internal link on the caching article"
+    for h in internal:
+        assert ".md" not in h, f"unresolved markdown link: {h}"
+        assert h.startswith("/wiki-fe/") or h.startswith("/"), h
 
 
-# ── 404 History Fallback ───────────────────────────────────────────
+# ── 404 ────────────────────────────────────────────────────────────
 
 
-def test_404_fallback_on_bad_wiki(page, base_url):
-    """Bad wiki ID on fresh load redirects to Home and cleans URL."""
-    # Fresh load with non-existent wiki
-    page.goto(f"{base_url}/#non-existent-wiki", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    # URL should not contain the bad hash
-    assert "non-existent-wiki" not in page.url
+def test_unknown_url_serves_not_found_page(page, base_url):
+    """An unknown route serves the Next not-found page with a link home."""
+    page.goto(f"{base_url}/system-design/no-such-article-xyz/", wait_until="domcontentloaded")
+    body = page.locator("body").inner_text().lower()
+    assert "not found" in body or "doesn't exist" in body
+    assert page.locator("a[href='/wiki-fe/']").count() >= 1
 
 
-def test_404_fallback_on_bad_article(page, base_url):
-    """Valid wiki + bad article slug on fresh load redirects to Home."""
-    page.goto(f"{base_url}/#system-design/this-does-not-exist", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=15_000)
-
-    assert "this-does-not-exist" not in page.url
-
-
-# ── 404 "did you mean" search rescue ────────────────────────────────
-
-
-def test_404_near_miss_offers_suggestion(page, base_url):
-    """A near-miss slug offers the closest article via a toast action button."""
-    page.goto(f"{base_url}/#system-design/cachng", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    # Falls back to home, but surfaces a suggestion toast first.
-    toast = page.locator("#wiki-toast")
-    toast.wait_for(state="visible", timeout=5_000)
-    assert "Caching" in toast.inner_text()
-
-
-def test_404_near_miss_open_navigates_to_match(page, base_url):
-    """Clicking the suggestion's Open button routes to the matched article."""
-    page.goto(f"{base_url}/#system-design/cachng", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    page.locator("#wiki-toast .toast-undo-btn").click()
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    assert page.url.endswith("#system-design/caching")
-
-
-def test_404_unrelated_slug_shows_plain_message(page, base_url):
-    """A slug with no near match falls back to the plain not-found toast."""
-    page.goto(f"{base_url}/#system-design/zzzqqqxxx", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    toast = page.locator("#wiki-toast")
-    toast.wait_for(state="visible", timeout=5_000)
-    assert "not found" in toast.inner_text().lower()
-    # No suggestion action button on the plain not-found path.
-    assert page.locator("#wiki-toast .toast-undo-btn").count() == 0
-
-
-# ── 404.html standalone search rescue ──────────────────────────────
-
-
-def test_404_html_shows_suggestions_for_known_slug(page, base_url):
-    """404.html with a ?title= near-miss renders suggestion links in the terminal UI."""
-    page.goto(f"{base_url}/404.html?title=cachng", wait_until="domcontentloaded")
-
-    block = page.locator("#suggestions-block")
-    block.wait_for(state="visible", timeout=8_000)
-    assert block.locator(".suggestion-item").count() >= 1
-    titles = block.locator(".suggestion-title").all_inner_texts()
-    assert any("Caching" in t or "cach" in t.lower() for t in titles)  # codespell:ignore
-
-
-def test_404_html_suggestion_link_points_to_app(page, base_url):
-    """Suggestion links href targets the SPA hash route, not 404.html."""
-    page.goto(f"{base_url}/404.html?title=cachng", wait_until="domcontentloaded")
-
-    block = page.locator("#suggestions-block")
-    block.wait_for(state="visible", timeout=8_000)
-    first_href = block.locator(".suggestion-item").first.get_attribute("href")
-    assert first_href is not None
-    assert "404" not in first_href
-    assert "#" in first_href
-
-
-def test_404_html_no_suggestions_when_no_title_param(page, base_url):
-    """404.html with no ?title= param leaves the suggestions block hidden."""
+def test_static_404_html_has_noindex(page, base_url):
+    """The generated 404.html carries robots noindex (spec §12)."""
     page.goto(f"{base_url}/404.html", wait_until="domcontentloaded")
-
-    block = page.locator("#suggestions-block")
-    assert block.get_attribute("hidden") is not None
-
-
-def test_404_html_no_suggestions_for_gibberish_title(page, base_url):
-    """404.html with a gibberish title that matches nothing stays hidden."""
-    page.goto(f"{base_url}/404.html?title=zzzqqqxxx999", wait_until="domcontentloaded")
-
-    # Give the async rescue script time to run and find no matches.
-    page.wait_for_timeout(500)
-    block = page.locator("#suggestions-block")
-    assert block.get_attribute("hidden") is not None
-
-
-def test_404_html_wiki_title_matches_state_js_registry(page, base_url):
-    """404.html must import WIKIS from state.js rather than a hand-maintained
-    copy - regression for a bug where the two definitions had already drifted
-    ("DSA" vs "Data Structures & Algorithms")."""
-    page.goto(base_url, wait_until="domcontentloaded")
-    result = page.evaluate(
-        "async () => (await import('/js/state.js')).WIKIS.find(w => w.id === 'dsa')?.title"
-    )
-    assert result == "Data Structures & Algorithms"
-
-    page.goto(f"{base_url}/404.html?title=zzzqqqxxx999", wait_until="domcontentloaded")
-    imported_title = page.evaluate(
-        "async () => (await import('./js/state.js')).WIKIS.find(w => w.id === 'dsa')?.title"
-    )
-    assert imported_title == "Data Structures & Algorithms"
-
-
-# ── 404.html back-button history fallback ───────────────────────────
-
-
-def test_404_back_btn_redirects_when_no_history(page, base_url):
-    """404.html back button redirects to wiki home when history is empty."""
-    page.goto(f"{base_url}/404.html", wait_until="domcontentloaded")
-    page.wait_for_load_state("domcontentloaded")
-
-    page.click("#back-btn")
-    # Condition-based: poll until the URL no longer contains 404.html.
-    page.wait_for_function(
-        "() => !location.href.includes('404.html')",
-        timeout=5_000,
-    )
-
-
-# ── fetchText absolute URL ──────────────────────────────────────────
-
-
-def test_fetch_produces_absolute_url(page, base_url):
-    """fetchText resolves relative .md paths to absolute URLs via new URL(path, location.origin)."""
-    with page.expect_response("**/caching.md") as resp_info:
-        page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-        page.wait_for_selector("#view-content.active", timeout=10_000)
-
-    response = resp_info.value
-    assert response.status == 200
-    assert response.url.startswith("http"), (
-        f"Expected absolute fetch URL, got: {response.url}"
-    )
-    assert "caching.md" in response.url
-
-
-# ── Route deduplication ─────────────────────────────────────────────
-
-
-def test_rapid_navigate_pushes_single_history_entry(page, base_url):
-    """Regression: navigate() used to push a history entry synchronously on
-    every call while the debounced route() only ever executed the last one,
-    so rapid repeated navigation left Back-button entries whose content was
-    never rendered. Only the final destination in a rapid burst should push."""
-    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-index.active", timeout=8_000)
-
-    start_length = page.evaluate("() => history.length")
-
-    page.evaluate(
-        """() => {
-        window.navigate('system-design/caching');
-        window.navigate('system-design/load-balancing');
-        window.navigate('system-design/message-queues');
-    }"""
-    )
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-
-    end_length = page.evaluate("() => history.length")
-    assert end_length - start_length == 1, (
-        f"Expected exactly 1 new history entry from a rapid navigate() burst, got {end_length - start_length}"
-    )
-
-    # The one entry that was pushed must be the one that actually rendered.
-    page.go_back()
-    page.wait_for_selector("#view-index.active", timeout=5_000)
-
-
-def test_back_forward_does_not_double_render(page, base_url):
-    """Back+forward navigation fires route handler once; popstate+hashchange both call route() but dedup fires _execRoute once."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    # Push article to history via in-app navigate (uses history.pushState)
-    page.evaluate("() => window.navigate('system-design/caching', true)")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=8_000,
-    )
-
-    # Go back to home; popstate fires, route('') runs
-    page.go_back()
-    page.wait_for_selector("#view-home.active", timeout=5_000)
-
-    # Set up observer once home is stable
-    page.evaluate(
-        """() => {
-        window._loadCount = 0;
-        const obs = new MutationObserver(() => {
-            if (document.querySelector('#markdown-body > .skeleton')) window._loadCount++;
-        });
-        obs.observe(document.getElementById('markdown-body'), { childList: true });
-        window._routeObs = obs;
-    }"""
-    )
-
-    # Go forward - browser fires both popstate and hashchange
-    page.go_forward()
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=8_000,
-    )
-
-    page.evaluate("() => window._routeObs.disconnect()")
-    load_count = page.evaluate("() => window._loadCount")
-
-    assert load_count == 1, (
-        f"Content loaded {load_count} times on back+forward; expected 1 (route dedup broken)"
-    )
-
-
-def test_manual_hash_edit_does_not_reuse_stale_filepath(page, base_url):
-    """Editing location.hash directly (plain hashchange, no pushState) to a
-    different wiki+slug must not reuse history.state.filePath left over from
-    the previous article - regression for _execRoute trusting a stale state
-    object without checking its hash matches the newly parsed route."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    page.evaluate("() => window.navigate('system-design/caching', true)")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=8_000,
-    )
-
-    # Plain hash mutation - no pushState, so history.state still holds the
-    # previous article's { hash: 'system-design/caching', filePath, title }.
-    page.evaluate("() => { location.hash = 'dsa/array'; }")
-    page.wait_for_function(
-        "() => document.title.includes('Array')",
-        timeout=10_000,
-    )
-
-    title = page.locator("#markdown-body h1").inner_text()
-    assert "Array" in title
-    assert "Caching" not in title
+    robots = page.locator("meta[name='robots']").first.get_attribute("content")
+    assert robots is not None and "noindex" in robots

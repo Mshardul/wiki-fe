@@ -1,11 +1,6 @@
 import type { Code, Html, Root } from "mdast";
 import { visit } from "unist-util-visit";
 
-// Faithful port of js/content/structure-viz.js: a ```viz fence (line 1 = type,
-// line 2 = JSON array) becomes an inline SVG in a .structure-viz wrapper. A parse
-// failure or unknown type leaves the raw code block as fallback. Deterministic —
-// no client behaviour.
-
 const NODE_R = 16;
 const LEVEL_H = 56;
 const SVG_PAD = 20;

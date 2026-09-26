@@ -4,9 +4,7 @@ import { clearCompletions, pullCompletions } from "./completions";
 import { clearRecents, pullRecents } from "./recents";
 import { getSession } from "./session";
 
-// Cache-through orchestrator. Ported from js/state.js scheduleSyncMutation +
-// js/storage/settings-theme.js Sync. Local is the instant read path + UI source of truth;
-// the API is the durable store; writes are fire-and-forget.
+// Cache-through orchestrator: local is the instant read path + UI source of truth; the API is the durable store; writes are fire-and-forget.
 
 const queues = new Map<string, Promise<unknown>>();
 
@@ -32,7 +30,6 @@ export function scheduleSyncMutation(key: string, fn: () => Promise<unknown>): v
   } else if (status === "loading") {
     bootQueue.push(() => sequenced(key, fn));
   }
-  // status "out": local-only, nothing to sync
 }
 
 export async function flushBootMutations(): Promise<void> {
@@ -49,7 +46,6 @@ export async function pullAll(): Promise<void> {
   await Promise.allSettled([pullBookmarks(), pullRecents(), pullCompletions()]);
 }
 
-// Logout: drop every synced local cache.
 export function clearUserDataCache(): void {
   clearBookmarks();
   clearRecents();

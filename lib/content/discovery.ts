@@ -2,9 +2,7 @@ import { readFileSync } from "node:fs";
 import { posix } from "node:path";
 import { verticalRegistry } from "./verticals";
 
-// index.md format (matches js/render/home-parse.js parseIndexMd):
-// `## Heading` starts a section; rows are `| [Title](./rel/path.md) | Description |`;
-// headings matching skipHeadings are not article sections.
+// index.md format: `## Heading` starts a section; rows are `| [Title](./rel/path.md) | Description |`; headings matching skipHeadings are not article sections.
 const SKIP_HEADINGS = ["how to use", "contributing", "deferred", "not yet filed"];
 const ROW_RE = /^\|\s*\[([^\]]+)\]\(([^)]+\.md)\)\s*\|\s*([^|]*?)\s*\|/;
 
@@ -58,7 +56,6 @@ export function parseIndexSections(markdown: string, verticalDir: string): Index
   return sections;
 }
 
-// Ports js/render/learning-paths.js TRACK_TABLE_ROW_RE.
 const TRACK_ROW_RE = /^\|\s*[\w.]+\s*\|\s*\[([^\]]+)\]\(([^)]+\.md)\)\s*\|/;
 
 export interface TrackRow {

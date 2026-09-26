@@ -6,7 +6,7 @@ import { getRecents } from "@/lib/storage/recents";
 import { broadcastSessionChange, setSession } from "@/lib/storage/session";
 import { clearUserDataCache, pullAll } from "@/lib/storage/sync";
 
-// NETWORK carries the raw fetch-failure string — never surface it verbatim. Ported from js/auth.js _authErrorMessage.
+// NETWORK carries the raw fetch-failure string — never surface it verbatim.
 export function authErrorMessage(e: unknown, fallback: string): string {
   if (!(e instanceof ApiError)) return fallback;
   if (e.code === "NETWORK")
@@ -24,7 +24,6 @@ function hasLocalData(): boolean {
 }
 
 // Returns false only if the user chose "Keep" and the import failed — caller must then skip pullAll().
-// Ported from js/auth.js maybeMigrate.
 export async function migrateAnonData(keep: boolean): Promise<boolean> {
   if (!hasLocalData()) return true;
   if (!keep) {
@@ -51,7 +50,6 @@ interface FlowResult {
   code?: string;
 }
 
-// After a login / reset that returns a session: store the token, flip session, sync.
 async function completeSession(
   res: { user: import("@/lib/api").User; session_token: string },
   keep: boolean,

@@ -1,7 +1,6 @@
 import { api, getSessionToken, setSessionToken, type User } from "@/lib/api";
 
-// Session state. Identity is never cached in localStorage (CONVENTIONS.md) — memory only,
-// with a broadcast key that fires `storage` in other tabs. Ported from js/auth.js.
+// Identity is never cached in localStorage — memory only; a broadcast key fires storage in other tabs.
 
 export type SessionStatus = "loading" | "in" | "out";
 export interface Session {
@@ -35,7 +34,6 @@ export function broadcastSessionChange(): void {
   }
 }
 
-// A boot probe: skip GET /auth/me entirely if there is no token.
 export async function initSession(): Promise<void> {
   if (!getSessionToken()) {
     setSession({ user: null, status: "out" });
@@ -50,7 +48,6 @@ export async function initSession(): Promise<void> {
   }
 }
 
-// Cross-tab: another tab logged in/out — re-probe and catch up.
 export function bindCrossTabSession(onChange: (wasIn: boolean) => void): () => void {
   const handler = (e: StorageEvent) => {
     if (e.key !== SYNC_KEY) return;

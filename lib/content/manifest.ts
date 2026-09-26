@@ -14,7 +14,7 @@ const GENERATED_PATH = "lib/content/generated/manifest.json";
 
 let builtParts: { verticals: Vertical[]; articles: ManifestArticle[] } | null = null;
 
-// articleCount is the total index.md count incl. stubs, matching js/render/home-parse.js updateArticleCounts.
+// articleCount is the total index.md count incl. stubs.
 export async function buildManifest(): Promise<Manifest> {
   if (!builtParts) {
     const articles: ManifestArticle[] = [];
@@ -52,7 +52,6 @@ export async function getManifest(): Promise<Manifest> {
   return manifestCache;
 }
 
-// Emitted file only, null before the first content build.
 export function getManifestSync(): Manifest | null {
   manifestCache ??= readGeneratedManifest();
   return manifestCache;

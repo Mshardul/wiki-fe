@@ -1,4 +1,4 @@
-// execCommand fallback for non-secure contexts. Ported from js/content/code-blocks.js writeToClipboard.
+// execCommand fallback for non-secure contexts.
 export function writeToClipboard(text: string): Promise<void> {
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
   try {

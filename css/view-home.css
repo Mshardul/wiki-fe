@@ -90,6 +90,15 @@
   gap: var(--s5);
 }
 
+/* card wrapper holds the pin button as a sibling of the <a> (no nested interactive content) */
+.wiki-card-wrap {
+  position: relative;
+  display: flex;
+}
+.wiki-card-wrap .wiki-card {
+  flex: 1;
+}
+
 .wiki-card {
   position: relative;
   background: var(--surface);
@@ -168,9 +177,17 @@
   opacity: 0;
   transition: opacity var(--t-fast), color var(--t-fast);
 }
-.wiki-card:hover .wiki-card-pin-btn,
+.wiki-card-wrap:hover .wiki-card-pin-btn,
 .wiki-card-pin-btn.pinned {
   opacity: 1;
+}
+/* touch devices have no hover — always show, and meet the 44px target (WIKI-406) */
+@media (pointer: coarse) {
+  .wiki-card-pin-btn {
+    width: 44px;
+    height: 44px;
+    opacity: 1;
+  }
 }
 .wiki-card-pin-btn.pinned {
   color: var(--accent-light);

@@ -3,10 +3,7 @@ import { visit } from "unist-util-visit";
 import { resolveContentHref } from "../paths";
 import type { RenderContext } from "../types";
 
-// Faithful port of js/content/formatting.js renderPrerequisites: the "Prerequisites"
-// H2 + its UL become a .prereqs-container of chips right after the H1. Completion
-// state (chip-status--done, sort-by-done) needs runtime wiki-be data, so this emits
-// data-prereq-path and an undecorated .chip-status for the cutover.md island to fill.
+// Completion state needs runtime data, so this emits data-prereq-path and an undecorated .chip-status for the client island.
 
 const PREREQ_LEVEL_RE = /\[(Must|Should) read\]/;
 

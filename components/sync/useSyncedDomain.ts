@@ -11,8 +11,6 @@ import { getRecentsSnapshot, type Recent, subscribeRecents } from "@/lib/storage
 
 const EMPTY: never[] = [];
 
-// Gives a component the local value of a synced domain, re-rendering on same-tab writes and the
-// cross-tab storage event. Writes go through the domain module's cache-through path.
 export function useBookmarks(): {
   value: Bookmark[];
   toggle: (wikiId: string, path: string, title?: string) => boolean;

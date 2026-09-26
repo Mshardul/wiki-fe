@@ -6,8 +6,6 @@ import { pullAll } from "@/lib/storage/sync";
 const THRESHOLD = 70;
 const MAX = 120;
 
-// At scrollTop 0, drag down past the threshold → revalidate synced domains. Ported from
-// js/render/home-gestures.js bindIndexPullToRefresh.
 export function PullToRefresh() {
   useEffect(() => {
     const container = document.querySelector<HTMLElement>(".index-sections");

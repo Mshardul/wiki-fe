@@ -13,8 +13,6 @@ interface ReadTrackerProps {
 
 const DWELL_MS = 4000;
 
-// Records a visit (fade + recents) once the reader has dwelled on the article briefly.
-// Ported from js/render/content-view.js recordOpened + addToRecents.
 export function ReadTracker({ wikiId, path, title, slug }: ReadTrackerProps) {
   useEffect(() => {
     let done = false;

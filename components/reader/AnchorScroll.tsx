@@ -9,8 +9,6 @@ function scrollToId(id: string, behavior: ScrollBehavior) {
   return true;
 }
 
-// Wires in-article hash links (emitted by rehype-autolink-headings) to smooth-scroll + update the URL,
-// and honours a ?a=<id> deep link on mount. Ported from js/content/toc.js jumpToHeading + addAnchorLinks.
 export function AnchorScroll() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

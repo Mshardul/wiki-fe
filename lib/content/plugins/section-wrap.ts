@@ -1,9 +1,7 @@
 import type { Element, ElementContent, Root } from "hast";
 import { h } from "hastscript";
 
-// Faithful port of js/content/section-wrap.js: wraps flat heading-siblings into
-// nested .section / .subsection containers so later plugins and islands can target
-// "everything under this heading" by element instead of re-walking siblings.
+// Wraps flat heading-siblings into nested .section / .subsection containers so later plugins and islands can target "everything under this heading" by element instead of re-walking siblings.
 
 type Depth = "h2" | "h3";
 

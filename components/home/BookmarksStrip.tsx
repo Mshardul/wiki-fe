@@ -8,7 +8,6 @@ interface BookmarksStripProps {
   wikiId: string;
 }
 
-// The "Bookmarked" strip on a vertical index. Ported from js/storage/bookmarks.js renderBookmarksSection.
 export function BookmarksStrip({ wikiId }: BookmarksStripProps) {
   const bookmarks = useSyncExternalStore(
     subscribeBookmarks,

@@ -1,6 +1,5 @@
 import { getString, remove, setString } from "./local";
 
-// Ported from js/storage/scroll-collapse.js — heading-collapse persistence, keyed per wiki + article + section.
 const slugBase = (articlePath: string) => articlePath.replace(/\//g, "-");
 
 export function collapseKey(wikiId: string, articlePath: string, sectionId: string): string {
@@ -26,7 +25,7 @@ export function gcCollapseKeys(wikiId: string, articlePath: string, liveIds: str
       try {
         localStorage.removeItem(key);
       } catch {
-        // ignore
+        // private mode / quota — the local layer is best-effort
       }
     }
   }

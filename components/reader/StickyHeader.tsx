@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 const TOPBAR_H = 44;
 
-// Shows the section (h2) currently scrolled under the topbar. Ported from js/content/toc.js addStickySection.
 export function StickyHeader() {
   const [label, setLabel] = useState<string | null>(null);
 

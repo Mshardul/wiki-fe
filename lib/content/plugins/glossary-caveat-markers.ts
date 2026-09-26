@@ -2,11 +2,7 @@ import type { Element, Root, Text } from "hast";
 import { visit } from "unist-util-visit";
 import type { RenderContext } from "../types";
 
-// Faithful port of the markup half of js/content/glossary-caveats.js: [?text]
-// inline becomes a .caveat-marker with a hidden .caveat-body; an <abbr> whose
-// text matches a glossary key becomes an expandable .glossary-term with a hidden
-// .glossary-inline-def. Popover positioning and reveal handlers are cutover.md
-// islands — this emits markup + ARIA state only.
+// Emits markup + ARIA only; popover positioning and reveal handlers are client islands.
 
 const CAVEAT_RE = /\[\\?\?([^\]]+)\]/g;
 const SKIP_TAGS = new Set(["code", "pre", "script", "style"]);

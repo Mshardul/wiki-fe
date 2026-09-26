@@ -13,7 +13,6 @@ export interface Bookmark {
   wikiTitle: string;
 }
 
-// Bookmarks: local CRUD + cache-through sync. Ported from js/storage/bookmarks.js.
 export function getBookmarks(): Bookmark[] {
   return getJSON<Bookmark[]>(KEYS.bookmarks, []);
 }
@@ -41,11 +40,13 @@ function saveBookmarks(next: Bookmark[]): void {
 
 function deriveBookmark(wikiId: string, path: string): Bookmark {
   const wiki = verticalRegistry().find((v) => v.id === wikiId);
+  const dir = wiki ? wiki.indexPath.replace(/\/index\.md$/, "") : `content/${wikiId}`;
+  const rest = path.startsWith(`${dir}/`) ? path.slice(dir.length + 1) : path;
+  const slug = rest.replace(/\.md$/, "");
   const name = path.split("/").pop()?.replace(/\.md$/, "") ?? path;
-  return { wikiId, path, slug: name, title: name, wikiTitle: wiki?.title ?? "" };
+  return { wikiId, path, slug, title: name, wikiTitle: wiki?.title ?? "" };
 }
 
-// Toggles a bookmark; returns whether it is now bookmarked.
 export function toggleBookmark(wikiId: string, path: string, title?: string): boolean {
   const list = getBookmarks();
   const idx = list.findIndex((b) => b.wikiId === wikiId && b.path === path);
@@ -77,7 +78,7 @@ export function subscribeBookmarks(cb: () => void): () => void {
   return subscribeKey(KEYS.bookmarks, cb);
 }
 
-// Sync half: replace local with server truth on login / boot.
+// Overwrites local with server truth (no merge) — called on login/boot.
 export async function pullBookmarks(): Promise<void> {
   const rows = await api.bookmarks.list().catch<SyncRow[]>(() => []);
   setJSON(

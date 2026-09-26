@@ -5,24 +5,16 @@ import { useEffect, useState } from "react";
 import { Modal } from "@/components/common/Modal";
 import { useBookmarks } from "@/components/sync/useSyncedDomain";
 
-// The ⌘B bookmarks modal. Ported from js/app/bookmarks-modal.js.
 export function BookmarksModal() {
   const [open, setOpen] = useState(false);
   const { value: bookmarks, toggle } = useBookmarks();
   const router = useRouter();
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement;
-      const typing = el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
-      if (typing) return;
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
-        e.preventDefault();
-        setOpen((v) => !v);
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    // lib/hotkeys.ts owns the ⌘B keydown; a second listener here raced it and cancelled the open.
+    const onOpenEvt = () => setOpen((v) => !v);
+    document.addEventListener("wiki:open-bookmarks", onOpenEvt);
+    return () => document.removeEventListener("wiki:open-bookmarks", onOpenEvt);
   }, []);
 
   function goTo(b: (typeof bookmarks)[number]) {

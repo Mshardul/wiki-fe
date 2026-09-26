@@ -10,7 +10,6 @@ import {
   pullAll,
 } from "@/lib/storage/sync";
 
-// Boots the session on mount and keeps tabs in sync. Ported from js/auth.js Auth.init + the storage listener.
 export function SessionInit() {
   useEffect(() => {
     let cancelled = false;

@@ -9,6 +9,7 @@ lib/content/generated/
 public/data/
 
 # Test / Python
+.playwright-mcp/
 .venv/
 __pycache__/
 *.pyc

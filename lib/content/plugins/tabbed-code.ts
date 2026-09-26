@@ -1,12 +1,5 @@
 import type { Code, Html, Root, RootContent } from "mdast";
 
-// Faithful port of js/state.js tabsExtension + js/content/formatting.js
-// addTabbedCodeBlocks: a <!-- tabs id="x" title="y" --> ... <!-- /tabs id="x" -->
-// pair wraps its fenced blocks in a .tabbed-code container. The leading
-// `# id="x"` / `// id="x"` marker line is stripped from each block. Tab switching
-// is a cutover.md island — markup only here. A run with fewer than 2 blocks is
-// left ungrouped (matches the pres.length < 2 guard).
-
 const OPEN_RE = /^<!--\s*tabs\s+id="([^"]+)"(?:\s+title="([^"]*)")?\s*-->$/;
 const CLOSE_RE = /^<!--\s*\/tabs\s+id="([^"]+)"\s*-->$/;
 const MARKER_RE = /^(?:#|\/\/)\s*id="[^"]+"\n?/;

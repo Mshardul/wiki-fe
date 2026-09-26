@@ -35,7 +35,7 @@ describe("loadDataJson", () => {
 
   it("returns the empty default on a non-ok response", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404 }));
-    await expect(loadDataJson("shortcuts")).resolves.toEqual({ global: [], content: [] });
+    await expect(loadDataJson("shortcuts")).resolves.toEqual({});
   });
 
   it("returns the empty default when the payload fails schema validation", async () => {

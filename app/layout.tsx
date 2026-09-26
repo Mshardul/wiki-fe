@@ -3,9 +3,20 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { BookmarksModal } from "@/components/chrome/BookmarksModal";
+import { HealthPing } from "@/components/chrome/HealthPing";
 import { IconTooltip } from "@/components/chrome/IconTooltip";
+import { NavTransition } from "@/components/chrome/NavTransition";
 import { ToastHost } from "@/components/chrome/ToastHost";
+import { WikiSwitcherHost } from "@/components/chrome/WikiSwitcherHost";
+import { SwipeGestures } from "@/components/mobile/SwipeGestures";
+import { ViewportHandler } from "@/components/mobile/ViewportHandler";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { IosNudge } from "@/components/pwa/IosNudge";
 import { SearchModal } from "@/components/search/SearchModal";
+import { DistractionFree } from "@/components/settings/DistractionFree";
+import { PreferencesModal } from "@/components/settings/PreferencesModal";
+import { PrintTrigger } from "@/components/settings/PrintTrigger";
+import { SettingsInit } from "@/components/settings/SettingsInit";
 import { SessionInit } from "@/components/sync/SessionInit";
 import "../css/wiki.css";
 import "katex/dist/katex.min.css";
@@ -13,6 +24,9 @@ import "katex/dist/katex.min.css";
 const sprite = readFileSync("sprite.svg", "utf8");
 
 const swRegister = `if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/wiki-fe/sw.js",{scope:"/wiki-fe/"})})}`;
+
+// Pre-hydration theme boot: set data-theme + fontSize before first paint to avoid a flash; full applySettings() (all preset vars) runs in SettingsInit on mount.
+const bootTheme = `(function(){try{var s=JSON.parse(localStorage.getItem("wiki-settings")||"null");var dark=s&&s.backgroundId?s.backgroundId.indexOf("light-")!==0:!window.matchMedia("(prefers-color-scheme: light)").matches;document.documentElement.setAttribute("data-theme",dark?"dark":"light");if(s&&s.fontSize){var m={S:"87.5%",M:"100%",L:"112.5%"};document.documentElement.style.fontSize=m[s.fontSize]||"100%"}}catch(e){}})()`;
 
 export const metadata: Metadata = {
   title: { default: "Wiki", template: "%s · Wiki" },
@@ -37,6 +51,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <script dangerouslySetInnerHTML={{ __html: bootTheme }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font -- App Router head, rule targets pages/_document */}
@@ -48,10 +63,22 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <div hidden dangerouslySetInnerHTML={{ __html: sprite }} />
         {children}
-        <SessionInit />
-        <BookmarksModal />
+        {/* AuthModal must register its opener before SessionInit: SessionInit calls openAuthModal() sync on mount, and effects run in mount order. */}
         <AuthModal />
+        <SessionInit />
+        <SettingsInit />
+        <HealthPing />
+        <NavTransition />
+        <DistractionFree />
+        <BookmarksModal />
         <SearchModal />
+        <PreferencesModal />
+        <PrintTrigger />
+        <WikiSwitcherHost />
+        <SwipeGestures />
+        <ViewportHandler />
+        <InstallPrompt />
+        <IosNudge />
         <ToastHost />
         <IconTooltip />
         <script dangerouslySetInnerHTML={{ __html: swRegister }} />

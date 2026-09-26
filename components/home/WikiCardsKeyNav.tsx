@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 
-// Arrow-key navigation across the home .wiki-card grid. Ported from js/render/home-index.js key nav.
 export function WikiCardsKeyNav() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

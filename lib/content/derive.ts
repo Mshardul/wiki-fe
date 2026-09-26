@@ -12,7 +12,7 @@ function textContent(node: Element): string {
 
 const EXCERPT_MAX = 200;
 
-// headings/codeBlocks match js/render/content-view.js saveShapeFingerprint; tables/paragraphs are additive.
+// tables/paragraphs are additive to the fingerprint; headings/codeBlocks are the original fields.
 export function computeShapeFingerprint(tree: Nodes): ShapeFingerprint {
   const fp: ShapeFingerprint = { headings: 0, codeBlocks: 0, tables: 0, paragraphs: 0 };
   visit(tree, "element", (node: Element) => {

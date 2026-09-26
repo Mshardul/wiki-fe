@@ -1,4 +1,3 @@
-// Lets any component open the auth modal (topbar button, deep links) without prop-drilling.
 export type AuthPanel = "login" | "register" | "verify" | "forgot" | "reset" | "verify-result";
 
 type OpenFn = (panel: AuthPanel, token?: string) => void;

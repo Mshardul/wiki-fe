@@ -4,7 +4,6 @@ import { completionsKey } from "./keys";
 import { getJSON, remove, setJSON, subscribeKey } from "./local";
 import { scheduleSyncMutation } from "./sync";
 
-// Per-wiki completion set: local CRUD + cache-through sync. Ported from js/storage/completions.js.
 function readSet(wikiId: string): Set<string> {
   return new Set(getJSON<string[]>(completionsKey(wikiId), []));
 }

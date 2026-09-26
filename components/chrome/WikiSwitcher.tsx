@@ -11,7 +11,6 @@ interface WikiSwitcherProps {
   currentVertical?: string;
 }
 
-// Ported from js/app/wiki-switcher.js.
 export function WikiSwitcher({ open, onClose, currentVertical }: WikiSwitcherProps) {
   const router = useRouter();
   const listRef = useRef<HTMLDivElement>(null);
@@ -35,8 +34,8 @@ export function WikiSwitcher({ open, onClose, currentVertical }: WikiSwitcherPro
       open={open}
       onClose={onClose}
       label="Switch wiki"
-      className="wiki-switcher-modal"
-      backdropClassName="wiki-switcher-backdrop"
+      className="wiki-switcher-dialog"
+      backdropClassName="wiki-switcher-modal"
     >
       <div ref={listRef} className="wiki-switcher-list">
         {verticals.map((v) => (

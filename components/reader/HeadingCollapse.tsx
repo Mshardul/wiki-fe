@@ -16,8 +16,6 @@ function applyCollapsed(h2: HTMLElement, collapsed: boolean) {
 
 const ICON = '<svg class="icon" aria-hidden="true"><use href="#icon-chevron-down"></use></svg>';
 
-// Adds a per-h2 collapse toggle over the pipeline-emitted .section markup, persisted per article.
-// Ported from js/content/toc.js injectHeadingCollapseToggles.
 export function HeadingCollapse({ wikiId, articlePath }: HeadingCollapseProps) {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

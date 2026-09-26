@@ -5,8 +5,6 @@ import { useEffect } from "react";
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 4;
 
-// Ported from js/content/zoom-lightbox.js: click an image or a rendered diagram to open a full-screen
-// overlay with pinch-zoom, zoomed-pan, double-tap and swipe-down dismiss. Also wires image-load errors.
 export function ZoomLightbox() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

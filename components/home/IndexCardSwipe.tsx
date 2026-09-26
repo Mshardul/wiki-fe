@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { setCardSwipeActive } from "@/components/mobile/gestureState";
 import { toggleBookmark } from "@/lib/storage/bookmarks";
 import { showToast } from "@/lib/toast";
 
@@ -12,7 +13,6 @@ interface IndexCardSwipeProps {
   wikiId: string;
 }
 
-// Mobile swipe-right on an index card → bookmark toggle. Ported from js/render/home-gestures.js bindIndexCardSwipe.
 export function IndexCardSwipe({ wikiId }: IndexCardSwipeProps) {
   useEffect(() => {
     if (window.innerWidth > MOBILE_MAX) return;
@@ -36,6 +36,8 @@ export function IndexCardSwipe({ wikiId }: IndexCardSwipeProps) {
       }
       card = null;
       axis = null;
+      // deferred so the document-level edge-swipe listener still reads the flag this bubble phase
+      setTimeout(() => setCardSwipeActive(false), 0);
     };
 
     const first = (list: TouchList) => list[0] as Touch;
@@ -56,8 +58,10 @@ export function IndexCardSwipe({ wikiId }: IndexCardSwipeProps) {
       if (!axis) {
         if (Math.abs(dx) < DEADZONE && Math.abs(dy) < DEADZONE) return;
         axis = Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
-        if (axis === "x") card.classList.add("card-swiping");
-        else {
+        if (axis === "x") {
+          card.classList.add("card-swiping");
+          setCardSwipeActive(true);
+        } else {
           card = null;
           return;
         }

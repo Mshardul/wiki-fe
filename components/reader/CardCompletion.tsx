@@ -7,7 +7,6 @@ interface CardCompletionProps {
   wikiId: string;
 }
 
-// Marks server-rendered related / mentioned-by cards done from local completion state.
 export function CardCompletion({ wikiId }: CardCompletionProps) {
   useEffect(() => {
     const apply = () => {

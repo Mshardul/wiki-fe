@@ -50,18 +50,10 @@
   color: var(--text-heading);
   font-size: var(--text-xl);
 }
-.auth-field {
-  display: block;
-  margin-bottom: 1rem;
-}
-.auth-field > span {
-  display: block;
-  margin-bottom: 0.35rem;
-  color: var(--text-body);
-  font-size: var(--text-sm);
-}
-.auth-field input {
+/* AuthModal.tsx renders bare <input>s directly in .auth-panel, no wrapper div. */
+.auth-panel input {
   width: 100%;
+  margin-bottom: 1rem;
   padding: 0.6rem 0.75rem;
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -70,11 +62,11 @@
   font: inherit;
   font-size: max(16px, var(--text-base));
 }
-.auth-field input:focus {
+.auth-panel input:focus {
   outline: none;
   border-color: var(--accent);
 }
-.auth-field input:-webkit-autofill {
+.auth-panel input:-webkit-autofill {
   box-shadow: 0 0 0 1000px var(--surface-2) inset;
   -webkit-text-fill-color: var(--text-heading);
 }

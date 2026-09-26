@@ -8,7 +8,6 @@ interface RecentsStripProps {
   wikiId: string;
 }
 
-// The "Recently visited" strip on a vertical index. Ported from js/storage/recents.js renderRecentsSection.
 export function RecentsStrip({ wikiId }: RecentsStripProps) {
   const recents = useSyncExternalStore(subscribeRecents, getRecentsSnapshot, () => [] as Recent[]);
   const forWiki = recents.filter((r) => r.wikiId === wikiId);

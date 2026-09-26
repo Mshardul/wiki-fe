@@ -8,7 +8,6 @@ interface FocusModeProps {
   active: boolean;
 }
 
-// Dims everything outside the central reading band while active. Ported from js/content/formatting.js toggleFocusMode.
 export function FocusMode({ active }: FocusModeProps) {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

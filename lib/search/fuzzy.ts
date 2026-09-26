@@ -1,4 +1,3 @@
-// Substring-or-subsequence match. Ported verbatim from js/state.js fuzzyMatch.
 export function fuzzyMatch(query: string, text: string): boolean {
   if (!query) return true;
   const q = query.toLowerCase();

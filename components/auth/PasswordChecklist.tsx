@@ -2,7 +2,6 @@
 
 import { validatePassword } from "@/lib/auth/passwordRules";
 
-// Live 5-rule password checklist. Ported from js/auth.js AuthModal._renderChecklist.
 export function PasswordChecklist({ password, id }: { password: string; id?: string }) {
   const { rules } = validatePassword(password);
   return (

@@ -14,8 +14,6 @@ interface IndexIslandsProps {
   tracks: VerticalIndex["learningPaths"];
 }
 
-// Client wrapper composing the vertical-index interactivity. The RSC page renders the card grid;
-// these enhance it and render the strips.
 export function IndexIslands({ wikiId, tracks }: IndexIslandsProps) {
   return (
     <>

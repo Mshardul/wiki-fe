@@ -188,11 +188,19 @@ kbd {
 }
 
 /* Fallback for no View Transitions API/reduced-motion; depth increase = forward/slide left, decrease = back/slide right. */
-html.nav-forward .view.active {
+html.nav-forward .view.active,
+html.nav-forward main {
   animation: viewEnterForward 0.25s ease forwards;
 }
-html.nav-back .view.active {
+html.nav-back .view.active,
+html.nav-back main {
   animation: viewEnterBack 0.25s ease forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.nav-forward main,
+  html.nav-back main {
+    animation: none;
+  }
 }
 @keyframes viewEnterForward {
   from {

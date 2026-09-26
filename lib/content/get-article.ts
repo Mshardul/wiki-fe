@@ -30,7 +30,6 @@ function loadGlossary(): Record<string, string> {
   return glossaryCache;
 }
 
-// Feeds generateStaticParams.
 export function getArticleSlugs(): { vertical: string; slug: string[] }[] {
   return VERTICAL_IDS().flatMap((vertical) =>
     discoverArticlePaths(vertical).map((path) => ({ vertical, slug: loadArticle(path).slug })),
@@ -74,7 +73,6 @@ async function assemble(path: string): Promise<Article | undefined> {
   };
 }
 
-// Memoized per path. Undefined for an unknown vertical or slug.
 export function getArticle(vertical: string, slug: string[]): Promise<Article | undefined> {
   const path = resolvePath(vertical, slug);
   if (!path) return Promise.resolve(undefined);

@@ -2,8 +2,6 @@
 
 import { useEffect } from "react";
 
-// Arrow-key navigation across .index-card elements within a section. Ported from
-// js/render/home-index.js _indexCardKeyNav.
 export function KeyNav() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

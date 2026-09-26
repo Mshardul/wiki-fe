@@ -62,7 +62,7 @@
   }
   /* Content view has both FABs - keep them in separate corners instead of stacking */
   @supports selector(:has(*)) {
-    body:has(#view-content.active) .scroll-top-btn {
+    body:has(#markdown-body) .scroll-top-btn {
       right: auto;
       left: var(--s5);
     }

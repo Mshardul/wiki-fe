@@ -1,7 +1,6 @@
 import { expandQuery } from "./synonyms";
 
-// Sentence-based snippet extraction. Ported from js/search/search-features.js extractSnippet.
-// Returns { before, match, after } segments so the caller renders the highlight (no innerHTML).
+// Segments so the caller renders the highlight — never innerHTML.
 export interface Snippet {
   before: string;
   match: string;

@@ -12,8 +12,6 @@ function slugFromPath(fromPath: string, verticalId: string): string {
     .replace(/\.md$/, "");
 }
 
-// The "Mentioned by" backlink spine — a text panel, not a graph (kept, spec §9). Server-rendered.
-// Ported from js/render/related-articles.js renderBacklinks.
 export function MentionedBy({ articlePath }: MentionedByProps) {
   const sources = getBacklinks(articlePath);
   if (!sources.length) return null;

@@ -18,13 +18,26 @@ import { PasswordChecklist } from "./PasswordChecklist";
 
 const RESEND_COOLDOWN_S = 30;
 
+function PasswordRevealToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      className="auth-pw-toggle"
+      aria-pressed={shown}
+      aria-label={shown ? "Hide password" : "Show password"}
+      onClick={onToggle}
+    >
+      👁
+    </button>
+  );
+}
+
 export function AuthModal() {
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<AuthPanel>("login");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // shared field state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -35,8 +48,10 @@ export function AuthModal() {
   const [cooldown, setCooldown] = useState(0);
   const [forgotSent, setForgotSent] = useState(false);
   const [verifyResult, setVerifyResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [verifyResendEmail, setVerifyResendEmail] = useState("");
 
   const firstFieldRef = useRef<HTMLInputElement>(null);
+  const busyRef = useRef(false);
 
   const swap = useCallback((next: AuthPanel) => {
     setPanel(next);
@@ -78,12 +93,15 @@ export function AuthModal() {
   const pwValid = validatePassword(password).valid;
 
   async function run(fn: () => Promise<void>) {
-    if (busy) return;
+    // busy (state) lags a render behind two synchronous clicks, so check the ref instead
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     setError("");
     try {
       await fn();
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
@@ -177,6 +195,8 @@ export function AuthModal() {
             type="email"
             placeholder="Email"
             aria-label="Email"
+            aria-invalid={error ? "true" : undefined}
+            aria-describedby={error ? "auth-login-error" : undefined}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -186,22 +206,16 @@ export function AuthModal() {
               type={showPw ? "text" : "password"}
               placeholder="Password"
               aria-label="Password"
+              aria-invalid={error ? "true" : undefined}
+              aria-describedby={error ? "auth-login-error" : undefined}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <button
-              type="button"
-              className="auth-pw-toggle"
-              aria-pressed={showPw}
-              aria-label={showPw ? "Hide password" : "Show password"}
-              onClick={() => setShowPw((v) => !v)}
-            >
-              👁
-            </button>
+            <PasswordRevealToggle shown={showPw} onToggle={() => setShowPw((v) => !v)} />
           </div>
           {error && (
-            <p className="auth-error" role="alert">
+            <p id="auth-login-error" className="auth-error" role="alert">
               {error}
             </p>
           )}
@@ -235,22 +249,28 @@ export function AuthModal() {
             aria-label="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            disabled={busy}
             required
           />
-          <input
-            type={showPw ? "text" : "password"}
-            placeholder="Password"
-            aria-label="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div className="auth-pw-field">
+            <input
+              type={showPw ? "text" : "password"}
+              placeholder="Password"
+              aria-label="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={busy}
+              required
+            />
+            <PasswordRevealToggle shown={showPw} onToggle={() => setShowPw((v) => !v)} />
+          </div>
           <input
             type={showPw ? "text" : "password"}
             placeholder="Confirm password"
             aria-label="Confirm password"
             value={passwordConfirm}
             onChange={(e) => setPasswordConfirm(e.target.value)}
+            disabled={busy}
             required
           />
           <PasswordChecklist password={password} />
@@ -346,15 +366,18 @@ export function AuthModal() {
           }}
         >
           <h2>Set a new password</h2>
-          <input
-            ref={firstFieldRef}
-            type={showPw ? "text" : "password"}
-            placeholder="New password"
-            aria-label="New password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div className="auth-pw-field">
+            <input
+              ref={firstFieldRef}
+              type={showPw ? "text" : "password"}
+              placeholder="New password"
+              aria-label="New password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <PasswordRevealToggle shown={showPw} onToggle={() => setShowPw((v) => !v)} />
+          </div>
           <input
             type={showPw ? "text" : "password"}
             placeholder="Confirm new password"
@@ -376,6 +399,14 @@ export function AuthModal() {
           >
             {busy ? "Updating…" : "Update password"}
           </button>
+          <div className="auth-links">
+            <button type="button" onClick={() => swap("login")}>
+              Back to log in
+            </button>
+            <button type="button" onClick={() => swap("forgot")}>
+              Request a new link
+            </button>
+          </div>
         </form>
       )}
 
@@ -389,6 +420,27 @@ export function AuthModal() {
                 : "Verification failed"}
           </h2>
           {verifyResult != null && <p>{verifyResult.msg}</p>}
+          {verifyResult != null && !verifyResult.ok && (
+            <form
+              className="auth-verify-resend"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void onResend(verifyResendEmail.trim());
+              }}
+            >
+              <input
+                type="email"
+                placeholder="Email"
+                aria-label="Email"
+                value={verifyResendEmail}
+                onChange={(e) => setVerifyResendEmail(e.target.value)}
+                required
+              />
+              <button type="submit" className="auth-submit" disabled={busy || cooldown > 0}>
+                {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend verification email"}
+              </button>
+            </form>
+          )}
           <div className="auth-links">
             <button type="button" onClick={() => swap("login")}>
               Go to log in

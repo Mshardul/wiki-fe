@@ -7,7 +7,6 @@ interface TocProps {
   headings: Heading[];
 }
 
-// Builds the on-this-page nav from article.headings (no DOM walk, unlike js/content/toc.js buildTOC).
 export function Toc({ headings }: TocProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 

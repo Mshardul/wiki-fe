@@ -13,7 +13,6 @@ export interface Recent {
   visitedAt: number;
 }
 
-// Recently-visited list: local CRUD + cache-through sync. Ported from js/storage/recents.js.
 export function getRecents(): Recent[] {
   return getJSON<Recent[]>(KEYS.recents, []);
 }

@@ -9,7 +9,6 @@ function scrollFraction(): number {
   return total > 0 ? Math.min(1, Math.max(0, scrolled / total)) : 1;
 }
 
-// 0..1 page scroll fraction, updated on scroll + resize.
 export function useScrollProgress(): number {
   const [pct, setPct] = useState(0);
   useEffect(() => {

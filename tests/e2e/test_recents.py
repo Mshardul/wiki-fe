@@ -1,227 +1,85 @@
-"""
-- recently visited chips on wiki index (scoped per wiki)
-- clear button removes all recents for the wiki
-- chip strip show-more button for overflow
-- undo after clear re-syncs restored entries to the backend (WIKI-573)
-"""
+# Not ported: per-section clear button, show-more/overflow strip, undo-after-clear toast - RecentsStrip.tsx renders a plain unconditional chip list now (RECENTS_MAX=6, nothing ever hidden).
+# Only clear path is the global "Clear everything" in Preferences -> Advanced (window.confirm() gate, deliberately replaces the undo-toast) - already covered by test_settings.py::test_clear_everything_wipes_local_data.
+
+DWELL_TRIGGER_SCROLL = 500
 
 
-_MOCK_ARTICLE = "# Caching\n\nA simple article for recents testing.\n"
-
-
-def _stub_logged_in(page):
-    """GET /auth/me → 200 + a stored session token, so boot resolves to logged-in."""
-    page.add_init_script(
-        "localStorage.setItem('wiki-session-token', 'test-session-token')"
-    )
-    page.route(
-        "**/api/v1/auth/me",
-        lambda r: r.fulfill(
-            status=200,
-            content_type="application/json",
-            body='{"user":{"id":1,"email":"a@example.com"}}',
-        ),
-    )
-    for path in ("bookmarks", "completions"):
-        page.route(
-            f"**/api/v1/{path}",
-            lambda r: r.fulfill(status=200, content_type="application/json", body="[]"),
-        )
-
-
-def _visit_article(page, base_url, slug="recents-mock"):
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=3_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-    page.route(f"**/{slug}.md", lambda r: r.fulfill(body=_MOCK_ARTICLE))
-    page.evaluate(f"""() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/{slug}.md'),
-        encodeURIComponent('Caching'),
-        '{slug}'
-    )""")
-    page.wait_for_selector("#view-content.active", timeout=3_000)
+def _visit_article(page, base_url, path="system-design/components/caching/"):
+    page.goto(f"{base_url}/{path}", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
+    before = page.evaluate("() => localStorage.getItem('wiki-recents')")
+    page.evaluate(f"() => window.scrollTo(0, {DWELL_TRIGGER_SCROLL})")
     page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=3_000,
+        "(before) => localStorage.getItem('wiki-recents') !== before",
+        arg=before,
+        timeout=5_000,
     )
 
 
-def _go_to_index(page, base_url):
-    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-index.active", timeout=3_000)
+def _go_to_index(page, base_url, slug="system-design"):
+    page.goto(f"{base_url}/{slug}/", wait_until="domcontentloaded")
+    page.wait_for_selector(".index-card:not(.index-card--unavailable)", timeout=10_000)
 
 
 def test_recently_visited_chips_appear(page, base_url):
-    """after visiting an article, its chip appears in #recents-section on index."""
     _visit_article(page, base_url)
     _go_to_index(page, base_url)
-
     section = page.locator("#recents-section")
-    assert not section.get_attribute("class").__contains__("hidden")
-    chips = section.locator(".recent-chip").all()
-    assert len(chips) >= 1
+    section.wait_for(state="visible")
+    assert section.locator(".recent-chip").count() >= 1
 
 
-def test_recents_scoped_to_wiki(page, base_url):
-    """Regression for WIKI-448: recents section hides entirely (rather than
-    showing a placeholder sentence) when wiki-recents is cleared."""
+def test_recents_not_shown_for_other_wiki(page, base_url):
+    _visit_article(page, base_url)
+    _go_to_index(page, base_url, slug="dsa")
+    assert page.locator("#recents-section").count() == 0
+
+
+def test_recents_newest_first(page, base_url):
+    _visit_article(page, base_url, path="system-design/components/caching/")
+    _visit_article(page, base_url, path="system-design/components/dns/")
+    _go_to_index(page, base_url)
+    section = page.locator("#recents-section")
+    section.wait_for(state="visible")
+    titles = section.locator(".recent-chip").all_inner_texts()
+    assert titles[0] == "DNS"
+
+
+def test_recent_chip_navigates_to_article(page, base_url):
     _visit_article(page, base_url)
     _go_to_index(page, base_url)
-
-    # Confirm recents are present first
     section = page.locator("#recents-section")
     section.wait_for(state="visible")
-
-    # Clear the actual key the app uses
-    page.evaluate("() => localStorage.removeItem('wiki-recents')")
-    page.reload()
-    page.wait_for_selector("#view-index.active", timeout=3_000)
-
-    assert "hidden" in (section.get_attribute("class") or "")
-
-
-def test_clear_recents_removes_all_chips(page, base_url):
-    """clicking clear button on recents removes all chips."""
-    _visit_article(page, base_url)
-    _go_to_index(page, base_url)
-
-    section = page.locator("#recents-section")
-    section.wait_for(state="visible")
-
-    clear_btn = section.locator(".recents-clear-btn")
-    clear_btn.click()
-
-    assert "hidden" in (section.get_attribute("class") or "")
-
-
-def test_undo_clear_recents_resyncs_to_backend(page, base_url):
-    """Regression for WIKI-573: undoing a recents clear must re-schedule
-    a sync POST for each restored entry, not just write localStorage."""
-    _stub_logged_in(page)
-    add_calls = []
-
-    def _handle_recents(route):
-        if route.request.method == "POST":
-            add_calls.append(route.request.url)
-            route.fulfill(status=200, content_type="application/json", body="{}")
-        else:
-            route.fulfill(status=200, content_type="application/json", body="[]")
-
-    page.route("**/api/v1/recents", _handle_recents)
-
-    _visit_article(page, base_url)
-    _go_to_index(page, base_url)
-
-    section = page.locator("#recents-section")
-    section.wait_for(state="visible")
-    add_calls.clear()
-
-    section.locator(".recents-clear-btn").click()
-    page.locator(".toast-undo-btn").click()
-
-    page.wait_for_function(
-        "() => !document.getElementById('recents-section').classList.contains('hidden')",
-        timeout=3_000,
-    )
-    assert add_calls, "undo must re-POST the restored recent(s) to the backend"
-
-
-# ── Chip strip row limit ───────────────────────────────────────────
-
-
-def _inject_recents(page, count):
-    page.evaluate(f"""() => {{
-        const items = Array.from({{length: {count}}}, (_, i) => ({{
-            wikiId: 'system-design',
-            path: `content/system-design/article-${{i}}.md`,
-            title: `Article ${{i}}`,
-            slug: `article-${{i}}`,
-        }}));
-        localStorage.setItem('wiki-recents', JSON.stringify(items));
-    }}""")
-
-
-def test_show_more_appears_when_recents_overflow(page, base_url):
-    """show-more button appears when recents count exceeds CHIP_VISIBLE_MAX (4)."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    _inject_recents(page, 5)
-    _go_to_index(page, base_url)
-
-    section = page.locator("#recents-section")
-    section.wait_for(state="visible")
-
-    assert section.locator(".recents-show-more").count() == 1, (
-        "show-more button must appear when recents > 4"
-    )
-    assert section.locator(".recent-chip.chip--hidden").count() == 1, (
-        "1 chip must be hidden when 5 recents exist"
-    )
-
-
-def test_show_more_absent_when_chips_within_limit(page, base_url):
-    """no show-more button when recents count <= CHIP_VISIBLE_MAX (4)."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    _inject_recents(page, 3)
-    _go_to_index(page, base_url)
-
-    section = page.locator("#recents-section")
-    section.wait_for(state="visible")
-
-    assert section.locator(".recents-show-more").count() == 0, (
-        "no show-more button when chips <= 4"
-    )
-
-
-def test_show_more_click_expands_strip(page, base_url):
-    """clicking show-more expands strip and reveals hidden chips."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    _inject_recents(page, 5)
-    _go_to_index(page, base_url)
-
-    section = page.locator("#recents-section")
-    section.wait_for(state="visible")
-
-    section.locator(".recents-show-more").click()
-
-    expanded = section.locator(".recents-strip").evaluate(
-        "el => el.classList.contains('recents-strip-expanded')"
-    )
-    assert expanded, (
-        "strip must have recents-strip-expanded class after show-more click"
-    )
+    section.locator(".recent-chip").first.click()
+    page.wait_for_selector("#markdown-body", timeout=10_000)
+    assert "caching" in page.url
 
 
 def test_anon_recent_makes_no_api_call(page, base_url):
-    """logged-out users hit zero sync endpoints when visiting an article."""
     calls = []
     page.route(
         "**/api/v1/auth/me",
-        lambda r: r.fulfill(
-            status=401,
-            content_type="application/json",
-            body='{"error":{"code":"UNAUTHORIZED","message":"x"}}',
-        ),
+        lambda r: r.fulfill(status=401, content_type="application/json", body='{"error":{"code":"UNAUTHORIZED","message":"x"}}'),
     )
-    page.route(
-        "**/api/v1/recents",
-        lambda r: (calls.append(r.request.url), r.abort()),
-    )
-
+    page.route("**/api/v1/recents", lambda r: (calls.append(r.request.url), r.abort()))
     _visit_article(page, base_url)
-    page.wait_for_function("() => document.readyState === 'complete'", timeout=3_000)
+    page.wait_for_timeout(150)
     assert all("/recents" not in u for u in calls)
 
 
-def test_recents_empty_state_shown(page, base_url):
-    """Regression for WIKI-448: empty recents hides the section entirely."""
-    page.goto(base_url)
-    page.evaluate("localStorage.removeItem('wiki-recents')")
-    page.reload()
+def test_recents_absent_when_none_visited(page, base_url):
+    page.goto(base_url, wait_until="domcontentloaded")
+    page.evaluate("() => localStorage.removeItem('wiki-recents')")
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
     page.locator(".wiki-card").first.click()
-    page.wait_for_selector("#recents-section", state="attached")
-    section = page.locator("#recents-section")
-    assert "hidden" in (section.get_attribute("class") or "")
+    page.wait_for_selector(".index-card:not(.index-card--unavailable)", timeout=10_000)
+    assert page.locator("#recents-section").count() == 0
+
+
+def test_short_dwell_does_not_record_a_recent(page, base_url):
+    page.goto(f"{base_url}/system-design/components/caching/", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
+    page.wait_for_timeout(300)
+    _go_to_index(page, base_url)
+    assert page.locator("#recents-section").count() == 0

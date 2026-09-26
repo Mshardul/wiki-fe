@@ -11,7 +11,7 @@ interface ComparisonTableProps {
 const WHOLE_NUM_RE = /^-?\d+(\.\d+)?$/;
 const BIG_O_RE = /[OΘΩ]\s*\(([^)]*)\)/;
 
-// Rough Big-O ordering; unknown forms fall back to string compare.
+// Unknown Big-O forms fall back to string compare.
 function bigORank(text: string): number | null {
   const m = text.match(BIG_O_RE);
   if (!m) return null;
@@ -45,8 +45,6 @@ function compare(a: string, b: string, numericHint: boolean): number {
   return a.localeCompare(b, undefined, { numeric: true });
 }
 
-// Sort + column-toggle + scroll cues over table[data-comparison] (emitted by rehypeComparisonTable).
-// Ported from js/content/tables.js addTableSort / addComparisonColumnToggles / addTableScrollCues.
 export function ComparisonTable({ wikiId, articlePath }: ComparisonTableProps) {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");
@@ -59,7 +57,6 @@ export function ComparisonTable({ wikiId, articlePath }: ComparisonTableProps) {
       const ths = headerRow ? [...headerRow.querySelectorAll<HTMLTableCellElement>("th")] : [];
       if (!ths.length) continue;
 
-      // sort
       let sortCol = -1;
       let asc = true;
       ths.forEach((th, colIdx) => {
@@ -103,7 +100,6 @@ export function ComparisonTable({ wikiId, articlePath }: ComparisonTableProps) {
         });
       });
 
-      // column toggles
       const names = ths.map((th) => th.textContent?.trim() ?? "");
       const tableId = names.join("|");
       const hidden = new Set(getHiddenColumns(wikiId, articlePath, tableId));
@@ -134,7 +130,6 @@ export function ComparisonTable({ wikiId, articlePath }: ComparisonTableProps) {
         bar.appendChild(btn);
       });
 
-      // scroll cue
       const wrap = document.createElement("div");
       wrap.className = "table-scroll-wrap";
       table.parentNode?.insertBefore(wrap, table);

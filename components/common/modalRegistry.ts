@@ -27,7 +27,7 @@ export function anyOpen(): boolean {
   return registered.some((m) => m.isOpen());
 }
 
-// Closes the most-recently-opened open modal; falls back to registration order. Returns whether one closed.
+// Most-recently-opened first; falls back to registration order if the stack has no still-open entry.
 export function closeTopmost(): boolean {
   for (let i = openStack.length - 1; i >= 0; i--) {
     const m = openStack[i];

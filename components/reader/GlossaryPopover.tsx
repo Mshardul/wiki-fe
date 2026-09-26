@@ -21,8 +21,6 @@ function positionPopover(pop: HTMLElement, anchor: HTMLElement) {
   pop.style.top = `${top}px`;
 }
 
-// Hover/focus popover + click-to-expand for .glossary-term (emitted by rehypeGlossaryCaveatMarkers).
-// Ported from js/content/glossary-caveats.js addGlossaryTerms + addInlineGlossaryExpand.
 export function GlossaryPopover() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

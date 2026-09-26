@@ -5,8 +5,6 @@ import { useEffect } from "react";
 const SELECTOR = ".topbar-icon-btn";
 const SHOW_DELAY_MS = 300;
 
-// Custom short-delay tooltip for topbar icon buttons; keeps the native `title` as an a11y / no-JS fallback.
-// Ported from js/app/icon-tooltip.js.
 export function IconTooltip() {
   useEffect(() => {
     const tip = document.createElement("div");

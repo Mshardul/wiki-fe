@@ -24,7 +24,7 @@ export function remove(key: string): void {
   try {
     localStorage.removeItem(key);
   } catch {
-    // ignore
+    // private mode / quota — the local layer is best-effort
   }
   notify(key);
 }
@@ -43,8 +43,7 @@ export function setJSON<T>(key: string, value: T): void {
   setString(key, JSON.stringify(value));
 }
 
-// Referentially-stable snapshot reader for useSyncExternalStore: returns the same reference
-// until the stored string for `key` changes.
+// Referentially-stable snapshot reader for useSyncExternalStore: returns the same reference until the stored string for `key` changes.
 export function makeSnapshot<T>(key: string, fallback: T): () => T {
   let cachedRaw: string | null = null;
   let cachedValue: T = fallback;

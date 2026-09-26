@@ -1,11 +1,6 @@
 import type { Element, ElementContent, Root, Text } from "hast";
 import { visit } from "unist-util-visit";
 
-// Faithful port of js/content/formatting.js styleCallouts: an emoji-prefixed
-// blockquote becomes a .callout with a variant class; a leading "+" after the
-// emoji marks it collapsed. The first line's emoji is replaced with a paired
-// .callout-icon span inside a .callout-first-line wrapper.
-
 const CALLOUT_ICONS: Record<string, [string, string]> = {
   "🎯": ["callout-interview", "🎯"],
   "⚠️": ["callout-warning", "⚠️"],

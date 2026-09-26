@@ -4,10 +4,7 @@ import { BASE_PATH } from "@/lib/config";
 const glossary = z.record(z.string(), z.string());
 const synonyms = z.record(z.string(), z.array(z.string()));
 const shortcut = z.object({ keys: z.array(z.string()), description: z.string() });
-const shortcuts = z.object({
-  global: z.array(shortcut).default([]),
-  content: z.array(shortcut).default([]),
-});
+const shortcuts = z.record(z.string(), z.array(shortcut));
 const summaries = z.record(z.string(), z.string());
 
 const searchCard = z.object({
@@ -49,7 +46,7 @@ type DataJson<N extends DataJsonName> = z.infer<(typeof SCHEMAS)[N]>;
 const EMPTY: { [N in DataJsonName]: DataJson<N> } = {
   glossary: {},
   synonyms: {},
-  shortcuts: { global: [], content: [] },
+  shortcuts: {},
   summaries: {},
   "search-index": {},
   backlinks: {},
@@ -59,7 +56,6 @@ const EMPTY: { [N in DataJsonName]: DataJson<N> } = {
 
 const cache = new Map<DataJsonName, Promise<unknown>>();
 
-// Loads a public/data/<name>.json file, zod-validates it, caches the promise. Never throws — returns the empty default on any failure.
 export function loadDataJson<N extends DataJsonName>(name: N): Promise<DataJson<N>> {
   const hit = cache.get(name);
   if (hit) return hit as Promise<DataJson<N>>;

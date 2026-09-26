@@ -8,7 +8,6 @@ interface IndexCardStatusProps {
   wikiId: string;
 }
 
-// Marks index cards read/faded from local state. Ported from js/render/home-index.js completion + _applyFade.
 export function IndexCardStatus({ wikiId }: IndexCardStatusProps) {
   useEffect(() => {
     const apply = () => {

@@ -9,7 +9,6 @@ export function getFocusableIn(container: HTMLElement): HTMLElement[] {
   );
 }
 
-// Cycles Tab focus within `ref` while `active`. Ported from js/modal-registry.js createFocusTrap.
 export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean): void {
   useEffect(() => {
     if (!active) return;

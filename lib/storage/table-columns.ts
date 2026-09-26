@@ -1,6 +1,5 @@
 import { getJSON, remove, setJSON } from "./local";
 
-// Per-table hidden-column prefs. Ported from js/storage/table-columns.js.
 function key(wikiId: string, articlePath: string, tableId: string): string {
   return `wiki-table-cols-${wikiId}-${articlePath.replace(/\//g, "-")}-${tableId}`;
 }

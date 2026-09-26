@@ -7,8 +7,6 @@ const SHOW_AFTER_PX = 300;
 const RING_R = 17;
 const RING_CIRC = 2 * Math.PI * RING_R;
 
-// Back-to-top FAB. Its circular border is a progress ring whose fill tracks page scroll.
-// Ported from js/app.js (button) + js/content/toc.js (progress ring).
 export function ScrollToTop() {
   const [visible, setVisible] = useState(false);
   const pct = useScrollProgress();

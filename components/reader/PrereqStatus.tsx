@@ -7,8 +7,6 @@ interface PrereqStatusProps {
   wikiId: string;
 }
 
-// Marks .prereq-chip elements (emitted by rehypePrerequisites) done from local completion state.
-// Ported from js/content/formatting.js renderPrerequisites completion half.
 export function PrereqStatus({ wikiId }: PrereqStatusProps) {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

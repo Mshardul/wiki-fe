@@ -1,15 +1,20 @@
-export default function Offline() {
-  return (
-    <main className="content-layout">
-      <div className="content-main">
-        <article className="markdown-body">
-          <h1>You&apos;re offline</h1>
-          <p>
-            This article hasn&apos;t been downloaded for offline reading. Reconnect, or open
-            Settings → Offline to save articles ahead of time.
-          </p>
-        </article>
-      </div>
-    </main>
-  );
+import { OfflineShelf, type ShelfArticleMeta } from "@/components/pwa/OfflineShelf";
+import { BASE_PATH } from "@/lib/config";
+import { getManifest } from "@/lib/content";
+
+export const metadata = { title: "Offline shelf" };
+
+export default async function Offline() {
+  const manifest = await getManifest();
+  const verticalTitle = new Map(manifest.verticals.map((v) => [v.id, v.title]));
+  const articles: ShelfArticleMeta[] = manifest.articles
+    .filter((a) => !a.isStub)
+    .map((a) => ({
+      route: `${BASE_PATH}/${a.verticalId}/${a.slug.join("/")}/`,
+      title: a.title,
+      verticalId: a.verticalId,
+      verticalTitle: verticalTitle.get(a.verticalId) ?? a.verticalId,
+    }));
+
+  return <OfflineShelf articles={articles} />;
 }

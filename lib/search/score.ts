@@ -11,8 +11,6 @@ export interface SearchEntry {
   verticalTitle: string;
 }
 
-// Scoring ladder — ported exactly from js/search/search.js scoreMatch.
-// title exact=100, startsWith=90, includes=80, fuzzy=60; (non-short) desc includes=40, desc fuzzy=20, section fuzzy=10.
 export function scoreMatch(query: string, entry: SearchEntry): number {
   let best = 0;
   for (const term of expandQuery(query)) {
@@ -45,7 +43,6 @@ export interface Fallback {
   didYouMean: string | null;
 }
 
-// No-results fallback. Ported from js/search/search-features.js getFallbackSuggestions.
 export function getFallbackSuggestions(query: string, entries: SearchEntry[]): Fallback {
   const expanded = expandQuery(query);
   let didYouMean: string | null = null;

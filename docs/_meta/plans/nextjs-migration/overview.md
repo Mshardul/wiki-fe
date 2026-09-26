@@ -195,7 +195,7 @@ Where each spec section is carried out:
 | §7 Mermaid | Spike RESOLVED → client-island (`mermaid-spike-result.md`). `content-foundation.md` Phase 4 (`remark-mermaid`, markup only); `cutover.md` Phase 3 (`MermaidDiagrams.tsx` render + re-theme, `mermaid` client dep); `app-skeleton.md` Phase 3 (`--diagram-*` tokens) + Phase 5 (precache the chunk) |
 | §8 offline / PWA | `app-skeleton.md` Phase 5; `cutover.md` Phase 11 |
 | §9 dropped | no steps in any phase file — see Global Constraints "Dropped" above |
-| §10 testing | Python e2e sweep in `cutover.md` Phase 13 + `post-cutover.md`; Vitest per the testing rule above |
+| §10 testing | `cutover.md` Phase 13 = mechanical portable e2e sweep (cutover gate); mock-infra rewrites + coverage/latency/selector modernization = post-cutover **e2e-modernization epic** (`docs/tickets-backlog.md`, grouped with the §10 TS port); Vitest per the testing rule above |
 | §11 wiki-be | `app-skeleton.md` (CORS check + file the ticket); `post-cutover.md` (confirm resolved) |
 | §13 open items | decisions in the table above; carried out in the named phase files |
 

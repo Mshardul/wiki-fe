@@ -1,11 +1,7 @@
 import type { Element, ElementContent, Root } from "hast";
 import { visit } from "unist-util-visit";
 
-// Faithful port of the markup half of js/content/tables.js: a complexity table
-// (Big-O header words or Big-O cells) or a table under a "* Comparison *" heading
-// gets data-comparison plus per-<th> data-col-key and a data-col-numeric flag for
-// numeric / Big-O columns. Sort, column-toggle and scroll-cue stay cutover.md
-// islands. Quiz-me mode is DROPPED (spec §9).
+// data-comparison/data-col-key/data-col-numeric here are a contract consumed by the sort/column-toggle/scroll-cue islands.
 
 const COMPLEXITY_HEADER_RE = /\b(time|space|complexity|best|worst|average)\b/i;
 const BIG_O_RE = /[OΘΩ]\s*\(/;

@@ -1,196 +1,127 @@
 """
-HTML markup integrity tests:
-- Skip-to-content link (visually hidden, first focusable, links to #main-content)
-- CDN scripts have defer attribute
-- No inline onclick/onchange on static buttons; data-action delegation works
+HTML markup integrity tests for the pipeline-rendered article body:
+- Heading anchor-link icon structure (real SVG use, not an empty placeholder span)
+- section-wrap container nesting (no block content leaking into <p>)
+- Heading id uniqueness
+- Code-header structural markup (traffic lights, lang label, copy button)
+Skip-to-content, CDN-script-defer, and inline-onclick/data-action tests dropped -
+grep confirms no skip-link, no CDN <script> tags (Next bundles its own JS), and no
+data-action delegation exist anywhere in app/ or components/; those were vanilla-JS-era concerns.
 """
 
-import pytest
-
-# ── Skip-to-content ────────────────────────────────────────────────
+SLUG = "system-design/components/caching"
 
 
-def test_skip_to_content_link_exists(wiki_page):
-    """A .skip-to-content anchor element is present in the DOM."""
-    link = wiki_page.locator("a.skip-to-content")
-    assert link.count() == 1, "Expected exactly one .skip-to-content link"
+def _article(page, base_url, slug=SLUG):
+    page.goto(f"{base_url}/{slug}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
 
 
-def test_skip_to_content_points_to_main_content(wiki_page):
-    """The skip link href is #main-content."""
-    href = wiki_page.locator("a.skip-to-content").get_attribute("href")
-    assert href == "#main-content", f"Expected href='#main-content', got '{href}'"
+# ── Heading anchor-link icon ──────────────────────────────────────
 
 
-def test_main_content_target_exists(wiki_page):
-    """An element with id='main-content' exists for the skip link to target."""
-    count = wiki_page.locator("#main-content").count()
-    assert count == 1, "No element with id='main-content' found"
-
-
-def test_skip_link_is_first_focusable_element(wiki_page):
-    """The skip link is the first element reached by Tab from the page."""
-    wiki_page.keyboard.press("Tab")
-    focused_tag = wiki_page.evaluate(
-        "() => document.activeElement.tagName.toLowerCase()"
-    )
-    focused_class = wiki_page.evaluate("() => document.activeElement.className")
-    assert focused_tag == "a", (
-        f"First Tab focus landed on <{focused_tag}>, expected <a>"
-    )
-    assert "skip-to-content" in focused_class
-
-
-def test_skip_link_off_screen_by_default(wiki_page):
-    """The skip link is off-screen (not visually rendered) before focus."""
-    bounding_box = wiki_page.locator("a.skip-to-content").bounding_box()
-    # Off-screen via left:-9999px - bounding box x will be very negative or None
-    assert bounding_box is None or bounding_box["x"] < -100, (
-        f"Skip link appears to be on-screen before focus: {bounding_box}"
-    )
-
-
-def test_skip_link_visible_on_focus(wiki_page):
-    """The skip link becomes visible (on-screen) when it receives focus."""
-    wiki_page.keyboard.press("Tab")
-    bounding_box = wiki_page.locator("a.skip-to-content").bounding_box()
-    assert bounding_box is not None, "Skip link has no bounding box after focus"
-    assert bounding_box["x"] >= 0, (
-        f"Skip link still off-screen after focus: x={bounding_box['x']}"
-    )
-    assert bounding_box["width"] > 0 and bounding_box["height"] > 0, (
-        "Skip link has zero size after focus"
-    )
-
-
-# ── CDN script defer ───────────────────────────────────────────────
-
-
-def test_cdn_scripts_have_defer(wiki_page):
-    """All CDN <script> tags (showdown, highlight, mermaid, dompurify, katex) have defer."""
-    results = wiki_page.evaluate("""() => {
-        const scripts = [...document.querySelectorAll('script[src]')];
-        const cdn = scripts.filter(s =>
-            s.src.includes('cdn.jsdelivr.net') ||
-            s.src.includes('cdnjs.cloudflare.com')
-        );
-        return cdn.map(s => ({ src: s.src, defer: s.defer }));
+def test_heading_anchor_link_has_svg_icon(page, base_url):
+    """Each autolinked heading's <a> contains a real <svg><use> icon, not an empty span."""
+    _article(page, base_url)
+    svg_count = page.evaluate("""() => {
+        const anchors = document.querySelectorAll('#markdown-body h2 > a[aria-hidden="true"], #markdown-body h3 > a[aria-hidden="true"]');
+        return [...anchors].filter(a => a.querySelector('svg.icon > use')).length;
     }""")
-    assert len(results) >= 6, f"Expected at least 6 CDN scripts, found {len(results)}"
-    for script in results:
-        assert script["defer"], f"CDN script missing defer: {script['src']}"
+    heading_count = page.locator("#markdown-body h2, #markdown-body h3").count()
+    assert svg_count == heading_count, (
+        f"Expected all {heading_count} heading anchor-links to contain svg.icon > use, got {svg_count}"
+    )
 
 
-def test_app_module_script_not_deferred_explicitly(wiki_page):
-    """app.js is type=module (deferred implicitly), not additionally marked defer."""
-    is_module = wiki_page.evaluate("""() => {
-        const s = document.querySelector('script[src*="app.js"]');
-        return s?.type === 'module';
+def test_heading_anchor_link_icon_references_sprite(page, base_url):
+    """The heading anchor-link <use> references #icon-anchor in the inlined sprite."""
+    _article(page, base_url)
+    href = page.evaluate(
+        "() => document.querySelector('#markdown-body h2 a[aria-hidden=\"true\"] use')?.getAttribute('href')"
+    )
+    assert href == "#icon-anchor", f"Expected use href='#icon-anchor', got {href!r}"
+    symbol_exists = page.evaluate(
+        "() => !!document.getElementById('icon-anchor')"
+    )
+    assert symbol_exists, "No #icon-anchor symbol found in the inlined sprite"
+
+
+# ── section-wrap nesting validity ─────────────────────────────────
+
+
+def test_no_block_elements_nested_inside_paragraphs(page, base_url):
+    """section-wrap and other plugins must never leave div/pre/table/list/heading inside a <p>."""
+    _article(page, base_url)
+    offenders = page.evaluate("""() => {
+        const ps = [...document.querySelectorAll('#markdown-body p')];
+        return ps.filter(p => p.querySelector('div, pre, table, ul, ol, blockquote, h1, h2, h3, h4')).length;
     }""")
-    assert is_module, "app.js should be type=module"
+    assert offenders == 0, f"Found {offenders} <p> elements with block-level children"
 
 
-# ── No inline onclick/onchange ────────────────────────────────────
-
-
-def test_no_inline_onclick_on_buttons(wiki_page):
-    """No <button> element in the document has an inline onclick attribute."""
-    buttons_with_onclick = wiki_page.evaluate("""() => {
-        const btns = [...document.querySelectorAll('button[onclick]')];
-        return btns.map(b => b.outerHTML.slice(0, 120));
+def test_section_wrap_containers_pair_title_and_body(page, base_url):
+    """Every .section has exactly one .section-title (holding its h2) and one .section-body."""
+    _article(page, base_url)
+    result = page.evaluate("""() => {
+        const sections = [...document.querySelectorAll('#markdown-body .section')];
+        return sections.map(s => ({
+            titles: s.querySelectorAll(':scope > .section-title').length,
+            bodies: s.querySelectorAll(':scope > .section-body').length,
+            titleHasH2: !!s.querySelector(':scope > .section-title > h2'),
+        }));
     }""")
-    assert buttons_with_onclick == [], (
-        f"Found buttons with inline onclick: {buttons_with_onclick}"
+    assert len(result) > 0, "Expected at least one .section container"
+    for entry in result:
+        assert entry["titles"] == 1, f"Expected 1 .section-title, got {entry['titles']}"
+        assert entry["bodies"] == 1, f"Expected 1 .section-body, got {entry['bodies']}"
+        assert entry["titleHasH2"], ".section-title must wrap an h2"
+
+
+# ── Heading id uniqueness ─────────────────────────────────────────
+
+
+def test_heading_ids_are_unique(page, base_url):
+    """rehype-slug must not emit duplicate ids within a single article."""
+    _article(page, base_url)
+    ids = page.evaluate(
+        "() => [...document.querySelectorAll('#markdown-body [id]')].map(el => el.id)"
     )
+    assert len(ids) == len(set(ids)), f"Duplicate ids found in article body: {ids}"
 
 
-def test_no_inline_onchange_on_inputs(wiki_page):
-    """No <input> element has an inline onchange attribute."""
-    inputs_with_onchange = wiki_page.evaluate("""() => {
-        const inputs = [...document.querySelectorAll('input[onchange]')];
-        return inputs.map(i => i.outerHTML.slice(0, 120));
+# ── Code-header structural markup ─────────────────────────────────
+
+
+def test_code_block_has_traffic_lights_and_copy_button(page, base_url):
+    """Each highlighted <pre> gets a .code-header with 3 traffic-light spans and a trailing .copy-btn."""
+    _article(page, base_url)
+    page.wait_for_selector("#markdown-body pre .code-header", timeout=8_000)
+    result = page.evaluate("""() => {
+        const pres = [...document.querySelectorAll('#markdown-body pre')].filter(p => !p.classList.contains('mermaid'));
+        return pres.map(p => ({
+            hasHeader: !!p.querySelector(':scope > .code-header'),
+            lights: p.querySelectorAll(':scope > .code-header .tl').length,
+            lastChildIsCopyBtn: p.lastElementChild?.classList.contains('copy-btn') ?? false,
+        }));
     }""")
-    assert inputs_with_onchange == [], (
-        f"Found inputs with inline onchange: {inputs_with_onchange}"
-    )
+    assert len(result) > 0, "Expected at least one non-mermaid code block"
+    for entry in result:
+        assert entry["hasHeader"], "Expected .code-header as first child of <pre>"
+        assert entry["lights"] == 3, f"Expected 3 traffic-light spans, got {entry['lights']}"
+        assert entry["lastChildIsCopyBtn"], "Expected .copy-btn as last child of <pre>"
 
 
-def test_data_action_search_open_works(wiki_page):
-    """Clicking the [data-action=prefs-search-open] entry in the preferences
-    panel (WIKI-240: search moved out of the topbar into Preferences) opens
-    the global search modal."""
-    wiki_page.locator("[data-action='settings-open']").first.click()
-    wiki_page.wait_for_selector("#prefs-modal:not(.hidden)")
-    wiki_page.locator("[data-action='prefs-search-open']").first.click()
-    wiki_page.wait_for_function(
-        "() => !document.getElementById('global-search-modal').classList.contains('hidden')"
-    )
-    is_hidden = wiki_page.evaluate(
-        "() => document.getElementById('global-search-modal').classList.contains('hidden')"
-    )
-    assert not is_hidden, "Global search modal did not open via data-action=prefs-search-open"
-
-
-def test_data_action_settings_open_works(wiki_page):
-    """Clicking a [data-action=settings-open] button opens the settings panel."""
-    wiki_page.locator("[data-action='settings-open']").first.click()
-    wiki_page.wait_for_function(
-        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
-    )
-    is_hidden = wiki_page.evaluate(
-        "() => document.getElementById('prefs-modal').classList.contains('hidden')"
-    )
-    assert not is_hidden, "Settings panel did not open via data-action=settings-open"
-
-
-def test_data_action_settings_close_works(wiki_page):
-    """Clicking [data-action=prefs-close] closes the settings panel."""
-    wiki_page.locator("[data-action='settings-open']").first.click()
-    wiki_page.wait_for_function(
-        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
-    )
-    wiki_page.locator("[data-action='prefs-close']").click()
-    wiki_page.wait_for_function(
-        "() => document.getElementById('prefs-modal').classList.contains('hidden')"
-    )
-    is_hidden = wiki_page.evaluate(
-        "() => document.getElementById('prefs-modal').classList.contains('hidden')"
-    )
-    assert is_hidden, "Settings panel did not close via data-action=prefs-close"
-
-
-@pytest.mark.heavy
-def test_data_action_settings_export_works(wiki_page):
-    """Clicking [data-action=settings-export] triggers a file download."""
-    wiki_page.locator("[data-action='settings-open']").first.click()
-    wiki_page.wait_for_selector("#prefs-modal:not(.hidden)")
-    wiki_page.locator("[data-action='prefs-tab'][data-tab='advanced']").click()
-    wiki_page.wait_for_selector("#prefs-panel-advanced.active")
-
-    with wiki_page.expect_download() as dl_info:
-        wiki_page.locator("[data-action='settings-export']").click()
-    download = dl_info.value
-    assert download.suggested_filename.endswith(".json"), (
-        f"Expected .json download, got: {download.suggested_filename}"
-    )
-
-
-def test_data_action_wiki_home_navigates_home(page, base_url):
-    """Clicking [data-action=wiki-home] from index view returns to home."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    # Navigate into a wiki first
-    page.locator(".wiki-card").first.click()
-    page.wait_for_selector("#view-index.active", timeout=5_000)
-
-    # Multiple [data-action='wiki-home'] buttons exist (one per view); only
-    # the active view's is visible - scope to it to avoid strict-mode
-    # ambiguity between it and e.g. the changelog view's copy.
-    page.locator("[data-action='wiki-home']:visible").click()
-    page.wait_for_selector("#view-home.active", timeout=5_000)
-
-    is_active = page.evaluate(
-        "() => document.getElementById('view-home').classList.contains('active')"
-    )
-    assert is_active, "Home view not active after clicking data-action=wiki-home"
+def test_callout_blockquote_has_icon_and_first_line_wrap(page, base_url):
+    """A styled callout blockquote gets .callout-icon + .callout-first-line, not a raw emoji-prefixed paragraph."""
+    _article(page, base_url)
+    result = page.evaluate("""() => {
+        const callouts = [...document.querySelectorAll('#markdown-body blockquote.callout')];
+        return callouts.map(c => ({
+            hasIcon: !!c.querySelector('.callout-first-line .callout-icon'),
+            variantClass: [...c.classList].some(cls => cls.startsWith('callout-') && cls !== 'callout'),
+        }));
+    }""")
+    assert len(result) > 0, "Expected at least one .callout blockquote in this article"
+    for entry in result:
+        assert entry["hasIcon"], "Expected .callout-first-line > .callout-icon"
+        assert entry["variantClass"], "Expected a callout-<variant> class alongside .callout"

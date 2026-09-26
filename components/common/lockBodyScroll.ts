@@ -1,6 +1,6 @@
 let count = 0;
 
-// Ref-counted body scroll lock; mirrors the .modal-open class as js/state.js did.
+// Ref-counted; nested modals must not unlock the body on the first close.
 export function lockBodyScroll(): void {
   count++;
   document.body.classList.add("modal-open");

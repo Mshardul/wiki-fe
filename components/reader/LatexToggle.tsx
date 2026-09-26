@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { writeToClipboard } from "@/lib/clipboard";
 import { showToast } from "@/lib/toast";
 
-// Single-letter → readable-name substitutions. Ported verbatim from js/content/formatting.js VAR_MAP.
 const VAR_MAP: Record<string, string> = {
   T: "time",
   t: "time",
@@ -52,8 +51,6 @@ function toolbarFor(block: HTMLElement): HTMLElement {
   return toolbar;
 }
 
-// Adds an αβ variable-name toggle + copy-LaTeX button to each .katex-display block.
-// Ported from js/content/formatting.js addFormulaToggle / addLatexCopyButtons.
 export function LatexToggle() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

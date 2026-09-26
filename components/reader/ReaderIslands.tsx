@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScrollToTop } from "@/components/chrome/ScrollToTop";
+import { TocDrawer } from "@/components/mobile/TocDrawer";
 import type { Article } from "@/lib/content/types";
 import { AnchorScroll } from "./AnchorScroll";
 import { ArticleFind } from "./ArticleFind";
@@ -10,6 +11,7 @@ import { CardCompletion } from "./CardCompletion";
 import { CaveatReveal } from "./CaveatReveal";
 import { CodeCopy } from "./CodeCopy";
 import { ComparisonTable } from "./ComparisonTable";
+import { EscapeToIndex } from "./EscapeToIndex";
 import { FocusMode } from "./FocusMode";
 import { GlossaryPopover } from "./GlossaryPopover";
 import { HeadingCollapse } from "./HeadingCollapse";
@@ -20,6 +22,7 @@ import { PracticeAnswerToggle } from "./PracticeAnswerToggle";
 import { PrereqStatus } from "./PrereqStatus";
 import { ProgressRing } from "./ProgressRing";
 import { ReadTracker } from "./ReadTracker";
+import { ScrollRestore } from "./ScrollRestore";
 import { StickyHeader } from "./StickyHeader";
 import { TabbedCode } from "./TabbedCode";
 import { Toc } from "./Toc";
@@ -29,8 +32,6 @@ interface ReaderIslandsProps {
   article: Pick<Article, "headings" | "verticalId" | "slug" | "path" | "title" | "isStub">;
 }
 
-// Single client wrapper the article page mounts; composes every reader island so the page
-// stays a thin server component.
 export function ReaderIslands({ article }: ReaderIslandsProps) {
   const [focusMode, setFocusMode] = useState(false);
   const articlePath = article.slug.join("/");
@@ -44,6 +45,7 @@ export function ReaderIslands({ article }: ReaderIslandsProps) {
   return (
     <>
       <ProgressRing />
+      <EscapeToIndex verticalId={article.verticalId} />
       <StickyHeader />
       <aside id="toc-sidebar" className="toc-sidebar">
         <div className="toc-header">
@@ -51,6 +53,7 @@ export function ReaderIslands({ article }: ReaderIslandsProps) {
         </div>
         <Toc headings={article.headings} />
       </aside>
+      <TocDrawer />
 
       <HeadingCollapse wikiId={article.verticalId} articlePath={articlePath} />
       <AnchorScroll />
@@ -71,12 +74,15 @@ export function ReaderIslands({ article }: ReaderIslandsProps) {
       <MermaidDiagrams />
 
       {!article.isStub && (
-        <ReadTracker
-          wikiId={article.verticalId}
-          path={article.path}
-          title={article.title}
-          slug={article.slug}
-        />
+        <>
+          <ReadTracker
+            wikiId={article.verticalId}
+            path={article.path}
+            title={article.title}
+            slug={article.slug}
+          />
+          <ScrollRestore wikiId={article.verticalId} articlePath={articlePath} />
+        </>
       )}
       <HoverPreview />
       <CardCompletion wikiId={article.verticalId} />

@@ -6,7 +6,6 @@ import { parseIndexSections } from "./discovery";
 import { getArticle } from "./get-article";
 import { verticalRegistry } from "./verticals";
 
-// isComplexityTable / extractTable port js/content/tables.js.
 const COMPLEXITY_HEADER_RE = /\b(time|space|complexity|best|worst|average)\b/i;
 const BIG_O_RE = /[OΘΩ]\s*\(/;
 const DS_SECTION_HEADING = "Data Structures";

@@ -21,8 +21,6 @@ export interface Crumb {
   href?: string;
 }
 
-// Given the current pathname (basePath already stripped by next/navigation), builds the crumb trail.
-// `leafTitle` overrides the last crumb's label with the real article title when the caller knows it.
 export function buildCrumbs(pathname: string, leafTitle?: string): Crumb[] {
   const segments = pathname
     .replace(/^\/+|\/+$/g, "")

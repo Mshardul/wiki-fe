@@ -58,7 +58,6 @@ export function getBacklinks(targetPath: string): BacklinkRef[] {
   });
 }
 
-// Ports _rankRelated from js/render/related-articles.js.
 const STOP = new Set([
   "a",
   "an",

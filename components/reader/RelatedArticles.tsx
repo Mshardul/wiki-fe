@@ -7,8 +7,6 @@ interface RelatedArticlesProps {
   slug: string[];
 }
 
-// Same-section "More in …" ranking. Server-rendered (no client state).
-// Ported from js/render/related-articles.js renderRelatedArticles.
 export function RelatedArticles({ vertical, slug }: RelatedArticlesProps) {
   const related: RelatedRef[] = getRelated(vertical, slug);
   if (!related.length) return null;

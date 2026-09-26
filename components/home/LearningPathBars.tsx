@@ -9,7 +9,6 @@ interface LearningPathBarsProps {
   tracks: VerticalIndex["learningPaths"];
 }
 
-// Per-track completion bar from local completions. Ported from js/render/learning-paths.js.
 export function LearningPathBars({ wikiId, tracks }: LearningPathBarsProps) {
   const [completed, setCompleted] = useState<Set<string>>(new Set());
 

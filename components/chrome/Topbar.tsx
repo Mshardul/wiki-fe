@@ -10,7 +10,6 @@ interface TopbarProps {
   actions?: ReactNode;
 }
 
-// Ported from the topbar markup in index.html + css/components/topbar.css.
 export function Topbar({ variant = "page", back, breadcrumb, title, actions }: TopbarProps) {
   if (variant === "content") {
     return (

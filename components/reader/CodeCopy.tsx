@@ -8,8 +8,6 @@ const ICONS =
   '<svg class="icon copy-btn-icon-copy" aria-hidden="true"><use href="#icon-copy"></use></svg>' +
   '<svg class="icon copy-btn-icon-check" aria-hidden="true"><use href="#icon-check"></use></svg>';
 
-// Wires the .copy-btn emitted by rehypeCodeHeader to copy the block's code.
-// Ported from js/content/code-blocks.js addCodeBlockHeader copy half.
 export function CodeCopy() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".markdown-body");

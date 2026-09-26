@@ -1,9 +1,7 @@
 import type { Element, ElementContent, Root } from "hast";
 import { visit } from "unist-util-visit";
 
-// Faithful port of js/content/practice-toggle.js: under the "Practice problems"
-// H2, each problem H3's Approach-through-Complexity run is wrapped in a hidden
-// .problem-answer. The reveal button is a cutover.md island; this emits markup only.
+// Emits hidden .problem-answer markup only; the reveal button is a client island.
 
 const APPROACH_RE = /^Approach[.:]?$/;
 const COMPLEXITY_RE = /^Complexity[.:]?$/;

@@ -1,141 +1,42 @@
-"""
-Content hotkeys (b for bookmark, , for settings toggle).
-Visual pulse on heading after TOC click.
-Persist and restore wiki index scroll position.
-"""
+# Dropped: index-scroll persistence (wiki-index-scroll-* is orphaned, Next router owns scroll — confirmed during test_index_ux.py's sweep) and the TOC-click pulse (.toc-heading-pulse is dead CSS, Toc.tsx's onClick only scrollIntoView + history.replaceState, never toggles the class).
 
 
 def _go_to_article(page, base_url):
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.goto(f"{base_url}/system-design/components/caching/", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
 
 
-# ── Content Hotkeys ────────────────────────────────────────────────
-
-
-def test_hotkey_b_bookmarks(page, base_url):
-    """Pressing 'b' toggles bookmark state."""
+def test_hotkey_b_toggles_bookmark(page, base_url):
     _go_to_article(page, base_url)
-    btn = page.locator("#prefs-bookmark-toggle")
-
-    # Initial state (assuming unbookmarked)
-    initial_state = "active" in (btn.get_attribute("class") or "")
-
-    # Toggle on
+    before = page.evaluate("() => localStorage.getItem('wiki-bookmarks')")
     page.keyboard.press("b")
-    assert "active" in btn.get_attribute("class")
-
-    # Toggle off (test uppercase B too)
-    page.keyboard.press("B")
-    # Should revert to initial state
-    is_active = "active" in btn.get_attribute("class")
-    assert is_active == initial_state
-
-
-def test_hotkey_comma_settings(page, base_url):
-    """Pressing ',' toggles the settings panel."""
-    _go_to_article(page, base_url)
-    panel = page.locator("#prefs-modal")
-
-    # Initially closed
-    assert "hidden" in (panel.get_attribute("class") or "")
-
-    # Open
-    page.keyboard.press(",")
-    assert "hidden" not in (panel.get_attribute("class") or "")
-
-    # Close (toggle)
-    page.keyboard.press(",")
     page.wait_for_function(
-        "() => document.getElementById('prefs-modal').classList.contains('hidden')"
+        "(before) => localStorage.getItem('wiki-bookmarks') !== before",
+        arg=before,
+        timeout=5_000,
     )
-    assert "hidden" in (panel.get_attribute("class") or "")
+    assert "caching" in (page.evaluate("() => localStorage.getItem('wiki-bookmarks')") or "")
 
-
-def test_hotkeys_disabled_in_input(page, base_url):
-    """Hotkeys should not trigger when an input is focused."""
-    _go_to_article(page, base_url)
-    # Open search modal to focus input
-    page.keyboard.press("Meta+k")
-    page.wait_for_selector("#gsearch-input")
-    page.focus("#gsearch-input")
-
-    # Try bookmarking via hotkey while input focused
     page.keyboard.press("b")
-    btn = page.locator("#prefs-bookmark-toggle")
-    # Should not toggle
-    assert "active" not in (btn.get_attribute("class") or "")
-
-
-# ── TOC Jump Pulse ─────────────────────────────────────────────────
-
-
-def test_toc_pulse_on_click(page, base_url):
-    """Clicking a TOC item adds the pulse class to the target heading."""
-    _go_to_article(page, base_url)
-    toc_item = page.locator("#toc-nav .toc-item").first
-    toc_item.click()
-
-    # Pulse class is added synchronously, removed after 600ms.
-    # Check immediately.
-    has_pulse = page.evaluate("""() => {
-        const toc = document.querySelector('#toc-nav .toc-item');
-        if (!toc) return false;
-        const id = toc.getAttribute('href').slice(1);
-        const h = document.querySelector(`#${id}`);
-        return h && h.classList.contains('toc-heading-pulse');
-    }""")
-    assert has_pulse
-
-
-# ── Persist Index Scroll ───────────────────────────────────────────
-
-
-def test_index_scroll_persistence(page, base_url):
-    """Scroll position on wiki index is restored when revisiting."""
-    logs = []
-    page.on("console", lambda m: logs.append(m.text))
-    # 1. Go to index and scroll down
-    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector(
-        ".index-card", timeout=10_000
-    )  # Content loaded → page is scrollable
-    # Scroll to 60% of the actual scrollable height (stays within page bounds)
-    page.evaluate("""() => {
-        const max = document.documentElement.scrollHeight - window.innerHeight;
-        window.scrollTo({ top: Math.floor(max * 0.6), behavior: 'instant' });
-    }""")
     page.wait_for_function(
-        "() => localStorage.getItem('wiki-index-scroll-system-design') !== null",
+        "() => !(localStorage.getItem('wiki-bookmarks') || '').includes('caching')",
         timeout=5_000,
     )
 
-    saved_scroll = page.evaluate(
-        "() => localStorage.getItem('wiki-index-scroll-system-design')"
-    )
-    assert saved_scroll and int(saved_scroll) > 0
 
-    # 2. Navigate away (to article)
-    page.locator(".index-card").first.click()
-    page.wait_for_selector("#view-content.active", timeout=10_000)
+def test_hotkey_comma_opens_preferences(page, base_url):
+    _go_to_article(page, base_url)
+    page.keyboard.press(",")
+    page.wait_for_selector('[role="dialog"][aria-label="Preferences"]', timeout=5_000)
 
-    # 3. Go back to index
-    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector(".index-card", timeout=10_000)  # Content loaded
 
-    # Scroll restore itself runs inside a requestIdleCallback (home-index.js),
-    # scheduled only after populateIndexReadTimes() resolves - it is not done
-    # just because .index-card exists. Wait for the actual restore instead of
-    # assuming it already happened; under load, idle time can take a while.
-    saved = int(
-        page.evaluate(
-            "() => localStorage.getItem('wiki-index-scroll-system-design') || '0'"
-        )
-    )
-    page.wait_for_function(
-        f"() => window.scrollY >= {saved} * 0.7",
-        timeout=10_000,
-    )
+def test_hotkey_b_disabled_while_typing_in_search(page, base_url):
+    _go_to_article(page, base_url)
+    page.keyboard.press("Meta+k")
+    page.wait_for_selector(".gsearch-input", timeout=5_000)
+    page.focus(".gsearch-input")
 
-    scroll_y = page.evaluate("() => window.scrollY")
-    assert scroll_y >= saved * 0.7  # Restored to within 30% of saved position
+    before = page.evaluate("() => localStorage.getItem('wiki-bookmarks')")
+    page.keyboard.press("b")
+    page.wait_for_timeout(200)
+    assert page.evaluate("() => localStorage.getItem('wiki-bookmarks')") == before

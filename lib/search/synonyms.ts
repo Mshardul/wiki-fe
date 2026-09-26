@@ -1,6 +1,5 @@
 import { loadDataJson } from "@/lib/storage/data-json";
 
-// Synonym expansion. Ported from js/search/search-features.js expandQuery + js/state.js synonymCache.
 let map: Record<string, string[]> = {};
 let loaded = false;
 

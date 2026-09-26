@@ -1,7 +1,4 @@
-// Password policy — mirrors wiki-be. Values copied verbatim from js/auth.js PW_RULES.
-// Keep in sync with docs/_meta/auth.md (Password policy). WIKI-634: the special-char test
-// currently also passes whitespace; tightened there, not here, to stay a faithful port.
-
+// Keep in sync with docs/_meta/auth.md (Password policy) and wiki-be.
 export interface PasswordRule {
   id: string;
   label: string;

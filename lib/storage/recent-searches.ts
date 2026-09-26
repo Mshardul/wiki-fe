@@ -3,7 +3,6 @@ import { getJSON, makeSnapshot, remove, setJSON, subscribeKey } from "./local";
 
 const MAX = 10;
 
-// Recent search queries. Ported from js/storage/scroll-collapse.js RecentSearches.
 export function getRecentSearches(): string[] {
   return getJSON<string[]>(KEYS.recentSearches, []);
 }

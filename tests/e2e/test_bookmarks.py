@@ -1,225 +1,162 @@
-"""
-- bookmarks shown as chips on wiki index, not on home page
-- clear button removes all bookmarks for the wiki
-"""
-
 import pytest
+
+# Not ported: per-section "clear bookmarks" button on the index strip (BookmarksStrip.tsx renders plain <Link> chips, no clear control) - the only clear path now is the global "Clear everything" in Preferences -> Advanced, already covered by test_settings.py::test_clear_everything_wipes_local_data.
+# Settings-panel bookmark toggle doesn't exist either - the only ways to bookmark are the `b` hotkey on an article and index-card swipe-right (test_touch_gestures.py).
+# Dropped: "reopening is a no-op" - ⌘B is a real toggle here (BookmarksModal.tsx), so pressing it again while open closes the modal by design, not a no-op.
 
 
 def _go_to_article(page, base_url):
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.goto(f"{base_url}/system-design/components/caching/", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
 
 
 def _bookmark_current(page):
-    page.locator("[title='Preferences (,)']:visible").first.click()
-    page.wait_for_function(
-        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
-    )
-    page.locator("[data-tab='advanced']").click()
-    page.wait_for_function(
-        "() => document.getElementById('prefs-panel-advanced').getAttribute('aria-hidden') === 'false'"
-    )
-    btn = page.locator("#prefs-bookmark-toggle")
-    btn.wait_for(state="visible")
-    if "active" not in (btn.get_attribute("class") or ""):
-        btn.click()
-    page.keyboard.press("Escape")
-    page.wait_for_function(
-        "() => document.getElementById('prefs-modal').classList.contains('hidden')"
-    )
+    page.keyboard.press("b")
+    page.wait_for_timeout(100)
 
 
-def _go_to_index(page, base_url):
-    page.goto(f"{base_url}/#system-design", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-index.active", timeout=5_000)
+def _go_to_index(page, base_url, slug="system-design"):
+    page.goto(f"{base_url}/{slug}/", wait_until="domcontentloaded")
+    page.wait_for_selector(".index-card:not(.index-card--unavailable)", timeout=10_000)
 
 
 def _go_to_dsa_article(page, base_url):
-    page.goto(f"{base_url}/#dsa/array", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.goto(f"{base_url}/dsa/data-structures/array/", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
 
 
 def _open_bookmarks_modal(page):
     is_mac = "Mac" in page.evaluate("navigator.platform")
     page.keyboard.press("Meta+b" if is_mac else "Control+b")
-    page.wait_for_selector("#bookmarks-modal:not(.hidden)", timeout=5_000)
+    page.wait_for_selector('[role="dialog"][aria-label="Bookmarks"]', timeout=5_000)
+
+
+def _bookmarks_modal(page):
+    return page.locator('[role="dialog"][aria-label="Bookmarks"]')
 
 
 def test_bookmarks_not_on_home(page, base_url):
-    """home view has no bookmarks section."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=5_000)
-    assert page.locator("#view-home #bookmarks-section").count() == 0
+    page.goto(base_url, wait_until="domcontentloaded")
+    page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
+    assert page.locator("#bookmarks-section").count() == 0
 
 
 @pytest.mark.smoke
 def test_bookmarks_appear_on_index(page, base_url):
-    """after bookmarking, chip appears in #bookmarks-section on wiki index."""
     _go_to_article(page, base_url)
     _bookmark_current(page)
     _go_to_index(page, base_url)
 
     section = page.locator("#bookmarks-section")
-    assert not (section.get_attribute("class") or "").count("hidden")
-    chips = section.locator(".recent-chip").all()
-    assert len(chips) >= 1
-
-
-def test_clear_bookmarks_removes_all(page, base_url):
-    """clicking clear button on bookmarks section hides it."""
-    _go_to_article(page, base_url)
-    _bookmark_current(page)
-    _go_to_index(page, base_url)
-
-    section = page.locator("#bookmarks-section")
-    section.wait_for(state="visible")
-
-    section.locator(".recents-clear-btn").click()
-    assert "hidden" in (section.get_attribute("class") or "")
+    expect_count = section.locator(".recent-chip").count()
+    assert expect_count >= 1
 
 
 def test_bookmark_toggle_scoped_by_wiki_id(page, base_url):
-    """Toggling a bookmark on one wiki must not remove the same path bookmarked in another wiki."""
+    """Bookmarking the same path under two different wikis must not collide."""
     shared_path = "content/system-design/components/caching.md"
     _go_to_article(page, base_url)
     page.evaluate(
         f"""() => {{
             localStorage.setItem('wiki-bookmarks', JSON.stringify([
-                {{wikiId:'system-design', path:{shared_path!r}, slug:'caching', title:'Caching', wikiTitle:'System Design'}},
-                {{wikiId:'dsa', path:{shared_path!r}, slug:'caching', title:'Caching', wikiTitle:'Data Structures & Algorithms'}},
+                {{wikiId:'system-design', path:{shared_path!r}, slug:'components/caching', title:'Caching', wikiTitle:'System Design'}},
+                {{wikiId:'dsa', path:{shared_path!r}, slug:'components/caching', title:'Caching', wikiTitle:'Data Structures & Algorithms'}},
             ]));
         }}"""
     )
     page.reload(wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.locator("[title='Preferences (,)']:visible").first.click()
-    page.wait_for_function(
-        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
-    )
-    page.locator("[data-tab='advanced']").click()
-    page.wait_for_function(
-        "() => document.getElementById('prefs-panel-advanced').getAttribute('aria-hidden') === 'false'"
-    )
-    btn = page.locator("#prefs-bookmark-toggle")
-    assert "active" in (btn.get_attribute("class") or ""), "System Design bookmark must show active"
-    btn.click()
-    page.keyboard.press("Escape")
-    page.wait_for_function(
-        "() => document.getElementById('prefs-modal').classList.contains('hidden')"
-    )
+    page.wait_for_selector("#markdown-body", timeout=10_000)
+
+    _bookmark_current(page)  # toggles off the system-design entry only
 
     _open_bookmarks_modal(page)
-    wiki_labels = page.locator("#bookmarks-modal-list .bookmarks-modal-entry-wiki").all_inner_texts()
+    wiki_labels = _bookmarks_modal(page).locator(".bookmarks-modal-entry-wiki").all_inner_texts()
     assert "Data Structures & Algorithms" in wiki_labels
-    assert wiki_labels.count("System Design") == 0
+    assert "System Design" not in wiki_labels
 
 
 def test_anon_bookmark_makes_no_api_call(page, base_url):
-    """logged-out users hit zero sync endpoints when bookmarking."""
     calls = []
     page.route(
         "**/api/v1/auth/me",
-        lambda r: r.fulfill(
-            status=401,
-            content_type="application/json",
-            body='{"error":{"code":"UNAUTHORIZED","message":"x"}}',
-        ),
+        lambda r: r.fulfill(status=401, content_type="application/json", body='{"error":{"code":"UNAUTHORIZED","message":"x"}}'),
     )
-    # record then abort any sync-endpoint call (none should happen while anon)
-    page.route(
-        "**/api/v1/bookmarks",
-        lambda r: (calls.append(r.request.url), r.abort()),
-    )
+    page.route("**/api/v1/bookmarks", lambda r: (calls.append(r.request.url), r.abort()))
 
     _go_to_article(page, base_url)
     _bookmark_current(page)
-    page.wait_for_timeout(150)  # give any (erroneous) fire-and-forget POST time to fire
+    page.wait_for_timeout(150)
     assert all("/bookmarks" not in u for u in calls)
 
 
 def test_bookmarks_empty_state_shown(page, base_url):
-    """Regression for WIKI-448: empty bookmarks hides the section entirely
-    (rather than un-hiding with a placeholder sentence)."""
-    page.goto(base_url)
-    page.evaluate("localStorage.removeItem('wiki-bookmarks')")
-    page.reload()
+    page.goto(base_url, wait_until="domcontentloaded")
+    page.evaluate("() => localStorage.removeItem('wiki-bookmarks')")
+    page.reload(wait_until="domcontentloaded")
     page.locator(".wiki-card").first.click()
-    page.wait_for_selector("#bookmarks-section", state="attached")
-    section = page.locator("#bookmarks-section")
-    assert "hidden" in (section.get_attribute("class") or "")
+    page.wait_for_selector(".index-card:not(.index-card--unavailable)", timeout=10_000)
+    assert page.locator("#bookmarks-section").count() == 0
 
 
 @pytest.mark.smoke
 def test_cmd_b_opens_global_bookmarks_modal(page, base_url):
-    """Ctrl/Cmd+B opens the global bookmarks modal from any view."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=5_000)
+    page.goto(base_url, wait_until="domcontentloaded")
+    page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
     _open_bookmarks_modal(page)
-    modal = page.locator("#bookmarks-modal")
-    assert modal.is_visible()
-    assert modal.get_attribute("aria-hidden") == "false"
+    assert _bookmarks_modal(page).count() == 1
 
 
 def test_bookmarks_modal_lists_bookmarks_across_wikis(page, base_url):
-    """modal groups/lists entries from more than one wiki when bookmarks exist in both."""
     _go_to_article(page, base_url)
     _bookmark_current(page)
     _go_to_dsa_article(page, base_url)
     _bookmark_current(page)
 
     _open_bookmarks_modal(page)
-    entries = page.locator("#bookmarks-modal-list .bookmarks-modal-entry")
+    entries = _bookmarks_modal(page).locator(".bookmarks-modal-entry")
     assert entries.count() >= 2
-    wiki_labels = page.locator("#bookmarks-modal-list .bookmarks-modal-entry-wiki").all_inner_texts()
+    wiki_labels = _bookmarks_modal(page).locator(".bookmarks-modal-entry-wiki").all_inner_texts()
     assert "System Design" in wiki_labels
     assert "Data Structures & Algorithms" in wiki_labels
 
 
 def test_bookmarks_modal_entry_navigates_and_closes(page, base_url):
-    """clicking a bookmark entry navigates to that article and closes the modal."""
     _go_to_article(page, base_url)
     _bookmark_current(page)
     _go_to_index(page, base_url)
 
     _open_bookmarks_modal(page)
-    page.locator("#bookmarks-modal-list .bookmarks-modal-entry").first.click()
+    _bookmarks_modal(page).locator(".bookmarks-modal-entry").first.click()
 
-    # state="hidden" - default is "visible", which .hidden (display:none) can't satisfy.
-    page.wait_for_selector("#bookmarks-modal.hidden", state="hidden", timeout=5_000)
-    page.wait_for_selector("#view-content.active", timeout=10_000)
+    page.wait_for_selector('[role="dialog"][aria-label="Bookmarks"]', state="detached", timeout=5_000)
+    page.wait_for_selector("#markdown-body", timeout=10_000)
     assert "caching" in page.url
 
 
 def test_bookmarks_modal_remove_updates_list_and_persists(page, base_url):
-    """removing a bookmark from the modal updates the list and localStorage."""
     _go_to_article(page, base_url)
     _bookmark_current(page)
     _go_to_index(page, base_url)
 
     _open_bookmarks_modal(page)
-    entries = page.locator("#bookmarks-modal-list .bookmarks-modal-entry")
+    entries = _bookmarks_modal(page).locator(".bookmarks-modal-entry")
     assert entries.count() >= 1
 
-    page.locator("#bookmarks-modal-list .bookmarks-modal-remove").first.click()
-    # Removing the last bookmark closes the whole modal, so the empty-state
-    # <p> renders under a now-hidden ancestor - wait for it to attach, not
-    # to become visible (it may never be, if that was the only bookmark).
-    page.wait_for_selector("#bookmarks-modal-list .recents-empty", state="attached", timeout=5_000)
+    _bookmarks_modal(page).locator(".bookmarks-modal-remove").first.click()
+    page.wait_for_selector('[role="dialog"][aria-label="Bookmarks"] .recents-empty', state="attached", timeout=5_000)
 
-    stored = page.evaluate("localStorage.getItem('wiki-bookmarks')")
+    stored = page.evaluate("() => localStorage.getItem('wiki-bookmarks')")
     assert "caching" not in stored
 
 
 def test_bookmarks_modal_empty_state(page, base_url):
-    """empty state shows when no bookmarks exist anywhere."""
-    page.goto(base_url)
-    page.evaluate("localStorage.removeItem('wiki-bookmarks')")
-    page.reload()
-    page.wait_for_selector("#view-home.active", timeout=5_000)
+    page.goto(base_url, wait_until="domcontentloaded")
+    page.evaluate("() => localStorage.removeItem('wiki-bookmarks')")
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
 
     _open_bookmarks_modal(page)
-    empty = page.locator("#bookmarks-modal-list .recents-empty")
+    empty = _bookmarks_modal(page).locator(".recents-empty")
     assert empty.is_visible()
     assert "no bookmarks anywhere yet" in empty.inner_text()
     assert empty.locator("kbd").count() > 0
@@ -231,25 +168,14 @@ def test_escape_closes_bookmarks_modal(page, base_url):
     _open_bookmarks_modal(page)
 
     page.keyboard.press("Escape")
-    page.wait_for_selector("#bookmarks-modal.hidden", state="hidden", timeout=5_000)
+    page.wait_for_selector('[role="dialog"][aria-label="Bookmarks"]', state="detached", timeout=5_000)
 
 
-def test_reopening_bookmarks_modal_is_a_noop(page, base_url):
-    """Firing the ⌘B open hotkey while the bookmarks modal is already open must no-op."""
-    _go_to_article(page, base_url)
-    _bookmark_current(page)
-    _go_to_index(page, base_url)
-
+def test_cmd_b_again_toggles_modal_closed(page, base_url):
+    page.goto(base_url, wait_until="domcontentloaded")
+    page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
     _open_bookmarks_modal(page)
-    first_entry = page.locator("#bookmarks-modal-list .bookmarks-modal-entry").first
-    first_entry.focus()
 
-    # Re-fire the open hotkey while already open - a no-op must leave focus exactly
-    # where it was instead of the open sequence stealing it back to the first item.
     is_mac = "Mac" in page.evaluate("navigator.platform")
     page.keyboard.press("Meta+b" if is_mac else "Control+b")
-    page.wait_for_timeout(50)
-
-    assert first_entry.evaluate("(el) => el === document.activeElement")
-    modal = page.locator("#bookmarks-modal")
-    assert modal.is_visible()
+    page.wait_for_selector('[role="dialog"][aria-label="Bookmarks"]', state="detached", timeout=5_000)

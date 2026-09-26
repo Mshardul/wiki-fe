@@ -26,8 +26,6 @@ function offsetToPoint(nodes: Text[], target: number): { node: Text; offset: num
   return null;
 }
 
-// In-article find bar. Ported from js/content/formatting.js ArticleFind — Range-wraps matches
-// in place so island widgets survive, next/prev, live count.
 export function ArticleFind() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -104,8 +102,13 @@ export function ArticleFind() {
         setOpen(true);
       }
     };
+    const onOpenEvt = () => setOpen(true);
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("wiki:open-article-find", onOpenEvt);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("wiki:open-article-find", onOpenEvt);
+    };
   }, []);
 
   useEffect(() => {

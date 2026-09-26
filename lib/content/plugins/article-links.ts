@@ -5,10 +5,6 @@ import { resolveContentHref } from "../paths";
 import type { RenderContext } from "../types";
 import { verticalRegistry } from "../verticals";
 
-// Rewrites in-body markdown links to real Next routes: a relative *.md href resolves against the
-// article path to /{vertical}/{slug}/ (fragment carried as ?a=); http(s) links get target/rel;
-// bare #anchors are left for the AnchorScroll island. Ported from js/render/content-view.js interceptMdLinks.
-
 const CONTENT_RE = /^content\/([^/]+)\/(.+)\.md$/;
 
 function toRoute(articlePath: string, href: string): string | null {

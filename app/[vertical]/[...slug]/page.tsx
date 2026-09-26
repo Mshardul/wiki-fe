@@ -5,7 +5,7 @@ import { MentionedBy } from "@/components/reader/MentionedBy";
 import { ReaderIslands } from "@/components/reader/ReaderIslands";
 import { RelatedArticles } from "@/components/reader/RelatedArticles";
 import { CANONICAL_BASE } from "@/lib/config";
-import { getArticle, getArticleSlugs } from "@/lib/content";
+import { getArticle, getArticleSlugs, getVertical } from "@/lib/content";
 
 export function generateStaticParams() {
   return getArticleSlugs();
@@ -20,10 +20,12 @@ export async function generateMetadata({
   const article = await getArticle(vertical, slug);
   if (!article) return {};
   const path = `/${vertical}/${slug.join("/")}/`;
+  const v = getVertical(vertical);
   return {
-    title: article.title,
+    title: v ? `${article.title} · ${v.title}` : article.title,
     description: article.excerpt || undefined,
     alternates: { canonical: `${CANONICAL_BASE}${path}` },
+    robots: { index: false, follow: false },
   };
 }
 
@@ -38,7 +40,11 @@ export default async function Article({
 
   return (
     <>
-      <ReaderTopbar leafTitle={article.title} backHref={`/${vertical}/`} />
+      <ReaderTopbar
+        leafTitle={article.title}
+        backHref={`/${vertical}/`}
+        articlePath={article.isStub ? undefined : article.path}
+      />
       <main className="content-layout">
         <div className="content-main">
           <div className="article-hero">

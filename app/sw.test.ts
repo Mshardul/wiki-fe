@@ -29,4 +29,14 @@ describe("service worker precache scope (spec §8: small shell, not the whole si
     expect(config).not.toMatch(/"\*\*\/\*\.html"/);
     expect(config).toContain('modifyURLPrefix: { "": "/wiki-fe/" }');
   });
+
+  it("precaches only the shell's own chunks, runtime-caches the rest", () => {
+    // config derives globPatterns from the shell HTML instead of a blanket _next/static/**/*.js
+    expect(config).not.toMatch(/"_next\/static\/\*\*\/\*\.\{js/);
+    expect(config).toContain("SHELL_HTML");
+    expect(config).toContain("shellAssets");
+    // sw.ts runtime-caches every other JS chunk
+    expect(sw).toContain("wiki-static");
+    expect(sw).toMatch(/_next\\\/static\\\/.+\\\.js/);
+  });
 });

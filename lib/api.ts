@@ -1,5 +1,3 @@
-// Single typed wiki-be client. Framework-agnostic (no Next coupling, spec §2). Ported from js/api.js.
-
 const isLocal =
   typeof location !== "undefined" &&
   (location.hostname === "localhost" || location.hostname === "127.0.0.1");
@@ -35,9 +33,7 @@ export function setSessionToken(token: string | null): void {
   try {
     if (token) localStorage.setItem(SESSION_TOKEN_KEY, token);
     else localStorage.removeItem(SESSION_TOKEN_KEY);
-  } catch {
-    // storage unavailable — session won't persist
-  }
+  } catch {}
 }
 
 interface RequestOpts {
@@ -174,7 +170,11 @@ export const api = {
   },
 };
 
-// test-only: reset the fired-once guard
+// Fire-and-forget GET to warm a Render cold start.
+export function pingHealth(): void {
+  void fetch(`${BACKEND_URL}/health`).catch(() => {});
+}
+
 export function _resetSessionExpiredGuard(): void {
   sessionExpiredFired = false;
 }

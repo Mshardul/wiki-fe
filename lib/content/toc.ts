@@ -15,7 +15,6 @@ function headingText(node: Element): string {
   return out.trim();
 }
 
-// h2/h3/h4 in document order, matching js/content/toc.js buildTOC.
 export function extractHeadings(tree: Nodes): Heading[] {
   const headings: Heading[] = [];
   visit(tree, "element", (node: Element) => {

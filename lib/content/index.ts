@@ -3,9 +3,7 @@ import { getManifestSync } from "./manifest";
 import type { Vertical } from "./types";
 import { verticalRegistry } from "./verticals";
 
-// articleCount comes from the generated manifest when it exists; before the
-// first content build it falls back to the discovered path count (same
-// total-articles semantics as js/render/home-parse.js updateArticleCounts).
+// articleCount comes from the generated manifest when it exists; before the first content build it falls back to the discovered path count.
 export function getVerticals(): Vertical[] {
   const manifest = getManifestSync();
   return verticalRegistry().map((v) => {

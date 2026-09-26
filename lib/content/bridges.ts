@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { z } from "zod";
 
-// Ports scripts/validate_bridges.py - validate-only, the file is hand-authored and never regenerated.
+// Validate-only; bridges.json is hand-authored and never regenerated.
 const BRIDGES_FILE = "content/bridges.json";
 const PATH_RE = /^\.\/content\/.+\.md$/;
 

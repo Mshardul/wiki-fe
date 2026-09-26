@@ -5,7 +5,6 @@ import { logoutFlow } from "@/lib/auth/authFlows";
 import { showToast } from "@/lib/toast";
 import { openAuthModal } from "./authModalController";
 
-// Topbar auth control. Ported from js/auth.js Auth.refreshButtons / Auth.toggle.
 export function AuthButton() {
   const { status } = useSession();
   const loggedIn = status === "in";

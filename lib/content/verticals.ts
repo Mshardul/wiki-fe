@@ -1,7 +1,6 @@
 import type { Vertical } from "./types";
 
-// Lifted verbatim from js/state.js WIKIS; indexPath is repo-relative without the ./ prefix;
-// articleCount is derived from the manifest in Phase 6, not stored here.
+// indexPath is repo-relative without the ./ prefix; articleCount is derived from the manifest, not stored here.
 const REGISTRY: Omit<Vertical, "articleCount">[] = [
   {
     id: "system-design",

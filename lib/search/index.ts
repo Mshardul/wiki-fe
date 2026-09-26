@@ -4,8 +4,6 @@ import type { SearchEntry } from "./score";
 
 let cache: SearchEntry[] | null = null;
 
-// Flattens the Node-built search-index.json into a flat entry list. Ported from
-// js/render/home-parse.js search-entry building.
 export async function loadSearchEntries(): Promise<SearchEntry[]> {
   if (cache) return cache;
   const [index] = await Promise.all([loadDataJson("search-index")]);
@@ -36,7 +34,6 @@ export function _resetSearchEntriesCache(): void {
   cache = null;
 }
 
-// Route for a search entry (basePath handled by next/link at the call site).
 export function routeFor(entry: SearchEntry): string {
   const rest = entry.path.replace(/^content\/[^/]+\//, "").replace(/\.md$/, "");
   return `/${entry.verticalId}/${rest}/`;

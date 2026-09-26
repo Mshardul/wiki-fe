@@ -40,6 +40,11 @@ describe("lib/storage/bookmarks", () => {
     await vi.waitFor(() => expect(remove).toHaveBeenCalledWith("dsa", "content/dsa/x.md"));
   });
 
+  it("slug keeps nested directories, not just the filename", () => {
+    toggleBookmark("system-design", "content/system-design/components/caching.md");
+    expect(getBookmarks()[0]?.slug).toBe("components/caching");
+  });
+
   it("does not fire an API write when logged out", () => {
     state.status = "out";
     toggleBookmark("dsa", "content/dsa/x.md");

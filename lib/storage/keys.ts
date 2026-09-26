@@ -1,5 +1,3 @@
-// Canonical localStorage keys + prefixes, ported verbatim from the js/storage/* modules.
-// Flat keys:
 export const KEYS = {
   settings: "wiki-settings",
   bookmarks: "wiki-bookmarks",
@@ -14,7 +12,6 @@ export const KEYS = {
   lastLightPreset: "wiki-last-light-preset",
 } as const;
 
-// Per-wiki / per-article keys (suffix is wikiId or `${wikiId}-${articlePath}`):
 export const PREFIXES = {
   completed: "wiki-completed-",
   reveals: "wiki-reveals-",

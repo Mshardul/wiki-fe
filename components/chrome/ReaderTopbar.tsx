@@ -2,11 +2,19 @@
 
 import Link from "next/link";
 import { AuthButton } from "@/components/auth/AuthButton";
+import { SaveOffline } from "@/components/pwa/SaveOffline";
 import { Breadcrumb } from "./Breadcrumb";
 import { Topbar } from "./Topbar";
 
-// The article-page content topbar. Ported from the .content-topbar markup in index.html.
-export function ReaderTopbar({ leafTitle, backHref }: { leafTitle: string; backHref: string }) {
+export function ReaderTopbar({
+  leafTitle,
+  backHref,
+  articlePath,
+}: {
+  leafTitle: string;
+  backHref: string;
+  articlePath?: string;
+}) {
   return (
     <Topbar
       variant="content"
@@ -43,6 +51,7 @@ export function ReaderTopbar({ leafTitle, backHref }: { leafTitle: string; backH
               <use href="#icon-settings" />
             </svg>
           </button>
+          {articlePath && <SaveOffline articlePath={articlePath} />}
           <AuthButton />
         </>
       }
