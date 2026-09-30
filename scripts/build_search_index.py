@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate content/search-index.json from each wiki's index.md.
 
-Mirrors the parsing rules of parseIndexMd (js/render/home-index.js) so the
+Mirrors the parsing rules of parseIndexMd (lib/content/search-index.ts) so the
 FE can load one static JSON file instead of fetching + parsing every wiki's
 index.md on first ⌘K open. Run in CI before deploy; commit the output.
 
@@ -17,7 +17,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CONTENT_ROOT = REPO_ROOT / "content"
 
-# Keep in sync with WIKIS in js/state.js.
+# Keep in sync with lib/content/verticals.ts.
 WIKIS = [
     {"id": "system-design", "title": "System Design", "indexPath": "system-design/index.md"},
     {"id": "dsa", "title": "Data Structures & Algorithms", "indexPath": "dsa/index.md"},

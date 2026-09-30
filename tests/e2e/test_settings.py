@@ -338,11 +338,11 @@ def test_content_width_updates_css_var(wiki_page):
     row = _swatch_row(wiki_page, "Content width")
     row.locator(".settings-size-btn").nth(0).click()  # Narrow
     narrow = wiki_page.evaluate(
-        "() => document.documentElement.style.getPropertyValue('--content-inset').trim()"
+        "() => document.documentElement.style.getPropertyValue('--layout-padding').trim()"
     )
     row.locator(".settings-size-btn").nth(2).click()  # Wide
     wide = wiki_page.evaluate(
-        "() => document.documentElement.style.getPropertyValue('--content-inset').trim()"
+        "() => document.documentElement.style.getPropertyValue('--layout-padding').trim()"
     )
     assert narrow != wide
 

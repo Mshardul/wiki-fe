@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "next dev",
+    "prebuild": "pnpm content:build",
     "build": "next build && pnpm sw:build",
     "sw:build": "serwist build serwist.config.js",
     "start": "next start",

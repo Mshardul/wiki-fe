@@ -20,7 +20,7 @@ describe("computeShapeFingerprint", () => {
     });
   });
 
-  it("has the headings and codeBlocks fields js/render/content-view.js reads", () => {
+  it("has the headings and codeBlocks fields the manifest schema requires", () => {
     const fp = computeShapeFingerprint(hast("<h2>a</h2><pre>x</pre>"));
     expect(fp).toHaveProperty("headings");
     expect(fp).toHaveProperty("codeBlocks");

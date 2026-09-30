@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { buildCrumbs, pageTitleFor } from "./Breadcrumb";
+import { buildCrumbs } from "./Breadcrumb";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/dsa/patterns/sliding-window/" }));
 vi.mock("next/link", () => ({
@@ -19,16 +19,12 @@ describe("Breadcrumb", () => {
     expect(crumbs[2]?.href).toBeUndefined();
   });
 
-  it("derives the document title as leaf + vertical (matching server metadata)", () => {
-    const crumbs = buildCrumbs("/dsa/patterns/sliding-window/", "Sliding Window");
-    expect(pageTitleFor(crumbs)).toBe("Sliding Window · DSA · Wiki");
-  });
-
-  it("renders the trail and sets document.title", async () => {
+  it("renders the trail and leaves document.title to Next metadata", async () => {
+    document.title = "Sliding Window · Data Structures & Algorithms · Wiki";
     const { Breadcrumb } = await import("./Breadcrumb");
     render(<Breadcrumb leafTitle="Sliding Window" />);
     expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "DSA" }).getAttribute("href")).toBe("/dsa/");
-    expect(document.title).toBe("Sliding Window · DSA · Wiki");
+    expect(document.title).toBe("Sliding Window · Data Structures & Algorithms · Wiki");
   });
 });

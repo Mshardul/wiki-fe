@@ -44,6 +44,20 @@ def test_title_updates_on_client_nav(page, base_url):
     page.wait_for_function("() => document.title.includes('Array')", timeout=10_000)
 
 
+def test_title_after_client_nav_matches_server_metadata(wiki_page, base_url):
+    """A client-side nav lands on the same title a hard load serves (Next metadata is the only title source)."""
+    wiki_page.locator('a.wiki-card[href$="/dsa/"]').click()
+    wiki_page.wait_for_url("**/dsa/")
+    wiki_page.wait_for_selector(".index-main", timeout=8_000)
+    wiki_page.wait_for_load_state("networkidle")
+    assert wiki_page.title() == "Data Structures & Algorithms · Wiki"
+
+
+def test_title_on_offline_shelf(page, base_url):
+    page.goto(f"{base_url}/offline/", wait_until="networkidle")
+    assert page.title() == "Offline shelf · Wiki"
+
+
 # ── Multi-level path resolution (build-time article-links plugin) ───
 
 

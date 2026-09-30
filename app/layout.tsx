@@ -23,7 +23,8 @@ import "katex/dist/katex.min.css";
 
 const sprite = readFileSync("sprite.svg", "utf8");
 
-const swRegister = `if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/wiki-fe/sw.js",{scope:"/wiki-fe/"})})}`;
+// Also unregisters the pre-Next `wiki-sw.js` left behind in returning visitors' browsers.
+const swRegister = `if("serviceWorker" in navigator){window.addEventListener("load",function(){var sw=navigator.serviceWorker;sw.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){var w=r.active||r.waiting||r.installing;return w&&/\\/wiki-sw\\.js$/.test(w.scriptURL)?r.unregister():0}))}).catch(function(){}).then(function(){sw.register("/wiki-fe/sw.js",{scope:"/wiki-fe/"})})})}`;
 
 // Pre-hydration theme boot: set data-theme + fontSize before first paint to avoid a flash; full applySettings() (all preset vars) runs in SettingsInit on mount.
 const bootTheme = `(function(){try{var s=JSON.parse(localStorage.getItem("wiki-settings")||"null");var dark=s&&s.backgroundId?s.backgroundId.indexOf("light-")!==0:!window.matchMedia("(prefers-color-scheme: light)").matches;document.documentElement.setAttribute("data-theme",dark?"dark":"light");if(s&&s.fontSize){var m={S:"87.5%",M:"100%",L:"112.5%"};document.documentElement.style.fontSize=m[s.fontSize]||"100%"}}catch(e){}})()`;

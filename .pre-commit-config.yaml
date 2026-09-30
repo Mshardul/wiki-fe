@@ -38,14 +38,14 @@ repos:
         language: system
         entry: pnpm typecheck
         files: '\.(ts|tsx)$'
-        exclude: '^(js/|tests/e2e/)'
+        exclude: '^tests/e2e/'
         pass_filenames: false
       - id: ts-lint
         name: pnpm lint (eslint + biome)
         language: system
         entry: pnpm lint
         files: '\.(ts|tsx|css)$'
-        exclude: '^(js/|tests/e2e/)'
+        exclude: '^tests/e2e/'
         pass_filenames: false
 
   # ── Dead links (lychee - requires: brew install lychee) ─────────────────────
@@ -58,16 +58,6 @@ repos:
         args: [--offline, --no-progress, --root-dir, ".", --exclude-path, content]
         types: [markdown]
         pass_filenames: true
-
-  # ── SW cache version (content-hash bump, so a missed manual bump can't ship stale cache) ─
-  - repo: local
-    hooks:
-      - id: bump-cache-version
-        name: bump ARTICLE_CACHE version from content/ hash
-        language: system
-        entry: .venv/bin/python3 scripts/bump_cache_version.py
-        files: '^content/.*\.md$'
-        pass_filenames: false
 
   # ── Generated content indexes (search-index runs first, others consume its output) ──
   - repo: local

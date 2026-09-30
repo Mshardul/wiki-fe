@@ -12,6 +12,7 @@ interface HotkeyContext {
   isArticle: boolean;
   article?: { verticalId: string; path: string; title: string };
   anyModalOpen?: () => boolean;
+  wikiSwitcherOpen?: () => boolean;
 }
 
 const SIZES: Array<"S" | "M" | "L"> = ["S", "M", "L"];
@@ -46,7 +47,7 @@ export function bindHotkeys(getContext: () => HotkeyContext): () => void {
     }
     if (!typing && (e.key === "w" || e.key === "W")) {
       // wiki-switcher toggles itself, so only block opening it on top of a *different* open modal.
-      if (ctx.anyModalOpen?.()) return;
+      if (ctx.anyModalOpen?.() && !ctx.wikiSwitcherOpen?.()) return;
       e.preventDefault();
       document.dispatchEvent(new CustomEvent("wiki:open-wiki-switcher"));
       return;

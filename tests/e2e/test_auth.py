@@ -1,5 +1,4 @@
 import re
-import threading
 
 import pytest
 from playwright.sync_api import expect
@@ -46,20 +45,15 @@ def test_auth_modal_opens_from_topbar(page, base_url):
     expect(page.get_by_role("heading", name="Log in")).to_be_visible()
 
 
-def test_auth_modal_centered_regardless_of_viewport(page, base_url):
+def test_auth_modal_centered_on_desktop(page, base_url):
+    """Above 640px the auth dialog is a centered dialog; below it responsive.css makes it a bottom sheet."""
     _stub_logged_out(page)
-    page.set_viewport_size({"width": 390, "height": 844})
+    page.set_viewport_size({"width": 1280, "height": 800})
     page.goto(base_url, wait_until="domcontentloaded")
     page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
     _open_auth(page)
-    style = page.evaluate("""() => {
-        const backdrop = document.querySelector('.auth-modal');
-        return getComputedStyle(backdrop).alignItems;
-    }""")
-    assert style == "center", f"Backdrop should center its content on mobile too, got '{style}'"
-    assert page.locator(".auth-drag-handle:visible").count() == 0, (
-        "No drag handle should be visible - there is no bottom-sheet layout"
-    )
+    style = page.evaluate("() => getComputedStyle(document.querySelector('.auth-modal')).alignItems")
+    assert style == "center", f"Backdrop should center the dialog on desktop, got '{style}'"
 
 
 def test_auth_modal_closes_on_escape(page, base_url):
@@ -1061,46 +1055,29 @@ def test_register_password_reveal_toggle(page, base_url):
 
 def test_register_submit_shows_loading_label_and_locks_inputs(page, base_url):
     _stub_logged_out(page)
-    release_event = threading.Event()
-
-    def _handle_register(route):
-        # generous timeout: if this fires before the in-flight assertions run, the panel swaps to "verify" first
-        release_event.wait(timeout=30)
-        route.fulfill(status=200, content_type="application/json", body="{}")
-
-    page.route("**/api/v1/auth/register", _handle_register)
+    held = []
+    # hold the route and fulfill it from the test body; blocking inside a sync-API handler deadlocks the dispatcher
+    page.route("**/api/v1/auth/register", lambda route: held.append(route))
     page.goto(base_url, wait_until="domcontentloaded")
     page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
     _open_auth(page)
-    _auth_dialog(page).get_by_role("button", name="Create account").click()
-    _auth_dialog(page).get_by_label("Email").fill("new-user@example.com")
-    _auth_dialog(page).get_by_label("Password", exact=True).fill("LongEnough1!xx")
-    _auth_dialog(page).get_by_label("Confirm password").fill("LongEnough1!xx")
+    dialog = _auth_dialog(page)
+    dialog.get_by_role("button", name="Create account").click()
+    dialog.get_by_label("Email").fill("new-user@example.com")
+    dialog.get_by_label("Password", exact=True).fill("LongEnough1!xx")
+    dialog.get_by_label("Confirm password").fill("LongEnough1!xx")
+    dialog.locator("button[type=submit]").click()
 
-    # disabled-attribute commit happens after the click handler returns, so poll instead of reading immediately
-    page.evaluate(
-        "() => document.querySelector('.auth-panel.active button[type=submit]').click()"
-    )
-    in_flight = page.evaluate("""() => new Promise((resolve) => {
-        const check = () => {
-            const form = document.querySelector('.auth-panel.active');
-            const email = form?.querySelector('input[aria-label="Email"]');
-            if (email?.disabled) {
-                resolve({
-                    emailDisabled: email.disabled,
-                    pwDisabled: form.querySelector('input[aria-label="Password"]').disabled,
-                    label: form.querySelector('button[type=submit]').textContent,
-                });
-            } else {
-                requestAnimationFrame(check);
-            }
-        };
-        check();
-    })""")
-    assert in_flight["emailDisabled"] is True
-    assert in_flight["pwDisabled"] is True
-    assert in_flight["label"] == "Creating…"
+    expect(dialog.get_by_label("Email")).to_be_disabled()
+    expect(dialog.get_by_label("Password", exact=True)).to_be_disabled()
+    expect(dialog.locator("button[type=submit]")).to_have_text("Creating…")
 
-    release_event.set()
+    for _ in range(40):
+        if held:
+            break
+        page.wait_for_timeout(50)
+    assert held, "register request never reached the route"
+    # a failure keeps the register panel mounted so the unlock is observable (success swaps to verify)
+    held[0].fulfill(status=500, content_type="application/json", body="{}")
     expect(_auth_dialog(page).get_by_role("button", name="Create account")).to_be_visible()
     expect(_auth_dialog(page).get_by_label("Email")).to_be_enabled()

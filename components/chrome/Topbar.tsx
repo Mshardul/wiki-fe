@@ -7,10 +7,18 @@ interface TopbarProps {
   back?: ReactNode;
   breadcrumb?: ReactNode;
   title?: ReactNode;
+  titleVisible?: boolean;
   actions?: ReactNode;
 }
 
-export function Topbar({ variant = "page", back, breadcrumb, title, actions }: TopbarProps) {
+export function Topbar({
+  variant = "page",
+  back,
+  breadcrumb,
+  title,
+  titleVisible = false,
+  actions,
+}: TopbarProps) {
   if (variant === "content") {
     return (
       <header className="content-topbar">
@@ -19,7 +27,7 @@ export function Topbar({ variant = "page", back, breadcrumb, title, actions }: T
             {back}
             {breadcrumb}
           </div>
-          <div className="topbar-title">{title}</div>
+          <div className={`topbar-title${titleVisible ? " visible" : ""}`}>{title}</div>
           <div className="topbar-side topbar-side--end">{actions}</div>
         </div>
       </header>

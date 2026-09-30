@@ -21,6 +21,9 @@ tests/.cdn-cache/
 content/system-design/**/.v9-cache.json
 content/system-design/**/.rating-cache.json
 
+# Personal scratch notes, not published
+content/etc/
+
 # OS
 .DS_Store
 

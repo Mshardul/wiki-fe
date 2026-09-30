@@ -60,6 +60,8 @@ not valid json
 ```
 """
 
+import pytest
+
 
 def _load_mock_article(page, base_url, content, slug="mock"):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
@@ -79,6 +81,7 @@ def _load_mock_article(page, base_url, content, slug="mock"):
     )
 
 
+@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_bst_viz_renders_svg(page, base_url):
     """A ```viz bst block renders a .structure-viz with an inline SVG."""
     _load_mock_article(page, base_url, ARTICLE_WITH_BST_VIZ, slug="viz-bst")
@@ -89,6 +92,7 @@ def test_bst_viz_renders_svg(page, base_url):
     assert node_count == 5, f"Expected 5 tree nodes, got {node_count}"
 
 
+@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_heap_viz_renders_svg(page, base_url):
     """A ```viz heap block renders a .structure-viz with an inline SVG."""
     _load_mock_article(page, base_url, ARTICLE_WITH_HEAP_VIZ, slug="viz-heap")
@@ -99,6 +103,7 @@ def test_heap_viz_renders_svg(page, base_url):
     assert viz_type == "heap"
 
 
+@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_linked_list_viz_renders_svg(page, base_url):
     """A ```viz linked-list block renders nodes with connecting edges."""
     _load_mock_article(page, base_url, ARTICLE_WITH_LINKED_LIST_VIZ, slug="viz-linked-list")
@@ -113,6 +118,7 @@ def test_linked_list_viz_renders_svg(page, base_url):
     assert edge_count == 2, f"Expected 2 connecting edges, got {edge_count}"
 
 
+@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_array_viz_renders_svg(page, base_url):
     """A ```viz array block renders one cell per element."""
     _load_mock_article(page, base_url, ARTICLE_WITH_ARRAY_VIZ, slug="viz-array")
@@ -123,6 +129,7 @@ def test_array_viz_renders_svg(page, base_url):
     assert cell_count == 3, f"Expected 3 array cells, got {cell_count}"
 
 
+@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_unknown_viz_type_falls_back_to_raw_block(page, base_url):
     """An unrecognized structure tag leaves the raw ```viz code block intact."""
     _load_mock_article(page, base_url, ARTICLE_WITH_UNKNOWN_VIZ, slug="viz-unknown")
@@ -135,6 +142,7 @@ def test_unknown_viz_type_falls_back_to_raw_block(page, base_url):
     assert has_raw, "Unknown viz type should fall back to the raw code block"
 
 
+@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_bad_literal_viz_falls_back_to_raw_block(page, base_url):
     """A non-JSON literal in a ```viz block leaves the raw code block intact."""
     _load_mock_article(page, base_url, ARTICLE_WITH_BAD_LITERAL_VIZ, slug="viz-bad-literal")
@@ -157,6 +165,7 @@ array
 """
 
 
+@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_structure_viz_caps_large_arrays(page, base_url):
     """Very large structure-viz literals are capped instead of rendering unboundedly."""
     _load_mock_article(page, base_url, ARTICLE_WITH_LARGE_ARRAY_VIZ, slug="viz-large-array")

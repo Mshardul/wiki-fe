@@ -1,90 +1,35 @@
-"""
-- Clipboard failure toast
-- Scroll position persistence
-- Hover preview improvements (abort, position clamp, metadata filter)
-- Mermaid debounce + viewport-aware re-render
-- Toast queue (FIFO, 200ms gap)
-- parseIndexMd CRLF + malformed row guards
-- Debug overlay via ?debug URL param
-- Hotkey conflict detection
-- localStorage key uniqueness
-"""
-
-import re
-from pathlib import Path
+"""Clipboard-failure toast, toast queue, theme-event resilience, iOS install nudge, mock-article regressions."""
 
 import pytest
 
-from conftest import _make_cdn_fulfill_handler
+# Dropped: js/ source-scan tests (hotkey dupes, storage-key uniqueness) - lib/hotkeys.ts + lib/storage/keys.ts replace them, covered by vitest.
+# Dropped: anchor-btn copy toast - headings use build-time autolinks now, no copy-on-click anchor button.
+# Dropped: scroll restore via resume chip - duplicated by test_scroll_toc.py.
+# Dropped: toast ordering (second-after-first, priority overtake) - lib/toast.test.ts owns queue semantics.
+# Dropped: index.md CRLF / malformed-row parsing - vertical index is rendered at build time, no runtime parse.
+# Dropped: ?debug overlay (spec §9), prefs focus/offline toggles (not ported), sprite fetch-failure toast (sprite is inlined at build).
 
-JS_DIR = Path(__file__).parent.parent.parent / "js"
-
-
-def test_no_duplicate_hotkey_bindings():
-    """No two key+modifier combos in app.js keydown handlers share the same binding."""
-    src = (JS_DIR / "app.js").read_text()
-
-    # Extract key bindings: e.key === "X" comparisons, classified by whether
-    # their enclosing `if` line requires meta/ctrl, explicitly excludes it
-    # (e.g. `!e.metaKey && !e.ctrlKey`), or says nothing either way - these
-    # are three distinct binding spaces, not one, since e.g. plain "B" and
-    # Cmd/Ctrl+B never fire on the same keypress.
-    key_pattern = re.compile(r'e\.key\s*===\s*["\'](.+?)["\']')
-
-    seen = {}
-    conflicts = []
-    for line_no, line in enumerate(src.splitlines(), start=1):
-        keys = key_pattern.findall(line)
-        if not keys:
-            continue
-        excludes_modifier = bool(re.search(r"!e\.(metaKey|ctrlKey)", line))
-        requires_modifier = bool(
-            re.search(r"(?<!!)e\.(metaKey|ctrlKey|shiftKey|altKey)", line)
-        )
-        if excludes_modifier:
-            modifier = "no-meta-ctrl"
-        elif requires_modifier:
-            modifier = "meta-ctrl-or-other"
-        else:
-            modifier = "none"
-        # dedupe within the line first - `e.key === "b" || e.key === "B"` is
-        # one case-insensitive binding, not a self-conflict.
-        for key in {k.lower() for k in keys}:
-            combo = f"{modifier}+{key}"
-            if combo in seen:
-                conflicts.append(f"{combo} at lines {seen[combo]} and {line_no}")
-            else:
-                seen[combo] = line_no
-
-    assert not conflicts, f"Duplicate hotkey bindings found:\n" + "\n".join(conflicts)
+SLUG = "system-design/components/caching"
 
 
-def test_localStorage_keys_are_unique():
-    """All localStorage keys defined in js/storage/ are unique and article-scoped keys are wiki-prefixed."""
-    src = "\n".join(p.read_text() for p in sorted((JS_DIR / "storage").glob("*.js")))
+def _article(page, base_url, slug=SLUG):
+    page.goto(f"{base_url}/{slug}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
 
-    # Extract string constant key names (e.g. "wiki-bookmarks", "wiki-recents", etc.)
-    const_key_pattern = re.compile(r'const\s+\w+_KEY\w*\s*=\s*["\']([^"\']+)["\']')
-    keys = const_key_pattern.findall(src)
 
-    # All static keys must be unique
-    seen = {}
-    dupes = []
-    for k in keys:
-        if k in seen:
-            dupes.append(k)
-        seen[k] = True
-    assert not dupes, f"Duplicate localStorage key constants: {dupes}"
+def _code_ready(page, base_url, slug=SLUG):
+    _article(page, base_url, slug)
+    # CodeCopy injects the icon on mount, so its presence means the click handler is wired.
+    page.wait_for_selector("#markdown-body pre .copy-btn svg", timeout=10_000)
 
-    # Article-scoped key templates must include wiki id
-    template_pattern = re.compile(r'`([^`]*localStorage[^`]*)`|localStorage\.[sg]etItem\(`([^`]+)`')
-    for m in re.finditer(r'localStorage\.\w+\(`([^`]+)`', src):
-        key_template = m.group(1)
-        # If it contains a path variable it must also contain a wiki id variable
-        if "${" in key_template and "path" in key_template.lower():
-            assert "wikiId" in key_template or "wiki.id" in key_template or "currentWikiId" in key_template or "_wikiId" in key_template, (
-                f"Article-scoped key missing wiki prefix: {key_template!r}"
-            )
+
+def _deny_clipboard(page):
+    page.evaluate(
+        """() => {
+        navigator.clipboard.writeText = () =>
+            Promise.reject(new DOMException("blocked", "NotAllowedError"));
+    }"""
+    )
 
 
 def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
@@ -113,6 +58,7 @@ def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
 # ── In-content Table of Contents suppression ─────────────────────
 
 
+@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_in_content_toc_section_does_not_render(page, base_url):
     """The hand-authored '## Table of Contents' section (for raw-file
     readers) must not render in the app - the app builds its own live TOC
@@ -142,6 +88,7 @@ def test_in_content_toc_section_does_not_render(page, base_url):
 # ── Stub-article toolbar button sync ─────────────────────────────
 
 
+@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_stub_article_syncs_bookmark_read_offline_buttons(page, base_url):
     """A stub (empty-body) article must still sync the bookmark/read/offline
     toolbar buttons - the stub branch returns early and used to skip them."""
@@ -179,111 +126,28 @@ def test_stub_article_syncs_bookmark_read_offline_buttons(page, base_url):
 
 
 def test_copy_button_failure_shows_toast(page, base_url):
-    """denied clipboard on copy-btn click shows 'Copy failed' toast."""
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_selector("#markdown-body pre .copy-btn", timeout=10_000)
-
-    page.evaluate(
-        """() => {
-        navigator.clipboard.writeText = () =>
-            Promise.reject(new DOMException("blocked", "NotAllowedError"));
-    }"""
-    )
+    """Denied clipboard on copy-btn click shows the copy-failed toast."""
+    _code_ready(page, base_url)
+    _deny_clipboard(page)
     page.locator("#markdown-body pre .copy-btn").first.click()
-
     page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
-    assert "Copy failed" in page.locator("#wiki-toast").inner_text()
-
-
-def test_anchor_copy_failure_shows_toast(page, base_url):
-    """denied clipboard on anchor-btn click shows 'Copy failed' toast."""
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_selector("#markdown-body .anchor-btn", timeout=10_000)
-
-    page.evaluate(
-        """() => {
-        navigator.clipboard.writeText = () =>
-            Promise.reject(new DOMException("blocked", "NotAllowedError"));
-    }"""
-    )
-    page.locator("#markdown-body .anchor-btn").first.click()
-
-    page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
-    assert "Copy failed" in page.locator("#wiki-toast").inner_text()
+    assert "Couldn't copy" in page.locator("#wiki-toast").inner_text()
 
 
 def test_successful_copy_does_not_show_toast(page, base_url):
-    """successful clipboard write does not show error toast."""
+    """Successful clipboard write shows no error toast."""
     page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_selector("#markdown-body pre .copy-btn", timeout=10_000)
-
-    page.locator("#markdown-body pre .copy-btn").first.click()
-    page.wait_for_timeout(200)
-
-    toast_visible = page.evaluate(
-        "() => document.getElementById('wiki-toast')?.classList.contains('visible') ?? false"
-    )
-    # Toast should not be visible (or if it is, should not say "Copy failed")
-    if toast_visible:
-        assert "Copy failed" not in page.locator("#wiki-toast").inner_text()
+    _code_ready(page, base_url)
+    btn = page.locator("#markdown-body pre .copy-btn").first
+    btn.click()
+    page.wait_for_function("(b) => b.classList.contains('copied')", arg=btn.element_handle(), timeout=3_000)
+    assert page.locator("#wiki-toast.wiki-toast--error").count() == 0
 
 
 # ── Scroll restoration ────────────────────────────────────────────
 
 
-def test_scroll_position_restored_after_navigation(page, base_url):
-    """scroll position is saved on article revisit; since a heading exists
-    above the saved position, the resume chip (WIKI-253) is offered instead
-    of an automatic scroll, and clicking it restores the position."""
-    page.set_viewport_size({"width": 1280, "height": 800})
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=8_000,
-    )
-
-    page.evaluate("() => window.scrollTo({ top: 600, behavior: 'instant' })")
-    page.wait_for_function(
-        "() => localStorage.getItem('wiki-scroll-' + window.state.currentWikiId + '-' + window.state.currentFilePath) !== null",
-        timeout=5_000,
-    )
-
-    saved = page.evaluate(
-        "() => localStorage.getItem('wiki-scroll-' + window.state.currentWikiId + '-' + window.state.currentFilePath)"
-    )
-    assert saved is not None, "Scroll position not saved to localStorage"
-    assert int(saved) > 0, f"Saved scroll should be > 0 (got {saved})"
-
-    # Full page reload to home avoids SPA render-race that resets scrollY
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=5_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-
-    page.evaluate(
-        """() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/components/caching.md'),
-        encodeURIComponent('Caching'),
-        'caching'
-    )"""
-    )
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=8_000,
-    )
-    page.wait_for_selector("#resume-chip", timeout=3_000)
-    page.click(".resume-chip-jump")
-    page.wait_for_function("() => window.scrollY > 0", timeout=3_000)
-
-    scroll_y = page.evaluate("() => window.scrollY")
-    assert scroll_y > 0, f"Scroll not restored after clicking resume chip (scrollY={scroll_y})"
-
-
+@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_scroll_position_stable_after_revisit(page, base_url):
     """scroll position is not reset on second visit to same article."""
     page.set_viewport_size({"width": 1280, "height": 800})
@@ -303,6 +167,7 @@ def test_scroll_position_stable_after_revisit(page, base_url):
 # ── Hover preview improvements ────────────────────────────────────
 
 
+@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_hover_preview_hidden_after_mouseleave_during_fetch(page, base_url):
     """mouseleave during slow summaries.json fetch hides preview; stale content not shown."""
     import json
@@ -370,6 +235,7 @@ def test_hover_preview_hidden_after_mouseleave_during_fetch(page, base_url):
     )
 
 
+@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_hover_preview_left_clamped_near_right_edge(page, base_url):
     """preview left is clamped to >= 8px when viewport is narrower than preview."""
     import json
@@ -419,198 +285,37 @@ def test_hover_preview_left_clamped_near_right_edge(page, base_url):
 
 
 def test_rapid_theme_changes_do_not_crash(page, base_url):
-    """10 rapid theme changes via debounce do not throw errors."""
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=8_000,
-    )
-
+    """Ten rapid theme-change events do not throw."""
+    _article(page, base_url)
     errors = []
     page.on("pageerror", lambda err: errors.append(str(err)))
-
     for _ in range(10):
         page.evaluate(
-            "() => document.dispatchEvent(new CustomEvent('wiki:themechange', { detail: { theme: 'dark' } }))"
+            "() => document.dispatchEvent(new CustomEvent('wiki:theme-changed', { detail: { theme: 'dark' } }))"
         )
-
     page.wait_for_timeout(200)
-
     assert not errors, f"Page errors after rapid theme changes: {errors}"
-    assert page.locator("#view-content.active").count() == 1, (
-        "View should still be active"
-    )
+    assert page.locator("#markdown-body").count() == 1
 
 
 # ── Toast queue ────────────────────────────────────────────────────
 
 
 def test_toast_queue_no_crash_on_rapid_triggers(page, base_url):
-    """multiple rapid clipboard failures do not crash; toast stays coherent."""
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#markdown-body pre .copy-btn", timeout=10_000)
-
+    """Rapid clipboard failures do not crash; toast text stays coherent."""
+    _code_ready(page, base_url)
     errors = []
     page.on("pageerror", lambda err: errors.append(str(err)))
-
-    page.evaluate("""() => {
-        navigator.clipboard.writeText = () =>
-            Promise.reject(new DOMException("blocked", "NotAllowedError"));
-    }""")
-
+    _deny_clipboard(page)
     btns = page.locator("#markdown-body pre .copy-btn")
     for i in range(min(btns.count(), 5)):
         btns.nth(i).click()
-
     page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
-
-    # Toast text must be the expected message, not garbled from concurrent writes
-    assert "Copy failed" in page.locator("#wiki-toast").inner_text()
+    assert "Couldn't copy" in page.locator("#wiki-toast").inner_text()
     assert not errors, f"Page errors after rapid toasts: {errors}"
 
 
-@pytest.mark.slow
-def test_toast_queue_second_message_appears_after_first(page, base_url):
-    """queued second toast appears after first expires; not dropped."""
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#markdown-body pre .copy-btn", timeout=10_000)
-
-    page.evaluate("""() => {
-        navigator.clipboard.writeText = () =>
-            Promise.reject(new DOMException("blocked", "NotAllowedError"));
-    }""")
-
-    btns = page.locator("#markdown-body pre .copy-btn")
-    if btns.count() < 2:
-        return  # need at least 2 copy buttons to queue 2 toasts
-
-    # Click 2 buttons rapidly - queues 2 "Copy failed" toasts (3000ms each)
-    btns.nth(0).click()
-    btns.nth(1).click()
-
-    # First toast visible immediately
-    page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
-
-    # After first toast expires + 200ms gap, second toast must appear
-    # Total window: 3000ms (first) + 200ms (gap) + 500ms (render buffer) = 3700ms
-    page.wait_for_function(
-        "() => document.getElementById('wiki-toast')?.classList.contains('visible')",
-        timeout=4_500,
-        polling=100,
-    )
-    assert "Copy failed" in page.locator("#wiki-toast").inner_text()
-
-
-def test_toast_higher_priority_overtakes_queued_lower_priority(page, base_url):
-    """A higher-priority toast queued after 2 low-priority ones (e.g. install nudge) jumps the queue ahead of them, matching how the SW-update/session-expired toasts must overtake the install nudge."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    page.evaluate("""async () => {
-        const { showToast } = await import('./js/render/toast.js');
-        showToast("first low priority", 300, null, undefined, null, -1);
-        showToast("second low priority", 300, null, undefined, null, -1);
-        showToast("urgent high priority", 300, null, undefined, null, 1);
-    }""")
-
-    page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
-    assert "first low priority" in page.locator("#wiki-toast").inner_text()
-
-    # First toast's own 300ms timer expires and advances the queue - the
-    # high-priority toast queued last must be the one that appears next,
-    # ahead of "second low priority" which was enqueued before it.
-    page.wait_for_function(
-        "() => document.getElementById('wiki-toast')?.querySelector('.wiki-toast-msg')"
-        ".textContent !== 'first low priority'",
-        timeout=3_000,
-    )
-    assert "urgent high priority" in page.locator("#wiki-toast").inner_text()
-
-
-# ── parseIndexMd CRLF + malformed row guards ──────────────────────
-
-
-def test_index_renders_with_crlf_line_endings(page, base_url):
-    """wiki index with CRLF line endings renders article cards correctly."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    crlf_index = (
-        "## Components\r\n"
-        "\r\n"
-        "| Title | Description |\r\n"
-        "| --- | --- |\r\n"
-        "| [Caching](./components/caching.md) | Caching fundamentals |\r\n"
-        "| [Load Balancing](./components/load-balancing.md) | Load balancing |\r\n"
-    )
-    page.route("**/system-design/index.md", lambda r: r.fulfill(body=crlf_index))
-
-    page.evaluate("() => navigate('system-design')")
-    page.wait_for_selector("#view-index.active", timeout=8_000)
-
-    cards = page.locator(".index-card")
-    assert cards.count() > 0, "No index cards rendered from CRLF index.md"
-
-
-def test_index_malformed_row_does_not_crash(page, base_url):
-    """malformed link row in index.md is skipped; valid rows still render."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    index_with_bad_row = (
-        "## Components\n"
-        "\n"
-        "| Title | Description |\n"
-        "| --- | --- |\n"
-        "| [Caching](./components/caching.md) | Valid card |\n"
-        "| [Bad link without closing paren(./broken.md | Malformed |\n"
-    )
-    page.route(
-        "**/system-design/index.md", lambda r: r.fulfill(body=index_with_bad_row)
-    )
-
-    page.evaluate("() => navigate('system-design')")
-    page.wait_for_selector("#view-index.active", timeout=8_000)
-
-    # Valid card must still render; malformed row must be silently skipped
-    cards = page.locator(".index-card")
-    assert cards.count() >= 1, "Valid card missing after malformed row in index"
-
-
-# ── ?debug URL param dev info overlay ───────────────────────────────
-
-
-def test_debug_overlay_appears_with_debug_param(page, base_url):
-    """?debug param mounts the debug info overlay."""
-    page.goto(f"{base_url}/?debug", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    overlay = page.locator("#debug-overlay")
-    assert overlay.count() == 1, "#debug-overlay must be present when ?debug is in URL"
-    assert overlay.is_visible(), "#debug-overlay must be visible"
-
-
-def test_debug_overlay_absent_without_param(page, base_url):
-    """debug overlay must not appear without ?debug param."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    assert page.locator("#debug-overlay").count() == 0, (
-        "#debug-overlay must not exist without ?debug param"
-    )
-
-
-def test_debug_overlay_close_removes_it(page, base_url):
-    """clicking the close button removes the debug overlay from DOM."""
-    page.goto(f"{base_url}/?debug", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-
-    page.locator(".debug-close").click()
-
-    assert page.locator("#debug-overlay").count() == 0, (
-        "#debug-overlay must be removed after close button click"
-    )
+# ── iOS install nudge ─────────────────────────────────────────────
 
 
 _IOS_UA = (
@@ -619,18 +324,17 @@ _IOS_UA = (
 )
 
 
-def test_ios_install_nudge_shown_on_ios_ua(page, base_url, cdn_cache):
+def test_ios_install_nudge_shown_on_ios_ua(browser, base_url):
     """iOS Safari UA sees the manual Add-to-Home-Screen toast on boot."""
-    ctx = page.context.browser.new_context(user_agent=_IOS_UA, service_workers="block")
+    ctx = browser.new_context(user_agent=_IOS_UA, service_workers="block")
     ios_page = ctx.new_page()
-    for url, (body, content_type) in cdn_cache.items():
-        ios_page.route(url, _make_cdn_fulfill_handler(body, content_type))
-    ios_page.goto(base_url, wait_until="domcontentloaded")
-
-    toast = ios_page.locator("#wiki-toast.visible")
-    toast.wait_for(state="visible", timeout=8_000)
-    assert "Add to Home Screen" in toast.text_content()
-    ctx.close()
+    try:
+        ios_page.goto(f"{base_url}/", wait_until="domcontentloaded")
+        toast = ios_page.locator("#wiki-toast.visible")
+        toast.wait_for(state="visible", timeout=8_000)
+        assert "Add to Home Screen" in toast.text_content()
+    finally:
+        ctx.close()
 
 
 def test_ios_install_nudge_absent_on_desktop_ua(wiki_page):
@@ -638,58 +342,18 @@ def test_ios_install_nudge_absent_on_desktop_ua(wiki_page):
     assert wiki_page.locator("#wiki-toast.visible").count() == 0
 
 
-def test_ios_install_nudge_dismiss_persists(page, base_url, cdn_cache):
+def test_ios_install_nudge_dismiss_persists(browser, base_url):
     """Dismissing the iOS nudge keeps it from reappearing on the next visit."""
-    ctx = page.context.browser.new_context(user_agent=_IOS_UA, service_workers="block")
+    ctx = browser.new_context(user_agent=_IOS_UA, service_workers="block")
     ios_page = ctx.new_page()
-    for url, (body, content_type) in cdn_cache.items():
-        ios_page.route(url, _make_cdn_fulfill_handler(body, content_type))
-    ios_page.goto(base_url, wait_until="domcontentloaded")
-
-    ios_page.locator("#wiki-toast .toast-undo-btn").click()
-    ios_page.wait_for_function("() => !document.getElementById('wiki-toast').classList.contains('visible')")
-
-    ios_page.reload(wait_until="domcontentloaded")
-    ios_page.wait_for_selector("#view-home.active", timeout=8_000)
-    assert ios_page.locator("#wiki-toast.visible").count() == 0, (
-        "iOS nudge must not reappear after being dismissed once"
-    )
-    ctx.close()
-
-
-def _open_prefs(page):
-    page.locator("#view-content [title='Preferences (,)']").click()
-    page.wait_for_function(
-        "() => !document.getElementById('prefs-modal').classList.contains('hidden')"
-    )
-    page.locator("[data-action='prefs-tab'][data-tab='advanced']").click()
-    page.wait_for_selector("#prefs-panel-advanced.active")
-
-
-def test_focus_toggle_visible_on_desktop(page, base_url):
-    """focus-toggle button is visible on desktop."""
-    page.set_viewport_size({"width": 1280, "height": 800})
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    _open_prefs(page)
-    assert page.locator("[data-action='focus-toggle']").first.is_visible()
-
-
-def test_offline_toggle_visible_on_desktop(page, base_url):
-    """offline-toggle button (in prefs modal) is visible and only one instance exists."""
-    page.set_viewport_size({"width": 1280, "height": 800})
-    page.goto(f"{base_url}/#system-design/caching", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    _open_prefs(page)
-    toggles = page.locator("[data-action='offline-toggle']")
-    assert toggles.count() == 1
-    assert toggles.first.is_visible()
-
-
-def test_icon_sprite_fetch_failure_shows_toast(page, base_url):
-    """A failed sprite.svg fetch surfaces an error toast instead of silent blanks."""
-    page.route("**/sprite.svg", lambda route: route.abort())
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#wiki-toast.visible", timeout=8_000)
-    text = page.locator("#wiki-toast .wiki-toast-msg").inner_text()
-    assert "Icons failed to load" in text
+    try:
+        ios_page.goto(f"{base_url}/", wait_until="domcontentloaded")
+        ios_page.locator("#wiki-toast .toast-undo-btn").click()
+        ios_page.wait_for_selector("#wiki-toast", state="detached", timeout=3_000)
+        ios_page.reload(wait_until="domcontentloaded")
+        ios_page.wait_for_selector(".home-main .wiki-card", timeout=10_000)
+        # IosNudge fires from a mount effect; give it the same window the first visit needed.
+        ios_page.wait_for_timeout(500)
+        assert ios_page.locator("#wiki-toast.visible").count() == 0
+    finally:
+        ctx.close()

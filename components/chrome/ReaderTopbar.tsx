@@ -5,6 +5,7 @@ import { AuthButton } from "@/components/auth/AuthButton";
 import { SaveOffline } from "@/components/pwa/SaveOffline";
 import { Breadcrumb } from "./Breadcrumb";
 import { Topbar } from "./Topbar";
+import { useH1ScrolledPast } from "./useH1ScrolledPast";
 
 export function ReaderTopbar({
   leafTitle,
@@ -15,9 +16,12 @@ export function ReaderTopbar({
   backHref: string;
   articlePath?: string;
 }) {
+  const titleVisible = useH1ScrolledPast();
   return (
     <Topbar
       variant="content"
+      title={leafTitle}
+      titleVisible={titleVisible}
       back={
         <Link className="back-btn" href={backHref}>
           <svg className="icon" aria-hidden="true">

@@ -7,6 +7,9 @@
     { "keys": ["W"], "description": "Switch wiki (index + content views)" },
     { "keys": ["ESC"], "description": "Close / go back" }
   ],
+  "home": [
+    { "keys": ["← / → / ↑ / ↓"], "description": "Move between wiki cards" }
+  ],
   "index": [
     { "keys": ["↑ / ↓"], "description": "Move between article cards" },
     { "keys": ["Enter"], "description": "Open focused article" }
@@ -14,12 +17,9 @@
   "content": [
     { "keys": ["B"], "description": "Toggle bookmark" },
     { "keys": ["F"], "description": "Toggle focus mode" },
-    { "keys": ["H"], "description": "Toggle study mode" },
     { "keys": ["D"], "description": "Distraction-free mode" },
-    { "keys": ["Q"], "description": "Quiz mode" },
     { "keys": ["T"], "description": "Focus table of contents" },
     { "keys": ["/"], "description": "Search within article" },
-    { "keys": ["⌘F"], "description": "Search within wiki" },
     { "keys": ["="], "description": "Increase font size" },
     { "keys": ["-"], "description": "Decrease font size" }
   ],
@@ -29,12 +29,10 @@
     { "keys": [">"], "description": "Filter results to one section (type > then a section name)" }
   ],
   "touch": [
-    { "keys": ["Swipe right from edge"], "description": "Go back (article → wiki index, index/changelog → home)" },
+    { "keys": ["Swipe right from edge"], "description": "Go back" },
     { "keys": ["Swipe left from edge"], "description": "Open table of contents (article view)" },
-    { "keys": ["Swipe down"], "description": "Dismiss open panel or preview sheet" },
-    { "keys": ["Swipe on card"], "description": "Reveal card actions (home / index)" },
-    { "keys": ["Long-press link"], "description": "Peek preview in bottom sheet" },
-    { "keys": ["⋯ button"], "description": "More article actions (topbar)" },
+    { "keys": ["Swipe down"], "description": "Dismiss open panel" },
+    { "keys": ["Swipe right on article card"], "description": "Toggle bookmark (wiki index)" },
     { "keys": ["FAB (bottom-right)"], "description": "Table of contents / scroll to top" }
   ]
 }

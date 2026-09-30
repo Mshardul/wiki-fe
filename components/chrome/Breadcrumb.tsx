@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
 
 const VERTICAL_LABELS: Record<string, string> = {
   dsa: "DSA",
@@ -43,28 +42,14 @@ export function buildCrumbs(pathname: string, leafTitle?: string): Crumb[] {
   return crumbs;
 }
 
-// Leaf + vertical only, matching the server `generateMetadata` title so there is no post-hydration flash.
-export function pageTitleFor(crumbs: Crumb[]): string {
-  if (!crumbs.length) return "Wiki";
-  if (crumbs.length === 1) return `${crumbs[0]?.label} · Wiki`;
-  const leaf = crumbs[crumbs.length - 1]?.label;
-  const vertical = crumbs[0]?.label;
-  return `${leaf} · ${vertical} · Wiki`;
-}
-
 interface BreadcrumbProps {
   leafTitle?: string;
-  setDocumentTitle?: boolean;
 }
 
-export function Breadcrumb({ leafTitle, setDocumentTitle = true }: BreadcrumbProps) {
+// document.title is owned by route metadata; deriving it from the pathname mislabels the SW offline fallback.
+export function Breadcrumb({ leafTitle }: BreadcrumbProps) {
   const pathname = usePathname() ?? "/";
   const crumbs = buildCrumbs(pathname, leafTitle);
-  const title = pageTitleFor(crumbs);
-
-  useEffect(() => {
-    if (setDocumentTitle) document.title = title;
-  }, [title, setDocumentTitle]);
 
   if (!crumbs.length) return null;
 

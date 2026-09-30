@@ -4,6 +4,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { anyOpen } from "@/components/common/modalRegistry";
 import { bindHotkeys } from "@/lib/hotkeys";
+
+const wikiSwitcherOpen = () => document.querySelector(".wiki-switcher-modal") != null;
+
 import {
   applySettings,
   bindOsThemeListener,
@@ -16,6 +19,7 @@ export function SettingsInit() {
   const ctxRef = useRef({
     isArticle: false,
     anyModalOpen: anyOpen,
+    wikiSwitcherOpen,
   } as ReturnType<Parameters<typeof bindHotkeys>[0]>);
 
   useEffect(() => {
@@ -46,8 +50,9 @@ export function SettingsInit() {
             title: el?.querySelector("h1")?.textContent ?? "",
           },
           anyModalOpen: anyOpen,
+          wikiSwitcherOpen,
         }
-      : { isArticle: false, anyModalOpen: anyOpen };
+      : { isArticle: false, anyModalOpen: anyOpen, wikiSwitcherOpen };
   }, [pathname]);
 
   return null;

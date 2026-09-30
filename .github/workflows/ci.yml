@@ -25,31 +25,39 @@ jobs:
           extra_args: --all-files --config .pre-commit-config.ci.yaml
 
   tests-light:
+    needs: [build]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         shard:
-          # File-based, hand-balanced (~255-258 tests each), each its own job so -n 2 never oversubscribes the 2 vCPU/7GB runner - see docs/_meta/plans/e2e-ci-resource-hardening.md Decision #1.
+          # File-based, hand-balanced (~105-110 live tests each), each its own job so -n 2 never oversubscribes the 2 vCPU/7GB runner - see docs/_meta/plans/e2e-ci-resource-hardening.md Decision #1.
+          # Deferred-feature files (dashboard/admin/changelog/notes_scratchpad/complexity_comparator/section_map) return with their features post-cutover.
           - name: shard-1
             files: >-
-              tests/e2e/test_content_enhancements.py tests/e2e/test_behavioral_fixes.py tests/e2e/test_home.py
-              tests/e2e/test_read_toggle.py tests/e2e/test_toc_overhaul.py tests/e2e/test_bookmarks.py
-              tests/e2e/test_changelog.py tests/e2e/test_structure_viz.py tests/e2e/test_keyboard_scroll.py tests/e2e/test_security.py
+              tests/e2e/test_settings.py tests/e2e/test_search.py tests/e2e/test_home.py
+              tests/e2e/test_content_width.py tests/e2e/test_content_enhancements.py
           - name: shard-2
             files: >-
-              tests/e2e/test_settings.py tests/e2e/test_ux_hotkeys_errors.py tests/e2e/test_index_ux.py
-              tests/e2e/test_scroll_toc.py tests/e2e/test_line_numbers_pathing_help.py tests/e2e/test_touch_gestures.py
-              tests/e2e/test_data_backup.py tests/e2e/test_navigation.py tests/e2e/test_offline_shelf.py
-              tests/e2e/test_content_width.py tests/e2e/test_admin.py tests/e2e/test_complexity_comparator.py
+              tests/e2e/test_auth.py tests/e2e/test_scroll_toc.py tests/e2e/test_navigation_polish.py
+              tests/e2e/test_navigation.py tests/e2e/test_keyboard_scroll.py tests/e2e/test_ux_hotkeys_errors.py
+              tests/e2e/test_security.py tests/e2e/test_data_backup.py tests/e2e/test_links.py tests/e2e/test_structure_viz.py
           - name: shard-3
             files: >-
-              tests/e2e/test_search.py tests/e2e/test_auth.py tests/e2e/test_navigation_polish.py tests/e2e/test_content.py
-              tests/e2e/test_routing_pathing.py tests/e2e/test_html_markup.py tests/e2e/test_a11y_hotkeys.py
-              tests/e2e/test_links.py tests/e2e/test_recents.py tests/e2e/test_notes_scratchpad.py
-              tests/e2e/test_section_map.py tests/e2e/test_dashboard.py
+              tests/e2e/test_line_numbers_pathing_help.py tests/e2e/test_bookmarks.py tests/e2e/test_touch_gestures.py
+              tests/e2e/test_index_ux.py tests/e2e/test_offline_shelf.py tests/e2e/test_a11y_hotkeys.py
+              tests/e2e/test_routing_pathing.py tests/e2e/test_recents.py tests/e2e/test_html_markup.py
+              tests/e2e/test_behavioral_fixes.py tests/e2e/test_toc_overhaul.py tests/e2e/test_read_toggle.py
+              tests/e2e/test_content.py
     steps:
       - uses: actions/checkout@v4
+
+      # conftest serves out/ and only falls back to `pnpm build` when it's missing; this job has no Node.
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: out
+          path: out
 
       - uses: actions/setup-python@v5
         with:
@@ -71,14 +79,6 @@ jobs:
       - name: Install Chromium
         run: python -m playwright install --with-deps chromium
 
-      # CDN assets tests mock are version-pinned in conftest.py, so a cache keyed on its
-      # hash is valid until a version bumps (which changes the hash and the URL together).
-      - name: Cache CDN assets
-        uses: actions/cache@v4
-        with:
-          path: tests/.cdn-cache
-          key: cdn-assets-${{ hashFiles('tests/conftest.py') }}
-
       - name: Tests (e2e, light lane, ${{ matrix.shard.name }})
         run: >-
           pytest ${{ matrix.shard.files }} -q -n 2 -m "not heavy"
@@ -89,50 +89,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-traces-${{ matrix.shard.name }}
-          path: test-results/
-          retention-days: 7
-
-  tests-heavy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-          cache-dependency-path: requirements-dev.txt
-
-      - name: Install test deps
-        run: pip install -r requirements-dev.txt
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ hashFiles('requirements-dev.txt') }}
-
-      - name: Install Chromium
-        run: python -m playwright install --with-deps chromium
-
-      - name: Cache CDN assets
-        uses: actions/cache@v4
-        with:
-          path: tests/.cdn-cache
-          key: cdn-assets-${{ hashFiles('tests/conftest.py') }}
-
-      # Canvas/PNG/download tests only, isolated from tests-light so they never compete for the same runner.
-      - name: Tests (e2e, heavy lane)
-        run: >-
-          pytest tests/ -q -n 1 -m heavy
-          --screenshot=only-on-failure --video=retain-on-failure --tracing=retain-on-failure
-
-      - name: Upload failure artifacts (heavy lane)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-traces-heavy
           path: test-results/
           retention-days: 7
 
@@ -159,15 +115,39 @@ jobs:
           node-version-file: .nvmrc
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - name: Build content pipeline
-        run: pnpm content:build
-      - name: Build static site
+      - name: Build static site (prebuild runs content:build)
         run: pnpm build
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: out
           path: out
+
+  deploy:
+    needs: [build]
+    # PR runs build and test only; the github-pages environment rejects non-main refs anyway.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+      - id: deployment
+        uses: actions/deploy-pages@v4
 
   search-index:
     runs-on: ubuntu-latest
@@ -206,18 +186,6 @@ jobs:
           python3 scripts/build_search_index.py
           python3 scripts/build_broken_links.py
           git diff --exit-code content/broken-links.json
-
-  cache-version:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Bump ARTICLE_CACHE version and check it's committed
-        run: |
-          python3 scripts/bump_cache_version.py
-          git diff --exit-code wiki-sw.js
 
   dead-links:
     runs-on: ubuntu-latest

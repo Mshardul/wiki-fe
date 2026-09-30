@@ -3,7 +3,7 @@
 
 For every article listed in content/search-index.json, scans its raw markdown
 for internal .md links, resolves them relative to the article's own directory
-(mirroring resolvePath in js/render/nav-utils.js), and inverts the result into
+(mirroring resolveLink in lib/content/links.ts), and inverts the result into
 target_path -> [{title, path} of every article that links to it].
 
 Run after build_search_index.py (reads its output); commit the result.

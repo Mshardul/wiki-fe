@@ -22,11 +22,11 @@ describe("BookmarksModal", () => {
     push.mockClear();
   });
 
-  it("opens on ⌘B and lists the empty state", () => {
+  it("opens on the wiki:open-bookmarks event and lists the empty state", () => {
     render(<BookmarksModal />);
     expect(screen.queryByRole("dialog")).toBeNull();
     act(() => {
-      fireEvent.keyDown(document, { key: "b", metaKey: true });
+      document.dispatchEvent(new CustomEvent("wiki:open-bookmarks"));
     });
     expect(screen.getByRole("dialog", { name: "Bookmarks" })).toBeTruthy();
     expect(screen.getByText(/no bookmarks anywhere yet/)).toBeTruthy();
@@ -38,7 +38,7 @@ describe("BookmarksModal", () => {
     });
     render(<BookmarksModal />);
     act(() => {
-      fireEvent.keyDown(document, { key: "b", metaKey: true });
+      document.dispatchEvent(new CustomEvent("wiki:open-bookmarks"));
     });
 
     fireEvent.click(screen.getByLabelText("Remove bookmark"));
@@ -49,6 +49,6 @@ describe("BookmarksModal", () => {
       toggleBookmark("dsa", "content/dsa/patterns/two-pointers.md", "Two Pointers");
     });
     fireEvent.click(screen.getByText("Two Pointers"));
-    expect(push).toHaveBeenCalledWith("/dsa/two-pointers/");
+    expect(push).toHaveBeenCalledWith("/dsa/patterns/two-pointers/");
   });
 });

@@ -68,6 +68,15 @@ describe("bindHotkeys", () => {
     document.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "w" }));
     expect(events).not.toContain("wiki:open-wiki-switcher");
   });
+  it("W still toggles when the open modal is the wiki switcher itself", () => {
+    unbind = bindHotkeys(() => ({
+      isArticle: false,
+      anyModalOpen: () => true,
+      wikiSwitcherOpen: () => true,
+    }));
+    document.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "w" }));
+    expect(events).toContain("wiki:open-wiki-switcher");
+  });
   it("article-only: b toggles the bookmark", () => {
     key({ key: "b" }, true);
     expect(toggleBookmark).toHaveBeenCalledWith("dsa", "content/dsa/x.md", "X");

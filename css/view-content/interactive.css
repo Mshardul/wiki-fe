@@ -15,28 +15,6 @@
 }
 
 /* ═══════════════════════════════════════════════
-   HIDE-AND-REVEAL STUDY MODE
-   ═══════════════════════════════════════════════ */
-.markdown-body.study-mode h3 {
-  cursor: pointer;
-  user-select: none;
-}
-.markdown-body.study-mode h3::after {
-  content: "▸";
-  display: inline-block;
-  margin-left: var(--s2);
-  font-size: 0.7em;
-  color: var(--text-muted);
-  transition: transform var(--t-fast);
-}
-.markdown-body.study-mode h3.study-revealed::after {
-  transform: rotate(90deg);
-}
-[data-h3-body][hidden] {
-  display: none !important;
-}
-
-/* ═══════════════════════════════════════════════
    RESUME-BY-IDEA CHIP
    ═══════════════════════════════════════════════ */
 .resume-chip {

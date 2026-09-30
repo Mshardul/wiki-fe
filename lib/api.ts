@@ -33,7 +33,9 @@ export function setSessionToken(token: string | null): void {
   try {
     if (token) localStorage.setItem(SESSION_TOKEN_KEY, token);
     else localStorage.removeItem(SESSION_TOKEN_KEY);
-  } catch {}
+  } catch {
+    // storage blocked (private mode / quota): the session still works, it just won't survive a reload
+  }
 }
 
 interface RequestOpts {
