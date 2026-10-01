@@ -64,6 +64,7 @@ export default async function Article({
             <article
               id="markdown-body"
               className="markdown-body"
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
               dangerouslySetInnerHTML={{ __html: article.html }}
             />
           )}

@@ -26,26 +26,7 @@ repos:
       - id: biome-ci
         additional_dependencies: ["@biomejs/biome@2.5.11"]
 
-  - repo: local
-    hooks:
-      - id: pnpm-typecheck
-        name: pnpm typecheck
-        entry: pnpm typecheck
-        language: system
-        files: \.(ts|tsx)$
-        pass_filenames: false
-      - id: pnpm-lint
-        name: pnpm lint
-        entry: pnpm lint
-        language: system
-        files: \.(ts|tsx)$
-        pass_filenames: false
-      - id: pnpm-test
-        name: pnpm test
-        entry: pnpm test
-        language: system
-        files: \.(ts|tsx)$
-        pass_filenames: false
+  # typecheck/lint/test run in ci.yml's `frontend` job; the hooks runner has no Node.
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

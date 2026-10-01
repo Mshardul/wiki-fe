@@ -1,10 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  getPinnedWikis,
-  setPinnedWikis,
-  sortByPin,
-  togglePinnedWiki,
-} from "./pinned-wikis";
+import { getPinnedWikis, setPinnedWikis, sortByPin, togglePinnedWiki } from "./pinned-wikis";
 
 beforeEach(() => localStorage.clear());
 

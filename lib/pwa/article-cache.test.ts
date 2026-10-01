@@ -21,9 +21,7 @@ class FakeCache {
     return Promise.resolve(this.store.delete(key));
   }
   keys() {
-    return Promise.resolve(
-      [...this.store.keys()].map((k) => new Request(`https://x.test${k}`)),
-    );
+    return Promise.resolve([...this.store.keys()].map((k) => new Request(`https://x.test${k}`)));
   }
 }
 
@@ -44,10 +42,7 @@ beforeEach(() => {
   cache = caches_.get("wiki-articles") ?? new FakeCache();
   caches_.set("wiki-articles", cache);
   vi.stubGlobal("caches", { open: vi.fn(open) });
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockResolvedValue(new Response("<html></html>", { status: 200 })),
-  );
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("<html></html>", { status: 200 })));
 });
 afterEach(() => vi.unstubAllGlobals());
 

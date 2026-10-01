@@ -27,6 +27,7 @@ jobs:
   tests-light:
     needs: [build]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -68,20 +69,10 @@ jobs:
       - name: Install test deps
         run: pip install -r requirements-dev.txt
 
-      # Keyed on requirements-dev.txt so a pytest-playwright bump invalidates it - browser download is skipped on cache hit, apt-level --with-deps still runs every time.
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ hashFiles('requirements-dev.txt') }}
-
-      - name: Install Chromium
-        run: python -m playwright install --with-deps chromium
-
+      # Runner image ships Google Chrome; using it skips `playwright install --with-deps`, whose apt step hung a shard.
       - name: Tests (e2e, light lane, ${{ matrix.shard.name }})
         run: >-
-          pytest ${{ matrix.shard.files }} -q -n 2 -m "not heavy"
+          pytest ${{ matrix.shard.files }} -q -n 2 -m "not heavy" --browser-channel chrome
           --screenshot=only-on-failure --video=retain-on-failure --tracing=retain-on-failure
 
       - name: Upload failure artifacts (${{ matrix.shard.name }})
