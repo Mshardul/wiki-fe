@@ -817,7 +817,7 @@ No Chromium step — client-island Mermaid (`mermaid-spike-result.md`), no build
 **Files:**
 - Create: `docs/_meta/plans/nextjs-migration/sub-spec-3-exit.md`
 
-- [ ] **Step 1: Fill the exit checklist against spec §5 Sub-spec 3 exit criteria**
+- [x] **Step 1: Fill the exit checklist against spec §5 Sub-spec 3 exit criteria** — `sub-spec-3-exit.md` (2026-10-01). Open: CI e2e green run, logged-in sync (deferred).
   - cutover-critical checklist green (every "In scope" row) ✅/❌ — itemised
   - Python e2e mechanically-portable subset passes against the Next build ✅/❌ + run evidence; mock-infra tests skip-marked → e2e-modernization epic; those epic tickets filed
   - static export deploys to Pages at the subpath (first real deploy), every route loads ✅/❌
@@ -827,9 +827,9 @@ No Chromium step — client-island Mermaid (`mermaid-spike-result.md`), no build
   - vanilla app deleted in the same change ✅/❌
   - old service worker cleanly replaced ✅/❌
 
-- [ ] **Step 2: List what is knowingly absent** (the `post-cutover.md` set) so the reviewer knows the gap is intentional: dashboard view, admin view, changelog view, highlights + markers, notes scratchpad, complexity-comparator.
+- [x] **Step 2: List what is knowingly absent** (the `post-cutover.md` set) so the reviewer knows the gap is intentional: dashboard view, admin view, changelog view, highlights + markers, notes scratchpad, complexity-comparator.
 
-- [ ] **Step 3: Full local check** — `pnpm typecheck && pnpm lint && pnpm test && pnpm build`, all green.
+- [x] **Step 3: Full local check** — `pnpm typecheck && pnpm lint && pnpm test && pnpm build`, all green. 2026-10-01: 404 vitest, 176 pages.
 
 - [ ] **Step 4: Checkpoint** — report. `post-cutover.md` starts next; the live site runs the reduced app in the meantime (accepted, spec §5).
 

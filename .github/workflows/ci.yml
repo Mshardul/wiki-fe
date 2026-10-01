@@ -73,7 +73,7 @@ jobs:
       - name: Tests (e2e, light lane, ${{ matrix.shard.name }})
         run: >-
           pytest ${{ matrix.shard.files }} -q -n 2 -m "not heavy" --browser-channel chrome
-          --screenshot=only-on-failure --video=retain-on-failure --tracing=retain-on-failure
+          --screenshot=only-on-failure --tracing=retain-on-failure
 
       - name: Upload failure artifacts (${{ matrix.shard.name }})
         if: failure()
