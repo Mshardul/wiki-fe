@@ -1,7 +1,6 @@
 """
 TOC grouping/chevron/pulse tests dropped — Toc.tsx renders a flat nav (no .toc-h2-group,
 no .toc-group-chevron, no .toc-passed class), same gap test_scroll_toc.py already tracks as WIKI-652.
-Notes-rail 70/30 split tests dropped — no notes-scratchpad component is mounted in ReaderIslands.tsx yet.
 """
 
 SLUG = "system-design/components/caching"
@@ -142,3 +141,32 @@ def test_toc_current_class_applied_on_scroll(page, base_url):
         timeout=5_000,
     )
     assert page.locator("#toc-nav .toc-current").count() >= 1
+
+
+# ── Notes rail: mount + layout ──────────────────────────────────────
+
+
+def test_notes_scratchpad_mounted_in_toc_sidebar(page, base_url):
+    """NotesScratchpad renders inside #toc-sidebar, after the TOC nav."""
+    _article(page, base_url)
+    page.wait_for_selector("#notes-scratchpad-input", timeout=8_000)
+    in_sidebar = page.evaluate(
+        """() => !!document.querySelector('#toc-sidebar .notes-scratchpad')"""
+    )
+    assert in_sidebar, "Expected .notes-scratchpad inside #toc-sidebar"
+
+
+def test_notes_rail_shares_sidebar_with_toc(page, base_url):
+    """The TOC nav and the notes scratchpad are both present in the same rail, stacked."""
+    _article(page, base_url)
+    page.wait_for_selector("#notes-scratchpad-input", timeout=8_000)
+    order = page.evaluate(
+        """() => {
+            const sidebar = document.getElementById('toc-sidebar');
+            const nav = sidebar.querySelector('#toc-nav');
+            const notes = sidebar.querySelector('.notes-scratchpad');
+            if (!nav || !notes) return null;
+            return nav.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING ? 'nav-then-notes' : 'other';
+        }"""
+    )
+    assert order == "nav-then-notes", "Expected the TOC nav to precede the notes scratchpad in the rail"

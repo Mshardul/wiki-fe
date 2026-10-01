@@ -1,5 +1,9 @@
 # UI Components Audit Agent — Prompt
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-07-17 | 2026-08-12 | outdated |
+
 Paste this as the prompt when spawning the agent (e.g. `general-purpose` subagent, or a fresh Claude Code session in `wiki-fe`).
 
 **Roster is large (45 components) — split across parallel agents rather than one sequential run.** Partition the roster below into batches (e.g. by top-level grouping: Content / Chrome+App-level / State-holders+Storage / Orchestration+Views+Misc) and dispatch one agent per batch via `dispatching-parallel-agents`. **Every component belongs to exactly one batch — no component may be assigned to two agents.** This includes shared-primitive components like `graph-engine.js`: keep it and its consumers (`link-graph.js`, `section-map.js`, `index-graph.js`) in the same batch so one agent owns the full picture, rather than splitting them across batches and risking the same bug logged twice under two components. Each agent still runs the full Phase 1 + Phase 2 method per component in its batch, and each writes to its own dated report file (append a batch suffix, e.g. `ui-components-audit-content - YYYYMMDD.md`) to avoid concurrent-write collisions on one file. The **interaction pass** (Known interaction points) is cross-cutting — assign it to exactly one agent (or run it as a final pass after the batches finish) rather than duplicating it across all of them.

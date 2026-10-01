@@ -1,5 +1,9 @@
 # E2E CI Health Audit Agent - Prompt (wiki-fe)
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-08-03 | 2026-08-12 | outdated |
+
 Paste this as the prompt when spawning the agent (e.g. `general-purpose` subagent, or a fresh Claude Code session in `wiki-fe`).
 
 ---

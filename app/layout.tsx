@@ -12,6 +12,7 @@ import { SwipeGestures } from "@/components/mobile/SwipeGestures";
 import { ViewportHandler } from "@/components/mobile/ViewportHandler";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { IosNudge } from "@/components/pwa/IosNudge";
+import { ComplexityCompare } from "@/components/reader/ComplexityCompare";
 import { SearchModal } from "@/components/search/SearchModal";
 import { DistractionFree } from "@/components/settings/DistractionFree";
 import { PreferencesModal } from "@/components/settings/PreferencesModal";
@@ -74,6 +75,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <BookmarksModal />
         <SearchModal />
         <PreferencesModal />
+        <ComplexityCompare />
         <PrintTrigger />
         <WikiSwitcherHost />
         <SwipeGestures />

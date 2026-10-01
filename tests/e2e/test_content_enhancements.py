@@ -3096,7 +3096,7 @@ def _select_word(page, word):
     )
 
 
-@pytest.mark.skip(reason="highlights + markers not yet ported (post-cutover)")
+@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_selecting_text_shows_highlight_toolbar(page, base_url):
     """Selecting text inside the article body reveals the floating highlight toolbar."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-toolbar-show")
@@ -3106,7 +3106,7 @@ def test_selecting_text_shows_highlight_toolbar(page, base_url):
     assert page.locator(".highlight-toolbar-btn--emoji").count() == 6
 
 
-@pytest.mark.skip(reason="highlights + markers not yet ported (post-cutover)")
+@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_highlight_create_remove_and_keyboard_remove_lifecycle(page, base_url):
     """Chained: create a highlight, remove it via the popover, re-create, then remove via keyboard Enter."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-lifecycle")
@@ -3169,7 +3169,7 @@ def test_highlight_create_remove_and_keyboard_remove_lifecycle(page, base_url):
     )
 
 
-@pytest.mark.skip(reason="highlights + markers not yet ported (post-cutover)")
+@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_highlight_persists_and_reapplies_on_reload(page, base_url):
     """A highlight created in one render re-appears after reloading the same article."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reload")
@@ -3184,7 +3184,7 @@ def test_highlight_persists_and_reapplies_on_reload(page, base_url):
     assert page.locator("#markdown-body .wiki-highlight").first.inner_text() == "selectable"
 
 
-@pytest.mark.skip(reason="highlights + markers not yet ported (post-cutover)")
+@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_multiple_markers_reapply_on_reload(page, base_url):
     """Two markers at different offsets must both re-apply after reload without corrupting offsets."""
     _load_mock_article(page, base_url, ARTICLE_FOR_MULTI_MARKERS, slug="multi-marker")
@@ -3207,7 +3207,7 @@ def test_multiple_markers_reapply_on_reload(page, base_url):
     assert page.locator("#markdown-body .wiki-marker").count() == 2
 
 
-@pytest.mark.skip(reason="highlights + markers not yet ported (post-cutover)")
+@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_marker_create_and_remove_lifecycle(page, base_url):
     """Chained: create an emoji marker and verify persistence, then remove it via the popover."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-lifecycle")
@@ -3243,7 +3243,7 @@ def test_marker_create_and_remove_lifecycle(page, base_url):
     assert remaining == 0, "Marker entry still present in localStorage after removal"
 
 
-@pytest.mark.skip(reason="highlights + markers not yet ported (post-cutover)")
+@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_emoji_marker_persists_and_reapplies_on_reload(page, base_url):
     """A marker created in one render re-appears after reloading the same article."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-reload")
@@ -3260,7 +3260,7 @@ def test_emoji_marker_persists_and_reapplies_on_reload(page, base_url):
     assert page.locator("#markdown-body .wiki-marker").first.text_content() == marker_emoji
 
 
-@pytest.mark.skip(reason="highlights + markers not yet ported (post-cutover)")
+@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_highlight_reanchor_and_drop_on_upstream_edit(page, base_url):
     """Chained: an upstream edit that shifts offsets re-anchors the highlight via snippet match; a second edit that removes the snippet entirely drops the stale entry with a toast instead."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reanchor-drop")
@@ -3297,7 +3297,7 @@ def test_highlight_reanchor_and_drop_on_upstream_edit(page, base_url):
     assert remaining == 0, "Stale highlight entry should be dropped from storage, not kept"
 
 
-@pytest.mark.skip(reason="highlights + markers not yet ported (post-cutover)")
+@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_highlight_toolbar_buttons_are_keyboard_labeled(page, base_url):
     """Every toolbar button (highlight + 6 emoji + save-as-card) has a discernible aria-label."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-toolbar-a11y")
@@ -3316,7 +3316,7 @@ def test_highlight_toolbar_buttons_are_keyboard_labeled(page, base_url):
     )
 
 
-@pytest.mark.skip(reason="highlights + markers not yet ported (post-cutover)")
+@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_highlight_mark_is_keyboard_focusable(page, base_url):
     """A created highlight is a keyboard-reachable, labeled element (tabindex + aria-label)."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-focusable")
@@ -3336,7 +3336,7 @@ def test_highlight_mark_is_keyboard_focusable(page, base_url):
     assert result["label"], "Highlight mark must have an aria-label"
 
 
-@pytest.mark.skip(reason="highlights + markers not yet ported (post-cutover)")
+@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_keyboard_enter_removes_focused_highlight(page, base_url):
     """Pressing Enter on a focused highlight opens the remove popover and Remove clears it."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-kbd-remove")
@@ -3378,7 +3378,7 @@ More selectable prose after.
 """
 
 
-@pytest.mark.skip(reason="highlights + markers not yet ported (post-cutover)")
+@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_emoji_marker_buttons_hidden_when_selection_in_code(page, base_url):
     """484: Selecting inside a code block keeps highlight but hides emoji marker buttons."""
     _load_mock_article(page, base_url, ARTICLE_WITH_CODE_FOR_MARKERS, slug="marker-code-guard")
@@ -3397,7 +3397,7 @@ def test_emoji_marker_buttons_hidden_when_selection_in_code(page, base_url):
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
 
-@pytest.mark.skip(reason="highlights + markers not yet ported (post-cutover)")
+@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_emoji_marker_is_narrow_accent_tick(page, base_url):
     """485: Marker renders as a narrow accent tick, not a full-size inline glyph."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-accent-tick")

@@ -1,5 +1,9 @@
 # SD Writer - HLD (System Design)
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-08-22 | 2026-08-22 | current |
+
 Category file for **HLD** articles (`content/system-design/hld/**/*.md`). Read [sd-writer.md](./sd-writer.md) first (article-kind detection, universal params, NEVER, format conventions, callouts, topic boundary) - this file adds only what's specific to HLD.
 
 ---

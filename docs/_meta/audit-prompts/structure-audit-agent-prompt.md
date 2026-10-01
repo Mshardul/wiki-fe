@@ -1,5 +1,9 @@
 # Structure Audit — Prompt (wiki-fe)
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-08-04 | 2026-10-01 | current |
+
 Paste this as the prompt to the **orchestrating** Claude Code session in `wiki-fe`. Like `practice-problems-audit-agent-prompt.md`, the orchestrator dispatches parallel subagents, each covering a slice of the repo, then assembles their output itself. Read this whole file before starting.
 
 ---
@@ -10,7 +14,7 @@ File/directory **structure** of `wiki-fe`, excluding `content/`: does every file
 
 ## Required reading, before dispatching or auditing anything
 
-- `CLAUDE.md` / `CONVENTIONS.md` (repo root) — the file-size threshold (~400 lines, `js/`/`css/` only, not `tests/`), the module-map-as-contract convention, naming conventions.
+- `CLAUDE.md` / `CONVENTIONS.md` (repo root) — the file-size threshold (~400 lines, not `tests/`), the module-map-as-contract convention, naming conventions. Note: `CLAUDE.md`'s FILE MAP and some of `CONVENTIONS.md`'s own path examples (e.g. `js/domain/sub-file.js`) still describe a `js/`/`css/` tree that no longer exists — apply the stated rule, not its stale example paths. Scope the threshold to `app/`, `components/`, `lib/`, and `css/` (the `js/`-only framing predates the current structure).
 - The most recent prior `docs/_meta/audit-reports/structure-audit - *.md` (by filename date; check `pending/` too), if one exists. For each new finding, note whether it's a **regression** (fixed in the prior run, broken again), a **repeat** (still open), or **new**. Don't drop a prior open item just because this run's method differs.
 
 ## Concerns to check
@@ -22,12 +26,12 @@ File/directory **structure** of `wiki-fe`, excluding `content/`: does every file
 
 ### Concern 2 — File size / single-responsibility (CONVENTIONS.md's own threshold)
 
-- Any `js/` or `css/` file over ~400 lines with no one-line "single cohesive pipeline" exception comment at the top (see `js/render/content-view.js` for the correct pattern). This threshold does **not** apply to `tests/` — CONVENTIONS.md's Testing rules explicitly favor adding to an existing test file over creating new ones, so large test files are expected, not a violation.
+- Any `app/`, `components/`, `lib/`, or `css/` file over ~400 lines with no one-line "single cohesive pipeline" exception comment at the top. This threshold does **not** apply to `tests/` — CONVENTIONS.md's Testing rules explicitly favor adding to an existing test file over creating new ones, so large test files are expected, not a violation.
 - For each oversized file, look for a genuine internal seam (e.g. a large object literal doing 3+ unrelated things, a clearly separable sub-concern with its own line range) before proposing a split — not every oversized file has a clean cut; some are legitimately one cohesive pipeline and just need the documented exception comment instead.
 
 ### Concern 3 — Directory topology
 
-- Two or more files that are genuinely coupled (check actual imports, not just name similarity) sitting loose at a directory's top level instead of grouped into their own subfolder, when every *other* multi-file feature area in that same directory already is one (e.g. `js/app/`, `js/content/`, `js/render/`, `js/storage/` are all folders — a loose 2+-file cluster elsewhere is the outlier).
+- Two or more files that are genuinely coupled (check actual imports, not just name similarity) sitting loose at a directory's top level instead of grouped into their own subfolder, when every *other* multi-file feature area in that same directory already is one (e.g. `components/reader/`, `components/chrome/`, `components/auth/`, `lib/storage/`, `lib/content/` are all folders — a loose 2+-file cluster elsewhere is the outlier).
 - **Before proposing a new folder, check whether the cluster is transient.** A cluster of related files that exists to track a specific in-progress initiative (has its own status checklist, is expected to be deleted once that initiative finishes) should generally **stay flat, not be reorganized into a folder** — restructuring something destined for deletion is wasted effort. A permanent structural category (a feature area that will keep growing files indefinitely) is the case that actually warrants a folder. State which case applies and why for each candidate.
 
 ### Concern 4 — Dead / orphaned files
@@ -60,18 +64,18 @@ For every live doc, check specifically for: (a) a referenced file/directory that
 ### 1. Build the file inventory
 
 ```
-find . \( -path ./.venv -o -path ./content -o -path ./.git -o -path ./.pytest_cache -o -name __pycache__ -o -path "*/.cdn-cache*" -o -name .DS_Store \) -prune -o -type f -print
+find . \( -path ./.venv -o -path ./content -o -path ./.git -o -path ./.pytest_cache -o -name __pycache__ -o -path "*/.cdn-cache*" -o -name .DS_Store -o -path ./node_modules -o -path ./.next -o -path ./out -o -path ./coverage -o -path "./lib/content/generated" -o -path ./public/data -o -path ./.playwright-mcp -o -name "*.tsbuildinfo" -o -name next-env.d.ts \) -prune -o -type f -print
 ```
 
-This is today's full non-content file list — the ground truth every subagent checks against.
+Cross-check the exclude list against `.gitignore` before running — it names the current build/generated paths authoritatively; don't trust the hand-copied list above if it drifts. This is today's full non-content file list — the ground truth every subagent checks against.
 
 ### 2. Partition into batches, one per subagent
 
 Split by natural category, mirroring how the repo itself is organized — each batch should be self-contained enough that a subagent doesn't need to read outside it to do its job, though cross-references to `CLAUDE.md`/`CONVENTIONS.md` are fine (every batch needs those for the size threshold and naming rules):
 
 - **Batch: `docs/` full tree** — every file under `docs/`, all subdirectories, all root doc files (`tickets-backlog.md`, etc.), plus root `CLAUDE.md`/`CONVENTIONS.md`/`readme.md`/`CHANGELOG.md`. This batch does almost all of Concern 5's work, plus Concern 1/4 for anything doc-shaped.
-- **Batch: `js/` + `css/`** — full line-count sweep (Concern 2), directory-topology check (Concern 3), naming consistency (Concern 1) across both trees.
-- **Batch: `tests/` + `scripts/` + root config** (`.github/`, `Makefile`, `biome.json`, `.pre-commit-config*.yaml`, `pytest.ini`, `requirements-dev.txt`, `manifest.json`, `index.html`, `404.html`, `wiki-sw.js`, `icon.svg`, `sprite.svg`, `icons/`, `data/`) — placement/naming checks; note CONVENTIONS.md's file-size threshold does not apply to `tests/`.
+- **Batch: `app/` + `components/` + `lib/` + `css/`** — full line-count sweep (Concern 2), directory-topology check (Concern 3), naming consistency (Concern 1) across all four trees. Split into two sub-batches if this is too large for one subagent (e.g. `app/`+`components/` vs `lib/`+`css/`) — re-derive the split from the actual file count at run time.
+- **Batch: `tests/` + `scripts/` + root config** (`.github/`, `Makefile`, `biome.json`, `eslint.config.*`, `.pre-commit-config*.yaml`, `pytest.ini`, `pyproject.toml`, `tsconfig*.json`, `requirements-dev.txt`, `package.json`, `next.config.*`, `serwist.config.js`, `sprite.svg`, `public/` (includes `manifest.webmanifest`, `icon.svg`, `icons/`), `data/`) — placement/naming checks; note CONVENTIONS.md's file-size threshold does not apply to `tests/`.
 
 Adjust batch boundaries if the repo has grown a new top-level area since this prompt was last edited — the split above is a starting point, not a fixed roster (unlike `ui-components-audit`'s fixed component list, file trees change shape over time, so re-derive the split from the Step 1 inventory each run).
 

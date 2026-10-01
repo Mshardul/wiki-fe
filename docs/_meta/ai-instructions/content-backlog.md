@@ -1,5 +1,9 @@
 # AI Instructions - Content backlog
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-08-03 | 2026-08-03 | current |
+
 > Reference this file whenever content-backlog intent is detected: `DSA-xxx` / `SD-xxx` IDs, or phrases like "content backlog", "work content backlog", "file content backlog items", or running `.prompts/fe-audit-reports-to-content-backlog.md`.
 >
 > These are **not tickets**. Never call them tickets. Never file them in `docs/tickets-backlog.md`. App work stays on `WIKI-xxx`; content work stays here.

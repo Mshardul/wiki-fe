@@ -4,16 +4,18 @@
 
 ## Tech Stack
 
-- **Hosting** - GitHub Pages - static, no build step
-- **Framework** - none - vanilla JS (ES modules), no bundler, no TypeScript
-- **Markdown rendering** - Showdown
-- **Diagrams** - Mermaid
-- **Syntax highlighting** - highlight.js
-- **Offline** - service worker (`wiki-sw.js`), localStorage-only persistence (no server-side FE state)
-- **Backend** - calls `wiki-be` (Render) via `js/api.js`
-- **Lint/format** - Biome (`biome.json`)
-- **Tests** - pytest + Playwright (e2e, Python-driven browser tests)
+- **Hosting** - GitHub Pages - static export (`next build` → `out/`), no server runtime
+- **Framework** - Next.js (App Router), React, TypeScript - no `js/`/`css/` vanilla tree anymore, see note below
+- **Markdown rendering** - remark/rehype pipeline (`lib/content/pipeline.ts` + `lib/content/plugins/`)
+- **Diagrams** - Mermaid (via `components/reader/MermaidDiagrams.tsx`)
+- **Syntax highlighting** - Shiki (`@shikijs/rehype`)
+- **Offline** - service worker via Serwist (`app/sw.ts`), localStorage-only persistence (no server-side FE state)
+- **Backend** - calls `wiki-be` (Render) via `lib/api.ts`
+- **Lint/format** - Biome + ESLint (`biome.json`, `eslint.config.*`)
+- **Tests** - Vitest (unit/component) + pytest/Playwright (e2e, Python-driven browser tests against the static `out/` export)
 - **CI** - GitHub Actions (`.github/workflows/ci.yml`)
+
+**Note**: there is no `js/` directory. UI logic lives in `app/` (routes), `components/` (React islands, grouped by domain: `reader/`, `chrome/`, `auth/`, `search/`, `settings/`, `mobile/`, `pwa/`, `sync/`, `common/`), and `lib/` (non-UI logic: `api.ts`, `auth/`, `content/`, `storage/`). The FILE MAP below is **stale** - it still describes a `js/` tree that does not exist and has not been re-derived for the current structure yet. Don't trust it for file routing until it's rewritten; use `find components lib app -type f` or ask directly instead.
 
 ## Playwright MCP browser
 

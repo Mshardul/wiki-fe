@@ -1,5 +1,9 @@
 # Codebase Quality Audit Agent — Prompt (wiki-fe)
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-07-17 | 2026-08-14 | outdated |
+
 Paste this as the prompt when spawning the agent (e.g. `general-purpose` subagent, or a fresh Claude Code session in `wiki-fe`).
 
 ---

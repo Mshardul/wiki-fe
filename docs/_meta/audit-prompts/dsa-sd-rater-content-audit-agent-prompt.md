@@ -1,5 +1,9 @@
 # DSA/SD Rater Content Audit — Prompt (wiki-fe)
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-08-16 | 2026-08-16 | current |
+
 Paste this as the prompt to the **orchestrating** Claude Code session in `wiki-fe`, or select it from `.prompts/fe-run-audit.md`'s menu. Like `practice-problems-audit-agent-prompt.md`, this one is not handed to a single subagent — the orchestrator dispatches multiple subagents, each rating a slice of files, then assembles their output itself. Read this whole file before starting; the dispatch/assembly steps are as load-bearing as the rating criteria.
 
 ---

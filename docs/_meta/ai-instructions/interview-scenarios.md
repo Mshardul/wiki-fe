@@ -1,5 +1,9 @@
 # AI Instructions - Interview Scenario Bank Sub-Pages
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-07-20 | 2026-08-12 | current |
+
 > **Read `ai-instructions/_base.md` first.** This file defines the format and generation rules for
 > `[parent-topic]-interview-scenarios.md` sub-pages, referenced from `components.md`, `algorithms.md`,
 > and `hld.md` as the "Interview Scenario Bank" deep-dive link.

@@ -1,5 +1,9 @@
 # SD Writer - Algorithms & Concepts
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-08-22 | 2026-08-22 | current |
+
 Category file for **Algorithm/Concept** articles (`content/system-design/algorithms/**/*.md`). Read [sd-writer.md](./sd-writer.md) first (article-kind detection, universal params, NEVER, format conventions, callouts, topic boundary) - this file adds only what's specific to Algorithms/Concepts.
 
 ---

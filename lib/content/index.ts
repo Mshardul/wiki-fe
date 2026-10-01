@@ -23,6 +23,11 @@ export { buildBacklinks, getBacklinks, getRelated } from "./backlinks";
 export { validateBridges } from "./bridges";
 export { buildBrokenLinks } from "./broken-links";
 export { buildContent } from "./build";
+export {
+  buildFilenameIndex,
+  parseChangelog,
+  resolveFilename,
+} from "./changelog";
 export { buildComplexityTables } from "./complexity-tables";
 export { computeShapeFingerprint, deriveExcerpt } from "./derive";
 export { getArticle, getArticleSlugs } from "./get-article";

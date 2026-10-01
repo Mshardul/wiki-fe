@@ -21,8 +21,15 @@ import {
 } from "@/lib/storage/settings-presets";
 import { showToast } from "@/lib/toast";
 
-type Tab = "general" | "keyboard" | "advanced";
+type Tab = "general" | "keyboard" | "actions" | "advanced";
 type Shortcuts = Awaited<ReturnType<typeof loadDataJson<"shortcuts">>>;
+
+const TAB_LABELS: Record<Tab, string> = {
+  general: "Appearance",
+  keyboard: "Shortcuts",
+  actions: "Actions",
+  advanced: "Advanced",
+};
 
 const isDarkBg = (id: string) => !id.startsWith("light-");
 
@@ -123,16 +130,18 @@ export function PreferencesModal() {
       backdropClassName="prefs-modal"
     >
       <div className="prefs-tabs" role="tablist">
-        {(["general", "keyboard", "advanced"] as Tab[]).map((t) => (
+        {(["general", "keyboard", "actions", "advanced"] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
             role="tab"
             aria-selected={tab === t}
             className={`prefs-tab${tab === t ? " active" : ""}`}
+            data-action="prefs-tab"
+            data-tab={t}
             onClick={() => setTab(t)}
           >
-            {t === "general" ? "Appearance" : t === "keyboard" ? "Shortcuts" : "Advanced"}
+            {TAB_LABELS[t]}
           </button>
         ))}
       </div>
@@ -246,6 +255,29 @@ export function PreferencesModal() {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {tab === "actions" && (
+        <div className="prefs-panel active" id="prefs-panel-actions">
+          <div className="prefs-actions-list">
+            <button
+              type="button"
+              className="prefs-action-row"
+              data-action="complexity-compare-open"
+              title="Compare complexity"
+              aria-label="Compare complexity"
+              onClick={() => {
+                setOpen(false);
+                document.dispatchEvent(new CustomEvent("wiki:open-complexity-compare"));
+              }}
+            >
+              <svg className="icon" aria-hidden="true">
+                <use href="#icon-arrows-diff" />
+              </svg>
+              <span className="prefs-action-label">Compare complexity</span>
+            </button>
+          </div>
         </div>
       )}
 

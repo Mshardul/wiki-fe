@@ -16,6 +16,10 @@ Source of truth for what each article's `## Practice problems` section actually 
   - Word Break (LC 139)
 - Palindrome Partitioning - predicate-gated cut
   - Palindrome Partitioning II (LC 132)
+- Partition to K Equal Sum Subsets
+  - Matchsticks to Square (LC 473)
+  - Fair Distribution of Cookies (LC 2305)
+- Closest Subsequence Sum
 
 ## `content/dsa/patterns/binary-search-on-answer.md`
 
@@ -27,6 +31,10 @@ Source of truth for what each article's `## Practice problems` section actually 
 - Minimum Number of Days to Make m Bouquets (LC 1482)
 - Magnetic Force Between Two Balls (LC 1552)
   - Divide Chocolate (LC 1231)
+- Minimize Max Distance to Gas Station (LC 774)
+  - Any "minimize the maximum interval after inserting k points into sorted gaps" restatement
+- Maximum Average Subarray II (LC 644)
+  - Any "maximize/minimize a ratio over a variable-length window or subsequence" restatement (density, rate, score-per-item)
 
 ## `content/dsa/patterns/bitmask-dp.md`
 
@@ -46,6 +54,12 @@ Source of truth for what each article's `## Practice problems` section actually 
   - Minimum Cost to Assign Tasks (classic)
   - Number of Ways to Wear Different Hats to Each Other (LC 1434)
   - Maximum AND Sum of Array (LC 2172)
+- Sum Over All Subsets (SOS DP)
+  - Counting pairs with AND = 0 (classic CP)
+- Smallest Sufficient Team (LC 1125)
+  - Partition to K Equal Sum Subsets (LC 698)
+- Closest Subsequence Sum (LC 1755)
+  - Partition array into two subsets minimizing sum difference, n ≤ 40 (classic CP)
 
 ## `content/dsa/patterns/cyclic-sort.md`
 
@@ -59,8 +73,11 @@ _(stub - no Practice problems entries yet)_
 - Meeting Rooms II (LC 253)
   - Divide Intervals Into Minimum Number of Groups (LC 2406)
   - Car Pooling (LC 1094)
+  - Floating / event-sweep difference array (CP-primitive)
 - Number of Flowers in Full Bloom (LC 2251)
   - Meeting Rooms II (LC 253)
+- Increment Submatrix by One (LC 2536)
+  - Range Sum Query 2D
 
 ## `content/dsa/patterns/dp-patterns.md`
 
@@ -73,6 +90,8 @@ _(stub - no Practice problems entries yet)_
   - Find the Duplicate Number (LC 287)
 - Linked List Cycle II (LC 142)
   - Linked List Cycle (LC 141)
+  - Cycle length computation (CP-primitive)
+  - Brent's cycle detection (CP-primitive)
 - Middle of the Linked List (LC 876)
   - (none - see Palindrome Linked List below for a problem that composes this technique with another)
 - Palindrome Linked List (LC 234)
@@ -89,20 +108,28 @@ _(stub - no Practice problems entries yet)_
 - Find All Anagrams in a String - sliding window + freq array
   - Permutation in String (LC 567)
   - Minimum Window Substring (LC 76)
+  - Sliding-window frequency array (CP-primitive framing)
 - Sort Characters By Frequency (LC 451) - frequency of frequencies
   - Top K Frequent Elements (LC 347)
   - Top K Frequent Words (LC 692)
   - Reorganize String (LC 767)
+- Sort Colors (LC 75)
+  - Frequency array as counting sort (CP-primitive, general k)
+- Single Number (LC 136)
+  - Missing Number (LC 268)
 
 ## `content/dsa/patterns/graph-coloring.md`
 
 - Possible Bipartition (LC 886)
   - Is Graph Bipartite? (LC 785)
   - Divide Nodes into the Maximum Number of Groups (LC 2493)
+  - Odd-cycle detection (CP-primitive framing)
 - Flower Planting With No Adjacent (LC 1042)
   - Graph Coloring
 - Chromatic Number (bitmask DP)
   - Minimum number of teams / groups such that no two conflicting members share a team (classic/CP framing)
+- Maximum Number of Accepted Invitations (LC 1820)
+  - Bipartite matching via 2-coloring (CP-primitive, general graph)
 
 ## `content/dsa/patterns/in-place-reversal.md`
 
@@ -113,20 +140,26 @@ _(stub - no Practice problems entries yet)_
   - Rotate List (LC 61)
 - Reverse Nodes in k-Group (LC 25)
   - Swap Nodes in Pairs (LC 24)
+  - Reverse Nodes in k-Group (iterative, contest variant)
 - Reorder List (LC 143)
   - Interleaving two lists (variant)
+- Palindrome Linked List (LC 234)
+  - Valid Palindrome (LC 125)
+- Rotate List (LC 61)
 
 ## `content/dsa/patterns/interval-dp.md`
 
 - Burst Balloons (LC 312)
   - Minimum Cost Tree from Leaf Values (LC 1130)
-  - Matrix Chain Multiplication (classic)
   - Zuma Game (LC 488)
+  - Minimum Cost to Cut a Stick (LC 1547)
 - Minimum Cost to Merge Stones (LC 1000)
 - Strange Printer (LC 664)
   - Minimum Insertion Steps to Make a String Palindrome (LC 1312)
 - Palindrome Partitioning II (LC 132)
   - Palindrome Partitioning (LC 131)
+- Matrix Chain Multiplication (classic)
+  - Optimal Binary Search Tree (classic)
 - Remove Boxes (LC 546)
 
 ## `content/dsa/patterns/k-way-merge.md`
@@ -136,10 +169,12 @@ _(stub - no Practice problems entries yet)_
   - Merge Two Sorted Lists (LC 21)
   - Merge Sorted Array (LC 88)
   - Sort List (LC 148)
+  - Merge k sorted streams/generators (online variant)
 - Kth Smallest Element in a Sorted Matrix (LC 378)
   - Kth Smallest in Multiplication Table (LC 668)
 - Smallest Range Covering Elements from K Lists (LC 632)
   - Minimum Window Substring (LC 76)
+  - Smallest Range II / running-window variants (classic)
 - Find K Pairs with Smallest Sums (LC 373)
   - Kth Smallest Element in a Sorted Matrix (LC 378)
 
@@ -154,9 +189,11 @@ _(stub - no Practice problems entries yet)_
 - Pacific Atlantic Water Flow (LC 417) - multi-source BFS
   - Walls and Gates (LC 286)
   - Rotting Oranges (LC 994)
+  - 01 Matrix (LC 542)
 - Shortest Path in a Grid with Obstacles Elimination (LC 1293) - state-augmented BFS
-  - Minimum Obstacle Removal to Reach Corner (LC 2290)
   - Cut Off Trees for Golf Event (LC 675)
+- Minimum Obstacle Removal to Reach Corner (LC 2290) - 0-1 BFS
+  - Shortest Path in a Grid with Obstacles Elimination (LC 1293)
 
 ## `content/dsa/patterns/meet-in-the-middle.md`
 
@@ -165,10 +202,12 @@ _(stub - no Practice problems entries yet)_
   - Partition Equal Subset Sum (LC 416)
   - Target Sum (LC 494)
   - Sum of Squares (find four perfect squares summing to N)
+  - Subset Sum, two-pointer combine variant (contest optimization)
 - Split Array With Same Average (LC 805)
   - Fair Split (partition into two equal-sum groups)
 - 4Sum II (LC 454)
   - Two Sum (LC 1)
+  - k-sum via MITM (6-sum, 8-sum generalization)
 
 ## `content/dsa/patterns/merge-intervals.md`
 
@@ -178,11 +217,13 @@ _(stub - no Practice problems entries yet)_
   - Merge Sorted Array (LC 88)
 - Meeting Rooms II (LC 253)
   - Car Pooling (LC 1094)
+  - Max overlap via event points (contest form)
 - Non-overlapping Intervals (LC 435)
   - Minimum Number of Arrows to Burst Balloons (LC 452)
 - Interval List Intersections (LC 986)
   - Merge Sorted Array (LC 88)
   - Find Right Interval (LC 436)
+- My Calendar III (LC 732)
 
 ## `content/dsa/patterns/modified-binary-search.md`
 
@@ -194,14 +235,18 @@ _(stub - no Practice problems entries yet)_
   - Peak Index in a Mountain Array (LC 852)
   - Find in Mountain Array (LC 1095)
   - Find Peak Element in 2D Matrix (LC 1901)
+  - Generalized "first True" <abbr>predicate</abbr> search (contest template)
 - Find First and Last Position of Element in Sorted Array (LC 34)
   - Search Insert Position (LC 35)
   - Count of Range Sum (LC 327)
   - Time Based Key-Value Store (LC 981)
   - Find Right Interval (LC 436)
   - Online Election (LC 911)
+  - Python `bisect` module as drop-in (contest velocity)
 - Search a 2D Matrix (LC 74)
   - Search a 2D Matrix II (LC 240)
+- Search in a Sorted Array of Unknown Size (LC 702)
+  - First Bad Version (LC 278)
 
 ## `content/dsa/patterns/monotonic-queue.md`
 
@@ -214,6 +259,7 @@ _(stub - no Practice problems entries yet)_
   - Subarray Sum Equals K (LC 560)
 - Longest Continuous Subarray With Absolute Diff Less Than or Equal to Limit (LC 1438)
   - Subarrays with Bounded Max/Min variants (interview-staple rephrasing)
+- Sliding Window Maximum II (grid version)
 
 ## `content/dsa/patterns/monotonic-stack.md`
 
@@ -228,11 +274,12 @@ _(stub - no Practice problems entries yet)_
 - Remove K Digits (LC 402)
   - Remove Duplicate Letters (LC 316)
   - Create Maximum Number (LC 321)
+- Sum of Subarray Minimums (LC 907)
+  - Sum of Subarray Ranges (LC 2104)
 
 ## `content/dsa/patterns/prefix-sum.md`
 
 - Range Sum Query - Immutable (LC 303)
-  - Range Sum Query 2D
   - Running Sum of 1d Array (LC 1480)
 - Subarray Sum Equals K (LC 560)
   - Subarray Sums Divisible by K (LC 974)
@@ -240,6 +287,7 @@ _(stub - no Practice problems entries yet)_
 - Product of Array Except Self (LC 238)
   - Trapping Rain Water (LC 42)
   - Range Sum Query
+- Range Sum Query 2D - Immutable (LC 304)
 
 ## `content/dsa/patterns/sliding-window.md`
 
@@ -261,6 +309,8 @@ _(stub - no Practice problems entries yet)_
 - Subarrays with K Different Integers (LC 992)
   - Binary Subarrays With Sum (LC 930)
   - Count Number of Nice Subarrays (LC 1248)
+- Find All Anagrams in a String (LC 438)
+  - Permutation in String (LC 567)
 
 ## `content/dsa/patterns/state-machine-dp.md`
 
@@ -275,8 +325,9 @@ _(stub - no Practice problems entries yet)_
   - House Robber III (LC 337)
   - Delete and Earn (LC 740)
 - Paint House (LC 256)
-  - Paint House II (LC 265)
 - Paint Fence (LC 276)
+- Paint House II (LC 265)
+- Domino Tiling of a Grid
 
 ## `content/dsa/patterns/subsets-permutations.md`
 
@@ -294,6 +345,8 @@ _(stub - no Practice problems entries yet)_
 - K Closest Points to Origin (LC 973)
   - Kth Smallest Element in a Sorted Matrix (LC 378)
   - Find K Closest Elements (LC 658)
+- Top K Frequent Elements, bucket-sort variant (LC 347)
+  - Sort Characters By Frequency (LC 451)
 
 ## `content/dsa/patterns/tree-graph-traversal.md`
 
@@ -311,6 +364,10 @@ _(stub - no Practice problems entries yet)_
 - Number of Provinces (LC 547)
   - Number of Islands (LC 200)
   - Number of Connected Components in an Undirected Graph (classic)
+- Rotting Oranges (LC 994)
+  - Walls and Gates (classic, not on LC)
+  - As Far from Land as Possible (LC 1162)
+- Shortest Path Visiting All Nodes (LC 847)
 
 ## `content/dsa/patterns/two-heaps.md`
 
@@ -320,6 +377,7 @@ _(stub - no Practice problems entries yet)_
 - Sliding Window Median (LC 480)
   - Maximum of Sliding Window (LC 239)
   - Minimum Window Substring (LC 76)
+  - Count of Smaller Numbers After Self (LC 315)
 - IPO (LC 502)
   - Reorganize String (LC 767)
 
@@ -340,34 +398,44 @@ _(stub - no Practice problems entries yet)_
 - Valid Palindrome (LC 125)
   - Valid Palindrome II (LC 680)
   - Longest Palindromic Substring (LC 5)
+- Closest Subsequence Sum (LC 1755)
+  - Partition Equal Subset Sum-style subset-sum with n ≤ 40 (classic, not on LC in this exact form)
 
 # Data Structures
 
 ## `content/dsa/data-structures/array.md`
 
-- Trapping Rain Water - _converging two pointers_
+- Trapping Rain Water
   - Container With Most Water (LC 11)
-- Next Permutation - _in-place index manipulation_
+- Next Permutation
   - Previous Permutation With One Swap (LC 1053)
-- Maximum Subarray - _Kadane's dynamic programming_
+- Maximum Subarray
   - Maximum Sum Circular Subarray (LC 918)
   - Maximum Product Subarray (LC 152)
-- Minimum Size Subarray Sum - _sliding window_
+- Minimum Size Subarray Sum
   - Minimum Window Substring (LC 76)
+- Range Sum Query - Immutable
+  - Range Sum Query 2D
+  - Contiguous Array (LC 525)
+- Range Addition
+  - My Calendar II (LC 731)
+- Group Anagrams
+  - Find All Anagrams in a String (LC 438)
 
 ## `content/dsa/data-structures/avl-tree.md`
 
-- Insert into an AVL tree - _rebalance on the way up_
+- Insert into an AVL tree
   - Balance a Binary Search Tree (LC 1382)
-- Validate height-balanced - _bottom-up heights_
-- Build a balanced BST from sorted data - _vs AVL_
+- Validate height-balanced
+- Build a balanced BST from sorted data
   - Convert Sorted List to Binary Search Tree (LC 109)
-- AVL delete with rebalance-on-removal - _multi-ancestor fixup_
+- AVL delete with rebalance-on-removal
+- Count of Smaller Numbers After Self
+  - Kth Largest Element in a Stream (LC 703)
 
 ## `content/dsa/data-structures/b-plus-tree.md`
 
 - Range query on a sorted structure
-  - Count of numbers in a range (LC 2250)
   - Find first and last position of element in sorted array (LC 34)
 - Design an index for a database column
   - Design a key-value store with range queries (system design)
@@ -375,36 +443,46 @@ _(stub - no Practice problems entries yet)_
 
 ## `content/dsa/data-structures/b-tree.md`
 
-- Why B-trees for databases - _reasoning_
-- B-tree search - _multi-key-node descent_
-- Choose the order for a disk block - _sizing_
-- B-tree vs B+-tree for range scans - _reasoning_
-- Insert-with-node-split - _median push-up_
+- Why B-trees for databases
+- B-tree search
+  - Search in a Binary Search Tree (LC 700)
+- Choose the order for a disk block
+- B-tree vs B+-tree for range scans
+- Insert-with-node-split
+- Range Sum Query - Mutable
+  - Range Sum Query 2D
+- Merge k Sorted Lists
+  - Smallest Range Covering Elements from K Lists (LC 632)
+  - Find K Pairs with Smallest Sums (LC 373)
 
 ## `content/dsa/data-structures/binary-search-tree.md`
 
-- Validate Binary Search Tree - _bounded recursion_
-- Kth Smallest Element in a BST - _in-order counting_
+- Validate Binary Search Tree
+- Kth Smallest Element in a BST
   - Binary Search Tree Iterator (LC 173)
-- Lowest Common Ancestor of a BST - _ordering shortcut_
-  - Lowest Common Ancestor of a Binary Search Tree III (LC 1650)
-- Insert into a BST - _recursive descent_
-- Convert Sorted Array to BST - _balanced build_
+- Lowest Common Ancestor of a BST
+  - Lowest Common Ancestor of a Binary Tree III (LC 1650)
+- Insert into a BST
+- Convert Sorted Array to BST
   - Convert Sorted List to Binary Search Tree (LC 109)
-- Delete Node in a BST - _two-child successor-replacement_
+- Delete Node in a BST
   - Delete Leaves With a Given Value (LC 1325)
+- Inorder Successor in BST
+  - Inorder Successor in BST II (LC 510)
 
 ## `content/dsa/data-structures/binary-tree.md`
 
-- Maximum Depth of Binary Tree - _DFS recursion_
+- Maximum Depth of Binary Tree
   - Minimum Depth of Binary Tree (LC 111)
-- Binary Tree Level Order Traversal - _BFS_
+- Binary Tree Level Order Traversal
   - Binary Tree Zigzag Level Order Traversal (LC 103)
   - Average of Levels in Binary Tree (LC 637)
-- Invert Binary Tree - _recursive swap_
-- Diameter of Binary Tree - _tree DP_
+- Invert Binary Tree
+- Diameter of Binary Tree
   - Binary Tree Maximum Path Sum (LC 124)
-- Lowest Common Ancestor - _recursive search_
+  - Balanced Binary Tree (LC 110)
+  - House Robber III (LC 337)
+- Lowest Common Ancestor
   - Lowest Common Ancestor of a Binary Tree II (LC 1644)
 
 ## `content/dsa/data-structures/bloom-filter.md`
@@ -412,104 +490,143 @@ _(stub - no Practice problems entries yet)_
 - Design a Web Crawler URL Deduplication System
   - Design a spam filter for email deduplication (same mechanic: large n, tolerate FP, no FN, no deletion).
   - Implement a visited-set for a large-scale graph crawler with a 1 GB memory cap"
+  - Design a Spell Checker (static dictionary load, FP-rate-vs-memory sizing)
 - First Missing Positive (Membership + Exact Fallback)
   - Find the duplicate number in [1..n] with O(1) space" (LC 287)
   - Find all missing numbers in [1..n]" (LC 448)
 - Design a Counting Bloom Filter with Delete
   - Design a rate limiter using a sliding-window with probabilistic eviction"
   - Design a distributed deduplication service where messages can be retracted"
-- Design a Spell Checker
-  - Design a username availability checker for a social platform" (same mechanic: static set loaded once, FP = rare false "available" claim tolerable, FN = saying taken when free is the real sin).
-  - Filter malicious URLs using a pre-built blocklist"
 
 ## `content/dsa/data-structures/circular-buffer.md`
 
-_(stub - no Practice problems entries yet)_
+- Design Circular Queue
+  - Design Circular Deque (LC 641)
+  - Design a Stack With Increment Operation (LC 1381)
+- Design Hit Counter
+  - Moving Average from Data Stream (below)
+  - Logger Rate Limiter (LC 359)
+- Moving Average from Data Stream
+  - Design Hit Counter (above)
+  - Sliding Window Average of All Subarrays of Size K (variant framing)
+  - Fixed-window rolling aggregate (running sum/min/max over the last k elements, no LC number)
+- Design a Rate Limiter
+  - Design a Logger Rate Limiter (LC 359)
+  - Design Hit Counter (above)
+- Rotate Array
+  - Rotate List (LC 61)
 
 ## `content/dsa/data-structures/deque.md`
 
-- Sliding Window Maximum - _monotonic deque_
+- Sliding Window Maximum
   - Jump Game VI (LC 1696)
   - Constrained Subsequence Sum (LC 1425)
-- Design Circular Deque - _ring buffer, both ends_
+- Design Circular Deque
   - Design Circular Queue (LC 622)
-- Shortest Subarray with Sum at Least K - _monotonic deque on prefix sums_
-- Sliding Window Median - _why a deque is **not** enough_
+- Shortest Subarray with Sum at Least K (LC 862)
+- Sliding Window Median
   - Find Median from Data Stream (LC 295)
+- Minimum Cost to Make at Least One Valid Path in a Grid
+  - Shortest Path in Binary Matrix (LC 1091)
+  - Number of Ways to Arrive at Destination (LC 1976)
 
 ## `content/dsa/data-structures/dynamic-array.md`
 
 - Implement a Dynamic Array from Scratch - grow-and-shrink resize policy
   - Design a ArrayList / Vector class (common systems-interview phrasing)
-- O(1) Removal at an Arbitrary Index - swap-with-last-then-pop
+- O(1) Removal at an Arbitrary Index
 - Amortized Copy-Count Walkthrough - aggregate-method proof by simulation
 - Growth Factor Comparison - geometric vs fixed-increment resizing
-- Insert Delete GetRandom O(1) - swap-with-last + index map
+- Insert Delete GetRandom O(1)
   - Insert Delete GetRandom O(1)
-- Min Stack - parallel auxiliary buffer
+- Min Stack
   - Max Stack (design variant)
 - Implement Queue using Stacks - amortized analysis across two buffers
   - Implement Stack using Queues (LC 225)
+- Next Greater Element
+  - Daily Temperatures (LC 739)
+  - Largest Rectangle in Histogram (LC 84)
+- Sliding Window Median
+  - Find Median from Data Stream (LC 295)
 
 ## `content/dsa/data-structures/fenwick-tree.md`
 
-- Range Sum Query - Mutable - _point update, range query_
+- Range Sum Query - Mutable
   - Range Sum Query 2D
-  - My Calendar III (LC 732)
-- Count of Smaller Numbers After Self - _BIT as order statistics_
+- Count of Smaller Numbers After Self
   - Reverse Pairs (LC 493)
   - Count of Range Sum (LC 327)
-- Range Sum Query - Range Update and Range Sum - _two BITs_
-  - Range Addition (LC 370)
+  - Count inversions in an array (classic)
+- Range Sum Query - Range Update and Range Sum
+- Range Addition
+  - My Calendar III (LC 732)
 
 ## `content/dsa/data-structures/graph.md`
 
-- Number of Islands (LC 200) - BFS/DFS connected components
+- Number of Islands (LC 200)
   - Flood Fill (LC 733)
   - Max Area of Island (LC 695)
   - Count Sub Islands (LC 1905)
-- Clone Graph (LC 133) - BFS + hashmap original-to-clone
+- Clone Graph (LC 133)
   - Copy List with Random Pointer (LC 138)
   - Graph Valid Tree (LC 261)
   - Pacific Atlantic Water Flow (LC 417)
-- Course Schedule (LC 207) - DFS three-color cycle detection / topo sort
+- Course Schedule (LC 207)
   - Course Schedule II (LC 210)
   - Find Eventual Safe States (LC 802)
   - Alien Dictionary (LC 269)
-- Network Delay Time (LC 743) - weighted shortest path (Dijkstra)
+- Network Delay Time (LC 743)
   - Path with Minimum Effort (LC 1631)
   - Cheapest Flights Within K Stops (LC 787)
+- Redundant Connection (LC 684)
+  - Number of Provinces (LC 547)
+  - Accounts Merge (LC 721)
+- Count of Smaller Numbers After Self on a Tree (subtree-sum queries via Euler tour)
+  - Kth Ancestor of a Tree Node (LC 1483)
 
 ## `content/dsa/data-structures/hash-set.md`
 
-_(stub - no Practice problems entries yet)_
+- Contains Duplicate
+  - Contains Duplicate II (LC 219)
+- Intersection of Two Arrays
+- Longest Consecutive Sequence
+  - Longest Consecutive Sequence II (variants on trees/graphs)
+- Happy Number
+  - Linked List Cycle (LC 141)
 
 ## `content/dsa/data-structures/hash-table.md`
 
-- Two Sum - _complement lookup_
+- Two Sum
   - Two Sum IV
   - 4Sum II (LC 454)
-- Group Anagrams - _canonical key_
-- Longest Consecutive Sequence - _set membership_
-- Subarray Sum Equals K - _prefix sum + hashing_
+- Group Anagrams
+  - Group Shifted Strings (LC 249)
+- Longest Consecutive Sequence
+- Subarray Sum Equals K
   - Contiguous Array (LC 525)
   - Subarray Sums Divisible by K (LC 974)
-- First Unique Character - _frequency map_
+- First Unique Character
+  - Sort Characters By Frequency (LC 451)
+- Longest Common Subsequence
+  - Edit Distance (LC 72)
+  - Distinct Subsequences (LC 115)
 
 ## `content/dsa/data-structures/heap.md`
 
-- Kth Largest Element in a Stream - bounded min-heap
+- Kth Largest Element in a Stream
   - Kth Largest Element in an Array (LC 215)
-- Top K Frequent Elements - heap of size K
+- Top K Frequent Elements
   - Top K Frequent Words (LC 692)
   - K Closest Points to Origin (LC 973)
-- Merge K Sorted Lists - k-way merge with a heap
+- Merge K Sorted Lists (LC 23)
   - Kth Smallest Element in a Sorted Matrix (LC 378)
-- Find Median from Data Stream - two heaps
+- Find Median from Data Stream
   - Sliding Window Median (LC 480)
-- Swim in Rising Water - Dijkstra-style heap shortest path
+- Swim in Rising Water (LC 778)
   - Path with Minimum Effort (LC 1631)
   - Path with Maximum Probability (LC 1514)
+- Network Delay Time (LC 743)
+  - Cheapest Flights Within K Stops (LC 787)
 
 ## `content/dsa/data-structures/interval-tree.md`
 
@@ -525,13 +642,13 @@ _(stub - no Practice problems entries yet)_
 
 ## `content/dsa/data-structures/lfu-cache.md`
 
-- LFU Cache - _frequency buckets + min_freq pointer, O(1)_
-- All O`one` Data Structure - _bucketed counts, O(1) min and max_
-- Top K Frequent Elements - _bucket sort by frequency_
+- LFU Cache
+- All O`one` Data Structure
+- Top K Frequent Elements
   - Top K Frequent Words (LC 692)
   - Sort Characters By Frequency (LC 451)
-- Maximum Frequency Stack - _live frequency-bucket eviction, LIFO within a bucket_
-- LRU Cache - _the recency-only sibling, for contrast_
+- Maximum Frequency Stack (LC 895)
+  - LRU Cache
 
 ## `content/dsa/data-structures/linked-list.md`
 
@@ -542,41 +659,53 @@ _(stub - no Practice problems entries yet)_
 - Merge Two Sorted Lists - _dummy head + splice_
   - Merge Sorted Array (LC 88)
 - Remove Nth Node From End - _two pointers, one pass_
-- LRU Cache - _hashmap + doubly linked list_
+  - LRU Cache
 
 ## `content/dsa/data-structures/lru-cache.md`
 
-- LRU Cache - _map + doubly linked list, O(1)_
-- LFU Cache - _frequency buckets, O(1)_
-- LRU Cache with TTL - _map + DLL splice, with expiry-on-access_
+- LRU Cache
+  - Design In-Memory File System with LRU eviction (variant, no canonical LC number)
+  - All O(1) Data Structure (LC 432)
+- LFU Cache
+- LRU Cache with TTL
 
 ## `content/dsa/data-structures/queue.md`
 
-- Implement Queue using Stacks - amortized transfer
+- Implement Queue using Stacks
   - Implement Stack using Queues (LC 225)
-- Number of Recent Calls - sliding-window queue
-- Sliding Window Maximum - monotonic deque
+- Number of Recent Calls
+- Sliding Window Maximum
   - Shortest Subarray with Sum at Least K (LC 862)
-- Rotting Oranges - multi-source BFS
+- Rotting Oranges
   - 01 Matrix (LC 542)
-- Design Circular Queue - ring buffer
-  - First Unique Character in a Stream
+- 0/1 Matrix Shortest Path
+  - Minimum Cost to Make at Least One Valid Path in a Grid (LC 1368)
 
 ## `content/dsa/data-structures/red-black-tree.md`
 
 - Why libraries pick red-black over AVL - _reasoning_
 - Verify red-black properties - _black-height check_
+  - Balanced Binary Tree (LC 110)
 - Red-black insert fixup - _recolor then rotate_
 - Order-statistics with a red-black tree - _augmentation_
   - Count of Smaller Numbers After Self (LC 315)
 
 ## `content/dsa/data-structures/segment-tree.md`
 
-_(stub - no Practice problems entries yet)_
+- Range Sum Query - Mutable
+  - Range Sum Query 2D
+- Range Minimum Query with updates
+  - Range Maximum Query variants (implicit in many sliding-window/stack problems reframed with updates)
+  - Sliding Window Maximum (LC 239)
+- Range Addition
+  - Range Sum Query
+  - My Calendar III (LC 732)
+- Range Frequency Query
+  - Count of Range Sum (LC 327)
 
 ## `content/dsa/data-structures/skip-list.md`
 
-- Design Skip List (LeetCode 1206)
+- Design Skiplist (LeetCode 1206)
   - Design a Sorted Set / Ordered Map from scratch
 - Range Sum Query with Frequent Insert/Delete (design variant)
   - Count of Smaller Numbers After Self (LeetCode 315)
@@ -585,52 +714,45 @@ _(stub - no Practice problems entries yet)_
 
 ## `content/dsa/data-structures/stack.md`
 
-- Valid Parentheses - _matching with a stack_
+- Valid Parentheses
   - Remove All Adjacent Duplicates In String (LC 1047)
   - Minimum Remove to Make Valid Parentheses (LC 1249)
-- Daily Temperatures - _monotonic stack_
+- Daily Temperatures
   - Next Greater Element I (LC 496)
-- Min Stack - _auxiliary stack_
+- Min Stack
   - Max Stack (LC 716)
-- Evaluate Reverse Polish Notation - _operand stack_
-- Largest Rectangle in Histogram - _monotonic stack with widths_
+- Evaluate Reverse Polish Notation
+- Largest Rectangle in Histogram
   - Maximal Rectangle (LC 85)
+- Iterative Postorder Traversal
+  - Iterative Inorder Traversal (variant, no distinct LC number beyond LC 94)
 
 ## `content/dsa/data-structures/string.md`
 
-- Valid Anagram - _character count_
-  - Valid Anagram (LC 242)
+- Valid Anagram
   - Ransom Note (LC 383)
-- Longest Substring Without Repeating Characters - _sliding window_
-  - Longest Substring Without Repeating Characters (LC 3)
-- Valid Palindrome - _two pointers_
-  - Valid Palindrome (LC 125)
-- Find All Anagrams in a String - _fixed window + count match_
-  - Find All Anagrams in a String (LC 438)
-  - Permutation in String (LC 567)
-- Implement strStr / Find the Index - _rolling hash (Rabin–Karp)_
-  - Implement strStr() (LC 28)
-
-## `content/dsa/data-structures/suffix-array.md`
-
-- Longest repeated substring
-  - Longest Duplicate Substring" (LeetCode 1044, though that problem expects a binary-search + hashing or SA approach; the SA approach is cleaner), "Longest Repeated Non-Overlapping Substring" (requires the additional constraint `SA[i] - SA[i-1] ≥ lcp_len`).
-- Number of distinct substrings
-  - Count Different Palindromic Subsequences" is related but distinct (requires different structure); "Distinct Substrings" is the canonical name on SPOJ (DISUBSTR).
-- Longest common substring of two strings
-  - Longest Common Substring" appears as SPOJ LCS, as a sub-problem in many sequence-alignment tasks, and as the baseline for generalized suffix array problems (extend to k strings).
+  - First Unique Character in a String (LC 387)
+- Implement strStr / Find the Index
+  - Repeated DNA Sequences (LC 187)
+- Longest Substring Without Repeating Characters
+  - Longest Substring with At Most Two Distinct Characters (LC 159)
+  - Max Consecutive Ones III (LC 1004)
 
 ## `content/dsa/data-structures/suffix-tree.md`
 
 - Longest Repeated Substring (via suffix tree)
   - Longest Repeated Substring via Suffix Array (LC-style, SPOJ)
+  - Longest Repeated Non-Overlapping Substring
   - Longest Duplicate Substring (LC 1044)
+  - Deepest-node-via-explicit-tree-walk variants (competitive-programming judges)
 - Count Distinct Substrings (via suffix tree)
   - Number of Distinct Substrings via Suffix Array (SPOJ DISUBSTR)
   - Count of Distinct Substrings of Length K
 - Longest Common Substring Across k Strings (Generalized Suffix Tree)
   - Longest Common Substring of Two Strings (Suffix Array version)
-  - Shortest Common Superstring (a related but distinct problem - requires a different technique, typically greedy merging or DP over overlaps, not a generalized suffix tree).
+  - Bottom-up subtree-bitmask queries (competitive-programming judges)
+- Count Pattern Occurrences with Many Queries (LCP + RMQ)
+  - Number of Distinct Substrings (this article, Practice #2)
 
 ## `content/dsa/data-structures/treap.md`
 
@@ -638,38 +760,44 @@ _(stub - no Practice problems entries yet)_
   - Order-Statistics Tree (k-th smallest)
   - Count of Smaller Numbers After Self (LC 315)
 - Range Reverse and Query (Implicit Treap)
-  - Reverse Substring range-update variants in competitive programming judges (Codeforces "array with range reverse")
   - Rope data structure operations (used in text editors for large-document insert/delete/substring)
+  - Insert/delete at arbitrary array index in O(log n)
 - Merge Two Treaps / Union of Two Sorted Sets
   - Union of Two Balanced BSTs (weight-balanced tree "join" algorithm)
   - Persistent Treap Version Merge
+  - Split treap at key k (the inverse operation)
 
 ## `content/dsa/data-structures/trie.md`
 
 - Implement a Trie - _insert, search, startsWith_
   - Map Sum Pairs (LC 677)
   - Longest Word in Dictionary (LC 720)
-- Word Search II - _trie + DFS on a grid_
-- Replace Words - _shortest-prefix lookup_
-- Maximum XOR of Two Numbers - _bitwise trie_
+- Word Search II
+- Replace Words
+- Maximum XOR of Two Numbers (LC 421)
   - Maximum XOR With an Element From Array (LC 1707)
-- Design Add and Search Words - _wildcard DFS_
+- Design Add and Search Words
+- Count Words With a Given Prefix
+  - Map Sum Pairs (LC 677)
 
 ## `content/dsa/data-structures/union-find.md`
 
 - Number of Connected Components in an Undirected Graph
   - Number of Provinces (LC 547)
   - Number of Islands (LC 200)
+  - Largest component / max size after unions
 - Kruskal's MST (edge-sort + DSU cycle detection)
   - Min Cost to Connect All Points (LC 1584)
   - Connecting Cities With Minimum Cost (LC 1135)
+  - Any "minimum cost to connect all nodes" / "build a minimum-weight spanning forest" restatement
 - Accounts Merge
   - Sentence Similarity II (LC 737)
   - Largest Component Size by Common Factor (LC 952)
 - Redundant Connection - cycle detection
   - Redundant Connection II (LC 685)
   - Graph Valid Tree (LC 261)
-- Satisfiability of Equality Equations
+  - Online "add edge, is the graph still acyclic?" streaming queries
+- Satisfiability of Equality Equations (LC 990)
 
 # Algorithms
 
@@ -682,6 +810,16 @@ _(stub - no Practice problems entries yet)_
   - Detect all forbidden substrings in a document (content-moderation-flavored judge problems)
 - Short Encoding of Words (LC 820) - trie suffix links, *not* Aho-Corasick (but the neighbor to not confuse)
 
+## `content/dsa/algorithms/amortized-analysis.md`
+
+- Design a Stack With Increment Operation (LC 1381)
+  - Range Update range-sum queries via difference array (general technique)
+- Implement Queue using Stacks (LC 232)
+  - Min Stack (LC 155)
+- Union-Find with Path Compression and Union by Rank
+  - Number of Connected Components in an Undirected Graph (LC 323)
+  - Accounts Merge (LC 721)
+
 ## `content/dsa/algorithms/backtracking.md`
 
 _(stub - no Practice problems entries yet)_
@@ -693,6 +831,16 @@ _(stub - no Practice problems entries yet)_
 ## `content/dsa/algorithms/bfs.md`
 
 _(stub - no Practice problems entries yet)_
+
+## `content/dsa/algorithms/big-o-notation.md`
+
+- Merge two sorted arrays - derive the bound
+  - Merge Sorted Array (LC 88)
+- Nested loop with a shrinking bound
+- Recurrence solving via Master theorem
+  - Pow(x, n) (LC 50)
+- Amortized cost of a dynamic array - accounting method
+  - Design a HashSet / Design HashMap (LC 705/706)
 
 ## `content/dsa/algorithms/binary-search.md`
 

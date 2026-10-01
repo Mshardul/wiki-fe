@@ -1,5 +1,9 @@
 # DSA Article Writer
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-06-16 | 2026-08-22 | outdated |
+
 The **source of truth** for writing a DSA article (`content/dsa/**/*.md`). Given a topic, this file tells you what to write, in what shape, and in what order.
 
 **Purpose: make the reader interview- AND competitive-programming-ready** - the theory, the working, and the reasoning, plus the CP toolkit. The two goals shape every param: not "is the article complete?" but "could a candidate walk into an interview _and_ sit a contest with only this page?" Passing [dsa-rater.md](./dsa-rater.md) is the _check_ that you hit that bar - not the goal itself. (See the wiki [readme](../../../readme.md#goals) for the per-vertical goal statement.)

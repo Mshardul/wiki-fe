@@ -15,9 +15,11 @@ import { EscapeToIndex } from "./EscapeToIndex";
 import { FocusMode } from "./FocusMode";
 import { GlossaryPopover } from "./GlossaryPopover";
 import { HeadingCollapse } from "./HeadingCollapse";
+import { HighlightsIsland } from "./Highlights";
 import { HoverPreview } from "./HoverPreview";
 import { LatexToggle } from "./LatexToggle";
 import { MermaidDiagrams } from "./MermaidDiagrams";
+import { NotesScratchpad } from "./NotesScratchpad";
 import { PracticeAnswerToggle } from "./PracticeAnswerToggle";
 import { PrereqStatus } from "./PrereqStatus";
 import { ProgressRing } from "./ProgressRing";
@@ -52,6 +54,13 @@ export function ReaderIslands({ article }: ReaderIslandsProps) {
           <span className="toc-label">On this page</span>
         </div>
         <Toc headings={article.headings} />
+        {!article.isStub && (
+          <NotesScratchpad
+            key={`${article.verticalId}:${articlePath}`}
+            wikiId={article.verticalId}
+            articlePath={articlePath}
+          />
+        )}
       </aside>
       <TocDrawer />
 
@@ -82,6 +91,7 @@ export function ReaderIslands({ article }: ReaderIslandsProps) {
             slug={article.slug}
           />
           <ScrollRestore wikiId={article.verticalId} articlePath={articlePath} />
+          <HighlightsIsland wikiId={article.verticalId} articlePath={articlePath} />
         </>
       )}
       <HoverPreview />

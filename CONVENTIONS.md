@@ -300,3 +300,21 @@ For the full model and the *why*, see the decisions docs:
 - **Enforcement tooling:** Biome runs in pre-commit and CI (formatting + lint mechanics). Semantic rules (module boundaries, no `console.*`, etc.) remain on author + reviewer until custom lint rules are added.
 
 ---
+
+## Meta docs
+
+- Living meta docs that can drift from the codebase they describe - currently `docs/_meta/audit-prompts/` and `docs/_meta/ai-instructions/` - open with a meta-info table, immediately under the title, before any other content:
+
+  ```markdown
+  | Created | Last updated | Status |
+  |---|---|---|
+  | YYYY-MM-DD | YYYY-MM-DD | current |
+  ```
+
+  - **Created** - date of the file's first commit (`git log --follow --diff-filter=A --format=%ad --date=short -- <file> | tail -1`), not guessed.
+  - **Last updated** - date of the most recent substantive edit (today's date when you're making one).
+  - **Status** - one word only: `current` or `outdated`. No reasoning in this field - if an `outdated` file needs explaining, say why in the file's own body, not the table.
+  - Dated/historical-by-design docs (`docs/_meta/audit-reports/`, `docs/_meta/plans/`) are exempt - their filenames already carry a date and staleness is expected, not a defect to track.
+  - Don't backfill this table onto a file until it's actually touched for another reason, or a meta-doc sweep explicitly asks for it across a directory.
+
+---

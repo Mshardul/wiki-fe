@@ -1,5 +1,9 @@
 # DSA Article Rater
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-06-16 | 2026-08-22 | current |
+
 Scores a written DSA article (`content/dsa/**/*.md`) for interview-readiness and gives a **publish gate** (ship / no-ship). Given an article path, follow the steps below and produce a scored report. Scoring is LLM judgment - no separate parser. The same article may vary slightly run-to-run on judgment params; that is accepted. Filesystem params (U8/U11/U12) are deterministic and supplied by a script - see step 5.
 
 **Rules live in [dsa-writer.md](./dsa-writer.md).** That file defines every param (U1, DS2, PA1, FB, …) - what must be present, in what shape. This file does **not** redefine them; it scores against them by ID and decides publishability. If you need to know what a param _requires_, read the writer. This file owns: detection, the scoring scale, weights, the gate, the filesystem pre-check, the [content verification checks](#content-verification-pass-v-checks) (V1–V14, correctness not structure), and the report format.

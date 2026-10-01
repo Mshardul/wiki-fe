@@ -1,5 +1,9 @@
 # DSA Writer - Algorithms
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-08-22 | 2026-08-22 | current |
+
 Category file for **Algorithm** articles (`content/dsa/algorithms/**/*.md`). Read [dsa-writer.md](./dsa-writer.md) first (article-kind detection, universal params, format conventions, depth bar) - this file adds only what's specific to Algorithms.
 
 ---

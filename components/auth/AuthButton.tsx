@@ -11,6 +11,7 @@ export function AuthButton() {
 
   return (
     <button
+      id="auth-btn-home"
       type="button"
       className="topbar-icon-btn topbar-auth-btn"
       title={loggedIn ? "Log out" : "Log in"}

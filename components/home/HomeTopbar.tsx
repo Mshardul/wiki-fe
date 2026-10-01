@@ -1,12 +1,36 @@
 "use client";
 
 import Link from "next/link";
+import { AdminNavButton } from "@/components/admin/AdminNavButton";
 import { AuthButton } from "@/components/auth/AuthButton";
 
 export function HomeTopbar() {
   return (
     <div className="page-topbar home-topbar">
       <div className="topbar-inner">
+        <AdminNavButton />
+        <Link
+          className="topbar-icon-btn"
+          href="/dashboard/"
+          title="Dashboard"
+          aria-label="Dashboard"
+          data-action="dashboard-open"
+        >
+          <svg className="icon" aria-hidden="true">
+            <use href="#icon-dashboard" />
+          </svg>
+        </Link>
+        <Link
+          className="topbar-icon-btn"
+          href="/changelog/"
+          title="Changelog"
+          aria-label="Changelog"
+          data-action="changelog-open"
+        >
+          <svg className="icon" aria-hidden="true">
+            <use href="#icon-changelog" />
+          </svg>
+        </Link>
         <Link
           className="topbar-icon-btn"
           href="/offline/"

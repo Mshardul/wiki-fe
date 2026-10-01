@@ -10,6 +10,7 @@ export default defineConfig({
     environmentMatchGlobs: [
       ["components/**", "jsdom"],
       ["lib/storage/**", "jsdom"],
+      ["lib/reader/**", "jsdom"],
       ["lib/toast.test.ts", "jsdom"],
       ["lib/api.test.ts", "jsdom"],
       ["lib/pwa/**", "jsdom"],

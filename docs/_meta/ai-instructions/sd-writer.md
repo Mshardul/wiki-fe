@@ -1,5 +1,9 @@
 # System Design Article Writer
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-08-12 | 2026-08-22 | current |
+
 The **source of truth** for writing a system design article (`content/system-design/**/*.md`). Given a topic, this file tells you what to write, in what shape, and in what order. Replaces `_base.md` + `components.md` + `algorithms.md` + `hld.md` + `devops-tools.md` + `devops-cheatsheets.md` - those six files are superseded by this one and [sd-rater.md](./sd-rater.md).
 
 **Purpose: make the reader interview-ready** - the mental model, the mechanics, and the trade-off reasoning a senior needs to defend this topic. Completeness is required **inside** this named mechanism and forbidden **across** sibling topics (see [Topic boundary](#topic-boundary-owns-vs-does-not-own)). The bar is "could a candidate walk into a system design interview with this page (plus linked siblings that own extracted facets) and defend every decision **on this topic**?" Passing [sd-rater.md](./sd-rater.md) is the _check_ that you hit that bar - not the goal itself.

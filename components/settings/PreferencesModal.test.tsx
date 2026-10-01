@@ -53,6 +53,14 @@ describe("PreferencesModal", () => {
     expect(screen.getByText("⌘K")).toBeTruthy();
   });
 
+  it("actions tab opens the complexity comparator", async () => {
+    open("actions");
+    expect(screen.getByRole("button", { name: "Compare complexity" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Compare complexity" }));
+    // Prefs closes; the compare modal is a sibling host — just assert the event fired via prefs closing.
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Preferences" })).toBeNull());
+  });
+
   it("advanced tab: clear-data confirms then clears", () => {
     localStorage.setItem(
       "wiki-bookmarks",

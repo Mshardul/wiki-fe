@@ -1,10 +1,14 @@
 # Mobile UX Audit Agent — Prompt
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-07-09 | 2026-10-01 | current |
+
 Paste this as the prompt when spawning the agent (e.g. `general-purpose` subagent, or a fresh Claude Code session in `wiki-fe`).
 
 ---
 
-You are auditing the `wiki-fe` repo (`/Users/shardul/Documents/Github/wiki/wiki-fe`) from the perspective of a mobile-first UI/UX developer. This is a **build-free, vanilla JS/HTML/CSS wiki app** — no React, no bundler, no TypeScript (see `CLAUDE.md` / `CONVENTIONS.md` in repo root, read them first). Your job: find every mobile usability gap, bug, and rough edge a real user would hit on a phone, and log each one to a running file as you find it — not at the end, not from memory.
+You are auditing the `wiki-fe` repo (`/Users/shardul/Documents/Github/wiki/wiki-fe`) from the perspective of a mobile-first UI/UX developer. This is a **Next.js (App Router) + React + TypeScript wiki app**, statically exported to `out/` for GitHub Pages (see `CLAUDE.md` / `CONVENTIONS.md` in repo root, read them first — `CLAUDE.md`'s FILE MAP is stale, don't trust it for routing). UI logic lives in `components/*.tsx` + `lib/*.ts`; styling lives in `css/`. Your job: find every mobile usability gap, bug, and rough edge a real user would hit on a phone, and log each one to a running file as you find it — not at the end, not from memory.
 
 ## Goal
 
@@ -19,7 +23,7 @@ Walk through **every page/view and every interactive component** as if you were 
 
 Default to code-confirmed only when truly unambiguous — when in doubt, treat it as a hypothesis and verify live rather than risk a false finding.
 
-**Phase 2 — live browser verification (hypotheses only):** Serve the site locally. Run `python3 -m http.server` in the background from the `wiki-fe` root, or reuse an existing active test server. **Use a random free port, not the codebase's default (8000)** — that port may already be in use by the user's own dev server; pick an arbitrary high port (e.g. `python3 -m http.server 0` to let the OS assign one, or any unused port) and check it's free first.
+**Phase 2 — live browser verification (hypotheses only):** Serve the site locally: build the static export first (`pnpm build`, produces `out/`), then serve it the same way `tests/conftest.py`'s `base_url` fixture does — a `SimpleHTTPRequestHandler`/`http.server` rooted at `out/`, with the `/wiki-fe` prefix stripped and trailing-slash redirect behavior matched (read that fixture, don't reinvent it; a plain `python3 -m http.server` from repo root serves the wrong tree and will 404 on every route). **Use a random free port, not the codebase's default (8000)** — that port may already be in use by the user's own dev server; pick an arbitrary high port (e.g. `python3 -m http.server 0` to let the OS assign one, or any unused port) and check it's free first.
 
 When invoking Playwright MCP tools, ensure the browser context is configured to emulate a mobile device if possible (specifically set/ensure `isMobile: true` and `hasTouch: true`). This is crucial because standard mouse clicks won't trigger touch-specific event listeners and might keep CSS `:hover` states active, which behaves differently from actual touch screen releases.
 
@@ -54,32 +58,32 @@ Also assess **landscape keyboard vertical space constraints**: simulate/evaluate
 
 Work through these in order. Use `CLAUDE.md`'s file map to find the CSS/JS pair for each — do not grep blindly.
 
-1. **Home view** — `js/render/home-index.js`, `css/view-home.css`, `js/app/home-parallax.js`. Wiki card grid, hero, filter/swipe/hover interactions on cards. Check `home-parallax.js` respects `prefers-reduced-motion` (use `browser_evaluate` to emulate the media query) — mobile users hit this disproportionately via iOS "Reduce Motion."
-2. **Index view** — `js/render/home-index.js` (index sections), `css/view-index.css`. Section headers, index card grid, recents strip, bookmarks strip.
-3. **Content/article view** — `js/render/content-view.js`, `css/view-content/layout.css`. Sticky header, article hero, TOC sidebar, markdown body, headings/lists/links.
-- **TOC** — `js/content/toc.js`, `css/view-content/layout.css`. Sticky section header, collapse, progress ring — this is likely a mobile drawer; check open/close, backdrop, swipe.
-- **Code blocks** — `js/content/code-blocks.js`, `css/view-content/code.css`. Copy button reachability, horizontal scroll cue, line numbers on narrow width.
-- **Mermaid diagrams** — `js/content/mermaid.js`, `css/view-content/mermaid.css`. Diagrams are a classic mobile failure point — check zoom/pan/pinch, step-through controls, overflow. Check step-through animation respects `prefers-reduced-motion`.
-- **Tables** — `js/content/tables.js`, `css/view-content/code.css` (table rules). Column sort tap targets, scroll cue, quiz-me mode on narrow width.
-- **Zoom/lightbox** — `js/content/zoom-lightbox.js`, `css/view-content/mermaid.css`. Pinch/pan/ swipe gesture correctness on touch. Check pan/zoom transition animation respects `prefers-reduced-motion`.
-- **Callouts/prereqs** — `js/content/formatting.js`, `css/view-content/callouts-prereqs.css`.
-- **Interactive content** — `js/content/formatting.js` (focus mode, in-article find, LaTeX toggle, tabbed code blocks, footnotes), `css/view-content/interactive.css`.
-- **Glossary/related** — `js/content/glossary-caveats.js`, `js/render/related-articles.js`, `css/view-content/glossary-related.css`. Popover positioning on small screens.
-4. **Global search modal (⌘K)** — `js/search.js`, `css/components/search-modal.css`. On mobile there's no ⌘K — check what triggers it, whether the modal fits small viewports, whether the on-screen keyboard would cover results.
-5. **Preferences/settings modal** — `js/storage/settings-theme.js`, `css/components/preferences-modal.css`. Swatches, keyboard-shortcuts tab (irrelevant on mobile — check it's hidden/adapted, not just broken).
-6. **Auth modal** — `js/auth.js`, `css/components/auth.css`. Login/register/verify panels, password checklist readability on narrow width, error states.
-7. **Topbar/nav** — `css/components/topbar.css`, `js/render/nav-utils.js`. Breadcrumb, back button, scroll-to-top, reading-time badge, reading progress bar — check for overflow/truncation with long article titles at 360px.
-8. **Wiki switcher** — `js/app/wiki-switcher.js`, `css/components/wiki-switcher.css`.
-9. **Mobile-specific code** — `js/app/mobile-panels.js` (this is presumably the TOC drawer / gesture layer — audit it directly and thoroughly, it's the file most likely to contain mobile-only bugs), `js/app/distraction-free.js`.
-10. **Toast notifications** — `js/render/toast.js`, `css/components/toast.css`. Position/overlap with topbar or bottom-sheet UI on small screens.
-11. **404 page** — `404.html`.
+1. **Home view** — `components/home/IndexIslands.tsx`, `css/view-home.css`. Wiki card grid, hero, filter/swipe/hover interactions on cards. Check any parallax/motion effect respects `prefers-reduced-motion` (use `browser_evaluate` to emulate the media query) — mobile users hit this disproportionately via iOS "Reduce Motion."
+2. **Index view** — `components/home/{WikiCardsKeyNav,KeyNav,BookmarksStrip,RecentsStrip,LearningPathBars,PinnedWikis,IndexCardStatus,IndexCardSwipe,PullToRefresh}.tsx`, `css/view-index.css`. Section headers, index card grid, recents strip, bookmarks strip.
+3. **Content/article view** — `app/[vertical]/[...slug]/page.tsx` + `components/reader/*.tsx` (re-derive the full file list with `find components/reader -type f`, it's grown since this prompt was last edited), `css/view-content/layout.css`. Sticky header, article hero, TOC sidebar, markdown body, headings/lists/links.
+- **TOC** — `components/reader/Toc.tsx`, `css/view-content/layout.css`. Sticky section header, collapse, progress ring — this is likely a mobile drawer; check open/close, backdrop, swipe.
+- **Code blocks** — `components/reader/{CodeCopy,TabbedCode}.tsx`, `css/view-content/code.css`. Copy button reachability, horizontal scroll cue, line numbers on narrow width.
+- **Mermaid diagrams** — `components/reader/MermaidDiagrams.tsx`, `css/view-content/mermaid.css`. Diagrams are a classic mobile failure point — check zoom/pan/pinch, step-through controls, overflow. Check step-through animation respects `prefers-reduced-motion`.
+- **Tables** — `components/reader/ComparisonTable.tsx`, `css/view-content/code.css` (table rules). Column sort tap targets, scroll cue, quiz-me mode on narrow width.
+- **Zoom/lightbox** — `components/reader/ZoomLightbox.tsx`, `css/view-content/mermaid.css`. Pinch/pan/swipe gesture correctness on touch. Check pan/zoom transition animation respects `prefers-reduced-motion`.
+- **Callouts/prereqs** — `components/reader/{CalloutCollapse,PrereqStatus}.tsx`, `css/view-content/callouts-prereqs.css`.
+- **Interactive content** — `components/reader/{FocusMode,ArticleFind,LatexToggle,TabbedCode,HeadingCollapse}.tsx`, `css/view-content/interactive.css`.
+- **Glossary/related** — `components/reader/{GlossaryPopover,CaveatReveal,RelatedArticles,MentionedBy,HoverPreview}.tsx`, `css/view-content/glossary-related.css`. Popover positioning on small screens.
+4. **Global search modal (⌘K)** — `components/search/SearchModal.tsx`, `css/components/search-modal.css`. On mobile there's no ⌘K — check what triggers it, whether the modal fits small viewports, whether the on-screen keyboard would cover results.
+5. **Preferences/settings modal** — `components/settings/PreferencesModal.tsx`, `lib/storage/settings.ts`, `css/components/preferences-modal.css`. Swatches, keyboard-shortcuts tab (irrelevant on mobile — check it's hidden/adapted, not just broken).
+6. **Auth modal** — `components/auth/{AuthModal,AuthButton,PasswordChecklist}.tsx`, `lib/auth/authFlows.ts`, `css/components/auth.css`. Login/register/verify panels, password checklist readability on narrow width, error states.
+7. **Topbar/nav** — `css/components/topbar.css`, `components/chrome/{Topbar,ReaderTopbar,IndexTopbar,Breadcrumb}.tsx`. Breadcrumb, back button, scroll-to-top, reading-time badge, reading progress bar — check for overflow/truncation with long article titles at 360px.
+8. **Wiki switcher** — `components/chrome/{WikiSwitcher,WikiSwitcherHost}.tsx`, `css/components/wiki-switcher.css`.
+9. **Mobile-specific code** — `components/mobile/{TocDrawer,SwipeGestures,ViewportHandler,gestureState}.ts*` (this is presumably the TOC drawer / gesture layer — audit it directly and thoroughly, it's the file set most likely to contain mobile-only bugs), `components/settings/DistractionFree.tsx`.
+10. **Toast notifications** — `components/chrome/ToastHost.tsx`, `lib/toast.ts`, `css/components/toast.css`. Position/overlap with topbar or bottom-sheet UI on small screens.
+11. **404 page** — `app/not-found.tsx` (source; builds to `out/404.html` for GitHub Pages).
 12. **Responsive breakpoints themselves** — read `css/responsive.css` end-to-end as its own pass; enumerate every actual breakpoint value declared there first, then test at least one width just below and one at/above each — the fixed 4-point matrix alone can't catch a gap between two of its points (e.g. a rule at 480px is invisible to a 393px/768px-only pass). Cross-check for unstyled gaps (e.g. a rule that kicks in at 400px leaves 360–399px unstyled).
-13. **Safe-area-insets & Viewport Meta** — grep for `env(safe-area-inset` / `viewport-fit=cover` in CSS and `index.html`.
+13. **Safe-area-insets & Viewport Meta** — grep for `env(safe-area-inset` / `viewport-fit=cover` in CSS and `app/layout.tsx`.
 - Check if `<meta name="viewport">` has `viewport-fit=cover` and correct sizing declarations. If absent, flag every fixed-position edge-hugging element (topbar, bottom sheet, TOC drawer, toast, sticky footer) as a hypothesis for notch/home-indicator overlap on iPhone; note as a limitation that Playwright can't truly simulate a notched device, so this is a code-read finding, not a live-verified one.
 - Check for iOS input auto-zoom: Verify that all text input fields, textareas, and select elements have a computed/defined `font-size` of at least `16px` on mobile screens. If any are under `16px`, flag them as causing unwanted page auto-zoom on iOS focus.
 14. **Text zoom / OS font-scaling** — use `browser_evaluate` to set `document.documentElement.style.fontSize` (or zoom) to simulate 150%/200% OS text-size boost, at 360px and 393px. Check for text/button overlap, truncated labels, modal content pushed off-screen, fixed-height containers clipping enlarged text. Note as a limitation: this approximates OS-level text-scaling by overriding the root font-size, but doesn't fully replicate real iOS/Android dynamic-type behavior (which scales via the OS accessibility layer, not a page-level CSS override) — treat findings here as directional, not a substitute for real-device testing.
-15. **Momentum scroll / rubber-banding vs modals** — check `js/app/mobile-panels.js` and any modal (search, preferences, auth, TOC drawer) for scroll-lock on the body when a modal/drawer is open (`overflow: hidden` on `<body>`, or a scroll-lock utility). If missing or incomplete, flag: background page can rubber-band/scroll behind an open modal on iOS Safari, a common source of visible content shift or a "stuck" scroll position after closing.
-16. **PWA / add-to-homescreen** — check for `manifest.json`/`manifest.webmanifest` link in `index.html` and `wiki-sw.js` service worker scope. If a manifest exists: verify `display: standalone` (or similar) viewport behaves correctly — no browser chrome assumptions baked into layout (e.g. safe-area again, status-bar color via `theme-color` meta). If no manifest, note as out-of-scope rather than a finding.
+15. **Momentum scroll / rubber-banding vs modals** — check `components/mobile/TocDrawer.tsx`, `components/common/lockBodyScroll.ts`, and any modal (search, preferences, auth, TOC drawer) for scroll-lock on the body when a modal/drawer is open (`overflow: hidden` on `<body>`, or a scroll-lock utility). If missing or incomplete, flag: background page can rubber-band/scroll behind an open modal on iOS Safari, a common source of visible content shift or a "stuck" scroll position after closing.
+16. **PWA / add-to-homescreen** — check for `public/manifest.webmanifest` link in `app/layout.tsx` and `app/sw.ts` service worker scope. If a manifest exists: verify `display: standalone` (or similar) viewport behaves correctly — no browser chrome assumptions baked into layout (e.g. safe-area again, status-bar color via `theme-color` meta). If no manifest, note as out-of-scope rather than a finding.
 
 ## Output file
 
@@ -94,7 +98,7 @@ Log to **`docs/_meta/audit-reports/mobile-ux-audit - YYYYMMDD.md`** (today's dat
 ### [SEVERITY] Short title
 
 - **Page/component:** Content view — TOC drawer
-- **File:** `js/app/mobile-panels.js:142`
+- **File:** `components/mobile/TocDrawer.tsx:142`
 - **Viewport(s):** 360px, 375px
 - **Repro:** Open article → tap TOC toggle → drawer opens but backdrop click doesn't close it
 - **Impact:** User gets stuck with drawer open, must reload page

@@ -1,5 +1,9 @@
 # System Design Article Rater
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-08-12 | 2026-08-22 | current |
+
 Scores a written system design article (`content/system-design/**/*.md`) for interview-readiness **and bloat**, and gives a **publish gate** (ship / no-ship). Given an article path, follow the steps below and produce a scored report. Scoring is LLM judgment - no separate parser, except U8/U9 which are deterministic (see step 5) - never LLM-guessed.
 
 **Rules live in [sd-writer.md](./sd-writer.md).** That file defines every param (U1, CO2, AL3, HL5, …) - what must be present, in what shape. This file does **not** redefine them; it scores against them by ID and decides publishability. This file owns: detection, the scoring scale, weights, the gate, the [content verification checks](#content-verification-pass-v-checks) (V1-V10, correctness not structure), the [redundancy/bloat checks](#redundancy--bloat-checks-r-checks) (R1-R8, including topic-boundary R8), and the report format. Do not look for a `## Scope` heading in articles - owns/does-not-own is inferred from the filename, body, and links per [sd-writer.md › Topic boundary](./sd-writer.md#topic-boundary-owns-vs-does-not-own).

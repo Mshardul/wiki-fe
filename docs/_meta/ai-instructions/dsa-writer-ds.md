@@ -1,5 +1,9 @@
 # DSA Writer - Data Structures
 
+| Created | Last updated | Status |
+|---|---|---|
+| 2026-08-22 | 2026-08-22 | current |
+
 Category file for **Data Structures** articles (`content/dsa/data-structures/**/*.md`). Read [dsa-writer.md](./dsa-writer.md) first (article-kind detection, universal params, format conventions, depth bar) - this file adds only what's specific to Data Structures.
 
 ---
