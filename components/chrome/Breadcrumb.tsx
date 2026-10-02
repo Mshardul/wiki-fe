@@ -36,7 +36,8 @@ export function buildCrumbs(pathname: string, leafTitle?: string): Crumb[] {
         : isLast && leafTitle
           ? leafTitle
           : titleCase(seg);
-    const href = isLast ? undefined : `/${segments.slice(0, i + 1).join("/")}/`;
+    // Only the vertical has an index page; intermediate folders are not routes.
+    const href = i === 0 && !isLast ? `/${seg}/` : undefined;
     crumbs.push({ label, href });
   });
   return crumbs;

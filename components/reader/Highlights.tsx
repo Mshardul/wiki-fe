@@ -147,6 +147,9 @@ export function HighlightsIsland({ wikiId, articlePath }: HighlightsProps) {
     highlightBtn.setAttribute("aria-label", "Highlight selected text");
     highlightBtn.title = "Highlight";
     highlightBtn.textContent = "✎";
+    // mousedown preventDefault keeps the article selection alive through the click
+    // (otherwise selectionchange clears activeRange before the click handler runs).
+    highlightBtn.addEventListener("mousedown", (e) => e.preventDefault());
     highlightBtn.addEventListener("click", () => {
       if (activeRange) createHighlight(activeRange);
       hideToolbar();
@@ -166,6 +169,7 @@ export function HighlightsIsland({ wikiId, articlePath }: HighlightsProps) {
       btn.setAttribute("aria-label", `Add ${label} marker`);
       btn.title = label;
       btn.textContent = emoji;
+      btn.addEventListener("mousedown", (e) => e.preventDefault());
       btn.addEventListener("click", () => {
         if (activeRange) createMarker(activeRange, emoji);
         hideToolbar();

@@ -23,6 +23,19 @@ import { remarkVideoEmbed } from "./plugins/video-embed";
 import { remarkViz } from "./plugins/viz";
 import type { RenderContext } from "./types";
 
+// Explicit list — @shikijs/rehype defaults to every bundled language (~13s cold start).
+// mermaid/viz fences are consumed by remark plugins before Shiki; `text` is a Shiki special language, always available for fallbackLanguage.
+export const SHIKI_LANGS = [
+  "python",
+  "javascript",
+  "json",
+  "sql",
+  "shellscript",
+  "lua",
+  "diff",
+  "java",
+] as const;
+
 // Order matters: section-wrap must run before prerequisites/practice-answer (they target .section-body/.subsection-body), code-header must run after Shiki (it wraps the highlighted output).
 export function createProcessor(ctx: RenderContext): Processor {
   return unified()
@@ -56,6 +69,7 @@ export function createProcessor(ctx: RenderContext): Processor {
     .use(rehypeArticleLinks, ctx)
     .use(rehypeShiki, {
       themes: { light: "github-light", dark: "github-dark" },
+      langs: [...SHIKI_LANGS],
       fallbackLanguage: "text",
       addLanguageClass: true,
     })

@@ -4,18 +4,21 @@
 
 ## Tech Stack
 
-- **Hosting** - GitHub Pages - static export (`next build` → `out/`), no server runtime
-- **Framework** - Next.js (App Router), React, TypeScript - no `js/`/`css/` vanilla tree anymore, see note below
-- **Markdown rendering** - remark/rehype pipeline (`lib/content/pipeline.ts` + `lib/content/plugins/`)
-- **Diagrams** - Mermaid (via `components/reader/MermaidDiagrams.tsx`)
-- **Syntax highlighting** - Shiki (`@shikijs/rehype`)
-- **Offline** - service worker via Serwist (`app/sw.ts`), localStorage-only persistence (no server-side FE state)
-- **Backend** - calls `wiki-be` (Render) via `lib/api.ts`
-- **Lint/format** - Biome + ESLint (`biome.json`, `eslint.config.*`)
-- **Tests** - Vitest (unit/component) + pytest/Playwright (e2e, Python-driven browser tests against the static `out/` export)
+- **Hosting** - GitHub Pages - static export (`next build` → `out/`), no server runtime. Base path `/wiki-fe/`.
+- **Package manager / Node** - pnpm `10.34.5`, Node `24.x` (see `.nvmrc` / `package.json` `engines` + `packageManager`)
+- **Framework** - Next.js (App Router), React, TypeScript
+- **Markdown rendering** - remark/rehype pipeline (`lib/content/pipeline.ts` + `lib/content/plugins/`); `pnpm content:build` / `prebuild` runs `buildContent()`
+- **Diagrams** - Mermaid (client island `components/reader/MermaidDiagrams.tsx`)
+- **Syntax highlighting** - Shiki (`@shikijs/rehype`) at build time
+- **Offline** - Serwist service worker (`app/sw.ts` → `out/sw.js`); localStorage-only FE persistence (no server-side FE state)
+- **Backend** - `wiki-be` (Render) via `lib/api.ts`
+- **Lint/format** - Biome + ESLint (`biome.json`, `eslint.config.*`); `pnpm typecheck` / `pnpm lint` / `pnpm test:all` are CI gates
+- **Tests** - Vitest: `pnpm test` (unit parallel + pipeline single-fork for Shiki/renderMarkdown) + `pnpm test:content` (one `buildContent` + artifact asserts); CI runs `pnpm test:all`. E2e: `pnpm test:e2e` (pytest `-n 2` against `out/`)
 - **CI** - GitHub Actions (`.github/workflows/ci.yml`)
 
-**Note**: there is no `js/` directory. UI logic lives in `app/` (routes), `components/` (React islands, grouped by domain: `reader/`, `chrome/`, `auth/`, `search/`, `settings/`, `mobile/`, `pwa/`, `sync/`, `common/`), and `lib/` (non-UI logic: `api.ts`, `auth/`, `content/`, `storage/`). The FILE MAP below is **stale** - it still describes a `js/` tree that does not exist and has not been re-derived for the current structure yet. Don't trust it for file routing until it's rewritten; use `find components lib app -type f` or ask directly instead.
+**SEO / discoverability is not a project goal** (personal tool; `robots` Disallow). Never optimise content or tickets for search engines.
+
+---
 
 ## Playwright MCP browser
 
@@ -62,7 +65,7 @@ Do this before any file reads or skill invocations - every session:
 | Commit                                              | `caveman-commit`                                            | -                                            |
 | Inline diff / code review                           | `caveman-review`                                            | -                                            |
 | Content article                                     | `brainstorming` (outline/scope only), then write            | `TDD`, `systematic-debugging`, `feature-dev` |
-| CSS / JS change, clear scope (1–3 files)            | none                                                        | all skills                                   |
+| CSS / TS change, clear scope (1–3 files)            | none                                                        | all skills                                   |
 | PR / code review                                    | `code-review`                                               | -                                            |
 | 2+ independent subtasks with zero shared state      | `dispatching-parallel-agents`                               | -                                            |
 | Modularise / find coupling / architectural refactor | `improve-codebase-architecture`                             | `brainstorming`                              |
@@ -82,7 +85,7 @@ Do this before any file reads or skill invocations - every session:
 **Never in this project:**
 
 - `frontend-design` - project has a fixed, established aesthetic; do not apply creative reinterpretation
-- `test-driven-development` - user runs tests manually; write correct code, skip the TDD loop
+- `test-driven-development` (the skill loop) - Vitest tests are required (see CONVENTIONS Testing); do not run the full e2e suite or the TDD skill ritual unprompted
 - `playground` - no interactive HTML playground tasks in this project
 - `netlify-skills` - project is not deployed on Netlify
 - `subagent-driven-development` - too heavyweight; use `dispatching-parallel-agents` for isolation instead
@@ -92,253 +95,115 @@ Do this before any file reads or skill invocations - every session:
 
 ## FILE MAP
 
-### JS (`js/`)
+**Never read every file in a domain folder** - the tables below say which file owns which behaviour. Prefer one targeted read over `find` dumps.
 
-| File / domain      | Owns                                                                                                                                                                     |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `app.js` + `app/`  | ES module entry; bootstraps app, wires hash router, exposes window globals for inline onclick handlers, keyboard shortcuts, click delegation, scroll-to-top. `app/` holds mobile gestures, wiki switcher, debug overlay, home parallax, print, distraction-free, study feedback, bookmarks modal - see subtable below |
-| `state.js`         | WIKIS registry, Showdown/Mermaid config, shared caches (readTimeCache, indexCache, allSearchCache), app state object, shared pure utilities (escHtml, fuzzyMatch)        |
-| `content/`         | Content post-processing after markdown→HTML - see subtable below                                                                                                        |
-| `render/`          | Routing + view rendering - see subtable below                                                                                                                            |
-| `search/`          | ⌘K search domain - see subtable below                                                                                                                                    |
-| `auth.js`          | Auth domain: password-rule validation, auth modal controller (login/register/verify panels), login/register/logout/resend flows, anon→login migration |
-| `api.js`           | Single wrapper for all backend (`wiki-be`) calls: base-URL detect, credentials, `ApiError`, global 401 handler, typed endpoint helpers |
-| `storage/`         | All localStorage operations - see subtable below                                                                                                                         |
-| `icon-sprite.js`   | Loads and inlines `sprite.svg` for the Tabler icon system                                                                              |
-| `modal-registry.js` | Shared focus-trap + open-state tracking helpers reused by modal controllers (search, auth, bookmarks, wiki-switcher, etc.) |
+### Routes (`app/`)
 
-**Never read every file in a domain folder** (`content/`, `render/`, `storage/`, `app/`, `search/`) - the subtables below say exactly which file owns which behavior.
+| Path | Owns |
+| --- | --- |
+| `layout.tsx` | Root shell: CSS, sprite, chrome hosts, global islands (search/auth/prefs/SW registration) |
+| `page.tsx` | Home (`/`) |
+| `[vertical]/page.tsx` | Vertical index |
+| `[vertical]/[...slug]/page.tsx` | Article reader (RSC HTML + `ReaderIslands`) |
+| `dashboard/**` | Progress dashboard |
+| `changelog/page.tsx` | Changelog |
+| `admin/page.tsx` | Admin site-health |
+| `offline/page.tsx` | Offline shelf |
+| `sw.ts` | Serwist service worker source |
 
-#### `js/app/`
+### Components (`components/`) — per-feature islands
 
-| File                  | Owns                                                                     |
-| --------------------- | ------------------------------------------------------------------------- |
-| `mobile-panels.js`    | Mobile TOC drawer, swipe gestures, panel-close registry, viewport resize  |
-| `wiki-switcher.js`    | Wiki switcher modal open/close/render                                     |
-| `debug-overlay.js`    | `?debug` diagnostic overlay                                                |
-| `home-parallax.js`    | Home hero mouse-parallax effect                                            |
-| `print.js`            | Print-article trigger                                                     |
-| `distraction-free.js` | Distraction-free mode toggle                                              |
-| `study-feedback.js`   | Haptic + tone feedback on study milestones, gated by settings flag         |
-| `bookmarks-modal.js`  | Bookmarks modal open/close/render, focus trap, entry click → navigate     |
-| `install-prompt.js`   | PWA `beforeinstallprompt` banner + iOS Add-to-Home-Screen nudge toast     |
-| `icon-tooltip.js`     | Custom short-delay tooltips for topbar/overflow icon buttons (keeps native `title` as fallback) |
-| `graph-engine.js`     | Shared force-directed sim primitives (node/edge builder, tick/damping) used by link-graph, section-map, index-graph |
-| `reading-progress.js` | Content-view reading-progress bar scroll handler, drives `toc.js` progress ring |
-| `link-graph.js`       | `g` link-graph overlay: cross-wiki node graph from backlinks, click-to-navigate |
-| `section-map.js`      | `Shift+G` / pinch section-map overlay: zoomed-out node map of current wiki section, read-state colored |
-| `complexity-compare.js` | Complexity comparator modal: picker, merged Big-O matrix from Data Structures tables |
+Markup for articles comes from the build pipeline. Islands add behaviour; they do not re-parse markdown.
 
-#### `js/content/`
+| Folder | Owns |
+| --- | --- |
+| `common/` | `Modal`, focus trap, modal registry, scroll-lock helpers |
+| `chrome/` | Topbars, toast host, breadcrumbs, wiki switcher, bookmarks modal, scroll-to-top, tooltips |
+| `reader/` | TOC, sticky header, highlights/markers, notes, Mermaid, find, related/mentioned-by, complexity comparator, code/table/glossary islands; `ReaderIslands` mounts the set |
+| `home/` | Index/home strips, card swipe, pull-to-refresh, learning-path bars, key nav |
+| `search/` | ⌘K `SearchModal` |
+| `auth/` | Auth button + modal + password checklist |
+| `settings/` | Preferences modal, distraction-free, print, settings init |
+| `sync/` | Session init + synced-domain hooks |
+| `mobile/` | TOC drawer, swipe gestures, viewport handler |
+| `pwa/` | Install prompt, iOS nudge, offline shelf, save-offline |
+| `dashboard/` | Dashboard shell/grid/progress bar |
+| `admin/` | Admin view + report tables |
+| `changelog/` | Changelog filter |
 
-| File                  | Owns                                                                             |
-| --------------------- | ----------------------------------------------------------------------------------- |
-| `zoom-lightbox.js`    | Zoom overlay (image + diagram), pinch/pan/swipe gestures                            |
-| `code-blocks.js`      | Code block header, copy buttons, clipboard helper, line numbers, hljs theme sync     |
-| `mermaid.js`          | Diagram render/re-render, node hover captions, step-through walkthrough              |
-| `tables.js`           | Column sort, quiz-me mode, table scroll cues, comparison column toggles     |
-| `toc.js`              | TOC build, sticky section header, per-heading collapse, progress ring               |
-| `formatting.js`       | Callouts, prerequisites chips, anchor links, LaTeX toggle/copy, focus mode, tabbed code blocks, footnotes, in-article find |
-| `glossary-caveats.js` | Inline caveat reveals, glossary popovers/expand, rendered-HTML session cache          |
-| `highlights.js`       | Per-article text highlights + inline emoji markers, freeze-frame export hookup       |
-| `freeze-frame.js`     | Exports a text selection as a shareable image card                                   |
-| `structure-viz.js`    | Inline ` ```viz ` fenced-block renderer for data-structure diagrams (bst, array, etc.) |
-| `video-embed.js`      | Converts bare YouTube/Vimeo URLs on their own line into a responsive iframe embed     |
-| `practice-toggle.js`  | Wraps DSA "Approach/Complexity" answer blocks into a collapsed reveal-on-click toggle |
-| `section-wrap.js`     | Wraps flat markdown-derived siblings under a heading into nested containers for downstream features |
+### Lib (`lib/`) — non-UI logic
 
-#### `js/render/`
-
-| File                   | Owns                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------------ |
-| `router.js`            | Hash router (`navigate`/`route`), view switching, slug resolution                    |
-| `home-index.js`        | Home grid, wiki index sections render/controls, card filter/hover, key nav              |
-| `home-gestures.js`     | Index-card swipe (bookmark/read toggle), pull-to-refresh, index refresh                |
-| `home-parse.js`        | `index.md` parser, shared index-fetch cache, article counts, ⌘K search-entry builder    |
-| `content-view.js`      | Content render pipeline: fetch → parse → post-process → wire links/hover-preview      |
-| `related-articles.js` | Related-article ranking + rendering, backlink spine ("Mentioned by" panel)            |
-| `changelog-view.js`   | `#changelog` view: parses `content/CHANGELOG.md`, date-grouped entries, filename filter, filename→article resolution via search index |
-| `nav-utils.js`         | Path resolution, breadcrumb, page title, `fetchText`, `readingTime`                   |
-| `toast.js`             | Toast queue + display                                                                |
-| `admin-view.js`        | Admin panel view: broken-links/backlinks/search-index reports for admin-role users    |
-| `index-graph.js`       | Home/index-view node graph overlay (per-wiki), built on `app/graph-engine.js`         |
-| `offline-view.js`      | `#offline` view: lists cached articles, last-cached date, per-article evict button    |
-| `dashboard-view.js`    | Progress dashboard view: wiki cards → per-section bars → per-learning-path bars, hash-nav drill-down |
-| `learning-paths.js`    | Parses learning-track tables from index markdown, per-track completion counts for dashboard/index cards |
-
-#### `js/storage/`
-
-| File                 | Owns                                                                     |
-| -------------------- | ----------------------------------------------------------------------------- |
-| `bookmarks.js`       | Bookmark CRUD, bookmarks section render                                       |
-| `recents.js`         | Recently-visited CRUD, recents section render                                 |
-| `read-tracking.js`   | Read/unread state, quiz-reveal tracking                                       |
-| `completions.js`     | Per-wiki-per-article completion Set (`wiki-completed-*`), sync via `api.completions` |
-| `offline.js`         | Offline cache download/remove/check, offline button state                     |
-| `settings-theme.js`  | Settings object + swatches, `Settings`/`Theme`/`Sync`, multi-tab sync listener |
-| `scroll-collapse.js` | Scroll-position cache, section collapse, TOC scroll, recent searches |
-| `table-columns.js`   | Comparison-table hidden-column prefs (`wiki-table-cols-*`)            |
-| `highlights.js`      | Per-article highlight/marker CRUD, keyed by wiki+article path                 |
-| `notes.js`           | Per-article notes scratchpad CRUD                                             |
-| `data-clear.js`      | "Clear my data" settings action - wipes bookmarks/highlights/notes/pinned-wikis |
-| `install-prompt.js`  | PWA iOS install-nudge dismissal state (localStorage flag read/write)          |
-
-#### `js/search/`
-
-| File                  | Owns                                                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `search.js`           | ⌘K modal: open/close lifecycle, search entry loading, fuzzy scoring, result rendering, section-filter mode (>)     |
-| `search-features.js`  | Search snippet extraction, recent-searches list, synonym cache use                                                  |
+| Path | Owns |
+| --- | --- |
+| `api.ts` | Sole `wiki-be` HTTP client (`ApiError`, credentials, 401) |
+| `config.ts` | App constants / base path helpers |
+| `hotkeys.ts` | Global keyboard shortcuts |
+| `toast.ts` | Toast queue |
+| `clipboard.ts` | Clipboard helpers |
+| `content/` | Discovery, pipeline, `getArticle`, `buildContent`, search-index/backlinks/broken-links/bridges/previews/complexity-tables, vertical index |
+| `content/plugins/` | remark/rehype transforms |
+| `storage/` | All `localStorage` + sync cache-through (bookmarks, recents, read, notes, highlights, settings, …) |
+| `search/` | Fuzzy/score/snippet/synonyms over the search index |
+| `auth/` | Password rules + auth flow helpers |
+| `reader/` | Complexity matrix merge, text-offset helpers for highlights |
+| `pwa/` | Cache Storage article ops + install helpers |
+| `admin/` | Admin report shaping |
+| `dashboard/` | Progress aggregation |
 
 ### CSS (`css/`)
 
-| File / folder           | Owns                                                                                                                                                  |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tokens.css`            | ALL CSS custom properties: spacing scale, typography scale, colour tokens, border-radius, transition durations - **read this first for any CSS task** |
-| `base.css`              | Global reset and base styles: body, headings, inline code, scrollbar, text selection                                                                  |
-| `themes.css`            | Binary `data-theme` light/dark CSS-only overrides (focus, shadows, code-block colors). Background presets (`--bg`/`--surface`/`--accent`/etc.) are computed in `settings-theme.js`, not named theme blocks |
-| `components/`           | Shared UI components - see subtable below                                                                                                              |
-| `components/auth.css`   | Auth modal + topbar auth button styles (tokens only)                                                                                              |
-| `view-home.css`         | Home view: background grid/glow, wiki card grid, home topbar, hero section                                                                            |
-| `view-index.css`        | Index view: hero, section headers, index card grid, recents strip, bookmarks strip                                                                    |
-| `view-changelog.css`    | Changelog view: date groups, entry list, filename-link chips                                                                                          |
-| `view-admin.css`        | Admin view: admin-nav visibility, report layout                                                                                                        |
-| `view-dashboard.css`    | Progress dashboard view: wiki/section/track card layout                                                                                                |
-| `view-offline.css`      | Offline-shelf view: cached-article list, status, evict button                                                                                          |
-| `view-content/`         | Content view - see subtable below                                                                                                                      |
-| `responsive.css`        | Mobile/tablet media queries - overrides layout, TOC visibility, topbar density for narrow viewports                                                   |
-| `print.css`             | Print stylesheet - study-sheet output, strips chrome, expands collapsed regions, footers source URL                                                    |
-| `wiki.css`              | CSS aggregator - imports all CSS modules via @import; never add rules here                                                                            |
+Tokens-first. **Start any CSS task in `tokens.css`.**
 
-#### `css/components/`
+| File / folder | Owns |
+| --- | --- |
+| `tokens.css` | Design tokens (spacing, type, colour, z-index, …) |
+| `base.css` / `themes.css` | Base element styles; light/dark overrides |
+| `components/` | Shared chrome: topbar, search/prefs modals, toast, wiki-switcher, bookmarks, auth |
+| `view-*.css` | Per-route view styles (home, index, dashboard, admin, changelog, offline) |
+| `view-content/` | Article layout, code, mermaid, callouts, interactive, glossary, highlights, notes, TOC |
+| `responsive.css` | Breakpoints only |
+| `print.css` | Print stylesheet |
+| `wiki.css` | Aggregator (`@import` only — no rules) |
 
-| File                    | Owns                                                                          |
-| ----------------------- | ---------------------------------------------------------------------------------- |
-| `topbar.css`            | Breadcrumb, back button, topbar, scroll-to-top, topbar title, icon buttons, reading progress bar, anchor links, reading-time badge |
-| `search-modal.css`      | ⌘K global search modal (all `.gsearch-*` rules)                                     |
-| `preferences-modal.css` | Settings swatches, preferences modal, keyboard-shortcuts tab                        |
-| `toast.css`             | Toast notification                                                                  |
-| `wiki-switcher.css`     | Wiki switcher modal, debug overlay                                                  |
-| `bookmarks-modal.css`   | Global bookmarks modal (⌘B)                                                          |
-| `link-graph.css`        | Link-graph overlay modal                                                            |
+### Tests
 
-#### `css/view-content/`
-
-| File                     | Owns                                                                        |
-| ------------------------ | ---------------------------------------------------------------------------------- |
-| `layout.css`             | Sticky header, article hero, TOC sidebar, markdown-body base, headings/lists/links/inline-code, content stub |
-| `code.css`               | Code blocks, line numbers, code header, table scroll cue, tables, tabbed code blocks |
-| `mermaid.css`            | Mermaid diagrams/tooltip/step-through, zoom overlay, image error fallback           |
-| `callouts-prereqs.css`   | Callout variants, prerequisites chips, collapsible callouts                          |
-| `interactive.css`        | Focus mode, details/summary, distraction-free mode, in-article find bar, per-heading collapse, formula toggle |
-| `glossary-related.css`  | Related articles, hover previews, inline caveats/glossary, footnotes, article-end marker |
-| `highlights.css`        | Per-article text highlight marks + inline emoji markers                              |
-| `notes-scratchpad.css`  | Notes scratchpad widget in content-view right rail                                   |
-| `toc-sidebar.css`       | TOC sidebar widget in content-view right rail                                        |
-
-### Tests (`tests/`)
-
-| File                                    | Covers                                                             |
-| --------------------------------------- | ------------------------------------------------------------------ |
-| `conftest.py`                           | Fixtures: browser setup, local HTTP server, navigation helpers     |
-| `e2e/test_home.py`                      | Home view, wiki cards, article counts, search button, theme toggle |
-| `e2e/test_search.py`                    | Search modal, results, keyboard nav                                |
-| `e2e/test_navigation.py`                | Sidebar, routing, breadcrumbs                                      |
-| `e2e/test_content.py`                   | Article rendering, markdown, code blocks, math                     |
-| `e2e/test_content_enhancements.py`      | Copy-code button, line numbers, enhanced content features          |
-| `e2e/test_html_markup.py`               | HTML markup rendering correctness                                  |
-| `e2e/test_bookmarks.py`                 | Bookmark add / remove / persist; anon-no-API-call invariant        |
-| `e2e/test_auth.py`                      | Auth modal, password checklist, login/register/verify, error states |
-| `e2e/test_recents.py`                   | Recent articles list                                               |
-| `e2e/test_settings.py`                  | Theme, font, content width settings                                |
-| `e2e/test_routing_pathing.py`           | URL routing, direct links, 404                                     |
-| `e2e/test_links.py`                     | Internal links, cross-references                                   |
-| `e2e/test_scroll_toc.py`                | TOC scroll tracking, active heading highlight                      |
-| `e2e/test_keyboard_scroll.py`           | Keyboard scroll shortcuts                                          |
-| `e2e/test_a11y_hotkeys.py`              | Accessibility, hotkeys, focus trap, card Space activation          |
-| `e2e/test_admin.py`                     | Admin nav visibility by role, broken-links/backlinks reports       |
-| `e2e/test_changelog.py`                 | `#changelog` view, filename filter, filename→article links         |
-| `e2e/test_dashboard.py`                 | Progress dashboard cards, drill-down, learning-path bars           |
-| `e2e/test_navigation_polish.py`         | Index collapse/expand, arrow-key cards, W/G hotkeys, list/graph    |
-| `e2e/test_notes_scratchpad.py`          | Per-article notes persist, collapse, terminal restyle              |
-| `e2e/test_offline_shelf.py`             | `#offline` shelf, dimming, evict, download-all                     |
-| `e2e/test_structure_viz.py`             | Inline ` ```viz ` fenced-block SVG render + fallback               |
-| `e2e/test_toc_overhaul.py`              | Heading collapse storage, TOC/notes rail layout                    |
-| `e2e/test_touch_gestures.py`            | Index-card swipe, long-press peek, edge swipe-back                 |
-| `e2e/test_ux_hotkeys_errors.py`         | UX hotkeys, error states                                           |
-| `e2e/test_read_toggle.py`               | Reading mode toggle                                                |
-| `e2e/test_index_ux.py`                  | Index / sidebar UX interactions                                    |
-| `e2e/test_data_backup.py`               | Data export / import                                               |
-| `e2e/test_content_width.py`             | Content width setting                                              |
-| `e2e/test_line_numbers_pathing_help.py` | Line numbers, pathing, help modal                                  |
-| `e2e/test_security.py`                  | XSS, sanitisation, security invariants                             |
-| `e2e/test_behavioral_fixes.py`          | Regression / behavioural fixes                                     |
-| `e2e/test_complexity_comparator.py`     | Complexity comparator modal, picker, merged Big-O matrix           |
-| `e2e/test_section_map.py`               | Section map overlay (Shift+G / pinch), node click nav              |
+| Path | Covers |
+| --- | --- |
+| `tests/conftest.py` | Serve `out/` under `/wiki-fe/`, browser fixtures, `wiki_page`, `force_paint` |
+| `tests/e2e/test_*.py` | Python Playwright e2e (see filenames for domain) |
+| `*.test.ts` / `*.test.tsx` | Vitest unit project — co-located under `lib/` / `components/` / `app/` |
+| `tests/content/artifacts.test.ts` | Vitest content project — asserts `lib/content/generated/*` after globalSetup `buildContent()` |
 
 ### Docs
 
-| File                                               | Read when                                                                               |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `docs/tickets-backlog.md`                          | WIKI-xxx mentioned OR any ticket intent detected - active tickets                        |
-| `docs/tickets-archive.md`                          | Need Done/Dropped ticket history (e.g. checking for duplicates, superseded-by refs)      |
-| `docs/_meta/ai-instructions/tickets.md`            | Ticket intent - read alongside tickets-backlog.md                                        |
-| `docs/content-backlog.md`                           | DSA-xxx / SD-xxx / content-backlog intent - active content rows                          |
-| `docs/content-archive.md`                           | Content-backlog Done/Dropped history                                                     |
-| `docs/_meta/ai-instructions/content-backlog.md`     | Content-backlog intent - schema + rules (not tickets)                                    |
-| `docs/_meta/ai-instructions/sd-writer.md`          | Writing / fixing system design articles - hub file (universal params, NEVER, format, cheatsheets/paths); read alongside the one matching category file below |
-| `docs/_meta/ai-instructions/sd-writer-component.md` | Category file - Component articles (`components/`) |
-| `docs/_meta/ai-instructions/sd-writer-algorithm.md` | Category file - Algorithm/Concept articles (`algorithms/`) |
-| `docs/_meta/ai-instructions/sd-writer-hld.md`       | Category file - HLD articles (`hld/`) |
-| `docs/_meta/ai-instructions/sd-writer-devops.md`    | Category file - DevOps tool articles (`devops-tools/`, not `cheatsheets/`) |
-| `docs/_meta/ai-instructions/sd-rater.md`           | Rating / publish-gate for system design articles                                        |
-| `docs/_meta/ai-instructions/dsa-writer.md`         | Writing / fixing DSA articles - hub file (universal params, format, depth bar); read alongside the one matching category file below |
-| `docs/_meta/ai-instructions/dsa-writer-ds.md`       | Category file - Data Structures articles (`data-structures/`) |
-| `docs/_meta/ai-instructions/dsa-writer-algorithm.md` | Category file - Algorithm articles (`algorithms/`) |
-| `docs/_meta/ai-instructions/dsa-writer-pattern.md`  | Category file - Pattern articles (`patterns/`) |
-| `docs/_meta/ai-instructions/dsa-rater.md`          | Rating / publish-gate for DSA articles                                                   |
-| `docs/_meta/ui-ux.md`                              | UI / UX decision needed                                                                 |
-| `docs/_meta/auth.md`                                | Auth/personal-layer decisions - product model, tech, DB schema, password/session/error contracts |
-| `docs/_meta/auth-integration.md`                    | [Archive] How auth wires into the FE SPA - reference only; superseded by implemented code |
-| `docs/_meta/plans/fe-be-integration.md` | Step-by-step plan for the FE auth+sync integration work                          |
-| `docs/tasks.md`                                    | Context on recently completed work or implementation notes                              |
-| `docs/changelog.md`                                | [removed — use `content/CHANGELOG.md` and `docs/tickets-archive.md`]                    |
+| File | Read when |
+| --- | --- |
+| `docs/tickets-backlog.md` | WIKI-xxx / ticket intent — active tickets |
+| `docs/tickets-archive.md` | Done/Dropped ticket history |
+| `docs/_meta/ai-instructions/tickets.md` | Ticket schema/rules |
+| `docs/content-backlog.md` / `docs/content-archive.md` | DSA-xxx / SD-xxx content rows |
+| `docs/_meta/ai-instructions/content-backlog.md` | Content-backlog schema |
+| `docs/_meta/ai-instructions/sd-writer*.md` / `dsa-writer*.md` / `*-rater.md` | Writing / rating articles |
 
 ---
 
 ## TASK → FILE ROUTING
 
-| Task                      | Read these only                                                                                 |
-| ------------------------- | ----------------------------------------------------------------------------------------------- |
-| Search bug                | `js/search/search.js`, `js/state.js`                                                            |
-| Rendering / markdown bug  | `js/render/content-view.js` (pipeline) or the specific `js/content/*.js` file for the enhancement in question |
-| Navigation / routing bug  | `js/render/router.js`, `js/state.js`                                                            |
-| Bookmark / recents bug    | `js/storage/bookmarks.js` or `js/storage/recents.js`, `js/state.js`                             |
-| Auth / sync bug           | `js/api.js`, `js/auth.js`, `js/storage/settings-theme.js` (Sync), `js/state.js`                  |
-| Settings bug              | `js/storage/settings-theme.js`, `css/themes.css`, `css/tokens.css`                               |
-| UI / visual bug           | `css/tokens.css` + relevant view/component CSS file                                              |
-| New CSS feature           | `css/tokens.css` first, then target view/component CSS file                                      |
-| Mobile gesture / TOC drawer bug | `js/app/mobile-panels.js`                                                                  |
-| Service worker issue      | `wiki-sw.js` only                                                                               |
-| Write tests for feature X | Relevant `tests/e2e/test_*.py` + `tests/conftest.py`                                            |
-| Content article           | `docs/_meta/ai-instructions/sd-writer.md` (system design) or `dsa-writer.md` (DSA)              |
-| Content backlog row       | `docs/_meta/ai-instructions/content-backlog.md` + `docs/content-backlog.md` + writer/rater for that vertical |
-
----
-
-## APP ARCHITECTURE
-
-See **[CONVENTIONS.md](./CONVENTIONS.md) → Architecture** for the boot sequence, view model, content-loading flow, persistence model, and the module-map-as-contract.
-
----
-
-## TOOL USAGE
-
-- **`Read`** - only for files you will edit immediately after
-- **`ctx_batch_execute`** - multi-file exploration, any output >20 lines
-- Never raw `Bash` for reading files
-- **Running tests** - may run individual tests when debugging (e.g. `pytest tests/e2e/test_x.py::test_y -v`). Never run the full suite unprompted; user runs that manually.
-- **Icon needed but missing from `sprite.svg`** - don't stop at "not in the local sprite." `sprite.svg` is a hand-picked ~27-icon subset of Tabler's full 5,900+ icon set (no build/generator script - see `js/icon-sprite.js`, it just fetches and inlines the static file), so a missing icon is almost always available upstream and just hasn't been pulled in yet. Use `WebSearch`/`WebFetch` against `tabler.io/icons` to find and confirm the right icon name before concluding it doesn't exist. To add it: get the outline SVG, strip to `<path>` elements only, add as a new `<symbol id="icon-name" viewBox="0 0 24 24">` block in `sprite.svg`, matching the existing entries' format exactly.
+| Task | Start here |
+| --- | --- |
+| Article render / markdown dialect | `lib/content/pipeline.ts`, `lib/content/plugins/`, then the matching reader island |
+| ⌘K search | `components/search/SearchModal.tsx`, `lib/search/` |
+| Auth / login | `components/auth/`, `lib/auth/`, `lib/api.ts` |
+| Bookmarks / recents / read | `lib/storage/*`, chrome/home islands that consume them |
+| Theme / prefs | `components/settings/PreferencesModal.tsx`, `lib/storage/settings.ts` |
+| Highlights / notes | `components/reader/Highlights.tsx` / `NotesScratchpad.tsx`, `lib/storage/highlights.ts` / `notes.ts` |
+| Complexity comparator | `components/reader/ComplexityCompare.tsx`, `lib/reader/complexity-matrix.ts` |
+| Dashboard / admin / changelog | `app/dashboard/**`, `app/admin/`, `app/changelog/`, matching `components/` + `lib/` |
+| SW / offline | `app/sw.ts`, `components/pwa/`, `lib/pwa/` |
+| Hotkeys | `lib/hotkeys.ts` |
+| CSS / theme tokens | `css/tokens.css` first |
+| Content article | `docs/_meta/ai-instructions/*-writer*.md`, then the `.md` under `content/` |
+| e2e failure | Matching `tests/e2e/test_*.py` + `tests/conftest.py` |
 
 ---
 
@@ -346,25 +211,15 @@ See **[CONVENTIONS.md](./CONVENTIONS.md) → Architecture** for the boot sequenc
 
 After finishing any coding task:
 
-1. **Tests** - decide if new behaviour needs coverage. Add tests if: a new user-visible interaction was added, a bug was fixed (regression test), or a new code path exists that existing tests don't reach. Use the test file map below to pick the right file. May run the specific new/changed test to confirm it passes; never run the full suite unprompted.
-2. **Ticket closure** - if the task came from a ticket (`WIKI-xxx`), move its row from `docs/tickets-backlog.md` to `docs/tickets-archive.md`: set Status = `Done` and Impl. Date = today's date (YYYY-MM-DD).
-3. **Content-backlog closure** - if the task came from a content-backlog row (`DSA-xxx` / `SD-xxx`), move it to `docs/content-archive.md`: set Status = `Done` and Done Date = today's date. Never put these in tickets-archive.
+1. **Tests** - new behaviour needs coverage. Vitest for `lib/` / islands; e2e only when user-visible interaction needs a browser. Prefer the existing test file for that domain. May run the specific new/changed test; never run the full e2e suite unprompted.
+2. **Ticket closure** - if `WIKI-xxx`, move the row from `docs/tickets-backlog.md` to `docs/tickets-archive.md` (Status `Done`, Impl. Date today).
+3. **Content-backlog closure** - if `DSA-xxx` / `SD-xxx`, move to `docs/content-archive.md`. Never put these in tickets-archive.
 
 After finishing any **content task**:
 
-4. **Content changelog** - update `content/CHANGELOG.md` with an entry under today's date. Log: new article, new section, expanded/rewritten section, new stub. Skip: typo fixes, grammar, cross-reference links. Format:
-   ```
-   ## YYYY-MM-DD
-   - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
-   ```
-5. **Search index** - after adding, renaming, or removing an article, regenerate `content/search-index.json`: run `python3 scripts/build_search_index.py` and commit the result alongside the content change. CI's `search-index` job runs the same generator and fails the build (`git diff --exit-code`) if the committed file is stale.
-6. **Backlinks** - after adding, renaming, removing, or changing internal links in an article, regenerate `content/backlinks.json`: run `python3 scripts/build_backlinks.py` (reads `search-index.json`, so regenerate that first) and commit the result. CI's `backlinks` job does the same and fails the build if the committed file is stale.
-
----
-
-## TEST PATTERNS
-
-Prescriptive test rules live in **[CONVENTIONS.md](./CONVENTIONS.md) → Testing** (e2e-only, `conftest.py` first, no new fixtures, happy + error path). Use the **test file map** above to pick which file a test belongs in.
+4. **Content changelog** - update `content/CHANGELOG.md` under today's date (new/expanded article or section; skip typos/grammar-only).
+5. **Search index / backlinks / broken-links** - produced by `next build` (`buildContent()` via `prebuild`) — no manual regeneration. CI's `build` job `git diff --exit-code`s the committed `content/{search-index,backlinks,broken-links}.json` against the Node emit. Run `pnpm build` (or `pnpm content:build`) and commit those JSON files with the content change.
+6. **`content/bridges.json`** - hand-authored; validated inside `buildContent()`.
 
 ---
 
@@ -372,23 +227,22 @@ Prescriptive test rules live in **[CONVENTIONS.md](./CONVENTIONS.md) → Testing
 
 **App dev tasks:**
 
-- Never read `content/**/*.md` - irrelevant to app code
-- Never read every file in a domain folder (`content/`, `render/`, `storage/`, `app/`) - use the subtables above to pick the right one
-- Never read all CSS files - always start with `tokens.css`
+- Never read `content/**/*.md` for app-code tasks (irrelevant)
+- Never read every file in a domain folder — use the FILE MAP
+- Never start CSS work without opening `tokens.css`
 
 **Content tasks:**
 
-- Never read `js/` or `css/` files
-- Never write or run tests
-- Never file content findings as `WIKI-xxx` tickets — use the content backlog (`DSA-xxx` / `SD-xxx`) per `docs/_meta/ai-instructions/content-backlog.md`
-- Never call content-backlog rows "tickets"
+- Never read `app/` / `components/` / `lib/` / `css/` unless the task is about app behaviour
+- Never write or run app tests for content-only work
+- Never file content findings as `WIKI-xxx` — use `DSA-xxx` / `SD-xxx`
 
 **All tasks:**
 
 - Never `git add` / `git commit` / `git push` unless explicitly asked
 - Never add `Co-Authored-By` to commit messages
-- Never put WIKI-xxx ticket IDs in code comments or CSS section headers
-- Never hard-wrap prose in Markdown files (manually inserting a newline mid-paragraph at some column width). Write each paragraph/list-item as one single line, no matter how long - let the editor soft-wrap for display. Applies to every `.md` file: audit reports, CLAUDE.md/CONVENTIONS.md, decisions, changelogs, tickets, content-backlog files. Manual line breaks are fine only inside code fences, tables, and where Markdown requires them (e.g. two-space hard break).
+- Never put WIKI-xxx / DSA-xxx / SD-xxx IDs in code comments or CSS section headers
+- Never hard-wrap prose in Markdown files (one line per paragraph/list-item; soft-wrap in the editor). Manual breaks only inside code fences, tables, and where Markdown requires them.
 
 ---
 
@@ -397,7 +251,7 @@ Prescriptive test rules live in **[CONVENTIONS.md](./CONVENTIONS.md) → Testing
 Full coding standards: **[CONVENTIONS.md](./CONVENTIONS.md)**. Repeated non-negotiables:
 
 - Never `git add` / `commit` / `push` unless explicitly asked; never add `Co-Authored-By`.
-- Never put `WIKI-xxx` ticket IDs in code comments or CSS section headers.
-- Any `wiki-sw.js` change ⇒ cache-version bump.
+- Never put ticket/content-backlog IDs in code comments or CSS section headers.
+- Service worker cache versioning is Serwist-hashed — no manual cache-version bump.
 - No `console.*` in committed code.
 - Content filenames: lowercase, hyphen-separated, `.md` extension.

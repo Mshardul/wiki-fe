@@ -1,6 +1,6 @@
 # Coding Standards - wiki-fe
 
-Prescriptive standards for this repo. Rules, not suggestions. New code follows them; changed code is brought up to them. **Biome** runs as a pre-commit hook and in CI (standalone binary, no node_modules) - it enforces formatting and lint mechanics automatically. Semantic rules (module boundaries, no `console.*`, etc.) remain on the author and reviewer.
+Prescriptive standards for this repo. Rules, not suggestions. New code follows them; changed code is brought up to them. **Biome** (format + style + CSS lint) and **ESLint** (TS/React/hooks/Next/a11y correctness) run in pre-commit and CI. Semantic rules (module boundaries, island rule, no ticket IDs) remain on the author and reviewer.
 
 This file is the *how to write the code*. The operational map (which file owns what, which skill to invoke, where to read for a task) lives in [CLAUDE.md](./CLAUDE.md).
 
@@ -8,139 +8,92 @@ This file is the *how to write the code*. The operational map (which file owns w
 
 ## Core principles
 
-- **SRP (Single Responsibility).** One module, one concern. Each `js/` file owns exactly one slice of the app (see the module map below); a function does one thing. If you can't name what a module owns in one phrase, it's doing too much.
-- **Size is a signal, not a rule to game.** A file crossing **~400 lines** is a prompt to split it by sub-concern into a domain subfolder (`js/domain/sub-file.js`, `css/view-x/sub-file.css`) - don't wait for a "refactor" ticket to do it. Exception: a single cohesive pipeline (fetch → render → wire, no independently reusable piece) may stay one file past the threshold if splitting would only fragment one linear flow - note the exception in a one-line comment at the top of that file.
-- **DRY (Don't Repeat Yourself).** Logic lives in one place. Shared pure helpers belong in `state.js` (`escHtml`, `fuzzyMatch`). A repeated literal → a named constant. A CSS value used twice → a token in `tokens.css`, never copied. **Exception:** a small (**<20 line**) render/UI helper duplicated across exactly 2 files (e.g. `_buildChipStrip` in `storage/bookmarks.js` and `storage/recents.js`) may stay duplicated rather than get its own shared module - the indirection cost of a module for one tiny function used twice outweighs the DRY win. Re-evaluate once a 3rd caller needs it.
-- **SoC (Separation of Concerns).** Rendering, persistence, content processing, and search never bleed into each other - that's why they're separate modules. Keep the boundaries.
-- **YAGNI.** Build for the current version. No framework, no abstraction layer, no config knob until a real second caller needs it. The app is deliberately small and dependency-light.
-- **Explicit over implicit.** No magic globals beyond the documented `window.*` handlers. Dynamic behaviour is wired in code you can grep, not inferred.
+- **SRP (Single Responsibility).** One module, one concern. Each file under `app/` / `lib/` / `components/` owns exactly one slice (see CLAUDE.md FILE MAP); a function does one thing. If you can't name what a module owns in one phrase, it's doing too much.
+- **Size is a signal, not a rule to game.** A file crossing **~400 lines** is a prompt to split it by sub-concern into a domain subfolder (`lib/domain/sub-file.ts`, `components/feature/Sub.tsx`, `css/view-x/sub-file.css`) - don't wait for a "refactor" ticket to do it. Exception: a single cohesive pipeline (no independently reusable piece) may stay one file past the threshold if splitting would only fragment one linear flow - note the exception in a one-line comment at the top of that file.
+- **DRY (Don't Repeat Yourself).** Logic lives in one place. Shared pure helpers belong in the owning `lib/` module. A repeated literal → a named constant. A CSS value used twice → a token in `tokens.css`, never copied. **Exception:** a small (**<20 line**) UI helper duplicated across exactly 2 files may stay duplicated rather than get its own shared module - the indirection cost of a module for one tiny function used twice outweighs the DRY win. Re-evaluate once a 3rd caller needs it.
+- **SoC (Separation of Concerns).** Rendering (components), persistence (`lib/storage/`), content processing (`lib/content/`), and search (`lib/search/`) never bleed into each other. Keep the boundaries.
+- **YAGNI.** Build for the current version. No abstraction layer, no config knob until a real second caller needs it.
+- **Explicit over implicit.** Dynamic behaviour is wired in code you can grep, not inferred. Prefer typed props and named exports over magic globals.
 - **Fail loud in dev.** A broken selector, a missing element, an unexpected API `code` should surface - don't silently swallow.
 
 ---
 
 ## Architecture
 
-- Single-page app. **No build step, no framework, no TypeScript.** Plain ES6 modules served as-is.
-- **Boot:** `index.html` → `wiki.css` → `app.js` → registers service worker → reads state → routes to the correct view.
-- **Views:** `#view-home`, `#view-index`, `#view-content` - exactly one active at a time. View state is owned by `state.js`.
-- **Content loading:** `js/content/` post-processes fetched `.md` after markdown→HTML. `js/render/` fetches `.md`, parses it, and converts it to DOM (routing, home/index views, content pipeline, related articles).
-- **Persistence:** `js/storage/` → `localStorage` (today). With auth, localStorage becomes a cache-through layer over the backend - see State & persistence below.
+- **Next.js App Router, static export** (`output: 'export'` → `out/`). No Node server in production. Base path `/wiki-fe/`. TypeScript throughout.
+- **Build:** `pnpm content:build` / `prebuild` runs `buildContent()`; `pnpm build` emits HTML + assets + Serwist SW. Markdown → HTML happens at **build time** via `lib/content/` (unified/remark/rehype + Shiki).
+- **Routes:** App Router pages under `app/` — home, `[vertical]`, `[vertical]/[...slug]`, dashboard, changelog, admin, offline. Real URLs, not hash routing.
+- **Islands:** Interactive behaviour attaches as client components under `components/`. See **The island rule** below.
+- **Persistence:** `lib/storage/` → `localStorage` (+ cache-through sync when logged in). No server-side FE state.
 
-### Module map is a contract
+### Domain map is a contract
 
-Each `js/` domain owns one concern; each file inside it owns one sub-concern. Do not reach across a domain boundary - call the owning module. Never read every file in a domain folder to find something - the tables below say exactly which file owns which behavior.
+Do not reach across a domain boundary - call the owning module. Never read every file in a domain folder to find something - CLAUDE.md FILE MAP says which file owns which behaviour.
 
-| Domain            | Owns                                                                                                             |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `app.js` + `app/`  | Entry/bootstrap, hash router wiring, `window.*` globals, keyboard shortcuts - see `js/app/` subtable below for the full domain |
-| `state.js`         | App state object, WIKIS registry, shared caches, shared pure utilities                                           |
-| `content/`         | Post-markdown content processing (callouts, copy buttons, Mermaid, TOC, focus mode, glossary, footnotes, …)      |
-| `render/`          | Routing + view rendering (home grid, index sections, content pipeline, breadcrumbs, related articles, toast)     |
-| `search/`          | ⌘K search domain - see `js/search/` subtable below                                                               |
-| `storage/`         | All `localStorage` access + cache-through backend sync hooks when logged in                                      |
-| `auth.js`          | Auth domain: password-rule validation, auth modal controller, login/register/logout/resend, anon→login migration |
-| `api.js`           | Single wrapper for all `wiki-be` calls (base-URL detect, credentials, `ApiError`, global 401)                    |
+| Domain | Owns |
+| --- | --- |
+| `app/` | Routes, root layout, Serwist SW source (`sw.ts`) |
+| `lib/content/` | Discovery, pipeline, plugins, search-index/backlinks/broken-links/manifest/getArticle |
+| `lib/storage/` | All `localStorage` + sync cache-through |
+| `lib/search/` | Fuzzy/score/snippet over the search index |
+| `lib/api.ts` | Sole `wiki-be` HTTP client |
+| `lib/auth/` | Password rules + auth helpers |
+| `lib/reader/` | Complexity matrix, text-offset helpers |
+| `lib/pwa/` | Cache Storage article ops + install helpers |
+| `components/*` | Per-feature client islands (see Components) |
+| `css/` | Tokens-first styles (faithful port; unchanged ownership) |
 
-#### `js/content/` - post-markdown enhancement
+### The island rule
 
-| File                   | Owns                                                                            |
-| ---------------------- | -------------------------------------------------------------------------------- |
-| `zoom-lightbox.js`     | Zoom overlay (shared by image + diagram zoom), pinch/pan/swipe gestures          |
-| `code-blocks.js`       | Code block header, copy buttons, clipboard helper, line numbers, hljs theme sync |
-| `mermaid.js`           | Diagram render/re-render, node captions, step-through walkthrough                |
-| `tables.js`            | Column sort, quiz-me mode, table scroll cues, comparison column toggles |
-| `toc.js`               | TOC build, sticky section header, per-heading collapse, progress ring            |
-| `formatting.js`        | Callouts, prerequisites chips, anchor links, LaTeX toggle/copy, focus mode, tabbed code blocks, footnotes, in-article find |
-| `glossary-caveats.js`  | Inline caveat reveals, glossary popovers/expand, rendered-HTML session cache      |
+Interactive behaviour attaches to the article body as **client islands**:
 
-#### `js/render/` - routing + view rendering
-
-| File                    | Owns                                                                          |
-| ----------------------- | -------------------------------------------------------------------------------- |
-| `router.js`             | Hash router (`navigate`/`route`), view switching, slug resolution               |
-| `home-index.js`         | Home grid, wiki index sections render/controls, card filter/hover, key nav         |
-| `home-gestures.js`      | Index-card swipe (bookmark/read toggle), pull-to-refresh, index refresh         |
-| `home-parse.js`         | `index.md` parser, shared index-fetch cache, article counts, ⌘K search-entry builder |
-| `content-view.js`       | Content render pipeline (fetch → parse → post-process → wire links/preview) - kept as one file, see size-threshold exception |
-| `related-articles.js`  | Related-article ranking + rendering                                             |
-| `nav-utils.js`          | Path resolution, breadcrumb, page title, `fetchText`, `readingTime`             |
-| `toast.js`              | Toast queue + display                                                           |
-
-#### `js/storage/` - localStorage + sync
-
-| File                  | Owns                                                              |
-| --------------------- | -------------------------------------------------------------------- |
-| `bookmarks.js`        | Bookmark CRUD, bookmarks section render                             |
-| `recents.js`          | Recently-visited CRUD, recents section render                       |
-| `read-tracking.js`    | Read/unread state, quiz-reveal tracking                             |
-| `completions.js`      | Per-wiki-per-article completion Set + `api.completions` sync        |
-| `offline.js`          | Service-worker cache download/remove/check for offline articles      |
-| `settings-theme.js`   | Settings object, theme/background/accent/font data, `Settings`/`Theme`/`Sync`, multi-tab sync listener |
-| `scroll-collapse.js`  | Scroll-position cache, section collapse state, TOC scroll, recent searches |
-| `table-columns.js`    | Comparison-table hidden-column prefs                                       |
-
-#### `js/search/` - ⌘K search domain
-
-| File                  | Owns                                                                                                         |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `search.js`           | ⌘K modal: open/close lifecycle, search entry loading, fuzzy scoring, result rendering, section-filter mode (>)   |
-| `search-features.js`  | Search snippet extraction, recent-searches list, synonym cache use                                                |
-
-#### `js/app/` - bootstrap-adjacent behaviors
-
-| File                  | Owns                                          |
-| --------------------- | ------------------------------------------------ |
-| `mobile-panels.js`    | Mobile TOC drawer, swipe gestures, panel-close registry, viewport resize |
-| `wiki-switcher.js`    | Wiki switcher modal open/close/render             |
-| `debug-overlay.js`    | `?debug` diagnostic overlay                       |
-| `home-parallax.js`    | Home hero mouse-parallax effect                   |
-| `print.js`            | Print-article trigger                             |
-| `distraction-free.js` | Distraction-free mode toggle                      |
-
-`state.js` is the **single source of app state.** Other modules read/write state through it, not via their own parallel globals.
+- **Markup comes from the build pipeline.** `lib/content/plugins/` emit structural markup and data attributes. An island **never re-parses markdown** and **never re-renders the article body**.
+- **Behaviour lives in React** and works with React-rendered controls **where possible** — TOC, search, tabs, callout collapse, code-copy, table sort: these render their own React UI and only *read* the body or toggle classes/attributes on it.
+- **Direct DOM mutation of the body is reserved** for cases that genuinely need it — Range-based highlight wrapping and emoji-marker insertion at text offsets. Keep those exceptions small and isolated.
+- **`dangerouslySetInnerHTML` is allowed only** for trusted build-time article HTML (the pipeline output). Never for user input or unsanitised markdown at runtime.
 
 ---
 
-## JavaScript
+## TypeScript / React
 
-- **ES6 modules only.** No bundler, no transpile, no TypeScript. Code ships exactly as written.
-- **No `console.*` in committed code.** Strip `console.log`/`warn`/`error`/`debug` before committing - they're dev scaffolding, not a logging system. If a genuine error path must surface, surface it through the UI (toast / error state), not the console.
-- **No inline styles** except dynamic values set programmatically via JS (e.g. a computed width). Everything static is a CSS class.
-- **Inline `onclick` handlers require a `window.*` global** (see the WINDOW GLOBALS block in `app.js`). Prefer the existing `data-action` delegation for new static buttons over adding globals.
-- **Naming:** `camelCase` for vars/functions, `UPPER_SNAKE` for module-level constants with a one-line reason if non-obvious.
-- **`load*` vs `get*`/`ensure*`:** reserve `load*` for async or network-backed work (`loadSynonyms`, `loadAllSearchEntries`, `loadIconSprite`). Synchronous storage/session reads use `get*`; one-time sync DOM setup uses `ensure*` (e.g. `ensureFontExtras`).
-- **Leading underscore (`_name`) marks "not part of this file's public contract"** - applies the same way at both granularities: a top-level function not in the module's exports (`_collectLocalReads` in `auth.js`), or a method on an exported object literal not meant for outside callers (`AuthModal._trapFocus`, `._renderChecklist`). No prefix = part of the public export or the object's intended external API.
-- **No new runtime dependencies** without a deliberate decision - the no-build, offline-first model depends on staying lean.
-- **Comments are sparse and short.** A comment earns its place only when the code can't say it itself - the *why*, a non-obvious constraint, a gotcha. Default to none. When you do comment, **one line**, not a paragraph. Never narrate *what* the next lines do (the code shows that), never restate the function name, never write multi-line block comments explaining mechanics. In `js/`, section labels are a single-line `/* … */` comment (not the multi-line box banners used in CSS).
-- **Comments are project-level, never ticket- or task-level.** Never reference a ticket number (`WIKI-xxx`), task number, PR number, or branch name in a code comment or CSS section header. Those belong in the commit message or PR description - not in the source file, where they rot.
+- **TypeScript strict.** Prefer named types/interfaces near their use; zod schemas for runtime-validated JSON (`public/data/*`, API envelopes where parsed).
+- **`"use client"` only at the island boundary** — prefer server components for pages/layouts; push the directive down to the component that needs browser APIs, not every leaf.
+- **No `console.*` in committed code.** Strip `console.log`/`warn`/`error`/`debug` before committing. Surface genuine error paths through the UI (toast / error state).
+- **No inline styles** except dynamic values set programmatically (e.g. a computed width). Everything static is a CSS class.
+- **Naming:** `camelCase` for vars/functions, `PascalCase` for components/types, `UPPER_SNAKE` for module-level constants with a one-line reason if non-obvious.
+- **`load*` vs `get*`/`ensure*`:** reserve `load*` for async or network-backed work. Synchronous storage/session reads use `get*`; one-time sync DOM/setup uses `ensure*`.
+- **Leading underscore (`_name`) marks "not part of this file's public contract"** — private helpers not exported, or methods not meant for outside callers.
+- **No new runtime dependencies** without a deliberate decision — static-export + offline-first depends on staying lean.
+- **Comments are sparse and short.** A comment earns its place only when the code can't say it itself - the *why*, a non-obvious constraint, a gotcha. Default to none. When you do comment, **one line**, not a paragraph. Never narrate *what* the next lines do, never restate the function name, never write multi-line block comments explaining mechanics. Section labels in TS are a single-line `/* … */` comment (not the multi-line box banners used in CSS).
+- **Comments are project-level, never ticket- or task-level.** Never reference a ticket number (`WIKI-xxx`), task number, PR number, or branch name in a code comment or CSS section header.
 
 ---
 
 ## Components (`components/`)
 
-The Next migration puts every runtime client island under `components/`, one folder per feature (mirrors the `js/` domain layout). Server-rendered markup comes from the build pipeline (`lib/content/`); an island never re-parses markdown or re-renders the article body.
+Every runtime client island lives under `components/`, one folder per feature. Server-rendered markup comes from the build pipeline (`lib/content/`); an island never re-parses markdown or re-renders the article body.
 
-- **Per-feature folders** - `components/<feature>/`, one folder per runtime island. Shared modal/focus-trap/portal shells live in `components/common/`; app chrome (topbar, toast host, tooltips, breadcrumb, wiki-switcher, scroll-to-top) in `components/chrome/`.
-- **`"use client"` only where behaviour needs it.** Prefer server components; add the directive at the island boundary, not on every leaf.
-- Planned folders:
+- **Per-feature folders** - `components/<feature>/`. Shared modal/focus-trap shells in `components/common/`; app chrome (topbar, toast host, tooltips, breadcrumb, wiki-switcher, scroll-to-top) in `components/chrome/`.
+- Folders in use:
   ```
   components/
-    common/     Modal, useFocusTrap, modalRegistry, Portal
+    common/     Modal, focus trap, modal registry
     chrome/     Topbar, ToastHost, IconTooltip, ScrollToTop, Breadcrumb, WikiSwitcher, BookmarksModal
-    reader/     Toc, ProgressRing, StickyHeader, HeadingCollapse, HoverPreview, PrereqStatus,
-                RelatedArticles, MentionedBy, CalloutCollapse, AnchorScroll, LatexToggle,
-                TabbedCode, ArticleFind, GlossaryPopover, CaveatReveal, CodeCopy, LineNumbers,
-                ComparisonTable, ZoomLightbox, ReadTracker, StubTreatment, FocusMode, MermaidDiagrams
-    home/       WikiCards, IndexSections, IndexCardSwipe, PullToRefresh, KeyNav, LearningPathBars
-    search/     SearchModal, useSearchIndex
-    auth/       AuthModal, PasswordChecklist
-    settings/   PreferencesModal, ThemeControls, DistractionFree, PrintTrigger, ClearData
-    sync/       (hooks, not visual)
-    mobile/     TocDrawer, SwipeGestures, PanelCloseRegistry, ViewportHandler
+    reader/     Toc, StickyHeader, Highlights, Markers, NotesScratchpad, MermaidDiagrams,
+                RelatedArticles, MentionedBy, ComplexityCompare, ArticleFind, …
+    home/       Index strips, card swipe, pull-to-refresh, key nav, learning-path bars
+    search/     SearchModal
+    auth/       AuthModal, PasswordChecklist, AuthButton
+    settings/   PreferencesModal, DistractionFree, PrintTrigger
+    sync/       Session init + synced-domain hooks
+    mobile/     TocDrawer, SwipeGestures, ViewportHandler
     pwa/        SaveOffline, InstallPrompt, IosNudge, OfflineShelf
+    dashboard/  Dashboard shell / progress
+    admin/      Admin view + report tables
+    changelog/  Changelog filter
   ```
-- **`lib/storage/`** owns all `localStorage` access + the cache-through sync half; **`lib/api.ts`** is the single `wiki-be` client (framework-agnostic, no Next coupling); **`lib/toast.ts`** owns the toast queue; **`lib/pwa/`** owns Cache Storage ops (`article-cache.ts`) + install-prompt helpers. Components call these, never touch `localStorage`, `caches`, or `fetch` a backend directly.
-- Comments follow the JavaScript rules above - sparse, one line, `why` not `what`, no ticket IDs.
+- **`lib/storage/`** owns all `localStorage` access + the cache-through sync half; **`lib/api.ts`** is the single `wiki-be` client (framework-agnostic, no Next coupling); **`lib/toast.ts`** owns the toast queue; **`lib/pwa/`** owns Cache Storage ops + install-prompt helpers. Components call these, never touch `localStorage`, `caches`, or `fetch` a backend directly.
+- Comments follow the TypeScript rules above - sparse, one line, `why` not `what`, no ticket IDs.
 
 ---
 
@@ -150,29 +103,27 @@ The Next migration puts every runtime client island under `components/`, one fol
 - **Add a token before repeating a value.** If a CSS value (color, font-weight, z-index, transition duration, font-size) appears in more than one rule and no token exists yet, add the token to `tokens.css` first, then use `var(--token-name)` everywhere. Available token groups: `--fw-*` (font-weight), `--z-*` (z-index layers), `--text-*` (font-size scale - always prefer over raw rem/em values), `--color-*` (semantic status colors), `--overlay-*` (rgba scrim colors), `--t*` (transitions), `--s*` (spacing), `--r-*` (border-radius, including `--r-xs: 4px`), `--topbar-h` (topbar height - use in any `top`/`calc` offset that depends on topbar).
 - **BEM-adjacent naming** (block-element pattern).
 - **`wiki.css` is the aggregator** - it `@import`s the modules and **holds no rules of its own.**
-- **Theming:** `data-theme` is binary `light`/`dark` for CSS-only overrides in `themes.css` (focus outline, shadows, code-block colors). Visual presets are JS-computed background entries in `settings-theme.js` that set `--bg`/`--surface`/`--text-heading`/`--accent` on `:root` — not extra `[data-theme="…"]` named themes.
-- View-specific rules live in `view-*.css` or a `view-*/` subfolder; shared components in `components/` (e.g. `components/auth.css`). Don't put view styles in the shared files or vice versa.
-- **`components/` and `view-content/` are split by sub-concern** (see the module map above for the JS equivalent). `components/topbar.css`, `search-modal.css`, `preferences-modal.css`, `toast.css`, `wiki-switcher.css`; `view-content/layout.css`, `code.css`, `mermaid.css`, `callouts-prereqs.css`, `interactive.css`, `glossary-related.css`. A new component/view rule set crossing ~400 lines gets its own file in the matching subfolder, imported from `wiki.css` in the same position.
+- **Theming:** `data-theme` is binary `light`/`dark` for CSS-only overrides in `themes.css` (focus outline, shadows, code-block colors). Visual presets are JS-computed background entries in settings that set `--bg`/`--surface`/`--text-heading`/`--accent` on `:root` — not extra `[data-theme="…"]` named themes.
+- View-specific rules live in `view-*.css` or a `view-*/` subfolder; shared components in `css/components/`. Don't put view styles in the shared files or vice versa.
+- **`css/components/` and `view-content/` are split by sub-concern.** A new component/view rule set crossing ~400 lines gets its own file in the matching subfolder, imported from `wiki.css` in the same position.
 - **Responsive:** mobile-first. All new CSS must work at 320px. Breakpoints live in `responsive.css` - not `tokens.css`, not scattered in view files. No new breakpoints outside `responsive.css` without a deliberate decision.
-- **Modal scrim naming:** click-outside dismiss layers use the `-backdrop` suffix (`auth-backdrop`, `link-graph-backdrop`, `toc-mobile-backdrop`). Full-viewport layer containers that own their own chrome (zoom lightbox, section map) keep `-overlay` on the root element; nested scrims inside those may still use `-backdrop` (e.g. `zoom-overlay-backdrop`).
+- **Modal scrim naming:** click-outside dismiss layers use the `-backdrop` suffix. Full-viewport layer containers that own their own chrome (zoom lightbox) keep `-overlay` on the root element; nested scrims inside those may still use `-backdrop`.
 - **No fixed px for layout dimensions that must adapt.** Use fluid units for layout-level sizing: `min()`, `max()`, `clamp()`, `vw`, `vh`, `%`. Fixed `px` is correct for: borders, outlines, icon sizes, touch targets (44px min), blur radii, `transform` nudges. Fixed `px` is wrong for: panel widths, drawer widths, overlay heights, `top`/`scroll-margin-top` offsets tied to a layout measurement. For topbar-relative offsets use `var(--topbar-h)` or `calc(var(--topbar-h) + ...)` - never a raw px value.
-- **Section-divider banners are a two-level hierarchy, nothing more.** A file has at most: one implicit "root" (the file itself - its content/filename already say what it's about) and, within it, section banners for genuinely distinct rule groups. No third tier - don't nest a lighter-weight label inside a section for a sub-group; either that sub-group is its own section or it isn't called out at all. Judge sections by what the file actually contains, not a line-count formula: a small single-purpose file may need zero section banners, a large file with several real groups may need several. If a file is accumulating enough distinct groups that it feels like it's covering more than one concern, that's a signal to split it into multiple files (see the ~400-line guidance above), not to invent a deeper comment hierarchy. Section banners use the full box form:
+- **Section-divider banners are a two-level hierarchy, nothing more.** A file has at most: one implicit "root" (the file itself) and, within it, section banners for genuinely distinct rule groups. No third tier. Section banners use the full box form:
   ```css
   /* ═══════════════════════════════════════════════
      SECTION NAME
      ═══════════════════════════════════════════════ */
   ```
-  Never a ticket ID in the banner text (see the JS rule above - applies here too). A one-line non-obvious "why" comment nested inside a section (e.g. explaining a specific rule's browser quirk) is a different thing entirely - keep those as ordinary one-line comments, not banners.
+  Never a ticket ID in the banner text. A one-line non-obvious "why" comment nested inside a section is a different thing entirely - keep those as ordinary one-line comments, not banners.
 
 ---
 
 ## State & persistence
 
-- **`state.js` owns app state.** Identity, view, caches - read and mutate through it.
-- **Avoid direct property assignment to `state` from outside `state.js`.** Mutations from other modules should go through exported functions where they exist; adding direct `state.foo = …` in a caller is a smell.
-- **`js/storage/` owns localStorage.** No other module touches `localStorage` directly.
-- **Cache-through model (with auth):** localStorage is the instant read path and UI source of truth; the API is the durable source. Sync hooks inject *inside* the relevant `js/storage/` save function so existing callers are unchanged. Writes are **fire-and-forget**; a load-time pull reconciles drift.
-- **Identity is never cached in localStorage** - `state.session` lives in memory only; the httpOnly cookie + backend are the sole authority.
+- **Session / identity live in React state + memory**, never in `localStorage`. The httpOnly cookie + backend are the sole auth authority; `GET /auth/me` sets the in-memory session.
+- **`lib/storage/` owns localStorage.** No other module touches `localStorage` directly.
+- **Cache-through model (with auth):** localStorage is the instant read path and UI source of truth; the API is the durable source. Sync hooks inject *inside* the relevant `lib/storage/` save function so existing callers are unchanged. Writes are **fire-and-forget**; a load-time pull reconciles drift.
 - **Scroll position stays local-only** - ephemeral, device-specific, never synced.
 
 For the full model and the *why*, see the decisions docs:
@@ -182,26 +133,32 @@ For the full model and the *why*, see the decisions docs:
 
 ## Errors & API
 
-- **All backend calls go through one wrapper (`api.js`).** No module makes its own `fetch` to the backend. The wrapper sets `credentials: "include"` once, parses JSON, and owns the base-URL detect.
-- **Never read the session cookie in JS.** It's httpOnly by design - JS cannot and must not try. The "logged-in?" signal is `state.session`, set from `GET /auth/me`.
+- **All backend calls go through one wrapper (`lib/api.ts`).** No module makes its own `fetch` to the backend. The wrapper sets `credentials: "include"` once, parses JSON, and owns the base-URL detect.
+- **Never read the session cookie in JS.** It's httpOnly by design. The "logged-in?" signal is the in-memory session from `GET /auth/me`.
 - **Errors are typed, switched on `code`.** The wrapper throws `ApiError(code, message, status)` parsed from the backend error envelope. Callers `catch` and **switch on the machine `code`, never on the human `message` text.**
 
-  ```js
+  ```ts
   // illustrative shape - not the implementation
   class ApiError extends Error {
-    constructor(code, message, status) { super(message); this.code = code; this.status = status; }
+    constructor(
+      public code: string,
+      message: string,
+      public status: number,
+    ) {
+      super(message);
+    }
   }
   ```
 
-- **One global 401 handler** in the wrapper: any 401 → flip `state.session` to logged-out, emit `wiki:session-expired`. Callers never repeat 401 logic.
-- **`code` strings are a cross-repo contract** with the backend - switch on the same strings the BE emits; don't invent FE-local ones. The canonical list lives in [auth.md](./docs/_meta/auth.md) (Auth flow + Security guards) and the BE repo.
+- **One global 401 handler** in the wrapper: any 401 → clear session, emit `wiki:session-expired`. Callers never repeat 401 logic.
+- **`code` strings are a cross-repo contract** with the backend - switch on the same strings the BE emits; don't invent FE-local ones. The canonical list lives in [auth.md](./docs/_meta/auth.md) and the BE repo.
 - **Password validation runs on both FE and BE** - one rule, two implementations, kept in sync via the decisions doc. The FE does the live checklist; the BE is the backstop. The 5 rules' values are in [auth.md](./docs/_meta/auth.md) (Password policy), not duplicated here.
 
 ---
 
 ## Security
 
-- **XSS / sanitisation is an invariant.** User-influenced or markdown-derived HTML must stay safe. This is regression-guarded by `tests/e2e/test_security.py` - don't weaken it without updating that guard deliberately.
+- **XSS / sanitisation is an invariant.** User-influenced HTML must stay safe. Build-time article HTML is trusted pipeline output only. Regression-guarded by `tests/e2e/test_security.py` - don't weaken it without updating that guard deliberately.
 - **`BACKEND_URL` is public, not a secret.** The browser must call it, so it lives in code by design. Security comes from CORS + the httpOnly cookie + BE validation, not from hiding the URL.
 - **No secrets, keys, or real email addresses in any tracked file** - including tests. Test emails use `@example.com`.
 
@@ -209,19 +166,17 @@ For the full model and the *why*, see the decisions docs:
 
 ## Interactive elements
 
-- **Prefer plain functions + event delegation on a stable parent** over attaching listeners to individual elements.
-- **No classes** unless per-instance state must outlive the handler lifecycle. That case is rare - prefer a closure or a data attribute.
-- **No Custom Elements** - the app doesn't use that API.
-- **Boolean UI-mode state** (focus mode, distraction-free, study mode, etc.): module-level `let` + mirrored DOM class is the default shape. Use an exported singleton object only when the API surface is multi-method (e.g. `ArticleFind`). DOM-class-only (no JS-side flag) is fine only for a pure CSS drawer already owned by layout.
+- Prefer React event handlers and controlled components over ad-hoc DOM listeners.
+- Event delegation on a stable parent is fine inside an island when wiring many static children.
+- Boolean UI-mode state (focus mode, distraction-free, etc.): React state + mirrored DOM class as needed. Prefer co-locating mode state with the island that owns the UX.
 
 ---
 
 ## Async
 
-- **Surface loading, empty, and error states** via `state.js` flags for any async operation that drives visible UI. One-off internal fetches that don't affect UI directly are exempt.
-- **Fetches interruptible by a view change must accept an `AbortSignal`** and cancel cleanly on signal.
-- **Clean up on view teardown** (cancel in-flight work, reset transient UI state). Teardown is managed in `app.js` via the hash router.
-- **Two allowed shapes for backend calls, don't mix them:** (1) **best-effort background sync** (optimistic localStorage-then-API writes in `storage/*.js`, e.g. `bookmarks.js`, `recents.js`) - un-awaited, `.catch(() => {})`, never blocks the UI, never surfaces the error. (2) **user-initiated request flows** (`auth.js` login/register/verify/etc.) - always `await`ed, errors caught and surfaced via `ApiError`. Don't `await` a best-effort sync call (blocks UI on a call the user doesn't need to wait for) and don't fire-and-forget a user-initiated one (swallows an error the user needs to see).
+- **Surface loading, empty, and error states** in the owning island/page for any async operation that drives visible UI. One-off internal fetches that don't affect UI directly are exempt.
+- **Fetches interruptible by navigation must accept an `AbortSignal`** (or equivalent cleanup in `useEffect`) and cancel cleanly on unmount/route change.
+- **Two allowed shapes for backend calls, don't mix them:** (1) **best-effort background sync** (optimistic localStorage-then-API writes in `lib/storage/`) - un-awaited, `.catch(() => {})`, never blocks the UI, never surfaces the error. (2) **user-initiated request flows** (auth login/register/verify/etc.) - always `await`ed, errors caught and surfaced via `ApiError`. Don't `await` a best-effort sync call and don't fire-and-forget a user-initiated one.
 
 ---
 
@@ -229,14 +184,14 @@ For the full model and the *why*, see the decisions docs:
 
 - All interactive elements must be keyboard-accessible and have a discernible label (`aria-label`, visible text, or associated `<label>`).
 - Semantic HTML first. Custom widgets only when no semantic element fits - if unavoidable, follow ARIA Authoring Practices for that widget role.
-- Focus is managed explicitly on view changes; see `app.js`.
+- Focus is managed explicitly on modal open/close and major view transitions.
 - Never suppress `outline` without providing an equivalent visible focus indicator.
 
 ---
 
 ## Error surfacing
 
-- **No `console.*` in committed code** (see JavaScript section). This means errors must go somewhere else.
+- **No `console.*` in committed code** (see TypeScript / React section). This means errors must go somewhere else.
 - User-visible errors surface through the UI - a toast, an inline error state - not the console.
 - No file-local `DEBUG` flags. Strip dev logging before committing.
 
@@ -244,32 +199,43 @@ For the full model and the *why*, see the decisions docs:
 
 ## Service worker
 
-- **Any change to `wiki-sw.js` requires a cache-version bump.** Never skip it - stale caches ship broken assets to returning users. Adding new files to the app (e.g. `js/api.js`) counts as a change that must be reflected on the next deploy.
+- Offline caching is **Serwist** (`app/sw.ts` → `out/sw.js`). Precache manifests are hashed at build time — **no manual cache-version bump.**
+- Custom article save/evict lives in `lib/pwa/` and is wired through the SW; don't invent a parallel cache layer.
 
 ---
 
 ## Testing
 
-- **End-to-end only, through the UI** (Playwright + pytest). Test behaviour as the user sees it, never JS functions directly.
-- **Read `tests/conftest.py` before writing any test** - it defines every shared fixture and navigation helper. **Never add new fixtures or conftest helpers** - use what exists.
-- **Add tests to the existing file** matching the feature (see the test map in CLAUDE.md). Never create a new test file unless the feature genuinely has no home.
-- **Match the existing structure** in that file (function- vs class-based, fixture usage).
+### Vitest (unit / component)
+
+- Every new unit ships with a passing test.
+- **Fixture-first (red-green)** for *new logic* — remark/rehype plugins under `lib/content/plugins/` and pure `lib/` functions (api client, storage, search scoring, matrix merge). Failing test → implement → pass.
+- **Code-then-test** for *ports of known-good behaviour* — island ports where the behaviour is already specified by a prior implementation. Port first, then write the test that locks it. The island still ships with a test.
+- Co-locate `*.test.ts` / `*.test.tsx` with the module (unit project). Full-corpus emit checks live in `tests/content/artifacts.test.ts` (content project) — never re-loop `getArticle`/`buildManifest` over the whole corpus in unit tests.
+- Scripts: `pnpm test` = unit (parallel) + pipeline (single-fork, Shiki once); `pnpm test:content` = one `buildContent` + artifact asserts; `pnpm test:all` = both (CI). Local e2e: `pnpm test:e2e` (`-n 2`, match CI light lane).
+
+### End-to-end (Playwright + pytest)
+
+- Test behaviour as the user sees it against the static `out/` export (see `tests/conftest.py`).
+- **Read `tests/conftest.py` before writing any e2e test** - it defines every shared fixture and navigation helper. **Never add new fixtures or conftest helpers** - use what exists.
+- **Add tests to the existing file** matching the feature. Never create a new test file unless the feature genuinely has no home.
 - Use `page.locator()` + `expect()`; avoid `page.query_selector()`.
-- **Never use `page.evaluate("element.click()")` to interact with elements.** If Playwright's actionability checks reject a click, fix the production code (e.g. remove a static `aria-hidden`, correct a CSS visibility issue) so the element is genuinely reachable. `evaluate`-based clicks bypass the checks and will miss real regressions.
-- **`page.wait_for_timeout()` is banned except for a genuine negative assertion** - proving something did *not* happen (no toast, no API call, no re-open) where no DOM state ever flips to signal "done," or waiting out a fixed internal timer (e.g. a debounce) that exposes no completion hook. Anything with an observable end state - element appears, class toggles, network settles - uses `wait_for_selector` / `expect(...).to_have_*` / `wait_for_function` instead. A sleep-based wait is CPU-load-dependent and is the first thing to flake when tests run in parallel; a condition-based wait isn't.
+- **Never use `page.evaluate("element.click()")` to interact with elements.** If Playwright's actionability checks reject a click, fix the production code so the element is genuinely reachable.
+- **`page.wait_for_timeout()` is banned except for a genuine negative assertion** or waiting out a fixed internal timer with no completion hook. Prefer condition-based waits.
 - **Selectors:** prefer user-visible text or ARIA roles. Use `data-testid` only when no semantic alternative exists.
-- **Isolation:** every test resets localStorage via the conftest fixture - don't assume state from other tests.
-- **Naming:** descriptive and behavior-focused (`test_login_unverified_shows_verify_panel`). No rigid template - match the style of the file you're adding to.
+- **Isolation:** every test resets localStorage via the conftest fixture.
+- **Naming:** descriptive and behavior-focused (`test_login_unverified_shows_verify_panel`).
 - Cover the **happy path and the error/edge path** (e.g. the anon-no-API-call invariant for sync).
-- **Never run the tests** - write correct test code; the user runs them.
+- **Never run the full e2e suite unprompted** - may run the specific new/changed test file; the user owns full-suite runs.
+- Follow-up epic (not this migration): port the Python Playwright e2e suite to `@playwright/test` (TypeScript) — tracked post-migration (spec §10, §14).
 
 ---
 
 ## Content code blocks (DSA/algorithm articles)
 
-- **Comments in embedded Python/pseudocode follow the same bar as app JS** (see JavaScript → Comments above): earn their place only for the *why* - a non-obvious invariant, a gotcha, a constraint the next line depends on. Never restate what the line does.
-- **Never justify an implementation choice by "so the article's prose matches."** If a data-structure/algorithm choice (e.g. `list` vs `set` for adjacency) exists only to make a worked trace reproducible, that reasoning belongs in the surrounding prose (if anywhere), not as a code comment - a reader of the code has no use for "why we picked this so our writeup lines up."
-- **Verify runnable code before shipping it in an article** - actually execute it (or paste + run in a scratch file), don't eyeball it. Catches path-reconstruction bugs, off-by-ones, and trace/code mismatches that reading alone misses.
+- **Comments in embedded Python/pseudocode follow the same bar as app TS** (see TypeScript / React → Comments above): earn their place only for the *why* - a non-obvious invariant, a gotcha, a constraint the next line depends on. Never restate what the line does.
+- **Never justify an implementation choice by "so the article's prose matches."** If a data-structure/algorithm choice exists only to make a worked trace reproducible, that reasoning belongs in the surrounding prose (if anywhere), not as a code comment.
+- **Verify runnable code before shipping it in an article** - actually execute it (or paste + run in a scratch file), don't eyeball it.
 
 ---
 
@@ -297,7 +263,7 @@ For the full model and the *why*, see the decisions docs:
 - Never put `WIKI-xxx` ticket IDs in code comments or CSS section headers.
 - Never put content-backlog IDs (`DSA-xxx` / `SD-xxx`) in app code/CSS either; they belong only in content-backlog docs and related content commits/changelog notes when useful.
 - When reviewing, treat each section of this file as a checklist. If a repeated violation isn't covered by an existing rule, add the rule here.
-- **Enforcement tooling:** Biome runs in pre-commit and CI (formatting + lint mechanics). Semantic rules (module boundaries, no `console.*`, etc.) remain on author + reviewer until custom lint rules are added.
+- **Enforcement tooling:** ESLint + Biome in pre-commit and CI. Semantic rules (module boundaries, island rule, no ticket IDs) remain on author + reviewer until custom lint rules are added.
 
 ---
 
@@ -316,5 +282,3 @@ For the full model and the *why*, see the decisions docs:
   - **Status** - one word only: `current` or `outdated`. No reasoning in this field - if an `outdated` file needs explaining, say why in the file's own body, not the table.
   - Dated/historical-by-design docs (`docs/_meta/audit-reports/`, `docs/_meta/plans/`) are exempt - their filenames already carry a date and staleness is expected, not a defect to track.
   - Don't backfill this table onto a file until it's actually touched for another reason, or a meta-doc sweep explicitly asks for it across a directory.
-
----

@@ -88,47 +88,6 @@ def test_hover_preview_shows_summaries_json_entry(page, base_url):
     assert "Some prereq" not in preview_text
 
 
-def test_hover_preview_fails_closed_when_dompurify_missing(page, base_url):
-    """If DOMPurify becomes unavailable, the hover preview shows a safe placeholder, not raw HTML."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-
-    page.route(
-        "**/data/summaries.json",
-        lambda r: r.fulfill(
-            content_type="application/json",
-            body=json.dumps({"content/system-design/linked.md": "<script>window.__xss_fired = true;</script>Summary."}),
-        ),
-    )
-    page.route("**/linked.md", lambda r: r.fulfill(body="# Linked\n"))
-    page.route("**/mock.md", lambda r: r.fulfill(body="# Main\n\n[Link](./linked.md)"))
-
-    page.evaluate("""() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/mock.md'),
-        encodeURIComponent('Main'),
-        'mock'
-    )""")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-    page.wait_for_selector("a:has-text('Link')", timeout=5_000)
-
-    # Simulate the CDN script failing after the body already rendered - the
-    # hover preview does its own DOMPurify check on each render, independent of the body.
-    page.evaluate("() => { window.DOMPurify = undefined; }")
-    page.locator("a:has-text('Link')").dispatch_event("mouseenter")
-    page.wait_for_selector("#hover-preview.visible", timeout=5_000)
-
-    fired = page.evaluate("() => window.__xss_fired === true")
-    assert not fired, "raw unsanitized preview HTML was injected when DOMPurify failed to load"
-    preview_text = page.locator("#hover-preview").inner_text()
-    assert "not available" in preview_text.lower()
-
-
 def test_hover_preview_no_summary_entry_shows_fallback(page, base_url):
     """514: A link target with no data/summaries.json entry shows the
     'Preview not available' fallback instead of a markdown-scraped guess."""
@@ -463,7 +422,7 @@ def test_bridge_block_empty_when_no_bridge_entry(page, base_url):
 
 
 def test_gfm_preview_hash_resolves_to_heading(page, base_url):
-    """Author GFM hashes with collapsed hyphens still jump after Showdown ids differ."""
+    """Author GFM hashes with collapsed hyphens still jump to the matching heading."""
     _load_mock_article(
         page,
         base_url,

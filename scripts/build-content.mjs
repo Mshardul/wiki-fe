@@ -21,3 +21,8 @@ const to = "public/data";
 mkdirSync(to, { recursive: true });
 for (const f of GENERATED_FILES) copyFileSync(join("lib/content/generated", f), join(to, f));
 for (const f of AUTHORED_FILES) copyFileSync(join("data", f), join(to, f));
+
+// Committed baseline for search/backlinks/broken-links (bridges.json stays hand-authored).
+for (const f of ["search-index.json", "backlinks.json", "broken-links.json"]) {
+  copyFileSync(join("lib/content/generated", f), join("content", f));
+}

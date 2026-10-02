@@ -32,6 +32,35 @@ describe("api client", () => {
     expect(init.headers["X-Request-Id"]).toMatch(/[0-9a-f-]{36}/);
   });
 
+  it.each([
+    ["bookmarks", "add", "POST"],
+    ["bookmarks", "remove", "DELETE"],
+    ["completions", "add", "POST"],
+    ["completions", "remove", "DELETE"],
+    ["recents", "add", "POST"],
+  ] as const)("%s.%s sends client_ts with the mutation body", async (domain, op, method) => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 204,
+      ok: true,
+      headers: new Headers(),
+      json: () => Promise.resolve(undefined),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const call = (
+      api[domain] as unknown as Record<string, (w: string, p: string) => Promise<void>>
+    )[op] as (w: string, p: string) => Promise<void>;
+    await call("system-design", "content/system-design/components/caching.md");
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.method).toBe(method);
+    const body = JSON.parse(init.body as string) as { client_ts: string };
+    expect(body).toMatchObject({
+      wiki_id: "system-design",
+      path: "content/system-design/components/caching.md",
+    });
+    expect(Number.isNaN(Date.parse(body.client_ts))).toBe(false);
+  });
+
   it("throws ApiError with code/status/requestId on a 4xx envelope", async () => {
     vi.stubGlobal(
       "fetch",

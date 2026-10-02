@@ -108,6 +108,25 @@ def _article(page, base_url, slug=SLUG):
     page.wait_for_selector("#markdown-body", timeout=10_000)
 
 
+def _hl_article(page, base_url, slug=SLUG, *, clear=True):
+    """Real built article for highlight/marker e2e. clear=True wipes prior highlight/marker storage."""
+    page.goto(f"{base_url}/{slug}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
+    if clear:
+        page.evaluate(
+            """() => {
+                for (const k of Object.keys(localStorage)) {
+                    if (k.startsWith('wiki-highlights-') || k.startsWith('wiki-markers-')) {
+                        localStorage.removeItem(k);
+                    }
+                }
+            }"""
+        )
+        page.reload(wait_until="domcontentloaded")
+        page.wait_for_selector("#markdown-body", timeout=10_000)
+    force_paint(page)
+
+
 def _load_mock_article(page, base_url, content, slug="mock"):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector("#view-home.active", timeout=8_000)
@@ -943,19 +962,6 @@ x = greet("world")
 ```
 """
 
-ARTICLE_WITH_DIFF = """\
-# Diff Test
-
-## Section
-
-```diff
-+ added line here
-- removed line here
-  context line
-```
-"""
-
-
 @pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
 def test_code_block_has_traffic_lights(page, base_url):
     """Each code block gets a .code-header containing three .tl traffic-light dots."""
@@ -1044,41 +1050,6 @@ def test_code_block_without_lang_lacks_has_lang_label_class(page, base_url):
     }""")
     assert has_class is False, (
         "<pre> without language tag must not have has-lang-label class"
-    )
-
-
-# ── Diff block highlighting ───────────────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_diff_css_rules_for_additions_and_deletions(page, base_url):
-    """CSS rules give .hljs-addition and .hljs-deletion display:block."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_DIFF, slug="diff-css")
-    page.wait_for_selector("#markdown-body", timeout=5_000)
-
-    result = page.evaluate("""() => {
-        const body = document.getElementById('markdown-body');
-        const pre = document.createElement('pre');
-        const code = document.createElement('code');
-        code.className = 'language-diff';
-        const add = document.createElement('span');
-        add.className = 'hljs-addition';
-        const del = document.createElement('span');
-        del.className = 'hljs-deletion';
-        code.appendChild(add);
-        code.appendChild(del);
-        pre.appendChild(code);
-        body.appendChild(pre);
-        const addDisplay = getComputedStyle(add).display;
-        const delDisplay = getComputedStyle(del).display;
-        body.removeChild(pre);
-        return { addDisplay, delDisplay };
-    }""")
-    assert result["addDisplay"] == "block", (
-        f".hljs-addition display should be block, got: {result['addDisplay']}"
-    )
-    assert result["delDisplay"] == "block", (
-        f".hljs-deletion display should be block, got: {result['delDisplay']}"
     )
 
 
@@ -3069,6 +3040,9 @@ Alpha word here and Beta word there for two marker offsets.
 """
 
 
+
+
+
 def _select_word(page, word):
     """Selects the first occurrence of `word` inside #markdown-body via a real Range,
     then fires the mouseup our production code listens on."""
@@ -3096,30 +3070,48 @@ def _select_word(page, word):
     )
 
 
-@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
+def _click_emoji_toolbar_btn(page, index=0):
+    """Click a toolbar emoji without Playwright scrolling.
+
+    Locator.click scrolls the button into view; Highlights.tsx hides the toolbar on
+    scroll (and clears activeRange), so the click either misses or creates nothing.
+    """
+    page.evaluate(
+        """(i) => {
+            const bar = document.querySelector('.highlight-toolbar');
+            if (!bar || bar.classList.contains('hidden')) {
+                throw new Error('highlight toolbar not visible');
+            }
+            const btn = bar.querySelectorAll('.highlight-toolbar-btn--emoji')[i];
+            if (!btn) throw new Error('emoji toolbar button missing at index ' + i);
+            btn.click();
+        }""",
+        index,
+    )
+
+
 def test_selecting_text_shows_highlight_toolbar(page, base_url):
     """Selecting text inside the article body reveals the floating highlight toolbar."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-toolbar-show")
-    _select_word(page, "selectable")
+    _hl_article(page, base_url)
+    _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     assert page.locator(".highlight-toolbar-btn--highlight").is_visible()
     assert page.locator(".highlight-toolbar-btn--emoji").count() == 6
 
 
-@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_highlight_create_remove_and_keyboard_remove_lifecycle(page, base_url):
     """Chained: create a highlight, remove it via the popover, re-create, then remove via keyboard Enter."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-lifecycle")
+    _hl_article(page, base_url)
 
     # Phase 1: create, verify DOM wrap + localStorage persistence.
-    _select_word(page, "selectable")
+    _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
     mark = page.locator("#markdown-body .wiki-highlight").first
-    assert mark.inner_text() == "selectable"
+    assert mark.inner_text() == "avalanches"
 
     stored = page.evaluate(
         """() => {
@@ -3131,7 +3123,7 @@ def test_highlight_create_remove_and_keyboard_remove_lifecycle(page, base_url):
     assert stored is not None and len(stored) == 1, (
         f"Expected exactly one persisted highlight entry, got: {stored}"
     )
-    assert stored[0]["snippet"] == "selectable"
+    assert stored[0]["snippet"] == "avalanches"
 
     # Phase 2: remove via the popover, verify DOM + storage both clear.
     page.locator("#markdown-body .wiki-highlight").first.click()
@@ -3152,7 +3144,7 @@ def test_highlight_create_remove_and_keyboard_remove_lifecycle(page, base_url):
     assert remaining == 0, "Highlight entry still present in localStorage after popover removal"
 
     # Phase 3: re-create, then remove via keyboard Enter + Remove instead of a click.
-    _select_word(page, "selectable")
+    _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
@@ -3169,54 +3161,60 @@ def test_highlight_create_remove_and_keyboard_remove_lifecycle(page, base_url):
     )
 
 
-@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_highlight_persists_and_reapplies_on_reload(page, base_url):
     """A highlight created in one render re-appears after reloading the same article."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reload")
-    _select_word(page, "selectable")
+    _hl_article(page, base_url)
+    _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reload")
+    _hl_article(page, base_url, clear=False)
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
-    assert page.locator("#markdown-body .wiki-highlight").first.inner_text() == "selectable"
+    assert page.locator("#markdown-body .wiki-highlight").first.inner_text() == "avalanches"
 
 
-@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_multiple_markers_reapply_on_reload(page, base_url):
     """Two markers at different offsets must both re-apply after reload without corrupting offsets."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_MULTI_MARKERS, slug="multi-marker")
-    _select_word(page, "Alpha")
-    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
-    page.locator(".highlight-toolbar-btn--emoji").first.click()
-    _select_word(page, "Beta")
-    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
-    page.locator(".highlight-toolbar-btn--emoji").nth(1).click()
-    page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
-    assert page.locator("#markdown-body .wiki-marker").count() == 2
-
-    page.reload(wait_until="domcontentloaded")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-    page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
-    assert page.locator("#markdown-body .wiki-marker").count() == 2
-
-
-@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
-def test_marker_create_and_remove_lifecycle(page, base_url):
-    """Chained: create an emoji marker and verify persistence, then remove it via the popover."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-lifecycle")
-
-    # Phase 1: create, verify DOM badge + localStorage persistence.
-    _select_word(page, "testing")
+    _hl_article(page, base_url)
+    _select_word(page, "absorb")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
-    page.locator(".highlight-toolbar-btn--emoji").first.click()
+    _click_emoji_toolbar_btn(page, 0)
+    page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
+    # First marker clears the selection; wait for toolbar hide before selecting again
+    # or selectionchange/click races leave the second mouseup ignored.
+    page.wait_for_function(
+        "() => document.querySelector('.highlight-toolbar')?.classList.contains('hidden') === true",
+        timeout=3_000,
+    )
+    _select_word(page, "hammer")
+    force_paint(page)
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=5_000)
+    _click_emoji_toolbar_btn(page, 1)
+    page.wait_for_function(
+        "() => document.querySelectorAll('#markdown-body .wiki-marker').length === 2",
+        timeout=5_000,
+    )
+
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
+    page.wait_for_function(
+        "() => document.querySelectorAll('#markdown-body .wiki-marker').length === 2",
+        timeout=5_000,
+    )
+
+
+def test_marker_create_and_remove_lifecycle(page, base_url):
+    """Chained: create an emoji marker and verify persistence, then remove it via the popover."""
+    _hl_article(page, base_url)
+
+    # Phase 1: create, verify DOM badge + localStorage persistence.
+    _select_word(page, "crucially")
+    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
+    force_paint(page)
+    _click_emoji_toolbar_btn(page, 0)
     page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
 
     stored = page.evaluate(
@@ -3225,7 +3223,14 @@ def test_marker_create_and_remove_lifecycle(page, base_url):
     assert stored is not None, "No wiki-markers-* key written to localStorage"
 
     # Phase 2: remove via the popover, verify DOM + storage both clear.
-    page.locator("#markdown-body .wiki-marker").first.click()
+    # Marker tick is ~3px wide — Playwright scroll/hit-testing flakes; fire a real click in-page.
+    page.evaluate(
+        """() => {
+            const m = document.querySelector('#markdown-body .wiki-marker');
+            if (!m) throw new Error('marker missing');
+            m.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        }"""
+    )
     page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
     force_paint(page)
     page.locator(".highlight-remove-btn").click()
@@ -3243,28 +3248,27 @@ def test_marker_create_and_remove_lifecycle(page, base_url):
     assert remaining == 0, "Marker entry still present in localStorage after removal"
 
 
-@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_emoji_marker_persists_and_reapplies_on_reload(page, base_url):
     """A marker created in one render re-appears after reloading the same article."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-reload")
-    _select_word(page, "testing")
+    _hl_article(page, base_url)
+    _select_word(page, "crucially")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
-    page.locator(".highlight-toolbar-btn--emoji").first.click()
+    _click_emoji_toolbar_btn(page, 0)
     page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
 
     marker_emoji = page.locator("#markdown-body .wiki-marker").first.text_content()
 
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-reload")
+    _hl_article(page, base_url, clear=False)
     page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
     assert page.locator("#markdown-body .wiki-marker").first.text_content() == marker_emoji
 
 
-@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
+@pytest.mark.skip(reason="requires mutable mock article (snippet shift/remove) — not portable to static export; covered by vitest relocation unit tests")
 def test_highlight_reanchor_and_drop_on_upstream_edit(page, base_url):
     """Chained: an upstream edit that shifts offsets re-anchors the highlight via snippet match; a second edit that removes the snippet entirely drops the stale entry with a toast instead."""
     _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-reanchor-drop")
-    _select_word(page, "selectable")
+    _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
@@ -3278,7 +3282,7 @@ def test_highlight_reanchor_and_drop_on_upstream_edit(page, base_url):
     page.evaluate("() => sessionStorage.clear()")
     _load_mock_article(page, base_url, shifted, slug="hl-reanchor-drop")
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
-    assert page.locator("#markdown-body .wiki-highlight").first.inner_text() == "selectable"
+    assert page.locator("#markdown-body .wiki-highlight").first.inner_text() == "avalanches"
 
     # Phase 2: remove the highlighted snippet entirely - the stale entry is dropped, not misplaced.
     removed = shifted.replace("some selectable text", "completely different words")
@@ -3297,30 +3301,28 @@ def test_highlight_reanchor_and_drop_on_upstream_edit(page, base_url):
     assert remaining == 0, "Stale highlight entry should be dropped from storage, not kept"
 
 
-@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_highlight_toolbar_buttons_are_keyboard_labeled(page, base_url):
-    """Every toolbar button (highlight + 6 emoji + save-as-card) has a discernible aria-label."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-toolbar-a11y")
-    _select_word(page, "selectable")
+    """Every toolbar button (highlight + 6 emoji) has a discernible aria-label."""
+    _hl_article(page, base_url)
+    _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
 
     labels = page.evaluate(
         """() => [...document.querySelectorAll('.highlight-toolbar-btn')]
             .map(b => b.getAttribute('aria-label'))"""
     )
-    assert len(labels) == 8, (
-        f"Expected 8 toolbar buttons (1 highlight + 6 emoji + 1 save-as-card), got {len(labels)}"
+    assert len(labels) == 7, (
+        f"Expected 7 toolbar buttons (1 highlight + 6 emoji), got {len(labels)}"
     )
     assert all(label and label.strip() for label in labels), (
         f"Every toolbar button must have a non-empty aria-label, got: {labels}"
     )
 
 
-@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_highlight_mark_is_keyboard_focusable(page, base_url):
     """A created highlight is a keyboard-reachable, labeled element (tabindex + aria-label)."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-focusable")
-    _select_word(page, "selectable")
+    _hl_article(page, base_url)
+    _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
@@ -3336,11 +3338,10 @@ def test_highlight_mark_is_keyboard_focusable(page, base_url):
     assert result["label"], "Highlight mark must have an aria-label"
 
 
-@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_keyboard_enter_removes_focused_highlight(page, base_url):
     """Pressing Enter on a focused highlight opens the remove popover and Remove clears it."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="hl-kbd-remove")
-    _select_word(page, "selectable")
+    _hl_article(page, base_url)
+    _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
@@ -3351,6 +3352,7 @@ def test_keyboard_enter_removes_focused_highlight(page, base_url):
     page.wait_for_selector(".highlight-remove-popover:not(.hidden)", timeout=3_000)
     force_paint(page)
 
+    force_paint(page)
     page.locator(".highlight-remove-btn").click()
     page.wait_for_function(
         "() => document.querySelectorAll('#markdown-body .wiki-highlight').length === 0",
@@ -3378,11 +3380,10 @@ More selectable prose after.
 """
 
 
-@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_emoji_marker_buttons_hidden_when_selection_in_code(page, base_url):
     """484: Selecting inside a code block keeps highlight but hides emoji marker buttons."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_CODE_FOR_MARKERS, slug="marker-code-guard")
-    _select_word(page, "inside")
+    _hl_article(page, base_url, slug="system-design/hld/url-shortener")
+    _select_word(page, "url_mappings")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
 
     assert page.locator(".highlight-toolbar-btn--highlight").is_visible()
@@ -3393,18 +3394,18 @@ def test_emoji_marker_buttons_hidden_when_selection_in_code(page, base_url):
     assert visible_emoji == 0, "Emoji marker buttons must be hidden for code selections"
 
     # Highlight-only still works inside code.
+    force_paint(page)
     page.locator(".highlight-toolbar-btn--highlight").click()
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
 
-@pytest.mark.skip(reason="highlights/markers e2e deferred to Phase 9 — mock-article fixture rewrite")
 def test_emoji_marker_is_narrow_accent_tick(page, base_url):
     """485: Marker renders as a narrow accent tick, not a full-size inline glyph."""
-    _load_mock_article(page, base_url, ARTICLE_FOR_HIGHLIGHTS, slug="marker-accent-tick")
-    _select_word(page, "testing")
+    _hl_article(page, base_url)
+    _select_word(page, "crucially")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
-    page.locator(".highlight-toolbar-btn--emoji").first.click()
+    _click_emoji_toolbar_btn(page, 0)
     page.wait_for_selector("#markdown-body .wiki-marker", timeout=3_000)
 
     metrics = page.evaluate(

@@ -16,6 +16,7 @@ describe("Breadcrumb", () => {
     const crumbs = buildCrumbs("/dsa/patterns/sliding-window/", "Sliding Window");
     expect(crumbs.map((c) => c.label)).toEqual(["DSA", "Patterns", "Sliding Window"]);
     expect(crumbs[0]?.href).toBe("/dsa/");
+    expect(crumbs[1]?.href).toBeUndefined();
     expect(crumbs[2]?.href).toBeUndefined();
   });
 

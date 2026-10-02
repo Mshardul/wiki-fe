@@ -59,37 +59,7 @@ repos:
         types: [markdown]
         pass_filenames: true
 
-  # ── Generated content indexes (search-index runs first, others consume its output) ──
-  - repo: local
-    hooks:
-      - id: build-search-index
-        name: regenerate content/search-index.json
-        language: system
-        entry: .venv/bin/python3 scripts/build_search_index.py
-        files: '^content/.*\.md$'
-        pass_filenames: false
-      - id: build-backlinks
-        name: regenerate content/backlinks.json
-        language: system
-        entry: .venv/bin/python3 scripts/build_backlinks.py
-        files: '^content/.*\.md$'
-        pass_filenames: false
-      - id: build-broken-links
-        name: regenerate content/broken-links.json
-        language: system
-        entry: .venv/bin/python3 scripts/build_broken_links.py
-        files: '^content/.*\.md$'
-        pass_filenames: false
-
-  # ── bridges.json (hand-authored, unlike the generated files above) ──────────
-  - repo: local
-    hooks:
-      - id: validate-bridges
-        name: validate content/bridges.json
-        language: system
-        entry: .venv/bin/python3 scripts/validate_bridges.py
-        files: '^content/bridges\.json$'
-        pass_filenames: false
+  # Generated content indexes + bridges validation: produced/gated by `pnpm build` (`buildContent()`).
 
   # ── Hygiene ─────────────────────────────────────────────────────────────────
   # content/ (1.5M of authored markdown) only excluded on the two whitespace fixers below -

@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { CANONICAL_BASE } from "@/lib/config";
-import { getArticle, getArticleSlugs, getManifest } from "@/lib/content";
+import { getArticle, getArticleSlugs } from "@/lib/content";
 
 // client islands in the tree (EscapeToIndex, …) call useRouter/usePathname; the SSR-markup
 // test doesn't mount the app router, so stub the hooks.
@@ -53,13 +53,10 @@ describe("article route", () => {
   });
 
   it("renders a stub banner instead of an article body for a stub", async () => {
-    const stub = (await getManifest()).articles.find((a) => a.isStub);
-    if (!stub) return;
-    const [vertical, ...slug] = stub.path
-      .replace(/^\.?\/?content\//, "")
-      .replace(/\.md$/, "")
-      .split("/");
-    const el = await Article({ params: Promise.resolve({ vertical: vertical ?? "", slug }) });
+    // Known stub — avoid getManifest()/full corpus rebuild in the unit project.
+    const el = await Article({
+      params: Promise.resolve({ vertical: "dsa", slug: ["patterns", "cyclic-sort"] }),
+    });
     const html = renderToStaticMarkup(el);
     expect(html).toContain("content-stub");
     expect(html).toContain("hasn&#x27;t been written yet");

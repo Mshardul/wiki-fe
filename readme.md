@@ -1,6 +1,6 @@
 # Wiki
 
-A fast, offline-capable reference wiki for interview prep. Two verticals - **System Design** and **Data Structures & Algorithms** - share one app: a single-page app with no build step, no framework, no server. Content is plain markdown; the app turns it into a searchable, linkable, themeable site.
+A fast, offline-capable reference wiki for interview prep. Two verticals - **System Design** and **Data Structures & Algorithms** - share one app: Next.js (App Router) static export to GitHub Pages. Content is plain markdown; a build-time pipeline turns it into a searchable, linkable, themeable site with client islands for interactivity.
 
 ---
 
@@ -24,46 +24,43 @@ These goals drive the writer/rater params: the DSA params exist to make an artic
 | **System Design**                | ⚙️   | `content/system-design/` | ~51 articles            |
 | **Data Structures & Algorithms** | 🧩   | `content/dsa/`           | scaffolded, content WIP |
 
-Each vertical is one entry in the `WIKIS` array in `js/state.js` - that single entry gives it a home card, an index view, and routing for free. Adding a vertical is data, not code.
+Each vertical is one entry in `lib/content/verticals.ts` - that registry drives discovery, home cards, index routes, and `generateStaticParams`. Adding a vertical is data, not a new app shell.
 
 ---
 
 ## Dev setup
 
 ```bash
-brew install lychee   # one-time: needed for the dead-link pre-commit hook
-make install          # creates .venv, installs test deps + Chromium, wires pre-commit
+# Node 24.x + pnpm 10.34.5 (see package.json engines / packageManager)
+pnpm install          # app deps
+make install          # .venv + Playwright Chromium + pre-commit (e2e)
 ```
-
-`make install` will warn if lychee is missing.
 
 ---
 
 ## How to run
 
-No build. The app fetches `.md` files over HTTP, so it must be served - opening `index.html` from `file://` won't load content.
-
 ```bash
-# from the wiki/ directory, any static server works:
-python3 -m http.server 8000
-# then open http://localhost:8000
+pnpm dev              # Next dev server (base path /wiki-fe/)
+# or production-shaped:
+pnpm build            # content:build + next build + Serwist → out/
+# then serve out/ under /wiki-fe/ (e2e conftest does this)
 ```
 
-A service worker (`wiki-sw.js`) caches assets for offline use. **Any change to `wiki-sw.js` requires a cache version bump** - otherwise clients keep the stale cache.
+Offline caching is Serwist (`app/sw.ts`) — precache hashes update on build; no manual cache-version bump.
 
 ---
 
 ## Architecture (brief)
 
-Single-page app, vanilla JS ES modules, no TypeScript, no framework.
+Next.js App Router, TypeScript, static export to `out/` on GitHub Pages (`/wiki-fe/`).
 
-- **Boot:** `index.html` → `wiki.css` → `app.js` → registers service worker → reads state → routes to a view.
-- **Views:** `#view-home` (vertical cards), `#view-index` (one vertical's sections), `#view-content` (one article). One active at a time.
-- **Content:** each vertical's `index.md` lists its articles in markdown tables (`parseIndexMd`). The app loads only files reachable from there - nothing globs the directory. Articles are markdown → HTML via Showdown, with Mermaid diagrams, highlight.js, hover link-previews, and a generated TOC.
-- **Persistence:** `localStorage` only (settings, bookmarks, recents, read-tracking). No server, no database.
+- **Build-time content:** `lib/content/` (unified/remark/rehype + Shiki) renders markdown → HTML; `pnpm content:build` also emits committed `content/{search-index,backlinks,broken-links}.json`.
+- **Routes:** real paths under `app/` — home, `[vertical]`, article `[...slug]`, dashboard, changelog, admin, offline.
+- **Islands:** interactive behaviour is client components under `components/` (search, auth, highlights, Mermaid, …). Markup comes from the pipeline; islands never re-parse markdown.
+- **Persistence:** `lib/storage/` → localStorage (+ optional sync via `wiki-be` through `lib/api.ts`).
 
-`js/`: `app.js` + `app/` (entry/router/bootstrap) · `state.js` (WIKIS registry, config, caches) · `content/` (post-processing) · `render/` (views + index parser) · `search.js` (⌘K) · `storage/` (localStorage) · `auth.js` (auth domain) · `api.js` (backend wrapper). Full file-by-file map: [CLAUDE.md](./CLAUDE.md) FILE MAP.
-`css/`: tokens-first - all design tokens in `tokens.css`, then base / themes / components / per-view modules, aggregated by `wiki.css`.
+`app/` routes · `lib/` content/api/storage/search · `components/` per-feature islands · `css/` tokens-first. Full file-by-file map: [CLAUDE.md](./CLAUDE.md) FILE MAP.
 
 **Deeper detail for working on the code lives in [CLAUDE.md](./CLAUDE.md)** - file map, task→file routing, conventions.
 
@@ -120,7 +117,7 @@ Files that don't update themselves - review/update these on a recurring basis, n
 | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | `docs/_meta/audit-prompts/auth-ux-audit-agent-prompt.md`                              | Auth flow/UI changes meaningfully - keep journey checklist matching real steps                    |
 | `docs/_meta/audit-prompts/mobile-ux-audit-agent-prompt.md`                            | New page/component added, or viewport/breakpoint strategy changes                                 |
-| `docs/_meta/audit-prompts/ui-components-audit-agent-prompt.md`                        | New JS component added/removed - update component roster (31 currently); known interaction points list needs manual review as new components are added |
+| `docs/_meta/audit-prompts/ui-components-audit-agent-prompt.md`                        | New island/component added/removed - update component roster; known interaction points list needs manual review as new components are added |
 | `docs/_meta/audit-prompts/codebase-quality-audit-agent-prompt.md`                     | Rare - only if module layout or shared-helper conventions change structurally                      |
 | `docs/_meta/audit-prompts/security-audit-agent-prompt.md`                             | New innerHTML/localStorage/postMessage/SW-cache code path added, or Semgrep rule packs change        |
 | `CLAUDE.md` FILE MAP                                                                   | New `js/` file added/removed - run `find js -name '*.js'` and diff against the FILE MAP subtables    |

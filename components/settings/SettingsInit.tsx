@@ -27,7 +27,10 @@ export function SettingsInit() {
     const unsubSettings = subscribeSettings(() => applySettings(getSettings()));
     const unbindOs = bindOsThemeListener();
     const unbindKeys = bindHotkeys(() => ctxRef.current);
+    // Hotkeys bind after hydration; automation waits on this to avoid pressing keys into the void.
+    document.documentElement.dataset.hotkeysReady = "true";
     return () => {
+      delete document.documentElement.dataset.hotkeysReady;
       unsubSettings();
       unbindOs();
       unbindKeys();

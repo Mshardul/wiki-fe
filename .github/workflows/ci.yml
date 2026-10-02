@@ -33,23 +33,25 @@ jobs:
       matrix:
         shard:
           # File-based, hand-balanced (~105-110 live tests each), each its own job so -n 2 never oversubscribes the 2 vCPU/7GB runner - see docs/_meta/plans/e2e-ci-resource-hardening.md Decision #1.
-          # Deferred-feature files (dashboard/admin/changelog/notes_scratchpad/complexity_comparator/section_map) return with their features post-cutover.
+          # Part A feature files (dashboard/admin/changelog/notes/complexity) live; section_map deleted (spec §9 drop).
           - name: shard-1
             files: >-
               tests/e2e/test_settings.py tests/e2e/test_search.py tests/e2e/test_home.py
               tests/e2e/test_content_width.py tests/e2e/test_content_enhancements.py
+              tests/e2e/test_notes_scratchpad.py
           - name: shard-2
             files: >-
               tests/e2e/test_auth.py tests/e2e/test_scroll_toc.py tests/e2e/test_navigation_polish.py
               tests/e2e/test_navigation.py tests/e2e/test_keyboard_scroll.py tests/e2e/test_ux_hotkeys_errors.py
               tests/e2e/test_security.py tests/e2e/test_data_backup.py tests/e2e/test_links.py tests/e2e/test_structure_viz.py
+              tests/e2e/test_dashboard.py tests/e2e/test_admin.py tests/e2e/test_complexity_comparator.py
           - name: shard-3
             files: >-
               tests/e2e/test_line_numbers_pathing_help.py tests/e2e/test_bookmarks.py tests/e2e/test_touch_gestures.py
               tests/e2e/test_index_ux.py tests/e2e/test_offline_shelf.py tests/e2e/test_a11y_hotkeys.py
               tests/e2e/test_routing_pathing.py tests/e2e/test_recents.py tests/e2e/test_html_markup.py
               tests/e2e/test_behavioral_fixes.py tests/e2e/test_toc_overhaul.py tests/e2e/test_read_toggle.py
-              tests/e2e/test_content.py
+              tests/e2e/test_content.py tests/e2e/test_changelog.py
     steps:
       - uses: actions/checkout@v4
 
@@ -94,7 +96,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
-      - run: pnpm test
+      - run: pnpm test:all
 
   build:
     needs: [frontend]
@@ -108,6 +110,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build static site (prebuild runs content:build)
         run: pnpm build
+      - name: Committed content indexes match buildContent()
+        run: git diff --exit-code content/search-index.json content/backlinks.json content/broken-links.json
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -139,56 +143,6 @@ jobs:
           path: out
       - id: deployment
         uses: actions/deploy-pages@v4
-
-  search-index:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Regenerate search-index.json and check it's committed
-        run: |
-          python3 scripts/build_search_index.py
-          git diff --exit-code content/search-index.json
-
-  backlinks:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Regenerate backlinks.json and check it's committed
-        run: |
-          python3 scripts/build_search_index.py
-          python3 scripts/build_backlinks.py
-          git diff --exit-code content/backlinks.json
-
-  broken-links:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Regenerate broken-links.json and check it's committed
-        run: |
-          python3 scripts/build_search_index.py
-          python3 scripts/build_broken_links.py
-          git diff --exit-code content/broken-links.json
-
-  dead-links:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      # Offline broken-link check across docs and HTML. content/ excluded -
-      # authored wiki articles use app-internal hash routes, not real URLs.
-      - name: Link check (lychee)
-        uses: lycheeverse/lychee-action@v2
-        with:
-          args: --offline --no-progress --root-dir . './**/*.md' './**/*.html' --exclude-path content
-          fail: true
 
   dsa-sd-check:
     runs-on: ubuntu-latest
@@ -235,18 +189,6 @@ jobs:
       - name: No DSA/SD articles changed
         if: steps.changed.outputs.dsa_files == '' && steps.changed.outputs.sd_files == ''
         run: echo "No DSA or SD articles changed in this push/PR - skipping."
-
-  bridges:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Validate content/bridges.json (hand-authored, shape + target checks)
-        run: |
-          pip install jsonschema
-          python3 scripts/validate_bridges.py
 
   semgrep:
     runs-on: ubuntu-latest

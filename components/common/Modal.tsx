@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { lockBodyScroll, unlockBodyScroll } from "./lockBodyScroll";
 import { type ModalEntry, markClosed, markOpened, registerModal } from "./modalRegistry";
@@ -33,7 +33,8 @@ export function Modal({
     close: () => onCloseRef.current(),
   });
 
-  useEffect(() => {
+  // Layout effect: the registry must report open as soon as the dialog is in the DOM, before any keypress can dispatch.
+  useLayoutEffect(() => {
     onCloseRef.current = onClose;
     openRef.current = open;
   });

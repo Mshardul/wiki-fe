@@ -1,38 +1,38 @@
 {
   "./content/dsa/paths/cp-weighted.md": [
     {
-      "target": "./content/dsa/index.md",
-      "title": "CP-weighted"
+      "title": "CP-weighted",
+      "target": "./content/dsa/index.md"
     }
   ],
   "./content/dsa/paths/senior-depth.md": [
     {
-      "target": "./content/dsa/index.md",
-      "title": "Senior-depth"
+      "title": "Senior-depth",
+      "target": "./content/dsa/index.md"
     }
   ],
   "./content/dsa/paths/standard-swe.md": [
     {
-      "target": "./content/dsa/index.md",
-      "title": "Standard SWE"
+      "title": "Standard SWE",
+      "target": "./content/dsa/index.md"
     }
   ],
   "./content/system-design/paths/components-foundation.md": [
     {
-      "target": "./content/system-design/index.md",
-      "title": "Components Foundation"
+      "title": "Components Foundation",
+      "target": "./content/system-design/index.md"
     }
   ],
   "./content/system-design/paths/distributed-depth.md": [
     {
-      "target": "./content/system-design/index.md",
-      "title": "Distributed Depth"
+      "title": "Distributed Depth",
+      "target": "./content/system-design/index.md"
     }
   ],
   "./content/system-design/paths/hld-interview-loop.md": [
     {
-      "target": "./content/system-design/index.md",
-      "title": "HLD Interview Loop"
+      "title": "HLD Interview Loop",
+      "target": "./content/system-design/index.md"
     }
   ]
 }

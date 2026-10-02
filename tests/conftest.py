@@ -44,6 +44,20 @@ def disable_animations(page):
     """)
 
 
+@pytest.fixture(autouse=True)
+def wait_for_hotkeys_ready(page):
+    """Hotkeys bind after hydration; hold every in-app goto until they are live so early key presses aren't lost under load."""
+    original_goto = page.goto
+
+    def goto(url, **kwargs):
+        response = original_goto(url, **kwargs)
+        if url.startswith("http://localhost") and BASE_PREFIX in url:
+            page.wait_for_selector("html[data-hotkeys-ready]", state="attached", timeout=15_000)
+        return response
+
+    page.goto = goto
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _ensure_build():
     """The e2e suite runs against the static Next export. Build it if it's missing; a stale

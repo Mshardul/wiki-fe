@@ -14,11 +14,12 @@ def _go_to_article(page, base_url, slug="dsa/data-structures/array"):
 
 
 def _open_comparator(page):
-    page.keyboard.press(",")
-    page.wait_for_selector('[role="dialog"][aria-label="Preferences"]', timeout=3_000)
+    # Prefer the topbar control over the "," hotkey — hotkey races with focus/typing checks.
+    page.locator("button[aria-label='Preferences']").click()
+    page.wait_for_selector('[role="dialog"][aria-label="Preferences"]', timeout=5_000)
     page.locator('[data-action="prefs-tab"][data-tab="actions"]').click()
     page.locator('[data-action="complexity-compare-open"]').click()
-    page.wait_for_selector(DIALOG, timeout=3_000)
+    page.wait_for_selector(DIALOG, timeout=5_000)
 
 
 def _close_via_button(page):

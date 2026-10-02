@@ -104,7 +104,6 @@
   }
 
   /* Syntax highlight tokens flattened to ink */
-  .markdown-body pre code [class*="hljs-"],
   .markdown-body pre code span {
     color: #000 !important;
     background: transparent !important;
