@@ -392,7 +392,7 @@ Test: seeded broken-links data → correct row count; an article with zero backl
   - the live production `/wiki-fe/` URL — every route loads, offline works, auth + sync work against live `wiki-be`, every page titled, `robots.txt` disallows all. **No Lighthouse SEO check** (spec §14).
   - grep the repo for `Showdown`, `showdown`, `highlight.js`, `hljs`, `DOMPurify`, `wiki-sw.js`, `js/app.js` — zero live references (only in docs as historical notes, if anywhere)
 
-- [ ] **Step 4: Final checkpoint** — report. The migration is complete: Next.js App Router, static export, TypeScript, pnpm, build-time content pipeline, island interactivity, full feature parity minus the dropped decorations, offline, reader-facing metadata, docs rewritten, the `wiki-be` ticket resolved. SEO/discoverability remains a separate public-launch epic (spec §14).
+- [x] **Step 4: Final checkpoint** — report. The migration is complete: Next.js App Router, static export, TypeScript, pnpm, build-time content pipeline, island interactivity, full feature parity minus the dropped decorations, offline, reader-facing metadata, docs rewritten, the `wiki-be` ticket resolved. SEO/discoverability remains a separate public-launch epic (spec §14).
 
 **Exit criteria:** `sub-spec-5-exit.md` all ✅. The `wiki-be` ticket is resolved. The full toolchain + e2e + build are green. The vanilla stack has no live references anywhere in the codebase.
 

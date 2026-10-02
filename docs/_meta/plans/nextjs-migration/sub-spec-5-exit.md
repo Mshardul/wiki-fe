@@ -1,13 +1,13 @@
 # Sub-spec 5 exit checklist — `post-cutover.md` Part B
 
-Part B (Phases 8–10) plus the Phase 11 confirmation. Recorded **2026-10-02**. Phases 8–10 remain uncommitted pending user review.
+Part B (Phases 8–10) plus the Phase 11 confirmation. Recorded **2026-10-02**. Committed as `e560d33` + `a67d1e9`.
 
 ## Evidence against each spec §5 Sub-spec 5 exit criterion
 
 | Criterion | Status | Evidence |
 | --- | --- | --- |
 | Docs match shipped code | ✅ | Phase 10: `CLAUDE.md`, `CONVENTIONS.md`, `readme.md`, root `CLAUDE.md` and the `fe-next-stack` memory describe the Next stack; read back once, no live vanilla-era claims. |
-| CI green end to end | ◐ | Hosted CI [run 36907091637](https://github.com/Mshardul/wiki-fe/actions/runs/36907091637) on `c698ba4` — all jobs success incl. build, 3 e2e shards, deploy. That commit predates the uncommitted Phase 8–10 work (it still ran the old generator jobs), so the final CI form is unproven until those changes are pushed. Local toolchain + e2e verified green by the user. |
+| CI green end to end | ✅ | Hosted CI [run 37004270232](https://github.com/Mshardul/wiki-fe/actions/runs/37004270232) on `a67d1e9` — every job success: hooks, semgrep, dsa-sd-check, frontend, build, 3 e2e shards, deploy. The preceding run (`e560d33`, 36975344612) failed one shard on a highlight e2e race, fixed in `a67d1e9`. |
 | `wiki-be` ticket resolved | ✅ | WIKI-BE-58 — Done 2026-10-02. Live preflight `OPTIONS /api/v1/auth/me` from `https://mshardul.github.io` → 200 with ACAO; no BE code change. |
 
 ## Part B phases
@@ -15,7 +15,7 @@ Part B (Phases 8–10) plus the Phase 11 confirmation. Recorded **2026-10-02**. 
 | Phase | Status | Notes |
 | --- | --- | --- |
 | 8 — retire Python generators + CI final form | ✅ | Four generators + `bump_cache_version.py` deleted; five CI jobs removed; `build` job diff-gates committed indexes. |
-| 8b — `lib/content` build/read split | ⏸ Deferred | Own epic; needs an executable spec first ([`content-lib-split.md`](./content-lib-split.md)). Not blocking. |
+| 8b — `lib/content` build/read split | ⏸ Deferred | Own epic; executable spec written ([`content-lib-split-spec.md`](./content-lib-split-spec.md)). Not blocking. |
 | 9 — e2e full sweep + CI wiring | ✅ | Part A files sharded; highlight + notes e2e restored. `tests-heavy` job still absent (pre-existing). |
 | 10 — docs rewrite | ✅ | See above. |
 
@@ -44,10 +44,10 @@ Zero live references. Stale `.hljs*` CSS (`code.css`, `print.css`), the diff-hig
 - `Modal` synced its open state in a passive effect, so a keypress right after the dialog rendered could still see no modal open (W opened the switcher over Bookmarks); now a layout effect.
 - e2e hydration race: hotkeys bind after hydration but tests pressed keys on SSR content. `SettingsInit` sets `html[data-hotkeys-ready]`; `tests/conftest.py` waits on it after every in-app `page.goto`.
 - `test_navigation` direction-signal tests raced the 300ms transient attribute; they now record it with a `MutationObserver`.
+- `highlight` e2e raced the scroll-hides-toolbar behaviour under `scroll-behavior: smooth` (CI shard-1 worker crash); `_select_word` now scrolls instantly + settles, highlight button clicked via evaluate.
 - Gate after fixes: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm test:all` ✅ 449 + 4 · `pnpm build` ✅ 184 routes · full e2e ✅ **376 passed / 188 skipped / 0 failed, 3 consecutive runs**.
 
 ## Open items
 
-- Push Phase 8–10 + these fixes so hosted CI proves the final form.
 - `/reads` endpoints exist on the BE but the FE has never synced reads (local-only); decide if that is wanted.
 - Phase 8b epic and Playwright TS port epic (post-migration).
