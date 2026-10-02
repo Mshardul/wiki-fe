@@ -85,6 +85,6 @@ Rejected: a "fall back to `renderMarkdown()` when the artifact is missing" branc
 - `tests/content/equivalence.test.ts` (Python parity) — unaffected; `search-index.json` / `backlinks.json` output shape unchanged.
 - `app/article.test.tsx`, `app/vertical.test.tsx`, `app/page.test.tsx` — verify still green against the disk-backed accessor.
 
-**Spec first:** this epic gets its own short spec before code — the `generated/` artifact schema + version, the `build/` vs `read/` API surfaces, the test migration list, the dev workflow. Do not start from this stub.
+**Spec:** written 2026-10-02 as [`content-lib-split-spec.md`](./content-lib-split-spec.md) (executable phases, decisions, current test list; supersedes the test list above). Original note: this epic gets its own short spec before code — the `generated/` artifact schema + version, the `build/` vs `read/` API surfaces, the test migration list, the dev workflow. Do not start from this stub.
 
 **Constraints carried:** no git steps in the plan; single-line comments; `pnpm`; `.venv/bin/python3`; faithful behaviour (the `Article` shape `read/` returns must be byte-identical to what `getArticle` returns today — a fixture test pins it).

@@ -20,14 +20,8 @@ export default defineWorkspace([
         "components/**/*.test.{ts,tsx}",
         "tests/content/equivalence.test.ts",
       ],
-      // Full-corpus rebuilders → content; Shiki/renderMarkdown suite → pipeline.
-      exclude: [
-        "lib/content/build.test.ts",
-        "lib/content/manifest.test.ts",
-        "lib/content/complexity-tables.test.ts",
-        "lib/content/previews.test.ts",
-        ...PIPELINE_TESTS,
-      ],
+      // Shiki/renderMarkdown suite → pipeline.
+      exclude: PIPELINE_TESTS,
       fileParallelism: true,
     },
   },

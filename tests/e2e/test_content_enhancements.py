@@ -3045,15 +3045,20 @@ Alpha word here and Beta word there for two marker offsets.
 
 def _select_word(page, word):
     """Selects the first occurrence of `word` inside #markdown-body via a real Range,
-    then fires the mouseup our production code listens on."""
+    then fires the mouseup our production code listens on.
+
+    The word is scrolled into view (instantly - css sets smooth scrolling) and the scroll allowed to settle first:
+    Highlights.tsx hides the toolbar/popover on scroll, so a late scroll event from a later click/focus would race it."""
     page.evaluate(
-        """(word) => {
+        """async (word) => {
             const body = document.getElementById('markdown-body');
             const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
             let node;
             while ((node = walker.nextNode())) {
                 const idx = node.nodeValue.indexOf(word);
                 if (idx !== -1) {
+                    node.parentElement.scrollIntoView({ block: 'center', behavior: 'instant' });
+                    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
                     const range = document.createRange();
                     range.setStart(node, idx);
                     range.setEnd(node, idx + word.length);
@@ -3067,6 +3072,21 @@ def _select_word(page, word):
             throw new Error('word not found: ' + word);
         }""",
         word,
+    )
+
+
+def _click_highlight_toolbar_btn(page):
+    """Click the toolbar highlight button without Playwright scrolling (same scroll-hides-toolbar race as the emoji buttons)."""
+    page.evaluate(
+        """() => {
+            const bar = document.querySelector('.highlight-toolbar');
+            if (!bar || bar.classList.contains('hidden')) {
+                throw new Error('highlight toolbar not visible');
+            }
+            const btn = bar.querySelector('.highlight-toolbar-btn--highlight');
+            if (!btn) throw new Error('highlight toolbar button missing');
+            btn.click();
+        }"""
     )
 
 
@@ -3107,7 +3127,7 @@ def test_highlight_create_remove_and_keyboard_remove_lifecycle(page, base_url):
     _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
-    page.locator(".highlight-toolbar-btn--highlight").click()
+    _click_highlight_toolbar_btn(page)
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
     mark = page.locator("#markdown-body .wiki-highlight").first
@@ -3147,7 +3167,7 @@ def test_highlight_create_remove_and_keyboard_remove_lifecycle(page, base_url):
     _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
-    page.locator(".highlight-toolbar-btn--highlight").click()
+    _click_highlight_toolbar_btn(page)
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
     page.locator("#markdown-body .wiki-highlight").first.focus()
@@ -3167,7 +3187,7 @@ def test_highlight_persists_and_reapplies_on_reload(page, base_url):
     _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
-    page.locator(".highlight-toolbar-btn--highlight").click()
+    _click_highlight_toolbar_btn(page)
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
     _hl_article(page, base_url, clear=False)
@@ -3271,7 +3291,7 @@ def test_highlight_reanchor_and_drop_on_upstream_edit(page, base_url):
     _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
-    page.locator(".highlight-toolbar-btn--highlight").click()
+    _click_highlight_toolbar_btn(page)
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
     # Phase 1: shift offsets without touching the highlighted text - it re-anchors via snippet match.
@@ -3325,7 +3345,7 @@ def test_highlight_mark_is_keyboard_focusable(page, base_url):
     _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
-    page.locator(".highlight-toolbar-btn--highlight").click()
+    _click_highlight_toolbar_btn(page)
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
     result = page.evaluate(
@@ -3344,7 +3364,7 @@ def test_keyboard_enter_removes_focused_highlight(page, base_url):
     _select_word(page, "avalanches")
     page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
     force_paint(page)
-    page.locator(".highlight-toolbar-btn--highlight").click()
+    _click_highlight_toolbar_btn(page)
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
     page.locator("#markdown-body .wiki-highlight").first.focus()
@@ -3395,7 +3415,7 @@ def test_emoji_marker_buttons_hidden_when_selection_in_code(page, base_url):
 
     # Highlight-only still works inside code.
     force_paint(page)
-    page.locator(".highlight-toolbar-btn--highlight").click()
+    _click_highlight_toolbar_btn(page)
     page.wait_for_selector("#markdown-body .wiki-highlight", timeout=3_000)
 
 
