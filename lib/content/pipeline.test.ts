@@ -71,6 +71,15 @@ describe("standard pipeline", () => {
     expect(html).toMatch(/<a[^>]+href="#big-section"/);
   });
 
+  it("heading anchors are focusable and labelled for assistive tech", async () => {
+    const { html } = await renderMarkdown("## Big Section", ctx);
+    const link = html.match(/<a[^>]+href="#big-section"[^>]*>/)?.[0] ?? "";
+    expect(link).toContain('aria-label="Link to Big Section"');
+    expect(link).toMatch(/class="[^"]*\banchor-btn\b/);
+    expect(link).not.toContain("aria-hidden");
+    expect(link).not.toContain("tabindex");
+  });
+
   it("passes through literal HTML (rehype-raw)", async () => {
     const { html } = await renderMarkdown('<div class="note">hi</div>', ctx);
     expect(html).toContain('class="note"');

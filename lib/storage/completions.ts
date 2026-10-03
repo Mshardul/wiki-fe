@@ -1,4 +1,4 @@
-import { api, type SyncRow } from "@/lib/api";
+import { api } from "@/lib/api";
 import { verticalRegistry } from "@/lib/content/verticals";
 import { completionsKey } from "./keys";
 import { getJSON, remove, setJSON, subscribeKey } from "./local";
@@ -41,7 +41,8 @@ export function subscribeCompletions(wikiId: string, cb: () => void): () => void
 }
 
 export async function pullCompletions(): Promise<void> {
-  const rows = await api.completions.list().catch<SyncRow[]>(() => []);
+  const rows = await api.completions.list().catch(() => null);
+  if (!rows) return;
   const byWiki = new Map<string, Set<string>>();
   for (const r of rows) {
     if (!byWiki.has(r.wiki_id)) byWiki.set(r.wiki_id, new Set());

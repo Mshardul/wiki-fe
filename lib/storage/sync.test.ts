@@ -28,8 +28,11 @@ vi.mock("./session", () => ({
   getSession: () => ({ user: null, status }),
 }));
 
-import { addToRecents } from "./recents";
-import { discardBootMutations, flushBootMutations, scheduleSyncMutation } from "./sync";
+import { api } from "@/lib/api";
+import { getBookmarks } from "./bookmarks";
+import { listCompletions, markCompleted } from "./completions";
+import { addToRecents, getRecents } from "./recents";
+import { discardBootMutations, flushBootMutations, pullAll, scheduleSyncMutation } from "./sync";
 
 describe("cache-through sync", () => {
   beforeEach(() => {
@@ -88,5 +91,33 @@ describe("cache-through sync", () => {
   it("a synced-domain write updates local synchronously", () => {
     addToRecents({ wikiId: "dsa", path: "content/dsa/y.md", title: "Y", slug: ["y"] });
     expect(JSON.parse(localStorage.getItem("wiki-recents") ?? "[]")[0].title).toBe("Y");
+  });
+
+  it("pullAll keeps local state when the server is unreachable", async () => {
+    localStorage.setItem(
+      "wiki-bookmarks",
+      JSON.stringify([{ wikiId: "dsa", path: "content/dsa/x.md", title: "X", slug: ["x"] }]),
+    );
+    addToRecents({ wikiId: "dsa", path: "content/dsa/y.md", title: "Y", slug: ["y"] });
+    markCompleted("dsa", "content/dsa/z.md");
+    const down = () => Promise.reject(new Error("Failed to fetch"));
+    vi.mocked(api.bookmarks.list).mockImplementationOnce(down);
+    vi.mocked(api.recents.list).mockImplementationOnce(down);
+    vi.mocked(api.completions.list).mockImplementationOnce(down);
+
+    await pullAll();
+
+    expect(getBookmarks()).toHaveLength(1);
+    expect(getRecents()).toHaveLength(1);
+    expect(listCompletions("dsa")).toEqual(["content/dsa/z.md"]);
+  });
+
+  it("pullAll replaces local state with the server's when it answers", async () => {
+    localStorage.setItem(
+      "wiki-bookmarks",
+      JSON.stringify([{ wikiId: "dsa", path: "content/dsa/x.md", title: "X", slug: ["x"] }]),
+    );
+    await pullAll();
+    expect(getBookmarks()).toHaveLength(0);
   });
 });

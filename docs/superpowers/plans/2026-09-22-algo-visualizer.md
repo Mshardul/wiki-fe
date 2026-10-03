@@ -1,5 +1,7 @@
 # Algorithm Visualizer Implementation Plan
 
+> **Status 2026-10-02:** unblocked (cutover is done) but written against the deleted `js/**` stack. Re-target to `app/`, `components/`, `lib/` (React/TS) before any implementation; this plan is reference only until then.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build an interactive algorithm visualizer — a dedicated route where users input values, run a real algorithm, and step/play through its execution with array/graph/tree/DP-grid visuals and a debugger-style variables panel.

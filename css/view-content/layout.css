@@ -264,6 +264,14 @@ body.distraction-free .sticky-section-header {
 .markdown-body a.wiki-link-inpage {
   text-decoration-style: dotted;
 }
+.markdown-body a.anchor-btn {
+  text-decoration: none;
+  color: var(--text-subtle);
+}
+.markdown-body a.anchor-btn:hover,
+.markdown-body a.anchor-btn:focus-visible {
+  color: var(--accent-light);
+}
 .markdown-body a.wiki-link-article::after,
 .markdown-body a.wiki-link-external::after {
   content: " ↗";

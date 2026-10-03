@@ -24,7 +24,7 @@ def test_heading_anchor_link_has_svg_icon(page, base_url):
     """Each autolinked heading's <a> contains a real <svg><use> icon, not an empty span."""
     _article(page, base_url)
     svg_count = page.evaluate("""() => {
-        const anchors = document.querySelectorAll('#markdown-body h2 > a[aria-hidden="true"], #markdown-body h3 > a[aria-hidden="true"]');
+        const anchors = document.querySelectorAll('#markdown-body h2 > a.anchor-btn, #markdown-body h3 > a.anchor-btn');
         return [...anchors].filter(a => a.querySelector('svg.icon > use')).length;
     }""")
     heading_count = page.locator("#markdown-body h2, #markdown-body h3").count()
@@ -33,11 +33,22 @@ def test_heading_anchor_link_has_svg_icon(page, base_url):
     )
 
 
+def test_heading_anchor_link_is_labelled_and_keyboard_reachable(page, base_url):
+    """Heading anchors are real links: named for screen readers, not aria-hidden, and in the tab order."""
+    _article(page, base_url)
+    first = page.locator("#markdown-body h2 > a.anchor-btn").first
+    assert (first.get_attribute("aria-label") or "").startswith("Link to ")
+    assert first.get_attribute("aria-hidden") is None
+    assert first.get_attribute("tabindex") is None
+    first.focus()
+    assert page.evaluate("() => document.activeElement.classList.contains('anchor-btn')")
+
+
 def test_heading_anchor_link_icon_references_sprite(page, base_url):
     """The heading anchor-link <use> references #icon-anchor in the inlined sprite."""
     _article(page, base_url)
     href = page.evaluate(
-        "() => document.querySelector('#markdown-body h2 a[aria-hidden=\"true\"] use')?.getAttribute('href')"
+        "() => document.querySelector('#markdown-body h2 a.anchor-btn use')?.getAttribute('href')"
     )
     assert href == "#icon-anchor", f"Expected use href='#icon-anchor', got {href!r}"
     symbol_exists = page.evaluate(

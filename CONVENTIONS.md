@@ -159,6 +159,7 @@ For the full model and the *why*, see the decisions docs:
 ## Security
 
 - **XSS / sanitisation is an invariant.** User-influenced HTML must stay safe. Build-time article HTML is trusted pipeline output only. Regression-guarded by `tests/e2e/test_security.py` - don't weaken it without updating that guard deliberately.
+- **No runtime sanitiser (decided 2026-10-02).** Article HTML is git-authored build output with no runtime user content, so the pipeline passes raw HTML through by design. Revisit (e.g. `rehype-sanitize`) if user-supplied content is ever rendered.
 - **`BACKEND_URL` is public, not a secret.** The browser must call it, so it lives in code by design. Security comes from CORS + the httpOnly cookie + BE validation, not from hiding the URL.
 - **No secrets, keys, or real email addresses in any tracked file** - including tests. Test emails use `@example.com`.
 
@@ -217,7 +218,7 @@ For the full model and the *why*, see the decisions docs:
 ### End-to-end (Playwright + pytest)
 
 - Test behaviour as the user sees it against the static `out/` export (see `tests/conftest.py`).
-- **Read `tests/conftest.py` before writing any e2e test** - it defines every shared fixture and navigation helper. **Never add new fixtures or conftest helpers** - use what exists.
+- **Read `tests/conftest.py` before writing any e2e test** - it defines every shared fixture and navigation helper. **Add a fixture or conftest helper only when it removes a shared race or a flow repeated across files** (e.g. the hotkeys-ready wait), with a one-line docstring saying why; otherwise use what exists.
 - **Add tests to the existing file** matching the feature. Never create a new test file unless the feature genuinely has no home.
 - Use `page.locator()` + `expect()`; avoid `page.query_selector()`.
 - **Never use `page.evaluate("element.click()")` to interact with elements.** If Playwright's actionability checks reject a click, fix the production code so the element is genuinely reachable.

@@ -118,8 +118,8 @@ Files that don't update themselves - review/update these on a recurring basis, n
 | `docs/_meta/audit-prompts/auth-ux-audit-agent-prompt.md`                              | Auth flow/UI changes meaningfully - keep journey checklist matching real steps                    |
 | `docs/_meta/audit-prompts/mobile-ux-audit-agent-prompt.md`                            | New page/component added, or viewport/breakpoint strategy changes                                 |
 | `docs/_meta/audit-prompts/ui-components-audit-agent-prompt.md`                        | New island/component added/removed - update component roster; known interaction points list needs manual review as new components are added |
-| `docs/_meta/audit-prompts/codebase-quality-audit-agent-prompt.md`                     | Rare - only if module layout or shared-helper conventions change structurally                      |
+| `docs/_meta/audit-prompts/codebase-quality-audit-agent-prompt.md`                     | Retired 2026-10-02 - do not run (covered by CONVENTIONS size signal + the structure audit)         |
 | `docs/_meta/audit-prompts/security-audit-agent-prompt.md`                             | New innerHTML/localStorage/postMessage/SW-cache code path added, or Semgrep rule packs change        |
-| `CLAUDE.md` FILE MAP                                                                   | New `js/` file added/removed - run `find js -name '*.js'` and diff against the FILE MAP subtables    |
+| `CLAUDE.md` FILE MAP                                                                   | New route, `components/` feature folder or `lib/` module added/removed - update the FILE MAP tables |
 
 Run audits periodically (no fixed cadence yet - ad hoc). Each run's output is a **new dated file** under `docs/_meta/audit-reports/` (`{name} - YYYYMMDD.md`) - never overwrite a prior run's file.

@@ -1,6 +1,6 @@
 # Interview Mode — Content Strategy (STUB)
 
-**Status:** Stub. Placeholder for a full spec to be written after the Next.js migration.
+**Status:** Stub. The Next.js migration shipped 2026-10-02, so this is unblocked; it still needs a full spec before any work.
 **Date:** 2026-08-31
 **Relationship to other work:** Depends on `nextjs-migration-design.md` shipping first (needs the component model, real routing, and build-time content pipeline). Not part of the migration pass.
 

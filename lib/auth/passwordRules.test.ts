@@ -18,9 +18,13 @@ describe("passwordRules", () => {
     expect(rule("digit").test("a1c")).toBe(true);
   });
 
-  it("special: any non-alphanumeric", () => {
+  it("special: a symbol, not whitespace or a letter/number in any script", () => {
     expect(rule("special").test("abc123")).toBe(false);
     expect(rule("special").test("abc!23")).toBe(true);
+    expect(rule("special").test("abc 123")).toBe(false);
+    expect(rule("special").test("abc\t123")).toBe(false);
+    expect(rule("special").test("abcé123")).toBe(false);
+    expect(rule("special").test("abc—123")).toBe(true);
   });
 
   it("valid aggregate is true only when every rule passes", () => {

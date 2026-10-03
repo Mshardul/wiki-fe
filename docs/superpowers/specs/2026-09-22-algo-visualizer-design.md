@@ -1,5 +1,7 @@
 # Algorithm Visualizer — Design
 
+> **Status 2026-10-02:** unblocked (cutover is done) but written against the deleted `js/**` stack. Re-target to `app/`, `components/`, `lib/` (React/TS) before any implementation; this spec is reference only until then.
+
 ## Purpose
 
 Interactive visualizer for DSA algorithms. User enters input values, runs the real algorithm, and watches it execute step by step — array bars, graph nodes, tree, or DP grid depending on algo type — with a debugger-style panel showing current variable values.

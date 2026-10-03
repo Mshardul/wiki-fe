@@ -254,7 +254,7 @@ def test_login_unverified_shows_verify_panel(page, base_url):
         "**/api/v1/auth/login",
         lambda r: r.fulfill(
             status=403, content_type="application/json",
-            body='{"error":{"code":"UNVERIFIED","message":"verify first"}}',
+            body='{"error":{"code":"EMAIL_NOT_VERIFIED","message":"verify first"}}',
         ),
     )
     page.goto(base_url, wait_until="domcontentloaded")
@@ -308,11 +308,11 @@ def test_forgot_sent_message_cleared_on_panel_swap(page, base_url):
     _auth_dialog(page).get_by_role("button", name="Forgot password?").click()
     _auth_dialog(page).get_by_label("Email").fill("a@example.com")
     _auth_dialog(page).get_by_role("button", name="Send reset link").click()
-    expect(page.get_by_text("If that account exists")).to_be_visible()
+    expect(page.get_by_text("Reset link sent")).to_be_visible()
 
     _auth_dialog(page).get_by_role("button", name="Back to log in").click()
     _auth_dialog(page).get_by_role("button", name="Forgot password?").click()
-    expect(page.get_by_text("If that account exists")).to_be_hidden()
+    expect(page.get_by_text("Reset link sent")).to_be_hidden()
 
 
 def test_login_network_error_shows_fe_authored_message(page, base_url):
@@ -337,7 +337,7 @@ def test_resend_network_error_does_not_claim_success(page, base_url):
         "**/api/v1/auth/login",
         lambda r: r.fulfill(
             status=403, content_type="application/json",
-            body='{"error":{"code":"UNVERIFIED","message":"not verified"}}',
+            body='{"error":{"code":"EMAIL_NOT_VERIFIED","message":"not verified"}}',
         ),
     )
     page.route("**/api/v1/auth/resend-verification", lambda route: route.abort())
@@ -431,7 +431,7 @@ def test_resend_button_debounced_and_shows_feedback(page, base_url):
         "**/api/v1/auth/login",
         lambda r: r.fulfill(
             status=403, content_type="application/json",
-            body='{"error":{"code":"UNVERIFIED","message":"verify first"}}',
+            body='{"error":{"code":"EMAIL_NOT_VERIFIED","message":"verify first"}}',
         ),
     )
 
@@ -464,7 +464,7 @@ def test_resend_after_login_403_uses_login_email(page, base_url):
         "**/api/v1/auth/login",
         lambda r: r.fulfill(
             status=403, content_type="application/json",
-            body='{"error":{"code":"UNVERIFIED","message":"verify first"}}',
+            body='{"error":{"code":"EMAIL_NOT_VERIFIED","message":"verify first"}}',
         ),
     )
     sent = {}
@@ -494,7 +494,7 @@ def test_resend_button_shows_cooldown_after_send(page, base_url):
         "**/api/v1/auth/login",
         lambda r: r.fulfill(
             status=403, content_type="application/json",
-            body='{"error":{"code":"UNVERIFIED","message":"verify first"}}',
+            body='{"error":{"code":"EMAIL_NOT_VERIFIED","message":"verify first"}}',
         ),
     )
     page.route(

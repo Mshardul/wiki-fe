@@ -13,7 +13,7 @@ export const PW_RULES: readonly PasswordRule[] = [
   {
     id: "special",
     label: "A special character ( ! @ # $ % ^ & * ? - _ )",
-    test: (p) => /[^A-Za-z0-9]/.test(p),
+    test: (p) => /[^\p{L}\p{N}\s]/u.test(p),
   },
 ];
 

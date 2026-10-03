@@ -2,7 +2,9 @@
 
 | Created | Last updated | Status |
 |---|---|---|
-| 2026-07-17 | 2026-08-14 | outdated |
+| 2026-07-17 | 2026-10-02 | retired |
+
+> **Retired 2026-10-02.** Written for the vanilla `js/**` app (11 stale references). Its file-size and topology checks are now covered by the CONVENTIONS size signal and the structure audit. Do not run; kept for history.
 
 Paste this as the prompt when spawning the agent (e.g. `general-purpose` subagent, or a fresh Claude Code session in `wiki-fe`).
 

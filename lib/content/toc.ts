@@ -4,12 +4,9 @@ import type { Heading } from "./types";
 
 const HEADING_DEPTH: Record<string, 2 | 3 | 4> = { h2: 2, h3: 3, h4: 4 };
 
-// Excludes the appended rehype-autolink anchor text.
-function headingText(node: Element): string {
+export function headingText(node: Element): string {
   let out = "";
-  visit(node, "text", (t, _i, parent) => {
-    const p = parent && parent.type === "element" ? parent : undefined;
-    if (p?.tagName === "a" && p.properties?.["ariaHidden"] === "true") return;
+  visit(node, "text", (t) => {
     out += t.value;
   });
   return out.trim();

@@ -73,7 +73,12 @@ export async function loginFlow(
     const migrated = await completeSession(res, keepAnon);
     return { ok: true, code: migrated ? undefined : "MIGRATION_FAILED" };
   } catch (e) {
-    if (e instanceof ApiError && e.status === 403) return { ok: false, code: "UNVERIFIED" };
+    if (e instanceof ApiError && e.code === "EMAIL_NOT_VERIFIED") {
+      return { ok: false, code: "UNVERIFIED" };
+    }
+    if (e instanceof ApiError && e.code === "ACCOUNT_DEACTIVATED") {
+      return { ok: false, code: "ACCOUNT_DEACTIVATED", error: e.message };
+    }
     return { ok: false, error: authErrorMessage(e, "Couldn't log you in. Please try again.") };
   }
 }
@@ -90,16 +95,14 @@ export async function registerFlow(email: string, password: string): Promise<Flo
   }
 }
 
-export async function resendFlow(email: string): Promise<{ networkError?: string }> {
+export async function resendFlow(email: string): Promise<{ error?: string }> {
   try {
     await api.auth.resendVerification(email);
     return {};
   } catch (e) {
-    if (e instanceof ApiError && (e.code === "NETWORK" || e.code === "TIMEOUT")) {
-      return { networkError: authErrorMessage(e, "Couldn't reach the server.") };
-    }
-    // auth-domain errors: BE returns 200 either way (anti-enumeration); still confirm the click
-    return {};
+    return {
+      error: authErrorMessage(e, "Couldn't send the verification email. Please try again."),
+    };
   }
 }
 

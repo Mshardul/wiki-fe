@@ -168,8 +168,12 @@ export function AuthModal() {
   const onResend = (addr: string) =>
     run(async () => {
       const r = await resendFlow(addr);
-      showToast(r.networkError ?? "Verification email sent");
-      if (!r.networkError) setCooldown(RESEND_COOLDOWN_S);
+      if (r.error) {
+        showToast(r.error, { variant: "error" });
+        return;
+      }
+      showToast("Verification email sent");
+      setCooldown(RESEND_COOLDOWN_S);
     });
 
   return (
@@ -327,7 +331,7 @@ export function AuthModal() {
         >
           <h2>Reset your password</h2>
           {forgotSent ? (
-            <p>If that account exists, a reset link is on its way.</p>
+            <p>Reset link sent. Check your email.</p>
           ) : (
             <>
               <input

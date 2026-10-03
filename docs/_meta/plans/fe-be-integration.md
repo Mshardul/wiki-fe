@@ -1,5 +1,7 @@
 # FE Auth + Sync Integration Implementation Plan
 
+> **Superseded 2026-10-02.** Vanilla-era plan (`js/api.js`, hash routes). The integration shipped in the Next app as `lib/api.ts`, `lib/storage/sync.ts`, `components/auth/` and `components/sync/`. Kept for history; do not execute.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Wire the existing vanilla-JS frontend to the already-built `wiki-be` backend so logged-in users get auth + server-synced bookmarks / reads / recents, while anonymous users keep today's exact local-only behaviour.

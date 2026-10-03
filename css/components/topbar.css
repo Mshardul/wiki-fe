@@ -214,7 +214,8 @@
 .markdown-body h4:hover .anchor-btn {
   opacity: 1;
 }
-.anchor-btn:hover {
+.anchor-btn:hover,
+.anchor-btn:focus-visible {
   color: var(--accent-light);
   opacity: 1;
 }

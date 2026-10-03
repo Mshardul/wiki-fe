@@ -118,7 +118,7 @@ Scroll position stays **local-only** (ephemeral, device-specific, capped at 50) 
 - ≥1 uppercase `A–Z`
 - ≥1 lowercase `a–z`
 - ≥1 digit `0–9`
-- ≥1 special char (anything outside `[A-Za-z0-9]`)
+- ≥1 special char (a symbol: not a letter or number in any script, and not whitespace)
 
 Special-char hint set shown in UI (subset, keyboard-safe, no escaping headaches):
 
@@ -137,16 +137,16 @@ Special-char hint set shown in UI (subset, keyboard-safe, no escaping headaches)
 Base path `/api/v1`. All JSON.
 
 1. **Register** `POST /auth/register {email, password}` → hash (bcrypt/argon2) → user `email_verified=0` → create verification token → send Resend email. `201`. Dup email → `409`.
-2. **Verify** `GET /auth/verify?token=…` → validate (not expired, not used) → `email_verified=1`, set `used_at` → **redirect to FE home** (vertical cards). Bad token → `400`.
+2. **Verify** `POST /auth/verify {token}` → validate (not expired, not used) → `email_verified=1`, set `used_at`. The email link opens the FE at `/?mode=verify&token=…`; the FE posts the token. Bad token → `400`.
 3. **Login** `POST /auth/login {email, password}` → check hash → reject if unverified (`403`) → create session. `200 {user:{id,email}, session_token}`. Bad creds → `401`.
 4. **Logout** `POST /auth/logout` → delete session row for the bearer token (missing/invalid token is a no-op, not an error - stays idempotent). `204`.
-5. **Me** `GET /auth/me` → `200 {user:{id,email}}` if valid bearer token, else `401`. FE calls on load (only if a token is stored) to know logged-in state.
+5. **Me** `GET /auth/me` → `200 {user:{id,email,role,is_active}}` if valid bearer token, else `401`. FE calls on load (only if a token is stored) to know logged-in state.
 6. **Resend verification** `POST /auth/resend-verification {email}` → if account exists and unverified, issue fresh token + send email. `200` (generic, regardless). Safety net for failed async sends.
 7. **Reset password** `POST /auth/reset-password {token, password}` → consume reset token, set new password, create session (same as login). `200 {user:{id,email}, session_token}`. Bad/used token → `400`.
 
 **Session middleware:** `Authorization: Bearer <token>` header → sha256 → lookup `sessions` → check expiry → load user → slide expiry → attach to request. Required on all sync routes.
 
-**Rate limiting:** skipped v0. Basic in-app limiter (login/register) targeted for **v2**; ongoing hardening track.
+**Rate limiting:** shipped. In-app per-IP limiter on every auth endpoint (5–30 requests/min depending on the endpoint).
 
 ---
 
@@ -192,11 +192,11 @@ POST   /api/v1/sync/import    {bookmarks[], reads[], recents[]}  → 200 {merged
 - Subject: `Verify your Wiki account`.
 - Body: minimal multipart (HTML + plain-text fallback for deliverability) - link to `{BACKEND}/api/v1/auth/verify?token=…`, "expires in 24h", "ignore if not you."
 - Inline HTML string (one email - no template engine; Jinja later if emails multiply).
-- Verify link hits BE → BE redirects to FE home after marking verified.
+- Verify link opens the FE (`/?mode=verify&token=…`), which posts the token to the BE.
 
 **Send strategy - best-effort async:** register returns `201` immediately; email sends in background. If Resend is slow/down, registration never hangs or 500s. Failed send → user recovers via **resend-verification** (in the auth flow above), which is the safety net. Resend endpoint gates on `email_verified=0`; abuse rate-limiting deferred to v2 track.
 
-**Password reset:** v1 (adds a second email + endpoints). v0 has no reset - sole early user can fix via DB.
+**Password reset:** shipped (forgot/reset endpoints + reset email; link opens the FE at `/?mode=reset&token=…`).
 
 **Integration shape:** thin `email.py` → `send_verification_email(to, token)`, calls Resend (SDK or `httpx`).
 
@@ -232,4 +232,4 @@ The BE URL is public; real protection = these invariants, gated automatically so
 
 - Highlight text-anchoring strategy (v1's hard problem).
 - Infra/deploy specifics (Fly volume, SQLite backup, spend limit, cross-origin verify) - see [infra-deploy.md](./infra-deploy.md).
-- Rate limiting (v2), password reset (v1) - noted in the flows above.
+- Rate limiting and password reset - shipped, see the flows above.

@@ -21,6 +21,7 @@ import { rehypeSectionWrap } from "./plugins/section-wrap";
 import { remarkTabbedCode } from "./plugins/tabbed-code";
 import { remarkVideoEmbed } from "./plugins/video-embed";
 import { remarkViz } from "./plugins/viz";
+import { headingText } from "./toc";
 import type { RenderContext } from "./types";
 
 // Explicit list — @shikijs/rehype defaults to every bundled language (~13s cold start).
@@ -53,6 +54,10 @@ export function createProcessor(ctx: RenderContext): Processor {
     .use(rehypeSlug)
     .use(rehypeAutolinkHeadings, {
       behavior: "append",
+      properties: (node) => ({
+        className: ["anchor-btn"],
+        ariaLabel: `Link to ${headingText(node)}`,
+      }),
       content: {
         type: "element",
         tagName: "svg",

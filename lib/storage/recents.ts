@@ -1,4 +1,4 @@
-import { api, type SyncRow } from "@/lib/api";
+import { api } from "@/lib/api";
 import { KEYS } from "./keys";
 import { getJSON, makeSnapshot, remove, setJSON, subscribeKey } from "./local";
 import { scheduleSyncMutation } from "./sync";
@@ -55,7 +55,8 @@ function deriveRecent(wikiId: string, path: string): Recent {
 }
 
 export async function pullRecents(): Promise<void> {
-  const rows = await api.recents.list().catch<SyncRow[]>(() => []);
+  const rows = await api.recents.list().catch(() => null);
+  if (!rows) return;
   setJSON(
     KEYS.recents,
     rows.slice(0, RECENTS_MAX).map((r) => deriveRecent(r.wiki_id, r.path)),

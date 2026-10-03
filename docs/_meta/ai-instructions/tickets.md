@@ -2,7 +2,7 @@
 
 | Created | Last updated | Status |
 |---|---|---|
-| 2026-05-12 | 2026-08-14 | outdated |
+| 2026-05-12 | 2026-10-02 | current |
 
 > Reference this file whenever ticket intent is detected: WIKI-xxx ID mentioned, or phrases like "work on tickets", "which ticket", "decide ticket", "let's pick a ticket".
 > Read `docs/tickets-backlog.md` for active tickets; `docs/tickets-archive.md` for Done/Dropped history.
@@ -88,20 +88,21 @@ Read `docs/tickets-backlog.md` to confirm the ticket exists with Status `Backlog
 
 ## COMPONENT → FILE MAPPING
 
-| Component tag | Files to read                                                       |
-| ------------- | ------------------------------------------------------------------- |
-| `search`      | `js/search.js`, `js/state.js`                                       |
-| `content`     | `js/content.js`, `js/render.js`                                     |
-| `render`      | `js/render.js`                                                      |
-| `nav`         | `js/app.js`, `js/state.js`                                          |
-| `storage`     | `js/storage.js`                                                     |
-| `settings`    | `js/storage.js`, `css/themes.css`, `css/tokens.css`                 |
-| `ui`          | Relevant view CSS (`css/view-*.css`) + `css/components.css`         |
-| `css`         | `css/tokens.css` first, then relevant view CSS                      |
-| `js`          | Use module map in `CLAUDE.md`                                       |
-| `sw`          | `wiki-sw.js` only - **cache version bump required on every change** |
-| `a11y`        | Relevant JS module + `index.html`                                   |
-| `ci`          | `.github/` directory                                                |
+| Component tag | Files to read                                                                           |
+| ------------- | --------------------------------------------------------------------------------------- |
+| `search`      | `components/search/`, `lib/search/`                                                     |
+| `content`     | `lib/content/` (pipeline, plugins), the matching `components/reader/` island            |
+| `render`      | The route in `app/` plus its feature folder under `components/`                         |
+| `nav`         | `components/chrome/` (breadcrumb, topbars), `components/reader/Toc.tsx`, `lib/hotkeys.ts` |
+| `storage`     | `lib/storage/`                                                                          |
+| `settings`    | `components/settings/`, `lib/storage/settings.ts`, `css/themes.css`, `css/tokens.css`   |
+| `auth` / `api`| `components/auth/`, `lib/auth/`, `lib/api.ts`                                           |
+| `ui`          | Relevant `css/view-*.css` + `css/components/`                                           |
+| `css`         | `css/tokens.css` first, then the relevant view CSS                                      |
+| `sw`          | `app/sw.ts`, `components/pwa/`, `lib/pwa/` (Serwist hashes its own precache - no manual cache bump) |
+| `a11y`        | The relevant component + `app/layout.tsx`                                               |
+| `ci`          | `.github/` directory                                                                    |
+| `js`          | Legacy tag from the vanilla app - use the FILE MAP in `CLAUDE.md`                       |
 
 ---
 

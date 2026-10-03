@@ -1,4 +1,3 @@
-import type { SyncRow } from "@/lib/api";
 import { api } from "@/lib/api";
 import { verticalRegistry } from "@/lib/content/verticals";
 import { KEYS } from "./keys";
@@ -78,9 +77,10 @@ export function subscribeBookmarks(cb: () => void): () => void {
   return subscribeKey(KEYS.bookmarks, cb);
 }
 
-// Overwrites local with server truth (no merge) — called on login/boot.
+// Overwrites local with server truth (no merge) — called on login/boot; an unreachable server leaves local untouched.
 export async function pullBookmarks(): Promise<void> {
-  const rows = await api.bookmarks.list().catch<SyncRow[]>(() => []);
+  const rows = await api.bookmarks.list().catch(() => null);
+  if (!rows) return;
   setJSON(
     KEYS.bookmarks,
     rows.map((r) => deriveBookmark(r.wiki_id, r.path)),

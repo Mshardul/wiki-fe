@@ -178,21 +178,10 @@ kbd {
 /* ═══════════════════════════════════════════════
    VIEW TRANSITIONS
    ═══════════════════════════════════════════════ */
-.view {
-  display: none;
-  min-height: 100vh;
-}
-.view.active {
-  display: block;
-  animation: viewEnter 0.25s ease forwards;
-}
-
 /* Fallback for no View Transitions API/reduced-motion; depth increase = forward/slide left, decrease = back/slide right. */
-html.nav-forward .view.active,
 html.nav-forward main {
   animation: viewEnterForward 0.25s ease forwards;
 }
-html.nav-back .view.active,
 html.nav-back main {
   animation: viewEnterBack 0.25s ease forwards;
 }

@@ -47,7 +47,10 @@ Zero live references. Stale `.hljs*` CSS (`code.css`, `print.css`), the diff-hig
 - `highlight` e2e raced the scroll-hides-toolbar behaviour under `scroll-behavior: smooth` (CI shard-1 worker crash); `_select_word` now scrolls instantly + settles, highlight button clicked via evaluate.
 - Gate after fixes: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm test:all` ✅ 449 + 4 · `pnpm build` ✅ 184 routes · full e2e ✅ **376 passed / 188 skipped / 0 failed, 3 consecutive runs**.
 
-## Open items
+## Open items (backlog triaged 2026-10-02, nothing implemented yet)
 
-- `/reads` endpoints exist on the BE but the FE has never synced reads (local-only); decide if that is wanted.
-- Phase 8b epic and Playwright TS port epic (post-migration).
+- Now: WIKI-BE-60 (email links 404), WIKI-658 (no UI to mark complete), WIKI-299 (outbox for failed sync writes), WIKI-633 with WIKI-BE-56 (import takes completions, drops reads).
+- Next: WIKI-646 (canary-article e2e, absorbs 645, 647, 649), WIKI-670 (Keep/Discard dialog).
+- Later: reader parity (651, 652, 653, 657), content health (661, 662, 666, 669), 664, 531, 663, 590/595 with BE-55/57, 668 with BE-59, 655 (re-spec first), 660 (build/read split, spec in `content-lib-split-spec.md`).
+- Dropped: 630, 641, 645 (merged), 659, 665, 667.
+- Playwright TS port of the e2e suite remains a post-migration epic.

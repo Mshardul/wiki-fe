@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   register: vi.fn(),
   importAll: vi.fn().mockResolvedValue(undefined),
   logout: vi.fn().mockResolvedValue(undefined),
+  resend: vi.fn(),
   bookmarksAdd: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -20,6 +21,7 @@ vi.mock("@/lib/api", async (orig) => {
         login: mocks.login,
         register: mocks.register,
         logout: mocks.logout,
+        resendVerification: mocks.resend,
       },
       importAll: mocks.importAll,
       bookmarks: {
@@ -40,7 +42,7 @@ vi.mock("@/lib/storage/session", () => ({
 }));
 
 import { ApiError } from "@/lib/api";
-import { anonDataExists, loginFlow, migrateAnonData, registerFlow } from "./authFlows";
+import { anonDataExists, loginFlow, migrateAnonData, registerFlow, resendFlow } from "./authFlows";
 
 describe("authFlows", () => {
   beforeEach(() => {
@@ -63,10 +65,49 @@ describe("authFlows", () => {
     });
   });
 
-  it("loginFlow maps a 403 to UNVERIFIED", async () => {
-    mocks.login.mockRejectedValue(new ApiError("UNVERIFIED", "not verified", 403));
+  it("loginFlow maps EMAIL_NOT_VERIFIED to UNVERIFIED", async () => {
+    mocks.login.mockRejectedValue(new ApiError("EMAIL_NOT_VERIFIED", "not verified", 403));
     const r = await loginFlow("a@example.com", "pw", true);
     expect(r).toEqual({ ok: false, code: "UNVERIFIED" });
+  });
+
+  it("loginFlow reports a deactivated account instead of asking to verify", async () => {
+    mocks.login.mockRejectedValue(
+      new ApiError("ACCOUNT_DEACTIVATED", "This account has been deactivated.", 403),
+    );
+    const r = await loginFlow("a@example.com", "pw", true);
+    expect(r).toEqual({
+      ok: false,
+      code: "ACCOUNT_DEACTIVATED",
+      error: "This account has been deactivated.",
+    });
+  });
+
+  it("loginFlow surfaces any other 403 as an error, not UNVERIFIED", async () => {
+    mocks.login.mockRejectedValue(new ApiError("FORBIDDEN", "Not allowed", 403));
+    const r = await loginFlow("a@example.com", "pw", true);
+    expect(r.code).toBeUndefined();
+    expect(r.error).toBe("Not allowed");
+  });
+
+  it("resendFlow succeeds quietly on a 2xx", async () => {
+    mocks.resend.mockResolvedValue(undefined);
+    expect(await resendFlow("a@example.com")).toEqual({});
+  });
+
+  it.each([
+    ["ALREADY_VERIFIED", "This email is already verified.", 400],
+    ["USER_NOT_FOUND", "User not found.", 404],
+    ["RATE_LIMITED", "Too many requests.", 429],
+  ])("resendFlow reports %s honestly", async (code, message, status) => {
+    mocks.resend.mockRejectedValue(new ApiError(code, message, status));
+    expect(await resendFlow("a@example.com")).toEqual({ error: message });
+  });
+
+  it("resendFlow maps a network failure to a friendly message", async () => {
+    mocks.resend.mockRejectedValue(new ApiError("NETWORK", "Failed to fetch", 0));
+    const r = await resendFlow("a@example.com");
+    expect(r.error).toMatch(/Check your connection/);
   });
 
   it("loginFlow maps a NETWORK error to a friendly message", async () => {
