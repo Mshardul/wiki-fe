@@ -3,7 +3,9 @@ import { getBookmarks } from "@/lib/storage/bookmarks";
 import { listAllCompletions } from "@/lib/storage/completions";
 import { getRecents } from "@/lib/storage/recents";
 import { broadcastSessionChange, setSession } from "@/lib/storage/session";
-import { clearUserDataCache, pullAll } from "@/lib/storage/sync";
+import { clearUserDataCache, flushOutbox, pullAll } from "@/lib/storage/sync";
+
+const LOGOUT_FLUSH_MS = 2_000; // bounds how long logout waits for unsent writes
 
 // NETWORK carries the raw fetch-failure string — never surface it verbatim.
 export function authErrorMessage(e: unknown, fallback: string): string {
@@ -148,6 +150,11 @@ export async function verifyFromLinkFlow(token: string): Promise<FlowResult> {
 }
 
 export async function logoutFlow(): Promise<void> {
+  // Best-effort: the cache is wiped next, so give the last unsent writes one short chance to land.
+  await Promise.race([
+    flushOutbox().catch(() => false),
+    new Promise((resolve) => setTimeout(resolve, LOGOUT_FLUSH_MS)),
+  ]);
   await api.auth.logout().catch(() => {});
   setSessionToken(null);
   setSession({ user: null, status: "out" });

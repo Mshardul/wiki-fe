@@ -29,42 +29,57 @@ def force_paint(page):
     cdp.detach()
 
 
+NO_ANIMATIONS_JS = """
+    (() => {
+        const s = document.createElement('style');
+        s.textContent = '*, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; transition-delay: 0s !important; animation-delay: 0s !important; }';
+        if (document.head) {
+            document.head.appendChild(s);
+        } else {
+            document.addEventListener('DOMContentLoaded', () => document.head.appendChild(s));
+        }
+    })();
+"""
+
+
 @pytest.fixture(autouse=True)
 def disable_animations(page):
-    page.add_init_script("""
-        (() => {
-            const s = document.createElement('style');
-            s.textContent = '*, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; transition-delay: 0s !important; animation-delay: 0s !important; }';
-            if (document.head) {
-                document.head.appendChild(s);
-            } else {
-                document.addEventListener('DOMContentLoaded', () => document.head.appendChild(s));
-            }
-        })();
-    """)
+    page.add_init_script(NO_ANIMATIONS_JS)
 
 
 @pytest.fixture(autouse=True)
 def wait_for_hotkeys_ready(page):
-    """Hotkeys bind after hydration; hold every in-app goto until they are live so early key presses aren't lost under load."""
+    """Hotkeys bind after hydration; hold every in-app goto and reload until they are live so early
+    key presses and selections aren't lost before the islands attach under load."""
     original_goto = page.goto
+    original_reload = page.reload
+
+    def wait_ready():
+        page.wait_for_selector("html[data-hotkeys-ready]", state="attached", timeout=15_000)
 
     def goto(url, **kwargs):
         response = original_goto(url, **kwargs)
         if url.startswith("http://localhost") and BASE_PREFIX in url:
-            page.wait_for_selector("html[data-hotkeys-ready]", state="attached", timeout=15_000)
+            wait_ready()
+        return response
+
+    def reload(**kwargs):
+        response = original_reload(**kwargs)
+        if BASE_PREFIX in page.url:
+            wait_ready()
         return response
 
     page.goto = goto
+    page.reload = reload
 
 
 @pytest.fixture(scope="session", autouse=True)
 def _ensure_build():
-    """The e2e suite runs against the static Next export. Build it if it's missing; a stale
-    build is the developer's responsibility (run `pnpm build` before the suite)."""
+    """The e2e suite runs against the static Next export, built with the canary pages
+    (`pnpm build:e2e`). Build it if it's missing; a stale build is the developer's responsibility."""
     if (OUT_DIR / "index.html").exists():
         return
-    subprocess.run(["pnpm", "build"], cwd=REPO_ROOT, check=True)
+    subprocess.run(["pnpm", "build:e2e"], cwd=REPO_ROOT, check=True)
 
 
 @pytest.fixture
@@ -158,3 +173,44 @@ def wiki_page(page, base_url, disable_animations):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector(".home-main .wiki-card", timeout=10_000)
     return page
+
+
+@pytest.fixture(scope="module")
+def content_page(browser, base_url):
+    """Read-only canary article, opened once per module: `content_page("text")` returns its page.
+
+    Canary pages exist only in an e2e build (`pnpm build:e2e`). Tests sharing a page must not
+    change its state (storage, settings, DOM); anything that mutates uses the per-test `page`."""
+    context = browser.new_context(service_workers="block")
+    context.add_init_script(NO_ANIMATIONS_JS)
+    pages = {}
+
+    def open_canary(name):
+        if name not in pages:
+            page = context.new_page()
+            response = page.goto(f"{base_url}/e2e-canary/{name}/", wait_until="domcontentloaded")
+            if response is None or response.status != 200:
+                pytest.fail(f"canary page {name!r} not served; rebuild with `pnpm build:e2e`")
+            page.wait_for_selector("#markdown-body", timeout=10_000)
+            page.wait_for_selector("html[data-hotkeys-ready]", state="attached", timeout=15_000)
+            pages[name] = page
+        page = pages[name]
+        # Tests that navigate by anchor or scroll leave the shared page mid-article; start each one at the top.
+        page.evaluate("() => { history.replaceState(null, '', location.pathname); scrollTo(0, 0); }")
+        return page
+
+    yield open_canary
+    context.close()
+
+
+@pytest.fixture
+def open_settings(page):
+    """Open the Preferences dialog on the current page and return its locator."""
+
+    def _open():
+        page.locator("[title='Preferences (,)']:visible").first.click()
+        dialog = page.get_by_role("dialog", name="Preferences")
+        dialog.wait_for()
+        return dialog
+
+    return _open

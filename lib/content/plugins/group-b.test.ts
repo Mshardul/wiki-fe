@@ -55,6 +55,12 @@ describe("remark-video-embed", () => {
     expect(html).toContain('src="https://player.vimeo.com/video/123456789"');
   });
 
+  it("does not embed a bare URL that is not a supported video host", async () => {
+    const { html } = await renderMarkdown("# T\n\nhttps://example.com/plain-page\n", ctx);
+    expect(html).not.toContain("<iframe");
+    expect(html).toContain("https://example.com/plain-page");
+  });
+
   it("leaves a URL inside a sentence as a link", async () => {
     const { html } = await renderMarkdown(md, ctx);
     expect(html).toMatch(/See this video at <a[^>]*youtu\.be\/inline123/);
@@ -73,6 +79,38 @@ describe("remark-viz", () => {
   it("renders a valid array block", async () => {
     const { html } = await renderMarkdown(md, ctx);
     expect(html).toContain('data-viz-type="array"');
+  });
+
+  const viz = async (type: string, literal: string) =>
+    (await renderMarkdown(`# T\n\n\`\`\`viz\n${type}\n${literal}\n\`\`\`\n`, ctx)).html;
+  const count = (html: string, cls: string) =>
+    (html.match(new RegExp(`class="${cls}"`, "g")) ?? []).length;
+
+  it("renders a heap with one node per element", async () => {
+    const html = await viz("heap", "[9,7,8,3,2,5]");
+    expect(html).toContain('data-viz-type="heap"');
+    expect(count(html, "structure-viz-node")).toBe(6);
+  });
+
+  it("renders a linked list with an edge between each pair of nodes", async () => {
+    const html = await viz("linked-list", "[1,2,3]");
+    expect(count(html, "structure-viz-node")).toBe(3);
+    expect(html.match(/class="structure-viz-edge"/g)).toHaveLength(2);
+  });
+
+  it("renders an array with one cell per element", async () => {
+    expect(count(await viz("array", "[10,20,30]"), "structure-viz-cell")).toBe(3);
+  });
+
+  it("leaves an unknown structure type as the raw code block", async () => {
+    const html = await viz("graph", "[1,2,3]");
+    expect(html).not.toContain("structure-viz");
+    expect(html).toMatch(/<pre[\s\S]*?graph[\s\S]*?<\/pre>/);
+  });
+
+  it("caps very large literals at 64 elements", async () => {
+    const big = JSON.stringify(Array.from({ length: 200 }, (_, i) => i));
+    expect(count(await viz("array", big), "structure-viz-cell")).toBe(64);
   });
 
   it("leaves a malformed block as a code fallback", async () => {

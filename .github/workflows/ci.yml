@@ -108,8 +108,8 @@ jobs:
           node-version-file: .nvmrc
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - name: Build static site (prebuild runs content:build)
-        run: pnpm build
+      - name: Build static site for e2e, incl. canary pages (prebuild runs content:build)
+        run: pnpm build:e2e
       - name: Committed content indexes match buildContent()
         run: git diff --exit-code content/search-index.json content/backlinks.json content/broken-links.json
       - name: Upload build artifact
@@ -138,6 +138,8 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      - name: Production build has no canary pages
+        run: test ! -e out/e2e-canary
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out

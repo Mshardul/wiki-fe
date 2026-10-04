@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { fromHtml } from "hast-util-from-html";
-import { loadArticle, readingTimeMinutes } from "./article";
+import { type LoadedArticle, loadArticle, readingTimeMinutes } from "./article";
 import { computeShapeFingerprint, deriveExcerpt } from "./derive";
 import { discoverArticlePaths } from "./discovery";
 import { renderMarkdown } from "./pipeline";
@@ -44,8 +44,8 @@ function resolvePath(vertical: string, slug: string[]): string | undefined {
   return allArticlePaths().includes(want) ? want : undefined;
 }
 
-async function assemble(path: string): Promise<Article | undefined> {
-  const loaded = loadArticle(path);
+export async function renderLoadedArticle(loaded: LoadedArticle): Promise<Article> {
+  const path = loaded.path;
   const vertical = verticalRegistry().find((v) => v.id === loaded.verticalId);
   const ctx: RenderContext = {
     articlePath: path,
@@ -78,7 +78,7 @@ export function getArticle(vertical: string, slug: string[]): Promise<Article | 
   if (!path) return Promise.resolve(undefined);
   let entry = articleCache.get(path);
   if (!entry) {
-    entry = assemble(path);
+    entry = renderLoadedArticle(loadArticle(path));
     articleCache.set(path, entry);
   }
   return entry;

@@ -33,7 +33,7 @@ App stays vanilla-JS SPA, hash router, no build, no framework. All FE auth UI = 
     - `save*()` → write localStorage **+** if logged in, fire API call.
     - **On login / boot (logged in):** pull from API → merge into localStorage → re-render.
     - **Anon:** exactly today's behavior, zero API.
-- **Writes = fire-and-forget:** write localStorage, async POST/DELETE, don't await, ignore transient failures - next load-time pull reconciles drift. UI stays instant.
+- **Writes = outbox:** write localStorage, queue the mutation in a persisted outbox, replay in order (retry with backoff on network/5xx, drop on permanent 4xx). Pull is skipped while writes are pending. UI stays instant.
 
 ### Session state (FE)
 
@@ -53,7 +53,7 @@ New module - single wrapper all BE calls go through (no existing module owns "ta
 - `credentials: "include"` on every call (set once here).
 - JSON in/out; throws `ApiError(code, message, status)` on non-2xx (parsed from the error envelope) → callers `catch` and switch on `code`.
 - **Global 401 handler:** any 401 → flip `state.session` to logged-out, emit `wiki:session-expired` → UI reacts (Option A). Callers never repeat 401 logic.
-- Thin helpers `api.get/post/del`. Storage sync uses fire-and-forget (`.catch(()=>{})`); failed writes are **dropped, not queued** in v0 - load-time pull reconciles (retry-queue = v3).
+- Thin helpers `api.get/post/del`. Storage sync enqueues mutations in a persisted outbox (`lib/storage/outbox.ts`) and replays them in order; failed writes are retried, not dropped.
 
 **Same-origin later:** when a custom domain is bought, switch the base to relative `/api/...` (no BE URL in code, `SameSite=Lax`). Same-origin = DNS/routing (e.g. Cloudflare free), **not vendor lock-in**; deferred only because no domain yet.
 
@@ -73,7 +73,7 @@ On login, if **local anon data exists**, show one prompt (generic copy - scales 
 ### Logout
 
 - **Always succeeds, never blocked** on sync. `POST /auth/logout` (kill session) + clear user-data cache.
-- **B-lite flush:** logout first fires a quick best-effort flush of any known-unsynced items (short timeout, no long await), then clears cache + logs out **regardless of result**. With fire-and-forget writes, most items already synced per-action, so this is usually instant; it just minimizes loss of a last unsynced write. Rare loss accepted (low-stakes data).
+- **B-lite flush:** logout first fires a quick best-effort flush of any known-unsynced items (short timeout, no long await), then clears cache + logs out **regardless of result**. Most items already synced per-action, so this is usually instant; it just minimizes loss of a last unsynced write. Rare loss accepted (low-stakes data).
 - Clearing cache on logout keeps the next login clean (migration prompt only triggers on genuinely anon data, not another account's leftovers).
 
 ### UI affordances (auth scope only)

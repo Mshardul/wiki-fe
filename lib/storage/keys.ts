@@ -10,6 +10,7 @@ export const KEYS = {
   iosNudgeDismissed: "wiki-ios-install-nudge-dismissed",
   lastDarkPreset: "wiki-last-dark-preset",
   lastLightPreset: "wiki-last-light-preset",
+  syncOutbox: "wiki-sync-outbox",
 } as const;
 
 export const PREFIXES = {

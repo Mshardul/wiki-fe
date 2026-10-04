@@ -158,3 +158,50 @@ def test_anon_completion_makes_no_api_call(page, base_url):
     expect(_complete_button(page)).to_have_attribute("aria-pressed", "true")
     page.wait_for_timeout(150)
     assert calls == []
+
+
+def _stub_logged_in_completions(page, server_up):
+    """Logged-in session with a completions endpoint that rejects writes (network error) until server_up['on']."""
+    page.route(
+        "**/api/v1/auth/me",
+        lambda r: r.fulfill(status=200, content_type="application/json", body='{"user":{"id":"1","email":"a@example.com"}}'),
+    )
+    page.add_init_script("localStorage.setItem('wiki-session-token', 'test-session-token')")
+    for path in ("bookmarks", "recents"):
+        page.route(f"**/api/v1/{path}", lambda r: r.fulfill(status=200, content_type="application/json", body="[]"))
+
+    writes = []
+
+    def completions(route):
+        if route.request.method == "GET":
+            route.fulfill(status=200, content_type="application/json", body="[]")
+        elif server_up["on"]:
+            writes.append(route.request.post_data_json)
+            route.fulfill(status=201, content_type="application/json", body="{}")
+        else:
+            route.abort()
+
+    page.route("**/api/v1/completions", completions)
+    return writes
+
+
+def test_failed_completion_write_survives_reload_and_replays_when_online(page, base_url):
+    server_up = {"on": False}
+    writes = _stub_logged_in_completions(page, server_up)
+
+    _go_to_article(page, base_url, STACK_ARTICLE)
+    page.keyboard.press("c")
+    expect(_complete_button(page)).to_have_attribute("aria-pressed", "true")
+    page.wait_for_function("() => localStorage.getItem('wiki-sync-outbox') !== null")
+
+    # the boot pull must not overwrite the unsent completion with the server's empty list
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
+    expect(_complete_button(page)).to_have_attribute("aria-pressed", "true")
+    assert writes == []
+
+    server_up["on"] = True
+    page.evaluate("() => window.dispatchEvent(new Event('online'))")
+    page.wait_for_function("() => localStorage.getItem('wiki-sync-outbox') === null")
+    assert [w["path"] for w in writes] == ["content/dsa/data-structures/stack.md"]
+    assert writes[0]["client_ts"]

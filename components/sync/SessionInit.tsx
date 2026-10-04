@@ -2,13 +2,9 @@
 
 import { useEffect } from "react";
 import { openAuthModal } from "@/components/auth/authModalController";
+import { discardUnowned } from "@/lib/storage/outbox";
 import { bindCrossTabSession, getSession, initSession } from "@/lib/storage/session";
-import {
-  clearUserDataCache,
-  discardBootMutations,
-  flushBootMutations,
-  pullAll,
-} from "@/lib/storage/sync";
+import { clearUserDataCache, flushOutbox, pullAll } from "@/lib/storage/sync";
 
 export function SessionInit() {
   useEffect(() => {
@@ -16,14 +12,13 @@ export function SessionInit() {
     void (async () => {
       await initSession();
       if (cancelled) return;
-      if (getSession().status === "in") {
-        await flushBootMutations();
-        await pullAll();
-      } else {
-        discardBootMutations();
-      }
+      if (getSession().status === "in") await pullAll();
+      else discardUnowned();
       document.dispatchEvent(new CustomEvent("wiki:session-changed"));
-    })().catch(() => discardBootMutations());
+    })().catch(discardUnowned);
+
+    const onOnline = () => void flushOutbox();
+    window.addEventListener("online", onOnline);
 
     const unbind = bindCrossTabSession((wasIn) => {
       const nowIn = getSession().status === "in";
@@ -47,6 +42,7 @@ export function SessionInit() {
 
     return () => {
       cancelled = true;
+      window.removeEventListener("online", onOnline);
       unbind();
     };
   }, []);

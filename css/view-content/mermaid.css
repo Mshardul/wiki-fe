@@ -210,10 +210,14 @@
 .zoom-overlay.hidden {
   opacity: 0;
   pointer-events: none;
+  /* visibility drops the closed dialog from the accessibility tree once the fade ends */
+  visibility: hidden;
+  transition: opacity var(--t), visibility 0s linear var(--t);
 }
 .zoom-overlay:not(.hidden) {
   opacity: 1;
   pointer-events: auto;
+  visibility: visible;
 }
 .zoom-overlay-backdrop {
   position: absolute;
@@ -291,8 +295,9 @@
   touch-action: none;
 }
 .zoom-diagram-svg {
+  /* mermaid sets width="100%" with only a viewBox, so auto would collapse to 0 in the flex box */
+  width: 90vw;
   max-width: 90vw;
   max-height: 88vh;
-  width: auto;
   height: auto;
 }

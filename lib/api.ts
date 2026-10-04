@@ -134,9 +134,9 @@ const get = <T>(p: string) => request<T>("GET", p);
 const post = <T>(p: string, b?: unknown) => request<T>("POST", p, b);
 const del = <T>(p: string, b?: unknown) => request<T>("DELETE", p, b);
 
-// The backend orders sync mutations last-write-wins by this client timestamp.
-function mutationRef(wiki_id: string, path: string) {
-  return { wiki_id, path, client_ts: new Date().toISOString() };
+// The backend orders sync mutations last-write-wins by this client timestamp; replays pass the original action time.
+function mutationRef(wiki_id: string, path: string, client_ts = new Date().toISOString()) {
+  return { wiki_id, path, client_ts };
 }
 
 export const api = {
@@ -158,19 +158,23 @@ export const api = {
   },
   bookmarks: {
     list: () => get<SyncRow[]>("/bookmarks"),
-    add: (wiki_id: string, path: string) => post<void>("/bookmarks", mutationRef(wiki_id, path)),
-    remove: (wiki_id: string, path: string) => del<void>("/bookmarks", mutationRef(wiki_id, path)),
+    add: (wiki_id: string, path: string, client_ts?: string) =>
+      post<void>("/bookmarks", mutationRef(wiki_id, path, client_ts)),
+    remove: (wiki_id: string, path: string, client_ts?: string) =>
+      del<void>("/bookmarks", mutationRef(wiki_id, path, client_ts)),
     clear: (wiki_id?: string) => del<void>("/bookmarks/all", wiki_id ? { wiki_id } : {}),
   },
   completions: {
     list: () => get<SyncRow[]>("/completions"),
-    add: (wiki_id: string, path: string) => post<void>("/completions", mutationRef(wiki_id, path)),
-    remove: (wiki_id: string, path: string) =>
-      del<void>("/completions", mutationRef(wiki_id, path)),
+    add: (wiki_id: string, path: string, client_ts?: string) =>
+      post<void>("/completions", mutationRef(wiki_id, path, client_ts)),
+    remove: (wiki_id: string, path: string, client_ts?: string) =>
+      del<void>("/completions", mutationRef(wiki_id, path, client_ts)),
   },
   recents: {
     list: () => get<SyncRow[]>("/recents"),
-    add: (wiki_id: string, path: string) => post<void>("/recents", mutationRef(wiki_id, path)),
+    add: (wiki_id: string, path: string, client_ts?: string) =>
+      post<void>("/recents", mutationRef(wiki_id, path, client_ts)),
     clear: (wiki_id?: string) => del<void>("/recents/all", wiki_id ? { wiki_id } : {}),
   },
   importAll: (payload: ImportPayload) => post<void>("/sync/import", payload),

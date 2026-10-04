@@ -1,6 +1,9 @@
 """Article body rendering: code copy, topbar title, TOC, zoom overlay, math, footnotes, prerequisites."""
 
+import re
+
 import pytest
+from playwright.sync_api import expect
 
 # Dropped: DOMPurify tests - article HTML is trusted build-time output, no runtime sanitiser (see test_security.py).
 # Dropped: sessionStorage HTML cache - no runtime markdown render to cache.
@@ -63,69 +66,6 @@ def test_copy_button_writes_to_clipboard(page, base_url):
     assert clipboard.strip() == pre_text.strip()
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_prerequisites_chips_rendered(page, base_url):
-    """Prerequisites section (H2 heading + list) is converted to chips."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# Mock Content\n\n## Prerequisites\n\n- [A](./a.md) [Must read] - reason A\n"
-        "- [B](./b.md) [Should read] - reason B\n\n## Body\n\ncontent\n",
-    )
-    page.wait_for_selector(".prereqs-container", timeout=5_000)
-
-    chips = page.locator(".prereq-chip").all()
-    assert len(chips) == 2
-    assert chips[0].inner_text().startswith("A")
-    assert chips[1].inner_text().startswith("B")
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_prerequisites_original_paragraph_removed(page, base_url):
-    """Original Prerequisites heading + list is removed after chip render."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# Mock Content\n\n## Prerequisites\n\n- [A](./a.md) [Must read] - reason A\n\n## Body\n\ncontent\n",
-    )
-    page.wait_for_selector(".prereqs-container", timeout=5_000)
-
-    remaining = page.evaluate("""() => {
-        const heading = [...document.querySelectorAll('#markdown-body h2')]
-            .find(h => h.textContent.trim() === 'Prerequisites');
-        return !!heading;
-    }""")
-    assert not remaining, "Original Prerequisites heading was not removed"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_prerequisites_strip_scrolls_horizontally(page, base_url):
-    """Prerequisites chips stay on one nowrap row with overflow-x scroll (same strip language as related)."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# Mock Content\n\n## Prerequisites\n\n"
-        "- [Alpha](./a.md) [Must read] - a\n"
-        "- [Beta](./b.md) [Should read] - b\n"
-        "- [Gamma](./c.md) [Must read] - c\n"
-        "- [Delta](./d.md) [Should read] - d\n\n"
-        "## Body\n\ncontent\n",
-    )
-    page.wait_for_selector(".prereqs-container", timeout=5_000)
-
-    style = page.evaluate("""() => {
-        const el = document.querySelector('.prereqs-container');
-        const s = getComputedStyle(el);
-        return { display: s.display, flexWrap: s.flexWrap, overflowX: s.overflowX, paddingBottom: s.paddingBottom };
-    }""")
-    assert style["display"] == "flex", f"expected flex, got: {style}"
-    assert style["flexWrap"] == "nowrap", f"expected nowrap, got: {style}"
-    assert style["overflowX"] in ("auto", "scroll"), f"expected overflow-x scroll, got: {style}"
-    assert style["paddingBottom"] != "0px", (
-        f"expected padding-bottom gap above the scrollbar, got: {style}"
-    )
-
-
 # ── Topbar title ────────────────────────────────────────────────────────────────
 
 
@@ -157,57 +97,7 @@ def test_topbar_title_text_matches_article(page, base_url):
 # ── KaTeX math ───────────────────────────────────────────────────────
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_katex_renders_block_math(page, base_url):
-    """$$...$$ block math is rendered into KaTeX HTML elements."""
-    _load_mock_article(page, base_url, "# Math\n\n$$E = mc^2$$\n", slug="math-block")
-
-    page.wait_for_selector("#markdown-body .katex", timeout=5_000)
-    katex_count = page.locator("#markdown-body .katex").count()
-    assert katex_count > 0, "No .katex elements found - block math not rendered"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_katex_renders_inline_math(page, base_url):
-    """$...$ inline math is rendered into KaTeX HTML elements."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# Inline Math\n\nEnergy is $E = mc^2$ by Einstein.\n",
-        slug="math-inline",
-    )
-
-    page.wait_for_selector("#markdown-body .katex", timeout=5_000)
-    katex_count = page.locator("#markdown-body .katex").count()
-    assert katex_count > 0, "No .katex elements found - inline math not rendered"
-
-
 # ── TOC rendering ──────────────────────────────────────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_toc_items_rendered_in_sidebar(page, base_url):
-    """TOC: sidebar nav contains one item per h2/h3 in article content."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# Title\n\n## Section One\n\nText.\n\n## Section Two\n\nText.\n\n### Subsection\n\nText.\n",
-        slug="toc-test",
-    )
-    page.wait_for_selector("#toc-nav .toc-item", timeout=5_000)
-
-    toc_count = page.locator("#toc-nav .toc-item").count()
-    assert toc_count == 3, f"Expected 3 TOC items (2×h2 + 1×h3), got {toc_count}"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_toc_h3_items_have_indent_class(page, base_url):
-    """TOC: h3 headings get .toc-h3 class for visual indent."""
-    _load_mock_article(
-        page, base_url, "# Title\n\n## Top\n\n### Sub\n\nText.\n", slug="toc-h3"
-    )
-    page.wait_for_selector("#toc-nav .toc-h3", timeout=5_000)
-    assert page.locator("#toc-nav .toc-h3").count() == 1
 
 
 def test_toc_item_click_does_not_break_path(page, base_url):
@@ -334,95 +224,6 @@ def _open_zoom_overlay(page, base_url):
     page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=5_000)
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_swipe_down_closes_zoom_overlay(page, base_url):
-    """A downward swipe (>80px) on the overlay closes it on touch devices."""
-    _open_zoom_overlay(page, base_url)
-
-    # Synthesize a downward touch swipe on the overlay.
-    closed = page.evaluate("""() => {
-        const overlay = document.getElementById('zoom-overlay');
-        const touch = (y) =>
-            new Touch({ identifier: 1, target: overlay, clientX: 0, clientY: y });
-        overlay.dispatchEvent(new TouchEvent('touchstart', {
-            bubbles: true, touches: [touch(100)], changedTouches: [touch(100)],
-        }));
-        overlay.dispatchEvent(new TouchEvent('touchend', {
-            bubbles: true, touches: [], changedTouches: [touch(300)],
-        }));
-        return overlay.classList.contains('hidden');
-    }""")
-    assert closed, "Downward swipe >80px should close the zoom overlay"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_small_swipe_does_not_close_zoom_overlay(page, base_url):
-    """A small vertical move (<80px) must not dismiss the overlay."""
-    _open_zoom_overlay(page, base_url)
-
-    still_open = page.evaluate("""() => {
-        const overlay = document.getElementById('zoom-overlay');
-        const touch = (y) =>
-            new Touch({ identifier: 1, target: overlay, clientX: 0, clientY: y });
-        overlay.dispatchEvent(new TouchEvent('touchstart', {
-            bubbles: true, touches: [touch(100)], changedTouches: [touch(100)],
-        }));
-        overlay.dispatchEvent(new TouchEvent('touchend', {
-            bubbles: true, touches: [], changedTouches: [touch(130)],
-        }));
-        return !overlay.classList.contains('hidden');
-    }""")
-    assert still_open, "A <80px swipe must not close the overlay"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_pinch_release_does_not_swipe_dismiss_with_stale_coords(page, base_url):
-    """505: After a 1-finger gesture then a pinch-to-1x, release must not swipe-dismiss
-    using stale startX/startY from the earlier single-finger touch."""
-    _open_zoom_overlay(page, base_url)
-
-    still_open = page.evaluate("""() => {
-        const overlay = document.getElementById('zoom-overlay');
-        const t = (id, x, y) =>
-            new Touch({ identifier: id, target: overlay, clientX: x, clientY: y });
-
-        // 1) Brief single-finger drag that plants startX/startY high on the page.
-        overlay.dispatchEvent(new TouchEvent('touchstart', {
-            bubbles: true, touches: [t(1, 0, 50)], changedTouches: [t(1, 0, 50)],
-        }));
-        overlay.dispatchEvent(new TouchEvent('touchend', {
-            bubbles: true, touches: [], changedTouches: [t(1, 0, 60)],
-        }));
-
-        // 2) Two-finger pinch (must clear stale coords / set pinchOccurred).
-        overlay.dispatchEvent(new TouchEvent('touchstart', {
-            bubbles: true,
-            touches: [t(1, 100, 200), t(2, 140, 200)],
-            changedTouches: [t(1, 100, 200), t(2, 140, 200)],
-        }));
-        overlay.dispatchEvent(new TouchEvent('touchmove', {
-            bubbles: true, cancelable: true,
-            touches: [t(1, 100, 200), t(2, 180, 200)],
-            changedTouches: [t(1, 100, 200), t(2, 180, 200)],
-        }));
-        // Pinch back toward start distance (scale ~1).
-        overlay.dispatchEvent(new TouchEvent('touchmove', {
-            bubbles: true, cancelable: true,
-            touches: [t(1, 100, 200), t(2, 140, 200)],
-            changedTouches: [t(1, 100, 200), t(2, 140, 200)],
-        }));
-        // Lift one finger at a Y that would look like a >80px downward swipe
-        // against the stale startY=50 from step 1 (200-50=150).
-        overlay.dispatchEvent(new TouchEvent('touchend', {
-            bubbles: true,
-            touches: [t(1, 100, 200)],
-            changedTouches: [t(2, 140, 200)],
-        }));
-        return !overlay.classList.contains('hidden');
-    }""")
-    assert still_open, "Pinch release must not swipe-dismiss via stale single-finger coords"
-
-
 # ── Footnotes ───────────────────────────────────────────────────
 
 
@@ -456,34 +257,48 @@ def _load_mock_article_content(page, base_url, content, slug="fntest"):
 # ── Footnotes ───────────────────────────────────────────────────
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_footnote_section_rendered(page, base_url):
-    """Articles with [^n] definitions should render a .footnotes section."""
-    _load_mock_article_content(page, base_url, _ARTICLE_WITH_FOOTNOTES)
-    assert page.locator(".footnotes").count() == 1, ".footnotes section must be present"
+# ── canary "text": math, footnotes, prerequisites, TOC (real build, shared read-only page) ──
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_footnote_list_items_rendered(page, base_url):
-    """Each footnote definition becomes a .footnote-item <li>."""
-    _load_mock_article_content(page, base_url, _ARTICLE_WITH_FOOTNOTES)
-    items = page.locator(".footnote-item").count()
-    assert items == 2, f"Expected 2 footnote items, got {items}"
+def test_math_renders_inline_and_block(content_page):
+    body = content_page("text").locator("#markdown-body")
+    expect(body.locator(".katex-display")).to_have_count(1)
+    expect(body.locator(".katex")).to_have_count(2)
+    box = body.locator(".katex-display .katex").bounding_box()
+    assert box and box["width"] > 0 and box["height"] > 0, "KaTeX styles must give rendered math a size"
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_footnote_refs_link_to_definitions(page, base_url):
-    """Inline [^a] markers become .footnote-ref links pointing to #fn-a."""
-    _load_mock_article_content(page, base_url, _ARTICLE_WITH_FOOTNOTES)
-    refs = page.locator(".footnote-ref").all()
-    assert len(refs) >= 1, "At least one .footnote-ref must exist"
-    href = refs[0].locator("a").get_attribute("href")
-    assert href and href.startswith("#fn-"), f"footnote-ref href must point to #fn-*, got {href!r}"
+def test_footnotes_render_as_list_without_raw_definitions(content_page):
+    page = content_page("text")
+    expect(page.locator("section.footnotes li")).to_have_count(2)
+    expect(page.locator("#markdown-body")).not_to_contain_text("[^first]:")
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_footnote_definitions_removed_from_body(page, base_url):
-    """[^n]: ... definition paragraphs must not appear in the article body."""
-    _load_mock_article_content(page, base_url, _ARTICLE_WITH_FOOTNOTES)
-    body_text = page.locator("#markdown-body").inner_text()
-    assert "[^a]:" not in body_text, "Definition paragraph [^a]: must be removed from body"
+def test_footnote_ref_jumps_to_definition_and_back(content_page):
+    page = content_page("text")
+    ref = page.locator('#markdown-body a[href="#user-content-fn-first"]')
+    ref.click()
+    expect(page.locator("#user-content-fn-first")).to_be_in_viewport()
+    page.get_by_role("link", name="Back to reference 1").click()
+    expect(ref).to_be_in_viewport()
+
+
+def test_prerequisites_become_chips_and_the_source_list_is_removed(content_page):
+    page = content_page("text")
+    strip = page.locator(".prereqs-container")
+    expect(strip.get_by_role("link", name="Array")).to_have_attribute("href", re.compile(r"/dsa/data-structures/array/$"))
+    expect(strip.locator(".prereq-chip")).to_have_count(2)
+    expect(strip.locator(".prereq-chip--unlinked")).to_contain_text("Pointer Aliasing")
+    expect(page.get_by_role("heading", name="Prerequisites")).to_have_count(0)
+
+
+def test_prerequisites_chips_stay_on_one_scrollable_row(content_page):
+    strip = content_page("text").locator(".prereqs-container")
+    style = strip.evaluate("el => { const s = getComputedStyle(el); return [s.display, s.flexWrap, s.overflowX]; }")
+    assert style == ["flex", "nowrap", "auto"]
+
+
+def test_toc_lists_h2_and_h3_with_h3_indented(content_page):
+    toc = content_page("text").locator("#toc-nav")
+    expect(toc.locator(".toc-item.toc-h2")).to_have_text(["Overview", "Code", "Long Form", "Footnotes"])
+    expect(toc.locator(".toc-item.toc-h3")).to_have_text(["Sub-topic", "First Reading Block", "Second Reading Block", "Third Reading Block", "Fourth Reading Block", "Fifth Reading Block", "Closing Notes"])

@@ -2,7 +2,7 @@ import { api } from "@/lib/api";
 import { verticalRegistry } from "@/lib/content/verticals";
 import { completionsKey } from "./keys";
 import { getJSON, remove, setJSON, subscribeKey } from "./local";
-import { scheduleSyncMutation } from "./sync";
+import { enqueueSync } from "./sync";
 
 function readSet(wikiId: string): Set<string> {
   return new Set(getJSON<string[]>(completionsKey(wikiId), []));
@@ -27,7 +27,7 @@ export function markCompleted(wikiId: string, path: string): boolean {
   if (set.has(path)) return false;
   set.add(path);
   setJSON(completionsKey(wikiId), [...set]);
-  scheduleSyncMutation(`completed|${wikiId}|${path}`, () => api.completions.add(wikiId, path));
+  enqueueSync({ kind: "completion.add", wikiId, path });
   return true;
 }
 
@@ -35,7 +35,7 @@ export function markUncompleted(wikiId: string, path: string): void {
   const set = readSet(wikiId);
   if (!set.delete(path)) return;
   setJSON(completionsKey(wikiId), [...set]);
-  scheduleSyncMutation(`completed|${wikiId}|${path}`, () => api.completions.remove(wikiId, path));
+  enqueueSync({ kind: "completion.remove", wikiId, path });
 }
 
 export function clearCompletions(wikiId: string): void {

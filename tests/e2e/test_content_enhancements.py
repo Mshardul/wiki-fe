@@ -17,6 +17,9 @@ import json
 
 import pytest
 from conftest import force_paint
+from playwright.sync_api import expect
+
+# Not ported to the Next reader (no component implements them): mermaid step-through walkthrough (Play button, caption rail, node highlight), mermaid node-caption tooltips, the copy-diagram-SVG button, and closing an open diagram zoom when the theme changes. Pinch/swipe/double-tap zoom is covered in ZoomLightbox.test.tsx.
 
 ARTICLE_WITH_TABLE = """\
 # Table Test
@@ -29,71 +32,6 @@ ARTICLE_WITH_TABLE = """\
 | row2a    | row2b    | row2c    | row2d    | row2e    |
 """
 
-ARTICLE_WITH_IMAGE = """\
-# Image Test
-
-![A test image](data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7)
-
-Some text after the image.
-"""
-
-ARTICLE_WITH_MERMAID = """\
-# Mermaid Test
-
-```mermaid
-graph LR
-  A[Start] --> B[Middle] --> C[End]
-```
-
-Some text.
-"""
-
-ARTICLE_WITH_VIDEO = """\
-# Video Test
-
-https://www.youtube.com/watch?v=dQw4w9WgXcQ
-
-Some text after the video.
-"""
-
-ARTICLE_WITH_BARE_URL_NOT_VIDEO = """\
-# Bare URL Test
-
-https://example.com/not-a-video
-
-Some text after the link.
-"""
-
-ARTICLE_WITH_TWO_MERMAID_DIAGRAMS = """\
-# Two Diagrams Test
-
-```mermaid
-graph LR
-  A[Start] --> B[Middle] --> C[End]
-```
-
-""" + ("Filler paragraph to push the second diagram off-screen.\n\n" * 80) + """
-```mermaid
-graph LR
-  X[Foo] --> Y[Bar] --> Z[Baz]
-```
-
-Some text.
-"""
-
-ARTICLE_WITH_MERMAID_STEPS = """\
-# Mermaid Step-Through Test
-
-```mermaid
-graph LR
-  A[Start] --> B[Middle] --> C[End]
-  %% step: 1 a "Start at node A"
-  %% step: 2 a,b "Traverse edge A to B"
-  %% step: 3 b,c "Traverse edge B to C"
-```
-
-Some text.
-"""
 
 # Dropped: quiz-me table blur (spec §9), save-as-card image export (freeze-frame, spec §9), study mode (H hotkey, removed).
 # Dropped: hljs stylesheet swap / SRI - Shiki highlights at build time, no runtime theme stylesheet.
@@ -147,33 +85,6 @@ def _load_mock_article(page, base_url, content, slug="mock"):
 
 
 # ── Video embed ───────────────────────────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_bare_youtube_url_converts_to_iframe_embed(page, base_url):
-    """A bare YouTube URL on its own line becomes a responsive iframe."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_VIDEO, slug="video-embed")
-    page.wait_for_selector(".video-embed iframe", timeout=5_000)
-
-    result = page.evaluate("""() => {
-        const iframe = document.querySelector('.video-embed iframe');
-        return { src: iframe?.getAttribute('src'), loading: iframe?.getAttribute('loading') };
-    }""")
-    assert result["src"] == "https://www.youtube.com/embed/dQw4w9WgXcQ"
-    assert result["loading"] == "lazy"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_bare_non_video_url_left_unconverted(page, base_url):
-    """A bare URL that isn't YouTube/Vimeo must not be turned into an embed."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_BARE_URL_NOT_VIDEO, slug="not-video")
-
-    result = page.evaluate("""() => ({
-        embeds: document.querySelectorAll('.video-embed').length,
-        text: document.getElementById('markdown-body').textContent,
-    })""")
-    assert result["embeds"] == 0
-    assert "https://example.com/not-a-video" in result["text"]
 
 
 # ── Table scroll cue ──────────────────────────────────────────────
@@ -374,480 +285,13 @@ def _pinch(page, el_selector, overlay_selector, start_dx, end_dx):
     )
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_pinch_zoom_scales_image_in_lightbox(page, base_url):
-    """Two-finger pinch on the image lightbox scales the zoomed image up."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_IMAGE, slug="pinch-image")
-    page.wait_for_selector(".zoomable-img", timeout=8_000)
-    page.click(".zoomable-img")
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    transform = _pinch(page, ".zoom-overlay-content > *", "#zoom-overlay", 20, 100)
-    assert "matrix(4" in transform, f"Expected scale to clamp at ZOOM_MAX (4), got: {transform}"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_pinch_zoom_scales_mermaid_diagram_in_lightbox(page, base_url):
-    """Two-finger pinch on the Mermaid diagram zoom overlay scales the diagram up."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="pinch-diagram")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
-    page.click(".mermaid-diagram")
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    transform = _pinch(page, ".zoom-overlay-content > *", "#zoom-overlay", 20, 100)
-    assert "matrix(4" in transform, f"Expected scale to clamp at ZOOM_MAX (4), got: {transform}"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_image_has_zoomable_class(page, base_url):
-    """Images in content body get .zoomable-img class after render."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_IMAGE, slug="img-class")
-    page.wait_for_selector("#markdown-body img", timeout=5_000)
-
-    has_class = page.evaluate("""() => {
-        const img = document.querySelector('#markdown-body img');
-        return img?.classList.contains('zoomable-img');
-    }""")
-    assert has_class, "Image in content is missing .zoomable-img class"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_image_click_opens_zoom_overlay(page, base_url):
-    """Clicking an image in the content body opens the zoom overlay."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_IMAGE, slug="img-open")
-    page.wait_for_selector("#markdown-body img.zoomable-img", timeout=5_000)
-
-    page.locator("#markdown-body img.zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    is_open = page.evaluate(
-        "() => !document.getElementById('zoom-overlay')?.classList.contains('hidden')"
-    )
-    assert is_open, "Zoom overlay did not open after clicking image"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_zoom_overlay_contains_image(page, base_url):
-    """Zoom overlay content contains an <img> element after an image is clicked."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_IMAGE, slug="img-content")
-    page.wait_for_selector("#markdown-body img.zoomable-img", timeout=5_000)
-
-    page.locator("#markdown-body img.zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    img_in_overlay = page.evaluate("""() => {
-        const overlay = document.getElementById('zoom-overlay');
-        return overlay?.querySelector('.zoom-overlay-content img') !== null;
-    }""")
-    assert img_in_overlay, "Zoom overlay does not contain an <img> element"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_zoom_overlay_closes_on_escape(page, base_url):
-    """Pressing Escape closes the zoom overlay."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_IMAGE, slug="img-esc")
-    page.wait_for_selector("#markdown-body img.zoomable-img", timeout=5_000)
-
-    page.locator("#markdown-body img.zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    page.keyboard.press("Escape")
-    page.wait_for_function(
-        "() => document.getElementById('zoom-overlay')?.classList.contains('hidden')",
-        timeout=3_000,
-    )
-    is_open = page.evaluate(
-        "() => !document.getElementById('zoom-overlay')?.classList.contains('hidden')"
-    )
-    assert not is_open, "Zoom overlay should be closed after pressing Escape"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_zoom_overlay_closes_on_backdrop_click(page, base_url):
-    """Clicking the backdrop closes the zoom overlay."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_IMAGE, slug="img-backdrop")
-    page.wait_for_selector("#markdown-body img.zoomable-img", timeout=5_000)
-
-    page.locator("#markdown-body img.zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    # The image is centered in the overlay and intercepts pointer events at center.
-    # Click at the top-left corner of the viewport - always on the backdrop, never on content.
-    page.mouse.click(5, 5)
-    page.wait_for_function(
-        "() => document.getElementById('zoom-overlay')?.classList.contains('hidden')",
-        timeout=3_000,
-    )
-    is_open = page.evaluate(
-        "() => !document.getElementById('zoom-overlay')?.classList.contains('hidden')"
-    )
-    assert not is_open, "Zoom overlay should be closed after clicking backdrop"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_zoom_overlay_closes_on_close_button(page, base_url):
-    """Clicking the × close button closes the zoom overlay."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_IMAGE, slug="img-closebtn")
-    page.wait_for_selector("#markdown-body img.zoomable-img", timeout=5_000)
-
-    page.locator("#markdown-body img.zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    page.locator(".zoom-overlay-close").click()
-    page.wait_for_function(
-        "() => document.getElementById('zoom-overlay')?.classList.contains('hidden')",
-        timeout=3_000,
-    )
-    is_open = page.evaluate(
-        "() => !document.getElementById('zoom-overlay')?.classList.contains('hidden')"
-    )
-    assert not is_open, "Zoom overlay should be closed after clicking close button"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_escape_after_zoom_stays_in_content_view(page, base_url):
-    """Escape while zoom overlay is open closes overlay without navigating away."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_IMAGE, slug="img-nav")
-    page.wait_for_selector("#markdown-body img.zoomable-img", timeout=5_000)
-
-    page.locator("#markdown-body img.zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    page.keyboard.press("Escape")
-    page.wait_for_function(
-        "() => document.getElementById('zoom-overlay')?.classList.contains('hidden')",
-        timeout=3_000,
-    )
-
-    still_content = page.evaluate(
-        "() => document.getElementById('view-content').classList.contains('active')"
-    )
-    assert still_content, "Content view was abandoned when Escape closed zoom overlay"
-
-
 # ── Diagram zoom ──────────────────────────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_diagram_has_zoom_cursor(page, base_url):
-    """.mermaid-diagram element has cursor: zoom-in from CSS."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-cursor")
-    page.wait_for_selector(".mermaid-diagram", timeout=8_000)
-
-    cursor = page.evaluate("""() => {
-        const d = document.querySelector('.mermaid-diagram');
-        return d ? getComputedStyle(d).cursor : null;
-    }""")
-    assert cursor == "zoom-in", (
-        f"Expected cursor: zoom-in on .mermaid-diagram, got: {cursor}"
-    )
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_diagram_click_opens_zoom_overlay(page, base_url):
-    """Clicking a rendered .mermaid-diagram opens the zoom overlay."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-open")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
-
-    page.locator(".mermaid-diagram").first.click()
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    is_open = page.evaluate(
-        "() => !document.getElementById('zoom-overlay')?.classList.contains('hidden')"
-    )
-    assert is_open, "Zoom overlay did not open after clicking mermaid diagram"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_diagram_zoom_overlay_closes_on_theme_change(page, base_url):
-    """An open diagram zoom overlay closes on theme change, instead of showing stale colors."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-zoom-theme")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
-
-    page.locator(".mermaid-diagram").first.click()
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    page.evaluate("() => Settings._setBackground('light-white')")
-
-    page.wait_for_function(
-        "() => document.getElementById('zoom-overlay')?.classList.contains('hidden')",
-        timeout=3_000,
-    )
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_diagram_zoom_overlay_contains_svg(page, base_url):
-    """Zoom overlay content contains an <svg> element after a diagram is clicked."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-svg")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
-
-    page.locator(".mermaid-diagram").first.click()
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    svg_in_overlay = page.evaluate("""() => {
-        const overlay = document.getElementById('zoom-overlay');
-        return overlay?.querySelector('.zoom-overlay-content svg') !== null;
-    }""")
-    assert svg_in_overlay, "Zoom overlay does not contain an <svg> element"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_diagram_zoom_overlay_svg_has_nonzero_size(page, base_url):
-    """Zoomed diagram SVG renders with real dimensions, not collapsed to 0x0."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-size")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
-
-    page.locator(".mermaid-diagram").first.click()
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    box = page.locator(".zoom-diagram-svg").bounding_box()
-    assert box is not None
-    assert box["width"] > 0 and box["height"] > 0, (
-        f"Zoomed diagram SVG collapsed to a zero-size box: {box}"
-    )
 
 
 # ── Diagram theme sync ────────────────────────────────────────────
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_src_stored_on_wrapper(page, base_url):
-    """.mermaid-diagram wrappers have data-mermaid-src set after initial render."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-src")
-    page.wait_for_selector(".mermaid-diagram", timeout=8_000)
-
-    has_src = page.evaluate("""() => {
-        const wrapper = document.querySelector('.mermaid-diagram');
-        return wrapper?.dataset.mermaidSrc?.trim().length > 0;
-    }""")
-    assert has_src, ".mermaid-diagram wrapper is missing data-mermaid-src attribute"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_diagram_rerenders_on_theme_change(page, base_url):
-    """Switching theme triggers Mermaid re-render; SVG output changes."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-theme")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
-
-    svg_before = page.evaluate(
-        "() => document.querySelector('.mermaid-diagram svg')?.outerHTML"
-    )
-    assert svg_before, "No mermaid SVG found before theme change"
-
-    page.evaluate("() => Settings._setBackground('light-white')")
-
-    page.wait_for_function(
-        f"""() => {{
-            const svg = document.querySelector('.mermaid-diagram svg');
-            return svg && svg.outerHTML !== {repr(svg_before)};
-        }}""",
-        timeout=5_000,
-    )
-
-    svg_after = page.evaluate(
-        "() => document.querySelector('.mermaid-diagram svg')?.outerHTML"
-    )
-    assert svg_before != svg_after, (
-        "Mermaid SVG did not change after theme switch - re-render not triggered"
-    )
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_diagram_src_preserved_after_theme_change(page, base_url):
-    """data-mermaid-src is preserved on wrapper after a theme-triggered re-render."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="diag-src-preserve")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
-
-    src_before = page.evaluate(
-        "() => document.querySelector('.mermaid-diagram')?.dataset.mermaidSrc"
-    )
-    page.evaluate("() => Settings._setBackground('light-white')")
-
-    # Wait for re-render: rerenderMermaidDiagrams replaces wrapper.innerHTML
-    page.wait_for_function(
-        "() => !!document.querySelector('.mermaid-diagram svg')",
-        timeout=5_000,
-    )
-
-    src_after = page.evaluate(
-        "() => document.querySelector('.mermaid-diagram')?.dataset.mermaidSrc"
-    )
-    assert src_before == src_after, (
-        "data-mermaid-src changed after re-render - re-render should preserve source attribute"
-    )
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_offscreen_diagram_rerenders_on_theme_change(page, base_url):
-    """Regression: a Mermaid diagram scrolled out of the
-    viewport must still re-render on theme change, not keep the stale
-    theme's colors until it happens to scroll back into view."""
-    _load_mock_article(
-        page, base_url, ARTICLE_WITH_TWO_MERMAID_DIAGRAMS, slug="diag-offscreen"
-    )
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
-    page.wait_for_function(
-        "() => document.querySelectorAll('.mermaid-diagram svg').length === 2",
-        timeout=8_000,
-    )
-
-    # Scroll to top so the second diagram sits well below the viewport.
-    page.evaluate("() => window.scrollTo(0, 0)")
-    second_in_viewport = page.evaluate("""() => {
-        const wrappers = document.querySelectorAll('.mermaid-diagram');
-        const r = wrappers[1].getBoundingClientRect();
-        return r.top < window.innerHeight;
-    }""")
-    assert not second_in_viewport, "test setup invalid: second diagram is still in viewport"
-
-    svg_before = page.evaluate(
-        "() => document.querySelectorAll('.mermaid-diagram svg')[1]?.outerHTML"
-    )
-    assert svg_before, "No mermaid SVG found for second (off-screen) diagram"
-
-    page.evaluate("() => Settings._setBackground('light-white')")
-
-    page.wait_for_function(
-        f"""() => {{
-            const svg = document.querySelectorAll('.mermaid-diagram svg')[1];
-            return svg && svg.outerHTML !== {repr(svg_before)};
-        }}""",
-        timeout=5_000,
-    )
-
-    svg_after = page.evaluate(
-        "() => document.querySelectorAll('.mermaid-diagram svg')[1]?.outerHTML"
-    )
-    assert svg_before != svg_after, (
-        "off-screen diagram's SVG did not change after theme switch - "
-        "the inViewport gate is still skipping it"
-    )
-
-
 # ── Mermaid step-through ──────────────────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_no_step_through_button_without_steps(page, base_url):
-    """A mermaid diagram with no %% step: directives gets no Play button."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID, slug="steps-none")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
-
-    count = page.locator(".mermaid-step-play-btn").count()
-    assert count == 0, "Play button should not appear when no %% step: directives are present"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_step_through_play_button_appears(page, base_url):
-    """A mermaid diagram with %% step: directives shows a Play button."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_STEPS, slug="steps-btn")
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
-
-    page.wait_for_selector(".mermaid-step-play-btn", timeout=3_000)
-    count = page.locator(".mermaid-step-play-btn").count()
-    assert count == 1, "Play button should appear when %% step: directives are present"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_step_through_play_reveals_rail_and_highlights_first_step(page, base_url):
-    """Clicking Play reveals the caption rail and highlights the first step's node."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_STEPS, slug="steps-play")
-    page.wait_for_selector(".mermaid-step-play-btn", timeout=8_000)
-
-    page.locator(".mermaid-step-play-btn").click()
-    page.wait_for_selector(".mermaid-step-rail", state="visible", timeout=3_000)
-
-    label_text = page.locator(".mermaid-step-label").inner_text()
-    assert "Step 1/3" in label_text, f"Expected 'Step 1/3' in rail label, got: {label_text}"
-
-    active_count = page.locator(".mermaid-diagram .step-active").count()
-    assert active_count >= 1, "First step should highlight at least one node"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_step_through_next_advances_step(page, base_url):
-    """Clicking Next advances to the next step and updates the caption."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_STEPS, slug="steps-next")
-    page.wait_for_selector(".mermaid-step-play-btn", timeout=8_000)
-
-    page.locator(".mermaid-step-play-btn").click()
-    page.wait_for_selector(".mermaid-step-rail", state="visible", timeout=3_000)
-
-    page.locator(".mermaid-step-next").click()
-    page.wait_for_function(
-        "() => document.querySelector('.mermaid-step-label')?.textContent.includes('Step 2/3')",
-        timeout=3_000,
-    )
-
-    label_text = page.locator(".mermaid-step-label").inner_text()
-    assert "Traverse edge A to B" in label_text, (
-        f"Expected step 2 caption in rail label, got: {label_text}"
-    )
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_step_highlight_survives_theme_change(page, base_url):
-    """An active step-through highlight is reapplied after a theme-triggered re-render, not lost."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_STEPS, slug="steps-theme")
-    page.wait_for_selector(".mermaid-step-play-btn", timeout=8_000)
-
-    page.locator(".mermaid-step-play-btn").click()
-    page.wait_for_selector(".mermaid-step-rail", state="visible", timeout=3_000)
-    page.locator(".mermaid-step-next").click()
-    page.wait_for_function(
-        "() => document.querySelector('.mermaid-step-label')?.textContent.includes('Step 2/3')",
-        timeout=3_000,
-    )
-
-    svg_before = page.evaluate("() => document.querySelector('.mermaid-diagram svg')?.outerHTML")
-    page.evaluate("() => Settings._setBackground('light-white')")
-    page.wait_for_function(
-        f"""() => {{
-            const svg = document.querySelector('.mermaid-diagram svg');
-            return svg && svg.outerHTML !== {repr(svg_before)};
-        }}""",
-        timeout=5_000,
-    )
-
-    label_text = page.locator(".mermaid-step-label").inner_text()
-    assert "Step 2/3" in label_text, (
-        f"Step label should still read Step 2/3 after theme change, got: {label_text}"
-    )
-    active_count = page.locator(".mermaid-diagram .step-active").count()
-    assert active_count >= 1, "Step highlight should be reapplied after theme-change re-render"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_step_prev_next_44px_on_coarse_pointer(browser, base_url, cdn_cache):
-    """Regression: .mermaid-step-prev/.mermaid-step-next use
-    small padding with no pointer:coarse fallback, under the 44px minimum."""
-    from conftest import _make_cdn_fulfill_handler
-
-    ctx = browser.new_context(
-        has_touch=True,
-        is_mobile=True,
-        viewport={"width": 390, "height": 844},
-        service_workers="block",
-    )
-    page = ctx.new_page()
-    try:
-        for url, (body, content_type) in cdn_cache.items():
-            page.route(url, _make_cdn_fulfill_handler(body, content_type))
-
-        _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_STEPS, slug="steps-touch")
-        page.wait_for_selector(".mermaid-step-play-btn", timeout=8_000)
-        page.locator(".mermaid-step-play-btn").click()
-        page.wait_for_selector(".mermaid-step-rail", state="visible", timeout=3_000)
-
-        heights = page.evaluate("""() => {
-            const prev = document.querySelector('.mermaid-step-prev').getBoundingClientRect();
-            const next = document.querySelector('.mermaid-step-next').getBoundingClientRect();
-            return { prev: prev.height, next: next.height };
-        }""")
-        assert heights["prev"] >= 44, f"mermaid-step-prev height too small: {heights['prev']}px"
-        assert heights["next"] >= 44, f"mermaid-step-next height too small: {heights['next']}px"
-    finally:
-        ctx.close()
 
 
 # ── Anchor link toast ─────────────────────────────────────────────
@@ -1200,30 +644,6 @@ def test_multiline_callout_only_flexes_first_line(page, base_url):
 
 # ── Broken image placeholder ─────────────────────────────────────
 
-ARTICLE_WITH_BROKEN_IMAGE = """\
-# Broken Image Test
-
-## Section
-
-![Missing image](/content/broken-test-image-404-xyz.png)
-
-Some text after the image.
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_broken_image_shows_error_placeholder(page, base_url):
-    """A broken <img> src is replaced with .img-error-placeholder after onerror fires."""
-    page.route("**/broken-test-image-404-xyz.png", lambda r: r.abort())
-    _load_mock_article(page, base_url, ARTICLE_WITH_BROKEN_IMAGE, slug="broken-img")
-    page.wait_for_selector("#markdown-body", timeout=5_000)
-    page.wait_for_selector(".img-error-placeholder", timeout=5_000)
-
-    count = page.evaluate(
-        "() => document.querySelectorAll('#markdown-body .img-error-placeholder').length"
-    )
-    assert count > 0, "No .img-error-placeholder found - broken image not replaced"
-
 
 # ── Copy code with source-context header ────────────────────────────────────────
 
@@ -1303,8 +723,6 @@ def test_copy_source_toggle_persists(wiki_page):
 
 
 # ── Topbar action buttons ──────────────────────────────────────────
-
-
 
 
 @pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
@@ -1616,57 +1034,6 @@ def test_comparison_column_toggle_hides_and_persists(page, base_url):
 
 # ── Mermaid copy as SVG ─────────────────────────────────────────────────────────
 
-ARTICLE_WITH_MERMAID_FOR_COPY = """\
-# Mermaid Copy Test
-
-## Section
-
-```mermaid
-graph LR
-  A[Start] --> B[End]
-```
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_diagram_has_copy_button(page, base_url):
-    """A rendered .mermaid-diagram contains a .mermaid-copy-btn button."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_FOR_COPY, slug="mermaid-copy-btn")
-    page.wait_for_selector(".mermaid-diagram", timeout=8_000)
-    count = page.evaluate(
-        "() => document.querySelectorAll('.mermaid-diagram .mermaid-copy-btn').length"
-    )
-    assert count >= 1, "No .mermaid-copy-btn found inside .mermaid-diagram"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_copy_btn_copies_svg(page, base_url):
-    """Clicking .mermaid-copy-btn writes SVG markup to the clipboard."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MERMAID_FOR_COPY, slug="mermaid-copy-svg")
-    page.wait_for_selector(".mermaid-diagram svg", state="attached", timeout=8_000)
-    # Patch clipboard before clicking so it survives any re-render
-    page.evaluate(
-        "() => { navigator.clipboard.writeText = (t) => { window.__svgCopied = t; return Promise.resolve(); }; }"
-    )
-    # Wait for DOM to stabilise: poll until the button stays attached for 200ms
-    page.wait_for_function(
-        """() => {
-            const btn = document.querySelector('.mermaid-copy-btn');
-            if (!btn || !btn.isConnected) return false;
-            window.__copyBtnRef = btn;
-            return true;
-        }""",
-        timeout=8_000,
-    )
-    page.wait_for_function(
-        "() => window.__copyBtnRef && window.__copyBtnRef.isConnected",
-        timeout=3_000,
-    )
-    page.locator(".mermaid-copy-btn").click()
-    page.wait_for_function("() => !!window.__svgCopied", timeout=5_000)
-    copied = page.evaluate("() => window.__svgCopied")
-    assert "<svg" in copied, f"Copied text does not look like SVG: {copied[:80]!r}"
-
 
 # ── Formula variable-substitution toggle ────────────────────────────
 
@@ -1776,135 +1143,6 @@ def test_formula_toggle_wrapper_present(page, base_url):
 
 # ── Mermaid node hover captions ──────────────────────────────────────
 
-ARTICLE_WITH_CAPTIONED_MERMAID = """\
-# Mermaid Caption Test
-
-## Section
-
-```mermaid
-%% node-caption: A "entry point - receives all requests"
-%% node-caption: B "load balancer - fans out to workers"
-graph LR
-  A[Client] --> B[Load Balancer] --> C[Server]
-```
-
-Some text.
-"""
-
-ARTICLE_WITH_UNCAPTIONED_MERMAID = """\
-# Mermaid No Caption Test
-
-## Section
-
-```mermaid
-graph LR
-  A[Start] --> B[End]
-```
-
-Some text.
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_node_caption_parsed_from_src(page, base_url):
-    """data-mermaid-src contains the %% node-caption lines after render."""
-    _load_mock_article(
-        page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-caption-src"
-    )
-    page.wait_for_selector(".mermaid-diagram[data-mermaid-src]", timeout=8_000)
-    src = page.evaluate(
-        "() => document.querySelector('.mermaid-diagram')?.dataset.mermaidSrc ?? ''"
-    )
-    assert "node-caption" in src, "node-caption lines missing from data-mermaid-src"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_tooltip_element_exists(page, base_url):
-    """#mermaid-node-tooltip is injected into the DOM when captions are present."""
-    _load_mock_article(
-        page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-tooltip-el"
-    )
-    exists = page.evaluate(
-        "() => !!document.getElementById('mermaid-node-tooltip')"
-    )
-    assert exists, "#mermaid-node-tooltip not found in DOM"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_tooltip_not_injected_without_captions(page, base_url):
-    """#mermaid-node-tooltip is NOT injected when no %% node-caption lines are present."""
-    _load_mock_article(
-        page, base_url, ARTICLE_WITH_UNCAPTIONED_MERMAID, slug="mermaid-tooltip-absent"
-    )
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
-    exists = page.evaluate(
-        "() => !!document.getElementById('mermaid-node-tooltip')"
-    )
-    assert not exists, "#mermaid-node-tooltip should not exist when no captions defined"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_tooltip_not_visible_on_load(page, base_url):
-    """#mermaid-node-tooltip does not have .visible class on initial load."""
-    _load_mock_article(
-        page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-tooltip-hidden"
-    )
-    page.wait_for_selector(".mermaid-diagram svg", timeout=8_000)
-    is_visible = page.evaluate(
-        "() => document.getElementById('mermaid-node-tooltip')?.classList.contains('visible') ?? false"
-    )
-    assert not is_visible, "#mermaid-node-tooltip should not be .visible on load"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_tooltip_shows_on_touchstart(page, base_url):
-    """Tapping a captioned node (touchstart) shows the tooltip - touch fallback
-    for devices with no mouseenter."""
-    _load_mock_article(
-        page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-tooltip-touch"
-    )
-    page.wait_for_selector(".mermaid-diagram .has-node-caption", timeout=8_000)
-
-    page.evaluate("""() => {
-        const el = document.querySelector('.has-node-caption');
-        const rect = el.getBoundingClientRect();
-        const touch = new Touch({
-            identifier: 1, target: el,
-            clientX: rect.x + rect.width / 2, clientY: rect.y + rect.height / 2,
-        });
-        el.dispatchEvent(new TouchEvent('touchstart', {
-            bubbles: true, cancelable: true,
-            touches: [touch], targetTouches: [touch], changedTouches: [touch],
-        }));
-    }""")
-
-    is_visible = page.evaluate(
-        "() => document.getElementById('mermaid-node-tooltip')?.classList.contains('visible') ?? false"
-    )
-    assert is_visible, "tooltip did not become visible on touchstart"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_mermaid_captions_survive_theme_change(page, base_url):
-    """Node-caption wiring is re-applied after a theme-triggered Mermaid re-render."""
-    _load_mock_article(
-        page, base_url, ARTICLE_WITH_CAPTIONED_MERMAID, slug="mermaid-caption-theme"
-    )
-    page.wait_for_selector(".mermaid-diagram .has-node-caption", timeout=8_000)
-
-    svg_before = page.evaluate("() => document.querySelector('.mermaid-diagram svg')?.outerHTML")
-    page.evaluate("() => Settings._setBackground('light-white')")
-    page.wait_for_function(
-        f"""() => {{
-            const svg = document.querySelector('.mermaid-diagram svg');
-            return svg && svg.outerHTML !== {repr(svg_before)};
-        }}""",
-        timeout=5_000,
-    )
-
-    caption_count = page.locator(".mermaid-diagram .has-node-caption").count()
-    assert caption_count > 0, "Caption wiring must survive theme-change re-render"
-
 
 # ── ResizeObserver cleanup ──────────────────────────────────────────────────────
 
@@ -1986,54 +1224,6 @@ def test_tabbed_code_blocks_lang_persistence(page, base_url):
 
 
 # ── Zoom overlay caption from alt text ───────────────────────────────────
-
-ARTICLE_WITH_CAPTIONED_IMAGE = """\
-# Caption Test
-
-## Section
-
-![A descriptive caption](data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7)
-
-Some text.
-"""
-
-ARTICLE_WITH_UNCAPTIONED_IMAGE = """\
-# No Caption Test
-
-## Section
-
-![](data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7)
-
-Some text.
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_zoom_overlay_shows_caption_when_alt_present(page, base_url):
-    """Clicking an image with alt text shows .zoom-caption in the overlay."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_CAPTIONED_IMAGE, slug="caption-img")
-    page.wait_for_selector(".zoomable-img", timeout=5_000)
-    page.locator(".zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    caption = page.locator(".zoom-caption")
-    assert caption.count() == 1, ".zoom-caption not found in overlay"
-    assert caption.is_visible(), ".zoom-caption not visible"
-    assert caption.inner_text() == "A descriptive caption"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_zoom_overlay_no_caption_when_alt_empty(page, base_url):
-    """Clicking an image with empty alt text shows no visible .zoom-caption."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_UNCAPTIONED_IMAGE, slug="no-caption-img")
-    page.wait_for_selector(".zoomable-img", timeout=5_000)
-    page.locator(".zoomable-img").first.click()
-    page.wait_for_selector("#zoom-overlay:not(.hidden)", timeout=3_000)
-
-    caption = page.locator(".zoom-caption")
-    assert caption.count() == 0 or not caption.is_visible(), (
-        ".zoom-caption should not be visible when alt is empty"
-    )
 
 
 # ── Collapsible callouts with + prefix ────────────────────────────────────
@@ -3033,15 +2223,6 @@ ARTICLE_FOR_HIGHLIGHTS = """\
 This is a paragraph with some selectable text in it for testing highlights and markers.
 """
 
-ARTICLE_FOR_MULTI_MARKERS = """\
-# Multi-marker Test
-
-Alpha word here and Beta word there for two marker offsets.
-"""
-
-
-
-
 
 def _select_word(page, word):
     """Selects the first occurrence of `word` inside #markdown-body via a real Range,
@@ -3382,23 +2563,6 @@ def test_keyboard_enter_removes_focused_highlight(page, base_url):
 
 # ── Emoji markers inside code ────────────────────────────────────────────────────
 
-ARTICLE_WITH_CODE_FOR_MARKERS = """\
-# Code Marker Guard
-
-## Section
-
-Prose before the block.
-
-```python
-
-
-def selectable():
-    return "inside"
-```
-
-More selectable prose after.
-"""
-
 
 def test_emoji_marker_buttons_hidden_when_selection_in_code(page, base_url):
     """484: Selecting inside a code block keeps highlight but hides emoji marker buttons."""
@@ -3563,3 +2727,116 @@ def test_code_block_disables_ligatures(page, base_url):
     )
     lig = (lig or "").replace(" ", "").lower()
     assert "none" in lig or lig == "noligatures", f"expected ligatures none, got {lig!r}"
+
+
+
+# ── canary "media": video embed, image zoom, mermaid (real build) ──────────────
+
+IMAGE_ALT = "A checkerboard of indigo squares"
+
+
+def _canary(page, base_url, name):
+    page.goto(f"{base_url}/e2e-canary/{name}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
+    return page
+
+
+def _zoom_overlay(page):
+    return page.get_by_role("dialog", name="Zoomed view")
+
+
+def _expect_zoom_open(overlay):
+    expect(overlay).to_be_visible()
+
+
+# A closed overlay is hidden from the accessibility tree too, so it no longer matches by role.
+def _expect_zoom_closed(overlay):
+    expect(overlay).to_be_hidden()
+
+
+def test_bare_video_url_becomes_a_responsive_embed_and_other_urls_stay_links(content_page):
+    page = content_page("media")
+    frame = page.locator(".video-embed iframe")
+    expect(frame).to_have_count(1)
+    expect(frame).to_have_attribute("src", "https://www.youtube.com/embed/dQw4w9WgXcQ")
+    box = page.locator(".video-embed").bounding_box()
+    assert box and abs(box["width"] / box["height"] - 16 / 9) < 0.05
+    expect(page.get_by_role("link", name="https://example.com/plain-page")).to_be_visible()
+
+
+@pytest.mark.parametrize("close", ["escape", "backdrop", "close button"])
+def test_image_opens_in_zoom_overlay_with_its_alt_as_caption(page, base_url, close):
+    _canary(page, base_url, "media")
+    page.get_by_role("img", name=IMAGE_ALT).click()
+    overlay = _zoom_overlay(page)
+    _expect_zoom_open(overlay)
+    expect(overlay.get_by_role("img", name=IMAGE_ALT)).to_be_visible()
+    expect(overlay.locator(".zoom-caption")).to_have_text(IMAGE_ALT)
+
+    if close == "escape":
+        page.keyboard.press("Escape")
+    elif close == "backdrop":
+        overlay.locator(".zoom-overlay-backdrop").click(position={"x": 5, "y": 5})
+    else:
+        overlay.get_by_role("button", name="Close").click()
+    _expect_zoom_closed(overlay)
+
+
+def test_image_without_alt_text_opens_zoom_without_a_caption(page, base_url):
+    _canary(page, base_url, "media")
+    page.locator("#markdown-body img.zoomable-img").nth(1).click()
+    overlay = _zoom_overlay(page)
+    _expect_zoom_open(overlay)
+    expect(overlay.locator(".zoom-caption")).to_be_hidden()
+
+
+def test_escape_closes_the_zoom_without_leaving_the_article(page, base_url):
+    _canary(page, base_url, "media")
+    url = page.url
+    page.get_by_role("img", name=IMAGE_ALT).click()
+    page.keyboard.press("Escape")
+    _expect_zoom_closed(_zoom_overlay(page))
+    expect(page.locator("#markdown-body")).to_be_visible()
+    assert page.url == url
+
+
+def test_diagram_renders_and_opens_in_zoom_at_a_real_size(page, base_url):
+    _canary(page, base_url, "media")
+    diagram = page.locator("pre.mermaid svg")
+    expect(diagram).to_be_visible()
+
+    diagram.click()
+    overlay = _zoom_overlay(page)
+    _expect_zoom_open(overlay)
+    zoomed = overlay.locator(".zoom-overlay-content svg")
+    expect(zoomed).to_be_visible()
+    box = zoomed.bounding_box()
+    assert box and box["width"] > 50 and box["height"] > 20
+
+
+def test_diagram_redraws_in_the_new_theme_and_keeps_its_source(page, base_url, open_settings):
+    _canary(page, base_url, "media")
+    diagram = page.locator("pre.mermaid")
+    expect(diagram.locator("svg")).to_be_visible()
+    source = diagram.get_attribute("data-mermaid-src")
+    assert "Client" in source
+
+    def node_fill():
+        return diagram.locator("svg .node rect").first.evaluate("el => getComputedStyle(el).fill")
+
+    def choose(theme):
+        dialog = open_settings()
+        row = dialog.locator("xpath=.//div[contains(@class,'prefs-section')][.//div[contains(@class,'prefs-section-label') and normalize-space()='Theme']]")
+        row.get_by_role("button", name=theme).click()
+        page.keyboard.press("Escape")
+        expect(dialog).to_be_hidden()
+
+    choose("Dark")
+    dark = node_fill()
+    choose("Light")
+    page.wait_for_function(
+        "dark => getComputedStyle(document.querySelector('pre.mermaid svg .node rect')).fill !== dark",
+        arg=dark,
+    )
+    assert node_fill() != dark
+    assert diagram.get_attribute("data-mermaid-src") == source

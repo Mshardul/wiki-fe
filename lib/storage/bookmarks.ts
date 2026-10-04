@@ -2,7 +2,7 @@ import { api } from "@/lib/api";
 import { verticalRegistry } from "@/lib/content/verticals";
 import { KEYS } from "./keys";
 import { getJSON, makeSnapshot, setJSON, subscribeKey } from "./local";
-import { scheduleSyncMutation } from "./sync";
+import { enqueueSync } from "./sync";
 
 export interface Bookmark {
   wikiId: string;
@@ -28,11 +28,11 @@ function saveBookmarks(next: Bookmark[]): void {
   const nextKeys = new Set(next.map((b) => `${b.wikiId}|${b.path}`));
   for (const b of next) {
     const k = `${b.wikiId}|${b.path}`;
-    if (!prevKeys.has(k)) scheduleSyncMutation(k, () => api.bookmarks.add(b.wikiId, b.path));
+    if (!prevKeys.has(k)) enqueueSync({ kind: "bookmark.add", wikiId: b.wikiId, path: b.path });
   }
   for (const b of prev) {
     const k = `${b.wikiId}|${b.path}`;
-    if (!nextKeys.has(k)) scheduleSyncMutation(k, () => api.bookmarks.remove(b.wikiId, b.path));
+    if (!nextKeys.has(k)) enqueueSync({ kind: "bookmark.remove", wikiId: b.wikiId, path: b.path });
   }
   setJSON(KEYS.bookmarks, next);
 }
@@ -60,17 +60,13 @@ export function toggleBookmark(wikiId: string, path: string, title?: string): bo
   return true;
 }
 
+export function clearBookmarksLocal(wikiId?: string): void {
+  setJSON(KEYS.bookmarks, wikiId ? getBookmarks().filter((b) => b.wikiId !== wikiId) : []);
+}
+
 export function clearBookmarks(wikiId?: string): void {
-  if (!wikiId) {
-    scheduleSyncMutation("bookmarks|clear", () => api.bookmarks.clear());
-    setJSON(KEYS.bookmarks, []);
-    return;
-  }
-  scheduleSyncMutation(`bookmarks|clear|${wikiId}`, () => api.bookmarks.clear(wikiId));
-  setJSON(
-    KEYS.bookmarks,
-    getBookmarks().filter((b) => b.wikiId !== wikiId),
-  );
+  enqueueSync({ kind: "bookmark.clear", wikiId });
+  clearBookmarksLocal(wikiId);
 }
 
 export function subscribeBookmarks(cb: () => void): () => void {

@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   resend: vi.fn(),
   bookmarksAdd: vi.fn().mockResolvedValue(undefined),
   completionsList: vi.fn().mockResolvedValue([]),
+  completionsAdd: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/api", async (orig) => {
@@ -31,7 +32,11 @@ vi.mock("@/lib/api", async (orig) => {
         list: vi.fn().mockResolvedValue([]),
       },
       recents: { ...actual.api.recents, list: vi.fn().mockResolvedValue([]) },
-      completions: { ...actual.api.completions, list: mocks.completionsList },
+      completions: {
+        ...actual.api.completions,
+        list: mocks.completionsList,
+        add: mocks.completionsAdd,
+      },
     },
   };
 });
@@ -40,10 +45,18 @@ const sessionMock = vi.hoisted(() => ({ setSession: vi.fn(), broadcastSessionCha
 vi.mock("@/lib/storage/session", () => ({
   setSession: sessionMock.setSession,
   broadcastSessionChange: sessionMock.broadcastSessionChange,
+  getSession: () => ({ user: { id: "1", email: "a@example.com" }, status: "in" }),
 }));
 
 import { ApiError, type ImportPayload } from "@/lib/api";
-import { anonDataExists, loginFlow, migrateAnonData, registerFlow, resendFlow } from "./authFlows";
+import {
+  anonDataExists,
+  loginFlow,
+  logoutFlow,
+  migrateAnonData,
+  registerFlow,
+  resendFlow,
+} from "./authFlows";
 
 describe("authFlows", () => {
   beforeEach(() => {
@@ -51,6 +64,8 @@ describe("authFlows", () => {
     vi.clearAllMocks();
     mocks.importAll.mockResolvedValue(undefined);
     mocks.completionsList.mockResolvedValue([]);
+    mocks.completionsAdd.mockResolvedValue(undefined);
+    mocks.logout.mockResolvedValue(undefined);
   });
   afterEach(() => vi.restoreAllMocks());
 
@@ -205,5 +220,30 @@ describe("authFlows", () => {
       expect(mocks.completionsList).not.toHaveBeenCalled();
       expect(localStorage.getItem("wiki-completed-dsa")).toBe(JSON.stringify(["content/dsa/a.md"]));
     });
+  });
+
+  it("logout gives unsent writes a chance to land before ending the session", async () => {
+    localStorage.setItem(
+      "wiki-sync-outbox",
+      JSON.stringify([
+        {
+          kind: "completion.add",
+          wikiId: "dsa",
+          path: "content/dsa/a.md",
+          id: "e1",
+          owner: "1",
+          clientTs: "2026-01-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    await logoutFlow();
+    expect(mocks.completionsAdd).toHaveBeenCalledWith(
+      "dsa",
+      "content/dsa/a.md",
+      "2026-01-01T00:00:00.000Z",
+    );
+    expect(mocks.completionsAdd.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.logout.mock.invocationCallOrder[0] ?? -Infinity,
+    );
   });
 });

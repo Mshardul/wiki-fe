@@ -9,7 +9,9 @@ vi.mock("@/lib/api", () => ({
   api: { bookmarks: { add, remove, list: listMock, clear: vi.fn() } },
 }));
 const state = vi.hoisted(() => ({ status: "in" }));
-vi.mock("./session", () => ({ getSession: () => ({ user: null, status: state.status }) }));
+vi.mock("./session", () => ({
+  getSession: () => ({ user: state.status === "in" ? { id: "u1" } : null, status: state.status }),
+}));
 
 import { getBookmarks, isBookmarked, pullBookmarks, toggleBookmark } from "./bookmarks";
 
@@ -28,7 +30,11 @@ describe("lib/storage/bookmarks", () => {
     expect(isBookmarked("dsa", "content/dsa/patterns/sliding-window.md")).toBe(true);
     expect(getBookmarks()[0]?.title).toBe("Sliding Window");
     await vi.waitFor(() =>
-      expect(add).toHaveBeenCalledWith("dsa", "content/dsa/patterns/sliding-window.md"),
+      expect(add).toHaveBeenCalledWith(
+        "dsa",
+        "content/dsa/patterns/sliding-window.md",
+        expect.any(String),
+      ),
     );
   });
 
@@ -37,7 +43,9 @@ describe("lib/storage/bookmarks", () => {
     const now = toggleBookmark("dsa", "content/dsa/x.md");
     expect(now).toBe(false);
     expect(getBookmarks()).toHaveLength(0);
-    await vi.waitFor(() => expect(remove).toHaveBeenCalledWith("dsa", "content/dsa/x.md"));
+    await vi.waitFor(() =>
+      expect(remove).toHaveBeenCalledWith("dsa", "content/dsa/x.md", expect.any(String)),
+    );
   });
 
   it("slug keeps nested directories, not just the filename", () => {

@@ -123,7 +123,7 @@ Every runtime client island lives under `components/`, one folder per feature. S
 
 - **Session / identity live in React state + memory**, never in `localStorage`. The httpOnly cookie + backend are the sole auth authority; `GET /auth/me` sets the in-memory session.
 - **`lib/storage/` owns localStorage.** No other module touches `localStorage` directly.
-- **Cache-through model (with auth):** localStorage is the instant read path and UI source of truth; the API is the durable source. Sync hooks inject *inside* the relevant `lib/storage/` save function so existing callers are unchanged. Writes are **fire-and-forget**; a load-time pull reconciles drift.
+- **Cache-through model (with auth):** localStorage is the instant read path and UI source of truth; the API is the durable source. Sync hooks inject *inside* the relevant `lib/storage/` save function so existing callers are unchanged. Writes go through a persisted outbox (`lib/storage/outbox.ts`, drained by `lib/storage/sync.ts`) and are replayed in order, so a failed or offline write is retried instead of dropped; a pull only runs once the outbox is empty.
 - **Scroll position stays local-only** - ephemeral, device-specific, never synced.
 
 For the full model and the *why*, see the decisions docs:
@@ -177,7 +177,7 @@ For the full model and the *why*, see the decisions docs:
 
 - **Surface loading, empty, and error states** in the owning island/page for any async operation that drives visible UI. One-off internal fetches that don't affect UI directly are exempt.
 - **Fetches interruptible by navigation must accept an `AbortSignal`** (or equivalent cleanup in `useEffect`) and cancel cleanly on unmount/route change.
-- **Two allowed shapes for backend calls, don't mix them:** (1) **best-effort background sync** (optimistic localStorage-then-API writes in `lib/storage/`) - un-awaited, `.catch(() => {})`, never blocks the UI, never surfaces the error. (2) **user-initiated request flows** (auth login/register/verify/etc.) - always `await`ed, errors caught and surfaced via `ApiError`. Don't `await` a best-effort sync call and don't fire-and-forget a user-initiated one.
+- **Two allowed shapes for backend calls, don't mix them:** (1) **background sync** (optimistic localStorage-then-outbox writes in `lib/storage/`) - queued via `enqueueSync`, never blocks the UI, never surfaces the error. (2) **user-initiated request flows** (auth login/register/verify/etc.) - always `await`ed, errors caught and surfaced via `ApiError`. Don't `await` a best-effort sync call and don't fire-and-forget a user-initiated one.
 
 ---
 
@@ -218,6 +218,9 @@ For the full model and the *why*, see the decisions docs:
 ### End-to-end (Playwright + pytest)
 
 - Test behaviour as the user sees it against the static `out/` export (see `tests/conftest.py`).
+- **Canary articles are the e2e content surface.** Feature behaviour in a rendered article (math, footnotes, prerequisites, TOC, callouts, and so on) is tested against fixtures in `tests/fixtures/canary/*.md`, served at `/e2e-canary/<name>/` only by an e2e build (`pnpm build:e2e`, `WIKI_E2E=1`). They render through the real pipeline and the real reader islands, so they test the full stack, but they are not in the manifest, search, backlinks or any index. Never inject markdown at runtime. A canary must stay above `STUB_THRESHOLD` (a unit test enforces it), and one that links to a real article breaks loudly if that article is renamed.
+- **`content_page("<canary>")`** is a module-scoped, read-only page: one `goto` per canary per module, reset to the top for each test. Tests that change state (storage, settings, DOM, login) use the per-test `page` instead.
+- Add a test here only if it needs a real browser (layout, scroll, focus, overlay geometry, rendered diagrams). Behaviour already covered by a Vitest pipeline fixture or island test is not re-asserted in e2e.
 - **Read `tests/conftest.py` before writing any e2e test** - it defines every shared fixture and navigation helper. **Add a fixture or conftest helper only when it removes a shared race or a flow repeated across files** (e.g. the hotkeys-ready wait), with a one-line docstring saying why; otherwise use what exists.
 - **Add tests to the existing file** matching the feature. Never create a new test file unless the feature genuinely has no home.
 - Use `page.locator()` + `expect()`; avoid `page.query_selector()`.

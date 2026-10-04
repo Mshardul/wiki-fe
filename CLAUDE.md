@@ -13,7 +13,7 @@
 - **Offline** - Serwist service worker (`app/sw.ts` → `out/sw.js`); localStorage-only FE persistence (no server-side FE state)
 - **Backend** - `wiki-be` (Render) via `lib/api.ts`
 - **Lint/format** - Biome + ESLint (`biome.json`, `eslint.config.*`); `pnpm typecheck` / `pnpm lint` / `pnpm test:all` are CI gates
-- **Tests** - Vitest: `pnpm test` (unit parallel + pipeline single-fork for Shiki/renderMarkdown) + `pnpm test:content` (one `buildContent` + artifact asserts); CI runs `pnpm test:all`. E2e: `pnpm test:e2e` (pytest `-n 2` against `out/`)
+- **Tests** - Vitest: `pnpm test` (unit parallel + pipeline single-fork for Shiki/renderMarkdown) + `pnpm test:content` (one `buildContent` + artifact asserts); CI runs `pnpm test:all`. E2e: `pnpm build:e2e` (adds canary pages) then `pnpm test:e2e` (pytest `-n 2` against `out/`)
 - **CI** - GitHub Actions (`.github/workflows/ci.yml`)
 
 **SEO / discoverability is not a project goal** (personal tool; `robots` Disallow). Never optimise content or tickets for search engines.
@@ -171,6 +171,7 @@ Tokens-first. **Start any CSS task in `tokens.css`.**
 | --- | --- |
 | `tests/conftest.py` | Serve `out/` under `/wiki-fe/`, browser fixtures, `wiki_page`, `force_paint` |
 | `tests/e2e/test_*.py` | Python Playwright e2e (see filenames for domain) |
+| `tests/fixtures/canary/*.md` | Canary articles served at `/e2e-canary/<name>/` by an e2e build only; see CONVENTIONS Testing |
 | `*.test.ts` / `*.test.tsx` | Vitest unit project — co-located under `lib/` / `components/` / `app/` |
 | `tests/content/artifacts.test.ts` | Vitest content project — asserts `lib/content/generated/*` after globalSetup `buildContent()` |
 

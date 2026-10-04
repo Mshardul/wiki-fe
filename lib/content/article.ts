@@ -122,8 +122,9 @@ function extractPrerequisites(tree: Root, fromPath: string): Prerequisite[] {
   return out;
 }
 
-export function loadArticle(path: string): LoadedArticle {
-  const raw = readFileSync(path, "utf8");
+// `path` is the identity the article is rendered under; `sourcePath` is where its markdown is read from.
+export function loadArticle(path: string, sourcePath: string = path): LoadedArticle {
+  const raw = readFileSync(sourcePath, "utf8");
   const { content } = matter(raw);
   const tree = parseMdast(content);
 

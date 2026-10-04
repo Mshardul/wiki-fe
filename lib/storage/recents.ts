@@ -1,7 +1,7 @@
 import { api } from "@/lib/api";
 import { KEYS } from "./keys";
 import { getJSON, makeSnapshot, remove, setJSON, subscribeKey } from "./local";
-import { scheduleSyncMutation } from "./sync";
+import { enqueueSync } from "./sync";
 
 const RECENTS_MAX = 6;
 
@@ -23,22 +23,23 @@ export function addToRecents(entry: Omit<Recent, "visitedAt">): void {
     ...getRecents().filter((r) => r.path !== entry.path),
   ].slice(0, RECENTS_MAX);
   setJSON(KEYS.recents, next);
-  scheduleSyncMutation(`recents|${entry.wikiId}|${entry.path}`, () =>
-    api.recents.add(entry.wikiId, entry.path),
-  );
+  enqueueSync({ kind: "recent.add", wikiId: entry.wikiId, path: entry.path });
 }
 
-export function clearRecents(wikiId?: string): void {
+export function clearRecentsLocal(wikiId?: string): void {
   if (!wikiId) {
     remove(KEYS.recents);
-    scheduleSyncMutation("recents|clear", () => api.recents.clear());
     return;
   }
   setJSON(
     KEYS.recents,
     getRecents().filter((r) => r.wikiId !== wikiId),
   );
-  scheduleSyncMutation(`recents|clear|${wikiId}`, () => api.recents.clear(wikiId));
+}
+
+export function clearRecents(wikiId?: string): void {
+  enqueueSync({ kind: "recent.clear", wikiId });
+  clearRecentsLocal(wikiId);
 }
 
 export function subscribeRecents(cb: () => void): () => void {
