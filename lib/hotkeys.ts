@@ -1,3 +1,4 @@
+import { toggleCompletion } from "./reader/completion";
 import { toggleBookmark } from "./storage/bookmarks";
 import { getSettings, updateSettings } from "./storage/settings";
 
@@ -58,6 +59,12 @@ export function bindHotkeys(getContext: () => HotkeyContext): () => void {
     if (e.key === "b" || e.key === "B") {
       e.preventDefault();
       if (ctx.article) toggleBookmark(ctx.article.verticalId, ctx.article.path, ctx.article.title);
+    } else if (e.key === "c" || e.key === "C") {
+      // Stubs and index pages have no #markdown-body, so there is nothing to complete.
+      if (ctx.article && document.getElementById("markdown-body")) {
+        e.preventDefault();
+        toggleCompletion(ctx.article.verticalId, ctx.article.path);
+      }
     } else if (e.key === "/") {
       e.preventDefault();
       document.dispatchEvent(new CustomEvent("wiki:open-article-find"));

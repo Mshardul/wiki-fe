@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { toggleBookmark } = vi.hoisted(() => ({ toggleBookmark: vi.fn() }));
+const { toggleBookmark, toggleCompletion } = vi.hoisted(() => ({
+  toggleBookmark: vi.fn(),
+  toggleCompletion: vi.fn(),
+}));
 vi.mock("./storage/bookmarks", () => ({ toggleBookmark }));
+vi.mock("./reader/completion", () => ({ toggleCompletion }));
 vi.mock("./storage/settings", () => ({
   getSettings: () => ({ fontSize: "M" }),
   updateSettings: vi.fn(),
@@ -25,6 +29,7 @@ const WIKI_EVENTS = [
 beforeEach(() => {
   events.length = 0;
   toggleBookmark.mockClear();
+  toggleCompletion.mockClear();
   for (const t of WIKI_EVENTS) document.addEventListener(t, listener);
   document.body.innerHTML = "";
 });
@@ -80,6 +85,25 @@ describe("bindHotkeys", () => {
   it("article-only: b toggles the bookmark", () => {
     key({ key: "b" }, true);
     expect(toggleBookmark).toHaveBeenCalledWith("dsa", "content/dsa/x.md", "X");
+  });
+  it("article-only: c toggles completion when the article body exists", () => {
+    document.body.innerHTML = '<article id="markdown-body"></article>';
+    key({ key: "c" }, true);
+    expect(toggleCompletion).toHaveBeenCalledWith("dsa", "content/dsa/x.md");
+  });
+  it("c does nothing on a stub (no article body)", () => {
+    key({ key: "c" }, true);
+    expect(toggleCompletion).not.toHaveBeenCalled();
+  });
+  it("c does nothing off an article", () => {
+    document.body.innerHTML = '<article id="markdown-body"></article>';
+    key({ key: "c" });
+    expect(toggleCompletion).not.toHaveBeenCalled();
+  });
+  it("c with a modifier is left to the browser", () => {
+    document.body.innerHTML = '<article id="markdown-body"></article>';
+    key({ key: "c", metaKey: true }, true);
+    expect(toggleCompletion).not.toHaveBeenCalled();
   });
   it("article-only: f toggles focus mode, d distraction-free, / find", () => {
     key({ key: "f" }, true);

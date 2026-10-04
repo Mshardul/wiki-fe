@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   logout: vi.fn().mockResolvedValue(undefined),
   resend: vi.fn(),
   bookmarksAdd: vi.fn().mockResolvedValue(undefined),
+  completionsList: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("@/lib/api", async (orig) => {
@@ -30,7 +31,7 @@ vi.mock("@/lib/api", async (orig) => {
         list: vi.fn().mockResolvedValue([]),
       },
       recents: { ...actual.api.recents, list: vi.fn().mockResolvedValue([]) },
-      completions: { ...actual.api.completions, list: vi.fn().mockResolvedValue([]) },
+      completions: { ...actual.api.completions, list: mocks.completionsList },
     },
   };
 });
@@ -41,7 +42,7 @@ vi.mock("@/lib/storage/session", () => ({
   broadcastSessionChange: sessionMock.broadcastSessionChange,
 }));
 
-import { ApiError } from "@/lib/api";
+import { ApiError, type ImportPayload } from "@/lib/api";
 import { anonDataExists, loginFlow, migrateAnonData, registerFlow, resendFlow } from "./authFlows";
 
 describe("authFlows", () => {
@@ -49,6 +50,7 @@ describe("authFlows", () => {
     localStorage.clear();
     vi.clearAllMocks();
     mocks.importAll.mockResolvedValue(undefined);
+    mocks.completionsList.mockResolvedValue([]);
   });
   afterEach(() => vi.restoreAllMocks());
 
@@ -149,5 +151,59 @@ describe("authFlows", () => {
     );
     mocks.importAll.mockRejectedValue(new Error("BE down"));
     expect(await migrateAnonData(true)).toBe(false);
+  });
+
+  describe("completions", () => {
+    const seed = () => {
+      localStorage.setItem("wiki-completed-dsa", JSON.stringify(["content/dsa/a.md"]));
+      localStorage.setItem(
+        "wiki-completed-system-design",
+        JSON.stringify(["content/system-design/b.md"]),
+      );
+    };
+
+    it("counts completions alone as local data", () => {
+      expect(anonDataExists()).toBe(false);
+      seed();
+      expect(anonDataExists()).toBe(true);
+    });
+
+    it("uploads completions from every vertical", async () => {
+      seed();
+      await migrateAnonData(true);
+      const payload = mocks.importAll.mock.calls[0]?.[0] as ImportPayload;
+      expect(payload.completions).toEqual(
+        expect.arrayContaining([
+          { wiki_id: "dsa", path: "content/dsa/a.md" },
+          { wiki_id: "system-design", path: "content/system-design/b.md" },
+        ]),
+      );
+      expect(payload.completions).toHaveLength(2);
+    });
+
+    it("imports before pulling so the pull cannot overwrite local completions", async () => {
+      seed();
+      mocks.login.mockResolvedValue({
+        user: { id: "1", email: "a@example.com" },
+        session_token: "t",
+      });
+      await loginFlow("a@example.com", "pw", true);
+      const importOrder = mocks.importAll.mock.invocationCallOrder[0] ?? Infinity;
+      const pullOrder = mocks.completionsList.mock.invocationCallOrder[0] ?? -Infinity;
+      expect(importOrder).toBeLessThan(pullOrder);
+    });
+
+    it("skips the pull and keeps local completions when the import fails", async () => {
+      seed();
+      mocks.importAll.mockRejectedValue(new Error("BE down"));
+      mocks.login.mockResolvedValue({
+        user: { id: "1", email: "a@example.com" },
+        session_token: "t",
+      });
+      const r = await loginFlow("a@example.com", "pw", true);
+      expect(r.code).toBe("MIGRATION_FAILED");
+      expect(mocks.completionsList).not.toHaveBeenCalled();
+      expect(localStorage.getItem("wiki-completed-dsa")).toBe(JSON.stringify(["content/dsa/a.md"]));
+    });
   });
 });

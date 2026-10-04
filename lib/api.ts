@@ -124,6 +124,11 @@ export interface SyncRow {
   wiki_id: string;
   path: string;
 }
+export interface ImportPayload {
+  bookmarks: SyncRow[];
+  completions: SyncRow[];
+  recents: SyncRow[];
+}
 
 const get = <T>(p: string) => request<T>("GET", p);
 const post = <T>(p: string, b?: unknown) => request<T>("POST", p, b);
@@ -168,7 +173,7 @@ export const api = {
     add: (wiki_id: string, path: string) => post<void>("/recents", mutationRef(wiki_id, path)),
     clear: (wiki_id?: string) => del<void>("/recents/all", wiki_id ? { wiki_id } : {}),
   },
-  importAll: (payload: unknown) => post<void>("/sync/import", payload),
+  importAll: (payload: ImportPayload) => post<void>("/sync/import", payload),
   admin: {
     listUsers: () => get<User[]>("/admin/users"),
     updateUserRole: (userId: string, role: string) =>

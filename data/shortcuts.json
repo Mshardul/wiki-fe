@@ -16,6 +16,7 @@
   ],
   "content": [
     { "keys": ["B"], "description": "Toggle bookmark" },
+    { "keys": ["C"], "description": "Toggle article completed" },
     { "keys": ["F"], "description": "Toggle focus mode" },
     { "keys": ["D"], "description": "Distraction-free mode" },
     { "keys": ["T"], "description": "Focus table of contents" },

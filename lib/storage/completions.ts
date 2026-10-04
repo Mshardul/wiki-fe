@@ -16,6 +16,12 @@ export function listCompletions(wikiId: string): string[] {
   return [...readSet(wikiId)];
 }
 
+export function listAllCompletions(): Array<{ wikiId: string; path: string }> {
+  return verticalRegistry().flatMap((v) =>
+    listCompletions(v.id).map((path) => ({ wikiId: v.id, path })),
+  );
+}
+
 export function markCompleted(wikiId: string, path: string): boolean {
   const set = readSet(wikiId);
   if (set.has(path)) return false;

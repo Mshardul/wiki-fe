@@ -521,14 +521,17 @@ def test_resend_button_shows_cooldown_after_send(page, base_url):
 def test_migrate_keep_imports_local_data(page, base_url):
     _stub_logged_out(page)
     _stub_login_success(page)
-    import_called = {"hit": False}
-    page.route(
-        "**/api/v1/sync/import",
-        lambda r: (import_called.__setitem__("hit", True), r.fulfill(status=200, content_type="application/json", body="{}"))[1],
-    )
+    import_bodies = []
+
+    def _capture_import(route):
+        import_bodies.append(route.request.post_data_json)
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    page.route("**/api/v1/sync/import", _capture_import)
     _stub_synced_domains_empty(page)
     page.add_init_script(
-        "localStorage.setItem('wiki-bookmarks', JSON.stringify([{wikiId:'dsa',path:'foo.md',slug:'foo',title:'Foo',wikiTitle:'DSA'}]))"
+        "localStorage.setItem('wiki-bookmarks', JSON.stringify([{wikiId:'dsa',path:'foo.md',slug:'foo',title:'Foo',wikiTitle:'DSA'}]));"
+        "localStorage.setItem('wiki-completed-dsa', JSON.stringify(['content/dsa/foo.md']))"
     )
     page.on("dialog", lambda d: d.accept())
 
@@ -540,7 +543,8 @@ def test_migrate_keep_imports_local_data(page, base_url):
     _auth_dialog(page).get_by_role("button", name="Log in").click()
 
     expect(page.locator(".topbar-auth-btn:visible").first).to_contain_text("Log out")
-    assert import_called["hit"], "/sync/import must be called when the user keeps local data"
+    assert import_bodies, "/sync/import must be called when the user keeps local data"
+    assert import_bodies[0]["completions"] == [{"wiki_id": "dsa", "path": "content/dsa/foo.md"}]
 
 
 def test_migrate_discard_clears_local_data_without_importing(page, base_url):

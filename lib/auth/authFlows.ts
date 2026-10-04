@@ -1,7 +1,6 @@
-import { ApiError, api, setSessionToken } from "@/lib/api";
-import { verticalRegistry } from "@/lib/content/verticals";
+import { ApiError, api, type ImportPayload, setSessionToken } from "@/lib/api";
 import { getBookmarks } from "@/lib/storage/bookmarks";
-import { listCompletions } from "@/lib/storage/completions";
+import { listAllCompletions } from "@/lib/storage/completions";
 import { getRecents } from "@/lib/storage/recents";
 import { broadcastSessionChange, setSession } from "@/lib/storage/session";
 import { clearUserDataCache, pullAll } from "@/lib/storage/sync";
@@ -16,11 +15,7 @@ export function authErrorMessage(e: unknown, fallback: string): string {
 }
 
 function hasLocalData(): boolean {
-  return (
-    getBookmarks().length > 0 ||
-    getRecents().length > 0 ||
-    verticalRegistry().some((v) => listCompletions(v.id).length > 0)
-  );
+  return getBookmarks().length > 0 || getRecents().length > 0 || listAllCompletions().length > 0;
 }
 
 // Returns false only if the user chose "Keep" and the import failed — caller must then skip pullAll().
@@ -30,8 +25,9 @@ export async function migrateAnonData(keep: boolean): Promise<boolean> {
     clearUserDataCache();
     return true;
   }
-  const payload = {
+  const payload: ImportPayload = {
     bookmarks: getBookmarks().map((b) => ({ wiki_id: b.wikiId, path: b.path })),
+    completions: listAllCompletions().map((c) => ({ wiki_id: c.wikiId, path: c.path })),
     recents: getRecents().map((r) => ({ wiki_id: r.wikiId, path: r.path })),
   };
   return api.importAll(payload).then(

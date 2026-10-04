@@ -1,4 +1,8 @@
-# Not ported: the "Mark as completed" button (.completion-btn), its toggle/persistence/anon-no-API-call tests, and the haptic-on-milestone tests (study-feedback.js never ported - grep confirms zero navigator.vibrate call sites in components/lib) - completions.ts markCompleted/markUncompleted have no UI writer anywhere in the Next app (WIKI-658). Read-dot + learning-path completion wiring already covered in test_index_ux.py; this file covers the two remaining completion-state consumers, CardCompletion.tsx and PrereqStatus.tsx.
+# Not ported: the haptic-on-milestone tests (study-feedback.js never ported - grep confirms zero navigator.vibrate call sites in components/lib). Covers the end-of-article complete button, the `c` hotkey, and the two completion-state consumers, CardCompletion.tsx and PrereqStatus.tsx; read-dot + learning-path wiring is covered in test_index_ux.py.
+
+import re
+
+from playwright.sync_api import expect
 
 STACK_ARTICLE = "dsa/data-structures/stack"
 STACK_PREREQ_PATH = "content/dsa/data-structures/array.md"
@@ -95,3 +99,62 @@ def test_completion_state_persists_on_revisit(page, base_url):
         timeout=5_000,
     )
     assert "prereq-chip--done" in (chip.get_attribute("class") or "")
+
+
+def _complete_button(page):
+    return page.get_by_role("button", name="Mark as completed")
+
+
+def test_complete_button_toggles_and_persists(page, base_url):
+    _go_to_article(page, base_url, STACK_ARTICLE)
+    button = _complete_button(page)
+    expect(button).to_have_attribute("aria-pressed", "false")
+
+    button.click()
+    expect(button).to_have_attribute("aria-pressed", "true")
+    expect(page.locator("#wiki-toast")).to_contain_text("Marked as completed")
+
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
+    expect(_complete_button(page)).to_have_attribute("aria-pressed", "true")
+
+    _complete_button(page).click()
+    expect(_complete_button(page)).to_have_attribute("aria-pressed", "false")
+
+
+def test_complete_toast_undo_reverts(page, base_url):
+    _go_to_article(page, base_url, STACK_ARTICLE)
+    _complete_button(page).click()
+    page.get_by_role("button", name="Undo").click()
+    expect(_complete_button(page)).to_have_attribute("aria-pressed", "false")
+
+
+def test_c_hotkey_toggles_completion(page, base_url):
+    _go_to_article(page, base_url, STACK_ARTICLE)
+    page.keyboard.press("c")
+    expect(_complete_button(page)).to_have_attribute("aria-pressed", "true")
+    page.keyboard.press("c")
+    expect(_complete_button(page)).to_have_attribute("aria-pressed", "false")
+
+
+def test_completing_marks_prereq_chip_done_on_dependent_article(page, base_url):
+    _go_to_article(page, base_url, "dsa/data-structures/array")
+    page.keyboard.press("c")
+    _go_to_article(page, base_url, STACK_ARTICLE)
+    chip = page.locator('.prereq-chip[data-prereq-path="content/dsa/data-structures/array.md"]')
+    expect(chip).to_have_class(re.compile(r"prereq-chip--done"))
+
+
+def test_anon_completion_makes_no_api_call(page, base_url):
+    calls = []
+    page.route(
+        "**/api/v1/auth/me",
+        lambda r: r.fulfill(status=401, content_type="application/json", body='{"error":{"code":"UNAUTHORIZED","message":"x"}}'),
+    )
+    page.route("**/api/v1/completions**", lambda r: (calls.append(r.request.url), r.abort()))
+
+    _go_to_article(page, base_url, STACK_ARTICLE)
+    _complete_button(page).click()
+    expect(_complete_button(page)).to_have_attribute("aria-pressed", "true")
+    page.wait_for_timeout(150)
+    assert calls == []

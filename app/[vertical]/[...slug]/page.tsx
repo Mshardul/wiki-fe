@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ReaderTopbar } from "@/components/chrome/ReaderTopbar";
+import { CompleteButton } from "@/components/reader/CompleteButton";
 import { MentionedBy } from "@/components/reader/MentionedBy";
 import { ReaderIslands } from "@/components/reader/ReaderIslands";
 import { RelatedArticles } from "@/components/reader/RelatedArticles";
@@ -68,6 +69,8 @@ export default async function Article({
               dangerouslySetInnerHTML={{ __html: article.html }}
             />
           )}
+
+          {!article.isStub && <CompleteButton wikiId={article.verticalId} path={article.path} />}
 
           <RelatedArticles vertical={vertical} slug={slug} />
           <MentionedBy articlePath={article.path} />
