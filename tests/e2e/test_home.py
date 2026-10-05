@@ -15,13 +15,13 @@ import pytest
 def test_topbar_search_opens_modal(wiki_page):
     """the home topbar search button opens the global search modal."""
     wiki_page.locator('.home-topbar [title="Search (⌘K)"]').click()
-    wiki_page.wait_for_selector(".gsearch-modal, #global-search-modal", timeout=5_000)
+    wiki_page.wait_for_selector(".gsearch-modal", timeout=5_000)
 
 
 def test_topbar_preferences_opens_modal(wiki_page):
     """the home topbar preferences button opens the preferences modal."""
     wiki_page.locator('.home-topbar [title="Preferences (,)"]').click()
-    wiki_page.wait_for_selector(".prefs-modal, #prefs-modal", timeout=5_000)
+    wiki_page.wait_for_selector(".prefs-modal", timeout=5_000)
 
 
 def test_article_count_is_a_real_number(wiki_page):

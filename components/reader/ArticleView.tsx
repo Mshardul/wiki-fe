@@ -46,7 +46,14 @@ export function ArticleView({ article, backHref, children }: ArticleViewProps) {
             />
           )}
 
-          {!article.isStub && <CompleteButton wikiId={article.verticalId} path={article.path} />}
+          {!article.isStub && (
+            <>
+              <div className="article-end-marker" aria-hidden="true">
+                ⌘
+              </div>
+              <CompleteButton wikiId={article.verticalId} path={article.path} />
+            </>
+          )}
           {children}
         </div>
 

@@ -14,6 +14,7 @@ Content view enhancements:
 """
 
 import json
+import re
 
 import pytest
 from conftest import force_paint
@@ -21,22 +22,12 @@ from playwright.sync_api import expect
 
 # Not ported to the Next reader (no component implements them): mermaid step-through walkthrough (Play button, caption rail, node highlight), mermaid node-caption tooltips, the copy-diagram-SVG button, and closing an open diagram zoom when the theme changes. Pinch/swipe/double-tap zoom is covered in ZoomLightbox.test.tsx.
 
-ARTICLE_WITH_TABLE = """\
-# Table Test
-
-## Section
-
-| Column A | Column B | Column C | Column D | Column E |
-|----------|----------|----------|----------|----------|
-| row1a    | row1b    | row1c    | row1d    | row1e    |
-| row2a    | row2b    | row2c    | row2d    | row2e    |
-"""
-
 
 # Dropped: quiz-me table blur (spec §9), save-as-card image export (freeze-frame, spec §9), study mode (H hotkey, removed).
 # Dropped: hljs stylesheet swap / SRI - Shiki highlights at build time, no runtime theme stylesheet.
 # Dropped: prefs Actions tab rows - the tab no longer exists (link-graph + section-map rows were spec §9 drops).
-# Dropped: .anchor-btn 32px touch target - headings use build-time autolinks, no anchor button to size.
+# Dropped: .anchor-btn 32px touch target and the anchor 'Link copied' toast - headings use build-time autolinks, no anchor button.
+# Dropped: empty-body read-time badge - a stub article takes ArticleView's stub branch, which never renders the badge.
 
 SLUG = "system-design/components/caching"
 
@@ -44,6 +35,14 @@ SLUG = "system-design/components/caching"
 def _article(page, base_url, slug=SLUG):
     page.goto(f"{base_url}/{slug}/", wait_until="domcontentloaded")
     page.wait_for_selector("#markdown-body", timeout=10_000)
+
+
+def _canary(page, base_url, name):
+    """Open a canary article and wait for hydration; also safe on pages from a custom browser context."""
+    page.goto(f"{base_url}/e2e-canary/{name}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
+    page.wait_for_selector("html[data-hotkeys-ready]", state="attached", timeout=15_000)
+    return page
 
 
 def _hl_article(page, base_url, slug=SLUG, *, clear=True):
@@ -87,100 +86,116 @@ def _load_mock_article(page, base_url, content, slug="mock"):
 # ── Video embed ───────────────────────────────────────────────────
 
 
-# ── Table scroll cue ──────────────────────────────────────────────
+# ── canary "tables": plain vs comparison tables, sort, column toggles, scroll cue ──
+
+SCROLL_CUE = re.compile(r"\bscroll-cue\b")
+PHONE = {"width": 390, "height": 844}
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_table_wrapped_in_scroll_container(page, base_url):
-    """Every table in the content body is wrapped in .table-scroll-wrap."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_TABLE, slug="table-wrap")
-    page.wait_for_selector(".table-scroll-wrap", timeout=5_000)
+def _plain_table(page):
+    return page.get_by_role("table").filter(has_text="Failover Mode")
 
-    result = page.evaluate("""() => {
-        const tables = document.querySelectorAll('#markdown-body table');
-        const wrapped = [...tables].filter(t => t.closest('.table-scroll-wrap'));
-        return { total: tables.length, wrapped: wrapped.length };
-    }""")
-    assert result["total"] > 0, "No tables found in article"
-    assert result["wrapped"] == result["total"], (
-        f"Only {result['wrapped']} of {result['total']} tables are wrapped"
+
+def _small_comparison(page):
+    return page.get_by_role("table").filter(has_text="Deque")
+
+
+def _wrap_of(page, text):
+    return page.locator("#markdown-body .table-scroll-wrap").filter(has_text=text)
+
+
+def test_comparison_tables_scroll_in_a_wrapper_that_owns_the_radius(content_page):
+    page = content_page("tables")
+    expect(page.locator("#markdown-body .table-scroll-wrap")).to_have_count(2)
+    expect(_plain_table(page).locator("xpath=ancestor::div[contains(@class,'table-scroll-wrap')]")).to_have_count(0)
+
+    # Regression: radius + overflow:hidden on the table itself left a ghost band when scrolled inside the wrap.
+    styles = _wrap_of(page, "Deque").evaluate(
+        """wrap => ({
+            overflowX: getComputedStyle(wrap).overflowX,
+            radius: getComputedStyle(wrap).borderTopLeftRadius,
+            tableOverflow: getComputedStyle(wrap.querySelector('table')).overflow,
+        })"""
     )
+    assert styles["overflowX"] == "auto"
+    assert styles["radius"] != "0px"
+    assert styles["tableOverflow"] == "visible"
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_table_scroll_wrap_has_overflow_auto(page, base_url):
-    """.table-scroll-wrap has overflow-x: auto to enable horizontal scrolling."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_TABLE, slug="table-overflow")
-    page.wait_for_selector(".table-scroll-wrap", timeout=5_000)
-
-    overflow = page.evaluate("""() => {
-        const wrap = document.querySelector('.table-scroll-wrap');
-        return getComputedStyle(wrap).overflowX;
-    }""")
-    assert overflow == "auto", (
-        f"Expected overflow-x: auto on .table-scroll-wrap, got: {overflow}"
-    )
+def test_scroll_cue_marks_only_comparison_tables_wider_than_the_column(content_page):
+    page = content_page("tables")
+    expect(_wrap_of(page, "Typical Use Case")).to_have_class(SCROLL_CUE)
+    expect(_wrap_of(page, "Deque")).not_to_have_class(SCROLL_CUE)
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_table_scroll_cue_on_narrow_viewport(page, base_url):
-    """.table-scroll-wrap gets .scroll-cue when table overflows its container."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_TABLE, slug="table-narrow")
-    page.wait_for_selector(".table-scroll-wrap", timeout=5_000)
+def test_scroll_cue_clears_once_the_last_column_is_scrolled_into_view(page, base_url):
+    page.set_viewport_size(PHONE)
+    _canary(page, base_url, "tables")
+    wide = _wrap_of(page, "Typical Use Case")
+    expect(wide).to_have_class(SCROLL_CUE)
 
-    # Force overflow by narrowing the wrapper, then trigger updateCue directly.
-    # ResizeObserver timing in headless tests is not reliable enough to await.
-    result = page.evaluate("""() => {
-        const wrap = document.querySelector('.table-scroll-wrap');
-        if (!wrap) return { found: false };
-        wrap.style.width = '120px';
-        const overflows = wrap.scrollWidth > wrap.clientWidth + 4;
-        const atEnd = wrap.scrollLeft + wrap.clientWidth >= wrap.scrollWidth - 4;
-        wrap.classList.toggle('scroll-cue', overflows && !atEnd);
-        return { found: true, hasCue: wrap.classList.contains('scroll-cue'),
-                 scrollW: wrap.scrollWidth, clientW: wrap.clientWidth };
-    }""")
-    assert result["found"], "No .table-scroll-wrap found"
-    assert result["hasCue"], (
-        f".scroll-cue not set; scrollWidth={result['scrollW']}, clientWidth={result['clientW']}"
-    )
+    wide.hover()
+    page.mouse.wheel(5_000, 0)
+    expect(wide).not_to_have_class(SCROLL_CUE)
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_table_scroll_cue_absent_on_wide_viewport(page, base_url):
-    """.scroll-cue is absent when the table fits within the viewport."""
-    page.set_viewport_size({"width": 1400, "height": 900})
-    _load_mock_article(page, base_url, ARTICLE_WITH_TABLE, slug="table-wide")
-    page.wait_for_selector(".table-scroll-wrap", timeout=5_000)
-
-    has_cue = page.evaluate(
-        "() => document.querySelector('.table-scroll-wrap')?.classList.contains('scroll-cue')"
-    )
-    assert not has_cue, (
-        ".table-scroll-wrap should NOT have .scroll-cue on wide viewport"
-    )
+def test_plain_table_wraps_inside_the_column_and_nothing_widens_the_page_on_a_phone(page, base_url):
+    page.set_viewport_size(PHONE)
+    _canary(page, base_url, "tables")
+    table = _plain_table(page).bounding_box()
+    body = page.locator("#markdown-body").bounding_box()
+    assert table and body
+    assert table["x"] + table["width"] <= body["x"] + body["width"] + 1
+    assert page.evaluate("() => document.documentElement.scrollWidth <= innerWidth")
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_table_scroll_wrap_owns_radius_not_table(page, base_url):
-    """Regression: border-radius+overflow:hidden lived on the table itself,
-    causing a compositing ghost band when scrolled inside .table-scroll-wrap.
-    The wrap now owns the radius; the table clips nothing."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_TABLE, slug="table-radius")
-    page.wait_for_selector(".table-scroll-wrap", timeout=5_000)
+def test_clicking_a_comparison_header_sorts_ascending_then_descending(page, base_url):
+    _canary(page, base_url, "tables")
+    table = _small_comparison(page)
+    names = table.locator("tbody td:first-child")
+    score = table.get_by_role("button", name="Score")
+    structure = table.get_by_role("button", name="Structure")
+    expect(names).to_have_text(["Stack", "Queue", "Deque"])
 
-    result = page.evaluate("""() => {
-        const wrap = document.querySelector('.table-scroll-wrap');
-        const table = wrap.querySelector('table');
-        return {
-            wrapRadius: getComputedStyle(wrap).borderRadius,
-            tableOverflow: getComputedStyle(table).overflow,
-        };
-    }""")
-    assert result["wrapRadius"] != "0px", "Expected .table-scroll-wrap to own the border-radius"
-    assert result["tableOverflow"] == "visible", (
-        f"Expected table overflow:visible (no clip), got: {result['tableOverflow']}"
-    )
+    score.click()
+    expect(names).to_have_text(["Queue", "Deque", "Stack"])
+    expect(score).to_have_class(re.compile(r"\bsort-asc\b"))
+    expect(structure).not_to_have_class(re.compile(r"\bsort-(asc|desc)\b"))
+
+    score.click()
+    expect(names).to_have_text(["Stack", "Deque", "Queue"])
+    expect(score).to_have_class(re.compile(r"\bsort-desc\b"))
+
+
+def test_enter_and_space_sort_a_focused_comparison_header(page, base_url):
+    _canary(page, base_url, "tables")
+    table = _small_comparison(page)
+    names = table.locator("tbody td:first-child")
+    structure = table.get_by_role("button", name="Structure")
+
+    structure.press("Enter")
+    expect(names).to_have_text(["Deque", "Queue", "Stack"])
+    structure.press("Space")
+    expect(names).to_have_text(["Stack", "Queue", "Deque"])
+
+
+def test_hidden_comparison_column_stays_hidden_after_reload(page, base_url):
+    _canary(page, base_url, "tables")
+    toggles = page.get_by_role("group", name="Visible comparison columns").first
+    expect(toggles.get_by_role("button")).to_have_text(["Score", "Notes"])
+    notes = toggles.get_by_role("button", name="Notes")
+    note_cell = _small_comparison(page).get_by_role("cell", name="open at both ends")
+    expect(notes).to_have_attribute("aria-pressed", "true")
+    expect(note_cell).to_be_visible()
+
+    notes.click()
+    expect(notes).to_have_attribute("aria-pressed", "false")
+    expect(note_cell).to_be_hidden()
+
+    page.reload(wait_until="domcontentloaded")
+    expect(notes).to_have_attribute("aria-pressed", "false")
+    expect(note_cell).to_be_hidden()
+    expect(_small_comparison(page).get_by_role("cell", name="Deque")).to_be_visible()
 
 
 # ── Code block right-fade scroll cue ──────────────────────────────
@@ -241,10 +256,9 @@ def test_copy_btn_and_sortable_th_44px_on_coarse_pointer(browser, base_url):
         assert copy_size["width"] >= 44, f"copy-btn width too small: {copy_size['width']}px"
         assert copy_size["height"] >= 44, f"copy-btn height too small: {copy_size['height']}px"
 
-        th = page.locator(".sortable-th").first
-        if th.count():
-            th_size = th.evaluate("el => el.getBoundingClientRect().height")
-            assert th_size >= 44, f"sortable-th height too small: {th_size}px"
+        _canary(page, base_url, "tables")
+        th = _small_comparison(page).get_by_role("button", name="Score").bounding_box()
+        assert th and th["height"] >= 44, f"sortable-th height too small: {th}"
     finally:
         ctx.close()
 
@@ -292,101 +306,6 @@ def _pinch(page, el_selector, overlay_selector, start_dx, end_dx):
 
 
 # ── Mermaid step-through ──────────────────────────────────────────
-
-
-# ── Anchor link toast ─────────────────────────────────────────────
-
-ARTICLE_WITH_SECTIONS = """\
-# Toast Test
-
-First paragraph.
-
-## Section Alpha
-
-Content here.
-
-## Section Beta
-
-More content.
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_anchor_link_click_shows_link_copied_toast(page, base_url):
-    """Clicking a heading anchor button shows a 'Link copied' toast."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="anchor-toast")
-    page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-    page.wait_for_selector("#markdown-body h2 .anchor-btn", timeout=5_000)
-
-    page.locator("#markdown-body h2 .anchor-btn").first.click()
-    page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
-
-    toast_text = page.evaluate(
-        "() => document.getElementById('wiki-toast')?.textContent"
-    )
-    assert "Link copied" in (toast_text or ""), (
-        f"Expected 'Link copied' in toast, got '{toast_text}'"
-    )
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_anchor_link_toast_does_not_show_on_page_load(page, base_url):
-    """No toast is visible on initial article load (no accidental trigger)."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="anchor-no-toast")
-
-    toast_visible = page.evaluate(
-        "() => document.getElementById('wiki-toast')?.classList.contains('visible') ?? false"
-    )
-    assert not toast_visible, "Toast must not be visible on article load"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_toast_has_opaque_background(page, base_url):
-    """Regression: .wiki-toast referenced the undefined token
-    --surface-raised, resolving to a transparent background that let it
-    fully overlap article text unreadably mid-scroll."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="toast-bg")
-    page.context.grant_permissions(["clipboard-read", "clipboard-write"])
-    page.wait_for_selector("#markdown-body h2 .anchor-btn", timeout=5_000)
-
-    page.locator("#markdown-body h2 .anchor-btn").first.click()
-    page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
-
-    bg = page.evaluate(
-        "() => getComputedStyle(document.getElementById('wiki-toast')).backgroundColor"
-    )
-    assert bg not in ("rgba(0, 0, 0, 0)", "transparent"), (
-        f"Toast background must be opaque, got: {bg}"
-    )
-
-
-# ── Reading progress bar glow ────────────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_reading_progress_bar_has_box_shadow(page, base_url):
-    """reading-progress element has a box-shadow (accent glow) set in CSS."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="progress-glow")
-
-    box_shadow = page.evaluate("""() => {
-        const bar = document.getElementById('reading-progress');
-        return bar ? window.getComputedStyle(bar).boxShadow : null;
-    }""")
-    assert box_shadow is not None, "#reading-progress element not found"
-    assert box_shadow != "none", (
-        "reading-progress must have a box-shadow glow, got 'none'"
-    )
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_reading_progress_bar_visible_in_content_view(page, base_url):
-    """reading-progress bar has .visible class when in content view."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="progress-visible")
-
-    is_visible = page.evaluate(
-        "() => document.getElementById('reading-progress')?.classList.contains('visible') ?? false"
-    )
-    assert is_visible, "reading-progress must have .visible class in content view"
 
 
 # ── Code block header ─────────────────────────────────────────────
@@ -495,151 +414,6 @@ def test_code_block_without_lang_lacks_has_lang_label_class(page, base_url):
     assert has_class is False, (
         "<pre> without language tag must not have has-lang-label class"
     )
-
-
-# ── Collapsible callouts ──────────────────────────────────────────
-
-ARTICLE_WITH_LONG_CALLOUT = """\
-# Callout Test
-
-## Section
-
-> ⚠️ **Warning** This callout contains many paragraphs and should be collapsed.
->
-> Paragraph one: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph two: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph three: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph four: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph five: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph six: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph seven: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph eight: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph nine: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph ten: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph eleven: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph twelve: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph thirteen: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph fourteen: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
->
-> Paragraph fifteen: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_tall_callout_gets_collapsible_class(page, base_url):
-    """A tall callout gets .callout--collapsible and a toggle button after render."""
-    page.set_viewport_size({"width": 1280, "height": 800})
-    _load_mock_article(
-        page, base_url, ARTICLE_WITH_LONG_CALLOUT, slug="callout-collapsible"
-    )
-    page.wait_for_selector(".callout", timeout=5_000)
-
-    result = page.evaluate("""() => {
-        const callout = document.querySelector('.callout');
-        if (!callout) return { found: false };
-        const nextEl = callout.nextElementSibling;
-        return {
-            found: true,
-            isCollapsible: callout.classList.contains('callout--collapsible'),
-            hasBtn: nextEl?.classList.contains('callout-expand-btn') ?? false,
-        };
-    }""")
-    assert result["found"], "No .callout element found in article"
-    assert result["isCollapsible"], (
-        ".callout is missing .callout--collapsible on a tall callout"
-    )
-    assert result["hasBtn"], ".callout-expand-btn not found after .callout"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_callout_expand_btn_toggles_expanded(page, base_url):
-    """Clicking the expand button adds .callout--expanded; clicking again removes it."""
-    page.set_viewport_size({"width": 1280, "height": 800})
-    _load_mock_article(page, base_url, ARTICLE_WITH_LONG_CALLOUT, slug="callout-expand")
-    page.wait_for_selector(".callout--collapsible", timeout=5_000)
-
-    page.locator(".callout-expand-btn").first.click()
-    is_expanded = page.evaluate(
-        "() => document.querySelector('.callout')?.classList.contains('callout--expanded')"
-    )
-    assert is_expanded, ".callout--expanded not added after first click"
-
-    page.locator(".callout-expand-btn").first.click()
-    is_still_expanded = page.evaluate(
-        "() => document.querySelector('.callout')?.classList.contains('callout--expanded')"
-    )
-    assert not is_still_expanded, (
-        ".callout--expanded still present after second click (collapse)"
-    )
-
-
-def _callout_article(emoji, label):
-    return f"# Callout Icon Test\n\n## Section\n\n> {emoji} **{label}** Callout body.\n"
-
-
-@pytest.mark.parametrize(
-    ("emoji", "css_class"),
-    [
-        ("🎯", "callout-interview"),
-        ("⚠️", "callout-warning"),
-        ("🧠", "callout-thought"),
-        ("⚖️", "callout-decision"),
-    ],
-)
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_callout_icon_matches_its_class(page, base_url, emoji, css_class):
-    """Each callout variant's rendered .callout-icon matches the emoji its class implies, not a mismatched hardcoded one."""
-    _load_mock_article(
-        page, base_url, _callout_article(emoji, css_class), slug=f"callout-icon-{css_class}"
-    )
-    page.wait_for_selector(".callout", timeout=5_000)
-
-    result = page.evaluate("""() => {
-        const bq = document.querySelector('.callout');
-        return { classList: [...bq.classList], icon: bq.querySelector('.callout-icon')?.textContent };
-    }""")
-    assert css_class in result["classList"], f"expected {css_class}, got {result['classList']}"
-    assert result["icon"] == emoji, f"callout icon mismatch: expected {emoji}, got {result['icon']}"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_multiline_callout_only_flexes_first_line(page, base_url):
-    """Regression: flexing the whole multi-line callout <p> turned every br-separated run into its own shrink-to-fit flex item and letter-wrapped it. Only .callout-first-line (icon + first line) should be a flex child."""
-    article = (
-        "# Callout Multiline Test\n\n## Section\n\n"
-        "> 🎯 **Interview tip**  \n> Second line of the callout.  \n> Third line of the callout.\n"
-    )
-    _load_mock_article(page, base_url, article, slug="callout-multiline")
-    page.wait_for_selector(".callout", timeout=5_000)
-
-    result = page.evaluate("""() => {
-        const bq = document.querySelector('.callout');
-        const p = bq.querySelector('p');
-        const firstLine = p.querySelector('.callout-first-line');
-        return {
-            pDisplay: getComputedStyle(p).display,
-            hasFirstLineWrap: !!firstLine,
-            firstLineDisplay: firstLine ? getComputedStyle(firstLine).display : null,
-        };
-    }""")
-    assert result["pDisplay"] != "flex", "The whole callout <p> should not be flexed"
-    assert result["hasFirstLineWrap"], "Expected a .callout-first-line wrapper around icon + first line"
-    assert result["firstLineDisplay"] == "flex", "Expected .callout-first-line to be the flex container"
 
 
 # ── Broken image placeholder ─────────────────────────────────────
@@ -855,796 +629,25 @@ def test_print_stylesheet_loaded(wiki_page):
     assert has_print, "No @media print rules found - print.css not loaded"
 
 
-# ── Table column sort ───────────────────────────────────────────────────────────
-
-ARTICLE_WITH_SORTABLE_TABLE = """\
-# Sort Test
-
-## Section
-
-| Name    | Score |
-| ------- | ----- |
-| Charlie | 30    |
-| Alice   | 10    |
-| Bob     | 20    |
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_table_headers_get_sortable_class(page, base_url):
-    """Every <th> in a table with <thead> gets .sortable-th after render."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_SORTABLE_TABLE, slug="sort-class")
-    page.wait_for_selector("#markdown-body table", timeout=5_000)
-    count = page.evaluate(
-        "() => document.querySelectorAll('#markdown-body th.sortable-th').length"
-    )
-    assert count == 2, f"Expected 2 sortable headers, got {count}"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_table_sort_asc_on_first_click(page, base_url):
-    """Clicking a <th> sorts rows ascending; first row becomes alphabetically first."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_SORTABLE_TABLE, slug="sort-asc")
-    page.wait_for_selector("#markdown-body th.sortable-th", timeout=5_000)
-    page.locator("#markdown-body th.sortable-th").first.click()
-    first_cell = page.evaluate(
-        "() => document.querySelector('#markdown-body tbody tr:first-child td').textContent.trim()"
-    )
-    assert first_cell == "Alice", f"Expected Alice first after asc sort, got {first_cell!r}"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_table_sort_desc_on_second_click(page, base_url):
-    """Clicking the same <th> twice reverses the sort to descending."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_SORTABLE_TABLE, slug="sort-desc")
-    page.wait_for_selector("#markdown-body th.sortable-th", timeout=5_000)
-    th = page.locator("#markdown-body th.sortable-th").first
-    th.click()
-    th.click()
-    first_cell = page.evaluate(
-        "() => document.querySelector('#markdown-body tbody tr:first-child td').textContent.trim()"
-    )
-    assert first_cell == "Charlie", f"Expected Charlie first after desc sort, got {first_cell!r}"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_table_sort_indicator_classes(page, base_url):
-    """Active sort column gets .sort-asc or .sort-desc; non-active columns have neither."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_SORTABLE_TABLE, slug="sort-indicator")
-    page.wait_for_selector("#markdown-body th.sortable-th", timeout=5_000)
-    page.locator("#markdown-body th.sortable-th").first.click()
-    page.wait_for_selector("#markdown-body th.sort-asc", timeout=5_000)
-    result = page.evaluate("""() => {
-        const ths = [...document.querySelectorAll('#markdown-body th.sortable-th')];
-        return {
-            firstAsc: ths[0].classList.contains('sort-asc'),
-            secondAsc: ths[1].classList.contains('sort-asc'),
-            secondDesc: ths[1].classList.contains('sort-desc'),
-        };
-    }""")
-    assert result["firstAsc"], "Clicked column should have .sort-asc"
-    assert not result["secondAsc"], "Non-clicked column must not have .sort-asc"
-    assert not result["secondDesc"], "Non-clicked column must not have .sort-desc"
-
-
-ARTICLE_WITH_MIXED_NUMERIC_TABLE = """\
-# Mixed Sort Test
-
-## Section
-
-| Name    | Complexity |
-| ------- | ---------- |
-| Alice   | 30         |
-| Bob     | N/A        |
-| Charlie | 10         |
-| Dan     | N/A        |
-| Erin    | 20         |
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_table_sort_mixed_numeric_is_transitive(page, base_url):
-    """Regression: non-numeric cells (e.g. 'N/A') must sort
-    consistently after every numeric cell, not fall back to string comparison
-    only for mixed pairs (which broke transitivity across 3+ rows)."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MIXED_NUMERIC_TABLE, slug="sort-mixed")
-    page.wait_for_selector("#markdown-body th.sortable-th", timeout=5_000)
-    page.locator("#markdown-body th.sortable-th").nth(1).click()
-    names = page.evaluate(
-        "() => [...document.querySelectorAll('#markdown-body tbody tr')]"
-        ".map(r => r.cells[0].textContent.trim())"
-    )
-    assert names == ["Charlie", "Erin", "Alice", "Bob", "Dan"], (
-        f"Expected numeric rows sorted ascending before N/A rows, got {names!r}"
-    )
-
-
-ARTICLE_WITH_UNIT_AND_COMMA_TABLE = """\
-# Unit Sort Test
-
-## Section
-
-| Name | Size |
-| ---- | ---- |
-| Alpha | 1,024 |
-| Beta | 2 GB |
-| Gamma | 10 |
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_table_sort_requires_whole_cell_numeric(page, base_url):
-    """Cells like '1,024' or with units must not be treated as truncated floats."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_UNIT_AND_COMMA_TABLE, slug="sort-units")
-    page.wait_for_selector("#markdown-body th.sortable-th", timeout=5_000)
-    page.locator("#markdown-body th.sortable-th").nth(1).click()
-    names = page.evaluate(
-        "() => [...document.querySelectorAll('#markdown-body tbody tr')]"
-        ".map(r => r.cells[0].textContent.trim())"
-    )
-    # Only "10" is a whole-cell number; comma/unit-like values sort as strings after it.
-    assert names[0] == "Gamma", f"Expected pure numeric Gamma first, got {names!r}"
-    assert "Alpha" in names[1:], f"1,024 must not sort as float 1 ahead of 2, got {names!r}"
-
-
-ARTICLE_WITH_COMPARISON_TABLE = """\
-# Compare
-
-## Comparison
-
-| Structure | Add | Remove |
-| --------- | --- | ------ |
-| Stack     | O(1) | O(1)   |
-| Queue     | O(1) | O(1)   |
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_comparison_table_gets_column_toggles(page, base_url):
-    """Tables under Comparison get show/hide column controls; other tables do not."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_COMPARISON_TABLE, slug="cmp-toggles")
-    page.wait_for_selector(".table-col-toggles", timeout=5_000)
-    labels = page.locator(".table-col-toggle").all_inner_texts()
-    assert labels == ["Add", "Remove"]
-
-    _load_mock_article(page, base_url, ARTICLE_WITH_TABLE, slug="cmp-not-every-table")
-    page.wait_for_selector("#markdown-body table", timeout=5_000)
-    assert page.locator(".table-col-toggles").count() == 0
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_comparison_column_toggle_hides_and_persists(page, base_url):
-    """Hiding a comparison column persists across a re-render of the same article."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_COMPARISON_TABLE, slug="cmp-persist")
-    page.wait_for_selector(".table-col-toggle", timeout=5_000)
-    page.locator(".table-col-toggle", has_text="Remove").click()
-    page.wait_for_function(
-        """() => document.querySelectorAll('#markdown-body table .table-col-hidden').length > 0""",
-        timeout=5_000,
-    )
-    _load_mock_article(page, base_url, ARTICLE_WITH_COMPARISON_TABLE, slug="cmp-persist")
-    page.wait_for_selector(".table-col-toggles", timeout=5_000)
-    pressed = page.locator(".table-col-toggle", has_text="Remove").get_attribute("aria-pressed")
-    assert pressed == "false"
-    hidden = page.evaluate(
-        "() => document.querySelectorAll('#markdown-body table .table-col-hidden').length"
-    )
-    assert hidden > 0
+def test_open_modal_is_left_out_of_the_printout(page, base_url, open_settings):
+    # Print / save as PDF fires window.print() before React unmounts the Preferences dialog.
+    _canary(page, base_url, "text")
+    dialog = open_settings()
+    page.emulate_media(media="print")
+    expect(dialog).to_be_hidden()
+    expect(page.locator("#markdown-body")).to_be_visible()
 
 
 # ── Mermaid copy as SVG ─────────────────────────────────────────────────────────
 
 
-# ── Formula variable-substitution toggle ────────────────────────────
-
-ARTICLE_WITH_MATH = """\
-# Math Test
-
-## Section
-
-Display formula with known variables:
-
-$$T = 1/\\lambda$$
-
-Some text.
-"""
-
-ARTICLE_WITH_MATH_NO_KNOWN_VARS = """\
-# Math No Vars Test
-
-## Section
-
-$$e = mc^2$$
-
-Some text.
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_formula_toggle_btn_added_for_known_vars(page, base_url):
-    """A .formula-toggle-btn is injected into .katex-display when it contains mapped vars."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MATH, slug="formula-btn-added")
-    page.wait_for_selector(".katex-display", timeout=5_000)
-    count = page.evaluate(
-        "() => document.querySelectorAll('.katex-display .formula-toggle-btn').length"
-    )
-    assert count >= 1, "No .formula-toggle-btn found in .katex-display with known vars"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_katex_toolbar_groups_formula_and_latex_copy(page, base_url):
-    """Formula toggle and LaTeX copy share one .katex-toolbar on the block."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MATH, slug="katex-toolbar")
-    page.wait_for_selector(".katex-display .katex-toolbar", timeout=5_000)
-    counts = page.evaluate(
-        """() => {
-            const tb = document.querySelector('.katex-display .katex-toolbar');
-            if (!tb) return null;
-            return {
-                formula: tb.querySelectorAll('.formula-toggle-btn').length,
-                copy: tb.querySelectorAll('.latex-copy-btn').length,
-            };
-        }"""
-    )
-    assert counts and counts["formula"] >= 1 and counts["copy"] >= 1, (
-        f"Expected both controls inside .katex-toolbar, got {counts!r}"
-    )
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_formula_toggle_btn_absent_when_no_mapped_vars(page, base_url):
-    """No .formula-toggle-btn is added when the formula has no vars in VAR_MAP."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MATH_NO_KNOWN_VARS, slug="formula-btn-absent")
-    page.wait_for_selector(".katex-display", timeout=5_000)
-    count = page.evaluate(
-        "() => document.querySelectorAll('.katex-display .formula-toggle-btn').length"
-    )
-    assert count == 0, ".formula-toggle-btn should not appear when no mapped vars"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_formula_toggle_btn_click_adds_active_class(page, base_url):
-    """Clicking .formula-toggle-btn adds .active to the button."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MATH, slug="formula-active")
-    page.wait_for_selector(".formula-toggle-btn", timeout=5_000)
-    page.locator(".formula-toggle-btn").first.hover()
-    page.locator(".formula-toggle-btn").first.click()
-    has_active = page.evaluate(
-        "() => document.querySelector('.formula-toggle-btn')?.classList.contains('active')"
-    )
-    assert has_active, ".formula-toggle-btn missing .active after first click"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_formula_toggle_btn_second_click_removes_active(page, base_url):
-    """Clicking .formula-toggle-btn twice removes .active (back to symbol mode)."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MATH, slug="formula-toggle-back")
-    page.wait_for_selector(".formula-toggle-btn", timeout=5_000)
-    btn = page.locator(".formula-toggle-btn").first
-    btn.hover()
-    btn.click()
-    btn.click()
-    has_active = page.evaluate(
-        "() => document.querySelector('.formula-toggle-btn')?.classList.contains('active')"
-    )
-    assert not has_active, ".formula-toggle-btn still .active after second click"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_formula_toggle_wrapper_present(page, base_url):
-    """.formula-toggle-wrapper span wraps the katex content after addFormulaToggle."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MATH, slug="formula-wrapper")
-    page.wait_for_selector(".formula-toggle-btn", timeout=5_000)
-    count = page.evaluate(
-        "() => document.querySelectorAll('.katex-display .formula-toggle-wrapper').length"
-    )
-    assert count >= 1, ".formula-toggle-wrapper not found in .katex-display"
-
-
 # ── Mermaid node hover captions ──────────────────────────────────────
-
-
-# ── ResizeObserver cleanup ──────────────────────────────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_resize_observers_cleared_on_navigation(page, base_url):
-    """Navigating away from an article resets state.tableResizeObservers to []."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_TABLE, slug="ro-cleanup")
-    page.wait_for_selector(".table-scroll-wrap", timeout=5_000)
-
-    count_before = page.evaluate(
-        "() => (window.state?.tableResizeObservers ?? []).length"
-    )
-    assert count_before >= 1, f"Expected ≥1 observer after render, got {count_before}"
-
-    page.evaluate("() => navigateHome()")
-    page.wait_for_selector("#view-home.active", timeout=5_000)
-
-    count_after = page.evaluate(
-        "() => (window.state?.tableResizeObservers ?? []).length"
-    )
-    assert count_after == 0, (
-        f"tableResizeObservers not cleared after navigation, still {count_after}"
-    )
-
-
-ARTICLE_WITH_TABS = """\
-# Tab Test
-
-## Sorting
-
-<!-- tabs id="sort-test" title="Quicksort" -->
-```python
-
-
-def quicksort(arr):
-    if len(arr) <= 1:
-        return arr
-    return quicksort([x for x in arr[1:] if x <= arr[0]]) + [arr[0]] + quicksort([x for x in arr[1:] if x > arr[0]])
-```
-```java
-public static void quicksort(int[] arr) {}
-```
-<!-- /tabs id="sort-test" -->
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_tabbed_code_blocks_render(page, base_url):
-    _load_mock_article(page, base_url, ARTICLE_WITH_TABS, slug="tab-test")
-    page.wait_for_selector(".code-tabs", timeout=3_000)
-
-    widget = page.locator(".code-tabs").first
-    assert widget.is_visible()
-
-    tabs = widget.locator(".code-tab")
-    assert tabs.count() == 2
-
-    assert "active" in (tabs.nth(0).get_attribute("class") or "")
-
-    tabs.nth(1).click()
-    assert "active" in (tabs.nth(1).get_attribute("class") or "")
-    panels = widget.locator(".code-tab-panel")
-    assert panels.nth(0).is_hidden()
-    assert panels.nth(1).is_visible()
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_tabbed_code_blocks_lang_persistence(page, base_url):
-    _load_mock_article(page, base_url, ARTICLE_WITH_TABS, slug="tab-test-persist")
-    page.wait_for_selector(".code-tabs", timeout=3_000)
-
-    page.locator(".code-tab[data-lang='java']").first.click()
-
-    _load_mock_article(page, base_url, ARTICLE_WITH_TABS, slug="tab-test-persist")
-    page.wait_for_selector(".code-tabs", timeout=3_000)
-    active_tab = page.locator(".code-tab.active").first
-    assert active_tab.get_attribute("data-lang") == "java"
 
 
 # ── Zoom overlay caption from alt text ───────────────────────────────────
 
 
-# ── Collapsible callouts with + prefix ────────────────────────────────────
-
-ARTICLE_WITH_PLUS_CALLOUT = """\
-# Plus Callout Test
-
-## Section
-
-> ⚠️ + This is a collapsible warning
-
-Short callout content that fits in one line.
-"""
-
-ARTICLE_WITHOUT_PLUS_CALLOUT = """\
-# Normal Callout Test
-
-## Section
-
-> ⚠️ This is a normal warning
-
-Short callout content that fits in one line.
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_plus_prefix_callout_starts_collapsible(page, base_url):
-    """A callout with + prefix gets .callout--collapsible regardless of height."""
-    page.set_viewport_size({"width": 1280, "height": 800})
-    _load_mock_article(page, base_url, ARTICLE_WITH_PLUS_CALLOUT, slug="plus-callout")
-    page.wait_for_selector(".callout", timeout=5_000)
-
-    result = page.evaluate("""() => {
-        const bq = document.querySelector('.callout');
-        if (!bq) return { found: false };
-        return {
-            found: true,
-            collapsible: bq.classList.contains('callout--collapsible'),
-            hasBtn: !!bq.nextElementSibling?.classList.contains('callout-expand-btn'),
-            plusStripped: !bq.textContent.includes('+'),
-        };
-    }""")
-    assert result["found"], "No .callout found"
-    assert result["collapsible"], ".callout--collapsible missing on + prefix callout"
-    assert result["hasBtn"], ".callout-expand-btn not found after + prefix callout"
-    assert result["plusStripped"], "+ character still visible in callout text"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_short_callout_without_plus_not_collapsible(page, base_url):
-    """A short callout without + prefix does not get .callout--collapsible."""
-    page.set_viewport_size({"width": 1280, "height": 800})
-    _load_mock_article(page, base_url, ARTICLE_WITHOUT_PLUS_CALLOUT, slug="no-plus-callout")
-    page.wait_for_selector(".callout", timeout=5_000)
-
-    is_collapsible = page.evaluate(
-        "() => document.querySelector('.callout')?.classList.contains('callout--collapsible')"
-    )
-    assert not is_collapsible, "Short callout without + got .callout--collapsible unexpectedly"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_plus_callout_expands_on_click(page, base_url):
-    """Clicking the expand button on a + prefix callout adds .callout--expanded."""
-    page.set_viewport_size({"width": 1280, "height": 800})
-    _load_mock_article(page, base_url, ARTICLE_WITH_PLUS_CALLOUT, slug="plus-expand")
-    page.wait_for_selector(".callout-expand-btn", timeout=5_000)
-
-    page.locator(".callout-expand-btn").first.click()
-    is_expanded = page.evaluate(
-        "() => document.querySelector('.callout')?.classList.contains('callout--expanded')"
-    )
-    assert is_expanded, ".callout--expanded not added after clicking expand button"
-
-
-# ── Glossary term hover popover ───────────────────────────────────────────
-
-ARTICLE_WITH_ABBR = """\
-# Glossary Test
-
-## Section
-
-The concept of <abbr>amortized</abbr> complexity is important in data structures.
-"""
-
-ARTICLE_WITHOUT_ABBR = """\
-# No Glossary Test
-
-## Section
-
-Some plain text with no abbr tags.
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_abbr_gets_glossary_term_class(page, base_url):
-    """An <abbr> matching a glossary key gets the .glossary-term class."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-term")
-    page.wait_for_selector("abbr", timeout=5_000)
-    page.wait_for_function(
-        "() => document.querySelector('abbr.glossary-term') !== null",
-        timeout=5_000,
-    )
-    count = page.evaluate(
-        "() => document.querySelectorAll('abbr.glossary-term').length"
-    )
-    assert count > 0, "No abbr.glossary-term found after glossary load"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_glossary_popover_appears_on_hover(page, base_url):
-    """Hovering a .glossary-term shows #glossary-popover with definition text."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-hover")
-    page.wait_for_function(
-        "() => document.querySelector('abbr.glossary-term') !== null",
-        timeout=5_000,
-    )
-    page.locator("abbr.glossary-term").first.hover()
-    page.wait_for_function(
-        "() => document.getElementById('glossary-popover')?.classList.contains('glossary-popover--visible')",
-        timeout=3_000,
-    )
-    text = page.evaluate("() => document.getElementById('glossary-popover')?.textContent")
-    assert text and len(text) > 10, "Glossary popover text is empty or too short"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_glossary_popover_survives_scroll_out_and_back(page, base_url):
-    """A glossary term keeps working after scrolling out of and back into
-    the IntersectionObserver's viewport margin (regression: the
-    popover used to die permanently because the term's node was replaced
-    with an unobserved clone on exit)."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-scroll-cycle")
-    page.wait_for_function(
-        "() => document.querySelector('abbr.glossary-term') !== null",
-        timeout=5_000,
-    )
-    # Push the term far below the viewport, wait for the real
-    # IntersectionObserver to fire its "not intersecting" branch, then
-    # scroll it back into view.
-    page.evaluate(
-        """
-        () => {
-          const body = document.getElementById('markdown-body');
-          const spacer = document.createElement('div');
-          spacer.style.height = '4000px';
-          body.insertBefore(spacer, body.firstChild);
-        }
-        """
-    )
-    page.wait_for_function(
-        """() => {
-          const r = document.querySelector('abbr.glossary-term').getBoundingClientRect();
-          return r.top > window.innerHeight || r.bottom < 0;
-        }""",
-        timeout=5_000,
-    )
-    page.evaluate(
-        "() => document.querySelector('abbr.glossary-term').scrollIntoView({block: 'center', behavior: 'instant'})"
-    )
-    page.wait_for_function(
-        """() => {
-          const r = document.querySelector('abbr.glossary-term').getBoundingClientRect();
-          return r.top < window.innerHeight && r.bottom > 0;
-        }""",
-        timeout=5_000,
-    )
-    # IntersectionObserver callbacks run after layout; two rAFs beat a fixed sleep under load.
-    page.evaluate("() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))")
-    page.locator("abbr.glossary-term").first.hover()
-    page.wait_for_function(
-        "() => document.getElementById('glossary-popover')?.classList.contains('glossary-popover--visible')",
-        timeout=3_000,
-    )
-    text = page.evaluate("() => document.getElementById('glossary-popover')?.textContent")
-    assert text and len(text) > 10, "Glossary popover stopped working after scroll cycle"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_no_glossary_popover_without_abbr(page, base_url):
-    """An article without <abbr> tags does not create #glossary-popover."""
-    _load_mock_article(page, base_url, ARTICLE_WITHOUT_ABBR, slug="no-glossary")
-    page.wait_for_selector("#markdown-body", timeout=5_000)
-    count = page.evaluate(
-        "() => document.querySelectorAll('abbr.glossary-term').length"
-    )
-    assert count == 0, "glossary-term class added when no abbr tags present"
-
-
-# ── Inline glossary expand ───────────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_inline_glossary_expand_class_added(page, base_url):
-    """A matched abbr gets .glossary-term--expandable after glossary loads."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-expand-class")
-    page.wait_for_function(
-        "() => document.querySelector('abbr.glossary-term--expandable') !== null",
-        timeout=5_000,
-    )
-    count = page.evaluate(
-        "() => document.querySelectorAll('abbr.glossary-term--expandable').length"
-    )
-    assert count > 0, "glossary-term--expandable class not added"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_inline_glossary_expand_def_hidden_initially(page, base_url):
-    """The .glossary-inline-def is not visible before clicking the term."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-expand-hidden")
-    page.wait_for_function(
-        "() => document.querySelector('abbr.glossary-term--expandable') !== null",
-        timeout=5_000,
-    )
-    open_count = page.evaluate(
-        "() => document.querySelectorAll('.glossary-inline-def--open').length"
-    )
-    assert open_count == 0, "Inline def shown before click"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_inline_glossary_expand_click_shows_def(page, base_url):
-    """Clicking .glossary-term--expandable shows the inline definition."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-expand-click")
-    page.wait_for_function(
-        "() => document.querySelector('abbr.glossary-term--expandable') !== null",
-        timeout=5_000,
-    )
-    page.locator("abbr.glossary-term--expandable").first.click()
-    page.wait_for_function(
-        "() => document.querySelector('.glossary-inline-def--open') !== null",
-        timeout=3_000,
-    )
-    text = page.evaluate(
-        "() => document.querySelector('.glossary-inline-def--open')?.textContent"
-    )
-    assert text and len(text) > 5, "Inline def opened but text is empty"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_inline_glossary_expand_touch_shows_def(page, base_url):
-    """Tapping a glossary abbr (synthetic touch, not mouse) shows its inline
-    definition - touch fallback for the hover-only popover path."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-expand-touch")
-    page.wait_for_function(
-        "() => document.querySelector('abbr.glossary-term--expandable') !== null",
-        timeout=5_000,
-    )
-    page.evaluate("""() => {
-        const el = document.querySelector('abbr.glossary-term--expandable');
-        const rect = el.getBoundingClientRect();
-        const x = rect.x + rect.width / 2, y = rect.y + rect.height / 2;
-        const touch = new Touch({ identifier: 1, target: el, clientX: x, clientY: y });
-        el.dispatchEvent(new TouchEvent('touchend', {
-            bubbles: true, cancelable: true,
-            touches: [], targetTouches: [], changedTouches: [touch],
-        }));
-        el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-    }""")
-    page.wait_for_function(
-        "() => document.querySelector('.glossary-inline-def--open') !== null",
-        timeout=3_000,
-    )
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_inline_glossary_expand_second_click_collapses(page, base_url):
-    """Second click on .glossary-term--expandable collapses the definition."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-expand-collapse")
-    page.wait_for_function(
-        "() => document.querySelector('abbr.glossary-term--expandable') !== null",
-        timeout=5_000,
-    )
-    abbr = page.locator("abbr.glossary-term--expandable").first
-    abbr.click()
-    page.wait_for_function(
-        "() => document.querySelector('.glossary-inline-def--open') !== null",
-        timeout=3_000,
-    )
-    abbr.click()
-    page.wait_for_function(
-        "() => document.querySelector('.glossary-inline-def--open') === null",
-        timeout=3_000,
-    )
-    open_count = page.evaluate(
-        "() => document.querySelectorAll('.glossary-inline-def--open').length"
-    )
-    assert open_count == 0, "Inline def still open after second click"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_glossary_popover_hidden_while_inline_expand_open(page, base_url):
-    """Hover popover stays hidden while the same abbr's inline expand is open."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_ABBR, slug="glossary-no-stack")
-    page.wait_for_function(
-        "() => document.querySelector('abbr.glossary-term--expandable') !== null",
-        timeout=5_000,
-    )
-    abbr = page.locator("abbr.glossary-term--expandable").first
-    abbr.click()
-    page.wait_for_function(
-        "() => document.querySelector('.glossary-inline-def--open') !== null",
-        timeout=3_000,
-    )
-    abbr.hover()
-    visible = page.evaluate(
-        "() => document.getElementById('glossary-popover')"
-        "?.classList.contains('glossary-popover--visible') === true"
-    )
-    assert not visible, "Hover popover must not stack on an open inline expand"
-
-
-# ── Inline caveat reveals ────────────────────────────────────
-
-ARTICLE_WITH_CAVEAT = """\
-# Caveat Test
-
-## Section
-
-This runs in O(1) amortized[?unless the array resizes, making it O(n)].
-
-And another claim[?second caveat here] for good measure.
-"""
-
-ARTICLE_WITHOUT_CAVEAT = """\
-# No Caveat Test
-
-## Section
-
-Plain text with no caveat markers at all.
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_caveat_marker_rendered(page, base_url):
-    """[?...] syntax produces .caveat-marker elements in the DOM."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_CAVEAT, slug="caveat-render")
-    page.wait_for_function(
-        "() => document.querySelector('.caveat-marker') !== null",
-        timeout=5_000,
-    )
-    count = page.evaluate(
-        "() => document.querySelectorAll('.caveat-marker').length"
-    )
-    assert count == 2, f"Expected 2 caveat markers, got {count}"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_caveat_body_hidden_initially(page, base_url):
-    """.caveat-body is not displayed before clicking the marker."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_CAVEAT, slug="caveat-hidden")
-    page.wait_for_function(
-        "() => document.querySelector('.caveat-marker') !== null",
-        timeout=5_000,
-    )
-    expanded = page.evaluate(
-        "() => document.querySelector('.caveat-marker[aria-expanded=\"true\"]') !== null"
-    )
-    assert not expanded, "Caveat marker should start collapsed"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_caveat_click_expands(page, base_url):
-    """Clicking .caveat-marker sets aria-expanded=true."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_CAVEAT, slug="caveat-click")
-    page.wait_for_function(
-        "() => document.querySelector('.caveat-marker') !== null",
-        timeout=5_000,
-    )
-    page.locator(".caveat-marker").first.click()
-    expanded = page.evaluate(
-        "() => document.querySelector('.caveat-marker')?.getAttribute('aria-expanded')"
-    )
-    assert expanded == "true", "Caveat marker not expanded after click"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_caveat_second_click_collapses(page, base_url):
-    """Second click collapses .caveat-marker back to aria-expanded=false."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_CAVEAT, slug="caveat-collapse")
-    page.wait_for_function(
-        "() => document.querySelector('.caveat-marker') !== null",
-        timeout=5_000,
-    )
-    marker = page.locator(".caveat-marker").first
-    marker.click()
-    marker.click()
-    expanded = page.evaluate(
-        "() => document.querySelector('.caveat-marker')?.getAttribute('aria-expanded')"
-    )
-    assert expanded == "false", "Caveat marker still expanded after second click"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_caveat_body_text_content(page, base_url):
-    """.caveat-body contains the text from the [?...] marker."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_CAVEAT, slug="caveat-text")
-    page.wait_for_function(
-        "() => document.querySelector('.caveat-body') !== null",
-        timeout=5_000,
-    )
-    texts = page.evaluate(
-        "() => Array.from(document.querySelectorAll('.caveat-body')).map(el => el.textContent)"
-    )
-    assert any("array resizes" in t for t in texts), "First caveat text not found"
-    assert any("second caveat" in t for t in texts), "Second caveat text not found"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_no_caveat_markers_without_syntax(page, base_url):
-    """Article with no [?...] syntax produces no .caveat-marker elements."""
-    _load_mock_article(page, base_url, ARTICLE_WITHOUT_CAVEAT, slug="caveat-none")
-    page.wait_for_selector("#markdown-body[data-render-done]", timeout=5_000)
-    count = page.evaluate(
-        "() => document.querySelectorAll('.caveat-marker').length"
-    )
-    assert count == 0, "Caveat markers found in article without [?...] syntax"
-
-
-# ── Progress ring ─────────────────────────────────────────────────
-
+# ── TOC ↔ content collapse sync ─────────────────────────────────
 
 ARTICLE_WITH_SECTIONS = """\
 # Long Article
@@ -1657,82 +660,7 @@ ARTICLE_WITH_SECTIONS = """\
 """ + ("More paragraph text.\n\n" * 30)
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_progress_ring_svg_attached_to_scroll_top_btn(page, base_url):
-    """After loading a content article the #scroll-top button has an SVG ring child."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="ring-attach")
-    has_ring = page.evaluate(
-        "() => !!document.querySelector('#scroll-top .scroll-top-ring')"
-    )
-    assert has_ring, "#scroll-top must contain a .scroll-top-ring SVG element"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_progress_ring_advances_on_scroll(page, base_url):
-    """stroke-dashoffset decreases (ring fills) as the user scrolls down."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="ring-scroll")
-    page.wait_for_selector("#scroll-top .scroll-top-ring", timeout=8_000)
-    offset_before = page.evaluate(
-        "() => parseFloat(document.querySelector('.scroll-top-ring-fill')?.getAttribute('stroke-dashoffset') ?? '999')"
-    )
-    page.evaluate("() => window.scrollTo({ top: 2000, behavior: 'instant' })")
-    page.wait_for_function(
-        f"() => parseFloat(document.querySelector('.scroll-top-ring-fill')?.getAttribute('stroke-dashoffset') ?? '999') !== {offset_before}",
-        timeout=3_000,
-    )
-    offset_after = page.evaluate(
-        "() => parseFloat(document.querySelector('.scroll-top-ring-fill')?.getAttribute('stroke-dashoffset') ?? '999')"
-    )
-    assert offset_after < offset_before, (
-        f"Ring fill offset should decrease on scroll ({offset_before} → {offset_after})"
-    )
-
-
-# ── Article end-marker ────────────────────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_end_marker_present_after_render(page, base_url):
-    """Every article must have exactly one .article-end-marker element."""
-    _load_mock_article(page, base_url, "# End Marker\n\nContent.\n", slug="end-mark")
-    count = page.locator(".article-end-marker").count()
-    assert count == 1, f"Expected 1 .article-end-marker, got {count}"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_end_marker_contains_glyph(page, base_url):
-    """The end-marker must contain the ⌘ glyph."""
-    _load_mock_article(page, base_url, "# End Marker\n\nContent.\n", slug="end-glyph")
-    text = page.locator(".article-end-marker").inner_text()
-    assert "⌘" in text, f"End marker must contain ⌘, got {text!r}"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_end_marker_precedes_completion_button(page, base_url):
-    """.article-end-marker sits immediately before .completion-btn, which is last."""
-    _load_mock_article(page, base_url, "# End Marker\n\nContent.\n", slug="end-last")
-    layout = page.evaluate("""() => {
-        const body = document.getElementById('markdown-body');
-        if (!body) return null;
-        const marker = body.querySelector('.article-end-marker');
-        const btn = body.querySelector('.completion-btn');
-        if (!marker || !btn) return { marker: !!marker, btn: !!btn };
-        return {
-            markerNextIsBtn: marker.nextElementSibling === btn,
-            btnIsLast: btn === body.lastElementChild,
-        };
-    }""")
-    assert layout, "Expected end marker and completion button in #markdown-body"
-    assert layout["markerNextIsBtn"], (
-        ".completion-btn must follow .article-end-marker immediately"
-    )
-    assert layout["btnIsLast"], ".completion-btn must be the last child of #markdown-body"
-
-
-# ── TOC ↔ content collapse sync ──────────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
+@pytest.mark.skip(reason="collapsible TOC sections not ported — WIKI-652")
 def test_toc_collapse_syncs_to_content_h2(page, base_url):
     """Collapsing a TOC h2 group adds section--collapsed to the matching content h2."""
     _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="toc-sync-down")
@@ -1745,7 +673,7 @@ def test_toc_collapse_syncs_to_content_h2(page, base_url):
     assert content_collapsed, "Collapsing TOC group must add section--collapsed to content h2"
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
+@pytest.mark.skip(reason="collapsible TOC sections not ported — WIKI-652")
 def test_content_collapse_syncs_to_toc(page, base_url):
     """Collapsing a content h2 adds section--collapsed to the matching TOC group."""
     _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="toc-sync-up")
@@ -1758,7 +686,7 @@ def test_content_collapse_syncs_to_toc(page, base_url):
     assert toc_collapsed, "Collapsing content h2 must add section--collapsed to TOC group"
 
 
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
+@pytest.mark.skip(reason="collapsible TOC sections not ported — WIKI-652")
 def test_toc_expand_syncs_content_section_visible(page, base_url):
     """Re-expanding a TOC group removes section--collapsed from the content h2."""
     _load_mock_article(page, base_url, ARTICLE_WITH_SECTIONS, slug="toc-sync-expand")
@@ -1865,38 +793,6 @@ def test_wrap_pass_preserves_heading_id_for_anchors(page, base_url):
     assert ids_present["h3HasId"], "h3 inside .subsection-title must keep its id"
 
 
-# ── Glossary inline expand (listener leak regression) ────────────
-
-ARTICLE_WITH_GLOSSARY_TERM = """\
-# Glossary Test
-
-Dynamic array resizing is <abbr>amortized</abbr> O(1).
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_glossary_expand_toggles_after_repeated_navigation(page, base_url):
-    """addInlineGlossaryExpand must keep working correctly across many article
-    renders - regression for a bug where one document-level click listener was
-    added per glossary term per render, never removed, growing unbounded."""
-    for i in range(5):
-        _load_mock_article(page, base_url, ARTICLE_WITH_GLOSSARY_TERM, slug=f"glossary-leak-{i}")
-
-    abbr = page.locator("#markdown-body abbr.glossary-term--expandable").first
-    abbr.click()
-    page.wait_for_function(
-        "() => document.querySelector('#markdown-body abbr')?.getAttribute('aria-expanded') === 'true'",
-        timeout=5_000,
-    )
-
-    # Click outside must collapse it (the shared document listener still works)
-    page.locator("body").click(position={"x": 5, "y": 5})
-    page.wait_for_function(
-        "() => document.querySelector('#markdown-body abbr')?.getAttribute('aria-expanded') === 'false'",
-        timeout=5_000,
-    )
-
-
 # ── In-article find touch trigger ─────────────────────────────────
 
 
@@ -1909,290 +805,6 @@ def test_find_button_opens_article_find(page, base_url):
     _open_actions_prefs(page)
     page.locator('#prefs-panel-actions [data-action="find-open"]').click()
     page.wait_for_selector("#article-find:not(.hidden)", timeout=5_000)
-
-
-# ── Practice problem answer-reveal toggle ─────────────────────────────
-
-ARTICLE_WITH_PRACTICE_PROBLEMS = """\
-# Practice Toggle Test
-
-## Practice problems
-
-Two staples for testing the answer toggle.
-
-### 1. First Problem - _testing_
-
-**Problem.** Given some input, do something.
-
-**Approach.** Do the obvious thing.
-
-```python
-
-
-def solve():
-    return True
-```
-
-**Complexity.** O(1) time, O(1) space.
-
-### 2. Second Problem - _also testing_
-
-**Problem.** Given other input, do another thing.
-
-**Approach.** Do the other obvious thing.
-
-```python
-
-
-def solve_other():
-    return False
-```
-
-**Complexity.** O(n) time, O(1) space.
-
-## Next Section
-
-Closing paragraph.
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_practice_problems_answers_hidden_by_default(page, base_url):
-    """Approach/code/Complexity are wrapped in .problem-answer and hidden by
-    default (practiceAnswersHidden defaults to true); Problem statement stays
-    visible."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-default")
-    page.wait_for_selector(".problem-answer", state="attached", timeout=5_000)
-
-    answer_count = page.locator(".problem-answer").count()
-    assert answer_count == 2, "Expected one .problem-answer per problem"
-
-    all_hidden = page.evaluate(
-        "() => Array.from(document.querySelectorAll('.problem-answer')).every(el => el.hidden)"
-    )
-    assert all_hidden, "Answers must be hidden by default"
-
-    problem_visible = page.evaluate(
-        """() => Array.from(document.querySelectorAll('#markdown-body .subsection-body > p'))
-            .some(p => p.textContent.includes('Given some input') && !p.hidden)"""
-    )
-    assert problem_visible, "Problem statement paragraph must stay visible"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_practice_eye_btn_matches_topbar_icon_scale(page, base_url):
-    """Practice eye control uses the primary icon-button box, not the old 20px spec."""
-    page.set_viewport_size({"width": 1280, "height": 800})
-    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-eye-size")
-    page.wait_for_selector(".practice-eye-btn", timeout=5_000)
-    size = page.evaluate(
-        """() => {
-            const r = document.querySelector('.practice-eye-btn').getBoundingClientRect();
-            return { width: r.width, height: r.height };
-        }"""
-    )
-    assert size["width"] >= 32, f"practice-eye-btn width too small: {size['width']}px"
-    assert size["height"] >= 32, f"practice-eye-btn height too small: {size['height']}px"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_practice_eye_toggle_reveals_only_its_own_problem(page, base_url):
-    """Clicking one problem's eye icon reveals only that problem's answer,
-    leaving the other problem's answer hidden."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-toggle-one")
-    page.wait_for_selector(".practice-eye-btn", timeout=5_000)
-
-    first_btn = page.locator(".practice-eye-btn").first
-    first_btn.click()
-
-    first_hidden = page.evaluate(
-        "() => document.querySelectorAll('.problem-answer')[0].hidden"
-    )
-    second_hidden = page.evaluate(
-        "() => document.querySelectorAll('.problem-answer')[1].hidden"
-    )
-    assert not first_hidden, "Clicked problem's answer should be revealed"
-    assert second_hidden, "Other problem's answer should remain hidden"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_practice_eye_toggle_click_again_hides_again(page, base_url):
-    """Clicking an already-revealed problem's eye icon hides it again."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-toggle-back")
-    page.wait_for_selector(".practice-eye-btn", timeout=5_000)
-
-    btn = page.locator(".practice-eye-btn").first
-    btn.click()
-    page.wait_for_function(
-        "() => document.querySelectorAll('.problem-answer')[0].hidden === false",
-        timeout=3_000,
-    )
-    btn.click()
-    page.wait_for_function(
-        "() => document.querySelectorAll('.problem-answer')[0].hidden === true",
-        timeout=3_000,
-    )
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_practice_answers_visible_when_preference_set_to_shown(page, base_url):
-    """When the Preferences 'practiceAnswersHidden' setting is false, answers
-    start visible on page load."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.evaluate(
-        "() => localStorage.setItem('wiki-settings', JSON.stringify({backgroundId: 'dark-void', practiceAnswersHidden: false}))"
-    )
-    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-pref-shown")
-    page.wait_for_selector(".problem-answer", timeout=5_000)
-
-    all_visible = page.evaluate(
-        "() => Array.from(document.querySelectorAll('.problem-answer')).every(el => !el.hidden)"
-    )
-    assert all_visible, "Answers must start visible when practiceAnswersHidden preference is false"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_practice_answer_hidden_survives_toc_section_collapse_and_expand(page, base_url):
-    """Regression for the toc.js/practice-toggle.js .hidden collision: collapsing
-    and re-expanding the whole Practice problems section via its own chevron
-    must not silently reveal an answer the user had explicitly hidden, nor hide
-    one they had explicitly revealed."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-toc-collapse")
-    page.wait_for_selector(".practice-eye-btn", timeout=5_000)
-
-    # Reveal the first problem's answer, leave the second hidden.
-    page.locator(".practice-eye-btn").first.click()
-    page.wait_for_function(
-        "() => document.querySelectorAll('.problem-answer')[0].hidden === false",
-        timeout=3_000,
-    )
-
-    # Collapse then re-expand the Practice problems section via its own chevron.
-    collapse_btn = page.locator(
-        "#markdown-body h2:has-text('Practice problems') .heading-collapse-btn"
-    )
-    collapse_btn.click()
-    page.wait_for_function(
-        """() => Array.from(document.querySelectorAll('#markdown-body h2'))
-            .find(h => h.textContent.includes('Practice problems'))
-            ?.classList.contains('section--collapsed')""",
-        timeout=3_000,
-    )
-    collapse_btn.click()
-    page.wait_for_function(
-        """() => !Array.from(document.querySelectorAll('#markdown-body h2'))
-            .find(h => h.textContent.includes('Practice problems'))
-            ?.classList.contains('section--collapsed')""",
-        timeout=3_000,
-    )
-
-    first_hidden = page.evaluate("() => document.querySelectorAll('.problem-answer')[0].hidden")
-    second_hidden = page.evaluate("() => document.querySelectorAll('.problem-answer')[1].hidden")
-    assert not first_hidden, "Section collapse/expand must not re-hide an answer the user revealed"
-    assert second_hidden, "Section collapse/expand must not reveal an answer the user never opened"
-
-
-ARTICLE_WITH_MISSING_COMPLEXITY = """\
-# Practice Missing Complexity
-
-## Practice problems
-
-### 1. Broken boundary
-
-**Problem.** Given input, do something.
-
-**Approach.** Do the obvious thing.
-
-```python
-
-
-def solve():
-    return True
-```
-
-This trailing paragraph must stay visible outside the answer block.
-
-### 2. Good problem
-
-**Problem.** Another task.
-
-**Approach.** Another approach.
-
-**Complexity.** O(1) time.
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_practice_answer_stops_without_complexity_label(page, base_url):
-    """Without a Complexity label, only the Approach paragraph is wrapped."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_MISSING_COMPLEXITY, slug="practice-no-complexity")
-    page.wait_for_selector(".problem-answer", state="attached", timeout=5_000)
-
-    first_answer_child = page.evaluate(
-        """() => document.querySelectorAll('.problem-answer')[0]?.firstElementChild?.textContent || ''"""
-    )
-    assert "Approach" in first_answer_child
-    assert "def solve" not in page.evaluate(
-        "() => document.querySelectorAll('.problem-answer')[0]?.textContent || ''"
-    )
-
-    trailing_visible = page.evaluate(
-        "() => Array.from(document.querySelectorAll('#markdown-body p'))"
-        ".some(p => p.textContent.includes('trailing paragraph') && !p.closest('.problem-answer'))"
-    )
-    assert trailing_visible, "Content after a missing Complexity label must stay outside .problem-answer"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_practice_answers_sync_when_preference_toggled_mid_view(page, base_url):
-    """Toggling practiceAnswersHidden in Preferences updates open article answers live."""
-    _load_mock_article(page, base_url, ARTICLE_WITH_PRACTICE_PROBLEMS, slug="practice-live-pref")
-    page.wait_for_selector(".practice-eye-btn", timeout=5_000)
-
-    page.locator("[title='Preferences (,)']:visible").first.click()
-    page.wait_for_selector("#prefs-modal:not(.hidden)", timeout=5_000)
-    page.locator("[data-action='prefs-tab'][data-tab='advanced']").click()
-    page.wait_for_function(
-        "() => document.getElementById('prefs-panel-advanced').getAttribute('aria-hidden') === 'false'",
-        timeout=5_000,
-    )
-    page.locator("#settings-practice-answers").click()
-    page.keyboard.press("Escape")
-    page.wait_for_function(
-        "() => document.getElementById('prefs-modal').classList.contains('hidden')",
-        timeout=5_000,
-    )
-
-    all_visible = page.evaluate(
-        "() => Array.from(document.querySelectorAll('.problem-answer')).every(el => !el.hidden)"
-    )
-    assert all_visible, "Answers must become visible when the preference is toggled to Shown"
-
-
-ARTICLE_SHORT_FOR_PROGRESS = """\
-# Short Article
-
-One brief paragraph that fits inside the viewport without scrolling.
-"""
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_short_article_shows_full_reading_progress(page, base_url):
-    """Articles shorter than the viewport should show a full progress bar."""
-    _load_mock_article(page, base_url, ARTICLE_SHORT_FOR_PROGRESS, slug="short-progress")
-    width = page.evaluate(
-        "() => document.getElementById('reading-progress')?.style.width || ''"
-    )
-    assert width == "100%", f"Expected full progress bar for short article, got {width!r}"
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_empty_body_article_hides_read_time_badge(page, base_url):
-    """Stub articles with no body must not show a misleading read-time badge."""
-    _load_mock_article(page, base_url, "# Stub Only\n\n", slug="empty-read-time")
-    badge = page.locator("#content-read-time").inner_text()
-    assert badge == "", f"Empty article should hide read-time badge, got {badge!r}"
 
 
 ARTICLE_FIND_MARKUP_BOUNDARY = """\
@@ -2735,12 +1347,6 @@ def test_code_block_disables_ligatures(page, base_url):
 IMAGE_ALT = "A checkerboard of indigo squares"
 
 
-def _canary(page, base_url, name):
-    page.goto(f"{base_url}/e2e-canary/{name}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#markdown-body", timeout=10_000)
-    return page
-
-
 def _zoom_overlay(page):
     return page.get_by_role("dialog", name="Zoomed view")
 
@@ -2840,3 +1446,310 @@ def test_diagram_redraws_in_the_new_theme_and_keeps_its_source(page, base_url, o
     )
     assert node_fill() != dark
     assert diagram.get_attribute("data-mermaid-src") == source
+
+
+# ── canary "interactive": callouts, formulas, code tabs, glossary, caveats, practice answers ──
+
+ACTIVE = re.compile(r"\bactive\b")
+POPOVER_VISIBLE = re.compile(r"\bglossary-popover--visible\b")
+AMORTIZED_DEF = "Average cost per operation"
+
+
+def _callout(page, title):
+    return page.locator("#markdown-body blockquote.callout").filter(has_text=title)
+
+
+def _callout_toggle(callout):
+    return callout.locator("xpath=following-sibling::*[1][self::button]")
+
+
+def _glossary_term(page):
+    return page.get_by_role("button", name="amortized", exact=True)
+
+
+def _height(locator):
+    box = locator.bounding_box()
+    assert box
+    return box["height"]
+
+
+def test_tall_callout_folds_behind_show_more_and_unfolds_on_click(page, base_url):
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _canary(page, base_url, "interactive")
+    callout = _callout(page, "Long Warning")
+    toggle = _callout_toggle(callout)
+    expect(toggle).to_have_text("Show more")
+    folded = _height(callout)
+
+    toggle.click()
+    expect(toggle).to_have_text("Show less")
+    assert _height(callout) > folded + 40
+
+    toggle.click()
+    expect(toggle).to_have_text("Show more")
+    assert _height(callout) == pytest.approx(folded, abs=1)
+
+
+def test_plus_callout_starts_folded_and_a_short_callout_does_not(content_page):
+    page = content_page("interactive")
+    folded = _callout(page, "Folded Note")
+    expect(_callout_toggle(folded)).to_have_text("Show more")
+    expect(folded).not_to_contain_text("+")
+    expect(_callout_toggle(_callout(page, "Short Thought"))).to_have_count(0)
+
+
+def test_multiline_callout_flexes_only_its_first_line(content_page):
+    # Regression: flexing the whole <p> made every br-separated run a shrink-to-fit flex item and letter-wrapped it.
+    page = content_page("interactive")
+    displays = _callout(page, "Interview tip").locator("p").first.evaluate(
+        "p => [getComputedStyle(p).display, getComputedStyle(p.querySelector('.callout-first-line')).display]"
+    )
+    assert displays == ["block", "flex"]
+
+
+def test_formula_toggle_swaps_symbols_for_names_and_back(page, base_url):
+    _canary(page, base_url, "interactive")
+    named = page.locator(".katex-display").nth(0)
+    plain = page.locator(".katex-display").nth(1)
+    expect(named.get_by_role("button", name="Copy LaTeX")).to_have_count(1)
+    expect(plain.get_by_role("button", name="Copy LaTeX")).to_have_count(1)
+    expect(plain.get_by_role("button", name="Toggle variable names")).to_have_count(0)
+
+    toggle = named.get_by_role("button", name="Toggle variable names")
+    expect(named).not_to_contain_text("time")
+    toggle.click()
+    expect(toggle).to_have_class(ACTIVE)
+    expect(named).to_contain_text("time")
+    toggle.click()
+    expect(toggle).not_to_have_class(ACTIVE)
+    expect(named).not_to_contain_text("time")
+
+
+def test_code_tabs_switch_panels_and_remember_the_language_after_reload(page, base_url):
+    _canary(page, base_url, "interactive")
+    tabs = page.get_by_role("tablist")
+    java = tabs.get_by_role("tab", name="java")
+    panels = page.locator(".code-tabs .code-tab-panel")
+    expect(tabs.get_by_role("tab", name="python")).to_have_class(ACTIVE)
+    expect(panels.nth(0)).to_be_visible()
+    expect(panels.nth(1)).to_be_hidden()
+
+    java.click()
+    expect(java).to_have_class(ACTIVE)
+    expect(panels.nth(1)).to_be_visible()
+    expect(panels.nth(0)).to_be_hidden()
+
+    page.reload(wait_until="domcontentloaded")
+    expect(java).to_have_class(ACTIVE)
+    expect(panels.nth(1)).to_be_visible()
+
+
+def test_hovering_a_glossary_term_shows_its_definition_beside_it(content_page):
+    page = content_page("interactive")
+    term = _glossary_term(page)
+    popover = page.get_by_role("tooltip")
+    term.hover()
+    expect(popover).to_have_class(POPOVER_VISIBLE)
+    expect(popover).to_contain_text(AMORTIZED_DEF)
+
+    t, p = term.bounding_box(), popover.bounding_box()
+    assert t and p
+    assert p["y"] >= t["y"] + t["height"] or p["y"] + p["height"] <= t["y"], "popover must sit beside the term, not over it"
+    assert abs(p["x"] - t["x"]) < 40
+    assert p["x"] >= 0 and p["x"] + p["width"] <= page.viewport_size["width"]
+
+    page.mouse.move(0, 0)
+    expect(popover).not_to_have_class(POPOVER_VISIBLE)
+
+
+def test_glossary_term_opens_its_definition_inline_and_closes_on_an_outside_click(page, base_url):
+    _canary(page, base_url, "interactive")
+    term = _glossary_term(page)
+    inline = page.locator("#markdown-body .glossary-inline-def")
+    expect(inline).to_be_hidden()
+
+    term.click()
+    expect(term).to_have_attribute("aria-expanded", "true")
+    expect(inline).to_be_visible()
+    expect(inline).to_contain_text(AMORTIZED_DEF)
+    expect(page.get_by_role("tooltip")).not_to_have_class(POPOVER_VISIBLE)
+
+    page.get_by_role("heading", name="Canary Interactive").click()
+    expect(term).to_have_attribute("aria-expanded", "false")
+    expect(inline).to_be_hidden()
+
+    term.press("Enter")
+    expect(inline).to_be_visible()
+    term.press("Enter")
+    expect(inline).to_be_hidden()
+
+
+def test_tapping_a_glossary_term_opens_its_definition_inline(browser, base_url):
+    ctx = browser.new_context(has_touch=True, is_mobile=True, viewport={"width": 390, "height": 844}, service_workers="block")
+    try:
+        page = _canary(ctx.new_page(), base_url, "interactive")
+        _glossary_term(page).tap()
+        expect(page.locator("#markdown-body .glossary-inline-def")).to_be_visible()
+    finally:
+        ctx.close()
+
+
+def test_caveat_marker_reveals_and_hides_its_exception(page, base_url):
+    _canary(page, base_url, "interactive")
+    marker = page.locator("#markdown-body .caveat-marker").first
+    exception = page.get_by_text("unless this append triggers a resize")
+    expect(page.locator("#markdown-body .caveat-marker")).to_have_count(2)
+    expect(exception).to_be_hidden()
+
+    marker.click()
+    expect(marker).to_have_attribute("aria-expanded", "true")
+    expect(exception).to_be_visible()
+    expect(page.get_by_text("second caveat body")).to_be_hidden()
+
+    marker.press("Enter")
+    expect(marker).to_have_attribute("aria-expanded", "false")
+    expect(exception).to_be_hidden()
+
+
+def _practice(page):
+    eyes = page.get_by_role("button", name="Toggle answer visibility")
+    answers = page.locator("#markdown-body .problem-answer")
+    return eyes, answers
+
+
+def test_practice_answer_eye_reveals_only_its_own_problem(page, base_url):
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _canary(page, base_url, "interactive")
+    eyes, answers = _practice(page)
+    expect(eyes).to_have_count(2)
+    expect(answers.nth(0)).to_be_hidden()
+    expect(answers.nth(1)).to_be_hidden()
+    expect(page.get_by_text("Return the largest value")).to_be_visible()
+    box = eyes.first.bounding_box()
+    assert box and box["width"] >= 32 and box["height"] >= 32
+
+    eyes.first.click()
+    expect(eyes.first).to_have_attribute("aria-pressed", "true")
+    expect(answers.nth(0)).to_be_visible()
+    expect(answers.nth(1)).to_be_hidden()
+
+    eyes.first.click()
+    expect(answers.nth(0)).to_be_hidden()
+
+
+def test_practice_reveal_survives_folding_and_unfolding_its_section(page, base_url):
+    # Regression: the section fold and the answer toggle both drove `hidden` and clobbered each other.
+    _canary(page, base_url, "interactive")
+    eyes, answers = _practice(page)
+    eyes.first.click()
+    expect(answers.nth(0)).to_be_visible()
+
+    heading = page.locator("#markdown-body h2").filter(has_text="Practice problems")
+    fold = heading.locator(".heading-collapse-btn")
+    fold.click()
+    expect(heading).to_have_class(re.compile(r"\bsection--collapsed\b"))
+    expect(answers.nth(0)).to_be_hidden()
+    fold.click()
+    expect(heading).not_to_have_class(re.compile(r"\bsection--collapsed\b"))
+
+    expect(answers.nth(0)).to_be_visible()
+    expect(answers.nth(1)).to_be_hidden()
+
+
+def test_practice_answers_preference_applies_live_and_on_the_next_visit(page, base_url, open_settings):
+    _canary(page, base_url, "interactive")
+    eyes, answers = _practice(page)
+    expect(answers.nth(0)).to_be_hidden()
+
+    dialog = open_settings()
+    dialog.get_by_role("tab", name="Advanced").click()
+    # The prefs toggle has no accessible name of its own; find it by its section label.
+    toggle = dialog.locator(
+        "xpath=.//div[contains(@class,'prefs-section')][.//div[contains(@class,'prefs-section-label') and normalize-space()='Practice problem answers']]//button"
+    )
+    expect(toggle).to_have_text("Hidden")
+    toggle.click()
+    expect(toggle).to_have_text("Shown")
+    page.keyboard.press("Escape")
+    expect(dialog).to_be_hidden()
+    expect(answers.nth(0)).to_be_visible()
+    expect(answers.nth(1)).to_be_visible()
+
+    page.reload(wait_until="domcontentloaded")
+    expect(eyes.first).to_have_attribute("aria-pressed", "true")
+    expect(answers.nth(0)).to_be_visible()
+
+
+def test_reader_controls_reattach_once_after_client_side_navigation_away_and_back(page, base_url):
+    _canary(page, base_url, "interactive")
+    page.keyboard.press("Meta+k")
+    page.get_by_role("dialog").get_by_role("textbox").fill("linked list")
+    page.keyboard.press("Enter")
+    page.wait_for_url("**/dsa/data-structures/linked-list/")
+    page.go_back()
+    page.wait_for_url("**/e2e-canary/interactive/")
+
+    eyes, _ = _practice(page)
+    expect(eyes).to_have_count(2)
+    expect(page.locator(".glossary-popover")).to_have_count(1)
+    expect(page.locator(".katex-display .formula-toggle-btn")).to_have_count(1)
+    _glossary_term(page).click()
+    expect(page.locator("#markdown-body .glossary-inline-def")).to_be_visible()
+
+
+# ── canary "text": reading progress, end marker, scroll restore, in-content TOC ──
+
+
+def _ring_offset(page):
+    return float(page.locator("#scroll-top .scroll-top-ring-fill").get_attribute("stroke-dashoffset"))
+
+
+def test_scrolling_the_article_fills_the_progress_bar_and_ring(page, base_url):
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _canary(page, base_url, "text")
+    bar = page.locator("#reading-progress")
+    expect(bar).to_have_css("opacity", "1")
+    assert bar.evaluate("el => getComputedStyle(el).boxShadow") != "none", "progress bar lost its accent glow"
+    start = _ring_offset(page)
+
+    page.mouse.wheel(0, 2_000)
+    page.wait_for_function("() => parseFloat(document.getElementById('reading-progress').style.width) > 0")
+    page.wait_for_function(
+        "start => parseFloat(document.querySelector('#scroll-top .scroll-top-ring-fill').getAttribute('stroke-dashoffset')) < start",
+        arg=start,
+    )
+
+    page.locator("#scroll-top").click()
+    page.wait_for_function("() => window.scrollY === 0")
+
+
+def test_article_ends_with_the_marker_right_before_the_complete_button(content_page):
+    page = content_page("text")
+    marker = page.locator(".article-end-marker")
+    expect(marker).to_have_count(1)
+    expect(marker).to_have_text("⌘")
+    expect(marker).to_have_attribute("aria-hidden", "true")
+    follows = marker.evaluate("m => m.previousElementSibling?.id === 'markdown-body' && !!m.nextElementSibling?.querySelector('.complete-btn')")
+    assert follows, "end marker must sit between the article body and the complete button"
+
+
+def test_hand_authored_table_of_contents_is_not_rendered(page, base_url):
+    _article(page, base_url, "dsa/data-structures/hash-table")
+    expect(page.locator("#markdown-body").get_by_role("heading", name="Table of Contents")).to_have_count(0)
+    expect(page.locator("#toc-sidebar").get_by_role("link", name="Table of Contents")).to_have_count(0)
+    expect(page.locator("#toc-sidebar").get_by_role("link")).not_to_have_count(0)
+
+
+def test_reading_position_is_restored_on_the_next_visit(page, base_url):
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _canary(page, base_url, "text")
+    page.mouse.wheel(0, 1_200)
+    page.wait_for_function("() => window.scrollY > 600")
+    saved = page.evaluate("() => window.scrollY")
+    # The save is debounced 250ms after the last scroll event; wait for it to land in storage.
+    page.wait_for_function(
+        "() => Object.keys(localStorage).some(k => k.startsWith('wiki-toc-scroll-article-') && Number(localStorage.getItem(k)) > 600)"
+    )
+
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_function("saved => Math.abs(window.scrollY - saved) < 50", arg=saved)

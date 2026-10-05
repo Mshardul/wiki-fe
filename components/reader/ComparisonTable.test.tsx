@@ -1,6 +1,24 @@
 import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ComparisonTable } from "./ComparisonTable";
+
+// Two-column comparison table with no numeric hint, as the plugin emits for mixed cells.
+function twoColTable(header: string, rows: Array<[string, string]>) {
+  const body = rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join("");
+  document.body.innerHTML = `
+    <article class="markdown-body">
+      <table data-comparison="true">
+        <thead><tr><th>Name</th><th>${header}</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </article>`;
+}
+
+function sortBySecondColumn(): string[] {
+  render(<ComparisonTable wikiId="dsa" articlePath="ds/array" />);
+  (document.querySelectorAll("th")[1] as HTMLElement).click();
+  return [...document.querySelectorAll("tbody tr td:first-child")].map((c) => c.textContent ?? "");
+}
 
 function table() {
   document.body.innerHTML = `
@@ -53,5 +71,36 @@ describe("ComparisonTable", () => {
     expect(document.querySelector("td:nth-child(3)")?.classList.contains("table-col-hidden")).toBe(
       true,
     );
+  });
+
+  it("sorts every number before every non-numeric cell, keeping the order transitive", () => {
+    twoColTable("Complexity", [
+      ["Alice", "30"],
+      ["Bob", "N/A"],
+      ["Charlie", "10"],
+      ["Dan", "N/A"],
+      ["Erin", "20"],
+    ]);
+    expect(sortBySecondColumn()).toEqual(["Charlie", "Erin", "Alice", "Bob", "Dan"]);
+  });
+
+  it("treats only whole-cell numbers as numeric, not commas or units", () => {
+    twoColTable("Size", [
+      ["Alpha", "1,024"],
+      ["Beta", "2 GB"],
+      ["Gamma", "10"],
+    ]);
+    expect(sortBySecondColumn()).toEqual(["Gamma", "Alpha", "Beta"]);
+  });
+
+  it("disconnects its resize observer and removes the toggle bar on unmount", () => {
+    const disconnect = vi.spyOn(ResizeObserver.prototype, "disconnect");
+    table();
+    const { unmount } = render(<ComparisonTable wikiId="dsa" articlePath="ds/array" />);
+    expect(document.querySelector(".table-col-toggles")).not.toBeNull();
+    unmount();
+    expect(disconnect).toHaveBeenCalledTimes(1);
+    expect(document.querySelector(".table-col-toggles")).toBeNull();
+    disconnect.mockRestore();
   });
 });

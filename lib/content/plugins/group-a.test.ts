@@ -43,6 +43,24 @@ describe("remark-section-wrap", () => {
   });
 });
 
+describe("remark-strip-in-content-toc", () => {
+  const md = read("in-content-toc.md");
+
+  it("drops the hand-authored Table of Contents heading and its list", async () => {
+    const { html } = await renderMarkdown(md, ctx());
+    expect(html).not.toContain("Table of Contents");
+    expect(html).not.toMatch(/<li><a href="#what-it-is">/);
+  });
+
+  it("keeps every section around it, including subsections", async () => {
+    const { html } = await renderMarkdown(md, ctx());
+    expect(html).toContain("prereqs-container");
+    expect(html).toContain('id="what-it-is"');
+    expect(html).toContain('id="collisions"');
+    expect(html).toContain("Some real content here.");
+  });
+});
+
 describe("remark-callouts", () => {
   const md = read("callouts.md");
 
@@ -57,6 +75,20 @@ describe("remark-callouts", () => {
   it("marks the +prefixed callout as collapsed", async () => {
     const { html } = await renderMarkdown(md, ctx());
     expect(html).toMatch(/class="callout callout-warning"[^>]*data-collapsed="true"/);
+  });
+
+  it.each([
+    ["callout-interview", "🎯"],
+    ["callout-warning", "⚠️"],
+    ["callout-thought", "🧠"],
+    ["callout-decision", "⚖️"],
+  ])("gives a %s callout the %s icon", async (cls, icon) => {
+    const { html } = await renderMarkdown(md, ctx());
+    expect(html).toMatch(
+      new RegExp(
+        `class="callout ${cls}"[^>]*>\\s*<p><span class="callout-first-line"><span class="callout-icon">${icon}</span>`,
+      ),
+    );
   });
 
   it("strips the leading emoji and pairs an icon span with the first line", async () => {
@@ -83,6 +115,16 @@ describe("remark-practice-answer", () => {
     const { html } = await renderMarkdown(md, ctx());
     expect(html).toMatch(
       /find the max sum[\s\S]*?<\/p>\s*<div class="problem-answer" hidden><p><strong>Approach/,
+    );
+  });
+
+  it("wraps only the Approach paragraph when no Complexity label follows", async () => {
+    const { html } = await renderMarkdown(read("practice-no-complexity.md"), ctx());
+    const answer = html.match(/<div class="problem-answer" hidden>([\s\S]*?)<\/div>/)?.[1] ?? "";
+    expect(answer).toContain("Do the obvious thing");
+    expect(answer).not.toContain("<pre");
+    expect(html).toMatch(
+      /Do the obvious thing\.<\/p><\/div>\s*<pre[\s\S]*trailing paragraph stays outside/,
     );
   });
 });

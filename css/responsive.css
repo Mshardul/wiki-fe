@@ -91,6 +91,11 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+  /* Comparison tables scroll inside .table-scroll-wrap, which owns the scroll cue; a self-scrolling table never overflows the wrap. */
+  .markdown-body .table-scroll-wrap table {
+    display: table;
+    overflow: visible;
+  }
   .markdown-body th,
   .markdown-body td {
     padding: var(--s2) var(--s3);
@@ -308,10 +313,7 @@
   .home-header {
     padding-top: var(--s16);
   }
-  /* Overflows 390px (iPhone 13) once breadcrumb hits min-width:0 - shed read-time badge and back-btn label, same as 375px tier below. */
-  #content-read-time {
-    display: none;
-  }
+  /* Overflows 390px (iPhone 13) once breadcrumb hits min-width:0 - shed the back-btn label, same as 375px tier below. */
   .content-topbar .back-btn {
     padding: var(--s2);
   }
@@ -324,54 +326,6 @@
   .content-topbar .topbar-icon-btn {
     min-width: 34px;
     min-height: 34px;
-  }
-}
-
-@media (max-width: 1024px) {
-  /* Overflow items collapse here too - the full icon row overflows narrow desktop widths (900-1024px), not just phones/tablets. */
-  #content-overflow-btn {
-    display: inline-flex;
-  }
-  .topbar-overflow {
-    position: relative;
-    display: block;
-  }
-  .topbar-overflow-menu {
-    display: none;
-    position: absolute;
-    top: calc(100% + var(--s2));
-    right: 0;
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--s1);
-    min-width: 200px;
-    padding: var(--s2);
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: var(--r-md);
-    box-shadow: var(--shadow-lg);
-    z-index: var(--z-overlay);
-  }
-  .topbar-overflow-menu.open {
-    display: flex;
-  }
-  .topbar-overflow-item {
-    width: 100%;
-    height: auto;
-    justify-content: flex-start;
-    gap: var(--s3);
-    padding: var(--s2) var(--s3);
-    border: none;
-    background: transparent;
-    border-radius: var(--r-sm);
-    min-height: 44px;
-  }
-  .topbar-overflow-item:hover {
-    background: var(--surface-hover);
-  }
-  .topbar-overflow-item span {
-    display: inline;
-    font-size: var(--text-sm);
   }
 }
 

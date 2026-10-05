@@ -1,5 +1,6 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { updateSettings } from "@/lib/storage/settings";
 import { PracticeAnswerToggle } from "./PracticeAnswerToggle";
 
 function withProblem() {
@@ -40,5 +41,34 @@ describe("PracticeAnswerToggle", () => {
 
     btn.click();
     expect(answer.hidden).toBe(true);
+  });
+
+  it("starts answers visible when the preference says to show them", () => {
+    updateSettings({ practiceAnswersHidden: false });
+    withProblem();
+    render(<PracticeAnswerToggle />);
+    expect((document.querySelector(".problem-answer") as HTMLElement).hidden).toBe(false);
+    expect(document.querySelector(".practice-eye-btn")?.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("syncs open answers when the preference changes mid-view", () => {
+    withProblem();
+    render(<PracticeAnswerToggle />);
+    const answer = document.querySelector(".problem-answer") as HTMLElement;
+
+    updateSettings({ practiceAnswersHidden: false });
+    expect(answer.hidden).toBe(false);
+    updateSettings({ practiceAnswersHidden: true });
+    expect(answer.hidden).toBe(true);
+  });
+
+  it("keeps a per-problem reveal when an unrelated setting changes", () => {
+    withProblem();
+    render(<PracticeAnswerToggle />);
+    const answer = document.querySelector(".problem-answer") as HTMLElement;
+    (document.querySelector(".practice-eye-btn") as HTMLButtonElement).click();
+
+    updateSettings({ fontSize: "L" });
+    expect(answer.hidden).toBe(false);
   });
 });

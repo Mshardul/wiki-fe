@@ -5,6 +5,11 @@ import { useScrollProgress } from "@/components/common/useScrollProgress";
 export function ProgressRing() {
   const pct = useScrollProgress();
   return (
-    <div id="reading-progress" className="reading-progress" style={{ width: `${pct * 100}%` }} />
+    // Only mounted in the reader, so always shown; the CSS hides .reading-progress without .visible.
+    <div
+      id="reading-progress"
+      className="reading-progress visible"
+      style={{ width: `${pct * 100}%` }}
+    />
   );
 }

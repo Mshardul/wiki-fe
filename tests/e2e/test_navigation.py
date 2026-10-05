@@ -58,9 +58,9 @@ def test_breadcrumb_crumbs_not_zero_width_on_narrow_viewport(page, base_url):
 def test_escape_closes_search_modal(wiki_page):
     """Escape closes an open search modal (takes priority over index nav)."""
     wiki_page.keyboard.press("Meta+k")
-    wiki_page.wait_for_selector(".gsearch-modal, #global-search-modal", timeout=5_000)
+    wiki_page.wait_for_selector(".gsearch-modal", timeout=5_000)
     wiki_page.keyboard.press("Escape")
-    wiki_page.wait_for_selector(".gsearch-modal, #global-search-modal", state="hidden", timeout=5_000)
+    wiki_page.wait_for_selector(".gsearch-modal", state="hidden", timeout=5_000)
 
 
 def test_escape_from_article_goes_to_index(page, base_url):

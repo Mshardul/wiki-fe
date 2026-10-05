@@ -222,7 +222,7 @@ abbr.glossary-term {
   cursor: help;
 }
 
-#glossary-popover {
+.glossary-popover {
   position: absolute;
   z-index: var(--z-toast);
   max-width: min(320px, 90vw);
@@ -240,7 +240,7 @@ abbr.glossary-term {
   transition: opacity var(--t-fast), transform var(--t-fast);
 }
 
-#glossary-popover.glossary-popover--visible {
+.glossary-popover.glossary-popover--visible {
   opacity: 1;
   transform: translateY(0);
 }

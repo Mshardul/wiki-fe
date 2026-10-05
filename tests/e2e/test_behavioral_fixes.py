@@ -55,36 +55,6 @@ def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
     )
 
 
-# ── In-content Table of Contents suppression ─────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_in_content_toc_section_does_not_render(page, base_url):
-    """The hand-authored '## Table of Contents' section (for raw-file
-    readers) must not render in the app - the app builds its own live TOC
-    sidebar, so showing both is a duplicate nav."""
-    content = (
-        "# Mock Article\n\n"
-        "## Prerequisites\n\n- [Array](./array.md)\n\n"
-        "## Table of Contents\n\n"
-        "- [Prerequisites](#prerequisites)\n"
-        "- [Table of Contents](#table-of-contents)\n"
-        "- [What it is](#what-it-is)\n\n"
-        "## What it is\n\nSome real content here.\n"
-    )
-    _load_mock_article(page, base_url, content)
-
-    heading_count = page.locator("#markdown-body h2:has-text('Table of Contents')").count()
-    assert heading_count == 0, "In-content Table of Contents heading must not render"
-
-    body_text = page.locator("#markdown-body").inner_text()
-    assert "What it is" in body_text, "Content after the TOC section must still render"
-
-    # The app's own live sidebar TOC must still build normally.
-    sidebar_links = page.locator("#toc-nav a").count()
-    assert sidebar_links > 0, "App's own sidebar TOC must still be built"
-
-
 # ── Stub-article toolbar button sync ─────────────────────────────
 
 
@@ -132,6 +102,9 @@ def test_copy_button_failure_shows_toast(page, base_url):
     page.locator("#markdown-body pre .copy-btn").first.click()
     page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
     assert "Couldn't copy" in page.locator("#wiki-toast").inner_text()
+    # Regression: the toast used an undefined surface token and rendered transparent over article text.
+    bg = page.locator("#wiki-toast").evaluate("el => getComputedStyle(el).backgroundColor")
+    assert bg not in ("rgba(0, 0, 0, 0)", "transparent"), f"toast background must be opaque, got {bg}"
 
 
 def test_successful_copy_does_not_show_toast(page, base_url):
@@ -142,26 +115,6 @@ def test_successful_copy_does_not_show_toast(page, base_url):
     btn.click()
     page.wait_for_function("(b) => b.classList.contains('copied')", arg=btn.element_handle(), timeout=3_000)
     assert page.locator("#wiki-toast.wiki-toast--error").count() == 0
-
-
-# ── Scroll restoration ────────────────────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_scroll_position_stable_after_revisit(page, base_url):
-    """scroll position is not reset on second visit to same article."""
-    page.set_viewport_size({"width": 1280, "height": 800})
-    _load_mock_article(
-        page,
-        base_url,
-        "# Mock\n\n" + "Paragraph text.\n\n" * 80,
-        slug="scroll-stable",
-    )
-    page.evaluate("() => window.scrollTo(0, 400)")
-    page.wait_for_function("() => window.scrollY > 0", timeout=3_000)
-
-    scroll_y = page.evaluate("() => window.scrollY")
-    assert scroll_y > 0, "Scroll should be non-zero after scrollTo"
 
 
 # ── Hover preview improvements ────────────────────────────────────

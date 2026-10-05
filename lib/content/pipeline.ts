@@ -14,6 +14,7 @@ import { rehypeCallouts } from "./plugins/callouts";
 import { rehypeCodeHeader } from "./plugins/code-header";
 import { rehypeComparisonTable } from "./plugins/comparison-table";
 import { rehypeGlossaryCaveatMarkers } from "./plugins/glossary-caveat-markers";
+import { remarkStripInContentToc } from "./plugins/in-content-toc";
 import { remarkMermaid } from "./plugins/mermaid";
 import { rehypePracticeAnswer } from "./plugins/practice-answer";
 import { rehypePrerequisites } from "./plugins/prerequisites";
@@ -43,6 +44,7 @@ export function createProcessor(ctx: RenderContext): Processor {
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkMath)
+    .use(remarkStripInContentToc)
     .use(remarkMermaid)
     .use(remarkVideoEmbed)
     .use(remarkViz)

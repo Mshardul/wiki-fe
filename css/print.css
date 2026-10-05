@@ -37,9 +37,7 @@
   .table-col-toggles,
   .code-traffic-lights,
   .scroll-to-top,
-  #global-search-modal,
-  #prefs-modal,
-  #auth-modal,
+  body > :has(> [aria-modal="true"]),
   #zoom-overlay {
     display: none !important;
   }
