@@ -21,7 +21,6 @@ export interface Settings {
   contentWidth: "Narrow" | "Default" | "Wide";
   lineHeight: "Tight" | "Normal" | "Relaxed";
   paraSpacing: "Tight" | "Normal" | "Relaxed";
-  copySourceHeader: boolean;
   hapticFeedback: boolean;
   practiceAnswersHidden: boolean;
 }
@@ -35,7 +34,6 @@ export const DEFAULT_SETTINGS: Settings = {
   contentWidth: "Default",
   lineHeight: "Normal",
   paraSpacing: "Normal",
-  copySourceHeader: false,
   hapticFeedback: false,
   practiceAnswersHidden: true,
 };
@@ -55,7 +53,6 @@ export function hasStoredSettings(): boolean {
   return Boolean(stored?.backgroundId);
 }
 
-// A first-run default that follows the OS preference; a stored value always wins.
 export function getSettings(): Settings {
   const stored = getJSON<Partial<Settings> | null>(KEYS.settings, null);
   if (stored?.backgroundId) return { ...DEFAULT_SETTINGS, ...stored };
@@ -79,7 +76,7 @@ export function subscribeSettings(cb: () => void): () => void {
   return subscribeKey(KEYS.settings, cb);
 }
 
-// Must delegate to getSettings() (not just read raw) or a fresh visit desyncs from the boot script's OS-preference fallback
+// Merge via getSettings(), or a fresh visit desyncs from the boot script's OS fallback.
 const rawSnapshot = makeSnapshot<Partial<Settings> | null>(KEYS.settings, null);
 let lastRaw: unknown;
 let lastMerged: Settings = DEFAULT_SETTINGS;
@@ -152,7 +149,6 @@ export function applySettings(s: Settings): void {
   document.dispatchEvent(new CustomEvent("wiki:theme-changed", { detail: { theme } }));
 }
 
-// Re-apply on OS theme change only while the user has no stored preference.
 export function bindOsThemeListener(): () => void {
   if (typeof window === "undefined") return () => {};
   const mq = window.matchMedia("(prefers-color-scheme: light)");

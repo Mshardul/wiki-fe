@@ -1,9 +1,3 @@
-# resume-by-idea chip not ported, skip-marked below (see test_scroll_toc.py).
-# Not ported / doesn't map to the new architecture: .anchor-btn aria-label (heading anchors use rehype-autolink-headings' default, aria-hidden+tabindex=-1, not a labeled button — real gap, flagged not dropped); Space-key + aria-label on wiki-card/index-card (both are real <a> elements now, confirmed in app/page.tsx + KeyNav.test.tsx's fixture — don't need aria-label or Space-activation like the old role=button divs did); sessionStorage search-index caching (SearchModal loads search-index.json once per modal-open and filters in-memory, no repeated fetch to cache against).
-
-import pytest
-
-
 def _go_to_article(page, base_url, slug="system-design/components/caching"):
     page.goto(f"{base_url}/{slug}/", wait_until="domcontentloaded")
     page.wait_for_selector("#markdown-body", timeout=10_000)
@@ -97,11 +91,10 @@ def test_t_hotkey_uppercase(page, base_url):
     )
 
 
-# ── Scroll position saved on scroll (silent-restore model) ──────
+# ── Scroll position saved on scroll ─────────────────────────────
 
 
 def test_scroll_position_saved_to_local_storage(page, base_url):
-    """Scrolling an article persists the offset to localStorage under a wiki-toc-scroll-* key (no resume chip, Next silently re-applies on revisit — write side only, read side covered by test_scroll_toc.py)."""
     _go_to_article(page, base_url)
 
     page.evaluate("""() => {
@@ -114,11 +107,6 @@ def test_scroll_position_saved_to_local_storage(page, base_url):
     )
     saved_y = page.evaluate("() => window.scrollY")
     assert saved_y > 0, "Could not scroll article (content may be too short)"
-
-
-@pytest.mark.skip(reason="resume-by-idea chip not ported — WIKI-651 (see test_scroll_toc.py)")
-def test_resume_chip_shown_and_restores_scroll():
-    pass
 
 
 # ── Missing aria on interactive elements ────────────────────────────

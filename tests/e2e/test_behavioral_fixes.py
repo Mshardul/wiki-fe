@@ -1,13 +1,4 @@
-"""Clipboard-failure toast, toast queue, theme-event resilience, iOS install nudge, mock-article regressions."""
-
-import pytest
-
-# Dropped: js/ source-scan tests (hotkey dupes, storage-key uniqueness) - lib/hotkeys.ts + lib/storage/keys.ts replace them, covered by vitest.
-# Dropped: anchor-btn copy toast - headings use build-time autolinks now, no copy-on-click anchor button.
-# Dropped: scroll restore via resume chip - duplicated by test_scroll_toc.py.
-# Dropped: toast ordering (second-after-first, priority overtake) - lib/toast.test.ts owns queue semantics.
-# Dropped: index.md CRLF / malformed-row parsing - vertical index is rendered at build time, no runtime parse.
-# Dropped: ?debug overlay (spec §9), prefs focus/offline toggles (not ported), sprite fetch-failure toast (sprite is inlined at build).
+"""Clipboard-failure toast, toast queue, theme-event resilience, iOS install nudge."""
 
 SLUG = "system-design/components/caching"
 
@@ -32,83 +23,21 @@ def _deny_clipboard(page):
     )
 
 
-def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-    if extra_routes:
-        for pattern, handler in extra_routes:
-            page.route(pattern, handler)
-    page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
-    page.evaluate(
-        f"""() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/{slug}.md'),
-        encodeURIComponent('{slug.capitalize()}'),
-        '{slug}'
-    )"""
-    )
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-
-
-# ── Stub-article toolbar button sync ─────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_stub_article_syncs_bookmark_read_offline_buttons(page, base_url):
-    """A stub (empty-body) article must still sync the bookmark/read/offline
-    toolbar buttons - the stub branch returns early and used to skip them."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-    page.evaluate(
-        """() => localStorage.setItem('wiki-bookmarks', JSON.stringify([
-        { wikiId: 'system-design', path: 'content/system-design/mock.md', title: 'Mock' }
-    ]))"""
-    )
-    page.route("**/mock.md", lambda r: r.fulfill(body="# Mock\n"))
-    page.evaluate(
-        """() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/mock.md'),
-        encodeURIComponent('Mock'),
-        'mock'
-    )"""
-    )
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-    page.wait_for_selector(".content-stub", timeout=5_000)
-
-    is_active = page.evaluate(
-        "() => document.getElementById('prefs-bookmark-toggle')?.classList.contains('active')"
-    )
-    assert is_active, "Bookmark toggle must reflect state even on a stub article"
-
-
 # ── Clipboard failure toast ──────────────────────────────────────
 
 
 def test_copy_button_failure_shows_toast(page, base_url):
-    """Denied clipboard on copy-btn click shows the copy-failed toast."""
     _code_ready(page, base_url)
     _deny_clipboard(page)
     page.locator("#markdown-body pre .copy-btn").first.click()
     page.wait_for_selector("#wiki-toast.visible", timeout=3_000)
     assert "Couldn't copy" in page.locator("#wiki-toast").inner_text()
-    # Regression: the toast used an undefined surface token and rendered transparent over article text.
+    # An undefined surface token renders the toast transparent over article text.
     bg = page.locator("#wiki-toast").evaluate("el => getComputedStyle(el).backgroundColor")
     assert bg not in ("rgba(0, 0, 0, 0)", "transparent"), f"toast background must be opaque, got {bg}"
 
 
 def test_successful_copy_does_not_show_toast(page, base_url):
-    """Successful clipboard write shows no error toast."""
     page.context.grant_permissions(["clipboard-read", "clipboard-write"])
     _code_ready(page, base_url)
     btn = page.locator("#markdown-body pre .copy-btn").first
@@ -117,128 +46,10 @@ def test_successful_copy_does_not_show_toast(page, base_url):
     assert page.locator("#wiki-toast.wiki-toast--error").count() == 0
 
 
-# ── Hover preview improvements ────────────────────────────────────
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_hover_preview_hidden_after_mouseleave_during_fetch(page, base_url):
-    """mouseleave during slow summaries.json fetch hides preview; stale content not shown."""
-    import json
-    import threading
-
-    ready = threading.Event()
-
-    def slow_handler(route):
-        ready.wait(timeout=2.0)
-        route.fulfill(
-            content_type="application/json",
-            body=json.dumps(
-                {"content/system-design/slow-link.md": "Stale content that must not appear."}
-            ),
-        )
-
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-    page.route("**/data/summaries.json", slow_handler)
-    page.route("**/slow-link.md", lambda r: r.fulfill(body="# L\n\nBody."))
-    page.route(
-        "**/abort-host.md",
-        lambda r: r.fulfill(body="# Host\n\n[Link](./slow-link.md)"),
-    )
-    page.evaluate(
-        """() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/abort-host.md'),
-        encodeURIComponent('Host'),
-        'abort-host'
-    )"""
-    )
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-    page.wait_for_selector("a:has-text('Link')", timeout=5_000)
-
-    page.locator("a:has-text('Link')").dispatch_event("mouseenter")
-    page.wait_for_selector("#hover-preview.visible", timeout=3_000)
-
-    # Mouseleave before fetch resolves
-    page.locator("a:has-text('Link')").dispatch_event("mouseleave")
-    page.wait_for_function(
-        "() => !document.getElementById('hover-preview').classList.contains('visible')",
-        timeout=3_000,
-    )
-
-    # Now let the fetch complete
-    ready.set()
-    # Brief wait for any post-fetch render attempt to settle (no DOM signal available)
-    page.wait_for_timeout(200)
-
-    # Preview must remain hidden; stale content must not be shown
-    is_visible = page.evaluate(
-        "() => document.getElementById('hover-preview').classList.contains('visible')"
-    )
-    assert not is_visible, "Preview must stay hidden after mouseleave"
-
-    text = page.evaluate("() => document.getElementById('hover-preview').innerText")
-    assert "Stale content" not in (text or ""), (
-        "Stale content must not appear after abort"
-    )
-
-
-@pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
-def test_hover_preview_left_clamped_near_right_edge(page, base_url):
-    """preview left is clamped to >= 8px when viewport is narrower than preview."""
-    import json
-
-    # 320px viewport is narrower than the 340px preview; clamping always fires
-    page.set_viewport_size({"width": 320, "height": 800})
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-
-    page.route(
-        "**/data/summaries.json",
-        lambda r: r.fulfill(
-            content_type="application/json",
-            body=json.dumps({"content/system-design/right-linked.md": "Content."}),
-        ),
-    )
-    page.route(
-        "**/right-host.md",
-        lambda r: r.fulfill(body="# Host\n\n[Link](./right-linked.md)\n"),
-    )
-    page.evaluate(
-        """() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/right-host.md'),
-        encodeURIComponent('Host'),
-        'right-host'
-    )"""
-    )
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-    page.wait_for_selector("a:has-text('Link')", timeout=5_000)
-
-    page.locator("a:has-text('Link')").dispatch_event("mouseenter")
-    page.wait_for_selector("#hover-preview.visible", timeout=5_000)
-
-    left = page.evaluate(
-        "() => parseInt(document.getElementById('hover-preview').style.left)"
-    )
-    assert left >= 8, f"Preview left ({left}px) should be clamped to >= 8px"
-
-
 # ── Mermaid debounce + viewport-aware ──────────────────────────────
 
 
 def test_rapid_theme_changes_do_not_crash(page, base_url):
-    """Ten rapid theme-change events do not throw."""
     _article(page, base_url)
     errors = []
     page.on("pageerror", lambda err: errors.append(str(err)))
@@ -255,7 +66,6 @@ def test_rapid_theme_changes_do_not_crash(page, base_url):
 
 
 def test_toast_queue_no_crash_on_rapid_triggers(page, base_url):
-    """Rapid clipboard failures do not crash; toast text stays coherent."""
     _code_ready(page, base_url)
     errors = []
     page.on("pageerror", lambda err: errors.append(str(err)))
@@ -278,7 +88,6 @@ _IOS_UA = (
 
 
 def test_ios_install_nudge_shown_on_ios_ua(browser, base_url):
-    """iOS Safari UA sees the manual Add-to-Home-Screen toast on boot."""
     ctx = browser.new_context(user_agent=_IOS_UA, service_workers="block")
     ios_page = ctx.new_page()
     try:
@@ -291,12 +100,10 @@ def test_ios_install_nudge_shown_on_ios_ua(browser, base_url):
 
 
 def test_ios_install_nudge_absent_on_desktop_ua(wiki_page):
-    """Default (non-iOS) UA never sees the iOS Add-to-Home-Screen toast."""
     assert wiki_page.locator("#wiki-toast.visible").count() == 0
 
 
 def test_ios_install_nudge_dismiss_persists(browser, base_url):
-    """Dismissing the iOS nudge keeps it from reappearing on the next visit."""
     ctx = browser.new_context(user_agent=_IOS_UA, service_workers="block")
     ios_page = ctx.new_page()
     try:

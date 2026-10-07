@@ -33,11 +33,23 @@ export function Modal({
     close: () => onCloseRef.current(),
   });
 
-  // Layout effect: the registry must report open as soon as the dialog is in the DOM, before any keypress can dispatch.
+  // Layout effects: the registry and the Escape listener must be live as soon as the dialog is in the DOM, before any keypress can dispatch.
   useLayoutEffect(() => {
     onCloseRef.current = onClose;
     openRef.current = open;
   });
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    function onKeydown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onCloseRef.current();
+      }
+    }
+    document.addEventListener("keydown", onKeydown);
+    return () => document.removeEventListener("keydown", onKeydown);
+  }, [open]);
 
   useFocusTrap(dialogRef, open);
 
@@ -51,16 +63,7 @@ export function Modal({
     const prevFocus = document.activeElement as HTMLElement | null;
     (initialFocusRef?.current ?? dialogRef.current)?.focus();
 
-    function onKeydown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        onCloseRef.current();
-      }
-    }
-    document.addEventListener("keydown", onKeydown);
-
     return () => {
-      document.removeEventListener("keydown", onKeydown);
       unlockBodyScroll();
       markClosed(entry);
       prevFocus?.focus();

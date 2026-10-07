@@ -1,472 +1,63 @@
-"""
-- Hover previews from data/summaries.json (017/514)
-- External and Anchor link handling (049)
-- Cross-wiki `wiki://` link navigation (199)
-- Author-curated "## Recommended" section feeds the related-articles panel (027)
-- Backlink spine: "Mentioned by" reverse links (250)
-- Cross-wiki concept bridges: "Cross-wiki bridge" block (260)
-"""
+"""In-article anchors, related-articles strip, Mentioned-by backlinks."""
 
-import json
+import re
 
-import pytest
-
-# Every test here drives an article via the vanilla mock-article infra
-# (window.navigateToContent + page.route("**/*.md")), which Next has no equivalent for.
-# The features (hover previews, related, backlinks, bridges, link rewriting) still ship
-# and have vitest island + pipeline coverage; rewriting these to drive real built
-# articles is WIKI-645 (e2e-modernization epic, post-cutover).
-pytestmark = pytest.mark.skip(reason="e2e-modernization epic — mock-article rewrite")
+from playwright.sync_api import expect
 
 
-def _load_mock_article(page, base_url, content, slug="mock", extra_routes=None):
-    """Navigate to a mocked article via JS, bypassing index slug resolution.
-    Waits until the loading indicator is replaced by actual content."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-    if extra_routes:
-        for pattern, handler in extra_routes:
-            page.route(pattern, handler)
-    page.route(f"**/{slug}.md", lambda r: r.fulfill(body=content))
-    page.evaluate(f"""() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/{slug}.md'),
-        encodeURIComponent('{slug.capitalize()}'),
-        '{slug}'
-    )""")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
+def _canary(page, base_url, name):
+    page.goto(f"{base_url}/e2e-canary/{name}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
+    page.wait_for_selector("html[data-hotkeys-ready]", state="attached", timeout=15_000)
+    return page
 
 
-def test_hover_preview_shows_summaries_json_entry(page, base_url):
-    """017/514: Hovering an internal link shows its hand-authored summary from
-    data/summaries.json, not a scrape of the target article's markdown (which
-    previously could surface a prereq/TOC bullet instead of a real summary)."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-
-    page.route(
-        "**/data/summaries.json",
-        lambda r: r.fulfill(
-            content_type="application/json",
-            body=json.dumps({"content/system-design/linked.md": "This is the summary."}),
-        ),
-    )
-    page.route(
-        "**/linked.md",
-        # Body is irrelevant now - hover preview no longer fetches/scrapes the
-        # target article, so a prereq-only body proves the scrape path is gone.
-        lambda r: r.fulfill(body="## Prerequisites\n\n- **Some prereq**\n"),
-    )
-    page.route("**/mock.md", lambda r: r.fulfill(body="# Main\n\n[Link](./linked.md)"))
-
-    page.evaluate("""() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/mock.md'),
-        encodeURIComponent('Main'),
-        'mock'
-    )""")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-    page.wait_for_selector("a:has-text('Link')", timeout=5_000)
-
-    # Dispatch mouseenter directly - Playwright's hover() fires mouseleave immediately
-    # (due to internal mouse positioning), which cancels the 400 ms preview timer.
-    page.locator("a:has-text('Link')").dispatch_event("mouseenter")
-    page.wait_for_selector("#hover-preview.visible", timeout=5_000)
-
-    preview_text = page.locator("#hover-preview").inner_text()
-    assert "This is the summary." in preview_text
-    assert "Some prereq" not in preview_text
+def _jump_link(page):
+    return page.locator("#markdown-body").get_by_role("link", name="jump to the sub-topic", exact=True)
 
 
-def test_hover_preview_no_summary_entry_shows_fallback(page, base_url):
-    """514: A link target with no data/summaries.json entry shows the
-    'Preview not available' fallback instead of a markdown-scraped guess."""
-    page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#view-home.active", timeout=8_000)
-    page.wait_for_function("() => typeof window.navigateToContent === 'function'", timeout=8_000)
-
-    page.route(
-        "**/data/summaries.json",
-        lambda r: r.fulfill(content_type="application/json", body="{}"),
-    )
-    page.route("**/linked.md", lambda r: r.fulfill(body="# Linked\n\nBody text."))
-    page.route("**/mock.md", lambda r: r.fulfill(body="# Main\n\n[Link](./linked.md)"))
-
-    page.evaluate("""() => navigateToContent(
-        'system-design',
-        encodeURIComponent('../content/system-design/mock.md'),
-        encodeURIComponent('Main'),
-        'mock'
-    )""")
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-    page.wait_for_selector("a:has-text('Link')", timeout=5_000)
-
-    page.locator("a:has-text('Link')").dispatch_event("mouseenter")
-    page.wait_for_selector("#hover-preview.visible", timeout=5_000)
-
-    preview_text = page.locator("#hover-preview").inner_text()
-    assert "Preview not available" in preview_text
+# ── In-article anchors ─────────────────────────────────────────────
 
 
-def test_external_links_target_blank(page, base_url):
-    """049: External links automatically get target='_blank'."""
-    _load_mock_article(
-        page, base_url, "# Ext\n\n[Google](https://google.com)", slug="ext"
-    )
-    page.wait_for_selector("a:has-text('Google')", timeout=5_000)
-
-    assert page.locator("a:has-text('Google')").get_attribute("target") == "_blank"
-    assert (
-        page.locator("a:has-text('Google')").get_attribute("rel")
-        == "noopener noreferrer"
-    )
-    assert "wiki-link-external" in (
-        page.locator("a:has-text('Google')").get_attribute("class") or ""
-    )
+def test_in_article_anchor_scrolls_to_heading_and_sets_a_param(content_page):
+    page = content_page("text")
+    _jump_link(page).click()
+    expect(page).to_have_url(re.compile(r"/e2e-canary/text/\?a=sub-topic$"))
+    expect(page.locator("#sub-topic")).to_be_in_viewport()
 
 
-def test_cross_wiki_link_navigates_to_target_wiki(page, base_url):
-    """199: `wiki://other-wiki-id/path/article.md` navigates to the target
-    wiki + article instead of being treated as an external or dead link."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# Cross Wiki Source\n\n[Hash Table](wiki://dsa/data-structures/hash-table.md)",
-        slug="cross-wiki-source",
-        extra_routes=[
-            (
-                "**/content/dsa/data-structures/hash-table.md",
-                lambda r: r.fulfill(body="# Hash Table\n\nBody."),
-            ),
-        ],
-    )
-    link = page.locator("a:has-text('Hash Table')")
-    page.wait_for_selector("a:has-text('Hash Table')", timeout=5_000)
+def test_in_article_anchor_expands_a_collapsed_parent_section(page, base_url):
+    _canary(page, base_url, "text")
+    page.locator("#code").get_by_role("button", name="Toggle section").click()
+    expect(page.locator("#sub-topic")).to_be_hidden()
 
-    assert link.get_attribute("target") == "_blank"
-    assert "wiki-link-article" in (link.get_attribute("class") or "")
-    href = link.get_attribute("href") or ""
-    assert "dsa/hash-table" in href
+    _jump_link(page).click()
+    expect(page.locator("#sub-topic")).to_be_in_viewport()
+    expect(page.locator("#code")).not_to_have_class(re.compile(r"\bsection--collapsed\b"))
 
 
-def test_anchor_links_scroll_and_update_url(page, base_url):
-    """049: Anchor links update the ?a= URL param without breaking the hash."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# Mock\n\n[Go down](#down)\n\n" + "<br>\n" * 50 + "\n## Down\n",
-        slug="anchor",
-    )
-    page.wait_for_selector("a:has-text('Go down')", timeout=5_000)
-    assert "wiki-link-inpage" in (
-        page.locator("a:has-text('Go down')").get_attribute("class") or ""
-    )
-
-    page.locator("a:has-text('Go down')").click()
-    # history.replaceState doesn't trigger a Playwright navigation event; poll the URL directly.
-    page.wait_for_function("() => location.href.includes('?a=down')", timeout=5_000)
-
-    assert "?a=down" in page.url
-    assert "system-design/anchor" in page.url
-
-
-def test_recommended_section_feeds_related_panel(page, base_url):
-    """027: A `## Recommended` section is parsed into the related-articles
-    panel and stripped from the rendered body, instead of showing as a
-    regular heading + link list."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# Recommended Source\n\n"
-        "Some intro text.\n\n"
-        "## Recommended\n\n"
-        "- [Target One](target-one.md)\n"
-        "- [Target Two](target-two.md)\n",
-        slug="rec-source",
-        extra_routes=[
-            ("**/target-one.md", lambda r: r.fulfill(body="# Target One\n\nBody.")),
-            ("**/target-two.md", lambda r: r.fulfill(body="# Target Two\n\nBody.")),
-        ],
-    )
-
-    # Raw heading must not appear in the rendered article body.
-    h2_texts = page.eval_on_selector_all(
-        "#markdown-body h2", "els => els.map(e => e.textContent.trim())"
-    )
-    assert not any(t.lower() == "recommended" for t in h2_texts), (
-        "Recommended heading should be removed from the rendered body"
-    )
-
-    page.wait_for_selector("#related-articles .related-card", timeout=5_000)
-    label = page.locator("#related-articles .related-label").inner_text()
-    assert label.lower() == "recommended"
-
-    titles = page.locator("#related-articles .related-card-title").all_inner_texts()
-    assert titles == ["Target One", "Target Two"]
-
-    page.locator("#related-articles .related-card").first.click()
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-    assert "Target One" in page.locator("#topbar-title").inner_text()
+# ── Related strip and Mentioned by ─────────────────────────────────
 
 
 def test_related_strip_scrolls_horizontally_not_grid(page, base_url):
-    """Related / Mentioned-by strips use a nowrap flex row with overflow-x scroll
-    (shared pill-chip language with Prerequisites), not a wrapping CSS grid."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# Recommended Source\n\n"
-        "Some intro text.\n\n"
-        "## Recommended\n\n"
-        "- [Target One](target-one.md)\n"
-        "- [Target Two](target-two.md)\n"
-        "- [Target Three](target-three.md)\n"
-        "- [Target Four](target-four.md)\n",
-        slug="rec-source-scroll",
-        extra_routes=[
-            ("**/target-one.md", lambda r: r.fulfill(body="# Target One\n\nBody.")),
-            ("**/target-two.md", lambda r: r.fulfill(body="# Target Two\n\nBody.")),
-            ("**/target-three.md", lambda r: r.fulfill(body="# Target Three\n\nBody.")),
-            ("**/target-four.md", lambda r: r.fulfill(body="# Target Four\n\nBody.")),
-        ],
+    page.goto(f"{base_url}/system-design/components/caching/", wait_until="domcontentloaded")
+    related = page.locator("#related-articles")
+    expect(related.locator(".related-card").first).to_be_visible()
+    style = related.locator(".related-grid").evaluate(
+        "el => { const s = getComputedStyle(el); return [s.display, s.flexWrap, s.overflowX]; }"
     )
-    page.wait_for_selector("#related-articles .related-card", timeout=5_000)
-
-    style = page.evaluate("""() => {
-        const grid = document.querySelector('.related-grid');
-        const s = getComputedStyle(grid);
-        return {
-            display: s.display,
-            flexWrap: s.flexWrap,
-            overflowX: s.overflowX,
-            gridTemplateColumns: s.gridTemplateColumns,
-        };
-    }""")
-    assert style["display"] == "flex", f"expected flex strip, got: {style}"
-    assert style["flexWrap"] == "nowrap", f"expected nowrap, got: {style}"
-    assert style["overflowX"] in ("auto", "scroll"), f"expected overflow-x scroll, got: {style}"
-    assert style["gridTemplateColumns"] in ("none", ""), (
-        f"expected no grid tracks, got: {style}"
-    )
-    assert page.locator("#related-articles .related-card").count() == 4
+    assert style[:2] == ["flex", "nowrap"], style
+    assert style[2] in ("auto", "scroll"), style
 
 
-def test_article_without_recommended_section_uses_auto_related(page, base_url):
-    """027: Articles with no `## Recommended` heading keep the existing
-    keyword-ranked related-articles behavior (no regression)."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# No Recommended Here\n\n## Some Other Section\n\nJust prose, no recommendations.\n",
-        slug="no-rec",
-    )
-    h2_texts = page.eval_on_selector_all(
-        "#markdown-body h2", "els => els.map(e => e.textContent.trim())"
-    )
-    assert "Some Other Section" in h2_texts, (
-        "Non-recommended headings must still render normally"
-    )
+def test_backlink_spine_lists_articles_that_link_here(page, base_url):
+    page.goto(f"{base_url}/system-design/components/caching/", wait_until="domcontentloaded")
+    spine = page.locator("#backlink-spine")
+    expect(spine.locator(".related-label")).to_have_text(re.compile(r"^mentioned by$", re.I))
+    expect(spine.locator(".related-card").first).to_be_visible()
 
 
-def test_backlink_spine_shows_mentioned_by(page, base_url):
-    """WIKI-250: content/backlinks.json (built by build_backlinks.py) maps a
-    target article to the articles that link to it; the content view renders
-    that list as a 'Mentioned by' panel below related articles."""
-    backlinks = {
-        "./content/system-design/backlink-target.md": [
-            {"title": "Source One", "path": "./content/system-design/source-one.md"},
-        ],
-    }
-    _load_mock_article(
-        page,
-        base_url,
-        "# Backlink Target\n\nBody with no outgoing links.\n",
-        slug="backlink-target",
-        extra_routes=[
-            (
-                "**/content/backlinks.json",
-                lambda r: r.fulfill(
-                    content_type="application/json", body=json.dumps(backlinks)
-                ),
-            ),
-        ],
-    )
-    page.wait_for_selector("#backlink-spine .related-card", timeout=5_000)
-
-    label = page.locator("#backlink-spine .related-label").inner_text()
-    assert label.lower() == "mentioned by"
-
-    titles = page.locator("#backlink-spine .related-card-title").all_inner_texts()
-    assert titles == ["Source One"]
-
-
-def test_backlink_spine_empty_when_no_incoming_links(page, base_url):
-    """An article with no entry in backlinks.json shows no 'Mentioned by' panel."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# No Backlinks Here\n\nBody.\n",
-        slug="no-backlinks",
-        extra_routes=[
-            (
-                "**/content/backlinks.json",
-                lambda r: r.fulfill(content_type="application/json", body=json.dumps({})),
-            ),
-        ],
-    )
-    assert page.locator("#backlink-spine .related-card").count() == 0
-
-
-def test_bridge_block_shows_cross_wiki_pair(page, base_url):
-    """WIKI-260: an article with an entry in bridges.json renders a 'Cross-wiki
-    bridge' block linking to the resolved article in the other wiki, with the
-    canonical title/slug pulled from that wiki's search index (not bridges.json,
-    which only stores paths)."""
-    bridges = [
-        {
-            "a": "./content/system-design/bridge-source.md",
-            "b": "./content/dsa/data-structures/hash-table.md",
-        },
-    ]
-    _load_mock_article(
-        page,
-        base_url,
-        "# Bridge Source\n\nBody with no outgoing links.\n",
-        slug="bridge-source",
-        extra_routes=[
-            (
-                "**/content/bridges.json",
-                lambda r: r.fulfill(content_type="application/json", body=json.dumps(bridges)),
-            ),
-        ],
-    )
-    page.wait_for_selector("#bridge-block .related-card", timeout=5_000)
-
-    label = page.locator("#bridge-block .related-label").inner_text()
-    assert label.lower() == "cross-wiki bridge"
-
-    titles = page.locator("#bridge-block .related-card-title").all_inner_texts()
-    assert titles == ["Hash Table"]
-
-    wiki_badge = page.locator("#bridge-block .bridge-card-wiki").inner_text()
-    assert "Data Structures" in wiki_badge or "DSA" in wiki_badge
-
-
-def test_bridge_block_navigates_to_other_wiki(page, base_url):
-    """Clicking a bridge card navigates to the resolved article in the other wiki."""
-    bridges = [
-        {
-            "a": "./content/system-design/bridge-source-2.md",
-            "b": "./content/dsa/data-structures/hash-table.md",
-        },
-    ]
-    _load_mock_article(
-        page,
-        base_url,
-        "# Bridge Source Two\n\nBody.\n",
-        slug="bridge-source-2",
-        extra_routes=[
-            (
-                "**/content/bridges.json",
-                lambda r: r.fulfill(content_type="application/json", body=json.dumps(bridges)),
-            ),
-            (
-                "**/content/dsa/data-structures/hash-table.md",
-                lambda r: r.fulfill(body="# Hash Table\n\nBody.\n"),
-            ),
-        ],
-    )
-    page.wait_for_selector("#bridge-block .related-card", timeout=5_000)
-    page.locator("#bridge-block .related-card").first.click()
-
-    page.wait_for_selector("#view-content.active", timeout=10_000)
-    page.wait_for_function(
-        "() => !!document.querySelector('#markdown-body[data-render-done]')",
-        timeout=10_000,
-    )
-    assert "hash-table" in page.url.lower()
-
-
-def test_bridge_block_empty_when_no_bridge_entry(page, base_url):
-    """An article with no entry in bridges.json shows no 'Cross-wiki bridge' block."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# No Bridge Here\n\nBody.\n",
-        slug="no-bridge",
-        extra_routes=[
-            (
-                "**/content/bridges.json",
-                lambda r: r.fulfill(content_type="application/json", body=json.dumps([])),
-            ),
-        ],
-    )
-    assert page.locator("#bridge-block .related-card").count() == 0
-
-
-def test_gfm_preview_hash_resolves_to_heading(page, base_url):
-    """Author GFM hashes with collapsed hyphens still jump to the matching heading."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# Mock\n\n[jump](#monotonic-deque--sliding-window-maxmin)\n\n"
-        + "<br>\n" * 40
-        + "\n## Monotonic deque - sliding window max/min\n\nTarget body.\n",
-        slug="gfm-hash",
-    )
-    page.wait_for_selector("a:has-text('jump')", timeout=5_000)
-    page.locator("a:has-text('jump')").click()
-    page.wait_for_function(
-        "() => /[?&]a=/.test(location.search) && /monotonic-deque/.test(location.search)",
-        timeout=5_000,
-    )
-
-
-def test_inpage_hash_expands_collapsed_parent(page, base_url):
-    """Jumping to a nested heading expands a collapsed parent H2."""
-    _load_mock_article(
-        page,
-        base_url,
-        "# Mock\n\n[jump](#child)\n\n## Parent\n\nIntro.\n\n### Child\n\nNested.\n",
-        slug="hash-expand",
-    )
-    page.wait_for_selector(".heading-collapse-btn", timeout=5_000)
-    page.locator(".heading-collapse-btn").first.click()
-    page.wait_for_function(
-        "() => document.querySelector('#markdown-body h2')?.classList.contains('section--collapsed')",
-        timeout=5_000,
-    )
-    page.locator("a:has-text('jump')").click()
-    page.wait_for_function(
-        "() => !document.querySelector('#markdown-body h2')?.classList.contains('section--collapsed')",
-        timeout=5_000,
-    )
-
-
-def test_cross_article_md_link_opens_new_tab(page, base_url):
-    """Relative .md links are marked article links and open in a new tab."""
-    _load_mock_article(
-        page, base_url, "# Main\n\n[Other](./other.md)\n", slug="md-new-tab"
-    )
-    link = page.locator("#markdown-body a:has-text('Other')")
-    page.wait_for_selector("#markdown-body a:has-text('Other')", timeout=5_000)
-    assert link.get_attribute("target") == "_blank"
-    assert "wiki-link-article" in (link.get_attribute("class") or "")
-    assert "system-design/other" in (link.get_attribute("href") or "")
+def test_backlink_spine_absent_without_incoming_links(page, base_url):
+    page.goto(f"{base_url}/dsa/data-structures/treap/", wait_until="domcontentloaded")
+    page.wait_for_selector("#markdown-body", timeout=10_000)
+    expect(page.locator("#backlink-spine")).to_have_count(0)

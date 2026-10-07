@@ -1,5 +1,3 @@
-# Not ported: long-press-on-link peek sheet (HoverPreview.tsx wires mouseover/mouseout only, no touch path — real gap, skip-marked below); link-graph overlay (`g` hotkey, dropped per spec §9); sessionStorage search-index caching/dedup-on-refresh (PullToRefresh.tsx calls pullAll() instead, and SearchModal has no index cache to invalidate — see test_search.py).
-
 import pytest
 
 MOBILE_VIEWPORT = {"width": 390, "height": 800}
@@ -42,16 +40,25 @@ def mobile_page(page, base_url):
 def _go_to_index(page, base_url, slug="system-design"):
     page.goto(f"{base_url}/{slug}/", wait_until="domcontentloaded")
     page.wait_for_selector(".index-card:not(.index-card--unavailable)", timeout=10_000)
-    # document.elementFromPoint() hit-testing lags behind layout for a brief window right
-    # after navigation in headless Chromium - a short settle avoids dispatching synthetic
-    # touch events on the wrong element.
-    page.wait_for_timeout(300)
+
+
+def _wait_until_hit(page, locator, x, y):
+    # elementFromPoint lags layout right after navigation in headless Chromium, so touches hit the wrong element.
+    locator.evaluate(
+        """(el, [x, y]) => new Promise((resolve) => {
+            const check = () => (el.contains(document.elementFromPoint(x, y)) ? resolve() : requestAnimationFrame(check));
+            check();
+        })""",
+        [x, y],
+    )
 
 
 def _first_card_box(page):
     card = page.locator(".index-card:not(.index-card--unavailable)").first
     card.scroll_into_view_if_needed()
-    return card, card.bounding_box()
+    box = card.bounding_box()
+    _wait_until_hit(page, card, box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+    return card, box
 
 
 def test_card_swipe_right_bookmarks(mobile_page, base_url):
@@ -102,14 +109,8 @@ def test_card_tap_still_navigates(mobile_page, base_url):
     page.wait_for_selector("#markdown-body", timeout=10_000)
 
 
-def test_pull_to_refresh_revalidates_synced_domains(page, base_url):
-    page.route(
-        "**/api/v1/auth/me",
-        lambda r: r.fulfill(
-            status=200, content_type="application/json",
-            body='{"user":{"id":"1","email":"a@example.com"}}',
-        ),
-    )
+def test_pull_to_refresh_revalidates_synced_domains(page, base_url, logged_in):
+    logged_in()
     pull_called = {"bookmarks": False, "completions": False, "recents": False}
 
     def _mark(name):
@@ -121,13 +122,15 @@ def test_pull_to_refresh_revalidates_synced_domains(page, base_url):
 
     for path in ("bookmarks", "completions", "recents"):
         page.route(f"**/api/v1/{path}", _mark(path))
-    page.add_init_script("localStorage.setItem('wiki-session-token', 'test-token')")
 
     page.set_viewport_size(MOBILE_VIEWPORT)
-    _go_to_index(page, base_url)
-    # SessionInit also calls pullAll() on boot (logged in via the seeded token) - let that
-    # settle first so the counters below reflect the swipe's call, not boot's.
-    page.wait_for_timeout(500)
+    # Boot also calls pullAll() for the seeded token; wait it out so the counters only see the swipe.
+    with (
+        page.expect_response("**/api/v1/bookmarks"),
+        page.expect_response("**/api/v1/completions"),
+        page.expect_response("**/api/v1/recents"),
+    ):
+        _go_to_index(page, base_url)
     for k in pull_called:
         pull_called[k] = False
 
@@ -135,19 +138,15 @@ def test_pull_to_refresh_revalidates_synced_domains(page, base_url):
     box = container.bounding_box()
     cx = box["x"] + box["width"] / 2
     top = box["y"] + 5
+    _wait_until_hit(page, container, cx, top)
 
-    _swipe(page, cx, top, cx, top + 100, steps=8)
-
-    # fire-and-forget pullAll() - poll the Python-side flags a request handler already set.
-    for _ in range(20):
-        if any(pull_called.values()):
-            break
-        page.wait_for_timeout(100)
+    with page.expect_response(lambda r: any(f"/api/v1/{d}" in r.url for d in pull_called)):
+        _swipe(page, cx, top, cx, top + 100, steps=8)
     assert any(pull_called.values()), "pull-to-refresh must call pullAll() (bookmarks/completions/recents)"
 
 
 def test_edge_swipe_right_goes_back(mobile_page, base_url):
-    """swipe right from the left edge triggers history.back() - navigate for real (home -> index -> article) so there's a genuine history entry to return to, since this is real browser history now, not a deterministic SPA route stack."""
+    # Navigate for real so history.back() has a browser history entry to return to.
     page = mobile_page
     page.locator(".wiki-card").first.click()
     page.wait_for_selector(".index-card:not(.index-card--unavailable)", timeout=10_000)
@@ -236,11 +235,3 @@ def test_search_modal_closes_on_resize(mobile_page, base_url):
 
     page.set_viewport_size({"width": 800, "height": 390})
     page.wait_for_selector('[role="dialog"][aria-label="Search"]', state="detached", timeout=5_000)
-
-
-# ── Skip-marked → not ported ──────────────────────────────────────
-
-
-@pytest.mark.skip(reason="long-press peek sheet not ported on mobile — filed WIKI-657")
-def test_long_press_link_opens_peek_sheet():
-    pass

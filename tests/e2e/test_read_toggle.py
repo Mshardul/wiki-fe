@@ -1,4 +1,4 @@
-# Not ported: the haptic-on-milestone tests (study-feedback.js never ported - grep confirms zero navigator.vibrate call sites in components/lib). Covers the end-of-article complete button, the `c` hotkey, and the two completion-state consumers, CardCompletion.tsx and PrereqStatus.tsx; read-dot + learning-path wiring is covered in test_index_ux.py.
+"""Completion: complete button, c hotkey, related-card and prereq-chip done state, offline write replay."""
 
 import re
 
@@ -46,7 +46,6 @@ def test_related_card_not_done_when_incomplete(page, base_url):
 
 
 def test_related_card_updates_live_on_storage_change(page, base_url):
-    """CardCompletion re-applies via subscribeCompletions when the completed set changes underneath it."""
     _go_to_article(page, base_url, CACHING_ARTICLE)
     card = page.locator('#related-articles .related-card[data-related-path="system-design/components/cdn"]')
     assert "related-card--done" not in (card.get_attribute("class") or "")
@@ -160,16 +159,7 @@ def test_anon_completion_makes_no_api_call(page, base_url):
     assert calls == []
 
 
-def _stub_logged_in_completions(page, server_up):
-    """Logged-in session with a completions endpoint that rejects writes (network error) until server_up['on']."""
-    page.route(
-        "**/api/v1/auth/me",
-        lambda r: r.fulfill(status=200, content_type="application/json", body='{"user":{"id":"1","email":"a@example.com"}}'),
-    )
-    page.add_init_script("localStorage.setItem('wiki-session-token', 'test-session-token')")
-    for path in ("bookmarks", "recents"):
-        page.route(f"**/api/v1/{path}", lambda r: r.fulfill(status=200, content_type="application/json", body="[]"))
-
+def _stub_completions(page, server_up):
     writes = []
 
     def completions(route):
@@ -185,9 +175,10 @@ def _stub_logged_in_completions(page, server_up):
     return writes
 
 
-def test_failed_completion_write_survives_reload_and_replays_when_online(page, base_url):
+def test_failed_completion_write_survives_reload_and_replays_when_online(page, base_url, logged_in):
     server_up = {"on": False}
-    writes = _stub_logged_in_completions(page, server_up)
+    logged_in()
+    writes = _stub_completions(page, server_up)
 
     _go_to_article(page, base_url, STACK_ARTICLE)
     page.keyboard.press("c")

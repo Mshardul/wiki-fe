@@ -1,9 +1,5 @@
 import pytest
 
-# Not ported: per-section "clear bookmarks" button on the index strip (BookmarksStrip.tsx renders plain <Link> chips, no clear control) - the only clear path now is the global "Clear everything" in Preferences -> Advanced, already covered by test_settings.py::test_clear_everything_wipes_local_data.
-# Settings-panel bookmark toggle doesn't exist either - the only ways to bookmark are the `b` hotkey on an article and index-card swipe-right (test_touch_gestures.py).
-# Dropped: "reopening is a no-op" - ⌘B is a real toggle here (BookmarksModal.tsx), so pressing it again while open closes the modal by design, not a no-op.
-
 
 def _go_to_article(page, base_url):
     page.goto(f"{base_url}/system-design/components/caching/", wait_until="domcontentloaded")
@@ -11,8 +7,9 @@ def _go_to_article(page, base_url):
 
 
 def _bookmark_current(page):
+    before = page.evaluate("() => localStorage.getItem('wiki-bookmarks')")
     page.keyboard.press("b")
-    page.wait_for_timeout(100)
+    page.wait_for_function("(b) => localStorage.getItem('wiki-bookmarks') !== b", arg=before)
 
 
 def _go_to_index(page, base_url, slug="system-design"):
@@ -52,22 +49,15 @@ def test_bookmarks_appear_on_index(page, base_url):
     assert expect_count >= 1
 
 
-def test_bookmark_toggle_scoped_by_wiki_id(page, base_url):
-    """Bookmarking the same path under two different wikis must not collide."""
-    shared_path = "content/system-design/components/caching.md"
-    _go_to_article(page, base_url)
-    page.evaluate(
-        f"""() => {{
-            localStorage.setItem('wiki-bookmarks', JSON.stringify([
-                {{wikiId:'system-design', path:{shared_path!r}, slug:'components/caching', title:'Caching', wikiTitle:'System Design'}},
-                {{wikiId:'dsa', path:{shared_path!r}, slug:'components/caching', title:'Caching', wikiTitle:'Data Structures & Algorithms'}},
-            ]));
-        }}"""
+def test_bookmark_toggle_scoped_by_wiki_id(page, base_url, seed_bookmarks):
+    shared = {"path": "content/system-design/components/caching.md", "slug": "components/caching", "title": "Caching"}
+    seed_bookmarks(
+        {**shared, "wikiId": "system-design", "wikiTitle": "System Design"},
+        {**shared, "wikiId": "dsa", "wikiTitle": "Data Structures & Algorithms"},
     )
-    page.reload(wait_until="domcontentloaded")
-    page.wait_for_selector("#markdown-body", timeout=10_000)
+    _go_to_article(page, base_url)
 
-    _bookmark_current(page)  # toggles off the system-design entry only
+    _bookmark_current(page)
 
     _open_bookmarks_modal(page)
     wiki_labels = _bookmarks_modal(page).locator(".bookmarks-modal-entry-wiki").all_inner_texts()

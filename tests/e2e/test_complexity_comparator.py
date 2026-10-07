@@ -1,9 +1,4 @@
-"""
-Complexity comparator (WIKI-090):
-- Opening/closing the comparator modal
-- Picking 2+ data structures and rendering a merged Big-O matrix
-- Picker constraints (max picks, compare button gating)
-"""
+"""Complexity comparator: open/close, picker gating and search, merged Big-O matrix."""
 
 DIALOG = '[role="dialog"][aria-label="Complexity comparator"]'
 
@@ -15,10 +10,10 @@ def _go_to_article(page, base_url, slug="dsa/data-structures/array"):
 
 def _open_comparator(page):
     # Prefer the topbar control over the "," hotkey — hotkey races with focus/typing checks.
-    page.locator("button[aria-label='Preferences']").click()
-    page.wait_for_selector('[role="dialog"][aria-label="Preferences"]', timeout=5_000)
-    page.locator('[data-action="prefs-tab"][data-tab="actions"]').click()
-    page.locator('[data-action="complexity-compare-open"]').click()
+    page.get_by_role("button", name="Preferences").click()
+    prefs = page.get_by_role("dialog", name="Preferences")
+    prefs.get_by_role("tab", name="Actions").click()
+    prefs.get_by_role("button", name="Compare complexity").click()
     page.wait_for_selector(DIALOG, timeout=5_000)
 
 
@@ -28,7 +23,6 @@ def _close_via_button(page):
 
 
 def test_open_comparator_from_content(page, base_url):
-    """Comparator opens from prefs Actions and lists data structures."""
     _go_to_article(page, base_url)
     _open_comparator(page)
     page.wait_for_function(
@@ -38,14 +32,12 @@ def test_open_comparator_from_content(page, base_url):
 
 
 def test_close_button_closes_comparator(page, base_url):
-    """Clicking the close button closes the comparator modal."""
     _go_to_article(page, base_url)
     _open_comparator(page)
     _close_via_button(page)
 
 
 def test_overlay_click_closes_comparator(page, base_url):
-    """Clicking the backdrop closes the comparator modal."""
     _go_to_article(page, base_url)
     _open_comparator(page)
     # Modal backdrop is the outer .link-graph-modal presentation layer.
@@ -54,7 +46,6 @@ def test_overlay_click_closes_comparator(page, base_url):
 
 
 def test_compare_button_disabled_below_two_picks(page, base_url):
-    """Compare button stays disabled with fewer than 2 structures picked."""
     _go_to_article(page, base_url)
     _open_comparator(page)
     page.wait_for_function(
@@ -68,7 +59,6 @@ def test_compare_button_disabled_below_two_picks(page, base_url):
 
 
 def test_picking_two_structures_renders_merged_matrix(page, base_url):
-    """Picking 2 structures and clicking Compare renders a merged complexity table."""
     _go_to_article(page, base_url)
     _open_comparator(page)
     page.wait_for_function(
@@ -85,11 +75,10 @@ def test_picking_two_structures_renders_merged_matrix(page, base_url):
     page.wait_for_selector(".complexity-compare-table", timeout=10_000)
 
     header_cells = page.locator(".complexity-compare-table thead tr").first.locator("th")
-    assert header_cells.count() >= 3  # "Operation" + at least 2 structure columns
+    assert header_cells.count() >= 3
 
 
 def test_picker_search_filters_structures(page, base_url):
-    """Typing in the picker search input filters the structure list."""
     _go_to_article(page, base_url)
     _open_comparator(page)
     page.wait_for_function(
@@ -107,7 +96,6 @@ def test_picker_search_filters_structures(page, base_url):
 
 
 def test_transient_load_failure_does_not_stick(page, base_url):
-    """A transient search-index fetch failure on first open doesn't permanently cache an empty list."""
     page.route(
         "**/data/search-index.json",
         lambda route: route.fulfill(status=500, body="fail"),
@@ -127,7 +115,6 @@ def test_transient_load_failure_does_not_stick(page, base_url):
 
 
 def test_comparator_picks_reset_between_sessions(page, base_url):
-    """Reopening the comparator clears prior checkbox selections."""
     _go_to_article(page, base_url)
     _open_comparator(page)
     page.wait_for_function(

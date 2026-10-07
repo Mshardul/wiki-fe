@@ -284,11 +284,6 @@ export function PreferencesModal() {
       {tab === "advanced" && (
         <div className="prefs-panel active">
           <Toggle
-            label="Copy code with source comment"
-            on={s.copySourceHeader}
-            onToggle={() => set({ copySourceHeader: !s.copySourceHeader })}
-          />
-          <Toggle
             label="Practice problem answers"
             on={s.practiceAnswersHidden}
             onLabel="Hidden"

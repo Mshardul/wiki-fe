@@ -1,3 +1,4 @@
+import json
 import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -11,19 +12,8 @@ OUT_DIR = REPO_ROOT / "out"
 BASE_PREFIX = "/wiki-fe"
 
 
-def _make_cdn_fulfill_handler(body, content_type):
-    """Kept for tests that still call it directly; Next bundles its own assets so this is
-    only used by a handful of tests that fulfil a specific request themselves."""
-
-    def handler(route):
-        route.fulfill(status=200, content_type=content_type, body=body)
-
-    return handler
-
-
 def force_paint(page):
-    """Force a real compositor frame via CDP - Playwright's actionability check can pass on
-    stale hit-test geometry for a JS-positioned element without this."""
+    """Forces a compositor frame: actionability checks can pass on stale hit-test geometry for JS-positioned elements."""
     cdp = page.context.new_cdp_session(page)
     cdp.send("Page.captureScreenshot", {"format": "png"})
     cdp.detach()
@@ -49,8 +39,7 @@ def disable_animations(page):
 
 @pytest.fixture(autouse=True)
 def wait_for_hotkeys_ready(page):
-    """Hotkeys bind after hydration; hold every in-app goto and reload until they are live so early
-    key presses and selections aren't lost before the islands attach under load."""
+    """Hotkeys bind after hydration, so every in-app goto/reload waits for them or early key presses are lost."""
     original_goto = page.goto
     original_reload = page.reload
 
@@ -75,8 +64,7 @@ def wait_for_hotkeys_ready(page):
 
 @pytest.fixture(scope="session", autouse=True)
 def _ensure_build():
-    """The e2e suite runs against the static Next export, built with the canary pages
-    (`pnpm build:e2e`). Build it if it's missing; a stale build is the developer's responsibility."""
+    """Builds the e2e export (with canary pages) when out/ is missing; a stale build is the developer's call."""
     if (OUT_DIR / "index.html").exists():
         return
     subprocess.run(["pnpm", "build:e2e"], cwd=REPO_ROOT, check=True)
@@ -84,14 +72,13 @@ def _ensure_build():
 
 @pytest.fixture
 def browser_context_args(browser_context_args):
-    # Most tests don't exercise the SW; block it so it can't serve stale shells between runs.
-    # PWA/offline tests override this fixture locally to unblock.
+    # Block the SW so it can't serve stale shells between runs; PWA tests override this locally.
     return {**browser_context_args, "service_workers": "block"}
 
 
 @pytest.fixture(scope="session")
 def base_url():
-    """Serve the Next `out/` build under /wiki-fe/, matching the GitHub Pages subpath."""
+    """Serves out/ under /wiki-fe/, matching the GitHub Pages subpath."""
 
     class Handler(SimpleHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
@@ -100,14 +87,12 @@ def base_url():
             super().__init__(*args, directory=str(OUT_DIR), **kwargs)
 
         def translate_path(self, path):
-            # Strip the /wiki-fe prefix, then resolve against out/.
             if path.startswith(BASE_PREFIX):
                 path = path[len(BASE_PREFIX) :] or "/"
             return super().translate_path(path)
 
         def do_GET(self):
-            # trailingSlash: true — redirect an extensionless path with no trailing slash so
-            # the directory index resolves, mirroring Next's own behaviour.
+            # trailingSlash: true, so an extensionless path redirects to its directory index like Next does.
             p = self.path.split("?", 1)[0]
             if not p.endswith("/") and "." not in p.rsplit("/", 1)[-1]:
                 self.send_response(308)
@@ -159,7 +144,6 @@ def base_url():
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
-    # base_url ends at the subpath; tests do f"{base_url}/dsa/patterns/x/".
     yield f"http://localhost:{port}{BASE_PREFIX}"
 
     server.shutdown()
@@ -168,8 +152,6 @@ def base_url():
 
 @pytest.fixture
 def wiki_page(page, base_url, disable_animations):
-    """Home, ready for interaction. Replaces the vanilla `#view-home.active` +
-    `window.navigateToContent` waits."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector(".home-main .wiki-card", timeout=10_000)
     return page
@@ -177,10 +159,7 @@ def wiki_page(page, base_url, disable_animations):
 
 @pytest.fixture(scope="module")
 def content_page(browser, base_url):
-    """Read-only canary article, opened once per module: `content_page("text")` returns its page.
-
-    Canary pages exist only in an e2e build (`pnpm build:e2e`). Tests sharing a page must not
-    change its state (storage, settings, DOM); anything that mutates uses the per-test `page`."""
+    """Read-only canary page opened once per module and reset to the top per test; mutating tests use `page`."""
     context = browser.new_context(service_workers="block")
     context.add_init_script(NO_ANIMATIONS_JS)
     pages = {}
@@ -195,7 +174,6 @@ def content_page(browser, base_url):
             page.wait_for_selector("html[data-hotkeys-ready]", state="attached", timeout=15_000)
             pages[name] = page
         page = pages[name]
-        # Tests that navigate by anchor or scroll leave the shared page mid-article; start each one at the top.
         page.evaluate("() => { history.replaceState(null, '', location.pathname); scrollTo(0, 0); }")
         return page
 
@@ -214,3 +192,36 @@ def open_settings(page):
         return dialog
 
     return _open
+
+
+def _fulfill_json(body, status=200):
+    payload = json.dumps(body)
+    return lambda route: route.fulfill(status=status, content_type="application/json", body=payload)
+
+
+@pytest.fixture
+def logged_in(page):
+    """Signed-in session before the first goto; tests can re-route an endpoint afterwards since the latest route wins."""
+
+    def _login(role=None, synced=None):
+        user = {"id": "1", "email": "a@example.com", **({"role": role} if role else {})}
+        page.add_init_script("localStorage.setItem('wiki-session-token', 'test-token')")
+        page.route("**/api/v1/auth/me", _fulfill_json({"user": user}))
+        for domain, rows in {"bookmarks": [], "completions": [], "recents": [], **(synced or {})}.items():
+            page.route(f"**/api/v1/{domain}", _fulfill_json(rows))
+
+    return _login
+
+
+@pytest.fixture
+def seed_bookmarks(page):
+    """Seeds wiki-bookmarks before boot, once per tab, so a reload doesn't re-add entries a test removed."""
+
+    def _seed(*entries):
+        page.add_init_script(
+            "if (!sessionStorage.getItem('e2e-seeded-bookmarks')) {"
+            f"localStorage.setItem('wiki-bookmarks', {json.dumps(json.dumps(list(entries)))});"
+            "sessionStorage.setItem('e2e-seeded-bookmarks', '1');}"
+        )
+
+    return _seed

@@ -220,6 +220,8 @@ For the full model and the *why*, see the decisions docs:
 - Test behaviour as the user sees it against the static `out/` export (see `tests/conftest.py`).
 - **Canary articles are the e2e content surface.** Feature behaviour in a rendered article (math, footnotes, prerequisites, TOC, callouts, and so on) is tested against fixtures in `tests/fixtures/canary/*.md`, served at `/e2e-canary/<name>/` only by an e2e build (`pnpm build:e2e`, `WIKI_E2E=1`). They render through the real pipeline and the real reader islands, so they test the full stack, but they are not in the manifest, search, backlinks or any index. Never inject markdown at runtime. A canary must stay above `STUB_THRESHOLD` (a unit test enforces it), and one that links to a real article breaks loudly if that article is renamed.
 - **`content_page("<canary>")`** is a module-scoped, read-only page: one `goto` per canary per module, reset to the top for each test. Tests that change state (storage, settings, DOM, login) use the per-test `page` instead.
+- **`logged_in(role=None, synced=None)`** stubs a signed-in session and the sync pulls before the first `goto`; re-route an endpoint after calling it to observe or fail that call (the latest route wins). **`seed_bookmarks(*entries)`** seeds bookmarks once per tab before the app boots.
+- **No skip-marked placeholders.** A test for an unbuilt feature is written with the feature; its ticket tracks it. A runtime `pytest.skip` must never hide a missing precondition: assert it.
 - Add a test here only if it needs a real browser (layout, scroll, focus, overlay geometry, rendered diagrams). Behaviour already covered by a Vitest pipeline fixture or island test is not re-asserted in e2e.
 - **Read `tests/conftest.py` before writing any e2e test** - it defines every shared fixture and navigation helper. **Add a fixture or conftest helper only when it removes a shared race or a flow repeated across files** (e.g. the hotkeys-ready wait), with a one-line docstring saying why; otherwise use what exists.
 - **Add tests to the existing file** matching the feature. Never create a new test file unless the feature genuinely has no home.
@@ -264,7 +266,7 @@ For the full model and the *why*, see the decisions docs:
 
 - Keep diffs focused - one concern per commit (mirrors the SRP rule for code).
 - Never `git add` / `commit` / `push` unless explicitly asked. Never add `Co-Authored-By`.
-- Never put `WIKI-xxx` ticket IDs in code comments or CSS section headers.
+- Never put `WIKI-xxx` ticket IDs in code comments, test names, skip reasons, docstrings or CSS section headers.
 - Never put content-backlog IDs (`DSA-xxx` / `SD-xxx`) in app code/CSS either; they belong only in content-backlog docs and related content commits/changelog notes when useful.
 - When reviewing, treat each section of this file as a checklist. If a repeated violation isn't covered by an existing rule, add the rule here.
 - **Enforcement tooling:** ESLint + Biome in pre-commit and CI. Semantic rules (module boundaries, island rule, no ticket IDs) remain on author + reviewer until custom lint rules are added.

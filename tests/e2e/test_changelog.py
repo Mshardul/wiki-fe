@@ -1,13 +1,9 @@
-"""
-Changelog view (/changelog/): date-grouped entries from content/CHANGELOG.md,
-filename filter, resolvable filenames link to articles.
-Static export — content is build-time; no runtime CHANGELOG.md stubbing.
-"""
+"""Changelog view (/changelog/): date groups, filename filter, filenames linking to articles."""
 
 
 def _open_changelog(page, base_url):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.locator('[data-action="changelog-open"]').click()
+    page.get_by_role("link", name="Changelog").click()
     page.wait_for_url("**/changelog/**", timeout=8_000)
     page.wait_for_selector("#changelog-groups", timeout=8_000)
 
@@ -24,7 +20,6 @@ def test_changelog_groups_entries_by_date(page, base_url):
 
     dates = page.locator(".changelog-date").all_inner_texts()
     assert len(dates) >= 2
-    # Dates are YYYY-MM-DD and appear newest-first in the source file.
     assert all(len(d) == 10 and d[4] == "-" for d in dates)
     assert dates == sorted(dates, reverse=True)
 
@@ -37,7 +32,6 @@ def test_changelog_filter_narrows_by_filename(page, base_url):
     page.wait_for_selector(".changelog-group", timeout=5_000)
     total_groups = page.locator(".changelog-group").count()
 
-    # Pick a distinctive basename that appears in the real changelog.
     page.locator("#changelog-filter-input").fill("load-balancer-tls")
 
     visible_entries = page.locator(".changelog-entry")
@@ -69,7 +63,6 @@ def test_changelog_filename_known_becomes_link(page, base_url):
 
 
 def test_changelog_filename_unknown_renders_plain(page, base_url):
-    """Unresolvable filenames stay plain <code> (no .changelog-file-link)."""
     _open_changelog(page, base_url)
     page.locator("#changelog-filter-input").fill("index.md")
     page.wait_for_selector(".changelog-entry", timeout=3_000)
@@ -81,10 +74,7 @@ def test_changelog_filename_unknown_renders_plain(page, base_url):
 
 
 def test_changelog_entry_without_backtick_filename_still_renders(page, base_url):
-    """Filename-less notes render when present in the baked changelog."""
     _open_changelog(page, base_url)
-    # Real changelog is mostly file-backed; assert the empty-filenames path works via unit tests.
-    # Smoke: every entry list item has text content.
     texts = page.locator(".changelog-entry").all_inner_texts()
     assert len(texts) >= 1
     assert all(t.strip() for t in texts)

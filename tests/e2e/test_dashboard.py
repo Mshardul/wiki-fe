@@ -1,12 +1,9 @@
-"""
-Dashboard (/dashboard/): wiki cards → section bars → learning-path bars.
-Static export — uses real vertical indexes; completions via localStorage.
-"""
+"""Dashboard (/dashboard/): wiki cards → section bars → learning-path bars."""
 
 
 def _open_dashboard(page, base_url):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
-    page.locator('[data-action="dashboard-open"]').click()
+    page.get_by_role("link", name="Dashboard").click()
     page.wait_for_url("**/dashboard/**", timeout=8_000)
     page.wait_for_selector("#view-dashboard", timeout=8_000)
 
@@ -18,7 +15,6 @@ def test_dashboard_opens_from_home_topbar(page, base_url):
 
 
 def test_dashboard_shows_both_verticals(page, base_url):
-    """Both verticals have articles in the real corpus — both cards render."""
     _open_dashboard(page, base_url)
     page.wait_for_selector(".dashboard-card", timeout=5_000)
     titles = page.locator(".dashboard-card-title").all_inner_texts()
@@ -35,7 +31,7 @@ def test_dashboard_shows_zero_percent_with_no_progress(page, base_url):
             }
         }"""
     )
-    page.locator('[data-action="dashboard-open"]').click()
+    page.get_by_role("link", name="Dashboard").click()
     page.wait_for_selector(".dashboard-card", timeout=5_000)
     labels = page.locator(".dashboard-stat-label").all_inner_texts()
     assert any("(0%)" in label for label in labels)
@@ -51,10 +47,9 @@ def test_dashboard_reflects_completed_counts(page, base_url):
             );
         }"""
     )
-    page.locator('[data-action="dashboard-open"]').click()
+    page.get_by_role("link", name="Dashboard").click()
     page.wait_for_selector(".dashboard-card", timeout=5_000)
 
-    # System Design card should show at least 1 completed.
     sd = page.locator(".dashboard-card", has=page.locator(".dashboard-card-title", has_text="System Design"))
     label = sd.locator(".dashboard-stat-label").inner_text()
     assert "Completed" in label

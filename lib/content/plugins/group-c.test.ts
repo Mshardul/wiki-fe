@@ -66,6 +66,15 @@ describe("rehype-code-header", () => {
     expect(html).toContain('<span class="code-lang-label">js</span>');
   });
 
+  it("adds has-lang-label only to a pre whose fence names a language", async () => {
+    const { html } = await renderMarkdown(`${md}\n\`\`\`\nplain block\n\`\`\`\n`, ctx());
+    const pres = html.match(/<pre[^>]*>/g) ?? [];
+    expect(pres).toHaveLength(3);
+    expect(pres[0]).toContain("has-lang-label");
+    expect(pres[1]).toContain("has-lang-label");
+    expect(pres[2]).not.toContain("has-lang-label");
+  });
+
   it("carries data-code-origin built from title and vertical", async () => {
     const { html } = await renderMarkdown(md, ctx());
     expect(html).toContain(

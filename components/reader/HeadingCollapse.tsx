@@ -8,7 +8,7 @@ interface HeadingCollapseProps {
   articlePath: string;
 }
 
-function applyCollapsed(h2: HTMLElement, collapsed: boolean) {
+export function applyCollapsed(h2: HTMLElement, collapsed: boolean) {
   h2.classList.toggle("section--collapsed", collapsed);
   const body = h2.closest(".section")?.querySelector<HTMLElement>(":scope > .section-body");
   if (body) body.hidden = collapsed;

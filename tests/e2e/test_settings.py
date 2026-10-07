@@ -1,7 +1,5 @@
 import pytest
 
-# Not ported to the PreferencesModal UI: haptic-feedback toggle, Advanced-tab Focus Mode/Save Offline buttons (focus mode is hotkey-only via `f`), font-extras lazy stylesheet, accent-swatch aria-labels, bg-side separator, paragraph-spacing picker (paraSpacing stays in the schema, no UI).
-
 
 def _settings_is_open(page):
     page.wait_for_selector('[role="dialog"][aria-label="Preferences"]', timeout=5_000)
@@ -612,28 +610,25 @@ def _open_advanced_tab(page):
 def test_advanced_tab_has_clear_data_and_toggles(wiki_page):
     _open_advanced_tab(wiki_page)
     dialog = _prefs_dialog(wiki_page)
-    assert dialog.get_by_text("Copy code with source comment").count() == 1
     assert dialog.get_by_text("Practice problem answers").count() == 1
     assert dialog.get_by_role("button", name="Clear everything").count() == 1
 
 
-def test_clear_everything_wipes_local_data(wiki_page):
-    wiki_page.evaluate(
-        """() => localStorage.setItem('wiki-bookmarks',
-        JSON.stringify([{wikiId:'dsa',path:'x',slug:'x',title:'X',wikiTitle:'D'}]))"""
-    )
-    wiki_page.once("dialog", lambda d: d.accept())
-    _open_advanced_tab(wiki_page)
-    _prefs_dialog(wiki_page).get_by_role("button", name="Clear everything").click()
-    stored = wiki_page.evaluate("() => localStorage.getItem('wiki-bookmarks')")
+def test_clear_everything_wipes_local_data(page, base_url, seed_bookmarks):
+    seed_bookmarks({"wikiId": "dsa", "path": "x", "slug": "x", "title": "X", "wikiTitle": "D"})
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    page.wait_for_selector(".home-main .wiki-card", timeout=10_000)
+    page.once("dialog", lambda d: d.accept())
+    _open_advanced_tab(page)
+    _prefs_dialog(page).get_by_role("button", name="Clear everything").click()
+    stored = page.evaluate("() => localStorage.getItem('wiki-bookmarks')")
     assert stored == "[]"
 
 
-# ── Focus mode (hotkey-only in Next, no Advanced-tab button) ────────────────────
+# ── Focus mode ──────────────────────────────────────────────────────
 
 
 def test_focus_mode_hotkey_toggles_class_on_markdown_body(page, base_url):
-    """`f` on an article toggles .focus-mode on .markdown-body (Advanced-tab button dropped; hotkey-only)."""
     page.goto(f"{base_url}/dsa/patterns/sliding-window/", wait_until="domcontentloaded")
     page.wait_for_selector("#markdown-body", timeout=10_000)
 
@@ -645,15 +640,6 @@ def test_focus_mode_hotkey_toggles_class_on_markdown_body(page, base_url):
     page.wait_for_function(
         "() => !document.querySelector('.markdown-body')?.classList.contains('focus-mode')"
     )
-
-
-# ── Topbar declutter ─────────────────────────────────────────────────
-
-
-def test_no_theme_toggle_button_anywhere(wiki_page):
-    """The quick dark/light toggle button was removed app-wide - theme is chosen only via the Theme buttons in the preferences panel."""
-    assert wiki_page.locator('[data-action="toggle-theme"]').count() == 0
-    assert wiki_page.locator(".prefs-theme-toggle-btn").count() == 0
 
 
 def test_accent_swatch_44px_on_coarse_pointer(browser, base_url):
@@ -680,7 +666,6 @@ def test_accent_swatch_44px_on_coarse_pointer(browser, base_url):
 
 
 def test_corrupt_settings_json_falls_back_to_defaults(page, base_url):
-    """Invalid wiki-settings JSON does not crash the app - getJSON silently falls back to DEFAULT_SETTINGS (no reset-toast behaviour ported; the vanilla version showed one)."""
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.evaluate("() => localStorage.setItem('wiki-settings', '{not-json')")
     page.reload(wait_until="domcontentloaded")

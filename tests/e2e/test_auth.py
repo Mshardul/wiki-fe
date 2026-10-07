@@ -4,9 +4,7 @@ import pytest
 from playwright.sync_api import expect
 
 _UNAUTH = '{"error":{"code":"UNAUTHORIZED","message":"no session"}}'
-
-# Not ported (no ids - aria-label/role/text selectors): migrate-modal (window.confirm() instead), mobile bottom-sheet/drag-handle (.auth-drag-handle unused), #auth-close button (Escape/backdrop only). Dropped: session-changed-tears-down-reading-state — useSession is the only listener, no router teardown exists to regress.
-# Bugs found+fixed this sweep: double-click fired two requests (busy state lagged a render, fixed with sync busyRef); missing aria-invalid/aria-describedby on login error; verify-result had no resend path on failure.
+_FOO_BOOKMARK = {"wikiId": "dsa", "path": "foo.md", "slug": "foo", "title": "Foo", "wikiTitle": "DSA"}
 
 
 def _stub_logged_out(page):
@@ -110,7 +108,7 @@ def test_register_checklist_resyncs_on_panel_leave_and_return(page, base_url):
     _auth_dialog(page).get_by_role("button", name="Back to log in").click()
     _auth_dialog(page).get_by_role("button", name="Create account").click()
 
-    # swap() clears the shared password field on every panel change - differs from vanilla's per-panel-persisted state
+    # swap() clears the shared password field on every panel change.
     expect(_auth_dialog(page).get_by_label("Password", exact=True)).to_have_value("")
 
 
@@ -190,17 +188,9 @@ def test_login_shows_success_toast(page, base_url):
     expect(toast).to_contain_text("Logged in")
 
 
-def test_logout_shows_success_toast(page, base_url):
-    page.route(
-        "**/api/v1/auth/me",
-        lambda r: r.fulfill(
-            status=200, content_type="application/json",
-            body='{"user":{"id":"1","email":"a@example.com"}}',
-        ),
-    )
+def test_logout_shows_success_toast(page, base_url, logged_in):
+    logged_in()
     page.route("**/api/v1/auth/logout", lambda r: r.fulfill(status=204))
-    _stub_synced_domains_empty(page)
-    page.add_init_script("localStorage.setItem('wiki-session-token', 'pre-existing-token')")
     page.goto(base_url, wait_until="domcontentloaded")
     page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
     expect(page.locator(".topbar-auth-btn:visible").first).to_contain_text("Log out")
@@ -211,17 +201,9 @@ def test_logout_shows_success_toast(page, base_url):
     expect(toast).to_contain_text("Logged out")
 
 
-def test_logout_clears_stored_session_token(page, base_url):
-    page.route(
-        "**/api/v1/auth/me",
-        lambda r: r.fulfill(
-            status=200, content_type="application/json",
-            body='{"user":{"id":"1","email":"a@example.com"}}',
-        ),
-    )
+def test_logout_clears_stored_session_token(page, base_url, logged_in):
+    logged_in()
     page.route("**/api/v1/auth/logout", lambda r: r.fulfill(status=204))
-    _stub_synced_domains_empty(page)
-    page.add_init_script("localStorage.setItem('wiki-session-token', 'pre-existing-token')")
     page.goto(base_url, wait_until="domcontentloaded")
     page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
     expect(page.locator(".topbar-auth-btn:visible").first).to_contain_text("Log out")
@@ -394,11 +376,7 @@ def test_login_double_click_fires_single_request(page, base_url):
     _auth_dialog(page).get_by_label("Email").fill("a@example.com")
     _auth_dialog(page).get_by_label("Password", exact=True).fill("LongEnough1!xx")
 
-    page.evaluate("""() => {
-        const btn = document.querySelector('.auth-panel.active button[type=submit]');
-        btn.click();
-        btn.click();
-    }""")
+    _auth_dialog(page).get_by_role("button", name="Log in").dblclick()
 
     expect(page.locator(".topbar-auth-btn:visible").first).to_contain_text("Log out")
     assert call_count["n"] == 1, f"expected exactly one login request, got {call_count['n']}"
@@ -449,11 +427,7 @@ def test_resend_button_debounced_and_shows_feedback(page, base_url):
     _auth_dialog(page).get_by_role("button", name="Log in").click()
     expect(page.get_by_role("heading", name="Check your email")).to_be_visible()
 
-    page.evaluate("""() => {
-        const btn = document.querySelector('.auth-panel.active button.auth-submit');
-        btn.click();
-        btn.click();
-    }""")
+    _auth_dialog(page).get_by_role("button", name="Resend verification email").dblclick()
     expect(page.locator(".wiki-toast")).to_be_visible()
     assert call_count["n"] == 1, f"expected exactly one resend request, got {call_count['n']}"
 
@@ -518,7 +492,7 @@ def test_resend_button_shows_cooldown_after_send(page, base_url):
 # ── anon-data migration on login (plain confirm(), no dedicated modal) ─────────
 
 
-def test_migrate_keep_imports_local_data(page, base_url):
+def test_migrate_keep_imports_local_data(page, base_url, seed_bookmarks):
     _stub_logged_out(page)
     _stub_login_success(page)
     import_bodies = []
@@ -529,10 +503,8 @@ def test_migrate_keep_imports_local_data(page, base_url):
 
     page.route("**/api/v1/sync/import", _capture_import)
     _stub_synced_domains_empty(page)
-    page.add_init_script(
-        "localStorage.setItem('wiki-bookmarks', JSON.stringify([{wikiId:'dsa',path:'foo.md',slug:'foo',title:'Foo',wikiTitle:'DSA'}]));"
-        "localStorage.setItem('wiki-completed-dsa', JSON.stringify(['content/dsa/foo.md']))"
-    )
+    seed_bookmarks(_FOO_BOOKMARK)
+    page.add_init_script("localStorage.setItem('wiki-completed-dsa', JSON.stringify(['content/dsa/foo.md']))")
     page.on("dialog", lambda d: d.accept())
 
     page.goto(base_url, wait_until="domcontentloaded")
@@ -547,7 +519,7 @@ def test_migrate_keep_imports_local_data(page, base_url):
     assert import_bodies[0]["completions"] == [{"wiki_id": "dsa", "path": "content/dsa/foo.md"}]
 
 
-def test_migrate_discard_clears_local_data_without_importing(page, base_url):
+def test_migrate_discard_clears_local_data_without_importing(page, base_url, seed_bookmarks):
     _stub_logged_out(page)
     _stub_login_success(page)
     import_called = {"hit": False}
@@ -556,9 +528,7 @@ def test_migrate_discard_clears_local_data_without_importing(page, base_url):
         lambda r: (import_called.__setitem__("hit", True), r.fulfill(status=200, content_type="application/json", body="{}"))[1],
     )
     _stub_synced_domains_empty(page)
-    page.add_init_script(
-        "localStorage.setItem('wiki-bookmarks', JSON.stringify([{wikiId:'dsa',path:'foo.md',slug:'foo',title:'Foo',wikiTitle:'DSA'}]))"
-    )
+    seed_bookmarks(_FOO_BOOKMARK)
     page.on("dialog", lambda d: d.dismiss())
 
     page.goto(base_url, wait_until="domcontentloaded")
@@ -574,7 +544,7 @@ def test_migrate_discard_clears_local_data_without_importing(page, base_url):
     assert stored in (None, "[]")
 
 
-def test_migrate_import_failure_shows_toast_and_skips_pull(page, base_url):
+def test_migrate_import_failure_shows_toast_and_skips_pull(page, base_url, seed_bookmarks):
     _stub_logged_out(page)
     _stub_login_success(page)
     page.route(
@@ -587,9 +557,7 @@ def test_migrate_import_failure_shows_toast_and_skips_pull(page, base_url):
             f"**/api/v1/{path}",
             lambda r: (pull_called.__setitem__("hit", True), r.fulfill(status=200, content_type="application/json", body="[]"))[1],
         )
-    page.add_init_script(
-        "localStorage.setItem('wiki-bookmarks', JSON.stringify([{wikiId:'dsa',path:'foo.md',slug:'foo',title:'Foo',wikiTitle:'DSA'}]))"
-    )
+    seed_bookmarks(_FOO_BOOKMARK)
     page.on("dialog", lambda d: d.accept())
 
     page.goto(base_url, wait_until="domcontentloaded")
@@ -603,11 +571,6 @@ def test_migrate_import_failure_shows_toast_and_skips_pull(page, base_url):
     assert not pull_called["hit"], "pullAll() must not run after a failed import - it would overwrite the kept local data"
     stored = page.evaluate("() => localStorage.getItem('wiki-bookmarks')")
     assert "foo.md" in stored
-
-
-# ── logout clears private data ──────────────────────────────────────────────
-
-# test_logout_clears_highlights_markers_notes dropped: those lib/storage modules don't exist yet (post-cutover.md scope), nothing writes those keys.
 
 
 # ── focus trap ───────────────────────────────────────────────────────────────
@@ -826,7 +789,6 @@ def test_logout_in_other_tab_clears_user_data_cache_in_this_tab(page, base_url):
 
 
 def test_reset_panel_has_recovery_links(page, base_url):
-    """Regression: reset panel had no recovery links, an expired token dead-ended the user."""
     _stub_logged_out(page)
     page.goto(f"{base_url}/?mode=reset&token=expiredtoken", wait_until="domcontentloaded")
     expect(page.get_by_role("heading", name="Set a new password")).to_be_visible()
@@ -895,7 +857,6 @@ def test_verify_link_boot_param_calls_verify_and_strips_url(page, base_url):
 
 
 def test_verify_result_failure_shows_resend_form(page, base_url):
-    """Regression: verify-result had no resend path on failure, only "Go to log in"."""
     _stub_logged_out(page)
     page.route(
         "**/api/v1/auth/verify",

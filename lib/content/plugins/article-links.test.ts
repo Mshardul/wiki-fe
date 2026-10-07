@@ -25,6 +25,12 @@ describe("rehypeArticleLinks (through the pipeline)", () => {
     expect(html).toContain('href="/wiki-fe/dsa/patterns/two-pointers/?a=how-it-works"');
   });
 
+  it("leaves a link with more .. than the article depth unrewritten", async () => {
+    const { html } = await renderMarkdown("See [Deep](../../../../target.md).", ctx());
+    expect(html).toContain('href="../../../../target.md"');
+    expect(html).not.toContain("wiki-link-article");
+  });
+
   it("marks an external link target/rel", async () => {
     const { html } = await renderMarkdown("See [ext](https://example.com).", ctx());
     expect(html).toMatch(/target="_blank"/);

@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { useLayoutEffect, useState } from "react";
+import { describe, expect, it, vi } from "vitest";
 import { Modal } from "./Modal";
 import { closeTopmost } from "./modalRegistry";
 
@@ -26,6 +26,25 @@ describe("Modal", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.body.classList.contains("modal-open")).toBe(false);
+  });
+
+  it("handles an Escape pressed as soon as the dialog is in the DOM, before passive effects run", () => {
+    const onClose = vi.fn();
+    function EscapeOnCommit() {
+      useLayoutEffect(() => {
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      }, []);
+      return null;
+    }
+    render(
+      <>
+        <Modal open onClose={onClose} label="Test">
+          <button type="button">inside</button>
+        </Modal>
+        <EscapeOnCommit />
+      </>,
+    );
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("backdrop click closes it", () => {

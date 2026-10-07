@@ -56,6 +56,22 @@ describe("HighlightsIsland", () => {
     );
   });
 
+  it("re-anchors a highlight whose snippet moved after an upstream edit", () => {
+    Highlights.add("dsa", "content/dsa/x.md", { start: 0, end: 5, snippet: "world" });
+    render(<HighlightsIsland wikiId="dsa" articlePath="content/dsa/x.md" />);
+
+    expect(document.querySelector(".wiki-highlight")?.textContent).toBe("world");
+    expect(Highlights.getAll("dsa", "content/dsa/x.md")).toHaveLength(1);
+  });
+
+  it("drops a highlight whose snippet is gone instead of misplacing it", () => {
+    Highlights.add("dsa", "content/dsa/x.md", { start: 0, end: 7, snippet: "nomatch" });
+    render(<HighlightsIsland wikiId="dsa" articlePath="content/dsa/x.md" />);
+
+    expect(document.querySelector(".wiki-highlight")).toBeNull();
+    expect(Highlights.getAll("dsa", "content/dsa/x.md")).toHaveLength(0);
+  });
+
   it("drops a marker whose snippet no longer matches and toasts", () => {
     Markers.add("dsa", "content/dsa/x.md", { offset: 0, emoji: "🤔", snippet: "nomatch" });
     render(<HighlightsIsland wikiId="dsa" articlePath="content/dsa/x.md" />);

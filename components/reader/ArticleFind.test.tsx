@@ -50,6 +50,20 @@ describe("ArticleFind", () => {
     vi.useRealTimers();
   });
 
+  it("matches a query that spans inline markup", () => {
+    document.body.innerHTML = `<article class="markdown-body"><p>Alpha <strong>bravo</strong> charlie.</p></article>`;
+    vi.useFakeTimers();
+    render(<ArticleFind />);
+    act(() => {
+      fireEvent.keyDown(document, { key: "/" });
+    });
+    type("alpha bravo");
+
+    expect(screen.getByText("1/1")).toBeTruthy();
+    expect(document.querySelectorAll("mark.article-find-hit").length).toBeGreaterThan(0);
+    vi.useRealTimers();
+  });
+
   it("clears highlights on close", () => {
     withArticle();
     vi.useFakeTimers();

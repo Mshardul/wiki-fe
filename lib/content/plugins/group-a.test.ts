@@ -152,6 +152,14 @@ describe("rehype-prerequisites", () => {
     expect(html).toMatch(/data-unlinked-prereq="true"/);
   });
 
+  it("keeps the clean prerequisite name in data-title, without badge text", async () => {
+    const { html } = await renderMarkdown(md, ctx());
+    expect(html).toMatch(/<a class="prereq-chip"[^>]*data-title="Databases"/);
+    expect(html).toMatch(
+      /class="prereq-chip prereq-chip--unlinked"[^>]*data-title="Consistent Hashing"/,
+    );
+  });
+
   it("carries the Must/Should level badge", async () => {
     const { html } = await renderMarkdown(md, ctx());
     expect(html).toContain('class="prereq-level prereq-level--must"');

@@ -1,17 +1,4 @@
-"""
-- scroll position persisted per article in localStorage, re-applied on revisit
-- ?a= anchor param takes priority over saved scroll
-- TOC sidebar visible on desktop, a drawer on mobile
-- Sticky section header updates on scroll
-- mobile FAB layout / body-scroll lock
-
-Skip-marked → reader-parity tickets (surfaced by the sweep):
-- resume-by-idea chip (WIKI-651) — Next silently restores instead
-- collapsible TOC sections + collapse-all (WIKI-652) — Next TOC is flat
-- scroll-key eviction manifest (WIKI-653) — Next writes keys with no manifest
-"""
-
-import pytest
+"""Scroll restore, TOC sidebar and mobile drawer, sticky section header."""
 
 SLUG = "system-design/components/caching"
 
@@ -22,8 +9,6 @@ def _article(page, base_url, slug=SLUG):
 
 
 def _scroll_key(page):
-    """ScrollRestore's key: wiki-toc-scroll-article-<wikiId>-<slug-with-dashes>,
-    where slug = article.slug.join('/') (no vertical prefix, no content/ , no .md)."""
     return page.evaluate(
         """() => {
         const seg = location.pathname.replace(/^\\/wiki-fe\\//, '').replace(/\\/$/, '');
@@ -37,7 +22,6 @@ def _scroll_key(page):
 
 
 def test_scroll_position_saved_and_restored(page, base_url):
-    """A saved scroll offset is re-applied when the article is revisited."""
     _article(page, base_url)
     key = _scroll_key(page)
     page.evaluate("(k) => localStorage.setItem(k, '600')", key)
@@ -50,31 +34,30 @@ def test_scroll_position_saved_and_restored(page, base_url):
 
 
 def test_scroll_position_not_restored_with_anchor(page, base_url):
-    """?a= anchor param wins over a saved scroll position."""
     _article(page, base_url)
     key = _scroll_key(page)
     page.evaluate("(k) => localStorage.setItem(k, '2000')", key)
 
-    heading_id = page.evaluate("() => document.querySelector('#markdown-body [id]')?.id")
-    if not heading_id:
-        pytest.skip("no headings to anchor to")
-
-    page.goto(f"{base_url}/{SLUG}/?a={heading_id}", wait_until="domcontentloaded")
-    page.wait_for_selector("#markdown-body", timeout=10_000)
-    page.wait_for_timeout(400)
-    # Anchored to the heading (near its offset), not the saved 2000.
-    at = page.evaluate(
-        "(id) => Math.abs(window.scrollY - (document.getElementById(id).getBoundingClientRect().top + window.scrollY)) < 120",
-        heading_id,
+    heading = page.evaluate(
+        """() => {
+            const h = [...document.querySelectorAll('#markdown-body h2[id]')].at(-1);
+            return h && { id: h.id, top: h.getBoundingClientRect().top + window.scrollY };
+        }"""
     )
-    assert at, "expected scroll at the anchored heading, not the saved position"
+    assert heading and abs(heading["top"] - 2000) > 500, f"need a heading far from the saved offset, got {heading}"
+
+    page.goto(f"{base_url}/{SLUG}/?a={heading['id']}", wait_until="domcontentloaded")
+    page.wait_for_function(
+        "(id) => Math.abs(document.getElementById(id).getBoundingClientRect().top) < 120",
+        arg=heading["id"],
+        timeout=5_000,
+    )
 
 
 # ── TOC sidebar / drawer ──────────────────────────────────────────
 
 
 def test_toc_nav_reserves_scrollbar_gutter(page, base_url):
-    """#toc-nav reserves a stable scrollbar gutter so edge clicks aren't blocked."""
     _article(page, base_url)
     page.wait_for_selector("#toc-nav .toc-item", timeout=10_000)
     gutter = page.evaluate(
@@ -212,28 +195,9 @@ def test_sticky_section_header_shows_section_on_scroll(page, base_url):
         const h2 = document.querySelector('#markdown-body h2');
         return h2 ? h2.getBoundingClientRect().top + window.scrollY : null;
     }""")
-    if h2_top is None:
-        pytest.skip("no h2 in article")
+    assert h2_top is not None, "article has no h2"
     page.evaluate(f"() => window.scrollTo(0, {int(h2_top) + 200})")
     page.wait_for_function(
         "() => document.getElementById('sticky-section-header')?.textContent?.trim().length > 0",
         timeout=3_000,
     )
-
-
-# ── Skip-marked → reader-parity tickets ──────────────────────────
-
-
-@pytest.mark.skip(reason="resume-by-idea chip not ported — WIKI-651")
-def test_resume_chip_shows_and_jumps():
-    pass
-
-
-@pytest.mark.skip(reason="collapsible TOC sections not ported — WIKI-652")
-def test_toc_section_chevron_collapse():
-    pass
-
-
-@pytest.mark.skip(reason="scroll-key eviction manifest not ported — WIKI-653")
-def test_scroll_keys_tracked_in_eviction_manifest():
-    pass

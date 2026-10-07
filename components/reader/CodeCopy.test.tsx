@@ -21,7 +21,8 @@ describe("CodeCopy", () => {
     render(<CodeCopy />);
 
     const btn = document.querySelector(".copy-btn") as HTMLButtonElement;
-    expect(btn.querySelector("svg")).toBeTruthy();
+    expect(btn.querySelector(".copy-btn-icon-copy use")?.getAttribute("href")).toBe("#icon-copy");
+    expect(btn.querySelector(".copy-btn-icon-check use")?.getAttribute("href")).toBe("#icon-check");
     btn.click();
     await Promise.resolve();
     expect(writeText).toHaveBeenCalledWith("const x = 1;");
@@ -38,7 +39,6 @@ describe("CodeCopy", () => {
     render(<CodeCopy />);
     (document.querySelector(".copy-btn") as HTMLButtonElement).click();
     await new Promise((r) => setTimeout(r, 0));
-    // ToastHost isn't mounted here; assert the queue accepted it
     const { subscribeToast } = await import("@/lib/toast");
     let msg: string | undefined;
     subscribeToast((t) => {

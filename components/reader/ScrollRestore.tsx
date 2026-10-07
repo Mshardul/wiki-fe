@@ -13,7 +13,7 @@ export function ScrollRestore({ wikiId, articlePath }: ScrollRestoreProps) {
     // ?a= deep links (AnchorScroll) take priority — don't fight them
     if (!new URL(location.href).searchParams.has("a")) {
       const y = restoreScrollPosition(wikiId, articlePath);
-      if (y > 0) requestAnimationFrame(() => window.scrollTo(0, y));
+      if (y > 0) requestAnimationFrame(() => window.scrollTo({ top: y, behavior: "instant" }));
     }
 
     let timer: ReturnType<typeof setTimeout> | undefined;

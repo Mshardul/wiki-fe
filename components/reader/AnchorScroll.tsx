@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
+import { applyCollapsed } from "./HeadingCollapse";
 
 function scrollToId(id: string, behavior: ScrollBehavior) {
   const target = document.getElementById(id);
   if (!target) return false;
+  const parent = target
+    .closest(".section")
+    ?.querySelector<HTMLElement>(":scope > .section-title > h2");
+  if (parent?.classList.contains("section--collapsed")) applyCollapsed(parent, false);
   target.scrollIntoView({ behavior, block: "start" });
   return true;
 }
@@ -15,7 +20,7 @@ export function AnchorScroll() {
     if (!root) return;
 
     const deepLink = new URL(location.href).searchParams.get("a");
-    if (deepLink) requestAnimationFrame(() => scrollToId(deepLink, "auto"));
+    if (deepLink) requestAnimationFrame(() => scrollToId(deepLink, "instant"));
 
     const onClick = (e: MouseEvent) => {
       const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');

@@ -226,7 +226,7 @@ body.distraction-free .sticky-section-header {
 .markdown-body h2,
 .markdown-body h3,
 .markdown-body h4 {
-  scroll-margin-top: calc(var(--topbar-h) + var(--s6)); /* Clears sticky header + breathing room */
+  scroll-margin-top: calc(var(--topbar-h) + var(--s6));
 }
 
 /* Paragraphs */
@@ -236,12 +236,6 @@ body.distraction-free .sticky-section-header {
 .markdown-body p:last-child {
   margin-bottom: 0;
 }
-.markdown-body > p:first-of-type {
-  font-size: var(--text-lg);
-  color: var(--text-heading);
-  line-height: 1.75;
-}
-
 /* Horizontal rule */
 .markdown-body hr {
   border: none;
@@ -325,9 +319,7 @@ body.distraction-free .sticky-section-header {
   overflow-wrap: anywhere;
 }
 
-/* ═══════════════════════════════════════════════
-   CONTENT STUB (not written yet)
-   ═══════════════════════════════════════════════ */
+/* ─── Content Stub ─── */
 .content-stub {
   display: flex;
   flex-direction: column;
@@ -371,9 +363,7 @@ body.distraction-free .sticky-section-header {
   border: 0;
 }
 
-/* ═══════════════════════════════════════════════
-   COMPLETE BUTTON
-   ═══════════════════════════════════════════════ */
+/* ─── Complete Button ─── */
 .complete-bar {
   display: flex;
   justify-content: center;

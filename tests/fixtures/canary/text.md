@@ -34,7 +34,7 @@ A link to a real article: [Linked List](./data-structures/linked-list.md). An ex
 
 ## Long Form
 
-The sections below exist so the page is tall enough for scroll, reading-progress and table-of-contents tests, and large enough to count as a real article rather than a stub.
+The sections below exist so the page is tall enough for scroll, reading-progress and table-of-contents tests, and large enough to count as a real article rather than a stub. You can [jump to the sub-topic](#sub-topic) from here.
 
 ### First Reading Block
 
