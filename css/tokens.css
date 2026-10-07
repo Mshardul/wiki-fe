@@ -31,6 +31,8 @@
   --accent-light: #818cf8;
   --accent-dim: rgba(99, 102, 241, 0.12);
   --accent-glow: rgba(99, 102, 241, 0.25);
+  /* Text/icons drawn on top of --accent fills */
+  --on-accent: #fff;
 
   /* Semantic callout colors */
   --callout-interview-border: #6366f1;
@@ -161,4 +163,27 @@
   --diagram-edge: var(--text-muted);
   --diagram-cluster-fill: var(--surface-3);
   --diagram-cluster-stroke: var(--border);
+
+  /* Visualizer roles — aliases only, so theme presets flow through */
+  --viz-hit: var(--color-success);
+  --viz-miss: var(--color-error);
+  --viz-evict: var(--color-warning);
+  --viz-active: var(--accent);
+  --viz-hit-bg: color-mix(in srgb, var(--viz-hit) 16%, transparent);
+  --viz-miss-bg: color-mix(in srgb, var(--viz-miss) 16%, transparent);
+  --viz-evict-bg: color-mix(in srgb, var(--viz-evict) 16%, transparent);
+  --viz-slot-bg: var(--surface-2);
+  --viz-slot-border: var(--border-2);
+  --viz-on-accent: var(--on-accent);
+  --viz-tracking: 0.08em;
+  --viz-move: 0.6s cubic-bezier(0.5, 0, 0.3, 1.15);
+  --viz-hold: 0.7s;
+  --viz-glow: 1.9s;
+  --viz-panel-left-w: 256px;
+  --viz-panel-right-w: 340px;
+  --viz-rail-w: 48px;
+  --viz-cell-w: 40px;
+  --viz-cell-gap: 4px;
+  --viz-strip-cells: 15;
+  --viz-stage-narrow-h: 380px;
 }

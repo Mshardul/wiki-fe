@@ -9,7 +9,7 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
-const ARTICLE_RE = /\/wiki-fe\/(dsa|system-design)\/.+/;
+const ARTICLE_RE = /\/wiki-fe\/((dsa|system-design)\/.+|visualizer\/)/;
 const STATIC_JS_RE = /\/wiki-fe\/_next\/static\/.+\.js$/;
 
 const serwist = new Serwist({

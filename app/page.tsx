@@ -5,6 +5,7 @@ import { PinnedWikis } from "@/components/home/PinnedWikis";
 import { WikiCardsKeyNav } from "@/components/home/WikiCardsKeyNav";
 import { CANONICAL_BASE } from "@/lib/config";
 import { getVerticals } from "@/lib/content";
+import { VISUALIZERS } from "@/lib/visualizer/registry";
 
 export const metadata: Metadata = {
   title: { absolute: "Wiki — System Design & DSA" },
@@ -51,6 +52,24 @@ export default function Home() {
               </Link>
             </div>
           ))}
+        </div>
+        {/* Separate grid: PinnedWikis and card key-nav only manage the vertical cards. */}
+        <div className="wiki-grid wiki-grid--tools">
+          <Link href="/visualizer/" className="wiki-card">
+            <div className="wiki-card-icon">🎞️</div>
+            <div className="wiki-card-body">
+              <h2 className="wiki-card-title">Visualizer</h2>
+              <p className="wiki-card-desc">
+                Animated, step-by-step explanations — starting with cache eviction.
+              </p>
+            </div>
+            <div className="wiki-card-footer">
+              <span className="wiki-card-count">
+                {VISUALIZERS.length} {VISUALIZERS.length === 1 ? "visualizer" : "visualizers"}
+              </span>
+              <span className="wiki-card-arrow">→</span>
+            </div>
+          </Link>
         </div>
       </main>
     </>

@@ -39,4 +39,8 @@ describe("service worker precache scope (spec §8: small shell, not the whole si
     expect(sw).toContain("wiki-static");
     expect(sw).toMatch(/_next\\\/static\\\/.+\\\.js/);
   });
+
+  it("runtime-caches visualizer pages so they work offline after one visit", () => {
+    expect(sw).toContain("visualizer\\/");
+  });
 });

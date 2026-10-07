@@ -1,6 +1,6 @@
 # Algorithm Visualizer — Design
 
-> **Status 2026-10-02:** unblocked (cutover is done) but written against the deleted `js/**` stack. Re-target to `app/`, `components/`, `lib/` (React/TS) before any implementation; this spec is reference only until then.
+> **Status 2026-10-07:** superseded by [2026-10-07-cache-visualizer-design.md](./2026-10-07-cache-visualizer-design.md). Never built; kept as reference for future DSA visualizers.
 
 ## Purpose
 

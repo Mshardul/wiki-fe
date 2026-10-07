@@ -220,6 +220,12 @@ Simple FIFO evicts keys in insertion order regardless of access frequency or rec
 
 S3-FIFO (2023): Three-queue variant - a small queue (S), a main queue (M), and a ghost queue (G). New entries enter S; on second access they graduate to M; evictions from S go to G. Objects in M are kept longer; one-time-access keys cycle through S quickly. Recent benchmarks on production web cache traces show S3-FIFO outperforming LRU with lower implementation complexity.
 
+### CLOCK (Second Chance)
+
+Approximates LRU without reordering anything on a hit. Keys sit in a fixed ring of slots, each with one reference bit. A hit sets the bit to 1. On a miss with a full cache, the hand sweeps forward: a slot with bit 1 is cleared to 0 and skipped (its second chance), and the first slot with bit 0 is evicted and replaced. Hits cost one bit write instead of a list move, so the hot path needs no lock on shared structure. Worst case is a full sweep when every bit is 1, after which the hand evicts the slot it started on.
+
+**Production use:** OS page replacement (Linux's active/inactive lists are a close relative), PostgreSQL's buffer pool clock-sweep.
+
 ### Lazy vs Active Expiry Trade-offs
 
 **Lazy expiry (Redis default):** An expired key is not removed proactively - it is deleted on access or during periodic background sampling. Memory overhead: expired keys occupy memory until accessed or sampled. Advantage: no background CPU cost for expiry scanning.

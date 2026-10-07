@@ -3,6 +3,9 @@
 import { useSyncExternalStore } from "react";
 import { getSession, type Session, subscribeSession } from "@/lib/storage/session";
 
+// Stable reference: useSyncExternalStore loops if the server snapshot is a new object each call.
+const SERVER_SESSION: Session = { user: null, status: "loading" };
+
 export function useSession(): Session {
   return useSyncExternalStore(
     (cb) => {
@@ -17,6 +20,6 @@ export function useSession(): Session {
       };
     },
     getSession,
-    (): Session => ({ user: null, status: "loading" }),
+    () => SERVER_SESSION,
   );
 }

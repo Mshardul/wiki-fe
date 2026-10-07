@@ -38,6 +38,9 @@ function Highlight({ text, term }: { text: string; term: string }) {
   );
 }
 
+// Stable server snapshot: a fresh [] per call makes useSyncExternalStore loop.
+const NO_RECENT_SEARCHES: string[] = [];
+
 export function SearchModal() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -48,7 +51,7 @@ export function SearchModal() {
   const recents = useSyncExternalStore(
     subscribeRecentSearches,
     getRecentSearchesSnapshot,
-    () => [] as string[],
+    () => NO_RECENT_SEARCHES,
   );
 
   useEffect(() => {

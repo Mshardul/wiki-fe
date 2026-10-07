@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { type Bookmark, getBookmarksSnapshot, subscribeBookmarks } from "@/lib/storage/bookmarks";
 
+// Stable server snapshot: a fresh [] per call makes useSyncExternalStore loop.
+const NO_BOOKMARKS: Bookmark[] = [];
+
 interface BookmarksStripProps {
   wikiId: string;
 }
@@ -12,7 +15,7 @@ export function BookmarksStrip({ wikiId }: BookmarksStripProps) {
   const bookmarks = useSyncExternalStore(
     subscribeBookmarks,
     getBookmarksSnapshot,
-    () => [] as Bookmark[],
+    () => NO_BOOKMARKS,
   );
   const forWiki = bookmarks.filter((b) => b.wikiId === wikiId);
   if (!forWiki.length) return null;

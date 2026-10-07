@@ -224,3 +224,7 @@
   color: var(--accent-light);
   transform: translateX(3px);
 }
+
+.wiki-grid--tools {
+  margin-top: var(--s6);
+}

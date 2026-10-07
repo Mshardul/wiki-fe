@@ -14,6 +14,11 @@
 @import "./view-offline.css";
 @import "./view-dashboard.css";
 @import "./view-admin.css";
+@import "./view-visualizer/ui.css";
+@import "./view-visualizer/stage.css";
+@import "./view-visualizer/panels.css";
+@import "./view-visualizer/playback.css";
+@import "./view-visualizer/layout.css";
 @import "./view-content/layout.css";
 @import "./view-content/toc-sidebar.css";
 @import "./view-content/notes-scratchpad.css";

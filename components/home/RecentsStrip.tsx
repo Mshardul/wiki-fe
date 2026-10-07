@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { getRecentsSnapshot, type Recent, subscribeRecents } from "@/lib/storage/recents";
 
+// Stable server snapshot: a fresh [] per call makes useSyncExternalStore loop.
+const NO_RECENTS: Recent[] = [];
+
 interface RecentsStripProps {
   wikiId: string;
 }
 
 export function RecentsStrip({ wikiId }: RecentsStripProps) {
-  const recents = useSyncExternalStore(subscribeRecents, getRecentsSnapshot, () => [] as Recent[]);
+  const recents = useSyncExternalStore(subscribeRecents, getRecentsSnapshot, () => NO_RECENTS);
   const forWiki = recents.filter((r) => r.wikiId === wikiId);
   if (!forWiki.length) return null;
 

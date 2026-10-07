@@ -605,3 +605,62 @@
     justify-content: stretch;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   VISUALIZER
+   ═══════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .viz-strip {
+    --viz-strip-cells: 11;
+  }
+}
+
+/* Interim single-column fallback until the dedicated mobile layout ships. */
+@media (max-width: 900px) {
+  .viz-page {
+    height: auto;
+  }
+  .viz-app {
+    flex: none;
+  }
+  .viz-app__body {
+    display: flex;
+    flex-direction: column;
+  }
+  .viz-app__centre {
+    order: -1;
+  }
+  .viz-stage {
+    flex: none;
+    height: var(--viz-stage-narrow-h);
+  }
+  .viz-panel--left,
+  .viz-panel--right {
+    border-left: 0;
+    border-right: 0;
+    border-top: 1px solid var(--border);
+  }
+  .viz-panel__rail {
+    flex-direction: row;
+    padding: var(--s2) var(--s4);
+  }
+  .viz-panel__rail-label {
+    writing-mode: horizontal-tb;
+  }
+}
+
+@media (max-width: 640px) {
+  .viz-strip {
+    --viz-strip-cells: 7;
+  }
+  .viz-head__actions {
+    margin-left: 0;
+  }
+  .viz-playback {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .viz-playback__aside {
+    justify-self: center;
+  }
+}

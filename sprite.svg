@@ -174,4 +174,26 @@
     <path d="M6 15v-1a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v1" />
     <path d="M12 9l0 3" />
   </symbol>
+  <symbol id="icon-repeat" viewBox="0 0 24 24">
+    <path d="M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3" />
+  <path d="M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3" />
+  </symbol>
+  <symbol id="icon-repeat-once" viewBox="0 0 24 24">
+    <path d="M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3" />
+  <path d="M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3" />
+  <path d="M11 11l1 -1v4" />
+  </symbol>
+  <symbol id="icon-repeat-off" viewBox="0 0 24 24">
+    <path d="M4 12v-3c0 -1.336 .873 -2.468 2.08 -2.856m3.92 -.144h10m-3 -3l3 3l-3 3" />
+  <path d="M20 12v3a3 3 0 0 1 -.133 .886m-1.99 1.984a3 3 0 0 1 -.877 .13h-13m3 3l-3 -3l3 -3" />
+  <path d="M3 3l18 18" />
+  </symbol>
+  <symbol id="icon-rotate" viewBox="0 0 24 24">
+    <path d="M9 4.55a8 8 0 0 1 6 14.9m0 -4.45v5h5" />
+  <path d="M5.63 7.16l0 .01" />
+  <path d="M4.06 11l0 .01" />
+  <path d="M4.63 15.1l0 .01" />
+  <path d="M7.16 18.37l0 .01" />
+  <path d="M11 19.94l0 .01" />
+  </symbol>
 </svg>

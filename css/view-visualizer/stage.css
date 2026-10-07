@@ -1,0 +1,479 @@
+/* ═══════════════════════════════════════════════
+   VISUALIZER — STAGE
+   ═══════════════════════════════════════════════ */
+.viz-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 40%, var(--surface-2), var(--bg) 75%);
+}
+.viz-stage__metric {
+  position: absolute;
+  top: var(--s3);
+  right: var(--s4);
+  z-index: var(--z-raised);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.viz-stage__metric-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: var(--fw-extrabold);
+  line-height: 1;
+  color: var(--text-heading);
+}
+.viz-stage__metric-label {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-extrabold);
+  letter-spacing: var(--viz-tracking);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.viz-stage__caption {
+  position: absolute;
+  left: var(--s4);
+  right: var(--s4);
+  bottom: var(--s4);
+  z-index: var(--z-raised);
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-heading);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════
+   VISUALIZER — LINEAR SHAPE (stack / queue)
+   ═══════════════════════════════════════════════ */
+.viz-linear {
+  position: absolute;
+  inset: 0;
+}
+.viz-linear__frame {
+  position: absolute;
+  border: 2px solid var(--border-2);
+  transition: left var(--viz-move), top var(--viz-move), width var(--viz-move), height var(--viz-move);
+}
+.viz-linear__frame--vertical {
+  border-top-color: transparent;
+  border-bottom: 2px dashed var(--viz-evict);
+  border-radius: 0 0 var(--r) var(--r);
+}
+.viz-linear__frame--horizontal {
+  border-left-color: transparent;
+  border-right: 2px dashed var(--viz-evict);
+  border-radius: 0 var(--r) var(--r) 0;
+}
+.viz-linear__label {
+  position: absolute;
+  font-size: var(--text-xs);
+  font-weight: var(--fw-extrabold);
+  letter-spacing: var(--viz-tracking);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+.viz-linear__label--exit {
+  color: var(--viz-evict);
+}
+.viz-blk {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--viz-slot-border);
+  border-radius: var(--r);
+  background: var(--viz-slot-bg);
+  color: var(--text-heading);
+  font-family: var(--font-mono);
+  font-weight: var(--fw-extrabold);
+  transition: left var(--viz-move), top var(--viz-move), width var(--t), height var(--t),
+    opacity var(--t-slow), border-color var(--t), background var(--t);
+}
+.viz-blk--new {
+  border-color: var(--viz-active);
+  box-shadow: 0 0 0 4px var(--accent-dim);
+}
+.viz-blk--hit {
+  border-color: var(--viz-hit);
+  background: var(--viz-hit-bg);
+}
+.viz-blk--next {
+  border-style: dashed;
+  border-color: var(--viz-evict);
+}
+.viz-blk--out {
+  border-color: var(--viz-evict);
+  background: var(--viz-evict-bg);
+  color: var(--viz-evict);
+  opacity: 0;
+}
+.viz-blk--enter-vertical {
+  animation: viz-enter-vertical var(--viz-move);
+}
+.viz-blk--enter-horizontal {
+  animation: viz-enter-horizontal var(--viz-move);
+}
+@keyframes viz-enter-vertical {
+  from {
+    transform: translateY(-160px);
+    opacity: 0;
+  }
+}
+@keyframes viz-enter-horizontal {
+  from {
+    transform: translateX(-160px);
+    opacity: 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   VISUALIZER — HISTOGRAM SHAPE
+   ═══════════════════════════════════════════════ */
+.viz-hist {
+  position: absolute;
+  inset: var(--s12) var(--s8) var(--s12);
+  display: flex;
+  gap: var(--s4);
+}
+.viz-hist__col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+}
+.viz-hist__track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  border-bottom: 2px solid var(--border-2);
+}
+.viz-hist__bar {
+  position: relative;
+  width: 100%;
+  border: 2px solid var(--accent);
+  border-radius: var(--r-sm) var(--r-sm) var(--r-xs) var(--r-xs);
+  background: color-mix(in srgb, var(--accent) 40%, var(--surface-2));
+  transition: height var(--viz-move), width var(--viz-move), background var(--t), border-color var(--t);
+}
+.viz-hist__count {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding-bottom: var(--s1);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  color: var(--text-heading);
+}
+.viz-hist__key {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: var(--fw-extrabold);
+  color: var(--text-heading);
+}
+.viz-hist__flag {
+  padding: 1px var(--s2);
+  border-radius: var(--r-full);
+  background: var(--viz-evict);
+  color: var(--bg);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-extrabold);
+  letter-spacing: var(--viz-tracking);
+  text-transform: uppercase;
+}
+.viz-hist__col--new .viz-hist__bar {
+  box-shadow: 0 0 0 4px var(--accent-dim);
+}
+.viz-hist__col--hit .viz-hist__bar {
+  border-color: var(--viz-hit);
+  background: var(--viz-hit-bg);
+}
+.viz-hist__col--next .viz-hist__bar {
+  border-style: dashed;
+  border-color: var(--viz-evict);
+  background: var(--viz-evict-bg);
+}
+.viz-hist--horizontal {
+  flex-direction: column;
+}
+.viz-hist--horizontal .viz-hist__col {
+  flex-direction: row;
+}
+.viz-hist--horizontal .viz-hist__key {
+  order: -1;
+  width: var(--s8);
+}
+.viz-hist--horizontal .viz-hist__track {
+  height: 100%;
+  align-items: stretch;
+  border-bottom: 0;
+  border-left: 2px solid var(--border-2);
+}
+.viz-hist--horizontal .viz-hist__bar {
+  height: 100%;
+  border-radius: var(--r-xs) var(--r-sm) var(--r-sm) var(--r-xs);
+}
+.viz-hist--horizontal .viz-hist__col {
+  position: relative;
+}
+.viz-hist--horizontal .viz-hist__flag {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.viz-hist--horizontal .viz-hist__count {
+  top: 50%;
+  bottom: auto;
+  left: 100%;
+  padding: 0 0 0 var(--s2);
+  transform: translateY(-50%);
+}
+
+/* ═══════════════════════════════════════════════
+   VISUALIZER — RING SHAPE
+   ═══════════════════════════════════════════════ */
+.viz-ring {
+  position: absolute;
+  top: var(--s8);
+  left: 0;
+  width: 100%;
+  height: calc(100% - var(--s8) - var(--s12));
+}
+.viz-ring__track {
+  fill: none;
+  stroke: var(--border-2);
+  stroke-width: 2;
+  stroke-dasharray: 4 6;
+}
+.viz-ring__slot {
+  fill: var(--viz-slot-bg);
+  stroke: var(--viz-slot-border);
+  stroke-width: 2;
+  transition: fill var(--t), stroke var(--t);
+}
+.viz-ring__slot--new {
+  stroke: var(--viz-active);
+  stroke-width: 3;
+}
+.viz-ring__slot--hit {
+  fill: var(--viz-hit-bg);
+  stroke: var(--viz-hit);
+}
+.viz-ring__slot--cleared {
+  stroke: var(--viz-evict);
+  stroke-dasharray: 5 4;
+}
+.viz-ring__key {
+  fill: var(--text-heading);
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-extrabold);
+}
+.viz-ring__bit--1 {
+  fill: var(--accent);
+}
+.viz-ring__bit--0 {
+  fill: transparent;
+  stroke: var(--border-2);
+  stroke-width: 1.5;
+}
+.viz-ring__bitval {
+  fill: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+}
+.viz-ring__hand {
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transform-box: view-box;
+  transform-origin: 150px 150px;
+  transition: transform var(--viz-move);
+}
+.viz-ring__hub {
+  fill: var(--accent);
+}
+
+/* ═══════════════════════════════════════════════
+   VISUALIZER — RANKING SHAPE
+   ═══════════════════════════════════════════════ */
+/* One step plays glow → hold (--viz-hold) → reorder; the glow then fades so every row ends plain. */
+.viz-rank {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(560px, calc(100% - var(--s16)));
+  height: min(calc(100% - var(--s16) - var(--s12)), calc(var(--n) * 4.5rem));
+  transform: translate(-50%, -50%);
+}
+.viz-rank__slot,
+.viz-rank__row {
+  position: absolute;
+  right: 0;
+  height: calc(100% / var(--n) - var(--s2));
+  top: calc(var(--rank) * (100% / var(--n)));
+  border-radius: var(--r);
+}
+.viz-rank__slot {
+  left: 0;
+  display: flex;
+  align-items: center;
+  border: 1px dashed transparent;
+}
+.viz-rank__slot.is-empty {
+  border-color: var(--border-2);
+}
+.viz-rank__no {
+  width: var(--s8);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  color: var(--text-muted);
+  text-align: center;
+}
+.viz-rank__row {
+  left: var(--s8);
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: 0 var(--s4);
+  border: 2px solid var(--viz-slot-border);
+  background: var(--viz-slot-bg);
+  transition: top var(--viz-move) var(--viz-hold);
+}
+.viz-rank__row--next {
+  border-style: dashed;
+  border-color: var(--viz-evict);
+}
+.viz-rank__row--new:not(.viz-rank__row--hit) {
+  animation: viz-rank-enter var(--viz-move) var(--viz-hold) both;
+}
+.viz-rank__row--out {
+  animation: viz-rank-leave 0.5s 0.2s both;
+  border: 2px dashed var(--viz-evict);
+  background: var(--viz-evict-bg);
+  transition: none;
+}
+.viz-rank__key {
+  width: var(--s6);
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: var(--fw-extrabold);
+  color: var(--text-heading);
+}
+.viz-rank__meter {
+  flex: 1;
+  height: var(--s2);
+  border-radius: var(--r-full);
+  background: var(--border);
+  overflow: hidden;
+}
+.viz-rank__fill {
+  display: block;
+  width: calc(var(--fill) * 1%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width var(--viz-move);
+}
+.viz-rank__count {
+  min-width: var(--s8);
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: var(--fw-bold);
+  color: var(--text-heading);
+}
+.viz-rank__glow {
+  position: absolute;
+  inset: -2px;
+  border: 2px solid var(--glow, var(--viz-active));
+  border-radius: inherit;
+  background: var(--glow-bg, var(--accent-dim));
+  box-shadow: 0 0 18px var(--glow, var(--viz-active));
+  pointer-events: none;
+  animation: viz-rank-glow var(--viz-glow) both;
+}
+.viz-rank__row--hit {
+  --glow: var(--viz-hit);
+  --glow-bg: var(--viz-hit-bg);
+}
+.viz-rank__plus,
+.viz-rank__flag {
+  position: absolute;
+  right: var(--s3);
+  padding: 1px var(--s2);
+  border-radius: var(--r-full);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-extrabold);
+  letter-spacing: var(--viz-tracking);
+}
+.viz-rank__plus {
+  top: -10px;
+  background: var(--viz-hit);
+  color: var(--viz-on-accent);
+  font-family: var(--font-mono);
+  animation: viz-rank-plus var(--viz-glow) both;
+}
+.viz-rank__flag {
+  bottom: -10px;
+  background: var(--viz-evict);
+  color: var(--bg);
+  text-transform: uppercase;
+}
+@keyframes viz-rank-glow {
+  0%,
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes viz-rank-plus {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  12%,
+  72% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes viz-rank-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@keyframes viz-rank-leave {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viz-blk,
+  .viz-linear__frame,
+  .viz-hist__bar,
+  .viz-ring__hand,
+  .viz-rank__row,
+  .viz-rank__fill,
+  .viz-rank__glow,
+  .viz-rank__plus {
+    transition: none;
+    animation: none;
+  }
+}

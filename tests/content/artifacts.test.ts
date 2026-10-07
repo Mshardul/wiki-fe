@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { manifestSchema } from "../../lib/content/manifest.schema";
+import { CACHING_ARTICLE, POLICIES } from "../../lib/visualizer/eviction/module";
 
 // globalSetup runs buildContent() once. These asserts lock the emit contract
 // without a second full-corpus render (see vitest content project).
@@ -26,6 +27,16 @@ describe("content build artifacts", () => {
     for (const name of EMITTED) {
       expect(existsSync(join(GENERATED_DIR, name)), name).toBe(true);
     }
+  });
+
+  it("eviction visualizer deep links resolve to caching article headings", () => {
+    const manifest = manifestSchema.parse(readJson("manifest.json"));
+    const article = manifest.articles.find(
+      (a) => `/${a.verticalId}/${a.slug.join("/")}/` === CACHING_ARTICLE,
+    );
+    expect(article, CACHING_ARTICLE).toBeDefined();
+    const ids = new Set(article?.headings.map((h) => h.id));
+    for (const p of Object.values(POLICIES)) expect(ids.has(p.meta.anchor), p.meta.anchor).toBe(true);
   });
 
   it("manifest parses against manifestSchema and covers the corpus", () => {

@@ -1,0 +1,69 @@
+/* ═══════════════════════════════════════════════
+   VISUALIZER — PAGE LAYOUT
+   ═══════════════════════════════════════════════ */
+/* The app takes whatever the topbar leaves, so no topbar height is hard-coded. */
+.viz-page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+.viz-page > .content-topbar {
+  flex: none;
+}
+.viz-app {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.viz-app--loading {
+  background: var(--bg);
+}
+.viz-head {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3) var(--s4);
+  padding: var(--s3) var(--s5);
+  border-bottom: 1px solid var(--border);
+}
+.viz-head__title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--fw-extrabold);
+  color: var(--text-heading);
+}
+.viz-head__sub {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.viz-head__actions {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+.viz-app__body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--viz-panel-left-w) minmax(0, 1fr) var(--viz-panel-right-w);
+}
+.viz-app--left-collapsed .viz-app__body {
+  grid-template-columns: var(--viz-rail-w) minmax(0, 1fr) var(--viz-panel-right-w);
+}
+.viz-app--right-collapsed .viz-app__body {
+  grid-template-columns: var(--viz-panel-left-w) minmax(0, 1fr) var(--viz-rail-w);
+}
+.viz-app--left-collapsed.viz-app--right-collapsed .viz-app__body {
+  grid-template-columns: var(--viz-rail-w) minmax(0, 1fr) var(--viz-rail-w);
+}
+.viz-app__centre {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}

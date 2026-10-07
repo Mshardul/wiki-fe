@@ -91,9 +91,24 @@ Every runtime client island lives under `components/`, one folder per feature. S
     dashboard/  Dashboard shell / progress
     admin/      Admin view + report tables
     changelog/  Changelog filter
+    visualizer/ frame/ (shared page frame), shapes/, ui/ (primitives), hooks/ — see Visualizer below
   ```
 - **`lib/storage/`** owns all `localStorage` access + the cache-through sync half; **`lib/api.ts`** is the single `wiki-be` client (framework-agnostic, no Next coupling); **`lib/toast.ts`** owns the toast queue; **`lib/pwa/`** owns Cache Storage ops + install-prompt helpers. Components call these, never touch `localStorage`, `caches`, or `fetch` a backend directly.
 - Comments follow the TypeScript rules above - sparse, one line, `why` not `what`, no ticket IDs.
+
+---
+
+## Visualizer
+
+Principles, page anatomy, architecture, rules and the roadmap live in **[docs/_meta/visualizer/README.md](./docs/_meta/visualizer/README.md)** — read it before any visualizer work. Non-negotiables:
+
+- **Module-driven.** A visualizer is a `VisualizerModule` (fields + defaults + `run → frames`) under `lib/visualizer/<name>/`. Nothing under `components/visualizer/` or `lib/visualizer/core/` knows about a specific visualizer — new wording or knobs go into the module contract.
+- **Shape follows structure.** Draw each concept in the shape of its real data structure (stack, queue, ranking, histogram, ring, lanes…); reuse a generic shape before adding one. Compare mode uses one common shape.
+- **Frames are pure and deterministic** — same inputs + seed, same frames; no side effects in `run`.
+- **One field schema drives both the config panel and the URL**; the URL holds the full run + current step.
+- **Colours only via the `--viz-*` aliases** in `tokens.css`, which point at existing tokens.
+- **Plain-English steps, never source code**, and minimal on-screen text.
+- **Tests:** fixture-first against hand-checked frames for everything in `lib/visualizer/**`; every frame component and hook ships with a component test.
 
 ---
 

@@ -109,6 +109,7 @@ Do this before any file reads or skill invocations - every session:
 | `changelog/page.tsx` | Changelog |
 | `admin/page.tsx` | Admin site-health |
 | `offline/page.tsx` | Offline shelf |
+| `visualizer/page.tsx` / `visualizer/[slug]/page.tsx` | Visualizer landing / one visualizer (mounts `VisualizerApp`) |
 | `sw.ts` | Serwist service worker source |
 
 ### Components (`components/`) — per-feature islands
@@ -130,6 +131,9 @@ Markup for articles comes from the build pipeline. Islands add behaviour; they d
 | `dashboard/` | Dashboard shell/grid/progress bar |
 | `admin/` | Admin view + report tables |
 | `changelog/` | Changelog filter |
+| `visualizer/frame/` | Shared visualizer page: `VisualizerApp`, header, config/info side panels, `Stage`, playback bar, timeline strip |
+| `visualizer/shapes/` | Data-structure shapes (`LinearShape`, `RankingShape`, `HistogramShape`, `RingShape`) picked by `Shape` |
+| `visualizer/ui/` / `visualizer/hooks/` | Reusable primitives (buttons, tabs, choice group, rich text, vars table) / playback, URL sync, hotkeys, follow-scroll, panel prefs |
 
 ### Lib (`lib/`) — non-UI logic
 
@@ -149,6 +153,9 @@ Markup for articles comes from the build pipeline. Islands add behaviour; they d
 | `pwa/` | Cache Storage article ops + install helpers |
 | `admin/` | Admin report shaping |
 | `dashboard/` | Progress aggregation |
+| `visualizer/core/` | Module contract + generic engine: field schema, URL state, playback, shapes geometry, rich text, seeded rng |
+| `visualizer/eviction/` | Eviction-policies module: trace, simulate, `policies/{lru,fifo,lfu,clock}` |
+| `visualizer/registry.ts` / `modules.ts` | Server-safe visualizer list (landing/home) / slug → module loader (client only) |
 
 ### CSS (`css/`)
 
@@ -160,6 +167,7 @@ Tokens-first. **Start any CSS task in `tokens.css`.**
 | `base.css` / `themes.css` | Base element styles; light/dark overrides |
 | `components/` | Shared chrome: topbar, search/prefs modals, toast, wiki-switcher, bookmarks, auth |
 | `view-*.css` | Per-route view styles (home, index, dashboard, admin, changelog, offline) |
+| `view-visualizer/` | Visualizer styles: `ui`, `stage`, `panels`, `playback`, `layout` (colours via `--viz-*` tokens) |
 | `view-content/` | Article layout, code, mermaid, callouts, interactive, glossary, highlights, notes, TOC |
 | `responsive.css` | Breakpoints only |
 | `print.css` | Print stylesheet |
@@ -185,6 +193,7 @@ Tokens-first. **Start any CSS task in `tokens.css`.**
 | `docs/content-backlog.md` / `docs/content-archive.md` | DSA-xxx / SD-xxx content rows |
 | `docs/_meta/ai-instructions/content-backlog.md` | Content-backlog schema |
 | `docs/_meta/ai-instructions/sd-writer*.md` / `dsa-writer*.md` / `*-rater.md` | Writing / rating articles |
+| `docs/_meta/visualizer/README.md` | Any Visualizer work — principles, page anatomy, architecture, rules, roadmap (read first) |
 
 ---
 
@@ -193,6 +202,7 @@ Tokens-first. **Start any CSS task in `tokens.css`.**
 | Task | Start here |
 | --- | --- |
 | Article render / markdown dialect | `lib/content/pipeline.ts`, `lib/content/plugins/`, then the matching reader island |
+| Visualizer (new visualizer or any change) | `docs/_meta/visualizer/README.md` first, then the spec it links |
 | ⌘K search | `components/search/SearchModal.tsx`, `lib/search/` |
 | Auth / login | `components/auth/`, `lib/auth/`, `lib/api.ts` |
 | Bookmarks / recents / read | `lib/storage/*`, chrome/home islands that consume them |
