@@ -1,7 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { evictionModule } from "@/lib/visualizer/eviction/module";
+import { lru } from "@/lib/visualizer/eviction/policies/lru";
+import { simulate } from "@/lib/visualizer/eviction/simulate";
 import { InfoPanel } from "./InfoPanel";
+import { StepLines } from "./InfoTabs";
 
 const RUN = evictionModule.run({
   ...evictionModule.defaults(),
@@ -94,5 +97,26 @@ describe("InfoPanel", () => {
       />,
     );
     expect(screen.getByRole("tab", { name: "About" }).getAttribute("aria-selected")).toBe("true");
+  });
+});
+
+describe("StepLines", () => {
+  const frames = simulate(lru, 4, "ABCADEAFBAGC".split(""));
+  const hit = frames.find((f) => f.badge === "HIT");
+  const miss = frames.find((f) => f.badge === "MISS");
+
+  it("marks the line for the current sub-step", () => {
+    if (!hit) throw new Error("fixture needs a hit frame");
+    const { container } = render(<StepLines frame={hit} sub={1} unit="request" />);
+    expect(container.querySelectorAll(".viz-steps__line--now")).toHaveLength(1);
+  });
+
+  it("a short path holds its last line when sub runs past it", () => {
+    if (!hit || !miss) throw new Error("fixture needs a hit and a miss frame");
+    expect(hit.path.length).toBeLessThan(miss.path.length);
+    const { container } = render(
+      <StepLines frame={hit} sub={miss.path.length - 1} unit="request" />,
+    );
+    expect(container.querySelectorAll(".viz-steps__line--now")).toHaveLength(1);
   });
 });

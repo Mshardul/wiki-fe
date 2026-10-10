@@ -187,8 +187,9 @@ export const api = {
   },
 };
 
-// Fire-and-forget GET to warm a Render cold start.
+// Fire-and-forget GET to warm a Render cold start; a local backend has none, so skip it there.
 export function pingHealth(): void {
+  if (isLocal) return;
   void fetch(`${BACKEND_URL}/health`).catch(() => {});
 }
 

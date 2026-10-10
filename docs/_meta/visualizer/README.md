@@ -20,12 +20,14 @@ Design spec for the shared frame and the first visualizer: [`../../superpowers/s
 
 A growing set of visualizers across DSA and HLD. Every visualizer page is built from **the same frame and the same reusable parts**, so adding one means writing its logic, not rebuilding UI. Design every piece with that reuse in mind; extract further only when a real second caller needs it.
 
+## Variants and Revision
+
+A module declares `variants: { key }` (the chips field whose options are its variants, in default order, by increasing difficulty) and optionally `revision` cards. Single shows one variant: switching variant keeps the current step and play state (unless the module sets `restartOnSwitch`, which restarts from step 1), and Previous/Next buttons next to the chips plus Shift+←/→ flip through the variants in chip order. The `[Single|Revision]` header toggle appears when the module has revision cards. Revision is a grid of looping concept cards, one per variant, independent of the inputs and the trace: both side panels and the playback bar are hidden, the legend and loop toggle sit in the footer, cards can be reordered (drag the grip or use the keyboard; saved locally per visualizer, never in the URL), and each card's "i" button opens a popup with the definition, how it differs, and an Open in Single button. Spec: `docs/superpowers/specs/2026-10-09-visualizer-variants-and-revision-design.md`. Side-by-side Compare mode was considered and dropped: Revision (one looping card per variant) covers the "see them differ" need without a multi-variant clock, so do not reintroduce it.
+
 ## Roadmap (not built yet)
 
-- **Compare mode** — up to 3 variants side by side on a common grid.
-- **Mobile layout** for single and compare (until then the page only guarantees no breakage at 320px).
+- **Mobile layout** for Single and Revision (until then the page only guarantees no breakage at 320px).
 - **OPT and ARC** eviction — shapes not designed yet (OPT: next-use countdown; ARC: composite of 2 stacks + 2 ghost stacks + moving divider).
-- **Caching strategies** visualizer (cache-aside, read-through, write-through, write-behind, write-around, refresh-ahead, stale-read race, crash cache) — lanes shape; refresh-ahead/TTL need expiry bars.
 - **"▶ Visualize" links** from articles into visualizers.
 - **DSA visualizers** — prior thinking in [`../../superpowers/specs/2026-09-22-algo-visualizer-design.md`](../../superpowers/specs/2026-09-22-algo-visualizer-design.md) (superseded, never built).
 
@@ -36,7 +38,7 @@ Remove an item when it ships.
 ## Design principles
 
 1. **Shape follows structure.** Draw the concept in the shape of its real data structure — a vertical stack for LRU, a horizontal queue for FIFO, a ranked list for LFU, a ring for CLOCK, time lanes for strategies. *Why:* the shape teaches before any text does, and a wrong shape misleads.
-2. **Native view for depth, common view for comparison.** Single view uses each item's own shape; compare mode uses one shared shape so differences line up.
+2. **Learn in Single, revise in Revision.** Single is for step-by-step depth on one variant; Revision is a cheat-sheet view of every variant with a simple looping animation.
 3. **Watch by default, drive when wanted.** Autoplay on load; full controls always available. No quizzes or "predict the next step".
 4. **Plain-English steps are the explanation.** The algorithm's loop body as 2–4 short plain-English lines, current line highlighted as it plays — never source code. The stage keeps only a one-line caption.
 5. **Show the variables, now vs before.** A table of the loop's variables for the current step, previous values faded beside them, changes marked. *Why:* turns watching boxes into tracing an algorithm.
@@ -52,13 +54,14 @@ Shapes are generic components fed a shape model; they never know which visualize
 
 | Shape | Looks like | Used for | Reuse candidates |
 |---|---|---|---|
-| **Linear** | stack (vertical) or queue (horizontal); open entry end, dashed exit end | LRU, FIFO, write-behind buffer | DFS, call stack, undo, BFS, message queue, rate limiter |
+| **Linear** | stack (vertical) or queue (horizontal); open entry end, dashed exit end | LRU, FIFO, write-behind buffer, token pile, request queue, timestamp log | DFS, call stack, undo, BFS, message queue, rate limiter |
 | **Ranking** | numbered rows by count, a hit glows then climbs, bottom row flagged; no axis | LFU | top-K, leaderboards, rate limiter |
+| **Flow diagram** | nodes (app, cache, database) with numbered edges in three fixed line styles: solid = synchronous, dashed = asynchronous or background, dotted = conditional or fallback | caching-strategy revision cards | request flows, handshakes, replication |
 | **Histogram** | bars by count, lowest flagged (built, unused so far) | — | frequency counting, distributions |
 | **Ring** | slots on a circle with a hand | CLOCK | circular buffer, consistent hashing |
-| **Lanes** (planned) | actor lanes (App / Cache / DB), time flows along the lane | caching strategies, TTL | TCP handshake, consensus rounds |
-| **Composite** (planned) | several shapes in one stage | ARC | LSM tree, multi-level caches |
-| **Common grid** (planned) | one row per variant, one column per key, lit = present | compare mode for any shape | — |
+| **Lanes** | actor lanes (App / Cache / DB) with state cards under each header and numbered messages between them | caching strategies | TCP handshake, consensus rounds, message queues, auth flows |
+| **Timeline** | tick axis with request marks in one or more rows, shaded window bands, boundaries, a bracket or labelled spans, a cursor at now; narrow stages thin the labels, then scroll | rate limiting (fixed window, sliding counter, the sliding log and the buckets' request strips) | TCP congestion windows, retry backoff, TTL expiry |
+| **Composite** | several shapes stacked in one stage, each at its natural or remaining height | rate limiting (log + list, token pile, leaky queue + rows) | ARC, LSM tree, multi-level caches |
 
 **Rotate:** shapes with an axis (linear, histogram) get an icon-only Rotate toggle in the playback footer that swaps the axis and keeps text upright — never a literal 90° CSS rotation. Its label names the default view while rotated. Shapes without an axis (ring) hide the button.
 
@@ -68,7 +71,7 @@ Shapes are generic components fed a shape model; they never know which visualize
 
 ```
 ┌ wiki topbar ──────────────────────────────────────────────────────────────┐
-├ header: title · subtitle               [Single|Compare] [Read article] [Copy link]
+├ header: title · subtitle               [Single|Revision] [Read article] [Copy link]
 ├───────────────┬──────────────────────────────────────┬────────────────────┤
 │ LEFT «        │ STAGE                       metric   │ » RIGHT             │
 │ chips (what)  │                                      │ name · shape chip   │
@@ -141,6 +144,7 @@ interface VizFrame {
 
 ## Rules
 
+- **Defaults belong to each visualizer.** A module owns its `defaults()` and picks them for learning: the first view should show that concept's defining behaviour in as few steps as possible, with a hand-picked sequence where one fits. Never copy another visualizer's defaults, and never add shared defaults to the frame. Sliders and workload chips are for exploring from there.
 - **Generic stays generic.** No visualizer-specific code or copy under `components/visualizer/` or `lib/visualizer/core/`. If the frame needs a new word or knob, add it to the module contract.
 - **Frames are pure and deterministic.** `run` has no side effects; the same inputs + seed always give the same frames.
 - **Tests:** Vitest fixture-first for everything in `lib/visualizer/**`, against hand-checked expected frames. Component tests for every frame component and hook. Browser e2e only for what needs a real browser (`tests/e2e/test_visualizer.py`).

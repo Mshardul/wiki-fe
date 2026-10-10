@@ -12,6 +12,7 @@ export const KEYS = {
   lastLightPreset: "wiki-last-light-preset",
   syncOutbox: "wiki-sync-outbox",
   visualizerPanels: "wiki-visualizer-panels",
+  visualizerOrder: "wiki-visualizer-order",
 } as const;
 
 export const PREFIXES = {

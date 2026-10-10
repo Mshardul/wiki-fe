@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { IndexTopbar } from "@/components/chrome/IndexTopbar";
 import { VisualizerApp } from "@/components/visualizer/frame/VisualizerApp";
 import { CANONICAL_BASE } from "@/lib/config";
+import { getGlossary } from "@/lib/content/get-article";
 import { getVisualizer, VISUALIZERS } from "@/lib/visualizer/registry";
 
 export function generateStaticParams() {
@@ -31,7 +32,7 @@ export default async function VisualizerPage({ params }: { params: Promise<{ slu
   return (
     <div className="viz-page">
       <IndexTopbar />
-      <VisualizerApp slug={slug} />
+      <VisualizerApp slug={slug} glossary={getGlossary()} />
     </div>
   );
 }

@@ -175,4 +175,12 @@ describe("usePlayback", () => {
     expect(result.current.frame).toBe(0);
     expect(result.current.playing).toBe(true);
   });
+
+  it("pause stops playback without moving the frame", () => {
+    const { result } = renderHook(() => usePlayback(frames(5), 2));
+    expect(result.current.playing).toBe(true);
+    act(() => result.current.pause());
+    expect(result.current.playing).toBe(false);
+    expect(result.current.frame).toBe(2);
+  });
 });

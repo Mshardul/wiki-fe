@@ -64,14 +64,14 @@
   cursor: pointer;
 }
 .viz-strip__cell.is-good {
-  border-color: var(--viz-hit);
-  background: var(--viz-hit-bg);
-  color: var(--viz-hit);
+  border-color: var(--viz-good);
+  background: var(--viz-good-bg);
+  color: var(--viz-good);
 }
 .viz-strip__cell.is-bad {
-  border-color: var(--viz-miss);
-  background: var(--viz-miss-bg);
-  color: var(--viz-miss);
+  border-color: var(--viz-bad);
+  background: var(--viz-bad-bg);
+  color: var(--viz-bad);
 }
 .viz-strip__cell.is-current {
   border-color: var(--accent);

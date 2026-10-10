@@ -42,7 +42,7 @@ describe("CLOCK", () => {
 
   it("a hit sets the bit and marks the slot active without moving the hand", () => {
     expect(ring(9).active).toBe(1);
-    expect(ring(9).tone).toBe("hit");
+    expect(ring(9).tone).toBe("existing");
     expect(ring(9).cleared).toEqual([]);
     expect(ring(9).hand).toBe(ring(8).hand);
   });

@@ -20,7 +20,7 @@ export function LinearShape({ model, axis, size, subject }: LinearShapeProps) {
     fontSize,
   });
   const classOf = (key: string): string => {
-    if (key === model.active && model.tone === "hit") return "viz-blk viz-blk--hit";
+    if (key === model.active && model.tone === "existing") return "viz-blk viz-blk--existing";
     if (key === model.active) return `viz-blk viz-blk--new viz-blk--enter-${axis}`;
     if (key === model.next) return "viz-blk viz-blk--next";
     return "viz-blk";
@@ -31,8 +31,8 @@ export function LinearShape({ model, axis, size, subject }: LinearShapeProps) {
     style: box(L.slot(i)),
     className: classOf(key),
   }));
-  if (model.evicted) {
-    blocks.push({ key: model.evicted, style: box(L.exit), className: "viz-blk viz-blk--out" });
+  if (model.removed) {
+    blocks.push({ key: model.removed, style: box(L.exit), className: "viz-blk viz-blk--out" });
   }
   const entry = axis === "vertical" ? model.labels.entry : `${model.labels.entry} →`;
   const exit = axis === "vertical" ? `${model.labels.exit} ↓` : `→ ${model.labels.exit}`;

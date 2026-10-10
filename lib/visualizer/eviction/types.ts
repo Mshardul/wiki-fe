@@ -1,7 +1,7 @@
 import type { ShapeModel } from "../core/shapes";
 import type { Experiment, VarRow } from "../core/types";
 
-export const POLICY_IDS = ["lru", "fifo", "lfu", "clock"] as const;
+export const POLICY_IDS = ["fifo", "lru", "lfu", "clock"] as const;
 export type PolicyId = (typeof POLICY_IDS)[number];
 
 export const PATTERNS = ["hot", "scan", "loop", "uniform"] as const;

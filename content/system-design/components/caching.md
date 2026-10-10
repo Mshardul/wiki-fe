@@ -90,6 +90,16 @@ Writes land in the cache immediately and are returned as successful. The DB writ
 
 If the cache node fails before the async DB flush, the write is permanently lost. Write-behind requires a durable, replicated flush queue (Kafka, Redis Streams with replication) - not just an in-memory buffer. Additionally, if a key is evicted from the cache before being flushed, the eviction must trigger an immediate synchronous DB write (flush-on-eviction). Without this, eviction silently discards writes.
 
+### Write-Around
+
+Writes go straight to the DB and skip the cache. The cache fills only when a key is read, typically through cache-aside or read-through, so data that is written but rarely read back never occupies cache memory.
+
+**Trade-off:** a key that is not already cached misses on its first read after a write, so it suits write-heavy workloads where fresh writes are seldom re-read soon - log and event ingestion, bulk imports, archival records. For read-after-write patterns it only adds misses.
+
+#### Stale Entry Until Expiry
+
+Write-around never touches the cache, so a key that was already cached before the write keeps its old value until it expires or is explicitly invalidated. Pair it with a short TTL or an invalidation step for keys that can be both cached and rewritten (see [Cache Invalidation](#cache-invalidation)); on its own it gives eventual consistency bounded only by the entry's remaining lifetime.
+
 ### Refresh-Ahead
 
 The cache proactively refreshes a key before its TTL expires, based on access frequency prediction. A background thread monitors access rates; when a hot key's TTL falls below a threshold, it schedules a preemptive DB read and cache update. The client never sees a miss for that key.
@@ -104,6 +114,7 @@ The cache proactively refreshes a key before its TTL expires, based on access fr
 | Read-Through  | Cache library on miss | DB only           | Eventual               | Full                  | Simpler app code               |
 | Write-Through | On every write        | Cache + DB (sync) | Strong                 | Full                  | Fresh reads required           |
 | Write-Behind  | On every write        | Cache (async DB)  | Eventual               | Risk (pre-flush loss) | Write-heavy, latency-sensitive |
+| Write-Around  | Application on miss   | DB only (skips cache) | Eventual (stale until expiry) | Full           | Write-heavy, rarely re-read    |
 | Refresh-Ahead | Background refresh    | DB only           | Near-fresh             | Full                  | Predictable hot keys           |
 
 **Key Takeaway:** Cache-aside is the right default - it fails gracefully and keeps the DB authoritative. Write-through and write-behind are performance trade-offs with real consistency and durability costs; choose them only when profiling justifies it.
@@ -163,6 +174,9 @@ On write, must cache and DB stay in sync immediately?
      Can you tolerate data loss if the cache node fails before flushing?
        ├─ YES ──▶ Write-Behind (lower write latency; durability risk)
        └─ NO  ──▶ Write-Through or Cache-Aside with invalidation
+
+Is written data rarely read back soon (ingestion, bulk loads)?
+  └─ YES ──▶ Write-Around (keeps one-off writes out of the cache)
 
 Are access patterns predictable and hot keys known in advance?
   └─ YES ──▶ Consider Refresh-Ahead to avoid miss-on-expiry for those keys

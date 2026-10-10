@@ -9,6 +9,9 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-10-08
+- `system-design/components/caching.md` - new section: "Write-Around" (with Strategy Selection Matrix row and decision-tree branch)
+
 ## 2026-10-07
 - `system-design/components/caching.md` - new section: "CLOCK (Second Chance)"
 

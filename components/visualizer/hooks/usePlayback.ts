@@ -25,6 +25,7 @@ export interface Playback {
   repeat: RepeatMode;
   seek: (i: number) => void;
   step: (delta: number) => void;
+  pause: () => void;
   toggle: () => void;
   restart: (opts?: RestartOpts) => void;
   setSpeed: (speed: Speed) => void;
@@ -71,6 +72,11 @@ export function usePlayback(frames: VizFrame[], initialFrame = 0): Playback {
     },
     [seek],
   );
+
+  const pause = useCallback(() => {
+    live.current.playing = false;
+    setPlaying(false);
+  }, []);
 
   const restart = useCallback((opts?: RestartOpts) => {
     passes.current = 0;
@@ -138,5 +144,18 @@ export function usePlayback(frames: VizFrame[], initialFrame = 0): Playback {
     return () => window.clearInterval(id);
   }, [playing]);
 
-  return { frame, sub, playing, speed, repeat, seek, step, toggle, restart, setSpeed, cycleRepeat };
+  return {
+    frame,
+    sub,
+    playing,
+    speed,
+    repeat,
+    seek,
+    step,
+    pause,
+    toggle,
+    restart,
+    setSpeed,
+    cycleRepeat,
+  };
 }

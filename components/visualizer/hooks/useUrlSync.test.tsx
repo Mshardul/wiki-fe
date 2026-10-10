@@ -29,4 +29,11 @@ describe("useUrlSync", () => {
     expect(spy).toHaveBeenCalledOnce();
     expect(spy.mock.calls[0]?.[2]).toBe(`${window.location.pathname}?c=4&i=3&rot=1`);
   });
+
+  it("writes view=revision when the revision view is active", () => {
+    const spy = vi.spyOn(window.history, "replaceState");
+    renderHook(() => useUrlSync(SECTIONS, { capacity: 4 }, 0, false, "revision"));
+    vi.advanceTimersByTime(300);
+    expect(String(spy.mock.calls[0]?.[2])).toContain("view=revision");
+  });
 });

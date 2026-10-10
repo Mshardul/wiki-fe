@@ -15,7 +15,7 @@ const linear: LinearModel = {
   next: null,
   active: "F",
   tone: "new",
-  evicted: null,
+  removed: null,
   labels: { entry: "newest", exit: "next out" },
   defaultAxis: "vertical",
 };
@@ -38,8 +38,8 @@ const ranking: RankingModel = {
   capacity: 4,
   next: "D",
   active: "A",
-  tone: "hit",
-  evicted: null,
+  tone: "existing",
+  removed: null,
 };
 
 describe("shape models", () => {

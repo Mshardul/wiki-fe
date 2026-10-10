@@ -97,7 +97,7 @@ export const clock: PolicyDef<ClockState> = {
       turns: state.turns,
       cleared: state.cleared,
       active: state.at >= 0 ? state.at : null,
-      tone: hit ? "hit" : "new",
+      tone: hit ? "existing" : "new",
     };
   },
   vars(state) {

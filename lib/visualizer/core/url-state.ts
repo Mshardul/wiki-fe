@@ -3,30 +3,37 @@ import {
   clampInt,
   type FieldSection,
   type InputValues,
-  parseSequence,
+  joinSequence,
+  parseSequenceField,
   SEED_MAX,
 } from "./fields";
+
+export type ViewMode = "single" | "revision";
 
 export interface ViewState {
   frame: number;
   rotated: boolean;
+  view: ViewMode;
 }
+
+export type ViewInput = Omit<ViewState, "view"> & { view?: ViewMode };
 
 export function encodeState(
   sections: FieldSection[],
   values: InputValues,
-  view: ViewState,
+  view: ViewInput,
 ): string {
   const q = new URLSearchParams();
   for (const f of allFields(sections)) {
     const v = values[f.key];
     if (v === null || v === undefined) continue;
     if (f.kind === "seed" && typeof v === "number") q.set(f.param, v.toString(16));
-    else if (f.kind === "sequence" && Array.isArray(v)) q.set(f.param, v.join(""));
+    else if (f.kind === "sequence" && Array.isArray(v)) q.set(f.param, joinSequence(f, v));
     else q.set(f.param, String(v));
   }
   q.set("i", String(view.frame + 1));
   if (view.rotated) q.set("rot", "1");
+  if (view.view === "revision") q.set("view", "revision");
   return `?${q.toString()}`;
 }
 
@@ -49,7 +56,8 @@ export function parseState(
       const n = Number.parseInt(raw, 16);
       if (Number.isFinite(n)) values[f.key] = clampInt(n, 0, SEED_MAX);
     } else {
-      values[f.key] = parseSequence(raw, f.maxLen);
+      const parsed = parseSequenceField(f, raw);
+      values[f.key] = parsed.ok ? parsed.tokens : null;
     }
   }
   const i = Number(q.get("i"));
@@ -58,6 +66,7 @@ export function parseState(
     view: {
       frame: Number.isFinite(i) && i >= 1 ? Math.floor(i) - 1 : 0,
       rotated: q.get("rot") === "1",
+      view: q.get("view") === "revision" ? "revision" : "single",
     },
   };
 }

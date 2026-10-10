@@ -101,6 +101,12 @@
   width: 100%;
   accent-color: var(--accent);
 }
+.viz-field.is-disabled {
+  opacity: 0.45;
+}
+.viz-field.is-disabled .viz-field__range {
+  cursor: not-allowed;
+}
 .viz-field__seq {
   width: 100%;
   padding: var(--s2) var(--s3);
@@ -118,7 +124,7 @@
   color: var(--text-subtle);
 }
 .viz-field__hint.is-error {
-  color: var(--viz-miss);
+  color: var(--viz-bad);
 }
 .viz-field__seed {
   display: flex;

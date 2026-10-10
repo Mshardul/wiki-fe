@@ -16,26 +16,40 @@ const VALUES = {
 const SEQ = "ABCADEAFBAGC".split("");
 
 describe("VizHeader", () => {
-  it("shows title, a disabled Compare, the article link and Copy link", () => {
+  const props = {
+    title: "Eviction policies",
+    subtitle: "What a full cache throws out — and why.",
+    articleHref: "/system-design/components/caching/#lru-least-recently-used",
+    onCopyLink: () => {},
+  };
+
+  it("shows title, the article link and Copy link, and no view toggle without a view prop", () => {
     const onCopy = vi.fn();
-    render(
-      <VizHeader
-        title="Eviction policies"
-        subtitle="What a full cache throws out — and why."
-        articleHref="/system-design/components/caching/#lru-least-recently-used"
-        onCopyLink={onCopy}
-      />,
-    );
+    render(<VizHeader {...props} onCopyLink={onCopy} />);
     expect(screen.getByRole("heading", { level: 1, name: "Eviction policies" })).toBeTruthy();
-    const compare = screen.getByRole("button", { name: "Compare" });
-    expect((compare as HTMLButtonElement).disabled).toBe(true);
-    expect(compare.getAttribute("title")).toBe("Compare — coming soon");
+    expect(screen.queryByRole("button", { name: "Revision" })).toBeNull();
     // next/link drops the slash before "#" unless the app's trailingSlash config is loaded.
     expect(screen.getByRole("link", { name: "Read article" }).getAttribute("href")).toMatch(
       /^\/system-design\/components\/caching\/?#lru-least-recently-used$/,
     );
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     expect(onCopy).toHaveBeenCalledOnce();
+  });
+
+  it("the view toggle reflects the view and reports changes", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<VizHeader {...props} view={{ value: "single", onChange }} />);
+    expect(screen.getByRole("button", { name: "Single" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Revision" }));
+    expect(onChange).toHaveBeenLastCalledWith("revision");
+    rerender(<VizHeader {...props} view={{ value: "revision", onChange }} />);
+    expect(screen.getByRole("button", { name: "Revision" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Single" }));
+    expect(onChange).toHaveBeenLastCalledWith("single");
   });
 });
 
@@ -149,5 +163,36 @@ describe("ConfigPanel", () => {
       />,
     );
     expect(screen.getByLabelText<HTMLInputElement>("Sequence").value).toBe("Q R");
+  });
+});
+
+describe("ConfigPanel variant nav", () => {
+  it("shows previous and next buttons only on the variants field and reports the step", () => {
+    const onStep = vi.fn();
+    render(
+      <ConfigPanel
+        sections={evictionModule.sections}
+        values={VALUES}
+        sequence={SEQ}
+        onChange={() => {}}
+        variantNav={{ key: "policy", onStep }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Next policy" }));
+    fireEvent.click(screen.getByRole("button", { name: "Previous policy" }));
+    expect(onStep.mock.calls).toEqual([[1], [-1]]);
+    expect(screen.queryByRole("button", { name: /Next cache size/i })).toBeNull();
+  });
+
+  it("shows no nav buttons without variantNav", () => {
+    render(
+      <ConfigPanel
+        sections={evictionModule.sections}
+        values={VALUES}
+        sequence={SEQ}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Next policy" })).toBeNull();
   });
 });

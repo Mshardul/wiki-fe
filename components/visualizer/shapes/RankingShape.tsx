@@ -54,7 +54,7 @@ export function RankingShape({ model, subject }: { model: RankingModel; subject:
               <span className="viz-rank__fill" />
             </span>
             <span className="viz-rank__count">{r.count}×</span>
-            {active && model.tone === "hit" && (
+            {active && model.tone === "existing" && (
               <span key={`plus-${pulse}`} className="viz-rank__plus">
                 +1
               </span>
@@ -63,13 +63,13 @@ export function RankingShape({ model, subject }: { model: RankingModel; subject:
           </div>
         );
       })}
-      {model.evicted !== null && (
+      {model.removed !== null && (
         <div
-          key={`out-${model.evicted}-${pulse}`}
+          key={`out-${model.removed}-${pulse}`}
           className="viz-rank__row viz-rank__row--out"
           style={vars({ "--rank": slots - 1 })}
         >
-          <span className="viz-rank__key">{model.evicted}</span>
+          <span className="viz-rank__key">{model.removed}</span>
         </div>
       )}
     </div>

@@ -1,15 +1,17 @@
 import { useId, useState } from "react";
 import {
   type ChipsField,
+  type FieldAvailability,
   type FieldSpec,
   type FieldValue,
-  parseSequence,
+  parseSequenceField,
   type SeedField,
   type SequenceField,
   type SliderField,
 } from "@/lib/visualizer/core/fields";
 import { formatSeed, randomSeed } from "@/lib/visualizer/core/rng";
 import { ChoiceGroup } from "../ui/ChoiceGroup";
+import { IconButton } from "../ui/IconButton";
 
 interface FieldProps<F extends FieldSpec> {
   field: F;
@@ -17,25 +19,54 @@ interface FieldProps<F extends FieldSpec> {
   onChange: (value: FieldValue) => void;
 }
 
-function ChipsInput({ field, value, onChange }: FieldProps<ChipsField>) {
+function ChipsInput({
+  field,
+  value,
+  onChange,
+  nav,
+  availability,
+}: FieldProps<ChipsField> & {
+  nav?: { onStep: (delta: number) => void };
+  availability?: FieldAvailability;
+}) {
+  const noun = field.label.toLowerCase();
   return (
     <div className="viz-field">
       {!field.hideLabel && <div className="viz-field__label">{field.label}</div>}
-      <ChoiceGroup
-        label={field.label}
-        options={field.options}
-        value={typeof value === "string" ? value : ""}
-        onChange={onChange}
-      />
+      <div className="viz-field__chips-row">
+        <ChoiceGroup
+          label={field.label}
+          options={field.options}
+          value={typeof value === "string" ? value : ""}
+          onChange={onChange}
+        />
+        {nav && (
+          <span className="viz-variant-nav">
+            <IconButton label={`Previous ${noun}`} onClick={() => nav.onStep(-1)}>
+              ‹
+            </IconButton>
+            <IconButton label={`Next ${noun}`} onClick={() => nav.onStep(1)}>
+              ›
+            </IconButton>
+          </span>
+        )}
+      </div>
+      {availability?.hint && <p className="viz-field__hint">{availability.hint}</p>}
     </div>
   );
 }
 
-function SliderInput({ field, value, onChange }: FieldProps<SliderField>) {
+function SliderInput({
+  field,
+  value,
+  onChange,
+  availability,
+}: FieldProps<SliderField> & { availability?: FieldAvailability }) {
   const id = useId();
   const v = typeof value === "number" ? value : field.min;
+  const disabled = availability?.disabled === true;
   return (
-    <div className="viz-field">
+    <div className={`viz-field${disabled ? " is-disabled" : ""}`}>
       <div className="viz-field__row">
         <label className="viz-field__label" htmlFor={id}>
           {field.label}
@@ -49,8 +80,10 @@ function SliderInput({ field, value, onChange }: FieldProps<SliderField>) {
         min={field.min}
         max={field.max}
         value={v}
+        disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
       />
+      {availability?.hint && <p className="viz-field__hint">{availability.hint}</p>}
     </div>
   );
 }
@@ -63,7 +96,7 @@ function SequenceInput({
 }: FieldProps<SequenceField> & { sequence: string[] }) {
   const id = useId();
   const [draft, setDraft] = useState(() => sequence.join(" "));
-  const [invalid, setInvalid] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   return (
     <div className="viz-field">
       <label className="viz-field__label" htmlFor={id}>
@@ -77,22 +110,20 @@ function SequenceInput({
         autoComplete="off"
         onChange={(e) => {
           setDraft(e.target.value);
-          setInvalid(false);
+          setError(null);
         }}
         onKeyDown={(e) => {
           if (e.key !== "Enter") return;
-          const keys = parseSequence(draft, field.maxLen);
-          if (!keys) {
-            setInvalid(true);
+          const parsed = parseSequenceField(field, draft);
+          if (!parsed.ok) {
+            setError(parsed.error);
             return;
           }
-          setInvalid(false);
-          onChange(keys);
+          setError(null);
+          onChange(parsed.tokens);
         }}
       />
-      <p className={`viz-field__hint${invalid ? " is-error" : ""}`}>
-        {invalid ? "Use letters A–Z" : field.hint}
-      </p>
+      <p className={`viz-field__hint${error ? " is-error" : ""}`}>{error ?? field.hint}</p>
     </div>
   );
 }
@@ -118,18 +149,37 @@ interface ConfigFieldProps {
   value: FieldValue;
   sequence: string[];
   onChange: (value: FieldValue) => void;
+  nav?: { onStep: (delta: number) => void };
+  availability?: FieldAvailability;
 }
 
-export function ConfigField({ field, value, sequence, onChange }: ConfigFieldProps) {
+export function ConfigField({
+  field,
+  value,
+  sequence,
+  onChange,
+  nav,
+  availability,
+}: ConfigFieldProps) {
   switch (field.kind) {
     case "chips":
-      return <ChipsInput field={field} value={value} onChange={onChange} />;
+      return (
+        <ChipsInput
+          field={field}
+          value={value}
+          onChange={onChange}
+          nav={nav}
+          availability={availability}
+        />
+      );
     case "slider":
-      return <SliderInput field={field} value={value} onChange={onChange} />;
+      return (
+        <SliderInput field={field} value={value} onChange={onChange} availability={availability} />
+      );
     case "sequence":
       return (
         <SequenceInput
-          key={sequence.join("")}
+          key={sequence.join(" ")}
           field={field}
           value={value}
           sequence={sequence}

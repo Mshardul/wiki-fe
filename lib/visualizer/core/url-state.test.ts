@@ -44,7 +44,7 @@ describe("url-state", () => {
     expect(search).toBe("?p=fifo&c=6&q=AB&s=7f3a&i=8&rot=1");
     expect(parseState(search, SECTIONS, DEFAULTS)).toEqual({
       values,
-      view: { frame: 7, rotated: true },
+      view: { frame: 7, rotated: true, view: "single" },
     });
   });
 
@@ -57,7 +57,7 @@ describe("url-state", () => {
   it("falls back to defaults on junk and clamps numbers", () => {
     const { values, view } = parseState("?p=xyz&c=-5&s=zz&q=123&i=abc&rot=yes", SECTIONS, DEFAULTS);
     expect(values).toEqual({ policy: "lru", capacity: 2, sequence: null, seed: 1 });
-    expect(view).toEqual({ frame: 0, rotated: false });
+    expect(view).toEqual({ frame: 0, rotated: false, view: "single" });
   });
 
   it("clamps an out-of-range seed and keeps a huge frame for playback to clamp", () => {
@@ -69,7 +69,21 @@ describe("url-state", () => {
   it("empty search returns the defaults untouched", () => {
     expect(parseState("", SECTIONS, DEFAULTS)).toEqual({
       values: DEFAULTS,
-      view: { frame: 0, rotated: false },
+      view: { frame: 0, rotated: false, view: "single" },
     });
+  });
+
+  it("writes view=revision only for the revision view and reads it back", () => {
+    expect(encodeState(SECTIONS, DEFAULTS, { frame: 0, rotated: false })).not.toContain("view=");
+    expect(
+      encodeState(SECTIONS, DEFAULTS, { frame: 0, rotated: false, view: "single" }),
+    ).not.toContain("view=");
+    const search = encodeState(SECTIONS, DEFAULTS, { frame: 0, rotated: false, view: "revision" });
+    expect(search).toContain("view=revision");
+    expect(parseState(search, SECTIONS, DEFAULTS).view.view).toBe("revision");
+  });
+
+  it("an unknown view value falls back to single", () => {
+    expect(parseState("?view=zzz", SECTIONS, DEFAULTS).view.view).toBe("single");
   });
 });

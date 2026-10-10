@@ -84,7 +84,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <IosNudge />
         <ToastHost />
         <IconTooltip />
-        <script dangerouslySetInnerHTML={{ __html: swRegister }} />
+        {/* sw.js only exists in built output, so dev would log a failed registration. */}
+        {process.env.NODE_ENV === "production" && (
+          <script dangerouslySetInnerHTML={{ __html: swRegister }} />
+        )}
       </body>
     </html>
   );

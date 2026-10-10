@@ -20,7 +20,7 @@ const linear: LinearModel = {
   next: "D",
   active: "F",
   tone: "new",
-  evicted: "C",
+  removed: "C",
   labels: { entry: "newest", exit: "next out" },
   defaultAxis: "vertical",
 };
@@ -37,7 +37,7 @@ describe("LinearShape", () => {
     expect(screen.getByRole("img", { name: "Cache: F, A, E, D" })).toBeTruthy();
   });
 
-  it("marks the new key, the next-out key and the evicted key", () => {
+  it("marks the new key, the next-out key and the removed key", () => {
     const { container } = render(
       <LinearShape model={linear} axis="vertical" size={SIZE} subject="Cache" />,
     );
@@ -64,14 +64,14 @@ describe("LinearShape", () => {
   it("a hit is marked without the enter animation", () => {
     const { container } = render(
       <LinearShape
-        model={{ ...linear, tone: "hit", evicted: null }}
+        model={{ ...linear, tone: "existing", removed: null }}
         axis="vertical"
         size={SIZE}
         subject="Cache"
       />,
     );
     const f = [...container.querySelectorAll(".viz-blk")].find((b) => b.textContent === "F");
-    expect(f?.className).toBe("viz-blk viz-blk--hit");
+    expect(f?.className).toBe("viz-blk viz-blk--existing");
   });
 });
 
@@ -81,7 +81,7 @@ describe("HistogramShape", () => {
     slots: [{ key: "A", count: 3 }, { key: "E", count: 1 }, null, null],
     next: "E",
     active: "A",
-    tone: "hit",
+    tone: "existing",
     defaultAxis: "vertical",
   };
 
@@ -90,7 +90,7 @@ describe("HistogramShape", () => {
     const bars = [...container.querySelectorAll<HTMLElement>(".viz-hist__bar")];
     expect(bars.map((b) => b.style.height)).toEqual(["60%", "20%", "0%", "0%"]);
     expect(screen.getByText("next out")).toBeTruthy();
-    expect(container.querySelector(".viz-hist__col--hit")?.textContent).toContain("A");
+    expect(container.querySelector(".viz-hist__col--existing")?.textContent).toContain("A");
   });
 
   it("each count sits on its own bar", () => {
@@ -128,7 +128,7 @@ describe("RankingShape", () => {
     next: "D",
     active: "F",
     tone: "new",
-    evicted: "C",
+    removed: "C",
   };
   const row = (container: HTMLElement, key: string) =>
     [...container.querySelectorAll<HTMLElement>(".viz-rank__row")].find(
@@ -178,11 +178,11 @@ describe("RankingShape", () => {
   it("a hit shows +1 on the active row, a miss does not", () => {
     const { container, rerender } = render(
       <RankingShape
-        model={{ ...ranking, tone: "hit", active: "A", evicted: null }}
+        model={{ ...ranking, tone: "existing", active: "A", removed: null }}
         subject="Cache"
       />,
     );
-    expect(row(container, "A")?.className).toContain("viz-rank__row--hit");
+    expect(row(container, "A")?.className).toContain("viz-rank__row--existing");
     expect(row(container, "A")?.textContent).toContain("+1");
     rerender(<RankingShape model={ranking} subject="Cache" />);
     expect(container.textContent).not.toContain("+1");
@@ -191,7 +191,7 @@ describe("RankingShape", () => {
   it("draws a placeholder for every slot, faint when no row holds it yet", () => {
     const { container } = render(
       <RankingShape
-        model={{ ...ranking, rows: ranking.rows.slice(0, 2), next: null, evicted: null }}
+        model={{ ...ranking, rows: ranking.rows.slice(0, 2), next: null, removed: null }}
         subject="Cache"
       />,
     );

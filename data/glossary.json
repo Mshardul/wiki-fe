@@ -53,5 +53,10 @@
   "split-brain": "A failure mode where a network partition causes two nodes to both believe they're the leader, each accepting writes - a correctness hazard in leader-election systems.",
   "quorum": "The minimum number of nodes that must agree for a read or write to be considered successful, ensuring overlap between read and write sets in a replicated system.",
   "write amplification": "When one logical write triggers multiple physical writes (e.g. LSM-tree compaction, SSD garbage collection), degrading throughput and device lifespan.",
-  "back-of-the-envelope": "A rough, order-of-magnitude capacity estimate (QPS, storage, bandwidth) done early in a system-design discussion to sanity-check an approach before designing in detail."
+  "back-of-the-envelope": "A rough, order-of-magnitude capacity estimate (QPS, storage, bandwidth) done early in a system-design discussion to sanity-check an approach before designing in detail.",
+  "fixed window counter": "A rate-limiting algorithm that counts requests in clock-aligned time windows and resets the count at each window boundary. Needs one counter per client.",
+  "sliding window log": "A rate-limiting algorithm that stores a timestamp for every allowed request and counts the ones inside the last window. Exact, at the cost of memory proportional to the limit.",
+  "sliding window counter": "A rate-limiting algorithm that estimates the count in the last window from two fixed-window counters, weighting the previous window by how much of it the last window still covers.",
+  "token bucket": "A rate-limiting algorithm where each request spends a token and tokens refill at a steady rate up to a cap, so idle time builds up a burst allowance.",
+  "leaky bucket": "A rate-limiting algorithm that queues requests and releases them at a constant rate, dropping new ones once the queue is full."
 }

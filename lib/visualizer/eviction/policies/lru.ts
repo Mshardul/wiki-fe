@@ -53,8 +53,8 @@ export const lru: PolicyDef<LinearState> = {
       capacity: state.capacity,
       next: full ? (state.order[state.order.length - 1] ?? null) : null,
       active: key,
-      tone: hit ? "hit" : "new",
-      evicted,
+      tone: hit ? "existing" : "new",
+      removed: evicted,
       labels: { entry: "newest", exit: "next out" },
       defaultAxis: "vertical",
     };

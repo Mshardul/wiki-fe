@@ -9,7 +9,7 @@ const TRACE = "ABCADEAFBAGC".split("");
 const hitsOf = (frames: { outcome: string }[]) =>
   frames.flatMap((f, i) => (f.outcome === "good" ? [i] : []));
 const evictionsOf = (frames: { model: { kind: string } }[]) =>
-  frames.map((f) => (f.model as LinearModel).evicted);
+  frames.map((f) => (f.model as LinearModel).removed);
 const varOf = (frame: { vars: { name: string; value: string }[] }, name: string) =>
   frame.vars.find((v) => v.name === name)?.value;
 
@@ -108,7 +108,7 @@ describe("simulate — degenerate sequences", () => {
       expect(hitsOf(frames)).toEqual([1, 2, 3]);
       for (const f of frames) {
         expect((f.model as LinearModel).next).toBeNull();
-        expect((f.model as LinearModel).evicted).toBeNull();
+        expect((f.model as LinearModel).removed).toBeNull();
       }
       expect(frames[3]?.metric).toBe("75%");
     }

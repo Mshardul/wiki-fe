@@ -3,7 +3,7 @@
 - article count renders a real number, never an ellipsis
 - boot theme applied before hydration
 - active-wiki marking after navigation
-- /health ping on load
+- no /health ping against a local backend
 - PWA manifest link + validity
 - pinned wikis (WIKI-297): pin reorders the card grid and persists
 """
@@ -63,14 +63,14 @@ def test_active_wiki_card_marked_after_navigation(page, base_url):
     )
 
 
-def test_health_ping_fires_on_load(page, base_url):
-    """boot fires a fire-and-forget GET to BE /health to warm a cold start."""
+def test_no_health_ping_against_local_backend(page, base_url):
+    """a local backend has no cold start, so boot sends no GET /health (a stopped one would log errors)."""
     hits = []
     page.route("**/health", lambda route: (hits.append(1), route.fulfill(status=200, body="ok")))
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
     page.wait_for_selector(".wiki-card", timeout=8_000)
     page.wait_for_timeout(500)
-    assert len(hits) >= 1, "expected a GET /health ping on load"
+    assert hits == [], "expected no /health ping when the backend is local"
 
 
 # parallax tests removed — home hero parallax is a dropped feature (spec §9).

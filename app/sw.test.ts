@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const sw = readFileSync("app/sw.ts", "utf8");
+const layout = readFileSync("app/layout.tsx", "utf8");
 const config = readFileSync("serwist.config.js", "utf8");
 
 describe("service worker precache scope (spec §8: small shell, not the whole site)", () => {
@@ -42,5 +43,11 @@ describe("service worker precache scope (spec §8: small shell, not the whole si
 
   it("runtime-caches visualizer pages so they work offline after one visit", () => {
     expect(sw).toContain("visualizer\\/");
+  });
+
+  it("registers the worker in production builds only, since next dev never emits sw.js", () => {
+    expect(layout).toMatch(
+      /NODE_ENV === "production" && \(?\s*<script dangerouslySetInnerHTML=\{\{ __html: swRegister \}\} \/>/,
+    );
   });
 });

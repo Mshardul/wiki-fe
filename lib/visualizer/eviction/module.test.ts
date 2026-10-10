@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { allFields, SEED_MAX } from "../core/fields";
 import { encodeState, parseState } from "../core/url-state";
 import { CACHING_ARTICLE, evictionModule, POLICIES, toEvictionInput } from "./module";
+import { PATTERNS, POLICY_IDS } from "./types";
 
 describe("eviction module", () => {
   it("defaults are valid and seed is random within range", () => {
@@ -96,10 +97,25 @@ describe("eviction module", () => {
       seed: 42,
       sequence: null,
     };
-    const search = encodeState(evictionModule.sections, values, { frame: 2, rotated: false });
-    expect(parseState(search, evictionModule.sections, evictionModule.defaults()).values).toEqual(
-      values,
-    );
+    const { sections } = evictionModule;
+    const search = encodeState(sections, values, { frame: 2, rotated: false });
+    expect(parseState(search, sections, evictionModule.defaults()).values).toEqual(values);
+  });
+
+  it("declares policy as the variants field, in difficulty order", () => {
+    expect(evictionModule.variants).toEqual({ key: "policy" });
+    expect(POLICY_IDS).toEqual(["fifo", "lru", "lfu", "clock"]);
+    expect(evictionModule.defaults().policy).toBe("lru");
+  });
+
+  it("every policy returns the same frame count and sequence for identical shared inputs", () => {
+    const base = evictionModule.defaults();
+    for (const pattern of PATTERNS) {
+      const runs = POLICY_IDS.map((policy) => evictionModule.run({ ...base, pattern, policy }));
+      const first = runs[0];
+      expect(runs.every((r) => r.frames.length === first?.frames.length)).toBe(true);
+      expect(runs.every((r) => r.sequence.join("") === first?.sequence.join(""))).toBe(true);
+    }
   });
 
   it("exposes all four v1 policies in display order", () => {

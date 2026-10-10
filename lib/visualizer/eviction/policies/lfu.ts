@@ -100,8 +100,8 @@ export const lfu: PolicyDef<LfuState> = {
       capacity: state.capacity,
       next: full ? victim(state) : null,
       active: key,
-      tone: hit ? "hit" : "new",
-      evicted,
+      tone: hit ? "existing" : "new",
+      removed: evicted,
     };
   },
   vars(state, key) {

@@ -1,0 +1,166 @@
+/* ═══════════════════════════════════════════════
+   VISUALIZER — TIMELINE AND COMPOSITE SHAPES
+   ═══════════════════════════════════════════════ */
+.viz-tl {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.viz-tl__inner {
+  position: relative;
+  flex: none;
+}
+.viz-tl__svg {
+  display: block;
+  overflow: visible;
+}
+.viz-tl__svg text {
+  font-family: var(--font);
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-tl__svg .viz-tl__bandlabel,
+.viz-tl__svg .viz-tl__rowlabel {
+  fill: var(--text-body);
+}
+.viz-tl__svg .viz-tl__bandlabel {
+  font-weight: var(--fw-semibold);
+}
+.viz-tl__band {
+  fill: var(--viz-slot-bg);
+  opacity: 0.6;
+}
+.viz-tl__band--1 {
+  fill: var(--surface-3);
+  opacity: 0.5;
+}
+.viz-tl__boundary {
+  stroke: var(--viz-exit);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.viz-tl__axis {
+  stroke: var(--viz-slot-border);
+}
+.viz-tl__span--outline {
+  fill: var(--accent-dim);
+  stroke: var(--viz-active);
+  stroke-width: 1.5;
+  opacity: 0.7;
+}
+.viz-tl__span--fill {
+  fill: var(--accent-dim);
+}
+.viz-tl__hatch {
+  fill: var(--viz-active);
+  opacity: 0.35;
+}
+.viz-tl__bracket {
+  fill: none;
+  stroke: var(--viz-bad);
+  stroke-width: 1.5;
+}
+.viz-tl__svg .viz-tl__spanlabel--alert {
+  fill: var(--viz-bad);
+  font-weight: var(--fw-semibold);
+}
+.viz-tl__svg .viz-tl__spanlabel--outline,
+.viz-tl__svg .viz-tl__spanlabel--fill {
+  fill: var(--text-body);
+}
+.viz-tl__mark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: viz-tl-drop var(--viz-move);
+}
+.viz-tl__dot {
+  transition: fill var(--t), stroke var(--t), opacity var(--t);
+}
+.viz-tl__mark--good .viz-tl__dot {
+  fill: var(--viz-good);
+}
+.viz-tl__mark--bad .viz-tl__dot {
+  fill: var(--viz-bad-bg);
+  stroke: var(--viz-bad);
+  stroke-width: 2;
+}
+.viz-tl__cross {
+  fill: none;
+  stroke: var(--viz-bad);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: viz-tl-cross var(--viz-move) var(--viz-move) backwards;
+}
+.viz-tl__mark--faded .viz-tl__dot {
+  fill: transparent;
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 2;
+  opacity: 0.8;
+}
+.viz-tl__ring {
+  fill: none;
+  stroke: var(--viz-active);
+  stroke-width: 2;
+}
+.viz-tl__more rect {
+  fill: var(--viz-slot-bg);
+  stroke: var(--viz-slot-border);
+}
+.viz-tl__more.is-current rect {
+  stroke: var(--viz-active);
+  stroke-width: 2;
+}
+.viz-tl__svg .viz-tl__more text {
+  fill: var(--text-heading);
+  font-weight: var(--fw-semibold);
+}
+.viz-tl__now {
+  fill: var(--viz-active);
+  transition: transform var(--viz-move);
+}
+@keyframes viz-tl-drop {
+  from {
+    transform: translateY(-48px) scale(0.4);
+    opacity: 0;
+  }
+}
+@keyframes viz-tl-cross {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .viz-tl__mark,
+  .viz-tl__cross {
+    animation: none;
+  }
+  .viz-tl__now,
+  .viz-tl__dot {
+    transition: none;
+  }
+}
+.viz-tl__anchor {
+  position: absolute;
+  top: 0;
+  height: 1px;
+  pointer-events: none;
+}
+
+.viz-composite {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.viz-composite__part {
+  position: relative;
+  flex: none;
+}

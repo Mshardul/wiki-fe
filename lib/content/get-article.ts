@@ -30,6 +30,10 @@ function loadGlossary(): Record<string, string> {
   return glossaryCache;
 }
 
+export function getGlossary(): Record<string, string> {
+  return loadGlossary();
+}
+
 export function getArticleSlugs(): { vertical: string; slug: string[] }[] {
   return VERTICAL_IDS().flatMap((vertical) =>
     discoverArticlePaths(vertical).map((path) => ({ vertical, slug: loadArticle(path).slug })),

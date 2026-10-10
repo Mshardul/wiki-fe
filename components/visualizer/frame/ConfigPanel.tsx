@@ -1,4 +1,9 @@
-import type { FieldSection, FieldValue, InputValues } from "@/lib/visualizer/core/fields";
+import type {
+  FieldAvailability,
+  FieldSection,
+  FieldValue,
+  InputValues,
+} from "@/lib/visualizer/core/fields";
 import { ConfigField } from "./ConfigFields";
 
 interface ConfigPanelProps {
@@ -6,9 +11,18 @@ interface ConfigPanelProps {
   values: InputValues;
   sequence: string[];
   onChange: (key: string, value: FieldValue) => void;
+  variantNav?: { key: string; onStep: (delta: number) => void };
+  availability?: Record<string, FieldAvailability>;
 }
 
-export function ConfigPanel({ sections, values, sequence, onChange }: ConfigPanelProps) {
+export function ConfigPanel({
+  sections,
+  values,
+  sequence,
+  onChange,
+  variantNav,
+  availability,
+}: ConfigPanelProps) {
   return (
     <div className="viz-config">
       {sections.map((s, i) => (
@@ -26,6 +40,8 @@ export function ConfigPanel({ sections, values, sequence, onChange }: ConfigPane
               value={values[f.key] ?? null}
               sequence={sequence}
               onChange={(v) => onChange(f.key, v)}
+              nav={variantNav && variantNav.key === f.key ? variantNav : undefined}
+              availability={availability?.[f.key]}
             />
           ))}
         </section>

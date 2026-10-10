@@ -20,33 +20,45 @@ interface StepTabProps {
   unit: string;
 }
 
+interface StepLinesProps {
+  frame: VizFrame;
+  sub: number;
+  unit: string;
+}
+
+export function StepLines({ frame, sub, unit }: StepLinesProps) {
+  return (
+    <div className="viz-steps">
+      <p className="viz-steps__head">
+        for each {unit} → <span className="viz-rich viz-rich--key">{frame.label}</span>
+      </p>
+      <ol className="viz-steps__list">
+        {frame.lines.map((line, i) => {
+          const state = lineState(frame, i, sub);
+          return (
+            // Lines are a fixed template, so position is the identity.
+            <li
+              key={i}
+              className={`viz-steps__line viz-steps__line--${state}`}
+              aria-current={state === "now" ? "step" : undefined}
+            >
+              {/* One grid cell: bare text/chips would each become their own grid item. */}
+              <span>
+                <RichText value={line} />
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
 export function StepTab({ frame, prev, sub, unit }: StepTabProps) {
   return (
     <>
       <h4 className="viz-info__label">Each {unit} runs</h4>
-      <div className="viz-steps">
-        <p className="viz-steps__head">
-          for each {unit} → <span className="viz-rich viz-rich--key">{frame.label}</span>
-        </p>
-        <ol className="viz-steps__list">
-          {frame.lines.map((line, i) => {
-            const state = lineState(frame, i, sub);
-            return (
-              // Lines are a fixed template, so position is the identity.
-              <li
-                key={i}
-                className={`viz-steps__line viz-steps__line--${state}`}
-                aria-current={state === "now" ? "step" : undefined}
-              >
-                {/* One grid cell: bare text/chips would each become their own grid item. */}
-                <span>
-                  <RichText value={line} />
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
+      <StepLines frame={frame} sub={sub} unit={unit} />
       <h4 className="viz-info__label">Variables</h4>
       <VarsTable now={frame.vars} before={prev?.vars ?? null} />
     </>

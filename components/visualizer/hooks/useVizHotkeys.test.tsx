@@ -47,4 +47,47 @@ describe("useVizHotkeys", () => {
     fireEvent.keyDown(document.body, { key: "ArrowRight", metaKey: true });
     expect(step).not.toHaveBeenCalled();
   });
+
+  it("Shift+arrows switch variant and never step", () => {
+    const step = vi.fn();
+    const variant = vi.fn();
+    function VariantHarness() {
+      useVizHotkeys({ toggle: () => {}, step, variant });
+      return null;
+    }
+    render(<VariantHarness />);
+    fireEvent.keyDown(document.body, { key: "ArrowRight", shiftKey: true });
+    fireEvent.keyDown(document.body, { key: "ArrowLeft", shiftKey: true });
+    expect(variant.mock.calls).toEqual([[1], [-1]]);
+    expect(step).not.toHaveBeenCalled();
+  });
+
+  it("ignores Shift+arrows in fields and with Ctrl, Meta or Alt held", () => {
+    const variant = vi.fn();
+    function VariantHarness() {
+      useVizHotkeys({ toggle: () => {}, variant });
+      return <input aria-label="Sequence" />;
+    }
+    const { getByLabelText } = render(<VariantHarness />);
+    fireEvent.keyDown(getByLabelText("Sequence"), { key: "ArrowRight", shiftKey: true });
+    fireEvent.keyDown(document.body, { key: "ArrowRight", shiftKey: true, ctrlKey: true });
+    fireEvent.keyDown(document.body, { key: "ArrowRight", shiftKey: true, metaKey: true });
+    fireEvent.keyDown(document.body, { key: "ArrowRight", shiftKey: true, altKey: true });
+    expect(variant).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when disabled and skips arrows when no step handler is given", () => {
+    const toggle = vi.fn();
+    function Disabled({ enabled }: { enabled: boolean }) {
+      useVizHotkeys({ toggle, enabled });
+      return null;
+    }
+    const { rerender } = render(<Disabled enabled={false} />);
+    fireEvent.keyDown(document.body, { key: " " });
+    expect(toggle).not.toHaveBeenCalled();
+    rerender(<Disabled enabled />);
+    fireEvent.keyDown(document.body, { key: " " });
+    fireEvent.keyDown(document.body, { key: "ArrowRight" });
+    expect(toggle).toHaveBeenCalledOnce();
+  });
 });

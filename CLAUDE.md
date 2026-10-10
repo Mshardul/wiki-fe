@@ -131,8 +131,8 @@ Markup for articles comes from the build pipeline. Islands add behaviour; they d
 | `dashboard/` | Dashboard shell/grid/progress bar |
 | `admin/` | Admin view + report tables |
 | `changelog/` | Changelog filter |
-| `visualizer/frame/` | Shared visualizer page: `VisualizerApp`, header, config/info side panels, `Stage`, playback bar, timeline strip |
-| `visualizer/shapes/` | Data-structure shapes (`LinearShape`, `RankingShape`, `HistogramShape`, `RingShape`) picked by `Shape` |
+| `visualizer/frame/` | Shared visualizer page: `VisualizerApp`, header, config/info side panels, `Stage`, playback bar, timeline strip; Revision view: `RevisionView`, `RevisionGrid`, `RevisionPopup`, `RevisionFooter` |
+| `visualizer/shapes/` | Generic, vocabulary-neutral data-structure shapes (`LinearShape`, `RankingShape`, `HistogramShape`, `RingShape`, `LanesShape`, `TimelineShape`, `CompositeShape`) picked by `Shape`, plus `FlowDiagram` for revision cards; fed models by each visualizer's adapter in `lib/visualizer/<name>/`, never domain words (see CONVENTIONS Visualizer) |
 | `visualizer/ui/` / `visualizer/hooks/` | Reusable primitives (buttons, tabs, choice group, rich text, vars table) / playback, URL sync, hotkeys, follow-scroll, panel prefs |
 
 ### Lib (`lib/`) — non-UI logic
@@ -153,8 +153,10 @@ Markup for articles comes from the build pipeline. Islands add behaviour; they d
 | `pwa/` | Cache Storage article ops + install helpers |
 | `admin/` | Admin report shaping |
 | `dashboard/` | Progress aggregation |
-| `visualizer/core/` | Module contract + generic engine: field schema, URL state, playback, shapes geometry, rich text, seeded rng |
+| `visualizer/core/` | Module contract + generic engine: field schema, URL state, playback, shapes geometry, rich text, seeded rng, variants, revision layout/loop/order/flow |
 | `visualizer/eviction/` | Eviction-policies module: trace, simulate, `policies/{lru,fifo,lfu,clock}` |
+| `visualizer/caching/` | Caching-strategies module: `strategies/*` (one file per strategy), `engine` (frames), `lanes` (world → lanes model), `tokens`, `trace`, `copy` |
+| `visualizer/rate-limiting/` | Rate-limiting module: `algorithms/*` (one limiter per algorithm), `engine` (steps, peak), `view` (state → Timeline / Linear / Composite models), `frames`, `trace`, `ticks`, `copy`, `revision` |
 | `visualizer/registry.ts` / `modules.ts` | Server-safe visualizer list (landing/home) / slug → module loader (client only) |
 
 ### CSS (`css/`)
@@ -241,6 +243,7 @@ After finishing any **content task**:
 - Never read `content/**/*.md` for app-code tasks (irrelevant)
 - Never read every file in a domain folder — use the FILE MAP
 - Never start CSS work without opening `tokens.css`
+- Never put a visualizer's domain words or rules in generic visualizer code (`components/visualizer/**`, `lib/visualizer/core/**`); domain logic and the model adapter live in `lib/visualizer/<name>/`
 
 **Content tasks:**
 

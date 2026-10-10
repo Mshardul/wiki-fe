@@ -30,3 +30,6 @@ content/etc/
 # Editor
 .vscode/
 .idea/
+
+# Brainstorming mockups (visual companion)
+.superpowers/

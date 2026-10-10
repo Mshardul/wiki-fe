@@ -1,10 +1,12 @@
 import { allFields, clampInt, type FieldSection, type InputValues, SEED_MAX } from "../core/fields";
 import { randomSeed } from "../core/rng";
+import type { ShapeModel } from "../core/shapes";
 import type { InfoContent, RunResult, VisualizerModule, VizFrame } from "../core/types";
 import { clock } from "./policies/clock";
 import { fifo } from "./policies/fifo";
 import { lfu } from "./policies/lfu";
 import { lru } from "./policies/lru";
+import { evictionRevision } from "./revision";
 import { simulate } from "./simulate";
 import { generateTrace } from "./trace";
 import {
@@ -19,13 +21,15 @@ import {
 
 export const CACHING_ARTICLE = "/system-design/components/caching/";
 
-interface PolicyEntry {
+export interface PolicyEntry {
+  empty: (capacity: number) => ShapeModel;
   meta: PolicyMeta;
   run: (capacity: number, trace: string[]) => VizFrame[];
 }
 
 const entry = <S>(def: PolicyDef<S>): PolicyEntry => ({
   meta: def,
+  empty: (capacity) => def.model(def.init(capacity), "", false, null),
   run: (capacity, trace) => simulate(def, capacity, trace),
 });
 
@@ -132,6 +136,8 @@ export const evictionModule: VisualizerModule = {
   subtitle: "What a full cache throws out — and why.",
   unit: "request",
   subject: "Cache",
+  variants: { key: "policy" },
+  revision: evictionRevision(POLICIES),
   sections: EVICTION_SECTIONS,
   defaults: () => ({
     policy: "lru",

@@ -25,7 +25,7 @@ describe("LFU", () => {
       { key: "D", count: 1 },
     ]);
     expect(rank(7).next).toBe("D");
-    expect(rank(7).evicted).toBe("C");
+    expect(rank(7).removed).toBe("C");
     expect(rank(7).tone).toBe("new");
     expect(frames[7]?.vars.find((v) => v.name === "uses of key")?.value).toBe("1");
     expect(frames[7]?.vars.find((v) => v.name === "lowest uses")?.value).toBe("1");
@@ -37,7 +37,7 @@ describe("LFU", () => {
       { key: "C", count: 1 },
       { key: "B", count: 1 },
     ]);
-    expect(rank(3).tone).toBe("hit");
+    expect(rank(3).tone).toBe("existing");
     expect(rank(3).active).toBe("A");
   });
 

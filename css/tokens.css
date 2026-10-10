@@ -165,13 +165,13 @@
   --diagram-cluster-stroke: var(--border);
 
   /* Visualizer roles — aliases only, so theme presets flow through */
-  --viz-hit: var(--color-success);
-  --viz-miss: var(--color-error);
-  --viz-evict: var(--color-warning);
+  --viz-good: var(--color-success);
+  --viz-bad: var(--color-error);
+  --viz-exit: var(--color-warning);
   --viz-active: var(--accent);
-  --viz-hit-bg: color-mix(in srgb, var(--viz-hit) 16%, transparent);
-  --viz-miss-bg: color-mix(in srgb, var(--viz-miss) 16%, transparent);
-  --viz-evict-bg: color-mix(in srgb, var(--viz-evict) 16%, transparent);
+  --viz-good-bg: color-mix(in srgb, var(--viz-good) 16%, transparent);
+  --viz-bad-bg: color-mix(in srgb, var(--viz-bad) 16%, transparent);
+  --viz-exit-bg: color-mix(in srgb, var(--viz-exit) 16%, transparent);
   --viz-slot-bg: var(--surface-2);
   --viz-slot-border: var(--border-2);
   --viz-on-accent: var(--on-accent);
@@ -186,4 +186,6 @@
   --viz-cell-gap: 4px;
   --viz-strip-cells: 15;
   --viz-stage-narrow-h: 380px;
+  --viz-card-min-w: 250px;
+  --viz-card-stage-h: 200px;
 }

@@ -21,8 +21,8 @@ Audience: the author plus a small circle of known users (friends, colleagues). I
 - Home-page card linking to the Visualizer section.
 
 **Later (separate specs, in this order)**
-1. Compare mode (common grid, up to 3 policies).
-2. Mobile layout for single + compare views. v1 only guarantees a working, non-broken page down to 320px.
+1. Variants and Revision view (specified in 2026-10-09-visualizer-variants-and-revision-design.md).
+2. Mobile layout for Single and Revision views. v1 only guarantees a working, non-broken page down to 320px.
 3. OPT and ARC (shapes not yet designed — OPT next-use countdown, ARC composite stacks).
 4. Caching strategies visualizer (lanes shape: cache-aside, read-through, write-through, write-behind, write-around, refresh-ahead, stale-read race, crash cache).
 
@@ -48,7 +48,7 @@ Audience: the author plus a small circle of known users (friends, colleagues). I
 
 ```
 ┌ wiki topbar ───────────────────────────────────────────────────────────┐
-├ header: title · one-line subtitle        [Single|Compare] [Read article] [Copy link]
+├ header: title · one-line subtitle        [Single|Revision] [Read article] [Copy link]
 ├──────────────┬──────────────────────────────────────┬──────────────────┤
 │ CONFIGURE «  │ stage                       hit rate │ » POLICY          │
 │ policy chips │                                      │ name · shape chip │
@@ -63,7 +63,7 @@ Audience: the author plus a small circle of known users (friends, colleagues). I
 └──────────────┴──────────────────────────────────────┴──────────────────┘
 ```
 
-- **Compare** toggle is rendered disabled in v1 (tooltip "coming soon") so the header layout is final.
+- **Revision** is specified in 2026-10-09-visualizer-variants-and-revision-design.md; the header toggle is shown when the module declares revision cards.
 - Both side panels collapse to 48px icon rails (`«` / `»`); the stage grows. Collapsed state persists per viewer (localStorage, see Persistence). Below 1200px the right panel starts collapsed.
 
 ### Left panel — Configure

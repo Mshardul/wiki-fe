@@ -125,3 +125,29 @@ describe("api client", () => {
     await expect(api.bookmarks.list()).rejects.toMatchObject({ code: "NETWORK", status: 0 });
   });
 });
+
+describe("pingHealth", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+
+  it("does nothing against a local backend, so a stopped dev backend logs no errors", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({});
+    vi.stubGlobal("fetch", fetchMock);
+    const { pingHealth } = await import("./api");
+    pingHealth();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("warms the hosted backend's cold start", async () => {
+    vi.resetModules();
+    vi.stubGlobal("location", { hostname: "example.github.io" });
+    const fetchMock = vi.fn().mockResolvedValue({});
+    vi.stubGlobal("fetch", fetchMock);
+    const { pingHealth, BACKEND_URL } = await import("./api");
+    pingHealth();
+    expect(BACKEND_URL).toBe("https://wiki-be.onrender.com");
+    expect(fetchMock).toHaveBeenCalledWith("https://wiki-be.onrender.com/health");
+  });
+});

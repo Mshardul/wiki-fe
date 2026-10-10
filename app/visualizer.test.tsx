@@ -14,7 +14,11 @@ import VisualizerIndex, { metadata } from "./visualizer/page";
 
 describe("visualizer routes", () => {
   it("static params list every built visualizer", () => {
-    expect(generateStaticParams()).toEqual([{ slug: "eviction-policies" }]);
+    expect(generateStaticParams()).toEqual([
+      { slug: "eviction-policies" },
+      { slug: "caching-strategies" },
+      { slug: "rate-limiting" },
+    ]);
   });
 
   it("metadata: titles, canonicals, no-index", async () => {
@@ -22,6 +26,11 @@ describe("visualizer routes", () => {
     expect(meta.title).toBe("Eviction policies");
     expect(meta.alternates?.canonical).toBe(`${CANONICAL_BASE}/visualizer/eviction-policies/`);
     expect(meta.robots).toEqual({ index: false, follow: false });
+    const caching = await generateMetadata({
+      params: Promise.resolve({ slug: "caching-strategies" }),
+    });
+    expect(caching.title).toBe("Caching strategies");
+    expect(caching.alternates?.canonical).toBe(`${CANONICAL_BASE}/visualizer/caching-strategies/`);
     expect(metadata.title).toBe("Visualizer");
     expect(metadata.alternates?.canonical).toBe(`${CANONICAL_BASE}/visualizer/`);
   });
@@ -31,6 +40,10 @@ describe("visualizer routes", () => {
     // trailingSlash is applied by the export config, not by next/link in unit tests.
     expect(html).toMatch(/href="\/visualizer\/eviction-policies\/?"/);
     expect(html).toContain("Eviction policies");
+    expect(html).toMatch(/href="\/visualizer\/caching-strategies\/?"/);
+    expect(html).toContain("Caching strategies");
+    expect(html).toMatch(/href="\/visualizer\/rate-limiting\/?"/);
+    expect(html).toContain("Rate limiting");
   });
 
   it("the visualizer page ships the app shell without a baked-in run", async () => {
@@ -40,5 +53,25 @@ describe("visualizer routes", () => {
     expect(html).toContain('class="viz-page"');
     expect(html).toContain("viz-app--loading");
     expect(html).not.toContain("viz-strip__cell");
+  });
+
+  it("the page hands the glossary to the app for the revision popup", async () => {
+    const page = await VisualizerPage({ params: Promise.resolve({ slug: "eviction-policies" }) });
+    expect(JSON.stringify(page)).toContain('"glossary"');
+    expect(JSON.stringify(page)).toContain('"lru"');
+  });
+
+  it("the caching page ships the app shell without a baked-in run", async () => {
+    const page = await VisualizerPage({ params: Promise.resolve({ slug: "caching-strategies" }) });
+    const html = renderToStaticMarkup(page);
+    expect(html).toContain("viz-app--loading");
+    expect(html).not.toContain("viz-lanes");
+  });
+
+  it("the rate-limiting page ships the app shell without a baked-in run", async () => {
+    const page = await VisualizerPage({ params: Promise.resolve({ slug: "rate-limiting" }) });
+    const html = renderToStaticMarkup(page);
+    expect(html).toContain("viz-app--loading");
+    expect(html).not.toContain("viz-tl");
   });
 });
