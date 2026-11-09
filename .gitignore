@@ -33,3 +33,6 @@ content/etc/
 
 # Brainstorming mockups (visual companion)
 .superpowers/
+
+# internal content
+content/private/
