@@ -96,7 +96,7 @@ interface Box {
 const fits = (label: string, w: number) => w >= Math.min(label.length * CHAR_W + 10, LABEL_MAX_W);
 
 function revealed(segments: ScheduleSegment[], now: number) {
-  return segments.filter((s) => s.from < now).map((s) => ({ ...s, cut: Math.min(s.to, now) }));
+  return segments.filter((s) => s.from <= now).map((s) => ({ ...s, cut: Math.min(s.to, now) }));
 }
 
 function heldSpans(segments: ScheduleSegment[], now: number) {

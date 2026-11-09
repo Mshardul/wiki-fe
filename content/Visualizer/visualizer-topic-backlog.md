@@ -46,6 +46,8 @@ Done. Content doc and visualizer built.
 
 ### 6. asyncio event loop
 
+Done. Visualizer built at `/visualizer/asyncio-event-loop/`.
+
 **Happy path:** one thread; the loop waits for ready sockets, runs each coroutine until its next `await`, then moves on.
 
 1. One `time.sleep()` or `requests.get()` inside an `async def`. Why does every request freeze?

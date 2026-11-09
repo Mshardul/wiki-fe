@@ -19,6 +19,7 @@ describe("visualizer routes", () => {
       { slug: "caching-strategies" },
       { slug: "rate-limiting" },
       { slug: "python-gil" },
+      { slug: "asyncio-event-loop" },
     ]);
   });
 
@@ -48,6 +49,7 @@ describe("visualizer routes", () => {
     expect(html).toContain("Compare algorithms");
     expect(html).toContain("Watch a mechanism");
     expect(html).toMatch(/href="\/visualizer\/python-gil\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/asyncio-event-loop\/?"/);
   });
 
   it("the visualizer page ships the app shell without a baked-in run", async () => {

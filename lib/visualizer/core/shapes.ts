@@ -132,7 +132,7 @@ export interface TimelineModel {
   boundaries: number[];
 }
 
-export type ScheduleStyle = "solid" | "hatch" | "outline";
+export type ScheduleStyle = "solid" | "hatch" | "outline" | "thread";
 export type ScheduleSwatch = ScheduleStyle | "meter" | "arrow" | "pin";
 export interface ScheduleSegment {
   from: number;

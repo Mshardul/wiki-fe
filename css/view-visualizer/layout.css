@@ -225,6 +225,9 @@
   border: 1.5px solid var(--viz-good);
   background: var(--viz-good-bg);
 }
+.viz-mech__swatch--thread {
+  background: var(--callout-thought-border);
+}
 .viz-mech__swatch--meter {
   height: 4px;
   background: var(--viz-exit);

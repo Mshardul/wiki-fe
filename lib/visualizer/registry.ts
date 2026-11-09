@@ -40,6 +40,14 @@ export const VISUALIZERS: VisualizerEntry[] = [
     icon: "🔒",
     kind: "mechanism",
   },
+  {
+    slug: "asyncio-event-loop",
+    title: "Inside the asyncio Event Loop",
+    description:
+      "Step through cooperative concurrency, then blocking I/O, CPU hogs, and why def endpoints differ from async def.",
+    icon: "🔄",
+    kind: "mechanism",
+  },
 ];
 
 export function getVisualizer(slug: string): VisualizerEntry | undefined {

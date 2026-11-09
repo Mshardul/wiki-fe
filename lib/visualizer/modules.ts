@@ -1,3 +1,4 @@
+import { asyncioModule } from "./asyncio/module";
 import { cachingModule } from "./caching/module";
 import type { VisualizerModule } from "./core/types";
 import { evictionModule } from "./eviction/module";
@@ -9,4 +10,5 @@ export const MODULES: Record<string, VisualizerModule> = {
   [cachingModule.slug]: cachingModule,
   [rateLimitingModule.slug]: rateLimitingModule,
   [gilModule.slug]: gilModule,
+  [asyncioModule.slug]: asyncioModule,
 };

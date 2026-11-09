@@ -29,5 +29,9 @@ describe("visualizer registry", () => {
       description:
         "Step through who holds the lock, then the cases where a CPU thread, a convoy, or a checkpoint breaks it.",
     });
+    expect(getVisualizer("asyncio-event-loop")).toMatchObject({
+      kind: "mechanism",
+      title: "Inside the asyncio Event Loop",
+    });
   });
 });

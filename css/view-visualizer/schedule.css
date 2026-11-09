@@ -63,6 +63,9 @@
   stroke: var(--viz-good);
   stroke-width: 1.5;
 }
+.viz-sched__seg--thread {
+  fill: var(--callout-thought-border);
+}
 .viz-sched__svg .viz-sched__seglabel--solid {
   fill: var(--viz-on-accent);
 }
@@ -74,6 +77,12 @@
 }
 .viz-sched__svg .viz-sched__seglabel--outline {
   fill: var(--viz-good);
+}
+.viz-sched__svg .viz-sched__seglabel--thread {
+  fill: var(--on-accent);
+}
+.viz-sched__svg .viz-sched__seglabel--thread.viz-sched__seglabel--out {
+  fill: var(--callout-thought-border);
 }
 .viz-sched__mark {
   stroke: var(--viz-on-accent);
