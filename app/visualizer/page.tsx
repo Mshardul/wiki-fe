@@ -24,21 +24,46 @@ export default function VisualizerIndex() {
             </p>
           </div>
         </div>
-        <div className="wiki-grid">
-          {VISUALIZERS.map((v) => (
-            <Link key={v.slug} href={`/visualizer/${v.slug}/`} className="wiki-card">
-              <div className="wiki-card-icon">{v.icon}</div>
-              <div className="wiki-card-body">
-                <h2 className="wiki-card-title">{v.title}</h2>
-                <p className="wiki-card-desc">{v.description}</p>
+        {(
+          [
+            [
+              "compare",
+              "Compare algorithms",
+              "Pick one, change the inputs, and watch what changes.",
+            ],
+            [
+              "mechanism",
+              "Watch a mechanism",
+              "Step through it, then through the cases where it breaks.",
+            ],
+          ] as const
+        ).map(([kind, heading, subtitle]) => {
+          const cards = VISUALIZERS.filter((v) => v.kind === kind);
+          if (cards.length === 0) return null;
+          return (
+            <section key={kind} className="viz-index-group">
+              <div className="viz-index-group__head">
+                <h2>{heading}</h2>
+                <p>{subtitle}</p>
               </div>
-              <div className="wiki-card-footer">
-                <span className="wiki-card-count">Open</span>
-                <span className="wiki-card-arrow">→</span>
+              <div className="wiki-grid">
+                {cards.map((v) => (
+                  <Link key={v.slug} href={`/visualizer/${v.slug}/`} className="wiki-card">
+                    <div className="wiki-card-icon">{v.icon}</div>
+                    <div className="wiki-card-body">
+                      <h3 className="wiki-card-title">{v.title}</h3>
+                      <p className="wiki-card-desc">{v.description}</p>
+                    </div>
+                    <div className="wiki-card-footer">
+                      <span className="wiki-card-count">Open</span>
+                      <span className="wiki-card-arrow">→</span>
+                    </div>
+                  </Link>
+                ))}
               </div>
-            </Link>
-          ))}
-        </div>
+            </section>
+          );
+        })}
       </main>
     </>
   );

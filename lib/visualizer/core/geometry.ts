@@ -1,4 +1,4 @@
-import type { Axis, CardSection, LeafModel } from "./shapes";
+import type { Axis, CardSection, LeafModel, ScheduleModel } from "./shapes";
 
 export interface Size {
   w: number;
@@ -176,6 +176,59 @@ export function timelineLayout(
     cx: (t) => left + t * pitch + pitch / 2,
     rowTop: (r) => rowsTop + r * rowH,
     rowBase: (r) => rowsTop + (r + 1) * rowH - markR - 3,
+  };
+}
+
+const SCHED_W = 720;
+const SCHED_MIN_W = 280;
+const SCHED_NARROW = 480;
+const SCHED_LEFT = 74;
+const SCHED_LEFT_NARROW = 72;
+const SCHED_RIGHT = 18;
+const SCHED_RIGHT_NARROW = 10;
+const SCHED_ROW = 54;
+const SCHED_LANE_H = 24;
+const SCHED_VALUES_H = 60;
+
+export interface ScheduleLayout {
+  width: number;
+  height: number;
+  left: number;
+  right: number;
+  axisY: number;
+  summaryY: number;
+  summaryH: number;
+  laneH: number;
+  valuesY: number;
+  rowY: (i: number) => number;
+  x: (t: number) => number;
+}
+
+// Pixel units at the stage's own width, so text keeps its real size and time compresses instead.
+export function scheduleLayout(
+  model: Pick<ScheduleModel, "end" | "rows" | "summary" | "values">,
+  width = SCHED_W,
+): ScheduleLayout {
+  const narrow = width < SCHED_NARROW;
+  const w = Math.max(width, SCHED_MIN_W);
+  const left = narrow ? SCHED_LEFT_NARROW : SCHED_LEFT;
+  const right = w - (narrow ? SCHED_RIGHT_NARROW : SCHED_RIGHT);
+  const lane0 = model.summary ? 96 : 56;
+  const rowY = (i: number) => lane0 + i * SCHED_ROW;
+  const valuesY = rowY(model.rows.length) + 4;
+  const end = Math.max(model.end, Number.EPSILON);
+  return {
+    width: w,
+    height: model.values ? valuesY + SCHED_VALUES_H : valuesY - 8,
+    left,
+    right,
+    axisY: 28,
+    summaryY: 40,
+    summaryH: 16,
+    laneH: SCHED_LANE_H,
+    valuesY,
+    rowY,
+    x: (t) => left + (Math.min(Math.max(t, 0), end) / end) * (right - left),
   };
 }
 

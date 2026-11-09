@@ -18,4 +18,16 @@ describe("visualizer registry", () => {
     expect(getVisualizer("eviction-policies")?.title).toBe("Eviction policies");
     expect(getVisualizer("nope")).toBeUndefined();
   });
+
+  it("compare visualizers stay compare, and the GIL is a mechanism", () => {
+    expect(getVisualizer("eviction-policies")?.kind).toBe("compare");
+    expect(getVisualizer("caching-strategies")?.kind).toBe("compare");
+    expect(getVisualizer("rate-limiting")?.kind).toBe("compare");
+    expect(getVisualizer("python-gil")).toMatchObject({
+      kind: "mechanism",
+      title: "Inside the Python GIL",
+      description:
+        "Step through who holds the lock, then the cases where a CPU thread, a convoy, or a checkpoint breaks it.",
+    });
+  });
 });

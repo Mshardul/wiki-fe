@@ -9,7 +9,7 @@ interface FieldBase {
 }
 export interface ChipsField extends FieldBase {
   kind: "chips";
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; detail?: string }[];
 }
 export interface SliderField extends FieldBase {
   kind: "slider";

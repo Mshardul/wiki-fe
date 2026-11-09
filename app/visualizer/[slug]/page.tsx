@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { IndexTopbar } from "@/components/chrome/IndexTopbar";
+import { MechanismApp } from "@/components/visualizer/frame/MechanismApp";
 import { VisualizerApp } from "@/components/visualizer/frame/VisualizerApp";
 import { CANONICAL_BASE } from "@/lib/config";
 import { getGlossary } from "@/lib/content/get-article";
@@ -28,11 +29,17 @@ export async function generateMetadata({
 
 export default async function VisualizerPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  if (!getVisualizer(slug)) notFound();
+  const entry = getVisualizer(slug);
+  if (!entry) notFound();
+  const glossary = getGlossary();
   return (
     <div className="viz-page">
       <IndexTopbar />
-      <VisualizerApp slug={slug} glossary={getGlossary()} />
+      {entry.kind === "mechanism" ? (
+        <MechanismApp slug={slug} glossary={glossary} />
+      ) : (
+        <VisualizerApp slug={slug} glossary={glossary} />
+      )}
     </div>
   );
 }

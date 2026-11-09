@@ -1,0 +1,388 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Inside the Python GIL</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a logic-analyzer trace. Threads are signal lanes, the GIL is a bus row above them, a playhead walks time frame by frame. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --fg:#152230; --muted:#5a6878; --line:#d6dce4;
+  --run:#3776ab; --run-ink:#ffffff; --gil:#e8b923; --wait:#8d99a8; --io:#2f9474; --io-bg:#e3f3ed;
+  --alert:#c9412f; --soft:#eef2f6;
+  --f-display:"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542;
+  --run:#5b9bd5; --run-ink:#0b1219; --gil:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --alert:#ff6b5b; --soft:#1c2530; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542;
+  --run:#5b9bd5; --run-ink:#0b1219; --gil:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --alert:#ff6b5b; --soft:#1c2530; color-scheme:dark }
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding-block:28px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font:500 13px/1.2 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);
+  padding:9px 12px;border-radius:8px;cursor:pointer;text-align:left}
+.tab small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-bottom:2px}
+.tab[aria-selected="true"]{border-color:var(--run);box-shadow:inset 0 0 0 1px var(--run)}
+.tab:focus-visible,.btn:focus-visible,.dot:focus-visible{outline:2px solid var(--gil);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(19px,3vw,23px);line-height:1.25;margin:0;text-wrap:balance}
+.trace{overflow-x:auto;margin:0 -4px}
+.trace svg{display:block;width:100%;min-width:620px;height:auto}
+.share{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px;font-variant-numeric:tabular-nums}
+.share b{color:var(--fg);font-weight:500}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--soft);color:var(--fg);padding:7px 12px;border-radius:7px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.dots{display:flex;gap:6px;flex:1;min-width:0}
+.dot{width:28px;height:6px;border-radius:3px;border:0;background:var(--line);cursor:pointer;padding:0}
+.dot[aria-current="true"]{background:var(--run)}
+.step{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.caption{border-left:3px solid var(--gil);padding:2px 0 2px 14px;min-height:78px}
+.caption h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.caption p{margin:0;max-width:68ch}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 4px;border-radius:4px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.note{background:var(--soft);border-radius:10px;padding:12px 14px;min-width:0}
+.note .eyebrow{margin-bottom:4px}
+.note p{margin:0;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:10px;border-radius:2px;display:inline-block}
+.foot{font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">CPython 3.12+ · default build · switch interval 5 ms</div>
+    <h1>Inside the Python GIL</h1>
+    <p class="lede">One timeline, four situations. Each thread is a lane; the yellow row shows who holds the GIL. Step through a scenario to see exactly when the lock changes hands, and why.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="stage">
+    <h2 class="q" id="q"></h2>
+    <div class="trace"><svg id="svg" viewBox="0 0 720 260" role="img" aria-label="Thread timeline"></svg></div>
+    <div class="share" id="share"></div>
+    <div class="controls">
+      <button class="btn" id="prev">Back</button>
+      <button class="btn" id="next">Next</button>
+      <button class="btn" id="play">Play</button>
+      <div class="dots" id="dots"></div>
+      <span class="step" id="stepno"></span>
+    </div>
+    <div class="caption" aria-live="polite"><h3 id="fh"></h3><p id="fb"></p></div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--run)"></i>Running Python (holds GIL)</span>
+      <span><svg width="22" height="10"><rect width="22" height="10" fill="url(#hatchL)" style="stroke:var(--wait)" stroke-width="1"/><defs><pattern id="hatchL" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" style="stroke:var(--wait)" stroke-width="2"/></pattern></defs></svg>Waiting for GIL</span>
+      <span><i class="sw" style="background:var(--io-bg);border:1.5px solid var(--io)"></i>In a blocking call (GIL released)</span>
+      <span><i class="sw" style="background:var(--gil);height:4px"></i>5 ms switch timer</span>
+      <span><i class="sw" style="background:var(--alert);height:2px"></i>Drop request</span>
+      <span><i class="sw" style="background:var(--fg);width:3px"></i>Checkpoint where GIL was dropped</span>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="note"><div class="eyebrow">Takeaway</div><p id="take"></p></div>
+    <div class="note"><div class="eyebrow">Generalizes to</div><p id="gen"></p></div>
+  </section>
+
+  <p class="foot">Timings are illustrative of the mechanism, not measured. Keyboard: ← → to step.</p>
+</div>
+
+<script>
+(function(){
+const R='run', W='wait', IO='io';
+const seg=(s,e,type,label)=>({s,e,type,label});
+
+const SCENARIOS=[
+{ id:'happy', tab:'Happy path', short:'I/O-bound threads',
+  q:'I/O-bound threads interleave: the GIL changes hands at every blocking call',
+  traces:{main:{max:20,unit:'ms',lanes:[
+    {id:'T1',segs:[seg(0,3,R,'Python'),seg(3,9,IO,'recv()'),seg(9,12,R,'Python'),seg(12,20,IO,'recv()')]},
+    {id:'T2',segs:[seg(0,4,IO,'recv()'),seg(4,8,R,'Python'),seg(8,15,IO,'send()'),seg(15,18,R,'Python'),seg(18,20,IO,'recv()')]}
+  ],timers:[],reqs:[],ticks:[]}},
+  frames:[
+    {t:3,h:'T1 runs',b:'T1 holds the GIL and executes bytecode. T2 is inside <code>recv()</code> with the GIL released: it is waiting on the network, not on the GIL.'},
+    {t:4,h:'T1 hits a blocking call',b:'Before the syscall, CPython releases the GIL (<code>Py_BEGIN_ALLOW_THREADS</code>). The GIL is free. No timer, no drop request.'},
+    {t:8,h:'T2\'s data arrives',b:'T2 returns from <code>recv()</code>, takes the free GIL (<code>Py_END_ALLOW_THREADS</code>) and runs its Python code.'},
+    {t:20,h:'The waits overlap',b:'Each thread releases at its next blocking call. Wall time tracks the longest wait, not the sum of waits. The switch timer never fires.'}
+  ],
+  take:'The GIL serializes Python bytecode, not waiting. Threads are a valid tool for blocking I/O.',
+  gen:'Any C code that wraps long work in the same release macros. NumPy on large arrays, hashlib on large buffers and zlib release the GIL, which is how threads get real parallelism for those calls.'
+},
+{ id:'cpu', tab:'Scenario 1', short:'CPU-bound threads',
+  q:'Why don\'t more threads speed up CPU-bound code?',
+  traces:{main:{max:20,unit:'ms',tickEvery:0.5,lanes:[
+    {id:'T1',segs:[seg(0,5.2,R,'pure-Python loop'),seg(5.2,10.4,W),seg(10.4,15.6,R,'pure-Python loop'),seg(15.6,20,W)]},
+    {id:'T2',segs:[seg(0,5.2,W),seg(5.2,10.4,R,'pure-Python loop'),seg(10.4,15.6,W),seg(15.6,20,R,'pure-Python loop')]}
+  ],timers:[{lane:'T2',s:0,e:5},{lane:'T1',s:5.2,e:10.2},{lane:'T2',s:10.4,e:15.4},{lane:'T1',s:15.6,e:20.6}],
+    reqs:[{t:5,from:'T2',to:'T1'},{t:10.2,from:'T1',to:'T2'},{t:15.4,from:'T2',to:'T1'}],
+    ticks:[{lane:'T1',t:5.2},{lane:'T2',t:10.4},{lane:'T1',t:15.6}]}},
+  frames:[
+    {t:2.5,h:'T1 runs, T2 waits',b:'Both threads run pure Python. T1 holds the GIL. T2 is ready but blocked, and its 5 ms switch timer is counting down.'},
+    {t:5,h:'The timer expires',b:'No handoff happened in 5 ms, so T2 sets the drop request on the eval breaker.'},
+    {t:5.2,h:'T1 reaches a checkpoint',b:'At its next loop back-edge, T1 sees the request and drops the GIL. It then waits until T2 actually takes it, so it cannot grab it straight back.'},
+    {t:10.4,h:'The roles swap',b:'T2 runs. T1 waits with its own timer, and the same forced handoff repeats.'},
+    {t:20,h:'~5 ms slices, never parallel',b:'Only one lane is solid at any instant. Total time is the sum of both threads\' work plus switching overhead. Four threads only add lanes.'}
+  ],
+  take:'Threads give concurrency, not parallelism, for pure-Python CPU work. The overhead is the cost of forcing handoffs.',
+  gen:'Any runtime with one global execution lock, such as CRuby\'s GVL. Fix: processes (ProcessPoolExecutor), or move the hot loop into C that releases the GIL.'
+},
+{ id:'convoy', tab:'Scenario 2', short:'Convoy effect',
+  q:'Why did adding one CPU-bound thread hurt my I/O thread\'s latency?',
+  traces:{main:{max:22,unit:'ms',tickEvery:0.5,lanes:[
+    {id:'T1',name:'T1 CPU',segs:[seg(0,0.4,W),seg(0.4,5.8,R,'spin()'),seg(5.8,6.2,W),seg(6.2,11.6,R,'spin()'),seg(11.6,12,W),seg(12,17.4,R,'spin()'),seg(17.4,17.8,W),seg(17.8,22,R,'spin()')]},
+    {id:'T2',name:'T2 I/O',segs:[seg(0,0.4,R),seg(0.4,0.7,IO,'recv'),seg(0.7,5.8,W),seg(5.8,6.2,R),seg(6.2,6.5,IO,'send'),seg(6.5,11.6,W),seg(11.6,12,R),seg(12,12.3,IO,'recv'),seg(12.3,17.4,W),seg(17.4,17.8,R),seg(17.8,18.1,IO,'send'),seg(18.1,22,W)]}
+  ],timers:[{lane:'T2',s:0.7,e:5.7},{lane:'T2',s:6.5,e:11.5},{lane:'T2',s:12.3,e:17.3},{lane:'T2',s:18.1,e:23.1}],
+    reqs:[{t:5.7,from:'T2',to:'T1'},{t:11.5,from:'T2',to:'T1'},{t:17.3,from:'T2',to:'T1'}],
+    ticks:[{lane:'T1',t:5.8},{lane:'T1',t:11.6},{lane:'T1',t:17.4}]}},
+  frames:[
+    {t:0.4,h:'T2 calls recv()',b:'T2 runs briefly, then releases the GIL before the syscall, exactly as in the happy path. T1 has been waiting for it.'},
+    {t:0.7,h:'T1 grabs it, recv() returns at once',b:'T1 takes the free GIL and spins. The data was already buffered, so <code>recv()</code> returns in microseconds. But T2 now needs the GIL to touch its data, and it has to wait.'},
+    {t:5.8,h:'A full switch interval later',b:'T2\'s 5 ms timer expires, it sets the drop request, and T1 hands over at its next checkpoint. One fast syscall cost T2 about 5 ms.'},
+    {t:6.5,h:'sendall() repeats the cycle',b:'T2 runs a few microseconds of Python, releases the GIL for <code>sendall()</code>, and T1 grabs it again.'},
+    {t:22,h:'Throughput collapses',b:'Every I/O call is followed by up to one switch interval of waiting. When this was reported in 2010 (bpo-7946), one spinning thread made an echo-server transfer more than 4x slower.'}
+  ],
+  take:'The GIL has no notion of I/O priority. A CPU-bound thread in the same process quietly taxes every I/O-bound thread.',
+  gen:'Priority inversion and head-of-line blocking in any shared-lock design. Fix: move CPU work to processes or GIL-releasing C code. Lowering sys.setswitchinterval() trades throughput for latency.'
+},
+{ id:'race', tab:'Scenario 3', short:'Race conditions',
+  q:'My race-condition demo stopped failing on newer Python. Is my code safe now?',
+  traces:{
+    A:{max:12,unit:null,label:'Version A · counter += 1',lanes:[
+      {id:'T1',segs:[seg(0,1,R,'LOAD counter'),seg(1,2,R,'LOAD 1'),seg(2,3,R,'ADD'),seg(3,4,R,'STORE'),seg(4,5,R,'JUMP ↺'),seg(5,12,W)]},
+      {id:'T2',segs:[seg(0,5,W),seg(5,12,R,'next increments…')]}
+    ],timers:[],reqs:[{t:1.5,from:'T2',to:'T1',label:'drop request (pending)'}],ticks:[{lane:'T1',t:5}],
+      counter:[{t:0,v:'100'},{t:4,v:'101'},{t:12,v:'101 + T2\'s work, nothing lost'}]},
+    B:{max:14,unit:null,label:'Version B · counter += one()',lanes:[
+      {id:'T1',segs:[seg(0,1,R,'LOAD counter'),seg(1,2,R,'LOAD one'),seg(2,3,R,'CALL'),seg(3,11,W),seg(11,12,R,'ADD'),seg(12,13,R,'STORE')]},
+      {id:'T2',segs:[seg(0,3,W),seg(3,11,R,'500 increments')]}
+    ],timers:[],reqs:[{t:1.5,from:'T2',to:'T1',label:'drop request (pending)'}],ticks:[{lane:'T1',t:3,label:'RESUME in one()'}],
+      counter:[{t:0,v:'100',note:'T1 read 100'},{t:11,v:'600'},{t:13,v:'101 · 499 lost',bad:true}]}
+  },
+  frames:[
+    {trace:'A',t:4,h:'Version A: counter += 1',b:'A drop request has been pending since step 1, but none of load, add or store is a checkpoint. The increment completes and stores 101.'},
+    {trace:'A',t:12,h:'The switch lands between increments',b:'The only checkpoint is the backward jump, after the store. Every handoff happens on a complete increment, so the final count is correct on 3.10+.'},
+    {trace:'B',t:2,h:'Version B: counter += one()',b:'Same loop, but the right-hand side is a call. T1 has already loaded <code>counter</code> (100) onto its stack.'},
+    {trace:'B',t:3,h:'Entering one() is a checkpoint',b:'The call starts a new frame, and RESUME checks the eval breaker. The pending request fires, and T1 drops the GIL while holding the stale value 100.'},
+    {trace:'B',t:11,h:'T2 runs on',b:'T2 completes 500 increments. <code>counter</code> is now 600.'},
+    {trace:'B',t:13,h:'T1 stores 101',b:'T1 adds 1 to its stale 100 and stores 101, wiping out T2\'s work. Lost updates are back, and the count differs on every run.'}
+  ],
+  take:'The GIL protects CPython\'s internals, not your invariants. Where switches happen is an implementation detail; it changed in 3.10 and there is no GIL at all on the free-threaded build. Use threading.Lock for read-modify-write.',
+  gen:'Any "it works because of the scheduler" bug. A test that passes is not proof of atomicity.'
+}];
+
+const NS='http://www.w3.org/2000/svg';
+const VW=720, L=74, RP=18, ROW=54, LANE_H=24;
+const svg=document.getElementById('svg');
+let si=0, fi=0, curT=0, curTrace=null, anim=null, playTimer=null;
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function traceOf(sc,f){return sc.traces[f.trace||'main']}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+
+function draw(sc,tr,t){
+  const x=v=>L+(v/tr.max)*(VW-L-RP);
+  const yAxis=22, yGil=40, gilH=16, lane0=96;
+  const laneY=i=>lane0+i*ROW;
+  const nL=tr.lanes.length;
+  const yCounter=lane0+nL*ROW+4;
+  const H=yCounter+(tr.counter?40:0)+(tr.counter?6:-8);
+  svg.setAttribute('viewBox',`0 0 ${VW} ${H}`);
+  const idx={}; tr.lanes.forEach((l,i)=>idx[l.id]=i);
+  let o=`<defs>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" style="fill:var(--surface)"/><line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--wait)" stroke-width="2"/></pattern>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--alert)"/></marker>
+  </defs>`;
+  // axis
+  o+=`<line x1="${L}" y1="${yAxis+6}" x2="${VW-RP}" y2="${yAxis+6}" style="stroke:var(--line)"/>`;
+  if(tr.unit){
+    const step=tr.max>20?2:2;
+    for(let v=0;v<=tr.max+0.001;v+=step){
+      o+=`<line x1="${x(v)}" y1="${yAxis+3}" x2="${x(v)}" y2="${yAxis+9}" style="stroke:var(--muted)"/>`;
+      o+=`<text x="${x(v)}" y="${yAxis-2}" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">${v}${v===0?' ms':''}</text>`;
+    }
+  } else {
+    o+=`<text x="${L}" y="${yAxis-2}" font-size="11" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">${esc(tr.label)} · bytecode steps →</text>`;
+  }
+  // GIL row
+  o+=`<text x="${L-10}" y="${yGil+gilH/2+4}" text-anchor="end" font-size="12" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">GIL</text>`;
+  o+=`<rect x="${L}" y="${yGil}" width="${VW-L-RP}" height="${gilH}" rx="3" style="fill:var(--soft)"/>`;
+  tr.lanes.forEach(l=>l.segs.forEach(s=>{
+    if(s.type!==R||s.s>=t) return;
+    const e=Math.min(s.e,t), w=x(e)-x(s.s);
+    o+=`<rect x="${x(s.s)}" y="${yGil}" width="${Math.max(w,0.5)}" height="${gilH}" style="fill:var(--gil)"/>`;
+    if(w>22) o+=`<text x="${x(s.s)+w/2}" y="${yGil+12}" text-anchor="middle" font-size="10" font-weight="600" font-family="IBM Plex Mono, monospace" fill="#2a2100">${l.id}</text>`;
+  }));
+  // lanes
+  tr.lanes.forEach((l,i)=>{
+    const y=laneY(i);
+    o+=`<text x="${L-10}" y="${y+LANE_H/2+4}" text-anchor="end" font-size="12" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">${esc(l.name||l.id)}</text>`;
+    o+=`<line x1="${L}" y1="${y+LANE_H/2}" x2="${VW-RP}" y2="${y+LANE_H/2}" style="stroke:var(--line)" stroke-dasharray="2 4"/>`;
+    l.segs.forEach(s=>{
+      if(s.s>=t) return;
+      const e=Math.min(s.e,t), x0=x(s.s), w=Math.max(x(e)-x0,0.5);
+      if(s.type===R) o+=`<rect x="${x0}" y="${y}" width="${w}" height="${LANE_H}" rx="2" style="fill:var(--run)"/>`;
+      else if(s.type===W) o+=`<rect x="${x0+0.5}" y="${y+0.5}" width="${Math.max(w-1,0.5)}" height="${LANE_H-1}" rx="2" fill="url(#hatch)" style="stroke:var(--wait)" stroke-width="1"/>`;
+      else o+=`<rect x="${x0+0.75}" y="${y+0.75}" width="${Math.max(w-1.5,0.5)}" height="${LANE_H-1.5}" rx="2" style="fill:var(--io-bg);stroke:var(--io)" stroke-width="1.5"/>`;
+      if(s.label && e>=s.e-0.0001){
+        const full=x(s.e)-x0;
+        if(full>=Math.min(s.label.length*6.4+10,200)){
+          const ink=s.type===R?'var(--run-ink)':s.type===IO?'var(--io)':'var(--muted)';
+          o+=`<text x="${x0+full/2}" y="${y+LANE_H/2+4}" text-anchor="middle" font-size="10.5" font-family="IBM Plex Mono, monospace" style="fill:${ink}">${esc(s.label)}</text>`;
+        } else if(s.type===IO){
+          o+=`<text x="${x0+full/2}" y="${y+LANE_H+12}" text-anchor="middle" font-size="9.5" font-family="IBM Plex Mono, monospace" style="fill:var(--io)">${esc(s.label)}</text>`;
+        }
+      }
+    });
+    // faint checkpoints along running segments
+    if(tr.tickEvery){
+      l.segs.forEach(s=>{ if(s.type!==R) return;
+        for(let v=Math.ceil(s.s/tr.tickEvery)*tr.tickEvery; v<Math.min(s.e,t); v+=tr.tickEvery){
+          if(v<=s.s+0.05) continue;
+          o+=`<line x1="${x(v)}" y1="${y+LANE_H-5}" x2="${x(v)}" y2="${y+LANE_H}" style="stroke:var(--run-ink)" stroke-opacity=".55"/>`;
+        }});
+    }
+  });
+  // timers
+  tr.timers.forEach(tm=>{
+    if(tm.s>=t) return;
+    const y=laneY(idx[tm.lane])-9, e=Math.min(tm.e,tr.max), cur=Math.min(t,e);
+    o+=`<rect x="${x(tm.s)}" y="${y}" width="${x(e)-x(tm.s)}" height="4" rx="2" style="fill:var(--line)"/>`;
+    o+=`<rect x="${x(tm.s)}" y="${y}" width="${Math.max(x(cur)-x(tm.s),0.5)}" height="4" rx="2" style="fill:var(--gil)"/>`;
+    if(x(e)-x(tm.s)>70) o+=`<text x="${x(tm.s)+2}" y="${y-3}" font-size="9.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">5 ms switch timer</text>`;
+  });
+  // checkpoint (hot) ticks
+  tr.ticks.forEach(k=>{
+    if(k.t>t+0.0001) return;
+    const y=laneY(idx[k.lane]);
+    o+=`<line x1="${x(k.t)}" y1="${y-4}" x2="${x(k.t)}" y2="${y+LANE_H+4}" style="stroke:var(--fg)" stroke-width="2.5"/>`;
+    if(k.label) o+=`<text x="${x(k.t)+5}" y="${y+LANE_H+14}" font-size="9.5" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">${esc(k.label)}</text>`;
+  });
+  // drop requests
+  tr.reqs.forEach(r=>{
+    if(r.t>t+0.0001) return;
+    const a=idx[r.from], b=idx[r.to];
+    const y1=a>b?laneY(a)-12:laneY(a)+LANE_H+3;
+    const y2=a>b?laneY(b)+LANE_H+3:laneY(b)-3;
+    o+=`<line x1="${x(r.t)}" y1="${y1}" x2="${x(r.t)}" y2="${y2}" style="stroke:var(--alert)" stroke-width="1.8" marker-end="url(#arr)"/>`;
+    const lab=r.label||'drop request';
+    const anchor=x(r.t)>VW-140?'end':'start', dx=anchor==='end'?-5:5;
+    o+=`<text x="${x(r.t)+dx}" y="${(y1+y2)/2+3}" text-anchor="${anchor}" font-size="9.5" font-family="IBM Plex Mono, monospace" style="fill:var(--alert)">${esc(lab)}</text>`;
+  });
+  // counter row
+  if(tr.counter){
+    o+=`<text x="${L-10}" y="${yCounter+18}" text-anchor="end" font-size="12" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">counter</text>`;
+    o+=`<line x1="${L}" y1="${yCounter+14}" x2="${VW-RP}" y2="${yCounter+14}" style="stroke:var(--line)"/>`;
+    tr.counter.forEach((c,i)=>{
+      if(c.t>t+0.0001) return;
+      const last=i===tr.counter.length-1;
+      const cx=x(c.t);
+      const anchor=last&&cx>VW-200?'end':'start';
+      const col=c.bad?'var(--alert)':'var(--fg)';
+      o+=`<circle cx="${cx}" cy="${yCounter+14}" r="3.5" style="fill:${col}"/>`;
+      o+=`<text x="${cx+(anchor==='end'?-6:6)}" y="${yCounter+30}" text-anchor="${anchor}" font-size="11.5" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:${col}">${esc(c.v)}</text>`;
+      if(c.note) o+=`<text x="${cx+6}" y="${yCounter+8}" font-size="9.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">${esc(c.note)}</text>`;
+    });
+  }
+  // playhead
+  const ph=x(Math.min(t,tr.max));
+  o+=`<line x1="${ph}" y1="${yAxis+6}" x2="${ph}" y2="${H-4}" style="stroke:var(--fg)" stroke-opacity=".35" stroke-dasharray="3 3"/>`;
+  svg.innerHTML=o;
+
+  // GIL share
+  const share=document.getElementById('share');
+  if(tr.unit){
+    const held={}; let total=0;
+    tr.lanes.forEach(l=>{held[l.id]=0; l.segs.forEach(s=>{ if(s.type===R&&s.s<t){held[l.id]+=Math.min(s.e,t)-s.s}})});
+    tr.lanes.forEach(l=>total+=held[l.id]);
+    const free=Math.max(t-total,0), f=v=>t>0?Math.round(v/t*100):0;
+    share.innerHTML=`<span>GIL held at ${t.toFixed(1)} ms:</span>`+tr.lanes.map(l=>`<span>${esc(l.name||l.id)} <b>${held[l.id].toFixed(1)} ms</b> (${f(held[l.id])}%)</span>`).join('')+`<span>free <b>${free.toFixed(1)} ms</b></span>`;
+  } else share.innerHTML='<span>Checkpoints in 3.12: function entry (RESUME) and loop back-edges. A pending drop request waits for one.</span>';
+}
+
+function animateTo(target, from){
+  cancelAnimationFrame(anim);
+  const sc=SCENARIOS[si], f=sc.frames[fi], tr=traceOf(sc,f);
+  if(reduce){curT=target; draw(sc,tr,curT); return}
+  const t0=performance.now(), a=from, dur=Math.min(1100, 350+Math.abs(target-a)/tr.max*1400);
+  const step=now=>{
+    const p=Math.min((now-t0)/dur,1), e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+    curT=a+(target-a)*e; draw(sc,tr,curT);
+    if(p<1) anim=requestAnimationFrame(step);
+  };
+  anim=requestAnimationFrame(step);
+}
+
+function show(newFi, instant){
+  const sc=SCENARIOS[si]; const prevTrace=curTrace;
+  fi=Math.max(0,Math.min(newFi,sc.frames.length-1));
+  const f=sc.frames[fi], key=sc.id+':'+(f.trace||'main');
+  const from=(prevTrace===key)?curT:0;
+  curTrace=key;
+  document.getElementById('fh').textContent=f.h;
+  document.getElementById('fb').innerHTML=f.b;
+  document.getElementById('stepno').textContent=`${fi+1} / ${sc.frames.length}`;
+  document.getElementById('prev').disabled=fi===0;
+  document.getElementById('next').disabled=fi===sc.frames.length-1;
+  [...document.getElementById('dots').children].forEach((d,i)=>d.setAttribute('aria-current',i===fi?'true':'false'));
+  if(instant){cancelAnimationFrame(anim); curT=f.t; draw(sc,traceOf(sc,f),curT)} else animateTo(f.t, from);
+}
+
+function selectScenario(i, instant){
+  stopPlay(); si=i; curTrace=null;
+  const sc=SCENARIOS[si];
+  [...document.getElementById('tabs').children].forEach((b,k)=>b.setAttribute('aria-selected',k===si?'true':'false'));
+  document.getElementById('q').textContent=sc.q;
+  document.getElementById('take').textContent=sc.take;
+  document.getElementById('gen').textContent=sc.gen;
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  sc.frames.forEach((_,k)=>{const d=document.createElement('button');d.className='dot';d.setAttribute('aria-label','Step '+(k+1));d.onclick=()=>{stopPlay();show(k)};dots.appendChild(d)});
+  show(instant?sc.frames.length-1:0, instant);
+}
+
+function stopPlay(){clearInterval(playTimer);playTimer=null;document.getElementById('play').textContent='Play'}
+document.getElementById('play').onclick=()=>{
+  if(playTimer){stopPlay();return}
+  const sc=SCENARIOS[si];
+  if(fi===sc.frames.length-1) show(0); else show(fi+1);
+  document.getElementById('play').textContent='Pause';
+  playTimer=setInterval(()=>{const n=SCENARIOS[si].frames.length; if(fi>=n-1){stopPlay();return} show(fi+1)},3800);
+};
+document.getElementById('prev').onclick=()=>{stopPlay();show(fi-1)};
+document.getElementById('next').onclick=()=>{stopPlay();show(fi+1)};
+document.addEventListener('keydown',e=>{
+  if(e.target.closest&&e.target.closest('input,textarea')) return;
+  if(e.key==='ArrowRight'){stopPlay();show(fi+1)} else if(e.key==='ArrowLeft'){stopPlay();show(fi-1)}
+});
+
+const tabs=document.getElementById('tabs');
+SCENARIOS.forEach((sc,i)=>{
+  const b=document.createElement('button'); b.className='tab'; b.setAttribute('role','tab');
+  b.innerHTML=`<small>${sc.tab}</small>${sc.short}`;
+  b.onclick=()=>{ try{history.replaceState(null,'','#'+sc.id)}catch(_){location.hash=sc.id} selectScenario(i)};
+  tabs.appendChild(b);
+});
+function fromHash(){const h=(location.hash||'').slice(1); const i=SCENARIOS.findIndex(s=>s.id===h); return i<0?0:i}
+window.addEventListener('hashchange',()=>selectScenario(fromHash()));
+// Open on the first step, drawn at rest (no fade-in) so the first frame is complete.
+selectScenario(fromHash(), false);
+show(0,true);
+})();
+</script>
+
+</body></html>

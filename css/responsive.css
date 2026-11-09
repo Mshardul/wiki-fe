@@ -653,6 +653,9 @@
   .viz-strip {
     --viz-strip-cells: 7;
   }
+  .viz-mech {
+    --viz-mech-pad: var(--s3);
+  }
   .viz-head__actions {
     margin-left: 0;
   }

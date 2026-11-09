@@ -1,0 +1,134 @@
+/* ═══════════════════════════════════════════════
+   VISUALIZER — SCHEDULE SHAPE
+   ═══════════════════════════════════════════════ */
+.viz-sched {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.viz-sched__axislabel {
+  margin: 0 0 var(--s1);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.viz-sched__svg {
+  display: block;
+}
+.viz-sched__svg text {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-sched__svg .viz-sched__rowlabel {
+  fill: var(--text-heading);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+}
+.viz-sched__axis,
+.viz-sched__guide {
+  stroke: var(--viz-slot-border);
+}
+.viz-sched__guide {
+  stroke-dasharray: 2 4;
+}
+.viz-sched__tick {
+  stroke: var(--text-muted);
+}
+.viz-sched__track {
+  fill: var(--viz-slot-bg);
+}
+.viz-sched__held {
+  fill: var(--viz-exit);
+}
+.viz-sched__svg .viz-sched__heldlabel {
+  fill: var(--bg);
+  font-weight: var(--fw-semibold);
+}
+.viz-sched__seg--solid {
+  fill: var(--viz-active);
+}
+.viz-sched__seg--hatch {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+}
+.viz-sched__hatch-bg {
+  fill: var(--surface);
+}
+.viz-sched__hatch-line {
+  stroke: var(--text-muted);
+  stroke-width: 2;
+}
+.viz-sched__seg--outline {
+  fill: var(--viz-good-bg);
+  stroke: var(--viz-good);
+  stroke-width: 1.5;
+}
+.viz-sched__svg .viz-sched__seglabel--solid {
+  fill: var(--viz-on-accent);
+}
+.viz-sched__svg .viz-sched__seglabel--solid.viz-sched__seglabel--out {
+  fill: var(--viz-active);
+}
+.viz-sched__svg .viz-sched__seglabel--hatch.viz-sched__seglabel--out {
+  fill: var(--text-body);
+}
+.viz-sched__svg .viz-sched__seglabel--outline {
+  fill: var(--viz-good);
+}
+.viz-sched__mark {
+  stroke: var(--viz-on-accent);
+  stroke-opacity: 0.55;
+}
+.viz-sched__meter-track {
+  fill: var(--viz-slot-border);
+}
+.viz-sched__meter-fill {
+  fill: var(--viz-exit);
+}
+.viz-sched__pin line {
+  stroke: var(--text-heading);
+  stroke-width: 2.5;
+}
+.viz-sched__svg .viz-sched__pinlabel {
+  fill: var(--text-heading);
+}
+.viz-sched__arrow line {
+  stroke: var(--viz-bad);
+  stroke-width: 1.8;
+}
+.viz-sched__arrowhead {
+  fill: var(--viz-bad);
+}
+.viz-sched__svg .viz-sched__arrowlabel {
+  fill: var(--viz-bad);
+}
+.viz-sched__value circle {
+  fill: var(--text-heading);
+}
+.viz-sched__svg .viz-sched__valuetext {
+  fill: var(--text-heading);
+  font-weight: var(--fw-semibold);
+}
+.viz-sched__value.is-bad circle,
+.viz-sched__svg .viz-sched__value.is-bad .viz-sched__valuetext {
+  fill: var(--viz-bad);
+}
+.viz-sched__share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s4);
+  margin: var(--s2) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-body);
+}
+.viz-sched__share b {
+  color: var(--text-heading);
+  font-weight: var(--fw-medium);
+}
+.viz-sched__now {
+  stroke: var(--text-heading);
+  stroke-opacity: 0.35;
+  stroke-dasharray: 3 3;
+}

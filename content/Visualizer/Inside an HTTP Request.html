@@ -1,0 +1,341 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Inside an HTTP Request</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a vertical pipeline. Request descends the left rail, response climbs the right rail; Django's middleware is a framed stack inside it. Same visual system as the GIL visualizer. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --fg:#152230; --muted:#5a6878; --line:#d6dce4; --soft:#eef2f6;
+  --req:#3776ab; --res:#2f9474; --gil:#e8b923; --alert:#c9412f; --skip:#a9b3bf;
+  --f-display:"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --req:#5b9bd5; --res:#4fc29b; --gil:#ffd43b; --alert:#ff6b5b; --skip:#4a5664; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --req:#5b9bd5; --res:#4fc29b; --gil:#ffd43b; --alert:#ff6b5b; --skip:#4a5664; color-scheme:dark }
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:960px;margin:0 auto;padding-block:28px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:64ch}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font:500 13px/1.2 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 12px;border-radius:8px;cursor:pointer;text-align:left}
+.tab small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-bottom:2px}
+.tab[aria-selected="true"]{border-color:var(--req);box-shadow:inset 0 0 0 1px var(--req)}
+.tab:focus-visible,.btn:focus-visible,.dot:focus-visible{outline:2px solid var(--gil);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:760px){.stage{grid-template-columns:minmax(0,1fr)}}
+.pipe svg{display:block;width:100%;max-width:400px;height:auto;margin:0 auto}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(19px,3vw,23px);line-height:1.25;margin:0;text-wrap:balance}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--soft);color:var(--fg);padding:7px 12px;border-radius:7px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.dots{display:flex;gap:6px;flex:1;min-width:0;flex-wrap:wrap}
+.dot{width:24px;height:6px;border-radius:3px;border:0;background:var(--line);cursor:pointer;padding:0}
+.dot[aria-current="true"]{background:var(--req)}
+.step{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.caption{border-left:3px solid var(--gil);padding:2px 0 2px 14px;min-height:96px}
+.caption h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.caption p{margin:0;max-width:62ch}
+code{font-family:var(--f-mono);font-size:.88em;background:var(--soft);padding:1px 4px;border-radius:4px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:18px;height:10px;border-radius:2px;display:inline-block}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.note{background:var(--soft);border-radius:10px;padding:12px 14px;min-width:0}
+.note .eyebrow{margin-bottom:4px}
+.note p{margin:0;font-size:14px}
+.foot{font-size:13px;color:var(--muted)}
+#svg .fade{transition:opacity .35s ease}
+#token{transition:transform .55s cubic-bezier(.4,.1,.2,1)}
+@media (prefers-reduced-motion: reduce){ #token,#svg .fade{transition:none} }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">AWS ALB · nginx · gunicorn (sync workers) · Django</div>
+    <h1>Inside an HTTP Request</h1>
+    <p class="lede">The arrow between "client" and "server" hides seven layers. The request goes down the left rail and the response comes back up the right. Watch which layers each scenario touches, and which one answers first.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="stage">
+    <div class="pipe"><svg id="svg" viewBox="0 0 380 600" role="img" aria-label="Request pipeline"></svg></div>
+    <div class="side">
+      <h2 class="q" id="q"></h2>
+      <div class="controls">
+        <button class="btn" id="prev">Back</button>
+        <button class="btn" id="next">Next</button>
+        <button class="btn" id="play">Play</button>
+        <span class="step" id="stepno"></span>
+      </div>
+      <div class="dots" id="dots"></div>
+      <div class="caption" aria-live="polite"><h3 id="fh"></h3><p id="fb"></p></div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--req);width:3px;height:14px"></i>Request path</span>
+        <span><i class="sw" style="background:var(--res);width:3px;height:14px"></i>Response path</span>
+        <span><i class="sw" style="border:1.5px dashed var(--skip)"></i>Never ran</span>
+        <span><i class="sw" style="border:1.5px solid var(--alert)"></i>Failed or killed</span>
+        <span><i class="sw" style="background:var(--gil);height:4px"></i>Timeout clock</span>
+        <span><i class="sw" style="background:var(--req);width:8px;height:8px"></i>Busy worker</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="note"><div class="eyebrow">Takeaway</div><p id="take"></p></div>
+    <div class="note"><div class="eyebrow">Generalizes to</div><p id="gen"></p></div>
+  </section>
+
+  <p class="foot">Defaults shown are the stock values of each tool; scenario 2 sets its timeouts explicitly. Keyboard: ← → to step.</p>
+</div>
+
+<script>
+(function(){
+const NODES={
+  client:{name:'Client',sub:'browser / app'},
+  alb:{name:'ALB',sub:'TLS, picks target'},
+  nginx:{name:'nginx',sub:'reverse proxy'},
+  gunicorn:{name:'gunicorn',sub:'4 sync workers'},
+  metrics:{name:'Metrics',sub:'middleware',mw:true},
+  auth:{name:'Auth',sub:'middleware',mw:true},
+  ratelimit:{name:'Rate limit',sub:'middleware',mw:true},
+  view:{name:'View',sub:'business logic',mw:true}
+};
+const ORDER=['client','alb','nginx','gunicorn','metrics','auth','ratelimit','view'];
+const ALL_IN=ORDER.slice();
+const OUT_ALL=ORDER.slice().reverse();
+
+const SC=[
+{id:'happy',tab:'Happy path',short:'One GET, both ways',
+ q:'One request through every layer, and back out in reverse',
+ frames:[
+  {h:'The ALB receives it',b:'TLS terminates at the load balancer, which forwards plain HTTP to a healthy nginx target.',
+   down:['client','alb'],active:'alb',token:{at:'alb',t:'GET /orders'},notes:{alb:'TLS terminated'},workers:[0,0,0,0]},
+  {h:'nginx reads the request',b:'nginx reads the full request, buffering any body, before it opens a connection to gunicorn.',
+   down:['client','alb','nginx'],active:'nginx',token:{at:'nginx',t:'GET /orders'},notes:{nginx:'request read, then proxied'},workers:[0,0,0,0]},
+  {h:'One sync worker takes it',b:'A free gunicorn worker accepts the connection. It handles this request and nothing else until the response is written.',
+   down:['client','alb','nginx','gunicorn'],active:'gunicorn',token:{at:'gunicorn',t:'GET /orders'},notes:{gunicorn:'worker 2 busy until done'},workers:[0,1,0,0]},
+  {h:'Middleware, top to bottom',b:'Django runs <code>MIDDLEWARE</code> in list order: metrics starts a timer, auth validates the token, rate-limit checks the quota.',
+   down:['client','alb','nginx','gunicorn','metrics','auth','ratelimit'],active:'ratelimit',token:{at:'ratelimit',t:'GET /orders'},
+   notes:{metrics:'start timer',auth:'token valid',ratelimit:'quota ok'},workers:[0,1,0,0]},
+  {h:'The view answers',b:'The view builds a 200 response. This is the innermost layer of the onion.',
+   down:ALL_IN,active:'view',token:{at:'view',t:'200',res:true},notes:{view:'builds 200'},workers:[0,1,0,0]},
+  {h:'Middleware, bottom to top',b:'The response passes back through rate-limit, auth and metrics in reverse order. Metrics records the status and latency last.',
+   down:ALL_IN,up:['view','ratelimit','auth','metrics'],active:'metrics',token:{at:'metrics',t:'200',res:true},notes:{metrics:'records 200 · 84 ms'},workers:[0,1,0,0]},
+  {h:'Back out to the client',b:'gunicorn writes the response, nginx relays it, the ALB returns it. The worker is free again. Every layer appears on both rails.',
+   down:ALL_IN,up:OUT_ALL,active:'client',token:{at:'client',t:'200',res:true},status:'200',workers:[0,0,0,0]}
+ ],
+ take:'Middleware order is a stack. The first layer in on the request is the last layer out on the response.',
+ gen:'Any onion-style middleware: Starlette/FastAPI, Express, Go http.Handler wrappers, gRPC interceptors.'},
+
+{id:'reject',tab:'Scenario 1',short:'Auth returns 401',
+ q:'Auth returns 401. What still runs, and does my metrics middleware see it?',
+ frames:[
+  {h:'Down to auth, as usual',b:'ALB, nginx, gunicorn and metrics run exactly as in the happy path. The token is expired.',
+   down:['client','alb','nginx','gunicorn','metrics','auth'],active:'auth',token:{at:'auth',t:'GET /orders'},notes:{metrics:'start timer',auth:'token expired'},workers:[0,1,0,0]},
+  {h:'Auth short-circuits',b:'Auth returns a 401 response and never calls <code>get_response</code>. The request turns around right here.',
+   down:['client','alb','nginx','gunicorn','metrics','auth'],active:'auth',token:{at:'auth',t:'401',err:true},notes:{auth:'returns 401, no get_response'},fail:['auth'],workers:[0,1,0,0]},
+  {h:'Everything below is skipped',b:'Rate-limit and the view never run. No quota is consumed and no query reaches the database.',
+   down:['client','alb','nginx','gunicorn','metrics','auth'],skip:['ratelimit','view'],active:'auth',token:{at:'auth',t:'401',err:true},notes:{ratelimit:'never runs',view:'never runs'},fail:['auth'],workers:[0,1,0,0]},
+  {h:'Up through the layers that ran',b:'The 401 passes back through metrics, which records it, then out through gunicorn, nginx and the ALB.',
+   down:['client','alb','nginx','gunicorn','metrics','auth'],up:['auth','metrics','gunicorn','nginx','alb','client'],skip:['ratelimit','view'],active:'client',token:{at:'client',t:'401',err:true},notes:{metrics:'records 401'},fail:['auth'],status:'401',statusErr:true,workers:[0,0,0,0]},
+  {h:'Now put metrics below auth',b:'Same request, with auth listed first in <code>MIDDLEWARE</code>. Metrics is skipped too, so 401s vanish from your dashboards while ALB logs still show them.',
+   order:['client','alb','nginx','gunicorn','auth','metrics','ratelimit','view'],
+   down:['client','alb','nginx','gunicorn','auth'],up:['auth','gunicorn','nginx','alb','client'],skip:['metrics','ratelimit','view'],active:'metrics',token:{at:'client',t:'401',err:true},notes:{metrics:'never sees the 401',auth:'returns 401'},fail:['auth'],status:'401',statusErr:true,banner:'MIDDLEWARE reordered',workers:[0,0,0,0]}
+ ],
+ take:'MIDDLEWARE order is a design decision. Anything that must see every response (metrics, request IDs, CORS and security headers) belongs above anything that can reject.',
+ gen:'Onion middleware in Starlette, Express and Go. Flask differs: when before_request returns early, after_request handlers still run, so verify per framework.'},
+
+{id:'timeout',tab:'Scenario 2',short:'502 vs 504',
+ q:'The handler is slow. Why a 502 in one setup and a 504 in another?',
+ frames:[
+  {h:'Three clocks start',b:'The view takes 75 s. Each layer starts its own clock: ALB idle 120 s, nginx <code>proxy_read_timeout</code> 60 s, gunicorn <code>--timeout</code> 30 s.',
+   down:ALL_IN,active:'view',token:{at:'view',t:'GET /report'},notes:{view:'working… needs 75 s'},clock:0,limits:{alb:120,nginx:60,gunicorn:30},workers:[0,1,0,0]},
+  {h:'t = 30 s: gunicorn fires first',b:'The arbiter has not heard from the busy worker for 30 s, so it kills it. The connection to nginx closes with no response.',
+   down:ALL_IN,active:'gunicorn',token:{at:'gunicorn',t:'killed',err:true},fail:['gunicorn','metrics','auth','ratelimit','view'],notes:{gunicorn:'WORKER TIMEOUT, worker killed',view:'process gone'},clock:30,limits:{alb:120,nginx:60,gunicorn:30},fired:['gunicorn'],workers:[0,2,0,0]},
+  {h:'nginx returns 502',b:'nginx sees the upstream close mid-request and logs "upstream prematurely closed connection". A broken upstream is a <b>502 Bad Gateway</b>.',
+   down:ALL_IN,up:['nginx','alb','client'],active:'nginx',token:{at:'client',t:'502',err:true},fail:['gunicorn','metrics','auth','ratelimit','view'],notes:{nginx:'upstream closed → 502',metrics:'never records anything'},clock:30,limits:{alb:120,nginx:60,gunicorn:30},fired:['gunicorn'],status:'502',statusErr:true,workers:[0,0,0,0]},
+  {h:'Raise gunicorn to 90 s: t = 60 s',b:'Replay with <code>--timeout 90</code>. Now nginx\'s 60 s clock is the shortest. nginx gives up waiting and returns <b>504 Gateway Timeout</b>.',
+   down:ALL_IN,up:['nginx','alb','client'],active:'nginx',token:{at:'client',t:'504',err:true},fail:['nginx'],notes:{nginx:'read timeout → 504',view:'still working…'},clock:60,limits:{alb:120,nginx:60,gunicorn:90},fired:['nginx'],status:'504',statusErr:true,workers:[0,1,0,0]},
+  {h:'t = 75 s: work nobody reads',b:'The view finishes and the worker writes its response to a connection nginx already gave up on. Metrics records a 200 for a request the client saw as a 504. The ALB\'s 120 s clock never fires.',
+   down:ALL_IN,up:['view','ratelimit','auth','metrics','gunicorn'],active:'gunicorn',token:{at:'gunicorn',t:'200 (too late)',err:true},fail:['nginx'],notes:{gunicorn:'writes to a closed socket',metrics:'records 200 (!)'},clock:75,limits:{alb:120,nginx:60,gunicorn:90},fired:['nginx'],status:'504',statusErr:true,workers:[0,0,0,0]}
+ ],
+ take:'Status code tells you which layer gave up: 502 means the upstream connection broke, 504 means a proxy timed out waiting. Make timeouts shrink inward (app < nginx < ALB). Equal timeouts race.',
+ gen:'Any chain of proxies and gateways, including service meshes and API gateways. Timeout and retry budgets shrink as you go inward.'},
+
+{id:'upload',tab:'Scenario 3',short:'50 MB upload',
+ q:'A 50 MB upload. Where is it buffered, and where is it rejected?',
+ frames:[
+  {h:'Default config: 413 at nginx',b:'nginx compares <code>Content-Length</code> (50 MB) with <code>client_max_body_size</code> (1 MB by default) and rejects at once. gunicorn and Django never hear about it.',
+   down:['client','alb','nginx'],up:['nginx','alb','client'],active:'nginx',skip:['gunicorn','metrics','auth','ratelimit','view'],token:{at:'client',t:'413',err:true},fail:['nginx'],notes:{nginx:'50 MB > 1 MB limit → 413',gunicorn:'never hears about it'},status:'413',statusErr:true,workers:[0,0,0,0]},
+  {h:'Raise the limit: nginx buffers first',b:'With the limit at 100 MB, nginx reads the whole body before contacting gunicorn: a few KB in memory, the rest spilled to a temp file on disk.',
+   down:['client','alb','nginx'],active:'nginx',token:{at:'nginx',t:'POST 50 MB'},notes:{nginx:'body → temp file (slow client)',gunicorn:'all workers free'},buffer:'nginx',workers:[0,0,0,0]},
+  {h:'Only then a worker is used',b:'Once the body is on disk, nginx streams it to gunicorn over the fast local connection. The slow upload never tied up a sync worker.',
+   down:['client','alb','nginx','gunicorn'],active:'gunicorn',token:{at:'gunicorn',t:'POST 50 MB'},notes:{gunicorn:'busy only for the local copy'},workers:[1,0,0,0]},
+  {h:'Django spills to disk too',b:'Files over <code>FILE_UPLOAD_MAX_MEMORY_SIZE</code> (2.5 MB) are streamed to a temp file. A non-file body over <code>DATA_UPLOAD_MAX_MEMORY_SIZE</code> would get a 400 instead.',
+   down:ALL_IN,active:'view',token:{at:'view',t:'POST 50 MB'},notes:{view:'file > 2.5 MB → temp file'},buffer:'view',workers:[1,0,0,0]},
+  {h:'200, after two copies on disk',b:'The view stores the file and the 200 travels back up. The body was written to disk twice before your code ran.',
+   down:ALL_IN,up:OUT_ALL,active:'client',token:{at:'client',t:'200',res:true},status:'200',workers:[0,0,0,0]},
+  {h:'Turn request buffering off',b:'With <code>proxy_request_buffering off</code>, nginx streams bytes as they arrive. Each slow upload holds a sync worker for its whole duration; four slow uploads and the pool is gone.',
+   down:['client','alb','nginx','gunicorn'],active:'gunicorn',token:{at:'gunicorn',t:'4 slow uploads',err:true},fail:['gunicorn'],notes:{nginx:'streams as bytes arrive',gunicorn:'every worker waiting on a client'},workers:[1,1,1,1]}
+ ],
+ take:'The reverse proxy protects sync workers from slow clients. Body limits must line up across layers, or users get a 413 or 400 from a layer you didn\'t expect.',
+ gen:'Any edge buffer in front of a limited worker pool (slowloris protection). For very large files, skip the app and upload to object storage with a pre-signed URL.'}
+];
+
+const svg=document.getElementById('svg');
+const VW=380, BX=46, BW=288, BH=50, TOP=16, GAP=66, LX=22, RX=VW-22;
+let si=0, fi=0, playTimer=null;
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+function render(){
+  const sc=SC[si], f=sc.frames[fi];
+  const order=f.order||ORDER;
+  const yOf={}; order.forEach((id,i)=>{yOf[id]=TOP+i*GAP+(i>=4?14:0)});
+  const H=yOf[order[order.length-1]]+BH+24;
+  svg.setAttribute('viewBox',`0 0 ${VW} ${H}`);
+  const cy=id=>yOf[id]+BH/2;
+  const skip=new Set(f.skip||[]), fail=new Set(f.fail||[]), fired=new Set(f.fired||[]);
+  const down=f.down||[], up=f.up||[];
+  let o=`<defs>
+    <marker id="aD" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--req)"/></marker>
+    <marker id="aU" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--res)"/></marker>
+    <pattern id="buf" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" style="fill:var(--surface)"/><line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--gil)" stroke-width="2.5"/></pattern>
+  </defs>`;
+  // Django frame
+  const mwIds=order.filter(id=>NODES[id].mw);
+  const fy=yOf[mwIds[0]]-14, fh=yOf[mwIds[mwIds.length-1]]+BH+8-fy;
+  o+=`<rect x="${BX-8}" y="${fy}" width="${BW+16}" height="${fh}" rx="10" style="fill:none;stroke:var(--line)" stroke-dasharray="4 4"/>`;
+  o+=`<rect x="${BX+4}" y="${fy-8}" width="${f.banner?190:122}" height="16" rx="3" style="fill:var(--surface)"/>`;
+  o+=`<text x="${BX+8}" y="${fy+4}" font-size="10.5" font-family="IBM Plex Mono, monospace" style="fill:${f.banner?'var(--alert)':'var(--muted)'}">${f.banner?'Django · '+esc(f.banner):'Django · MIDDLEWARE'}</text>`;
+  // rails
+  if(down.length>1){
+    const y1=cy(down[0]), y2=cy(down[down.length-1]);
+    o+=`<line class="fade" x1="${LX}" y1="${y1}" x2="${LX}" y2="${y2-6}" style="stroke:var(--req)" stroke-width="2.5" marker-end="url(#aD)"/>`;
+  }
+  down.forEach(id=>{o+=`<line x1="${LX}" y1="${cy(id)}" x2="${BX}" y2="${cy(id)}" style="stroke:var(--req)" stroke-width="1.5"/><circle cx="${LX}" cy="${cy(id)}" r="3" style="fill:var(--req)"/>`});
+  if(up.length>1){
+    const y1=cy(up[0]), y2=cy(up[up.length-1]);
+    o+=`<line class="fade" x1="${RX}" y1="${y1}" x2="${RX}" y2="${y2+6}" style="stroke:var(--res)" stroke-width="2.5" marker-end="url(#aU)"/>`;
+  }
+  up.forEach(id=>{o+=`<line x1="${BX+BW}" y1="${cy(id)}" x2="${RX}" y2="${cy(id)}" style="stroke:var(--res)" stroke-width="1.5"/><circle cx="${RX}" cy="${cy(id)}" r="3" style="fill:var(--res)"/>`});
+  // nodes
+  order.forEach(id=>{
+    const n=NODES[id], y=yOf[id], isSkip=skip.has(id), isFail=fail.has(id), isActive=f.active===id;
+    const touched=down.includes(id)||up.includes(id);
+    let stroke='var(--line)', dash='', sw=1.2, op=1;
+    if(isSkip){stroke='var(--skip)';dash='5 4';op=.55}
+    else if(isFail){stroke='var(--alert)';sw=2}
+    else if(isActive){stroke='var(--fg)';sw=2}
+    else if(!touched){op=.6}
+    const fill=f.buffer===id?'url(#buf)':'var(--surface)';
+    o+=`<g class="fade" opacity="${op}"><rect x="${BX}" y="${y}" width="${BW}" height="${BH}" rx="7" style="fill:${fill};stroke:${stroke}" stroke-width="${sw}" ${dash?`stroke-dasharray="${dash}"`:''}/>`;
+    o+=`<text x="${BX+12}" y="${y+20}" font-size="13.5" font-weight="600" font-family="IBM Plex Sans, sans-serif" style="fill:var(--fg)">${esc(n.name)}</text>`;
+    let sub=n.sub;
+    if(f.limits&&f.limits[id]!=null){ sub=(id==='alb'?'idle ':id==='nginx'?'read timeout ':'timeout ')+f.limits[id]+' s'; }
+    if(id==='nginx'&&si===3&&fi===0) sub='max body 1 MB';
+    if(id==='nginx'&&si===3&&fi>=1&&fi<=4) sub='max body 100 MB';
+    o+=`<text x="${BX+BW-10}" y="${y+20}" text-anchor="end" font-size="10.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">${esc(sub)}</text>`;
+    const note=f.notes&&f.notes[id];
+    if(note) o+=`<text x="${BX+12}" y="${y+38}" font-size="11" font-family="IBM Plex Mono, monospace" style="fill:${isFail?'var(--alert)':isSkip?'var(--muted)':'var(--fg)'}">${esc(note)}</text>`;
+    // clocks
+    if(f.limits&&f.limits[id]!=null){
+      const lim=f.limits[id], el=Math.min(f.clock,lim), w=BW-24, isF=fired.has(id);
+      o+=`<rect x="${BX+12}" y="${y+BH-8}" width="${w}" height="4" rx="2" style="fill:var(--line)"/>`;
+      o+=`<rect x="${BX+12}" y="${y+BH-8}" width="${Math.max(w*el/lim,1)}" height="4" rx="2" style="fill:${isF?'var(--alert)':'var(--gil)'}"/>`;
+    }
+    // workers
+    if(id==='gunicorn'&&f.workers){
+      f.workers.forEach((s,k)=>{
+        const col=s===2?'var(--alert)':s===1?'var(--req)':'none';
+        o+=`<rect x="${BX+BW-56+k*12}" y="${y+30}" width="8" height="8" rx="1.5" style="fill:${col};stroke:${s===2?'var(--alert)':'var(--req)'}" stroke-width="1.2"/>`;
+      });
+    }
+    // status at client
+    if(id==='client'&&f.status){
+      o+=`<rect x="${BX+BW-74}" y="${y+27}" width="62" height="18" rx="9" style="fill:${f.statusErr?'var(--alert)':'var(--res)'}"/>`;
+      o+=`<text x="${BX+BW-43}" y="${y+40}" text-anchor="middle" font-size="11.5" font-weight="600" font-family="IBM Plex Mono, monospace" fill="#ffffff">${esc(f.status)}</text>`;
+    }
+    o+=`</g>`;
+  });
+  // clock readout
+  if(f.clock!=null){
+    o+=`<text x="${VW-22}" y="${H-6}" text-anchor="end" font-size="12" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">t = ${f.clock} s</text>`;
+  }
+  // token (persistent element for smooth motion)
+  const tk=f.token;
+  let tx=BX+BW-10, ty=yOf[tk.at]-4;
+  const tw=Math.max(58, tk.t.length*7+16);
+  const col=tk.err?'var(--alert)':tk.res?'var(--res)':'var(--req)';
+  o+=`<g id="token" style="transform:translate(${tx-tw}px,${ty-9}px)"><rect width="${tw}" height="18" rx="9" style="fill:${col}"/><text x="${tw/2}" y="13" text-anchor="middle" font-size="11" font-weight="600" font-family="IBM Plex Mono, monospace" fill="#ffffff">${esc(tk.t)}</text></g>`;
+  // keep token element across renders for transition
+  const old=document.getElementById('token');
+  const prevTransform=old?old.style.transform:null;
+  svg.innerHTML=o;
+  const nt=document.getElementById('token');
+  if(prevTransform && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    const target=nt.style.transform;
+    nt.style.transition='none'; nt.style.transform=prevTransform;
+    nt.getBoundingClientRect();
+    nt.style.transition=''; nt.style.transform=target;
+  }
+
+  document.getElementById('fh').textContent=f.h;
+  document.getElementById('fb').innerHTML=f.b;
+  document.getElementById('stepno').textContent=`${fi+1} / ${sc.frames.length}`;
+  document.getElementById('prev').disabled=fi===0;
+  document.getElementById('next').disabled=fi===sc.frames.length-1;
+  [...document.getElementById('dots').children].forEach((d,i)=>d.setAttribute('aria-current',i===fi?'true':'false'));
+}
+
+function show(n){fi=Math.max(0,Math.min(n,SC[si].frames.length-1));render()}
+function select(i){
+  stopPlay(); si=i; fi=0;
+  const sc=SC[si];
+  [...document.getElementById('tabs').children].forEach((b,k)=>b.setAttribute('aria-selected',k===si?'true':'false'));
+  document.getElementById('q').textContent=sc.q;
+  document.getElementById('take').textContent=sc.take;
+  document.getElementById('gen').textContent=sc.gen;
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  sc.frames.forEach((_,k)=>{const d=document.createElement('button');d.className='dot';d.setAttribute('aria-label','Step '+(k+1));d.onclick=()=>{stopPlay();show(k)};dots.appendChild(d)});
+  const old=document.getElementById('token'); if(old) old.remove();
+  render();
+}
+function stopPlay(){clearInterval(playTimer);playTimer=null;document.getElementById('play').textContent='Play'}
+document.getElementById('play').onclick=()=>{
+  if(playTimer){stopPlay();return}
+  show(fi===SC[si].frames.length-1?0:fi+1);
+  document.getElementById('play').textContent='Pause';
+  playTimer=setInterval(()=>{if(fi>=SC[si].frames.length-1){stopPlay();return} show(fi+1)},3800);
+};
+document.getElementById('prev').onclick=()=>{stopPlay();show(fi-1)};
+document.getElementById('next').onclick=()=>{stopPlay();show(fi+1)};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){stopPlay();show(fi+1)} else if(e.key==='ArrowLeft'){stopPlay();show(fi-1)}
+});
+const tabs=document.getElementById('tabs');
+SC.forEach((sc,i)=>{
+  const b=document.createElement('button'); b.className='tab'; b.setAttribute('role','tab');
+  b.innerHTML=`<small>${sc.tab}</small>${sc.short}`;
+  b.onclick=()=>{try{history.replaceState(null,'','#'+sc.id)}catch(_){location.hash=sc.id} select(i)};
+  tabs.appendChild(b);
+});
+const fromHash=()=>{const i=SC.findIndex(s=>s.id===(location.hash||'').slice(1));return i<0?0:i};
+window.addEventListener('hashchange',()=>select(fromHash()));
+select(fromHash());
+})();
+</script>
+
+</body></html>

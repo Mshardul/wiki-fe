@@ -1,0 +1,339 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Inside a B-tree Index</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the index tree (root, internal, leaf pages) drawn above the heap pages it points into; each step lights the pages a query reads. Same series identity as the MVCC visualizer. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --fg:#152230; --muted:#5a6878; --line:#d6dce4; --soft:#eef2f6;
+  --run:#3776ab; --run-ink:#ffffff; --loop:#e8b923; --wait:#8d99a8; --io:#2f9474; --io-bg:#e3f3ed;
+  --thr:#7a5cc4; --thr-ink:#ffffff; --alert:#c9412f;
+  --f-display:"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding-block:28px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font:500 13px/1.2 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 12px;border-radius:8px;cursor:pointer;text-align:left}
+.tab small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-bottom:2px}
+.tab[aria-selected="true"]{border-color:var(--run);box-shadow:inset 0 0 0 1px var(--run)}
+.tab:focus-visible,.btn:focus-visible,.dot:focus-visible{outline:2px solid var(--loop);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(19px,3vw,23px);line-height:1.25;margin:0;text-wrap:balance}
+.trace{overflow-x:auto;margin:0 -4px}
+.trace svg{display:block;width:100%;min-width:620px;height:auto}
+.share{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px;font-variant-numeric:tabular-nums}
+.share b{color:var(--fg);font-weight:500}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--soft);color:var(--fg);padding:7px 12px;border-radius:7px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.dots{display:flex;gap:6px;flex:1;min-width:0}
+.dot{width:28px;height:6px;border-radius:3px;border:0;background:var(--line);cursor:pointer;padding:0}
+.dot[aria-current="true"]{background:var(--run)}
+.step{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.caption{border-left:3px solid var(--loop);padding:2px 0 2px 14px;min-height:78px}
+.caption h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.caption p{margin:0;max-width:68ch}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 4px;border-radius:4px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.note{background:var(--soft);border-radius:10px;padding:12px 14px;min-width:0}
+.note .eyebrow{margin-bottom:4px}
+.note p{margin:0;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:10px;border-radius:2px;display:inline-block}
+.foot{font-size:13px;color:var(--muted)}
+.txns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:30px}
+.txlabel{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.tx{font-family:var(--f-mono);font-size:12px;padding:3px 9px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface)}
+.tx.active{border-color:var(--run);color:var(--run)}
+.tx.idle{border-color:var(--alert);color:var(--alert)}
+.tx.committed{border-color:var(--io);color:var(--io)}
+.view{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+.view.solo{grid-template-columns:minmax(0,1fr)}
+@media (max-width:720px){.view{grid-template-columns:minmax(0,1fr)}}
+.panel{border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ptitle{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;justify-content:space-between;gap:8px}
+.tup{display:grid;grid-template-columns:34px minmax(0,1fr) 52px 52px;gap:8px;align-items:center;font-family:var(--f-mono);font-size:12.5px;padding:7px 8px;border-radius:6px;border:1.5px solid transparent;background:var(--soft);font-variant-numeric:tabular-nums;transition:background .3s,border-color .3s,opacity .3s}
+.tup.hdr{background:none;font-size:10.5px;color:var(--muted);padding-block:0;text-transform:uppercase}
+.tup .val{min-width:0;overflow-wrap:anywhere}
+.tup .sub{display:block;font-size:10.5px;color:var(--muted);font-family:var(--f-body)}
+.tup.live{background:var(--io-bg);border-color:var(--io)}
+.tup.new{background:var(--surface);border:1.5px dashed var(--run)}
+.tup.dead{opacity:.75}
+.tup.dead .val{text-decoration:line-through}
+.tup.pinned{background:repeating-linear-gradient(45deg,var(--surface) 0 5px,color-mix(in srgb,var(--alert) 18%,var(--surface)) 5px 10px);border-color:var(--alert)}
+.tup.free{background:none;border:1.5px dashed var(--line);color:var(--muted)}
+.tup.free .val{text-decoration:none}
+.idx{font-family:var(--f-mono);font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.idx .iname{font-size:11px;color:var(--muted)}
+.ent{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:6px;background:var(--soft);border:1.5px solid transparent}
+.ent.new{border-color:var(--alert)}
+.ent.stale{opacity:.6}
+.badge{display:inline-block;font-family:var(--f-mono);font-size:12px;padding:4px 10px;border-radius:6px;background:var(--soft);border-left:3px solid var(--loop)}
+.badge.bad{border-left-color:var(--alert)}
+.badge.good{border-left-color:var(--io)}
+.log{font-family:var(--f-mono);font-size:12px;background:var(--soft);border-radius:6px;padding:8px 10px;color:var(--fg);overflow-wrap:anywhere}
+.grid{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:3px}
+.cell{aspect-ratio:1;border-radius:2px;max-width:100%}
+.c-live{background:var(--io)}
+.c-pinned{background:var(--alert)}
+.c-free{background:none;outline:1px dashed var(--line);outline-offset:-1px}
+.pagesbar{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.xidwrap{overflow-x:auto}
+.xidwrap svg{display:block;width:100%;min-width:560px;height:auto}
+.rowlegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.rowlegend span{display:inline-flex;align-items:center;gap:6px}
+.treewrap{overflow-x:auto;margin:0 -4px}
+.treewrap svg{display:block;width:100%;min-width:640px;height:auto}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.counter{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.counter b{color:var(--fg);font-weight:500}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">PostgreSQL 17 · PostgreSQL 18 where skip scan changes the answer</div>
+    <h1>Inside a B-tree Index</h1>
+    <p class="lede">An index is a sorted copy of some columns, arranged as a shallow tree. A search reads one page per level down to a leaf, then follows pointers into the table (the heap). Step through to see which pages each query actually reads, and when the sort order can't help.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="stage">
+    <h2 class="q" id="q"></h2>
+    <div class="meta"><span class="badge" id="plan"></span><span class="counter" id="count"></span></div>
+    <div class="treewrap"><svg id="svg" viewBox="0 0 720 360" role="img" aria-label="B-tree index and heap pages"></svg></div>
+    <div class="controls">
+      <button class="btn" id="prev">Back</button>
+      <button class="btn" id="next">Next</button>
+      <button class="btn" id="play">Play</button>
+      <div class="dots" id="dots"></div>
+      <span class="step" id="stepno"></span>
+    </div>
+    <div class="caption" aria-live="polite"><h3 id="fh"></h3><p id="fb"></p></div>
+    <div class="rowlegend">
+      <span><i class="sw" style="background:color-mix(in srgb,var(--run) 16%,var(--surface));border:1.5px solid var(--run)"></i>Page read by the query</span>
+      <span><i class="sw" style="background:color-mix(in srgb,var(--alert) 14%,var(--surface));border:1.5px solid var(--alert)"></i>Read, but wasted or forced</span>
+      <span><i class="sw" style="border:1.5px dashed var(--alert)"></i>Can't route the search</span>
+      <span><i class="sw" style="background:var(--io);border-radius:50%;width:10px"></i>Visibility map: all-visible</span>
+      <span><i class="sw" style="border:1.5px solid var(--wait);border-radius:50%;width:10px"></i>Not all-visible</span>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="note"><div class="eyebrow">Takeaway</div><p id="take"></p></div>
+    <div class="note"><div class="eyebrow">Generalizes to</div><p id="gen"></p></div>
+  </section>
+
+  <p class="foot">A real index on 1 million rows has hundreds of leaf pages and a few levels; this tree shows six leaves. Page counts are illustrative. Keyboard: ← → to step.</p>
+</div>
+
+<script>
+(function(){
+const TREES={
+ cust:{name:'orders (customer_id, order_date)',root:'< 501 | ≥ 501',ints:['customers 1 – 500','501 – 50,000'],leaves:[
+  ['1 · 11-01','3 · 11-01','41 · 11-01'],['42 · 09-02','42 · 10-29','42 · 11-01'],['43 · 11-01','44 · 06-18','45 · 11-01'],
+  ['501 · 11-01','502 · 10-03','503 · 11-02'],['20,113 · 11-01','20,114 · 08-30','20,115 · 11-01'],['49,998 · 11-01','49,999 · 07-14','50,000 · 11-01']]},
+ status:{name:'orders (status, order_date)',root:'< pending | ≥ pending',ints:['cancelled – paid','pending – shipped'],leaves:[
+  ['cancelled · 10-31','cancelled · 11-01','cancelled · 11-03'],['paid · 10-30','paid · 11-01','paid · 11-01'],['paid · 11-02','paid · 11-05','paid · 11-07'],
+  ['pending · 10-29','pending · 11-01','pending · 11-02'],['shipped · 10-28','shipped · 11-01','shipped · 11-01'],['shipped · 11-03','shipped · 11-04','shipped · 11-06']]},
+ date:{name:'orders (order_date, customer_id)',root:'< 10-30 | ≥ 10-30',ints:['… – 10-29','10-30 – …'],leaves:[
+  ['07-14 · 49,999','08-30 · 20,114','09-02 · 42'],['09-15 · 7','10-02 · 3','10-12 · 44'],['10-15 · 9','10-20 · 2','10-29 · 42'],
+  ['10-30 · 18','10-31 · 6','11-01 · 1'],['11-01 · 3','11-01 · 39','11-01 · 41'],['11-01 · 42','11-02 · 503','11-05 · 12']]},
+ email:{name:'users (email) · sorted by raw value',root:'< alex | ≥ alex',ints:['A – Z (uppercase sorts first)','a – z'],leaves:[
+  ['Alice@x.com','BOB@x.com','Bob@y.com'],['Carol@z.com','DAVE@q.com','Erin@x.com'],['Pat@q.com','Sam@x.com','Zoe@x.com'],
+  ['alex@m.com','alice@y.com','bob@q.com'],['carol@x.com','dan@x.com','erin@y.com'],['mike@x.com','ravi@x.com','zed@x.com']]},
+ lower:{name:'users (lower(email))',root:'< dave | ≥ dave',ints:['alex – dan','dave – zoe'],leaves:[
+  ['alex@m.com','alice@x.com','alice@y.com'],['bob@q.com','bob@x.com','bob@y.com'],['carol@x.com','carol@z.com','dan@x.com'],
+  ['dave@q.com','erin@x.com','erin@y.com'],['mike@x.com','pat@q.com','ravi@x.com'],['sam@x.com','zed@x.com','zoe@x.com']]},
+ incl:{name:'orders (customer_id) INCLUDE (total)',root:'< 501 | ≥ 501',ints:['customers 1 – 500','501 – 50,000'],leaves:[
+  ['1 · total 40','3 · total 12','41 · total 99'],['42 · total 120','42 · total 75','42 · total 310'],['43 · total 18','44 · total 64','45 · total 22'],
+  ['501 · total 8','502 · total 51','503 · total 30'],['20,113 · total 77','20,114 · total 15','20,115 · total 90'],['49,998 · total 5','49,999 · total 63','50,000 · total 41']]}
+};
+const ALL_DATE={l0:[0,1,2],l1:[2],l2:[0,2],l3:[0],l4:[0,2],l5:[0,2]};
+
+const SC=[
+{id:'happy',tab:'Happy path',short:'WHERE customer_id = 42',
+ q:'WHERE customer_id = 42: one page per level, then into the heap',
+ frames:[
+  {tree:'cust',st:{root:'read'},plan:'Index Scan',count:'index pages 1 · heap pages 0',
+   h:'Root',b:'The root\'s separator keys say customers below 501 are under the left child. One page read.'},
+  {tree:'cust',st:{root:'read',i0:'read'},plan:'Index Scan',count:'index pages 2 · heap pages 0',
+   h:'Internal page',b:'Its keys narrow the search to the leaf that holds customer 42. Two pages read.'},
+  {tree:'cust',st:{root:'read',i0:'read',l1:'read'},hl:{l1:[0,1,2]},plan:'Index Scan',count:'index pages 3 · heap pages 0',
+   h:'Leaf: one contiguous run',b:'Entries are sorted by <code>customer_id</code> first, so all of customer 42\'s orders sit together, already ordered by <code>order_date</code>. The scan reads them left to right and stops at the leaf\'s high key.'},
+  {tree:'cust',st:{root:'read',i0:'read',l1:'read',h1:'read',h4:'read',h6:'read'},hl:{l1:[0,1,2]},links:[[1,1],[1,4],[1,6]],plan:'Index Scan',count:'index pages 3 · heap pages 3',
+   h:'Heap visits',b:'Each entry points to a row in the heap, and rows are stored in no particular order. Each matching row costs a heap visit, which is usually the expensive part. The rest of the table is never read.'}],
+ take:'An index lookup costs about one page per tree level, plus one heap visit per matching row. Depth grows logarithmically, so a billion rows adds only a level or two.',
+ gen:'Every B-tree or B+tree store: MySQL InnoDB, SQLite, and most databases\' secondary indexes.'},
+
+{id:'prefix',tab:'Scenario 1',short:'WHERE order_date = ?',
+ q:'Why doesn\'t an index on (customer_id, order_date) help WHERE order_date = ?',
+ frames:[
+  {tree:'cust',st:{root:'nope'},hl:ALL_DATE,hlBad:true,plan:'no usable range',bad:true,count:'',
+   h:'The root can\'t route',b:'The root\'s keys are customer IDs, and the query doesn\'t give one. 1 November orders (highlighted) are scattered through every customer\'s run, so every child might contain matches.'},
+  {tree:'cust',dim:true,heapAll:'scan',plan:'Seq Scan · Postgres 17',bad:true,count:'index pages 0 · heap pages all',
+   h:'Postgres 17: scan the table',b:'With no range to descend to, the planner reads the whole table instead.'},
+  {tree:'cust',st:{root:'read',i0:'read',i1:'read',l0:'scan',l1:'scan',l2:'scan',l3:'scan',l4:'scan',l5:'scan'},probes:[0,1,2,3,4,5],probeLabel:'1 of 50,000',hl:ALL_DATE,plan:'skip scan rejected · Postgres 18',bad:true,count:'would need 50,000 descents',
+   h:'Postgres 18: skip scan, in theory',b:'Skip scan can search once per distinct <code>customer_id</code>, jumping to <code>(c, 11-01)</code> each time. With 50,000 customers that is 50,000 descents, so the planner still picks the sequential scan.'},
+  {tree:'status',st:{root:'read',i0:'read',i1:'read',l0:'read',l1:'read',l3:'read',l4:'read'},probes:[0,1,3,4],hl:{l0:[1],l1:[1,2],l3:[1],l4:[1,2]},plan:'Index Scan · Index Searches: 4',count:'4 descents',
+   h:'Variant: low-cardinality leading column',b:'Index <code>(status, order_date)</code> with 4 statuses: skip scan needs only 4 descents, one per status. EXPLAIN ANALYZE on 18 reports <code>Index Searches: 4</code>.'},
+  {tree:'date',st:{root:'read',i1:'read',l3:'read',l4:'read',l5:'read'},hl:{l3:[2],l4:[0,1,2],l5:[0]},plan:'Index Scan',count:'index pages 5 · one contiguous run',
+   h:'The classic fix: lead with the filtered column',b:'An index on <code>(order_date, …)</code> puts all 1 November entries in one run. Column order follows how queries filter, not the order of the table\'s columns.'}],
+ take:'A multicolumn B-tree is usable from its leftmost columns. Postgres 18\'s skip scan relaxes this only when the leading column has few distinct values.',
+ gen:'MySQL 8.0\'s skip scan range access and Oracle\'s index skip scan, with the same low-cardinality condition.'},
+
+{id:'expr',tab:'Scenario 2',short:'WHERE lower(email) = ?',
+ q:'Why does WHERE lower(email) = ? ignore my index on email?',
+ frames:[
+  {tree:'email',st:{},hl:{l0:[0]},plan:'index on email',count:'',
+   h:'Sorted by the raw value',b:'Leaves hold <code>email</code> exactly as stored, in collation order (here uppercase first). The row we want, <code>Alice@x.com</code>, is in there.'},
+  {tree:'email',st:{root:'nope'},hl:{l0:[0]},hlBad:true,plan:'no key to compare',bad:true,count:'',
+   h:'Nowhere to send lower(...)',b:'The query asks for <code>lower(email) = \'alice@x.com\'</code>. The index stores <code>email</code>, not <code>lower(email)</code>, so the root has nothing to compare against.'},
+  {tree:'email',dim:true,heapAll:'scan',plan:'Seq Scan · lower() on every row',bad:true,count:'index pages 0 · heap pages all',
+   h:'Planner falls back to a scan',b:'Postgres reads every row and computes <code>lower()</code> on each.'},
+  {tree:'lower',st:{root:'read',i0:'read',l0:'read',h3:'read'},hl:{l0:[1]},links:[[0,3]],plan:'Index Scan',count:'index pages 3 · heap pages 1',
+   h:'Fix: index the expression',b:'<code>CREATE INDEX ON users (lower(email))</code> stores the computed values, sorted. The same query descends straight to <code>alice@x.com</code>.'},
+  {tree:'lower',st:{root:'nope'},plan:'Seq Scan',bad:true,count:'',
+   h:'The trap in reverse',b:'With only the expression index, <code>WHERE email = \'Alice@x.com\'</code> can\'t use it. The same family of traps: <code>created_at::date = …</code>, <code>id::text = \'42\'</code>, comparing text to an integer.'}],
+ take:'An index can only answer questions about exactly what it stores. Write predicates against the bare column, or index the expression you query.',
+ gen:'MySQL functional indexes (8.0.13+) and generated columns, and case-insensitive collations as an alternative to indexing an expression.'},
+
+{id:'ios',tab:'Scenario 3',short:'Index-only scans',
+ q:'Why can some queries skip the table entirely, and why does that depend on vacuum?',
+ frames:[
+  {tree:'cust',st:{root:'read',i0:'read',l1:'read'},hl:{l1:[0,1,2]},vm:[1,1,1,1,1,1,1,1],plan:'Index Only Scan · Heap Fetches: 0',count:'index pages 3 · heap pages 0',
+   h:'After a vacuum: no heap reads',b:'<code>SELECT order_date … WHERE customer_id = 42</code> needs only columns in the index. Every heap page is marked all-visible in the visibility map, so the table is never read.'},
+  {tree:'cust',st:{h4:'write',h6:'write'},vm:[1,1,1,1,0,1,0,1],plan:'UPDATEs elsewhere',count:'',
+   h:'Heavy writes clear the bits',b:'Updates touch heap pages 5 and 7. A page with new row versions may hold rows some snapshot can\'t see (see the MVCC visualizer), so its all-visible bit is cleared.'},
+  {tree:'cust',st:{root:'read',i0:'read',l1:'read',h4:'scan',h6:'scan'},hl:{l1:[0,1,2]},links:[[1,4],[1,6]],linkBad:true,vm:[1,1,1,1,0,1,0,1],plan:'Index Only Scan · Heap Fetches: 14',bad:true,count:'index pages 3 · heap pages 2',
+   h:'Same plan name, different cost',b:'The plan still says Index Only Scan, but every entry on a cleared page needs a heap visit to check visibility. <code>Heap Fetches</code> in EXPLAIN ANALYZE is the number to watch.'},
+  {tree:'cust',st:{root:'read',i0:'read',l1:'read'},hl:{l1:[0,1,2]},vm:[1,1,1,1,1,1,1,1],plan:'Index Only Scan · Heap Fetches: 0',count:'index pages 3 · heap pages 0',
+   h:'Vacuum re-marks the pages',b:'Once vacuum has run, the bits are set again and heap fetches drop back to zero.'},
+  {tree:'incl',st:{root:'read',i0:'read',l1:'read'},hl:{l1:[0,1,2]},vm:[1,1,1,1,1,1,1,1],plan:'Index Only Scan',count:'index pages 3 · heap pages 0',
+   h:'Make more queries index-only',b:'<code>CREATE INDEX ON orders (customer_id) INCLUDE (total)</code> stores <code>total</code> in the leaves without adding it to the sort key, so <code>SELECT total … WHERE customer_id = 42</code> can skip the table too.'}],
+ take:'An index-only scan is only as good as the visibility map. On write-heavy tables, tune autovacuum per table if you rely on them.',
+ gen:'Covering indexes in MySQL InnoDB (which checks visibility using the page\'s max transaction ID instead) and SQL Server\'s INCLUDE columns.'}
+];
+
+const svg=document.getElementById('svg');
+const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const $=id=>document.getElementById(id);
+let si=0, fi=0, playTimer=null;
+const LW=108, LH=74, LG=10, LX0=11, LY=188, IY=104, IW=230, IH=40, RY=22, RW=220, RH=40, HY=318, HW=78, HG=8, HX0=20, HH=44;
+const leafX=i=>LX0+i*(LW+LG);
+const intX=k=>{const a=leafX(k*3), b=leafX(k*3+2)+LW; return (a+b)/2-IW/2};
+const heapX=i=>HX0+i*(HW+HG);
+function style(state){
+  switch(state){
+    case 'read': return {f:'color-mix(in srgb,var(--run) 16%,var(--surface))',s:'var(--run)',w:2,d:''};
+    case 'scan': return {f:'color-mix(in srgb,var(--alert) 14%,var(--surface))',s:'var(--alert)',w:2,d:''};
+    case 'nope': return {f:'var(--surface)',s:'var(--alert)',w:2,d:'5 4'};
+    case 'write': return {f:'var(--surface)',s:'var(--loop)',w:2.5,d:''};
+    default: return {f:'var(--surface)',s:'var(--line)',w:1.2,d:''};
+  }
+}
+function draw(f){
+  const T=TREES[f.tree], st=f.st||{}, hl=f.hl||{};
+  const H=HY+HH+22;
+  svg.setAttribute('viewBox',`0 0 720 ${H}`);
+  let o=`<defs><marker id="pa" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--alert)"/></marker></defs>`;
+  const treeOp=f.dim?0.32:1;
+  o+=`<g opacity="${treeOp}">`;
+  o+=`<text x="11" y="14" font-size="10.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">INDEX ${esc(T.name)}</text>`;
+  const rx=360-RW/2;
+  // edges
+  [0,1].forEach(k=>{
+    const on=st.root&&st['i'+k]&&st.root!=='nope';
+    o+=`<line x1="360" y1="${RY+RH}" x2="${intX(k)+IW/2}" y2="${IY}" style="stroke:${on?'var(--run)':'var(--line)'}" stroke-width="${on?2:1.2}"/>`;
+    for(let j=0;j<3;j++){const i=k*3+j, on2=st['i'+k]&&st['l'+i]&&st['l'+i]!=='nope';
+      o+=`<line x1="${intX(k)+IW/2}" y1="${IY+IH}" x2="${leafX(i)+LW/2}" y2="${LY}" style="stroke:${on2?(st['l'+i]==='scan'?'var(--alert)':'var(--run)'):'var(--line)'}" stroke-width="${on2?2:1.2}"/>`;}
+  });
+  // root
+  {const s=style(st.root);o+=`<rect x="${rx}" y="${RY}" width="${RW}" height="${RH}" rx="6" style="fill:${s.f};stroke:${s.s}" stroke-width="${s.w}" ${s.d?`stroke-dasharray="${s.d}"`:''}/>`;
+   o+=`<text x="360" y="${RY+16}" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">root</text>`;
+   o+=`<text x="360" y="${RY+31}" text-anchor="middle" font-size="12" font-weight="500" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">${esc(T.root)}</text>`;
+   if(st.root==='nope') o+=`<text x="${rx+RW+8}" y="${RY+26}" font-size="11.5" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--alert)">which way? no key in the query</text>`;}
+  // internals
+  [0,1].forEach(k=>{const s=style(st['i'+k]), x=intX(k);
+    o+=`<rect x="${x}" y="${IY}" width="${IW}" height="${IH}" rx="6" style="fill:${s.f};stroke:${s.s}" stroke-width="${s.w}" ${s.d?`stroke-dasharray="${s.d}"`:''}/>`;
+    o+=`<text x="${x+IW/2}" y="${IY+16}" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">internal</text>`;
+    o+=`<text x="${x+IW/2}" y="${IY+31}" text-anchor="middle" font-size="11.5" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">${esc(T.ints[k])}</text>`;});
+  // leaves
+  T.leaves.forEach((ents,i)=>{const s=style(st['l'+i]), x=leafX(i);
+    o+=`<rect x="${x}" y="${LY}" width="${LW}" height="${LH}" rx="6" style="fill:${s.f};stroke:${s.s}" stroke-width="${s.w}"/>`;
+    o+=`<text x="${x+8}" y="${LY+13}" font-size="9.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">leaf ${i+1}</text>`;
+    ents.forEach((e,j)=>{const y=LY+28+j*16, on=(hl['l'+i]||[]).includes(j);
+      if(on) o+=`<rect x="${x+4}" y="${y-11}" width="${LW-8}" height="15" rx="3" style="fill:${f.hlBad?'color-mix(in srgb,var(--alert) 22%,var(--surface))':'color-mix(in srgb,var(--loop) 45%,var(--surface))'}"/>`;
+      o+=`<text x="${x+8}" y="${y}" font-size="${e.length>14?9.5:10.5}" font-weight="${on?600:400}" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">${esc(e)}</text>`;});
+    if(i<5) o+=`<line x1="${x+LW+1}" y1="${LY+LH/2}" x2="${x+LW+LG-1}" y2="${LY+LH/2}" style="stroke:var(--wait)" stroke-width="1.2"/>`;
+  });
+  (f.probes||[]).forEach((i,k)=>{const x=leafX(i)+LW/2;
+    o+=`<line x1="${x+30}" y1="${LY-16}" x2="${x+30}" y2="${LY-3}" style="stroke:var(--alert)" stroke-width="2" marker-end="url(#pa)"/>`;
+    o+=`<text x="${leafX(i)+LW-7}" y="${LY+13}" text-anchor="end" font-size="9.5" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--alert)">${f.probeLabel&&k===0?esc(f.probeLabel):'probe '+(k+1)}</text>`;});
+  o+=`</g>`;
+  // heap
+  o+=`<text x="${HX0}" y="${HY-10}" font-size="10.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">HEAP (table pages, rows in no particular order)</text>`;
+  (f.links||[]).forEach(([l,h])=>{o+=`<line x1="${leafX(l)+LW/2}" y1="${LY+LH}" x2="${heapX(h)+HW/2}" y2="${HY}" style="stroke:${f.linkBad?'var(--alert)':'var(--run)'}" stroke-width="1.5" stroke-dasharray="4 3"/>`;});
+  for(let i=0;i<8;i++){const state=f.heapAll||st['h'+i], s=style(state), x=heapX(i);
+    o+=`<rect x="${x}" y="${HY}" width="${HW}" height="${HH}" rx="6" style="fill:${s.f};stroke:${s.s}" stroke-width="${s.w}"/>`;
+    o+=`<text x="${x+10}" y="${HY+26}" font-size="11" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">page ${i+1}</text>`;
+    if(state==='write') o+=`<text x="${x+10}" y="${HY+39}" font-size="9" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">updated</text>`;
+    if(f.vm){const on=f.vm[i]; o+=`<circle cx="${x+HW-12}" cy="${HY+12}" r="5" style="fill:${on?'var(--io)':'var(--surface)'};stroke:${on?'var(--io)':'var(--wait)'}" stroke-width="1.5"/>`;}
+  }
+  svg.innerHTML=o;
+}
+function render(){
+  const sc=SC[si], f=sc.frames[fi];
+  draw(f);
+  const p=$('plan'); p.textContent=f.plan; p.className='badge '+(f.bad?'bad':'good');
+  $('count').innerHTML=f.count?`Pages read: <b>${esc(f.count)}</b>`:'';
+  $('fh').textContent=f.h; $('fb').innerHTML=f.b;
+  $('stepno').textContent=`${fi+1} / ${sc.frames.length}`;
+  $('prev').disabled=fi===0; $('next').disabled=fi===sc.frames.length-1;
+  [...$('dots').children].forEach((d,i)=>d.setAttribute('aria-current',i===fi?'true':'false'));
+}
+function show(n){fi=Math.max(0,Math.min(n,SC[si].frames.length-1));render()}
+function select(i){
+  stopPlay(); si=i; fi=0; const sc=SC[si];
+  [...$('tabs').children].forEach((b,k)=>b.setAttribute('aria-selected',k===si?'true':'false'));
+  $('q').textContent=sc.q; $('take').textContent=sc.take; $('gen').textContent=sc.gen;
+  const dots=$('dots'); dots.innerHTML='';
+  sc.frames.forEach((_,k)=>{const d=document.createElement('button');d.className='dot';d.setAttribute('aria-label','Step '+(k+1));d.onclick=()=>{stopPlay();show(k)};dots.appendChild(d)});
+  render();
+}
+function stopPlay(){clearInterval(playTimer);playTimer=null;$('play').textContent='Play'}
+$('play').onclick=()=>{
+  if(playTimer){stopPlay();return}
+  show(fi===SC[si].frames.length-1?0:fi+1); $('play').textContent='Pause';
+  playTimer=setInterval(()=>{if(fi>=SC[si].frames.length-1){stopPlay();return} show(fi+1)},4200);
+};
+$('prev').onclick=()=>{stopPlay();show(fi-1)};
+$('next').onclick=()=>{stopPlay();show(fi+1)};
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){stopPlay();show(fi+1)}else if(e.key==='ArrowLeft'){stopPlay();show(fi-1)}});
+SC.forEach((sc,i)=>{const b=document.createElement('button');b.className='tab';b.setAttribute('role','tab');b.innerHTML=`<small>${sc.tab}</small>${sc.short}`;b.onclick=()=>{try{history.replaceState(null,'','#'+sc.id)}catch(_){location.hash=sc.id} select(i)};$('tabs').appendChild(b)});
+const fromHash=()=>{const i=SC.findIndex(x=>x.id===(location.hash||'').slice(1));return i<0?0:i};
+window.addEventListener('hashchange',()=>select(fromHash()));
+select(fromHash());
+})();
+</script>
+
+</body></html>

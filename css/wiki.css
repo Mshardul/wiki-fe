@@ -17,6 +17,7 @@
 @import "./view-visualizer/ui.css";
 @import "./view-visualizer/stage.css";
 @import "./view-visualizer/timeline.css";
+@import "./view-visualizer/schedule.css";
 @import "./view-visualizer/panels.css";
 @import "./view-visualizer/playback.css";
 @import "./view-visualizer/layout.css";

@@ -132,6 +132,66 @@ export interface TimelineModel {
   boundaries: number[];
 }
 
+export type ScheduleStyle = "solid" | "hatch" | "outline";
+export type ScheduleSwatch = ScheduleStyle | "meter" | "arrow" | "pin";
+export interface ScheduleSegment {
+  from: number;
+  to: number;
+  style: ScheduleStyle;
+  label?: string;
+}
+export interface ScheduleRow {
+  id: string;
+  label: string;
+  segments: ScheduleSegment[];
+}
+export interface ScheduleMeter {
+  row: string;
+  from: number;
+  to: number;
+  label?: string;
+}
+export interface ScheduleArrow {
+  at: number;
+  from: string;
+  to: string;
+  label: string;
+}
+export interface SchedulePin {
+  at: number;
+  row: string;
+  label?: string;
+}
+export interface ScheduleValue {
+  at: number;
+  text: string;
+  note?: string;
+  bad?: boolean;
+}
+// Continuous time from 0 to end; the shape draws only what has happened by now.
+export interface ScheduleModel {
+  kind: "schedule";
+  // Frames with the same track glide from one now to the next; a new track starts from 0.
+  track: string;
+  end: number;
+  now: number;
+  tickEvery: number;
+  // Faint marks along solid segments at this spacing, e.g. points where a lock could change hands.
+  marksEvery: number | null;
+  // Suffix on the 0 tick. Null draws the numbers with no suffix; a caption can still sit above them.
+  unit: string | null;
+  axisLabel: string;
+  summary: { label: string; segments: ScheduleSegment[] } | null;
+  rows: ScheduleRow[];
+  meters: ScheduleMeter[];
+  arrows: ScheduleArrow[];
+  pins: SchedulePin[];
+  values: { label: string; points: ScheduleValue[] } | null;
+  // Solid time per row so far, read as "<lead> <now>: <row> <time> (<share>%) … <idle> <rest>".
+  share: { lead: string; idle: string } | null;
+  note: string | null;
+}
+
 export type LeafModel =
   | LinearModel
   | HistogramModel
@@ -143,7 +203,7 @@ export interface CompositeModel {
   kind: "composite";
   parts: LeafModel[];
 }
-export type ShapeModel = LeafModel | CompositeModel;
+export type ShapeModel = LeafModel | CompositeModel | ScheduleModel;
 
 export function defaultAxis(model: ShapeModel): Axis | null {
   return model.kind === "linear" || model.kind === "histogram" ? model.defaultAxis : null;
@@ -158,7 +218,7 @@ export function resolveAxis(model: ShapeModel, rotated: boolean): Axis | null {
 export function modelKeys(model: ShapeModel): string[] {
   if (model.kind === "linear") return model.items;
   if (model.kind === "ranking") return model.rows.map((r) => r.key);
-  if (model.kind === "lanes" || model.kind === "timeline") return [];
+  if (model.kind === "lanes" || model.kind === "timeline" || model.kind === "schedule") return [];
   if (model.kind === "composite") return model.parts.flatMap(modelKeys);
   return model.slots.flatMap((s) => (s ? [s.key] : []));
 }

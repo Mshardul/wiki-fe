@@ -1,7 +1,7 @@
 import type { FieldAvailability, FieldSection, InputValues } from "./fields";
 import type { FlowModel } from "./flow";
 import type { Rich } from "./rich";
-import type { ShapeModel } from "./shapes";
+import type { ScheduleSwatch, ShapeModel } from "./shapes";
 
 export type Outcome = "good" | "bad";
 
@@ -13,6 +13,8 @@ export interface VarRow {
 export interface VizFrame {
   index: number;
   label: string;
+  // Consecutive frames with the same group render together in the step strip.
+  group?: string;
   outcome: Outcome;
   badge: string;
   caption: Rich;
@@ -87,4 +89,8 @@ export interface VisualizerModule {
   // Per field key, which inputs matter for the current choice.
   availability?: (values: InputValues) => Record<string, FieldAvailability>;
   run: (values: InputValues) => RunResult;
+  // Mechanism pages. Compare modules omit these.
+  kicker?: string;
+  legend?: { label: string; swatch: ScheduleSwatch }[];
+  footnote?: string;
 }

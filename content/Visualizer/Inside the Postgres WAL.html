@@ -1,0 +1,336 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Inside the Postgres WAL</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one machine split into memory and disk tiers (data pages + WAL strip in each), a client strip above; scenario 3 adds a replica pipeline. Same series identity. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --fg:#152230; --muted:#5a6878; --line:#d6dce4; --soft:#eef2f6;
+  --run:#3776ab; --run-ink:#ffffff; --loop:#e8b923; --wait:#8d99a8; --io:#2f9474; --io-bg:#e3f3ed;
+  --thr:#7a5cc4; --thr-ink:#ffffff; --alert:#c9412f;
+  --f-display:"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding-block:28px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font:500 13px/1.2 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 12px;border-radius:8px;cursor:pointer;text-align:left}
+.tab small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-bottom:2px}
+.tab[aria-selected="true"]{border-color:var(--run);box-shadow:inset 0 0 0 1px var(--run)}
+.tab:focus-visible,.btn:focus-visible,.dot:focus-visible{outline:2px solid var(--loop);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(19px,3vw,23px);line-height:1.25;margin:0;text-wrap:balance}
+.trace{overflow-x:auto;margin:0 -4px}
+.trace svg{display:block;width:100%;min-width:620px;height:auto}
+.share{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px;font-variant-numeric:tabular-nums}
+.share b{color:var(--fg);font-weight:500}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--soft);color:var(--fg);padding:7px 12px;border-radius:7px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.dots{display:flex;gap:6px;flex:1;min-width:0}
+.dot{width:28px;height:6px;border-radius:3px;border:0;background:var(--line);cursor:pointer;padding:0}
+.dot[aria-current="true"]{background:var(--run)}
+.step{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.caption{border-left:3px solid var(--loop);padding:2px 0 2px 14px;min-height:78px}
+.caption h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.caption p{margin:0;max-width:68ch}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 4px;border-radius:4px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.note{background:var(--soft);border-radius:10px;padding:12px 14px;min-width:0}
+.note .eyebrow{margin-bottom:4px}
+.note p{margin:0;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:10px;border-radius:2px;display:inline-block}
+.foot{font-size:13px;color:var(--muted)}
+.txns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:30px}
+.txlabel{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.tx{font-family:var(--f-mono);font-size:12px;padding:3px 9px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface)}
+.tx.active{border-color:var(--run);color:var(--run)}
+.tx.idle{border-color:var(--alert);color:var(--alert)}
+.tx.committed{border-color:var(--io);color:var(--io)}
+.view{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+.view.solo{grid-template-columns:minmax(0,1fr)}
+@media (max-width:720px){.view{grid-template-columns:minmax(0,1fr)}}
+.panel{border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ptitle{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;justify-content:space-between;gap:8px}
+.tup{display:grid;grid-template-columns:34px minmax(0,1fr) 52px 52px;gap:8px;align-items:center;font-family:var(--f-mono);font-size:12.5px;padding:7px 8px;border-radius:6px;border:1.5px solid transparent;background:var(--soft);font-variant-numeric:tabular-nums;transition:background .3s,border-color .3s,opacity .3s}
+.tup.hdr{background:none;font-size:10.5px;color:var(--muted);padding-block:0;text-transform:uppercase}
+.tup .val{min-width:0;overflow-wrap:anywhere}
+.tup .sub{display:block;font-size:10.5px;color:var(--muted);font-family:var(--f-body)}
+.tup.live{background:var(--io-bg);border-color:var(--io)}
+.tup.new{background:var(--surface);border:1.5px dashed var(--run)}
+.tup.dead{opacity:.75}
+.tup.dead .val{text-decoration:line-through}
+.tup.pinned{background:repeating-linear-gradient(45deg,var(--surface) 0 5px,color-mix(in srgb,var(--alert) 18%,var(--surface)) 5px 10px);border-color:var(--alert)}
+.tup.free{background:none;border:1.5px dashed var(--line);color:var(--muted)}
+.tup.free .val{text-decoration:none}
+.idx{font-family:var(--f-mono);font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.idx .iname{font-size:11px;color:var(--muted)}
+.ent{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:6px;background:var(--soft);border:1.5px solid transparent}
+.ent.new{border-color:var(--alert)}
+.ent.stale{opacity:.6}
+.badge{display:inline-block;font-family:var(--f-mono);font-size:12px;padding:4px 10px;border-radius:6px;background:var(--soft);border-left:3px solid var(--loop)}
+.badge.bad{border-left-color:var(--alert)}
+.badge.good{border-left-color:var(--io)}
+.log{font-family:var(--f-mono);font-size:12px;background:var(--soft);border-radius:6px;padding:8px 10px;color:var(--fg);overflow-wrap:anywhere}
+.grid{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:3px}
+.cell{aspect-ratio:1;border-radius:2px;max-width:100%}
+.c-live{background:var(--io)}
+.c-pinned{background:var(--alert)}
+.c-free{background:none;outline:1px dashed var(--line);outline-offset:-1px}
+.pagesbar{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.xidwrap{overflow-x:auto}
+.xidwrap svg{display:block;width:100%;min-width:560px;height:auto}
+.rowlegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.rowlegend span{display:inline-flex;align-items:center;gap:6px}
+.clients{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:30px}
+.machines{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.machines.two{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+@media (max-width:760px){.machines.two{grid-template-columns:minmax(0,1fr)}}
+.machine{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.mname{font-family:var(--f-display);font-weight:600;font-size:15px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.mname small{font-family:var(--f-mono);font-weight:400;font-size:11px;color:var(--muted)}
+.tier{border-radius:8px;padding:10px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px;position:relative;min-width:0}
+@media (max-width:560px){.tier{grid-template-columns:minmax(0,1fr)}}
+.tier.mem{background:var(--soft)}
+.tier.disk{background:var(--surface);border:1.5px solid var(--line)}
+.tier.lost{opacity:.4}
+.tier.lost::after{content:"RAM contents lost";position:absolute;inset:auto 10px 8px auto;font-family:var(--f-mono);font-size:11px;color:var(--alert);font-weight:600}
+.tlabel{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.strip{display:flex;flex-wrap:wrap;gap:6px;min-height:30px;align-items:flex-start}
+.rec{font-family:var(--f-mono);font-size:11.5px;padding:4px 7px;border-radius:5px;border:1.5px solid var(--line);background:var(--surface);display:inline-flex;flex-direction:column;line-height:1.25;font-variant-numeric:tabular-nums}
+.rec small{font-size:10px;color:var(--muted)}
+.rec.commit{border-color:var(--io)}
+.rec.fpi{border-color:var(--thr)}
+.rec.ckpt{border-style:dashed;border-color:var(--fg)}
+.rec.new{box-shadow:0 0 0 2px var(--loop)}
+.rec.replay{background:color-mix(in srgb,var(--loop) 40%,var(--surface))}
+.rec.lost{border-color:var(--alert);color:var(--alert);text-decoration:line-through}
+.rec.old{opacity:.45}
+.pg{font-family:var(--f-mono);font-size:12px;padding:6px 8px;border-radius:6px;border:1.5px solid var(--line);background:var(--surface);display:inline-flex;flex-direction:column;gap:2px;min-width:0}
+.pg small{font-size:10px;color:var(--muted)}
+.pg.dirty{border-color:var(--loop);border-style:dashed}
+.pg.new{box-shadow:0 0 0 2px var(--loop)}
+.pg.torn{border-color:var(--alert);background:linear-gradient(180deg,color-mix(in srgb,var(--run) 18%,var(--surface)) 50%,color-mix(in srgb,var(--alert) 16%,var(--surface)) 50%)}
+.pg.stale{color:var(--muted)}
+.empty{font-family:var(--f-mono);font-size:11px;color:var(--muted);padding:5px 0}
+.pipe{display:flex;flex-direction:column;gap:6px}
+.stage-row{display:flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:12px;padding:6px 8px;border-radius:6px;background:var(--soft);border:1.5px solid transparent}
+.stage-row.done{border-color:var(--io)}
+.stage-row .tick{width:14px;text-align:center;color:var(--io);font-weight:600}
+.stage-row .ack{margin-left:auto;font-size:10.5px;font-weight:600;color:var(--surface);background:var(--fg);padding:1px 6px;border-radius:999px}
+.readres{font-family:var(--f-mono);font-size:12px;padding:6px 8px;border-radius:6px;border-left:3px solid var(--alert);background:var(--soft)}
+.readres.ok{border-left-color:var(--io)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">PostgreSQL 16+ · default settings unless a scenario changes one</div>
+    <h1>Inside the Postgres WAL</h1>
+    <p class="lede">A commit is durable when a small record in the write-ahead log (WAL) is on disk, not when the table is. The top half of each machine is memory, lost in a crash; the bottom half is disk. Step through to see what survives, and what "committed" actually promised.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="stage">
+    <h2 class="q" id="q"></h2>
+    <div class="meta" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="badge" id="badge"></span></div>
+    <div class="clients" id="clients"></div>
+    <div id="view"></div>
+    <div class="controls">
+      <button class="btn" id="prev">Back</button>
+      <button class="btn" id="next">Next</button>
+      <button class="btn" id="play">Play</button>
+      <div class="dots" id="dots"></div>
+      <span class="step" id="stepno"></span>
+    </div>
+    <div class="caption" aria-live="polite"><h3 id="fh"></h3><p id="fb"></p></div>
+    <div class="rowlegend">
+      <span><i class="sw" style="border:1.5px solid var(--line);background:var(--surface)"></i>WAL record (LSN = position)</span>
+      <span><i class="sw" style="border:1.5px solid var(--io)"></i>Commit record</span>
+      <span><i class="sw" style="border:1.5px solid var(--thr)"></i>Full-page image</span>
+      <span><i class="sw" style="border:1.5px dashed var(--fg)"></i>Checkpoint</span>
+      <span><i class="sw" style="border:1.5px dashed var(--loop)"></i>Dirty page (newer than disk)</span>
+      <span><i class="sw" style="box-shadow:0 0 0 2px var(--loop)"></i>Changed in this step</span>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="note"><div class="eyebrow">Takeaway</div><p id="take"></p></div>
+    <div class="note"><div class="eyebrow">Generalizes to</div><p id="gen"></p></div>
+  </section>
+
+  <p class="foot">LSNs and values are illustrative. Keyboard: ← → to step.</p>
+</div>
+
+<script>
+(function(){
+const R=(lsn,k,st,sub)=>({lsn,k,st,sub});
+const P=(id,val,st,sub)=>({id,val,st,sub});
+const OLD=[R('0/0F8','INSERT','old'),R('0/100','CHECKPOINT','old')];
+
+const SC=[
+{id:'happy',tab:'Happy path',short:'COMMIT → flush → ack',
+ q:'A commit is durable once one small WAL record is on disk',
+ frames:[
+  {clients:[{t:'client: UPDATE … waiting',st:''}],badge:'nothing on disk yet',bad:true,
+   m:{name:'Primary',memP:[P('page 7','balance=150','dirty new')],memW:[R('0/1A0','UPDATE page 7','new')],diskW:OLD,diskP:[P('page 7','balance=100','')]},
+   h:'Change in memory',b:'The data page is changed in shared buffers and marked dirty. A WAL record describing the change goes into the WAL buffer. All of this is in RAM.'},
+  {clients:[{t:'client: COMMIT … waiting',st:''}],badge:'commit record in RAM only',bad:true,
+   m:{name:'Primary',memP:[P('page 7','balance=150','dirty')],memW:[R('0/1A0','UPDATE page 7',''),R('0/1C8','COMMIT','commit new')],diskW:OLD,diskP:[P('page 7','balance=100','')]},
+   h:'COMMIT writes a commit record',b:'The commit itself is just another WAL record, still in the buffer.'},
+  {clients:[{t:'client: COMMIT … waiting',st:''}],badge:'write + fsync(WAL) · durable',
+   m:{name:'Primary',memP:[P('page 7','balance=150','dirty')],memW:[],diskW:[...OLD,R('0/1A0','UPDATE page 7','new'),R('0/1C8','COMMIT','commit new')],diskP:[P('page 7','balance=100','')]},
+   h:'WAL flush: the moment of durability',b:'The backend writes the WAL buffer up to its commit record and calls fsync. One small sequential write, often shared by many concurrent commits (group commit).'},
+  {clients:[{t:'client: COMMIT ✓',st:'committed'}],badge:'acknowledged',
+   m:{name:'Primary',memP:[P('page 7','balance=150','dirty')],memW:[],diskW:[...OLD,R('0/1A0','UPDATE page 7',''),R('0/1C8','COMMIT','commit')],diskP:[P('page 7','balance=100','stale','stale, and that is fine')]},
+   h:'Acknowledge',b:'The client sees COMMIT. The data file on disk still says 100. If the server crashed now, replaying the WAL would rebuild 150.'},
+  {clients:[{t:'client: COMMIT ✓',st:'committed'}],badge:'checkpoint · every 5 min or ~1 GB of WAL',
+   m:{name:'Primary',memP:[P('page 7','balance=150','')],memW:[],diskW:[R('0/0F8','INSERT','old'),R('0/100','CHECKPOINT','old'),R('0/1A0','UPDATE page 7','old'),R('0/1C8','COMMIT','commit old'),R('0/1D0','CHECKPOINT','ckpt new','recovery starts here')],diskP:[P('page 7','balance=150','new')]},
+   h:'Checkpoint, minutes later',b:'The checkpointer writes all dirty pages to the data files and fsyncs them. WAL before the new checkpoint (faded) is no longer needed for crash recovery and can be recycled.'}],
+ take:'WAL turns random writes into sequential ones and makes durability cheap. The data files may be minutes stale because the WAL can always redo them.',
+ gen:'MySQL InnoDB\'s redo log, SQLite\'s WAL mode, and LSM-tree stores like RocksDB and Cassandra\'s commit log: write the log first, organize data later.'},
+
+{id:'async',tab:'Scenario 1',short:'synchronous_commit = off',
+ q:'With synchronous_commit = off, what does a crash lose, and why is nothing corrupted?',
+ frames:[
+  {clients:[{t:'T1 ✓',st:'committed'}],badge:'acknowledged before fsync',bad:true,
+   m:{name:'Primary',memP:[P('row T1','written','dirty')],memW:[R('0/200','T1 COMMIT','commit new')],diskW:OLD,diskP:[P('data file','before T1','')]},
+   h:'T1 commits without waiting',b:'The commit record goes into the WAL buffer and the client is acknowledged immediately. No fsync.'},
+  {clients:[{t:'T1 ✓',st:'committed'}],badge:'WAL writer · every wal_writer_delay (200 ms)',
+   m:{name:'Primary',memP:[P('row T1','written','dirty')],memW:[],diskW:[...OLD,R('0/200','T1 COMMIT','commit new')],diskP:[P('data file','before T1','')]},
+   h:'The WAL writer flushes',b:'A background process writes and fsyncs the buffer on a timer. T1 is now durable.'},
+  {clients:[{t:'T1 ✓',st:'committed'},{t:'T2 ✓',st:'committed'},{t:'T3 ✓',st:'committed'}],badge:'T2, T3 acknowledged · in RAM only',bad:true,
+   m:{name:'Primary',memP:[P('row T1','written','dirty'),P('row T2','written','dirty new'),P('row T3','written','dirty new')],memW:[R('0/240','T2 COMMIT','commit new'),R('0/280','T3 COMMIT','commit new')],diskW:[...OLD,R('0/200','T1 COMMIT','commit')],diskP:[P('data file','before T1','')]},
+   h:'T2 and T3 commit',b:'Both clients are told they succeeded. Their commit records are still waiting in the buffer for the next flush.'},
+  {clients:[{t:'T1 ✓',st:'committed'},{t:'T2 ✓',st:'committed'},{t:'T3 ✓',st:'committed'}],badge:'power failure',bad:true,crash:true,
+   m:{name:'Primary',memP:[P('row T1','written','dirty'),P('row T2','written','dirty'),P('row T3','written','dirty')],memW:[R('0/240','T2 COMMIT','commit'),R('0/280','T3 COMMIT','commit')],diskW:[...OLD,R('0/200','T1 COMMIT','commit')],diskP:[P('data file','before T1','')]},
+   h:'Power fails',b:'RAM is gone: the WAL buffer with T2 and T3, and every dirty page.'},
+  {clients:[{t:'T1 ✓ survived',st:'committed'},{t:'T2 ✓ lost',st:'idle'},{t:'T3 ✓ lost',st:'idle'}],badge:'recovered · consistent, 2 commits missing',bad:true,
+   m:{name:'Primary',memP:[P('row T1','replayed','new')],memW:[R('0/240','T2 COMMIT','commit lost','lost with RAM'),R('0/280','T3 COMMIT','commit lost','lost with RAM')],diskW:[...OLD,R('0/200','T1 COMMIT','commit replay')],diskP:[P('data file','before T1','','T2, T3 never written here')]},
+   h:'Recovery: loss, not corruption',b:'Replay stops at the last record on disk. T1 is rebuilt; T2 and T3 are gone though their clients were told they succeeded. Their changes never reached the data files either: a data page is never written before its WAL. The window is at most 3 × <code>wal_writer_delay</code>, 600 ms by default.'}],
+ take:'Asynchronous commit trades the last few hundred milliseconds of durability for commit latency, without risking corruption. It can be set per transaction, so use it for data you can afford to lose.',
+ gen:'MySQL\'s innodb_flush_log_at_trx_commit = 2 and Redis AOF appendfsync everysec. Contrast fsync = off, which also skips checkpoint flushes and can genuinely corrupt the database.'},
+
+{id:'recovery',tab:'Scenario 2',short:'Crash recovery',
+ q:'After a crash, how does replaying the WAL rebuild the data, even a half-written page?',
+ frames:[
+  {clients:[],badge:'full_page_writes = on',
+   m:{name:'Primary',memP:[P('page 7','balance=150','dirty')],memW:[],diskW:[R('0/100','CHECKPOINT','ckpt'),R('0/140','page 7 · full image','fpi new','8 KB, balance=120'),R('0/1A0','page 7 · set 135','new'),R('0/220','page 7 · set 150','new')],diskP:[P('page 7','balance=100','')]},
+   h:'First change after a checkpoint logs the whole page',b:'The first change to page 7 after the checkpoint at 0/100 writes a full 8 KB copy of the page into the WAL. Later changes log only what changed. All three are committed and flushed.'},
+  {clients:[],badge:'crash during a data-file write',bad:true,crash:true,
+   m:{name:'Primary',memP:[P('page 7','balance=150','dirty')],memW:[],diskW:[R('0/100','CHECKPOINT','ckpt'),R('0/140','page 7 · full image','fpi','8 KB, balance=120'),R('0/1A0','page 7 · set 135',''),R('0/220','page 7 · set 150','')],diskP:[P('page 7','torn: half new, half old','torn new','8 KB page, disk writes 4 KB atomically')]},
+   h:'Crash mid-write: a torn page',b:'The OS was writing page 7 to the data file. Postgres pages are 8 KB, but the disk may only guarantee 4 KB at a time, so the page on disk is half new and half old. Change records can\'t be applied to a page like this.'},
+  {clients:[],badge:'redo from checkpoint 0/100',
+   m:{name:'Primary (restarting)',memP:[],memW:[],diskW:[R('0/100','CHECKPOINT','ckpt replay','start here'),R('0/140','page 7 · full image','fpi','8 KB, balance=120'),R('0/1A0','page 7 · set 135',''),R('0/220','page 7 · set 150','')],diskP:[P('page 7','torn','torn')]},
+   h:'Recovery starts at the last checkpoint',b:'The control file points to the checkpoint at 0/100. Everything before it is already in the data files; everything after it is replayed in order.'},
+  {clients:[],badge:'full-page image replaces the torn page',
+   m:{name:'Primary (restarting)',memP:[P('page 7','balance=120','new','from the image, not the disk')],memW:[],diskW:[R('0/100','CHECKPOINT','ckpt'),R('0/140','page 7 · full image','fpi replay','8 KB, balance=120'),R('0/1A0','page 7 · set 135',''),R('0/220','page 7 · set 150','')],diskP:[P('page 7','torn (ignored)','torn')]},
+   h:'The image overwrites the torn page',b:'Replaying 0/140 loads the intact 8 KB copy straight into memory. The torn page on disk is never consulted.'},
+  {clients:[],badge:'database open · page 7 = 150',
+   m:{name:'Primary',memP:[P('page 7','balance=150','new dirty')],memW:[],diskW:[R('0/100','CHECKPOINT','ckpt'),R('0/140','page 7 · full image','fpi'),R('0/1A0','page 7 · set 135','replay'),R('0/220','page 7 · set 150','replay')],diskP:[P('page 7','torn (overwritten at next checkpoint)','torn')]},
+   h:'The remaining records apply on top',b:'0/1A0 and 0/220 replay onto the clean image. Page 7 is exactly as it was at the last commit, and the database opens. The next checkpoint writes the good page over the torn one.'}],
+ take:'Checkpoints bound recovery time; full-page writes make torn pages harmless. Spacing checkpoints further apart means fewer full-page images but longer recovery.',
+ gen:'ARIES-style recovery in most databases. InnoDB solves torn pages differently, with its doublewrite buffer.'},
+
+{id:'replica',tab:'Scenario 3',short:'Committed, but not on the replica',
+ q:'The primary says committed, but the replica doesn\'t have the row. What did committed promise?',
+ frames:[
+  {repl:{level:'async (default)',stages:[0,0,0],ack:-1,read:false},clients:[{t:'COMMIT ✓',st:'committed'},{t:'read on replica: 0 rows',st:'idle'}],badge:'acked after local flush only',bad:true,
+   h:'Default: asynchronous replication',b:'With no synchronous standby, the primary acknowledges after its own WAL flush. The WAL reaches the replica milliseconds later, after the read. If the primary dies now, this commit can be lost entirely.'},
+  {repl:{level:'on + synchronous standby',stages:[1,1,0],ack:1,read:false},clients:[{t:'COMMIT ✓',st:'committed'},{t:'read on replica: 0 rows',st:'idle'}],badge:'acked after replica flush',
+   h:'synchronous_commit = on',b:'With a synchronous standby, the primary waits until the replica has flushed the WAL to its disk. The commit now survives losing the primary, but the replica hasn\'t replayed it, so the read can still miss it.'},
+  {repl:{level:'remote_write',stages:[1,0,0],ack:0,read:false},clients:[{t:'COMMIT ✓',st:'committed'},{t:'read on replica: 0 rows',st:'idle'}],badge:'acked after replica write',
+   h:'synchronous_commit = remote_write',b:'Waits only until the replica has received and written the WAL, not fsynced it. Faster than on; survives a primary crash, but not both machines losing power.'},
+  {repl:{level:'remote_apply',stages:[1,1,1],ack:2,read:true},clients:[{t:'COMMIT ✓',st:'committed'},{t:'read on replica: 1 row',st:'committed'}],badge:'acked after replica replay',
+   h:'synchronous_commit = remote_apply',b:'Waits until the replica has replayed the commit. Now the read on the replica sees the row, at the cost of the replica\'s replay time on every commit.'},
+  {repl:{level:'on · replica down',stages:[0,0,0],ack:1,read:false,down:true},clients:[{t:'COMMIT … blocked',st:'idle'}],badge:'commits wait for the standby',bad:true,
+   h:'The cost of waiting',b:'Every synchronous level adds at least one network round trip per commit. If the only synchronous replica goes down, commits on the primary block until it comes back or is removed from <code>synchronous_standby_names</code>.'}],
+ take:'For read-your-writes, read from the primary after a write, or use remote_apply for those transactions. To avoid losing commits on failover, use a synchronous standby, preferably with more than one candidate.',
+ gen:'MySQL semi-synchronous replication, MongoDB write concern w: "majority" and read concerns, Kafka acks=all with min.insync.replicas.'}
+];
+
+const $=id=>document.getElementById(id);
+const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+let si=0, fi=0, playTimer=null;
+
+const recH=r=>`<span class="rec ${r.k==='COMMIT'||/COMMIT/.test(r.k)?'commit ':''}${r.st}">${esc(r.lsn)} · ${esc(r.k)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</span>`;
+const pgH=p=>`<span class="pg ${p.st}"><b style="font-weight:500">${esc(p.id)}</b><span>${esc(p.val)}</span>${p.sub?`<small>${esc(p.sub)}</small>`:''}</span>`;
+const list=(arr,fn,empty)=>arr.length?arr.map(fn).join(''):`<span class="empty">${empty}</span>`;
+
+function machine(m,crash){
+  return `<div class="machine"><div class="mname"><span>${esc(m.name)}</span><small>one Postgres server</small></div>
+   <div class="tier mem ${crash?'lost':''}">
+     <div><div class="tlabel">Memory · shared buffers</div><div class="strip">${list(m.memP,pgH,'empty after restart')}</div></div>
+     <div><div class="tlabel">Memory · WAL buffer</div><div class="strip">${list(m.memW,recH,'empty')}</div></div>
+   </div>
+   <div class="tier disk">
+     <div><div class="tlabel">Disk · data files</div><div class="strip">${list(m.diskP,pgH,'—')}</div></div>
+     <div><div class="tlabel">Disk · WAL (fsynced)</div><div class="strip">${list(m.diskW,recH,'—')}</div></div>
+   </div></div>`;
+}
+function replView(r){
+  const primary=machine({name:'Primary',memP:[P('orders','new row','dirty')],memW:[],diskW:[R('0/1A0','INSERT',''),R('0/1C8','COMMIT','commit')],diskP:[P('orders','not yet','stale')]},false);
+  const names=['WAL received & written','WAL flushed (fsync)','WAL replayed · row visible'];
+  const rows=names.map((n,i)=>`<div class="stage-row ${r.stages[i]?'done':''}"><span class="tick">${r.stages[i]?'✓':'·'}</span><span>${n}</span>${r.ack===i?'<span class="ack">primary acks here</span>':''}</div>`).join('');
+  const rep=`<div class="machine"><div class="mname"><span>Replica</span><small>${r.down?'unreachable':'streaming'}</small></div>
+    <div class="tlabel">synchronous_commit = ${esc(r.level)}</div>
+    <div class="pipe" style="${r.down?'opacity:.4':''}">${rows}</div>
+    ${r.ack<0?'<div class="stage-row"><span class="tick"></span><span>primary acks after its own flush, before any of this</span></div>':''}
+    <div class="readres ${r.read?'ok':''}">SELECT … on replica → ${r.read?'1 row':'0 rows'}</div></div>`;
+  return `<div class="machines two">${primary}${rep}</div>`;
+}
+function render(){
+  const sc=SC[si], f=sc.frames[fi];
+  const b=$('badge'); b.textContent=f.badge; b.className='badge '+(f.bad?'bad':'good');
+  $('clients').innerHTML='<span class="txlabel">Clients</span>'+(f.clients&&f.clients.length?f.clients.map(c=>`<span class="tx ${c.st}">${esc(c.t)}</span>`).join(''):'<span class="tx">none connected</span>');
+  $('view').innerHTML=f.repl?replView(f.repl):`<div class="machines">${machine(f.m,f.crash)}</div>`;
+  $('fh').textContent=f.h; $('fb').innerHTML=f.b;
+  $('stepno').textContent=`${fi+1} / ${sc.frames.length}`;
+  $('prev').disabled=fi===0; $('next').disabled=fi===sc.frames.length-1;
+  [...$('dots').children].forEach((d,i)=>d.setAttribute('aria-current',i===fi?'true':'false'));
+}
+function show(n){fi=Math.max(0,Math.min(n,SC[si].frames.length-1));render()}
+function select(i){
+  stopPlay(); si=i; fi=0; const sc=SC[si];
+  [...$('tabs').children].forEach((b,k)=>b.setAttribute('aria-selected',k===si?'true':'false'));
+  $('q').textContent=sc.q; $('take').textContent=sc.take; $('gen').textContent=sc.gen;
+  const dots=$('dots'); dots.innerHTML='';
+  sc.frames.forEach((_,k)=>{const d=document.createElement('button');d.className='dot';d.setAttribute('aria-label','Step '+(k+1));d.onclick=()=>{stopPlay();show(k)};dots.appendChild(d)});
+  render();
+}
+function stopPlay(){clearInterval(playTimer);playTimer=null;$('play').textContent='Play'}
+$('play').onclick=()=>{
+  if(playTimer){stopPlay();return}
+  show(fi===SC[si].frames.length-1?0:fi+1); $('play').textContent='Pause';
+  playTimer=setInterval(()=>{if(fi>=SC[si].frames.length-1){stopPlay();return} show(fi+1)},4200);
+};
+$('prev').onclick=()=>{stopPlay();show(fi-1)};
+$('next').onclick=()=>{stopPlay();show(fi+1)};
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){stopPlay();show(fi+1)}else if(e.key==='ArrowLeft'){stopPlay();show(fi-1)}});
+SC.forEach((sc,i)=>{const b=document.createElement('button');b.className='tab';b.setAttribute('role','tab');b.innerHTML=`<small>${sc.tab}</small>${sc.short}`;b.onclick=()=>{try{history.replaceState(null,'','#'+sc.id)}catch(_){location.hash=sc.id} select(i)};$('tabs').appendChild(b)});
+const fromHash=()=>{const i=SC.findIndex(x=>x.id===(location.hash||'').slice(1));return i<0?0:i};
+window.addEventListener('hashchange',()=>select(fromHash()));
+select(fromHash());
+})();
+</script>
+
+</body></html>

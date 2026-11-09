@@ -61,6 +61,7 @@ Shapes are generic components fed a shape model; they never know which visualize
 | **Ring** | slots on a circle with a hand | CLOCK | circular buffer, consistent hashing |
 | **Lanes** | actor lanes (App / Cache / DB) with state cards under each header and numbered messages between them | caching strategies | TCP handshake, consensus rounds, message queues, auth flows |
 | **Timeline** | tick axis with request marks in one or more rows, shaded window bands, boundaries, a bracket or labelled spans, a cursor at now; narrow stages thin the labels, then scroll | rate limiting (fixed window, sliding counter, the sliding log and the buckets' request strips) | TCP congestion windows, retry backoff, TTL expiry |
+| **Schedule** | rows over continuous time that fill in up to now: solid / hatched / outlined segments with optional faint marks, an optional summary row above (who holds a shared resource), countdown meters, arrows between rows, pins, an optional values row, and an optional share readout or note underneath; dashed playhead that glides between steps; drawn at the stage width so it stays readable down to a phone, with axis labels thinning instead of overlapping | Python GIL (threads, lock holder, switch timer, drop requests, checkpoints, counter, "GIL held at") | Go scheduler, asyncio event loop, Redis single thread, lock contention |
 | **Composite** | several shapes stacked in one stage, each at its natural or remaining height | rate limiting (log + list, token pile, leaky queue + rows) | ARC, LSM tree, multi-level caches |
 
 **Rotate:** shapes with an axis (linear, histogram) get an icon-only Rotate toggle in the playback footer that swaps the axis and keeps text upright — never a literal 90° CSS rotation. Its label names the default view while rotated. Shapes without an axis (ring) hide the button.
@@ -92,6 +93,12 @@ Shapes are generic components fed a shape model; they never know which visualize
 - **Right panel — inside the step.** Fixed top: name, shape chip, one-line rule. Tabs: **Step** (loop body + variables now/before), **Log** (every step so far, click to jump), **About** (cost, wins, loses, seen in), **Try** (guided experiments). Static tabs must not re-render per tick. Collapses to an icon rail; starts collapsed below 1200px.
 
 Wording that differs per visualizer ("request", "Policy", "Hit rate") comes from the module, never from the frame.
+
+## Step rule: no jumps
+
+Students lose the thread when Next skips ahead to the interesting state. A step may cover a long stretch of one activity (one thread spinning for 5 ms can be one or two steps), but every change gets its own step: a lock handoff, something new arriving, a blocking call starting or returning, a timer starting or expiring, a request being sent, a value changing. A step never passes over a change to land on a later, more "meaningful" moment. Repetition is shown too: if the cycle runs three times, the student steps through three cycles.
+
+For schedule pages this is enforced: `lib/visualizer/steps.test.ts` runs every scenario of every registered visualizer through `skippedEvents` (`lib/visualizer/core/schedule.ts`) and fails on any step that skips a change. New labels on a continuing segment of the same style, such as successive bytecodes, are not changes. Apply the same rule by hand to shapes the check does not cover yet, and when porting a draft, fix its steps rather than copying its gaps.
 
 ## Playback & interaction rules
 

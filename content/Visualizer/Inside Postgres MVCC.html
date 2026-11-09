@@ -1,0 +1,299 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Inside Postgres MVCC</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a heap page drawn as its tuple versions under a strip of open transactions; scenario views swap to a page grid and an XID number line. Same series identity. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --fg:#152230; --muted:#5a6878; --line:#d6dce4; --soft:#eef2f6;
+  --run:#3776ab; --run-ink:#ffffff; --loop:#e8b923; --wait:#8d99a8; --io:#2f9474; --io-bg:#e3f3ed;
+  --thr:#7a5cc4; --thr-ink:#ffffff; --alert:#c9412f;
+  --f-display:"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding-block:28px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font:500 13px/1.2 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 12px;border-radius:8px;cursor:pointer;text-align:left}
+.tab small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-bottom:2px}
+.tab[aria-selected="true"]{border-color:var(--run);box-shadow:inset 0 0 0 1px var(--run)}
+.tab:focus-visible,.btn:focus-visible,.dot:focus-visible{outline:2px solid var(--loop);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(19px,3vw,23px);line-height:1.25;margin:0;text-wrap:balance}
+.trace{overflow-x:auto;margin:0 -4px}
+.trace svg{display:block;width:100%;min-width:620px;height:auto}
+.share{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px;font-variant-numeric:tabular-nums}
+.share b{color:var(--fg);font-weight:500}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--soft);color:var(--fg);padding:7px 12px;border-radius:7px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.dots{display:flex;gap:6px;flex:1;min-width:0}
+.dot{width:28px;height:6px;border-radius:3px;border:0;background:var(--line);cursor:pointer;padding:0}
+.dot[aria-current="true"]{background:var(--run)}
+.step{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.caption{border-left:3px solid var(--loop);padding:2px 0 2px 14px;min-height:78px}
+.caption h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.caption p{margin:0;max-width:68ch}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 4px;border-radius:4px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.note{background:var(--soft);border-radius:10px;padding:12px 14px;min-width:0}
+.note .eyebrow{margin-bottom:4px}
+.note p{margin:0;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:10px;border-radius:2px;display:inline-block}
+.foot{font-size:13px;color:var(--muted)}
+.txns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:30px}
+.txlabel{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.tx{font-family:var(--f-mono);font-size:12px;padding:3px 9px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface)}
+.tx.active{border-color:var(--run);color:var(--run)}
+.tx.idle{border-color:var(--alert);color:var(--alert)}
+.tx.committed{border-color:var(--io);color:var(--io)}
+.view{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+.view.solo{grid-template-columns:minmax(0,1fr)}
+@media (max-width:720px){.view{grid-template-columns:minmax(0,1fr)}}
+.panel{border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ptitle{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;justify-content:space-between;gap:8px}
+.tup{display:grid;grid-template-columns:34px minmax(0,1fr) 52px 52px;gap:8px;align-items:center;font-family:var(--f-mono);font-size:12.5px;padding:7px 8px;border-radius:6px;border:1.5px solid transparent;background:var(--soft);font-variant-numeric:tabular-nums;transition:background .3s,border-color .3s,opacity .3s}
+.tup.hdr{background:none;font-size:10.5px;color:var(--muted);padding-block:0;text-transform:uppercase}
+.tup .val{min-width:0;overflow-wrap:anywhere}
+.tup .sub{display:block;font-size:10.5px;color:var(--muted);font-family:var(--f-body)}
+.tup.live{background:var(--io-bg);border-color:var(--io)}
+.tup.new{background:var(--surface);border:1.5px dashed var(--run)}
+.tup.dead{opacity:.75}
+.tup.dead .val{text-decoration:line-through}
+.tup.pinned{background:repeating-linear-gradient(45deg,var(--surface) 0 5px,color-mix(in srgb,var(--alert) 18%,var(--surface)) 5px 10px);border-color:var(--alert)}
+.tup.free{background:none;border:1.5px dashed var(--line);color:var(--muted)}
+.tup.free .val{text-decoration:none}
+.idx{font-family:var(--f-mono);font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.idx .iname{font-size:11px;color:var(--muted)}
+.ent{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:6px;background:var(--soft);border:1.5px solid transparent}
+.ent.new{border-color:var(--alert)}
+.ent.stale{opacity:.6}
+.badge{display:inline-block;font-family:var(--f-mono);font-size:12px;padding:4px 10px;border-radius:6px;background:var(--soft);border-left:3px solid var(--loop)}
+.badge.bad{border-left-color:var(--alert)}
+.badge.good{border-left-color:var(--io)}
+.log{font-family:var(--f-mono);font-size:12px;background:var(--soft);border-radius:6px;padding:8px 10px;color:var(--fg);overflow-wrap:anywhere}
+.grid{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:3px}
+.cell{aspect-ratio:1;border-radius:2px;max-width:100%}
+.c-live{background:var(--io)}
+.c-pinned{background:var(--alert)}
+.c-free{background:none;outline:1px dashed var(--line);outline-offset:-1px}
+.pagesbar{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.xidwrap{overflow-x:auto}
+.xidwrap svg{display:block;width:100%;min-width:560px;height:auto}
+.rowlegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.rowlegend span{display:inline-flex;align-items:center;gap:6px}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">PostgreSQL 16+ · default autovacuum settings</div>
+    <h1>Inside Postgres MVCC</h1>
+    <p class="lede">Postgres never updates a row in place. Every UPDATE writes a new version (a tuple) stamped with the transaction that created it (xmin), and stamps the old one with the transaction that ended it (xmax). Step through to see who can see which version, and when vacuum is allowed to clean up.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="stage">
+    <h2 class="q" id="q"></h2>
+    <div class="txns" id="txns"></div>
+    <div id="view"></div>
+    <div class="controls">
+      <button class="btn" id="prev">Back</button>
+      <button class="btn" id="next">Next</button>
+      <button class="btn" id="play">Play</button>
+      <div class="dots" id="dots"></div>
+      <span class="step" id="stepno"></span>
+    </div>
+    <div class="caption" aria-live="polite"><h3 id="fh"></h3><p id="fb"></p></div>
+    <div class="rowlegend">
+      <span><i class="sw" style="background:var(--io-bg);border:1.5px solid var(--io)"></i>Live version</span>
+      <span><i class="sw" style="border:1.5px dashed var(--run)"></i>Written, not yet committed</span>
+      <span><i class="sw" style="background:var(--soft);opacity:.75"></i>Dead (struck through)</span>
+      <span><i class="sw" style="background:repeating-linear-gradient(45deg,var(--surface) 0 3px,var(--alert) 3px 5px);border:1.5px solid var(--alert)"></i>Dead but pinned by an open transaction</span>
+      <span><i class="sw" style="border:1.5px dashed var(--line)"></i>Free space</span>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="note"><div class="eyebrow">Takeaway</div><p id="take"></p></div>
+    <div class="note"><div class="eyebrow">Generalizes to</div><p id="gen"></p></div>
+  </section>
+
+  <p class="foot">Transaction IDs, row counts and page counts are illustrative. Keyboard: ← → to step.</p>
+</div>
+
+<script>
+(function(){
+const tup=(slot,val,xmin,xmax,st,sub)=>({slot,val,xmin,xmax,st,sub});
+const SC=[
+{id:'happy',tab:'Happy path',short:'UPDATE, dead version, vacuum',
+ q:'An UPDATE is an INSERT plus a stamp on the old version',
+ frames:[
+  {view:'page',txns:[{id:'100',st:'committed',n:'INSERT'}],tuples:[tup(1,'id=1 · balance=100',100,'—','live')],
+   h:'One live version',b:'Slot 1 holds the row, created by transaction 100. No xmax: nothing has deleted or replaced it.'},
+  {view:'page',txns:[{id:'101',st:'active',n:'UPDATE balance=150'}],tuples:[tup(1,'id=1 · balance=100',100,'101','live','still what everyone else sees'),tup(2,'id=1 · balance=150',101,'—','new','only 101 can see this')],
+   h:'Transaction 101 updates it',b:'Postgres writes a whole new version in slot 2 and stamps slot 1 with xmax 101. Until 101 commits, every other reader keeps seeing slot 1. Readers never wait for the writer.'},
+  {view:'page',txns:[{id:'101',st:'committed',n:'UPDATE'}],tuples:[tup(1,'id=1 · balance=100',100,'101','dead','no new snapshot sees it'),tup(2,'id=1 · balance=150',101,'—','live')],
+   h:'101 commits',b:'Slot 2 is now the live version. Slot 1 is dead: new snapshots skip it. But it still occupies space on the page.'},
+  {view:'page',txns:[],tuples:[tup(1,'free space','','','free','reusable by the next insert or update'),tup(2,'id=1 · balance=150',101,'—','live')],log:'autovacuum: removed 1 dead row version',
+   h:'Vacuum reclaims it',b:'No open transaction is older than 101, so nobody can need slot 1. Autovacuum marks its space free. The table file does not shrink; the space is reused.'}],
+ take:'MVCC trades space for concurrency. Every UPDATE and DELETE leaves garbage, and vacuum is the other half of the write path, not optional maintenance.',
+ gen:'Any MVCC store: InnoDB keeps old versions in its undo log and purges them; CockroachDB and Spanner keep versioned keys with a GC TTL.'},
+
+{id:'horizon',tab:'Scenario 1',short:'One long transaction',
+ q:'One long-running transaction. Why do tables it never touched bloat?',
+ frames:[
+  {view:'pages',table:'accounts',txns:[{id:'200',st:'idle',n:'idle in transaction · wrote to audit_log'}],cells:{live:30,pinned:0,free:30},pages:1,
+   h:'Session X goes idle',b:'An app opens a transaction (xid 200), writes one row to <code>audit_log</code>, and never commits. Everything from 200 onward must now be treated as possibly visible to someone.'},
+  {view:'pages',table:'accounts',txns:[{id:'200',st:'idle',n:'idle in transaction'}],cells:{live:30,pinned:80,free:10},pages:2,
+   h:'Updates pile up elsewhere',b:'A hot row in <code>accounts</code> is updated over and over. Every update leaves a dead version with an xmax above 200.'},
+  {view:'pages',table:'accounts',txns:[{id:'200',st:'idle',n:'idle in transaction'}],cells:{live:30,pinned:80,free:10},pages:2,log:'autovacuum on accounts: 0 removed; dead row versions are not yet removable, oldest xmin: 200',
+   h:'Autovacuum removes nothing',b:'Vacuum may only remove versions dead to every possible snapshot. The oldest open transaction, 200, sets that line (the xmin horizon), so every red tuple is pinned.'},
+  {view:'pages',table:'accounts',txns:[{id:'200',st:'idle',n:'idle in transaction · 2 hours'}],cells:{live:30,pinned:200,free:10},pages:4,
+   h:'Bloat spreads',b:'The table keeps growing page by page, and scans walk past dead versions. Session X never touched <code>accounts</code>; the horizon is shared across the database.'},
+  {view:'pages',table:'accounts',txns:[],cells:{live:30,pinned:0,free:210},pages:4,log:'autovacuum on accounts: removed 200 dead row versions',
+   h:'X ends; cleanup, but no shrinking',b:'The next vacuum removes everything at once. The file stays at 4 pages; only <code>VACUUM FULL</code> or <code>pg_repack</code> gives the space back to the OS.'}],
+ take:'The horizon is shared. Watch xact_start and backend_xid in pg_stat_activity, set idle_in_transaction_session_timeout, and check for stale replication slots and prepared transactions, which pin it the same way.',
+ gen:'Snapshot-based systems everywhere: long readers block InnoDB purge, and long-lived snapshots in RocksDB-based stores keep old versions through compaction.'},
+
+{id:'hot',tab:'Scenario 2',short:'HOT updates',
+ q:'Why does updating one column write to every index, and when doesn\'t it?',
+ frames:[
+  {view:'page',idx:true,txns:[],tuples:[tup(1,'id=1 · a@x.com · seen 10:00',100,'—','live')],
+   indexes:[{n:'users_pkey (id)',e:[{k:'1',s:'slot 1'}]},{n:'users_email_idx (email)',e:[{k:'a@x.com',s:'slot 1'}]}],badge:'last_seen is not indexed',
+   h:'Two indexes, one row',b:'<code>users</code> has a primary key on <code>id</code> and an index on <code>email</code>. <code>last_seen</code> is not indexed. Both indexes point at slot 1.'},
+  {view:'page',idx:true,txns:[{id:'110',st:'committed',n:'UPDATE last_seen'}],tuples:[tup(1,'id=1 · a@x.com · seen 10:00',100,'110','dead','redirects → slot 2'),tup(2,'id=1 · a@x.com · seen 10:05',110,'—','live','heap-only tuple')],
+   indexes:[{n:'users_pkey (id)',e:[{k:'1',s:'slot 1 → 2'}]},{n:'users_email_idx (email)',e:[{k:'a@x.com',s:'slot 1 → 2'}]}],badge:'HOT update · 0 index writes',good:true,
+   h:'Update an unindexed column: HOT',b:'No indexed column changed and the page has room, so the new version stays on the same page and slot 1 points to it. The indexes are untouched.'},
+  {view:'page',idx:true,txns:[{id:'111',st:'committed',n:'UPDATE email'}],tuples:[tup(1,'id=1 · a@x.com · seen 10:00',100,'110','dead','redirects → slot 2'),tup(2,'id=1 · a@x.com · seen 10:05',110,'111','dead'),tup(3,'id=1 · b@x.com · seen 10:05',111,'—','live')],
+   indexes:[{n:'users_pkey (id)',e:[{k:'1',s:'slot 1 → 2',stale:true},{k:'1',s:'slot 3',nw:true}]},{n:'users_email_idx (email)',e:[{k:'a@x.com',s:'slot 1 → 2',stale:true},{k:'b@x.com',s:'slot 3',nw:true}]}],badge:'regular update · 2 index writes',
+   h:'Update an indexed column: every index',b:'<code>email</code> changed, so this is a regular update. Both indexes get a new entry, including the primary key, whose value did not change. Old entries stay until vacuum.'},
+  {view:'page',idx:true,full:true,txns:[{id:'112',st:'committed',n:'UPDATE last_seen'}],tuples:[tup(3,'id=1 · b@x.com · seen 10:05',111,'112','dead'),tup('p2·1','id=1 · b@x.com · seen 10:09',112,'—','live','landed on page 2')],
+   indexes:[{n:'users_pkey (id)',e:[{k:'1',s:'slot 3',stale:true},{k:'1',s:'page 2 · 1',nw:true}]},{n:'users_email_idx (email)',e:[{k:'b@x.com',s:'slot 3',stale:true},{k:'b@x.com',s:'page 2 · 1',nw:true}]}],badge:'page full → not HOT · 2 index writes',
+   h:'A full page breaks HOT',b:'Same unindexed column as step 2, but the page has no room. The new version goes to another page, so every index needs a new entry. A lower <code>fillfactor</code> (say 90) leaves room for HOT updates.'},
+  {view:'page',idx:true,txns:[],tuples:[tup(1,'redirect → slot 3','','','free','line pointer kept for the index'),tup(2,'free space','','','free','pruned by an ordinary SELECT'),tup(3,'id=1 · b@x.com · seen 10:05',111,'112','dead')],
+   indexes:[{n:'users_pkey (id)',e:[{k:'1',s:'slot 1 → 3'},{k:'1',s:'page 2 · 1'}]},{n:'users_email_idx (email)',e:[{k:'b@x.com',s:'slot 3'},{k:'b@x.com',s:'page 2 · 1'}]}],badge:'HOT chain pruned without vacuum',good:true,
+   h:'Cleanup without vacuum',b:'Versions in a HOT chain can be pruned during ordinary page access, even by a SELECT. The first slot becomes a redirect so existing index entries still lead somewhere valid.'}],
+ take:'Every index multiplies the cost of non-HOT updates. Avoid indexing columns you update constantly, and consider a lower fillfactor for update-heavy tables. Check n_tup_hot_upd in pg_stat_user_tables.',
+ gen:'Write amplification in any engine whose secondary indexes point at physical row locations. InnoDB sidesteps part of it: secondary indexes point at the primary key instead.'},
+
+{id:'wrap',tab:'Scenario 3',short:'XID wraparound',
+ q:'Why does Postgres force an aggressive vacuum on a table nobody updates?',
+ frames:[
+  {view:'xid',now:1000100,frozen:false,h:'A row nobody touches',b:'A <code>countries</code> row was inserted at xid 1,000 and never updated. XIDs are 32-bit, and Postgres treats the 2.1 billion IDs before "now" as the past. The row\'s xmin is well inside that window.',txns:[]},
+  {view:'xid',now:200e6,frozen:false,trigger:true,h:'200 million transactions later',b:'The table\'s oldest unfrozen xid is now past <code>autovacuum_freeze_max_age</code> (200M by default). Autovacuum starts an aggressive, anti-wraparound vacuum on a table with zero dead rows.',txns:[]},
+  {view:'xid',now:210e6,frozen:true,h:'The row is frozen',b:'Vacuum marks the row as frozen: visible to every transaction regardless of how the xids compare. The clock can keep moving safely.',txns:[]},
+  {view:'xid',now:2147483648-3e6,frozen:false,danger:true,h:'If freezing can\'t keep up',b:'A pinned horizon (scenario 1) can block freezing. Postgres logs warnings with roughly 40 million IDs left, and with roughly 3 million left it refuses new xids: reads work, writes fail until vacuum catches up.',txns:[{id:'200',st:'idle',n:'still idle in transaction'}]},
+  {view:'xid',now:2147483648+5e7,frozen:false,lost:true,h:'Counterfactual: what the limits prevent',b:'Without freezing, once "now" passes xid 1,000 + 2³¹, the row\'s xmin falls outside the past window. It would look like it was created in the future, and silently vanish.',txns:[]}],
+ take:'Monitor age(datfrozenxid) per database and age(relfrozenxid) per table. Anti-wraparound vacuums can\'t be skipped, so make sure nothing pins the horizon for long.',
+ gen:'Fixed-width counters compared modulo their size: TCP sequence numbers (PAWS), 32-bit timestamps (the year 2038 problem).'}
+];
+
+let si=0, fi=0, playTimer=null;
+const $=id=>document.getElementById(id);
+const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+function txns(list){
+  $('txns').innerHTML='<span class="txlabel">Transactions</span>'+(list.length?list.map(t=>`<span class="tx ${t.st}">xid ${esc(t.id)} · ${t.st==='idle'?'idle':t.st}${t.n?' · '+esc(t.n):''}</span>`).join(''):'<span class="tx">none</span>');
+}
+function pageView(f){
+  const rows=f.tuples.map(t=>`<div class="tup ${t.st==='new'?'new':t.st==='live'?'live':t.st==='free'?'free':'dead'}"><span>${esc(t.slot)}</span><span class="val">${esc(t.val)}${t.sub?`<span class="sub">${esc(t.sub)}</span>`:''}</span><span>${esc(t.xmin)}</span><span>${esc(t.xmax)}</span></div>`).join('');
+  const page=`<div class="panel"><div class="ptitle"><span>Heap page 1${f.full?' · full':''}</span><span>${f.idx?'users':'accounts'}</span></div>
+    <div class="tup hdr"><span>slot</span><span>version</span><span>xmin</span><span>xmax</span></div>${rows}
+    ${f.log?`<div class="log">${esc(f.log)}</div>`:''}</div>`;
+  if(!f.idx) return `<div class="view solo">${page}</div>`;
+  const idx=f.indexes.map(i=>`<div class="idx"><span class="iname">${esc(i.n)}</span>${i.e.map(e=>`<div class="ent ${e.nw?'new':''} ${e.stale?'stale':''}"><span>${esc(e.k)}</span><span>→ ${esc(e.s)}</span></div>`).join('')}</div>`).join('');
+  return `<div class="view">${page}<div class="panel"><div class="ptitle"><span>Indexes</span></div>${idx}<div><span class="badge ${f.good?'good':'bad'}">${esc(f.badge)}</span></div></div></div>`;
+}
+function pagesView(f){
+  const c=f.cells, total=c.live+c.pinned+c.free;
+  let cells='';
+  for(let i=0;i<c.live;i++) cells+='<i class="cell c-live"></i>';
+  for(let i=0;i<c.pinned;i++) cells+='<i class="cell c-pinned"></i>';
+  for(let i=0;i<c.free;i++) cells+='<i class="cell c-free"></i>';
+  return `<div class="view solo"><div class="panel"><div class="ptitle"><span>Table ${esc(f.table)} · every tuple slot</span><span>${f.pages} page${f.pages>1?'s':''} on disk</span></div>
+    <div class="grid">${cells}</div>
+    <div class="pagesbar">${c.live} live · ${c.pinned} dead, pinned · ${c.free} free</div>
+    ${f.log?`<div class="log">${esc(f.log)}</div>`:''}</div></div>`;
+}
+function xidView(f){
+  const MAX=4294967296, W=640, L=30, R=20, y=70;
+  const x=v=>L+(Math.max(0,Math.min(v,MAX))/MAX)*(W-L-R);
+  const past0=Math.max(0,f.now-2147483648);
+  const rowX=x(1000);
+  const visible=f.frozen||(1000>=past0&&1000<=f.now);
+  const rowCol=f.lost?'var(--alert)':f.frozen?'var(--run)':'var(--io)';
+  let o=`<svg viewBox="0 0 ${W} 150" role="img" aria-label="Transaction ID number line">`;
+  o+=`<rect x="${L}" y="${y-10}" width="${W-L-R}" height="20" rx="4" style="fill:var(--soft)"/>`;
+  o+=`<rect x="${x(past0)}" y="${y-10}" width="${x(f.now)-x(past0)}" height="20" style="fill:var(--io-bg);stroke:var(--io)" stroke-width="1"/>`;
+  o+=`<text x="${(x(past0)+x(f.now))/2}" y="${y+4}" text-anchor="middle" font-size="11" font-family="IBM Plex Mono, monospace" style="fill:var(--io)">past: 2.1 billion IDs</text>`;
+  if(f.now<MAX-1) o+=`<text x="${(x(f.now)+x(Math.min(MAX,f.now+2147483648)))/2}" y="${y+4}" text-anchor="middle" font-size="11" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">future</text>`;
+  o+=`<line x1="${x(f.now)}" y1="${y-24}" x2="${x(f.now)}" y2="${y+24}" style="stroke:var(--fg)" stroke-width="2.5"/>`;
+  const nowTxt='now = '+(f.now>=1e9?(f.now/1e9).toFixed(3)+' B':f.now>=1e6?(f.now/1e6).toFixed(1)+' M':f.now.toLocaleString());
+  const anc=x(f.now)>W-160?'end':'start';
+  o+=`<text x="${x(f.now)+(anc==='end'?-6:6)}" y="${y-28}" text-anchor="${anc}" font-size="12" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">${nowTxt}</text>`;
+  o+=`<circle cx="${rowX}" cy="${y+36}" r="6" style="fill:${rowCol}"/>`;
+  o+=`<line x1="${rowX}" y1="${y+10}" x2="${rowX}" y2="${y+30}" style="stroke:${rowCol}" stroke-width="1.5"/>`;
+  const rowTxt=f.lost?'row xmin 1,000 · now looks like the future → invisible':f.frozen?'row xmin 1,000 · FROZEN, always visible':'row xmin 1,000 · visible';
+  o+=`<text x="${rowX+12}" y="${y+40}" font-size="12" font-family="IBM Plex Mono, monospace" style="fill:${rowCol}">${rowTxt}</text>`;
+  if(f.trigger) o+=`<text x="${x(f.now)+6}" y="${y+64}" font-size="11.5" font-family="IBM Plex Mono, monospace" style="fill:var(--alert)">age > autovacuum_freeze_max_age (200M) → anti-wraparound vacuum</text>`;
+  if(f.danger){ o+=`<line x1="${x(2147483648)}" y1="${y-14}" x2="${x(2147483648)}" y2="${y+14}" style="stroke:var(--alert)" stroke-width="2"/><text x="${x(2147483648)-6}" y="${y+64}" text-anchor="end" font-size="11.5" font-family="IBM Plex Mono, monospace" style="fill:var(--alert)">~3M IDs left → Postgres refuses new XIDs (writes fail)</text>`; }
+  o+=`<text x="${L}" y="${140}" font-size="10" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">0</text><text x="${W-R}" y="${140}" text-anchor="end" font-size="10" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">2³² ≈ 4.3 B (wraps to 0)</text>`;
+  o+='</svg>';
+  return `<div class="view solo"><div class="panel"><div class="ptitle"><span>Transaction ID space (32-bit, unrolled)</span><span>${visible&&!f.lost?'row visible':'row lost'}</span></div><div class="xidwrap">${o}</div></div></div>`;
+}
+
+function render(){
+  const sc=SC[si], f=sc.frames[fi];
+  txns(f.txns||[]);
+  $('view').innerHTML=f.view==='page'?pageView(f):f.view==='pages'?pagesView(f):xidView(f);
+  $('fh').textContent=f.h; $('fb').innerHTML=f.b;
+  $('stepno').textContent=`${fi+1} / ${sc.frames.length}`;
+  $('prev').disabled=fi===0; $('next').disabled=fi===sc.frames.length-1;
+  [...$('dots').children].forEach((d,i)=>d.setAttribute('aria-current',i===fi?'true':'false'));
+}
+function show(n){fi=Math.max(0,Math.min(n,SC[si].frames.length-1));render()}
+function select(i){
+  stopPlay(); si=i; fi=0; const sc=SC[si];
+  [...$('tabs').children].forEach((b,k)=>b.setAttribute('aria-selected',k===si?'true':'false'));
+  $('q').textContent=sc.q; $('take').textContent=sc.take; $('gen').textContent=sc.gen;
+  const dots=$('dots'); dots.innerHTML='';
+  sc.frames.forEach((_,k)=>{const d=document.createElement('button');d.className='dot';d.setAttribute('aria-label','Step '+(k+1));d.onclick=()=>{stopPlay();show(k)};dots.appendChild(d)});
+  render();
+}
+function stopPlay(){clearInterval(playTimer);playTimer=null;$('play').textContent='Play'}
+$('play').onclick=()=>{
+  if(playTimer){stopPlay();return}
+  show(fi===SC[si].frames.length-1?0:fi+1); $('play').textContent='Pause';
+  playTimer=setInterval(()=>{if(fi>=SC[si].frames.length-1){stopPlay();return} show(fi+1)},4200);
+};
+$('prev').onclick=()=>{stopPlay();show(fi-1)};
+$('next').onclick=()=>{stopPlay();show(fi+1)};
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){stopPlay();show(fi+1)}else if(e.key==='ArrowLeft'){stopPlay();show(fi-1)}});
+SC.forEach((sc,i)=>{const b=document.createElement('button');b.className='tab';b.setAttribute('role','tab');b.innerHTML=`<small>${sc.tab}</small>${sc.short}`;b.onclick=()=>{try{history.replaceState(null,'','#'+sc.id)}catch(_){location.hash=sc.id} select(i)};$('tabs').appendChild(b)});
+const fromHash=()=>{const i=SC.findIndex(x=>x.id===(location.hash||'').slice(1));return i<0?0:i};
+window.addEventListener('hashchange',()=>select(fromHash()));
+select(fromHash());
+})();
+</script>
+
+</body></html>

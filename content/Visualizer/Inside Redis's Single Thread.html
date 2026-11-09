@@ -1,0 +1,315 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Inside Redis's Single Thread</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the asyncio visualizer's trace, with Redis's main thread as the shared row and clients as lanes. Same series identity. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --fg:#152230; --muted:#5a6878; --line:#d6dce4; --soft:#eef2f6;
+  --run:#3776ab; --run-ink:#ffffff; --loop:#e8b923; --wait:#8d99a8; --io:#2f9474; --io-bg:#e3f3ed;
+  --thr:#7a5cc4; --thr-ink:#ffffff; --alert:#c9412f;
+  --f-display:"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding-block:28px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font:500 13px/1.2 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 12px;border-radius:8px;cursor:pointer;text-align:left}
+.tab small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-bottom:2px}
+.tab[aria-selected="true"]{border-color:var(--run);box-shadow:inset 0 0 0 1px var(--run)}
+.tab:focus-visible,.btn:focus-visible,.dot:focus-visible{outline:2px solid var(--loop);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(19px,3vw,23px);line-height:1.25;margin:0;text-wrap:balance}
+.trace{overflow-x:auto;margin:0 -4px}
+.trace svg{display:block;width:100%;min-width:620px;height:auto}
+.share{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px;font-variant-numeric:tabular-nums}
+.share b{color:var(--fg);font-weight:500}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--soft);color:var(--fg);padding:7px 12px;border-radius:7px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.dots{display:flex;gap:6px;flex:1;min-width:0}
+.dot{width:28px;height:6px;border-radius:3px;border:0;background:var(--line);cursor:pointer;padding:0}
+.dot[aria-current="true"]{background:var(--run)}
+.step{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.caption{border-left:3px solid var(--loop);padding:2px 0 2px 14px;min-height:78px}
+.caption h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.caption p{margin:0;max-width:68ch}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 4px;border-radius:4px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.note{background:var(--soft);border-radius:10px;padding:12px 14px;min-width:0}
+.note .eyebrow{margin-bottom:4px}
+.note p{margin:0;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:10px;border-radius:2px;display:inline-block}
+.foot{font-size:13px;color:var(--muted)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Redis 7.x / 8.x · Valkey 8 shares the model</div>
+    <h1>Inside Redis's Single Thread</h1>
+    <p class="lede">Redis runs every command, for every client, on one main thread. Each client is a lane; the yellow row shows which command is running. It works because commands take microseconds, and it breaks the moment one doesn't.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="stage">
+    <h2 class="q" id="q"></h2>
+    <div class="trace"><svg id="svg" viewBox="0 0 720 240" role="img" aria-label="Redis main thread timeline"></svg></div>
+    <div class="share" id="share"></div>
+    <div class="controls">
+      <button class="btn" id="prev">Back</button>
+      <button class="btn" id="next">Next</button>
+      <button class="btn" id="play">Play</button>
+      <div class="dots" id="dots"></div>
+      <span class="step" id="stepno"></span>
+    </div>
+    <div class="caption" aria-live="polite"><h3 id="fh"></h3><p id="fb"></p></div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--run)"></i>Running on the main thread</span>
+      <span><svg width="22" height="10"><defs><pattern id="hatchL" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" style="stroke:var(--wait)" stroke-width="2"/></pattern></defs><rect width="22" height="10" fill="url(#hatchL)" style="stroke:var(--wait)" stroke-width="1"/></svg>Command queued, main thread busy</span>
+      <span><i class="sw" style="background:var(--io-bg);border:1.5px solid var(--io)"></i>On the network</span>
+      <span><i class="sw" style="background:var(--thr)"></i>Another thread or process</span>
+      <span><i class="sw" style="background:var(--loop);height:6px"></i>Main thread busy</span>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="note"><div class="eyebrow">Takeaway</div><p id="take"></p></div>
+    <div class="note"><div class="eyebrow">Generalizes to</div><p id="gen"></p></div>
+  </section>
+
+  <p class="foot">Timings and memory figures are illustrative; fork times come from measurements in the Redis latency docs. Keyboard: ← → to step.</p>
+</div>
+
+<script>
+(function(){
+const R='run', W='wait', IO='io', T='thr';
+const s=(a,b,type,label)=>({s:a,e:b,type,label});
+
+const SC=[
+{id:'happy',tab:'Happy path',short:'Microsecond commands',
+ q:'One thread serves everyone, because each command takes about a microsecond',
+ traces:{main:{max:240,unit:'µs',lanes:[
+   {id:'A',segs:[s(0,100,IO,'GET on the wire'),s(100,101,R,'GET'),s(101,201,IO,'reply on the wire')]},
+   {id:'B',segs:[s(10,110,IO,'SET on the wire'),s(110,111,R,'SET'),s(111,211,IO,'reply on the wire')]},
+   {id:'C',segs:[s(20,120,IO,'GET on the wire'),s(120,121,R,'GET'),s(121,221,IO,'reply on the wire')]}]}},
+ frames:[
+  {t:100.5,h:'A\'s request arrives',b:'epoll reports A\'s socket readable. Redis reads and parses the command, then runs <code>GET user:42</code> against the in-memory hash table: about 1 µs.'},
+  {t:121,h:'B and C, one after another',b:'Each command runs to completion before the next starts. Nobody waits more than a microsecond or two, so the yellow row is almost empty.'},
+  {t:240,h:'Idle most of the time',b:'Each request spends about 100 µs on the network for 1 µs of work. One thread can serve hundreds of thousands of commands per second, with no locks on any data structure.'}],
+ take:'Single-threaded execution is a design choice: no locks, and every command is atomic. It works because commands are tiny and the data is in memory.',
+ gen:'The asyncio and Node.js event loops: one thread, non-blocking I/O, and everything depends on keeping each unit of work short.'},
+
+{id:'slow',tab:'Scenario 1',short:'KEYS * and big DEL',
+ q:'One KEYS * or a big DEL. Why does every client stall?',
+ traces:{
+  keys:{max:20,label:'KEYS user:* on 10 million keys',lanes:[
+   {id:'A',segs:[s(1,15,R,'KEYS user:*  · walks 10M keys')]},
+   {id:'B',segs:[s(0,0.2,R),s(2,15,W,'GET queued'),s(15,15.2,R)]},
+   {id:'C',segs:[s(4,15.2,W,'GET queued'),s(15.2,15.4,R)]}]},
+  scan:{max:20,label:'SCAN 0 MATCH user:* COUNT 1000, in batches',lanes:[
+   {id:'A',segs:[s(1,3,R,'SCAN'),s(3,4,IO),s(4,6,R,'SCAN'),s(6,7,IO),s(7,9,R,'SCAN'),s(9,10,IO),s(10,12,R,'SCAN'),s(12,13,IO),s(13,15,R,'SCAN')]},
+   {id:'B',segs:[s(0,0.2,R),s(2,3,W),s(3,3.2,R,'GET')]},
+   {id:'C',segs:[s(4,6,W),s(6,6.2,R,'GET')]}]},
+  del:{max:20,label:'DEL on a set with 5 million members',lanes:[
+   {id:'D',segs:[s(1,10,R,'DEL bigset · frees 5M members')]},
+   {id:'B',segs:[s(2,10,W,'GET queued'),s(10,10.2,R)]},
+   {id:'C',segs:[s(4,10.2,W,'GET queued'),s(10.2,10.4,R)]}]},
+  unlink:{max:20,label:'UNLINK bigset',lanes:[
+   {id:'D',segs:[s(1,1.2,R,'UNLINK')]},
+   {id:'lazyfree',name:'lazyfree',segs:[s(1.2,10,T,'background thread frees 5M members')]},
+   {id:'B',segs:[s(2,2.2,R,'GET')]},
+   {id:'C',segs:[s(4,4.2,R,'GET')]}]}},
+ frames:[
+  {trace:'keys',t:9,h:'KEYS walks the whole keyspace',b:'<code>KEYS user:*</code> visits all 10 million keys on the main thread. B and C send 1 µs <code>GET</code>s and wait behind it.'},
+  {trace:'keys',t:16,h:'Everyone paid for it',b:'B and C finally run when KEYS finishes. Their latency was set by somebody else\'s command; with client timeouts they would have failed. <code>SLOWLOG GET</code> shows the culprit.'},
+  {trace:'scan',t:16,h:'Fix: SCAN in batches',b:'<code>SCAN</code> returns a small batch plus a cursor. Between batches, B and C run straight away. The total work is the same; the stall is gone.'},
+  {trace:'del',t:11,h:'A big DEL blocks the same way',b:'Freeing 5 million set members happens on the main thread, so every client waits again.'},
+  {trace:'unlink',t:11,h:'Fix: UNLINK',b:'The key leaves the keyspace immediately and a background thread frees the memory. <code>lazyfree-lazy-user-del yes</code> makes DEL behave like this.'}],
+ take:'In Redis the cost of a command is paid by every client. In production use SCAN, HSCAN and SSCAN instead of KEYS, HGETALL and SMEMBERS on big collections, and UNLINK instead of DEL for big keys. Long Lua scripts block the same way.',
+ gen:'The blocking call in the asyncio visualizer: the same shape and the same fix, break the work up or move it off the thread.'},
+
+{id:'iothreads',tab:'Scenario 2',short:'I/O threads',
+ q:'Redis has I/O threads now. Why is execution still single-threaded?',
+ traces:{
+  noio:{max:28,unit:'µs',label:'io-threads 1 (default): main thread does all the I/O',lanes:[
+   {id:'A',segs:[s(0,3,R,'read'),s(3,4,R),s(4,6,R,'write')]},
+   {id:'B',segs:[s(0,6,W),s(6,9,R,'read'),s(9,10,R),s(10,12,R,'write')]},
+   {id:'C',segs:[s(0,12,W,'waiting'),s(12,15,R,'read'),s(15,16,R),s(16,18,R,'write')]},
+   {id:'D',segs:[s(0,18,W,'waiting'),s(18,21,R,'read'),s(21,22,R),s(22,24,R,'write')]}]},
+  io:{max:28,unit:'µs',label:'io-threads 4: reads and writes in parallel, execution serial',lanes:[
+   {id:'A',segs:[s(0,3,T,'read'),s(3,4,R),s(4,6,T,'write')]},
+   {id:'B',segs:[s(0,3,T,'read'),s(3,4,W),s(4,5,R),s(5,7,T,'write')]},
+   {id:'C',segs:[s(0,3,T,'read'),s(3,5,W),s(5,6,R),s(6,8,T,'write')]},
+   {id:'D',segs:[s(0,3,T,'read'),s(3,6,W),s(6,7,R),s(7,9,T,'write')]}]},
+  iokeys:{max:28,unit:'µs',label:'io-threads 4, but A runs a slow command',lanes:[
+   {id:'A',segs:[s(0,3,T,'read'),s(3,22,R,'slow command (KEYS, big DEL…)'),s(22,24,T,'write')]},
+   {id:'B',segs:[s(0,3,T,'read'),s(3,22,W,'queued'),s(22,23,R),s(23,25,T,'write')]},
+   {id:'C',segs:[s(0,3,T,'read'),s(3,23,W,'queued'),s(23,24,R),s(24,26,T,'write')]},
+   {id:'D',segs:[s(0,3,T,'read'),s(3,24,W,'queued'),s(24,25,R),s(25,27,T,'write')]}]}},
+ frames:[
+  {trace:'noio',t:24,h:'Without I/O threads',b:'For each command the main thread reads the socket, parses, executes (the short middle part) and writes the reply. Most of its time goes to I/O, not commands.'},
+  {trace:'io',t:9,h:'With I/O threads',b:'Reading, parsing and writing replies run on I/O threads (purple), in parallel. The main thread only executes, back to back. The same four commands finish in 9 µs instead of 24.'},
+  {trace:'iokeys',t:27,h:'Execution is still serial',b:'The yellow row still runs one command at a time. A slow command blocks every client exactly as in scenario 1, with or without I/O threads.'}],
+ take:'I/O threads scale the networking, not the data-structure work. To scale execution, run more Redis processes: Redis Cluster shards the keyspace across them.',
+ gen:'The split of network I/O from execution in nginx workers and Netty, and the netpoller in the Go visualizer. Redis 8 and Valkey 8 reworked I/O threading but kept execution on one thread.'},
+
+{id:'fork',tab:'Scenario 3',short:'BGSAVE and fork',
+ q:'A background save forks the process. Why do latency and memory spike?',
+ traces:{main:{max:420,label:'24 GB dataset, steady writes, BGSAVE starts',lanes:[
+   {id:'save',name:'BGSAVE',segs:[s(10,250,R,'fork(): copy ~48 MB of page tables')]},
+   {id:'A',segs:[s(0,1,R),s(20,250,W,'SET queued'),s(250,251,R),s(300,301,R),s(350,351,R)]},
+   {id:'B',segs:[s(5,6,R),s(60,250,W,'GET queued'),s(251,252,R),s(320,321,R),s(380,381,R)]},
+   {id:'child',name:'child',segs:[s(250,420,T,'child process writes the RDB snapshot')]}]}},
+ frames:[
+  {t:9,info:'memory: 24.0 GB',h:'Before the save',b:'Clients run as usual. Redis is about to start a background save (BGSAVE, or an AOF rewrite).'},
+  {t:250,info:'memory: 24.0 GB · main thread blocked ~240 ms',h:'fork() blocks the main thread',b:'Data isn\'t copied, but page tables are: about 48 MB of them for 24 GB in 4 KB pages. Measured at roughly 10 ms per GB on bare metal, and over 200 ms per GB on some virtual machines. Every client waits.'},
+  {t:330,info:'memory: 24.0 GB shared + 1.2 GB copied pages (4 KB pages)',h:'Copy-on-write',b:'Parent and child share memory. When the parent writes a key, the kernel first copies the 4 KB page it lives on. Memory grows with the number of distinct pages written during the save.'},
+  {t:330,info:'memory: 24.0 GB shared + 11 GB copied pages (2 MB huge pages)',bad:true,h:'With transparent huge pages',b:'The copy unit becomes 2 MB, 512 times larger. Small writes duplicate whole huge pages, and memory can approach double, risking an OOM kill. Redis recommends disabling THP.'},
+  {t:420,info:'memory: back to 24.0 GB',h:'The child finishes',b:'The snapshot is on disk, the child exits, and the copied pages are freed. <code>INFO</code> reports the fork cost as <code>latest_fork_usec</code>.'}],
+ take:'Leave memory headroom for snapshots, disable transparent huge pages, watch latest_fork_usec, and keep per-instance datasets moderate: fork cost grows with dataset size.',
+ gen:'Any process that forks to take a consistent snapshot of its own memory, and copy-on-write snapshots in file systems such as ZFS and Btrfs.'}
+];
+
+const svg=document.getElementById('svg');
+const VW=720, L=86, RP=70, ROW=50, LANE_H=24;
+let si=0, fi=0, curT=0, curKey=null, anim=null, playTimer=null;
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const trOf=(sc,f)=>sc.traces[f.trace||'main'];
+
+function draw(sc,tr,t){
+  const x=v=>L+(v/tr.max)*(VW-L-RP);
+  const yAxis=22, yLoop=40, loopH=16, lane0=86;
+  const laneY=i=>lane0+i*ROW;
+  const H=lane0+tr.lanes.length*ROW+4;
+  svg.setAttribute('viewBox',`0 0 ${VW} ${H}`);
+  let o=`<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" style="fill:var(--surface)"/><line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--wait)" stroke-width="2"/></pattern></defs>`;
+  o+=`<line x1="${L}" y1="${yAxis+6}" x2="${VW-RP}" y2="${yAxis+6}" style="stroke:var(--line)"/>`;
+  const tstep=tr.max<=30?2:tr.max<=100?10:tr.max<=250?20:50;
+  for(let v=0;v<=tr.max+0.001;v+=tstep){
+    o+=`<line x1="${x(v)}" y1="${yAxis+3}" x2="${x(v)}" y2="${yAxis+9}" style="stroke:var(--muted)"/>`;
+    o+=`<text x="${x(v)}" y="${yAxis-2}" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">${v}${v===0?' '+(tr.unit||'ms'):''}</text>`;
+  }
+  if(tr.label) o+=`<text x="${VW-RP+8}" y="${yAxis-2}" font-size="9.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)"></text>`;
+  // loop row
+  o+=`<text x="${L-10}" y="${yLoop+12}" text-anchor="end" font-size="12" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">Main</text>`;
+  o+=`<rect x="${L}" y="${yLoop}" width="${VW-L-RP}" height="${loopH}" rx="3" style="fill:var(--soft)"/>`;
+  tr.lanes.forEach(l=>l.segs.forEach(g=>{
+    if(g.type!==R||g.s>=t) return;
+    const e=Math.min(g.e,t), w=x(e)-x(g.s);
+    o+=`<rect x="${x(g.s)}" y="${yLoop}" width="${Math.max(w,0.6)}" height="${loopH}" style="fill:var(--loop)"/>`;
+    if(w>16) o+=`<text x="${x(g.s)+w/2}" y="${yLoop+12}" text-anchor="middle" font-size="10" font-weight="600" font-family="IBM Plex Mono, monospace" fill="#2a2100">${l.id}</text>`;
+  }));
+  // idle label inside loop row for longest idle gap so far
+  {
+    const busy=[]; tr.lanes.forEach(l=>l.segs.forEach(g=>{if(g.type===R&&g.s<t) busy.push([g.s,Math.min(g.e,t)])}));
+    busy.sort((a,b)=>a[0]-b[0]); let cur=0, best=null;
+    busy.forEach(([a,b])=>{ if(a-cur>2 && (!best||a-cur>best[1]-best[0])) best=[cur,a]; cur=Math.max(cur,b)});
+    if(best) o+=`<text x="${(x(best[0])+x(best[1]))/2}" y="${yLoop+12}" text-anchor="middle" font-size="9.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">idle in epoll</text>`;
+  }
+  if(tr.label) o+=`<text x="${L}" y="${lane0-12}" font-size="10.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">${esc(tr.label)}</text>`;
+  tr.lanes.forEach((l,i)=>{
+    const y=laneY(i);
+    o+=`<text x="${L-10}" y="${y+LANE_H/2+4}" text-anchor="end" font-size="12" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">${esc(l.name||l.id)}</text>`;
+    o+=`<line x1="${L}" y1="${y+LANE_H/2}" x2="${VW-RP}" y2="${y+LANE_H/2}" style="stroke:var(--line)" stroke-dasharray="2 4"/>`;
+    l.segs.forEach(g=>{
+      if(g.s>=t) return;
+      const e=Math.min(g.e,t), x0=x(g.s), w=Math.max(x(e)-x0,0.6);
+      if(g.type===R) o+=`<rect x="${x0}" y="${y}" width="${w}" height="${LANE_H}" rx="2" style="fill:var(--run)"/>`;
+      else if(g.type===T) o+=`<rect x="${x0}" y="${y}" width="${w}" height="${LANE_H}" rx="2" style="fill:var(--thr)"/>`;
+      else if(g.type===W) o+=`<rect x="${x0+0.5}" y="${y+0.5}" width="${Math.max(w-1,0.6)}" height="${LANE_H-1}" rx="2" fill="url(#hatch)" style="stroke:var(--wait)" stroke-width="1"/>`;
+      else o+=`<rect x="${x0+0.75}" y="${y+0.75}" width="${Math.max(w-1.5,0.6)}" height="${LANE_H-1.5}" rx="2" style="fill:var(--io-bg);stroke:var(--io)" stroke-width="1.5"/>`;
+      if(g.label && e>=g.e-0.0001){
+        const full=x(g.e)-x0;
+        if(full>=g.label.length*6.3+10){
+          const ink=g.type===R?'var(--run-ink)':g.type===T?'var(--thr-ink)':g.type===IO?'var(--io)':'var(--muted)';
+          o+=`<text x="${x0+full/2}" y="${y+LANE_H/2+4}" text-anchor="middle" font-size="10.5" font-family="IBM Plex Mono, monospace" style="fill:${ink}">${esc(g.label)}</text>`;
+        } else {
+          o+=`<text x="${x0+full/2}" y="${y+LANE_H+12}" text-anchor="middle" font-size="9.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">${esc(g.label)}</text>`;
+        }
+      }
+    });
+    const end=Math.max(...l.segs.map(g=>g.e)), start=Math.min(...l.segs.map(g=>g.s));
+    if(t>=end-0.0001) o+=`<text x="${x(end)+6}" y="${y+LANE_H/2+4}" font-size="10.5" font-weight="500" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">done</text>`;
+  });
+  const ph=x(Math.min(t,tr.max));
+  o+=`<line x1="${ph}" y1="${yAxis+6}" x2="${ph}" y2="${H-4}" style="stroke:var(--fg)" stroke-opacity=".35" stroke-dasharray="3 3"/>`;
+  svg.innerHTML=o;
+
+  const held={}; let tot=0;
+  tr.lanes.forEach(l=>{held[l.id]=0; l.segs.forEach(g=>{if(g.type===R&&g.s<t) held[l.id]+=Math.min(g.e,t)-g.s})});
+  tr.lanes.forEach(l=>tot+=held[l.id]);
+  document.getElementById('share').innerHTML=`<span>Main thread at ${t.toFixed(1)} ${tr.unit||'ms'}:</span>`+tr.lanes.map(l=>`<span>${esc(l.id)} <b>${held[l.id].toFixed(1)} ${tr.unit||'ms'}</b></span>`).join('')+`<span>idle <b>${Math.max(t-tot,0).toFixed(1)} ${tr.unit||'ms'}</b></span>`;
+  const fr=SC[si].frames[fi]; if(fr&&fr.info) document.getElementById('share').innerHTML=`<span>${esc(fr.info)}</span>`;
+}
+
+function animateTo(target,from){
+  cancelAnimationFrame(anim);
+  const sc=SC[si], f=sc.frames[fi], tr=trOf(sc,f);
+  if(reduce){curT=target;draw(sc,tr,curT);return}
+  const t0=performance.now(), a=from, dur=Math.min(1100,350+Math.abs(target-a)/tr.max*1400);
+  const step=now=>{const p=Math.min((now-t0)/dur,1), e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2; curT=a+(target-a)*e; draw(sc,tr,curT); if(p<1) anim=requestAnimationFrame(step)};
+  anim=requestAnimationFrame(step);
+}
+function show(n,instant){
+  const sc=SC[si]; fi=Math.max(0,Math.min(n,sc.frames.length-1));
+  const f=sc.frames[fi], key=sc.id+':'+(f.trace||'main');
+  const from=curKey===key?curT:0; curKey=key;
+  document.getElementById('fh').textContent=f.h;
+  document.getElementById('fb').innerHTML=f.b;
+  document.getElementById('stepno').textContent=`${fi+1} / ${sc.frames.length}`;
+  document.getElementById('prev').disabled=fi===0;
+  document.getElementById('next').disabled=fi===sc.frames.length-1;
+  [...document.getElementById('dots').children].forEach((d,i)=>d.setAttribute('aria-current',i===fi?'true':'false'));
+  if(instant){cancelAnimationFrame(anim);curT=f.t;draw(sc,trOf(sc,f),curT)} else animateTo(f.t,from);
+}
+function select(i,instant){
+  stopPlay(); si=i; curKey=null;
+  const sc=SC[si];
+  [...document.getElementById('tabs').children].forEach((b,k)=>b.setAttribute('aria-selected',k===si?'true':'false'));
+  document.getElementById('q').textContent=sc.q;
+  document.getElementById('take').textContent=sc.take;
+  document.getElementById('gen').textContent=sc.gen;
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  sc.frames.forEach((_,k)=>{const d=document.createElement('button');d.className='dot';d.setAttribute('aria-label','Step '+(k+1));d.onclick=()=>{stopPlay();show(k)};dots.appendChild(d)});
+  show(0,instant);
+}
+function stopPlay(){clearInterval(playTimer);playTimer=null;document.getElementById('play').textContent='Play'}
+document.getElementById('play').onclick=()=>{
+  if(playTimer){stopPlay();return}
+  show(fi===SC[si].frames.length-1?0:fi+1);
+  document.getElementById('play').textContent='Pause';
+  playTimer=setInterval(()=>{if(fi>=SC[si].frames.length-1){stopPlay();return} show(fi+1)},3800);
+};
+document.getElementById('prev').onclick=()=>{stopPlay();show(fi-1)};
+document.getElementById('next').onclick=()=>{stopPlay();show(fi+1)};
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){stopPlay();show(fi+1)}else if(e.key==='ArrowLeft'){stopPlay();show(fi-1)}});
+const tabs=document.getElementById('tabs');
+SC.forEach((sc,i)=>{const b=document.createElement('button');b.className='tab';b.setAttribute('role','tab');b.innerHTML=`<small>${sc.tab}</small>${sc.short}`;b.onclick=()=>{try{history.replaceState(null,'','#'+sc.id)}catch(_){location.hash=sc.id} select(i)};tabs.appendChild(b)});
+const fromHash=()=>{const i=SC.findIndex(x=>x.id===(location.hash||'').slice(1));return i<0?0:i};
+window.addEventListener('hashchange',()=>select(fromHash()));
+select(fromHash(),true);
+})();
+</script>
+
+</body></html>

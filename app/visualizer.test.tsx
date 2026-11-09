@@ -18,6 +18,7 @@ describe("visualizer routes", () => {
       { slug: "eviction-policies" },
       { slug: "caching-strategies" },
       { slug: "rate-limiting" },
+      { slug: "python-gil" },
     ]);
   });
 
@@ -44,6 +45,9 @@ describe("visualizer routes", () => {
     expect(html).toContain("Caching strategies");
     expect(html).toMatch(/href="\/visualizer\/rate-limiting\/?"/);
     expect(html).toContain("Rate limiting");
+    expect(html).toContain("Compare algorithms");
+    expect(html).toContain("Watch a mechanism");
+    expect(html).toMatch(/href="\/visualizer\/python-gil\/?"/);
   });
 
   it("the visualizer page ships the app shell without a baked-in run", async () => {

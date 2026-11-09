@@ -6,6 +6,7 @@ import { LanesShape } from "./LanesShape";
 import { LinearShape } from "./LinearShape";
 import { RankingShape } from "./RankingShape";
 import { RingShape } from "./RingShape";
+import { ScheduleShape } from "./ScheduleShape";
 import { TimelineShape } from "./TimelineShape";
 
 interface ShapeProps {
@@ -20,6 +21,7 @@ export function Shape({ model, rotated, size, subject, dense = isDense(size) }: 
   if (model.kind === "ring") return <RingShape model={model} subject={subject} />;
   if (model.kind === "ranking") return <RankingShape model={model} subject={subject} />;
   if (model.kind === "lanes") return <LanesShape model={model} subject={subject} />;
+  if (model.kind === "schedule") return <ScheduleShape model={model} subject={subject} />;
   if (model.kind === "timeline")
     return <TimelineShape model={model} size={size} subject={subject} dense={dense} />;
   if (model.kind === "composite") {

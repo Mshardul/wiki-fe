@@ -132,7 +132,7 @@ Markup for articles comes from the build pipeline. Islands add behaviour; they d
 | `admin/` | Admin view + report tables |
 | `changelog/` | Changelog filter |
 | `visualizer/frame/` | Shared visualizer page: `VisualizerApp`, header, config/info side panels, `Stage`, playback bar, timeline strip; Revision view: `RevisionView`, `RevisionGrid`, `RevisionPopup`, `RevisionFooter` |
-| `visualizer/shapes/` | Generic, vocabulary-neutral data-structure shapes (`LinearShape`, `RankingShape`, `HistogramShape`, `RingShape`, `LanesShape`, `TimelineShape`, `CompositeShape`) picked by `Shape`, plus `FlowDiagram` for revision cards; fed models by each visualizer's adapter in `lib/visualizer/<name>/`, never domain words (see CONVENTIONS Visualizer) |
+| `visualizer/shapes/` | Generic, vocabulary-neutral data-structure shapes (`LinearShape`, `RankingShape`, `HistogramShape`, `RingShape`, `LanesShape`, `TimelineShape`, `ScheduleShape`, `CompositeShape`) picked by `Shape`, plus `FlowDiagram` for revision cards; fed models by each visualizer's adapter in `lib/visualizer/<name>/`, never domain words (see CONVENTIONS Visualizer) |
 | `visualizer/ui/` / `visualizer/hooks/` | Reusable primitives (buttons, tabs, choice group, rich text, vars table) / playback, URL sync, hotkeys, follow-scroll, panel prefs |
 
 ### Lib (`lib/`) — non-UI logic

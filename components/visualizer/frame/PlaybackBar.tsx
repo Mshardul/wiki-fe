@@ -21,13 +21,13 @@ interface PlaybackBarProps {
   unit: string;
   playing: boolean;
   speed: Speed;
-  repeat: RepeatMode;
+  repeat?: RepeatMode;
   rotate: RotateControl | null;
   onSeek: (i: number) => void;
   onStep: (delta: number) => void;
   onToggle: () => void;
   onSpeed: (speed: Speed) => void;
-  onRepeat: () => void;
+  onRepeat?: () => void;
 }
 
 const SPEED_OPTIONS = SPEEDS.map((s) => ({ value: s, label: `${s}×` }));
@@ -46,7 +46,7 @@ export function PlaybackBar({
   onSpeed,
   onRepeat,
 }: PlaybackBarProps) {
-  const repeatView = REPEAT_VIEW[repeat];
+  const repeatView = repeat ? REPEAT_VIEW[repeat] : null;
   return (
     <div className="viz-playback">
       <span className="viz-playback__count">
@@ -82,9 +82,11 @@ export function PlaybackBar({
             <Icon name="rotate" />
           </IconButton>
         )}
-        <IconButton label={repeatView.label} active={repeat !== "off"} onClick={onRepeat}>
-          <Icon name={repeatView.icon} />
-        </IconButton>
+        {repeatView && onRepeat && (
+          <IconButton label={repeatView.label} active={repeat !== "off"} onClick={onRepeat}>
+            <Icon name={repeatView.icon} />
+          </IconButton>
+        )}
         <ChoiceGroup
           label="Speed"
           variant="segmented"

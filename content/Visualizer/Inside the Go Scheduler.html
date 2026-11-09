@@ -1,0 +1,305 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Inside the Go Scheduler</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: logic-analyzer trace with processor (P) rows above OS-thread (M) lanes, plus a run-queue panel. Same series identity. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --fg:#152230; --muted:#5a6878; --line:#d6dce4; --soft:#eef2f6;
+  --run:#3776ab; --run-ink:#ffffff; --loop:#e8b923; --wait:#8d99a8; --io:#2f9474; --io-bg:#e3f3ed;
+  --thr:#7a5cc4; --thr-ink:#ffffff; --alert:#c9412f; --p1:#b8742a; --p1-ink:#ffffff;
+  --f-display:"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; --p1:#e0a35c; --p1-ink:#1c1206; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; --p1:#e0a35c; --p1-ink:#1c1206; color-scheme:dark }
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding-block:28px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font:500 13px/1.2 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 12px;border-radius:8px;cursor:pointer;text-align:left}
+.tab small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-bottom:2px}
+.tab[aria-selected="true"]{border-color:var(--run);box-shadow:inset 0 0 0 1px var(--run)}
+.tab:focus-visible,.btn:focus-visible,.dot:focus-visible{outline:2px solid var(--loop);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(19px,3vw,23px);line-height:1.25;margin:0;text-wrap:balance}
+.trace{overflow-x:auto;margin:0 -4px}
+.trace svg{display:block;width:100%;min-width:620px;height:auto}
+.share{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px;font-variant-numeric:tabular-nums}
+.share b{color:var(--fg);font-weight:500}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--soft);color:var(--fg);padding:7px 12px;border-radius:7px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.dots{display:flex;gap:6px;flex:1;min-width:0}
+.dot{width:28px;height:6px;border-radius:3px;border:0;background:var(--line);cursor:pointer;padding:0}
+.dot[aria-current="true"]{background:var(--run)}
+.step{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.caption{border-left:3px solid var(--loop);padding:2px 0 2px 14px;min-height:78px}
+.caption h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.caption p{margin:0;max-width:68ch}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 4px;border-radius:4px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.note{background:var(--soft);border-radius:10px;padding:12px 14px;min-width:0}
+.note .eyebrow{margin-bottom:4px}
+.note p{margin:0;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:10px;border-radius:2px;display:inline-block}
+.foot{font-size:13px;color:var(--muted)}
+.queues{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.queues span{display:inline-flex;align-items:center;gap:5px}
+.chip{display:inline-block;padding:1px 6px;border-radius:4px;background:var(--soft);border:1px solid var(--line);color:var(--fg);font-size:11px}
+.empty{opacity:.6}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Go 1.22+ · G-M-P scheduler · scenario 3 compares Go 1.13</div>
+    <h1>Inside the Go Scheduler</h1>
+    <p class="lede">Goroutines (G) run on OS threads (M), but only while a thread holds a processor (P). The top rows show what each P is running; the lanes below show the threads. Watch Ps move between threads while goroutines move between queues.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="stage">
+    <h2 class="q" id="q"></h2>
+    <div class="trace"><svg id="svg" viewBox="0 0 720 240" role="img" aria-label="Scheduler timeline"></svg></div>
+    <div class="queues" id="queues"></div>
+    <div class="controls">
+      <button class="btn" id="prev">Back</button>
+      <button class="btn" id="next">Next</button>
+      <button class="btn" id="play">Play</button>
+      <div class="dots" id="dots"></div>
+      <span class="step" id="stepno"></span>
+    </div>
+    <div class="caption" aria-live="polite"><h3 id="fh"></h3><p id="fb"></p></div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--run)"></i>Thread running Go code with P0</span>
+      <span><i class="sw" style="background:var(--p1)"></i>… with P1</span>
+      <span><i class="sw" style="border:1.5px solid var(--alert)"></i>Thread blocked in a syscall (no P)</span>
+      <span><i class="sw" style="background:var(--io-bg);border:1.5px solid var(--io)"></i>Parked in netpoller</span>
+      <span><svg width="22" height="10"><defs><pattern id="hatchL" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" style="stroke:var(--wait)" stroke-width="2"/></pattern></defs><rect width="22" height="10" fill="url(#hatchL)" style="stroke:var(--wait)" stroke-width="1"/></svg>Runnable, queued</span>
+      <span><i class="sw" style="border:1.5px dashed var(--wait)"></i>Thread parked / idle</span>
+      <span><i class="sw" style="background:var(--alert);width:3px;height:14px"></i>sysmon acts</span>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="note"><div class="eyebrow">Takeaway</div><p id="take"></p></div>
+    <div class="note"><div class="eyebrow">Generalizes to</div><p id="gen"></p></div>
+  </section>
+
+  <p class="foot">Timings illustrate the mechanism and are not measured; sysmon wakes every 20 µs to 10 ms, so real hand-offs vary. Keyboard: ← → to step.</p>
+</div>
+
+<script>
+(function(){
+const R='run', SYS='sys', PARK='park', POLL='poll', Q='queued';
+const s=(a,b,type,label,p)=>({s:a,e:b,type,label,p});
+
+const SC=[
+{id:'happy',tab:'Happy path',short:'Run queues & stealing',
+ q:'Two Ps, one lopsided queue: how work stealing evens it out',
+ traces:{main:{max:12,ps:['P0','P1'],lanes:[
+   {id:'M0',segs:[s(0,3,R,'G1','P0'),s(3,6,R,'G2','P0'),s(6,9,R,'G6','P0')]},
+   {id:'M1',segs:[s(0,4,R,'G3','P1'),s(4,7,R,'G4','P1'),s(7,10,R,'G5','P1')]}],
+   marks:[{t:4,lane:'M1',label:'P1 steals G4, G5',info:true}]}},
+ frames:[
+  {t:2,h:'Two Ps, two threads',b:'M0 holds P0 and runs G1; M1 holds P1 and runs G3. G1 spawned four goroutines, so they all sit on P0\'s local queue.',q:{P0:['G2','G4','G5','G6'],P1:[],global:[]}},
+  {t:3.3,h:'G1 finishes',b:'P0 takes the next goroutine from its own queue. No lock and no OS thread switch: it is a function call on the same thread.',q:{P0:['G4','G5','G6'],P1:[],global:[]}},
+  {t:4.3,h:'P1 runs dry and steals',b:'G3 is done, P1\'s queue is empty and so is the global queue. P1 picks a victim and takes half of P0\'s waiting goroutines.',q:{P0:['G6'],P1:['G5'],global:[]}},
+  {t:10,h:'Balanced',b:'Both P rows stay full until the work is done, though it all started on P0. No central dispatcher decided this.',q:{P0:[],P1:[],global:[]}}],
+ take:'Goroutines are cheap because switching is a user-space call on the same thread, and work stealing spreads them across Ps automatically.',
+ gen:'Work-stealing schedulers: Java\'s ForkJoinPool, Rust\'s Tokio, Intel TBB.'},
+
+{id:'syscall',tab:'Scenario 1',short:'Blocking syscall',
+ q:'A goroutine makes a blocking syscall. How does the program keep running?',
+ traces:{main:{max:14,ps:['P0'],lanes:[
+   {id:'M0',segs:[s(0,2,R,'G1','P0'),s(2,10,SYS,'G1 blocked in read() syscall'),s(10,10.5,R,'',null),s(10.5,14,PARK,'parked, no P')]},
+   {id:'M1',segs:[s(0,2.4,PARK,'idle'),s(2.4,6,R,'G2','P0'),s(6,10.5,R,'G3','P0'),s(10.5,12,R,'G1','P0')]}],
+   marks:[{t:2.4,lane:'M1',label:'sysmon hands P0 to M1'}]}},
+ frames:[
+  {t:2,h:'G1 enters the syscall',b:'G1 reads a large file. M0 blocks in the kernel with G1 attached. P0 is marked "in syscall" and stuck with it, with G2 and G3 waiting.',q:{P0:['G2','G3'],global:[]}},
+  {t:4,h:'sysmon takes the P away',b:'sysmon sees P0 stuck in a syscall with work waiting and hands it to another thread, M1. Go code keeps running, now on a different OS thread.',q:{P0:['G3'],global:[]}},
+  {t:10.4,h:'The syscall returns, but there is no P',b:'M0 wakes with G1 and tries to get a P. None is free, so it puts G1 on the global run queue and parks itself.',q:{P0:[],global:['G1']}},
+  {t:12,h:'Two threads for one P',b:'G1 resumes on M1. Many concurrent blocking syscalls or cgo calls each cost a thread; the runtime aborts at 10,000 threads by default.',q:{P0:[],global:[]}}],
+ take:'GOMAXPROCS limits threads running Go code, not total threads. Each blocking syscall costs a thread while it blocks.',
+ gen:'Any M:N scheduler facing blocking calls: the same reason asyncio sends blocking calls to a threadpool, and libuv uses one for file I/O.'},
+
+{id:'netpoll',tab:'Scenario 2',short:'Network I/O',
+ q:'conn.Read() blocks too. Why doesn\'t it cost a thread?',
+ traces:{main:{max:14,ps:['P0'],lanes:[
+   {id:'M0',segs:[s(0,2,R,'G1','P0'),s(2,6,R,'G2','P0'),s(6,9,R,'G3','P0'),s(9,11,R,'G1','P0')]},
+   {id:'netpoll',name:'netpoll',segs:[s(2,7,POLL,'G1 parked on socket (epoll)'),s(7,9,Q,'G1 runnable')]},
+   {id:'M1',segs:[s(0,14,PARK,'never needed')]}],
+   marks:[{t:7,lane:'netpoll',label:'data arrives',info:true}]}},
+ frames:[
+  {t:2,h:'G1 reads the socket',b:'Sockets are non-blocking underneath. The read returns "would block", so the runtime registers the socket with epoll and parks G1. M0 does not block.',q:{P0:['G2','G3'],global:[],netpoll:['G1']}},
+  {t:5,h:'Same thread, next goroutine',b:'M0 keeps P0 and runs G2. No hand-off, no second thread. Compare scenario 1, where the same-looking code needed M1.',q:{P0:['G3'],global:[],netpoll:['G1']}},
+  {t:7.3,h:'Data arrives',b:'When the scheduler looks for work it checks the netpoller (sysmon also polls if nobody has for 10 ms). G1 becomes runnable and joins the queue.',q:{P0:['G1'],global:[],netpoll:[]}},
+  {t:11,h:'One thread throughout',b:'G1 resumes as if <code>Read</code> had simply returned. This is how a Go server holds 100k connections without 100k threads. File I/O is not netpolled and goes through scenario 1.',q:{P0:[],global:[],netpoll:[]}}],
+ take:'Go gives you blocking-style code with event-loop efficiency for network I/O. The netpoller is the event loop, hidden inside the runtime.',
+ gen:'The asyncio visualizer\'s event loop: the same epoll mechanism, but Go parks the whole goroutine stack, so you never write await.'},
+
+{id:'preempt',tab:'Scenario 3',short:'Tight loop',
+ q:'A tight loop with no function calls. Why could it hog a P before Go 1.14?',
+ traces:{
+  old:{max:40,ps:['P0'],label:'Go 1.13 · cooperative only',lanes:[
+   {id:'M0',segs:[s(0,40,R,'G1   for { x++ }   (no function calls)','P0')]}],
+   marks:[{t:10,lane:'M0',label:'preempt flag set, never checked'}]},
+  neu:{max:40,ps:['P0'],label:'Go 1.14+ · asynchronous preemption',lanes:[
+   {id:'M0',segs:[s(0,10,R,'G1','P0'),s(10,12,R,'G2','P0'),s(12,22,R,'G1','P0'),s(22,24,R,'G3','P0'),s(24,40,R,'G1','P0')]}],
+   marks:[{t:10,lane:'M0',label:'SIGURG'},{t:22,lane:'M0',label:'SIGURG'}]}},
+ frames:[
+  {trace:'old',t:12,h:'Go 1.13: G1 never yields',b:'sysmon sees G1 has run past 10 ms and sets its preempt flag. But the flag is only checked in function prologues, and this loop calls nothing.',q:{P0:['G2','G3'],global:[]}},
+  {trace:'old',t:40,h:'Everything else starves',b:'G2 and G3 wait indefinitely. A garbage collection that needs to stop the world waits for G1 too, so the whole program can hang.',q:{P0:['G2','G3'],global:[]}},
+  {trace:'neu',t:10.5,h:'Go 1.14+: sysmon sends SIGURG',b:'After about 10 ms, sysmon signals M0. The handler checks G1 is at a safe point, saves its state, and preempts it. G1 goes to the global queue; G2 runs.',q:{P0:['G3'],global:['G1']}},
+  {trace:'neu',t:24.5,h:'Fair slices',b:'G1, G2, G1, G3: each long run is cut at roughly 10–20 ms. Coarse, but no goroutine can hold a P forever. asyncio has no equivalent.',q:{P0:[],global:[]}}],
+ take:'Go is preemptive for CPU-bound goroutines since 1.14. Slices are coarse (about 10 ms), so a latency-sensitive goroutine can still wait that long behind a CPU hog.',
+ gen:'Cooperative vs preemptive scheduling everywhere: OS kernels use timer interrupts, the BEAM VM counts reductions, asyncio has no preemption at all.'}
+];
+
+const svg=document.getElementById('svg');
+const VW=720, L=86, RP=24, ROW=50, LANE_H=24;
+let si=0, fi=0, curT=0, curKey=null, anim=null, playTimer=null;
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const trOf=(sc,f)=>sc.traces[f.trace||'main'];
+const pFill=p=>p==='P1'?'var(--p1)':'var(--run)';
+const pInk=p=>p==='P1'?'var(--p1-ink)':'var(--run-ink)';
+
+function draw(sc,tr,t){
+  const x=v=>L+(v/tr.max)*(VW-L-RP);
+  const yAxis=22, pRow0=40, pH=16, pGap=22;
+  const lane0=pRow0+tr.ps.length*pGap+(tr.label?30:20);
+  const laneY=i=>lane0+i*ROW;
+  const H=lane0+tr.lanes.length*ROW+4;
+  svg.setAttribute('viewBox',`0 0 ${VW} ${H}`);
+  let o=`<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" style="fill:var(--surface)"/><line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--wait)" stroke-width="2"/></pattern></defs>`;
+  o+=`<line x1="${L}" y1="${yAxis+6}" x2="${VW-RP}" y2="${yAxis+6}" style="stroke:var(--line)"/>`;
+  const step=tr.max>20?5:2;
+  for(let v=0;v<=tr.max+0.001;v+=step){
+    o+=`<line x1="${x(v)}" y1="${yAxis+3}" x2="${x(v)}" y2="${yAxis+9}" style="stroke:var(--muted)"/>`;
+    o+=`<text x="${x(v)}" y="${yAxis-2}" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">${v}${v===0?' ms':''}</text>`;
+  }
+  // P rows
+  tr.ps.forEach((p,k)=>{
+    const y=pRow0+k*pGap;
+    o+=`<text x="${L-10}" y="${y+12}" text-anchor="end" font-size="12" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">${p}</text>`;
+    o+=`<rect x="${L}" y="${y}" width="${VW-L-RP}" height="${pH}" rx="3" style="fill:var(--soft)"/>`;
+    tr.lanes.forEach(l=>l.segs.forEach(g=>{
+      if(g.type!==R||g.p!==p||g.s>=t) return;
+      const e=Math.min(g.e,t), w=x(e)-x(g.s);
+      o+=`<rect x="${x(g.s)}" y="${y}" width="${Math.max(w,0.6)}" height="${pH}" style="fill:var(--loop)"/>`;
+      if(w>30) o+=`<text x="${x(g.s)+w/2}" y="${y+12}" text-anchor="middle" font-size="10" font-weight="600" font-family="IBM Plex Mono, monospace" fill="#2a2100">${esc(g.label.split(' ')[0])} on ${esc(l.id)}</text>`;
+      else if(w>14) o+=`<text x="${x(g.s)+w/2}" y="${y+12}" text-anchor="middle" font-size="10" font-weight="600" font-family="IBM Plex Mono, monospace" fill="#2a2100">${esc(g.label.split(' ')[0])}</text>`;
+    }));
+  });
+  if(tr.label) o+=`<text x="${L}" y="${lane0-12}" font-size="10.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">${esc(tr.label)}</text>`;
+  const idx={}; tr.lanes.forEach((l,i)=>idx[l.id]=i);
+  tr.lanes.forEach((l,i)=>{
+    const y=laneY(i);
+    o+=`<text x="${L-10}" y="${y+LANE_H/2+4}" text-anchor="end" font-size="12" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">${esc(l.name||l.id)}</text>`;
+    o+=`<line x1="${L}" y1="${y+LANE_H/2}" x2="${VW-RP}" y2="${y+LANE_H/2}" style="stroke:var(--line)" stroke-dasharray="2 4"/>`;
+    l.segs.forEach(g=>{
+      if(g.s>=t) return;
+      const e=Math.min(g.e,t), x0=x(g.s), w=Math.max(x(e)-x0,0.6);
+      let ink='var(--muted)';
+      if(g.type===R && g.p){o+=`<rect x="${x0}" y="${y}" width="${w}" height="${LANE_H}" rx="2" style="fill:${pFill(g.p)}"/>`;ink=pInk(g.p)}
+      else if(g.type===R){o+=`<rect x="${x0}" y="${y+6}" width="${w}" height="${LANE_H-12}" rx="2" style="fill:var(--wait)"/>`}
+      else if(g.type===SYS){o+=`<rect x="${x0+0.75}" y="${y+0.75}" width="${Math.max(w-1.5,0.6)}" height="${LANE_H-1.5}" rx="2" style="fill:var(--surface);stroke:var(--alert)" stroke-width="1.5"/>`;ink='var(--alert)'}
+      else if(g.type===POLL){o+=`<rect x="${x0+0.75}" y="${y+0.75}" width="${Math.max(w-1.5,0.6)}" height="${LANE_H-1.5}" rx="2" style="fill:var(--io-bg);stroke:var(--io)" stroke-width="1.5"/>`;ink='var(--io)'}
+      else if(g.type===Q){o+=`<rect x="${x0+0.5}" y="${y+0.5}" width="${Math.max(w-1,0.6)}" height="${LANE_H-1}" rx="2" fill="url(#hatch)" style="stroke:var(--wait)" stroke-width="1"/>`}
+      else if(g.type===PARK){o+=`<rect x="${x0+0.75}" y="${y+4}" width="${Math.max(w-1.5,0.6)}" height="${LANE_H-8}" rx="2" style="fill:none;stroke:var(--wait)" stroke-width="1.2" stroke-dasharray="4 3"/>`}
+      if(g.label && e>=g.e-0.0001){
+        const full=x(g.e)-x0;
+        if(full>=g.label.length*6.3+10) o+=`<text x="${x0+full/2}" y="${y+LANE_H/2+4}" text-anchor="middle" font-size="10.5" font-family="IBM Plex Mono, monospace" style="fill:${ink}">${esc(g.label)}</text>`;
+        else o+=`<text x="${x0+full/2}" y="${y+LANE_H+12}" text-anchor="middle" font-size="9.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">${esc(g.label)}</text>`;
+      }
+    });
+  });
+  (tr.marks||[]).forEach(m=>{
+    if(m.t>t+0.0001) return;
+    const y=laneY(idx[m.lane]), col=m.info?'var(--fg)':'var(--alert)';
+    o+=`<line x1="${x(m.t)}" y1="${y-6}" x2="${x(m.t)}" y2="${y+LANE_H+4}" style="stroke:${col}" stroke-width="2.5"/>`;
+    const anchor=x(m.t)>VW-200?'end':'start', dx=anchor==='end'?-6:6;
+    o+=`<text x="${x(m.t)+dx}" y="${y-4}" text-anchor="${anchor}" font-size="9.5" font-weight="500" font-family="IBM Plex Mono, monospace" style="fill:${col}">${esc(m.label)}</text>`;
+  });
+  const ph=x(Math.min(t,tr.max));
+  o+=`<line x1="${ph}" y1="${yAxis+6}" x2="${ph}" y2="${H-4}" style="stroke:var(--fg)" stroke-opacity=".35" stroke-dasharray="3 3"/>`;
+  svg.innerHTML=o;
+}
+
+function queues(q){
+  const el=document.getElementById('queues'); if(!q){el.innerHTML='';return}
+  el.innerHTML='<span>Run queues now:</span>'+Object.keys(q).map(k=>{
+    const name=k==='global'?'global':k==='netpoll'?'netpoller':k+' local';
+    const items=q[k].length?q[k].map(g=>`<i class="chip">${esc(g)}</i>`).join(''):'<i class="empty">empty</i>';
+    return `<span>${name}: ${items}</span>`}).join('');
+}
+
+function animateTo(target,from){
+  cancelAnimationFrame(anim);
+  const sc=SC[si], f=sc.frames[fi], tr=trOf(sc,f);
+  if(reduce){curT=target;draw(sc,tr,curT);return}
+  const t0=performance.now(), a=from, dur=Math.min(1100,350+Math.abs(target-a)/tr.max*1400);
+  const stepf=now=>{const p=Math.min((now-t0)/dur,1), e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2; curT=a+(target-a)*e; draw(sc,tr,curT); if(p<1) anim=requestAnimationFrame(stepf)};
+  anim=requestAnimationFrame(stepf);
+}
+function show(n,instant){
+  const sc=SC[si]; fi=Math.max(0,Math.min(n,sc.frames.length-1));
+  const f=sc.frames[fi], key=sc.id+':'+(f.trace||'main');
+  const from=curKey===key?curT:0; curKey=key;
+  document.getElementById('fh').textContent=f.h;
+  document.getElementById('fb').innerHTML=f.b;
+  queues(f.q);
+  document.getElementById('stepno').textContent=`${fi+1} / ${sc.frames.length}`;
+  document.getElementById('prev').disabled=fi===0;
+  document.getElementById('next').disabled=fi===sc.frames.length-1;
+  [...document.getElementById('dots').children].forEach((d,i)=>d.setAttribute('aria-current',i===fi?'true':'false'));
+  if(instant){cancelAnimationFrame(anim);curT=f.t;draw(sc,trOf(sc,f),curT)} else animateTo(f.t,from);
+}
+function select(i,instant){
+  stopPlay(); si=i; curKey=null;
+  const sc=SC[si];
+  [...document.getElementById('tabs').children].forEach((b,k)=>b.setAttribute('aria-selected',k===si?'true':'false'));
+  document.getElementById('q').textContent=sc.q;
+  document.getElementById('take').textContent=sc.take;
+  document.getElementById('gen').textContent=sc.gen;
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  sc.frames.forEach((_,k)=>{const d=document.createElement('button');d.className='dot';d.setAttribute('aria-label','Step '+(k+1));d.onclick=()=>{stopPlay();show(k)};dots.appendChild(d)});
+  show(0,instant);
+}
+function stopPlay(){clearInterval(playTimer);playTimer=null;document.getElementById('play').textContent='Play'}
+document.getElementById('play').onclick=()=>{
+  if(playTimer){stopPlay();return}
+  show(fi===SC[si].frames.length-1?0:fi+1);
+  document.getElementById('play').textContent='Pause';
+  playTimer=setInterval(()=>{if(fi>=SC[si].frames.length-1){stopPlay();return} show(fi+1)},3800);
+};
+document.getElementById('prev').onclick=()=>{stopPlay();show(fi-1)};
+document.getElementById('next').onclick=()=>{stopPlay();show(fi+1)};
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){stopPlay();show(fi+1)}else if(e.key==='ArrowLeft'){stopPlay();show(fi-1)}});
+const tabs=document.getElementById('tabs');
+SC.forEach((sc,i)=>{const b=document.createElement('button');b.className='tab';b.setAttribute('role','tab');b.innerHTML=`<small>${sc.tab}</small>${sc.short}`;b.onclick=()=>{try{history.replaceState(null,'','#'+sc.id)}catch(_){location.hash=sc.id} select(i)};tabs.appendChild(b)});
+const fromHash=()=>{const i=SC.findIndex(x=>x.id===(location.hash||'').slice(1));return i<0?0:i};
+window.addEventListener('hashchange',()=>select(fromHash()));
+select(fromHash(),true);
+})();
+</script>
+
+</body></html>
