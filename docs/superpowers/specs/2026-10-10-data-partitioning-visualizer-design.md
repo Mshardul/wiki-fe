@@ -12,11 +12,11 @@ Audience: the author plus a small known circle. Inherits the wiki theme; works o
 
 ## Scope
 
-- Route `/visualizer/data-partitioning/`, slug `data-partitioning`, title "Data Partitioning", subtitle "Sharding, consistent hashing and rebalancing", registered in `registry.ts` and `modules.ts`; the landing card and home count follow.
+- Route `/visualizer/data-partitioning/`, slug `data-partitioning`, title "Data partitioning", subtitle "Sharding, consistent hashing and rebalancing", registered in `registry.ts` and `modules.ts`; the landing card and home count follow.
 - Schemes, in variant order (increasing difficulty): **Mod-N, Range, Directory, Ring, Virtual nodes, Bounded-load, Rendezvous**.
 - Single view and Revision view (seven looping cards).
 - New generic shapes: **Bins**, **Scale** (line and circle layouts) and **Table**. Ranking and Composite are reused; Composite gains a side-by-side layout.
-- Generic frame changes: a `neutral` outcome, an `action` field kind (buttons), and Composite `layout` (see Frame changes).
+- Generic frame changes: a `neutral` outcome, an `action` field kind (buttons), value-aware sequence parsing, a sequence `link` hook, per-field resolved sequences, disabled chips, a Ranking suffix and Composite `layout` (see Frame changes).
 - `data/glossary.json`: six new entries (see Revision).
 
 Non-goals: no replication, no replica placement, no data-copy timing, no key salting or splitting a hot key, no per-request traffic simulation, no backend, no new runtime dependencies.
@@ -32,12 +32,12 @@ Steps per run = K + E × (1 + K), at most 12 + 4 × 13 = 64. Every scheme gives 
 
 Outcomes: place and event steps are `neutral`; a re-check where the key stays is `good`; a re-check where it moves is `bad` (data has to be copied). The strip therefore shows the cost of each event: mostly red under Mod-N, mostly green under the ring schemes.
 
-During a re-check phase, keys not yet re-checked are drawn on their pre-event node; keys already re-checked are on their new node. The moved key's chip flies from its old bin to its new one (see Views).
+During a re-check phase, keys not yet re-checked are drawn faded (pending) on their pre-event node, after that bin's settled chips; keys already re-checked are solid on their new node. Only settled chips count toward Bounded-load's cap line, so the cap visibly fills as the re-check places keys. The moved key's chip flies from its old bin to its new one (see Views).
 
 ## Hashing
 
 - **Keys** are whole numbers 0–99. **Key hash** `h(k) = (37k + 11) mod 100`. 37 and 100 are coprime, so h is a bijection on 0–99: no two keys share a position, and every hash can be checked by mental arithmetic.
-- **Nodes** are letters A–J. Node `i` (A = 1 … J = 10) sits at `h(i)` on the ring: A 48, B 85, C 22, D 59, E 96, F 33, G 70, H 7, I 44, J 81. The starting nodes are A onwards; **Add node** creates the next letter never used in this run, so a removed node is never resurrected at its old position. At most 6 nodes exist at once and at most 10 letters are used in a run (6 starting + 4 adds).
+- **Nodes** are letters A–J. Node `i` (A = 1 … J = 10) sits at `h(i)` on the ring: A 48, B 85, C 22, D 59, E 96, F 33, G 70, H 7, I 44, J 81. The starting nodes are A onwards; **Add node** creates the next letter never used in this run, so a removed node is never resurrected at its old position. At most 6 nodes exist at once and at most 8 letters (A–H) are used in a run (6 starting, then `- + - +`).
 - **Virtual nodes** come from a fixed, visible table (position r = 0 is the node's own `h(i)`, so one virtual node is the plain ring):
 
 | Node | r = 0 … 7 |
@@ -53,7 +53,7 @@ During a re-check phase, keys not yet re-checked are drawn on their pre-event no
 | I | 44 18 49 72 84 77 5 53 |
 | J | 81 40 99 69 75 78 92 54 |
 
-  All 80 positions are distinct. The table was chosen so that, for every starting count from 2 to 7 nodes, the spread between the largest and smallest ring share shrinks at each step of 1 → 2 → 4 → 8 virtual nodes (for 3 nodes: 26/37/37, 29/39/32, 38/30/32, 33/33/34 percent). A formula of the form `h(i) + r·(a·i + b)` cannot do this in a 100-position space (either the shares sometimes worsen as virtual nodes are added, or the virtual nodes bunch up and change nothing), so a table is used and the About tab says so, along with the real-world figure of 100–200 virtual nodes per node.
+  All 80 positions are distinct. The table was chosen so that, for every starting count from 2 to 6 nodes, the spread between the largest and smallest ring share shrinks at each step of 1 → 2 → 4 → 8 virtual nodes (for 3 nodes: 26/37/37, 29/39/32, 38/30/32, 33/33/34 percent). A formula of the form `h(i) + r·(a·i + b)` cannot do this in a 100-position space (either the shares sometimes worsen as virtual nodes are added, or the virtual nodes bunch up and change nothing), so a table is used and the About tab says so, along with the real-world figure of 100–200 virtual nodes per node. The trend is guaranteed only for node sets reachable without a Remove (A onwards); after a Remove the surviving set can break it, so no copy claims the trend there.
 - **Ring ownership:** a key belongs to the first node position at or clockwise after `h(k)`, wrapping past 99 to 0. A key exactly on a node position belongs to that node.
 - **Rendezvous score** `s(k, i) = (h(k) × (2i + 1) + 7i) mod 100`; the highest score wins, ties go to the earlier letter. Two nodes can tie only when `h(k)` is 9, 34, 59 or 84 and the nodes are 4 or 8 letters apart; the tie rule is tested.
 
@@ -65,7 +65,7 @@ Let K be the number of keys, N the number of nodes alive, w(k) the key's weight 
 |---|---|---|---|
 | Mod-N | alive nodes in letter order; node index = `h(k) mod N` | re-check every key with the new N | re-check every key with the new N; the remaining nodes keep letter order |
 | Range | raw key value k (not h) against contiguous ranges; N starting nodes split 0–99 equally: node j gets `⌊100j/N⌋ … ⌊100(j+1)/N⌋ − 1` | the fullest range (most keys; ties: lowest range) splits at its median key m (the key at index ⌊count/2⌋ of its sorted keys): the old node keeps `lo … m − 1`, the new node takes `m … hi` and is inserted next to it; if m = lo the split falls at `⌊(lo + hi)/2⌋ + 1`; a one-value range cannot split and the next fullest is used | the removed node's range merges into its lower neighbour (the upper one if it was first) |
-| Directory | each key, in order, goes to the least-loaded node (ties: earlier letter); the directory records it | the balancer repeats: scan the old nodes from most to least loaded (ties: earlier letter) and move the first node's most recently assigned key k for which `load(node) − load(new) ≥ 2·w(k)`; stop when no node has such a key | the removed node's keys, in their assignment order, each go to the least-loaded remaining node |
+| Directory | each key, in order, goes to the least-loaded node (ties: earlier letter); the directory records it | the balancer repeats: scan the old nodes from most to least loaded (ties: earlier letter); in the first node that has one, move its most recently assigned key k for which `load(node) − load(new) ≥ 2·w(k)` (later keys that fail the test are passed over, so a hot key stays and a lighter key moves); stop when no old node has such a key | the removed node's keys, in their assignment order, each go to the least-loaded remaining node |
 | Ring | ring ownership over one position per node | re-check every key | re-check every key |
 | Virtual nodes | ring ownership over V positions per node (V from the table) | re-check every key | re-check every key |
 | Bounded-load | cap = ⌈c × K / N⌉ keys; keys in sequence order walk clockwise from `h(k)` and take the first node (one position each) holding fewer than cap keys | recompute cap; re-place every key in sequence order | recompute cap; re-place every key in sequence order |
@@ -78,20 +78,20 @@ Directory balances by load, not count, so under the Hot key workload the hot key
 | Group | Field | Kind | Values | Default | Notes |
 |---|---|---|---|---|---|
 | Scheme | Scheme | chips | the seven schemes | Mod-N | the variants field; Prev/Next and Shift+←/→ come from the frame |
-| Nodes | Nodes | slider | 1–6 | 4 (3 starting + one Add) | shows the node count after the last event; dragging it sets a new starting count and clears the events |
+| Nodes | Nodes | slider | 1–6 | 4 (3 starting + one Add) | always reads start + adds − removes; dragging it sets a new starting count and clears the events |
 | Nodes | Add node | action | | | appends `+`; disabled at 6 nodes or 4 events |
-| Nodes | Remove node | action | | | appends `−X`, X picked from the nodes alive at that point by the seeded rng; disabled at 1 node or 4 events |
-| Nodes | Events | sequence | `+` and `−X` tokens | `+` | editable; `resetBy: ["nodes"]` |
+| Nodes | Remove node | action | | | appends `-X`, X picked from the nodes alive at that point by the seeded rng; disabled at 1 node or 4 events |
+| Nodes | Events | sequence | `+` and `-X` tokens | `+` | editable; `resetBy: ["nodes"]`, cleared to an empty list (not regenerated) |
 | Nodes | Virtual nodes | chips | 1 · 2 · 4 · 8 | 4 | enabled for Virtual nodes only |
 | Nodes | Cap factor c | chips | 1.0 · 1.25 · 1.5 · 2.0 | 1.25 | enabled for Bounded-load only; hint shows the live cap ("cap = 4 keys per node") |
 | Keys | Workload | chips | Random · Sequential · Hot key | Random | regenerates Keys |
-| Keys | Keys | sequence | 1–12 keys | hand-picked (below) | `resetBy: ["workload"]` |
+| Keys | Keys | sequence | 1–12 keys | hand-picked (below) | `resetBy: ["workload", "seed"]` (a new seed means new generated keys) |
 | (none) | Seed | seed | | random | drives the workloads and Remove's pick |
 
-- The starting node count is `slider − (adds − removes)`. Pressing Add or Remove moves the slider with the event and jumps playback to the new event step (see the `action` field under Frame changes). Dragging the slider sets the starting count to the new value and clears the events (Events lists `nodes` in its `resetBy`). Editing the Events field directly keeps the slider and recomputes the starting count; an edit that would need a starting count outside 1–6 is the error "Node count must stay between 1 and 6".
+- The starting node count is `slider − (adds − removes)`. Pressing Add or Remove moves the slider with the event and jumps playback to the new event step (see the `action` field under Frame changes). Dragging the slider sets the starting count to the new value and clears the events (Events lists `nodes` in its `resetBy`). Editing the Events field directly keeps the starting count and moves the slider to the new final count (through the Events field's `link`, see Frame changes), so deleting the default `+` leaves 3 nodes and no events; an edit whose running node count leaves 1–6 at any point is the error "Node count must stay between 1 and 6".
 - The Remove pick is decided when the button is pressed and written into the event token, so the URL replays exactly and the Events field shows which node went.
 - **Keys grammar:** whole numbers 0–99 separated by spaces, commas or underscores, each at most once, 1–12 of them; at most one key may carry a `*` suffix (the hot key, weight 5). Errors: "Keys must be whole numbers from 0 to 99", "Each key can appear once", "Use 1 to 12 keys", "Only one key can be hot (*)". URL: joined with `_` (`k=12_18_29_61*_65`).
-- **Events grammar:** `+` or `-` followed by a node letter, separated like keys, at most 4. Errors: "Events are + or −X (X a node letter)", "At most 4 events", "Node count must stay between 1 and 6", "Can't remove X: it isn't there at that point". URL: joined with `_` (`e=+_-B`).
+- **Events grammar:** `+`, or `-` followed by a node letter, separated like keys, at most 4. The parser also accepts the Unicode minus `−`; the field and URL always write the ASCII `-`. Errors: "Events are + or -X (X a node letter)", "At most 4 events", "Node count must stay between 1 and 6", "Can't remove X: it isn't there at that point". URL: joined with `_`; `URLSearchParams` writes `+` as `%2B` (`e=%2B_-B`), and a hand-typed bare `+` decodes to a space and is lost.
 - **Hints** through `availability`: Nodes says "Add and Remove change this; dragging starts over"; Cap factor shows the live cap; Virtual nodes says "Positions from a fixed table; real systems use 100–200".
 
 **Defaults, chosen for this visualizer:** scheme Mod-N, 3 starting nodes and one Add (slider 4), Virtual nodes 4, Cap factor 1.25, workload Random, random seed, and the hand-picked keys `12 18 29 61 65 66 79 97`. 17 steps (8 + 1 + 8). The same keys and event are the default for every scheme, and switching the scheme chip keeps the current step (`restartOnSwitch` off), so a student who pauses after the event can flip schemes and watch "Keys moved" change in place.
@@ -108,7 +108,7 @@ Why these keys (hashes 55, 77, 84, 68, 16, 53, 34, 0): adding D moves exactly 6/
 | Bounded-load (1.25) | cap 4 · A 79 · B 12 18 29 61 · C 65 66 97 | cap 3 · A 79 · B 18 29 61 · C 65 97 · D 12 66 | 2/8: 12 66 |
 | Rendezvous | A 29 · B 12 18 65 79 · C 61 66 97 | A — · B 12 18 65 79 · C 61 66 · D 29 97 | 2/8: 29 97 |
 
-These values come from simulating the rules in this spec; the headline ones (all hashes, both Mod-N placements, the ring before and after, Directory's two balancer moves, Rendezvous for 12, 29 and 97, Bounded-load's start cap and overflow, Virtual nodes after the add) were also checked by hand. The tests must pin them against hand-checked frames, not copy them from the implementation.
+Tests pin these values against hand-checked frames, never against the implementation's output.
 
 ## Workload generator
 
@@ -146,16 +146,16 @@ Each view is a model built by the adapter and drawn by generic shapes. Decided f
 |---|---|---|
 | Mod-N | node bins with key chips; caption shows the arithmetic with N filled in, e.g. `h(92) = 15 → 15 mod 4 = 3 → D · was A` | Bins |
 | Range | a 0–99 ruler of raw key values with range bands and key marks, above the bins; **bins follow key-space order**, so a split's new node sits next to the range it came from | Composite: Scale (line) + Bins |
-| Directory | the directory table (`key → node`) beside the bins; a balancer move rewrites one row | Composite (side): Table + Bins |
+| Directory | the directory table (`key → node`) beside the bins; the event step marks the rows the balancer (or a Remove) will change as pending, and each row is rewritten on that key's re-check step, as its chip moves, so table and bins never disagree | Composite (side): Table + Bins |
 | Ring | ring with node points labelled by letter, key points, owner arcs, and the current key's clockwise walk highlighted, beside the bins; each bin header shows its ring share | Composite (side): Scale (circle) + Bins |
-| Virtual nodes | as Ring, with V points per node labelled `A·0 … A·7` | Composite (side): Scale (circle) + Bins |
-| Bounded-load | as Ring, plus a dashed cap line in every bin and the walk passing full nodes | Composite (side): Scale (circle) + Bins |
+| Virtual nodes | as Ring, with V points per node, each labelled with its node letter only (48 labels would not fit); the virtual-node name and position (`B·3 at 62`) appear in the variables, caption and screen-reader text | Composite (side): Scale (circle) + Bins |
+| Bounded-load | as Ring, plus a dashed cap line in every bin (counting settled chips only) and the walk passing full nodes | Composite (side): Scale (circle) + Bins |
 | Rendezvous | the current key's scores as a ranking of nodes (winner on top) beside the bins | Composite (side): Ranking + Bins |
 
-- **Moved key:** on a re-check step where the key moves, its chip flies from the old bin to the new one along an arrow; the arrowhead travels with the chip and arrives with it (nothing appears at the destination first). Moved chips keep a moved tint in their new bin for the rest of the event, so the moved count builds up visibly. Only the current step's key animates, so at most one arrow is on screen. Uses `--viz-move`; under `prefers-reduced-motion` the chip is drawn in place with a static arrow.
+- **Moved key:** on a re-check step where the key moves, its chip flies from the old bin to the new one: the same chip element (same React key across frames) moves by a CSS transition of its position, a trail draws behind it in the same `--viz-move` time, and the arrowhead appears when the trail completes. Moved chips keep a moved tint in their new bin for the rest of the event, so the moved count builds up visibly. Only the current step's key animates, so at most one arrow is on screen. Uses `--viz-move`; under `prefers-reduced-motion` the chip is drawn in place with a static arrow.
 - **Event step:** an added node enters (bin and ring point, enter animation); a removed node's bin and point are marked removed and stay until its re-check phase ends; a Range split or merge redraws the bands. Every new shape element gets an enter animation using `--viz-move`, off under reduced motion.
 - **Hot key:** when a key is hot, every bin shows a load bar on one shared scale with a dashed average line, and the hot key's chip reads `61 ×5`. Without a hot key the load bars are hidden (load would equal the chip count).
-- **Narrow stages:** side-by-side Composites stack vertically when the stage is narrower than the two parts' natural widths (Ring at 320px: ring above bins, about 290px tall, inside the 380px narrow stage). Six 40px bins fit 320px.
+- **Narrow stages:** a `side` Composite sits side by side when the stage width is at least 1.1 × its height and stacks otherwise (Ring at 320 × 380: ring above bins). Stacked, a line Scale keeps a fixed 48px natural height (like Timeline), and a circle Scale with Bins splits the height 40/60 with Bins getting 60 (at 320 × 380: 120px ring, 180px bins). Bins parts are exempt from the Composite's 180px flex cap. A bin whose chips would fall below 16px each wraps them into two columns (twelve chips in a 180px bin: six rows), and a hot chip spans both columns. Six bins fit 320px.
 - **Caption:** one line: the decision with its arithmetic, plus "was X" on a moved re-check.
 
 ## Generic layer
@@ -163,22 +163,22 @@ Each view is a model built by the adapter and drawn by generic shapes. Decided f
 Vocabulary-neutral, per CONVENTIONS: no "key", "node", "shard" or "hash" in generic code; the adapter supplies every label. Lives in `core/shapes.ts`, `core/geometry.ts` and `components/visualizer/shapes/`, picked by `Shape.tsx`.
 
 ```ts
-type ItemTone = "changed" | "heavy";
+type ItemTone = "changed" | "heavy" | "pending";
 interface BinItem { id: string; text: string; tone?: ItemTone }
 interface Bin { id: string; label: string; items: BinItem[]; state?: "new" | "removed"; meter?: number }
 interface BinsModel {
   kind: "bins";
   bins: Bin[];
   active: string | null;
-  move: { item: string; from: string; to: string } | null;
+  move: { item: string; from: string; to: string; fromSlot: number } | null;
   limit: number | null;
   meter: { max: number; mark: number } | null;
   slots: number;
 }
 
 interface ScaleSegment { from: number; to: number; owner: string; label: string; state?: "new" | "removed" }
-interface ScaleAnchor { at: number; label: string; owner: string; state?: "new" | "removed" }
-interface ScalePoint { at: number; label: string; tone?: ItemTone; active?: boolean }
+interface ScaleAnchor { at: number; label: string; owner: string; title?: string; state?: "new" | "removed" }
+interface ScalePoint { id: string; at: number; label: string; tone?: ItemTone; active?: boolean }
 interface ScaleModel {
   kind: "scale";
   layout: "line" | "circle";
@@ -193,7 +193,7 @@ interface ScaleModel {
 interface TableModel {
   kind: "table";
   head: [string, string];
-  rows: { cells: [string, string]; tone?: "changed" }[];
+  rows: { cells: [string, string]; tone?: "changed" | "pending" }[];
   active: number | null;
 }
 
@@ -204,26 +204,32 @@ interface CompositeModel {
 }
 ```
 
-- **Bins** draws labelled columns of chips in the given order. `slots` is the run-wide tallest bin so the stage keeps one height. `limit` draws a dashed line after that many chips. `meter` draws a bar per bin on one shared scale with a dashed line at `mark`. `move` animates one chip from bin to bin with a travelling arrow. The screen-reader label lists bins and their items in order.
+- **Bins** draws labelled columns of chips in the given order. `slots` is the run-wide tallest bin so the stage keeps one height. Pending items draw faded, after the bin's other items. `limit` draws a dashed line after that many non-pending chips. Chips wrap into two columns below 16px each. `meter` draws a bar per bin on one shared scale with a dashed line at `mark`. `move` animates one chip from bin to bin with a travelling arrow. The screen-reader label lists bins and their items in order.
 - **Scale** draws positions `0 … size − 1` as a line or a circle (0 at the top, clockwise). Segments are owner arcs or bands; anchors are labelled points (letters drawn next to them); points are item marks; `walk` highlights the clockwise path from an item to its owner. Close points are offset outward so labels stay legible. No axis, so Rotate is hidden.
-- **Table** draws two-column rows with an active row and changed rows.
+- **Table** draws two-column rows with an active row, changed rows and pending (marked, not yet rewritten) rows.
 - **Ranking** is reused for rendezvous scores: rows are the alive nodes by score, `capacity` is set above the row count so no row is flagged.
-- **Composite** gains `layout: "side"`: parts sit in a row and fall back to a stack when the measured width is too small; the default stays `"stack"`, so existing modules are unchanged.
+- **Composite** gains `layout: "side"`: parts sit in a row when the stage width is at least 1.1 × its height, otherwise they stack; the default stays `"stack"`, so existing modules are unchanged. Side widths are fixed shares per part kind, computed by a new `compositeWidths` in `core/geometry.ts`: Scale 45%, Table or Ranking 40%, Bins take the rest. Stacked heights extend `compositeHeights`: a line Scale has a 48px natural height, and a circle Scale stacked with Bins takes 40% of the budget.
 - Considered and rejected: Lanes for the bins (Lanes means actors exchanging numbered messages; a partitioned dataset has no messages, so the shape would mislead), the existing Ring for the hash ring (it is evenly spaced slots with a hand; this needs arbitrary positions and owner arcs), and Timeline for the key ruler (its axis is ticks of time, capped at 20).
 
 ## Frame changes
 
 1. **`neutral` outcome.** `Outcome` becomes `"good" | "bad" | "neutral"`. Strip and log draw neutral cells and rows with the slot colours; existing modules never emit it.
-2. **`action` field kind.** `{ kind: "action"; key; label; apply: (values) => { values: InputValues; step?: number } }`, rendered as a button in its section. Pressing it replaces the values wholesale (no `resetBy` is applied, so Add can move the slider without clearing the events it just extended), rewrites the URL, re-runs, and seeks to `step` when given, otherwise step 1. Here `step` is the new event's step (K + E_before × (1 + K)), so the student watches the event and its re-check instead of replaying the placements. Disabled and hint come from `availability` like any field. No URL param of its own.
+2. **`action` field kind.** `{ kind: "action"; key; label; apply: (values) => { values: InputValues; step?: number } }`, rendered as a button in its section. Pressing it replaces the values wholesale (no `resetBy` is applied, so Add can move the slider without clearing the events it just extended), rewrites the URL, re-runs, and seeks to `step` when given, otherwise the first frame. `step` is a 0-based frame index (the URL's `i` is it plus one); here it is the new event's step, K + E_before × (1 + K), so the student watches the event and its re-check instead of replaying the placements. Disabled and hint come from `availability` like any field. No URL param of its own.
 3. **Composite `layout`** as above.
-4. **Variants:** `variants: { key: "scheme" }`, `restartOnSwitch` off. Equal frame counts across schemes hold by construction, and a test enforces it.
-5. **Revision:** the module supplies seven cards.
+4. **Value-aware sequence parsing.** `SequenceField.parse` receives the current values, so Events can validate against the slider.
+5. **`SequenceField.resetEmpty`.** A `resetBy` change clears the field to `[]` instead of `null` (which would regenerate the default), and `[]` round-trips through the URL.
+6. **Sequence `link`.** `SequenceField.link?: (values, tokens) => InputValues` returns the values to apply after a direct edit of that field (here Events moves the slider so the starting count holds). It does not run for `resetBy` clears or actions.
+7. **Per-field sequences.** `RunResult.sequences` gives each sequence field its own resolved tokens; without it every field shows `RunResult.sequence`.
+8. **Disabled chips.** A chips field honours `availability.disabled`.
+9. **Ranking suffix.** `RankingModel.suffix` replaces the default `×` after each count (scores are not "96×").
+10. **Variants:** `variants: { key: "scheme" }`, `restartOnSwitch` off. Equal frame counts across schemes hold by construction, and a test enforces it.
+11. **Revision:** the module supplies seven cards.
 
 A module that does not use these is unaffected.
 
 ## Revision
 
-Seven cards, in variant order. Each runs the real scheme over the fixed mini-run **keys `12 18 29 61 65 66`, 3 starting nodes, one Add**, and plays its 13 steps by drawing the Single-view model at each step (`render(0)` is the empty start), at the 200px card stage. The legend is not shown (it belongs to flow-diagram cards only). Ring-based cards use Composite `side` with at most 4 bins of 34px, which fits the 250px minimum card width. Virtual nodes uses V = 4; Bounded-load uses c = 1.25. Cards are independent of the inputs. Each supplies `steps`, `render`, `stepsText` (one screen-reader line per step, unique, e.g. "Re-check 66: moves from B to D"), `summary`, `glossaryTerm` and `differs`.
+Seven cards, in variant order. Each runs the real scheme over the fixed mini-run **keys `12 18 29 61 65 66`, 3 starting nodes, one Add**, and plays its 13 steps by drawing the Single-view model at each step (`render(0)` is the empty start), at the 200px card stage. The legend is not shown (it belongs to flow-diagram cards only). Ring-based, Directory and Rendezvous cards use Composite `side` with the same width shares as the Single view. At the 250px minimum card width the circle takes 112.5px (45%) and the 4 bins (30px each, the minimum bin width) fit the remaining 137.5px; a Table or Ranking takes 100px (40%) and the 4 bins fit the remaining 150px. Virtual nodes uses V = 4; Bounded-load uses c = 1.25. Cards are independent of the inputs. Each supplies `steps`, `render`, `stepsText` (one screen-reader line per step, unique, e.g. "Re-check 66: moves from B to D"), `summary`, `glossaryTerm` and `differs`.
 
 Mini-run results (start → after Add D, moved): Mod-N 5/6 · Range 2/6 · Directory 1/6 · Ring 2/6 (B starts with 5 of 6) · Virtual nodes 2/6 · Bounded-load 2/6 (cap 3 at the start pushes 61 and 66 from B to C) · Rendezvous 1/6.
 
@@ -245,13 +251,15 @@ Mini-run results (start → after Add D, moved): Mod-N 5/6 · Range 2/6 · Direc
 
 | Scheme | Lines |
 |---|---|
-| Mod-N | Hash the key · Divide by the node count; the remainder picks the node · After a node change, check again with the new count |
+| Mod-N | Hash the key: h(k) = 37k + 11 mod 100 · Divide by the node count; the remainder picks the node · After a node change, check every key again with the new count |
 | Range | Find the range that holds the key · That range's node owns it · Add splits the fullest range at its middle key; remove merges into a neighbour |
 | Directory | Look the key up in the directory · A new key goes to the least-loaded node · Add moves recent keys off the fullest nodes until even; remove hands its keys to the least loaded |
-| Ring | Hash the key to a point on the ring · Walk clockwise to the first node · That node owns the key |
-| Virtual nodes | Hash the key to a point on the ring · Walk clockwise to the first virtual node · Its physical node owns the key |
-| Bounded-load | Hash and walk clockwise · Node already at the cap: keep walking · The first node under the cap owns the key |
-| Rendezvous | Score the key against every node · The highest score wins; a tie goes to the earlier letter |
+| Ring | Hash the key to a point on the ring · Walk clockwise to the first node · That node owns the key · A node change moves only the keys in the arc it gains or loses |
+| Virtual nodes | Hash the key to a point on the ring · Walk clockwise to the first virtual node · Its physical node owns the key · A node change moves the keys in all its small arcs, spread over many nodes |
+| Bounded-load | Hash the key and walk clockwise · Node already at the cap: keep walking · The first node under the cap owns the key · A node change recomputes the cap and places every key again |
+| Rendezvous | Score the key against every node · The highest score wins; a tie goes to the earlier letter · A node change moves only keys whose top score changes hands |
+
+The last line of each ring-family scheme lights on the event step. Bounded-load's "keep walking" line lights only when the walk skipped a full node.
 
 - **About tab:** lookup cost, wins, loses, seen in, per scheme. Lookup: Mod-N O(1); Range O(log N); Directory O(1) plus a network hop; Ring O(log N); Virtual nodes O(log NV); Bounded-load O(log N) plus the walk; Rendezvous O(N). Seen in: Mod-N, simple client-side cache sharding; Range, Bigtable, HBase, CockroachDB; Directory, MongoDB's chunk map, Vitess lookup tables; Ring, Dynamo, Cassandra; Virtual nodes, Cassandra tokens, Riak; Bounded-load, HAProxy's balance factor; Rendezvous, GitHub's GLB load balancer, Apache Ignite. Virtual nodes' About states that its positions come from a fixed table chosen to show the trend and that real systems use 100–200 per node.
 - **Try tab:** two presets per scheme. Every preset patches keys, nodes, events and the scheme's own chip together, so it shows its point whatever the inputs were. A test per preset first moves the inputs away from the defaults, then applies the preset and pins the outcome.
@@ -277,7 +285,7 @@ Mini-run results (start → after Add D, moved): Mod-N 5/6 · Range 2/6 · Direc
 
 | Scheme | Link |
 |---|---|
-| Mod-N | `/system-design/algorithms/consistent-hashing/#the-problem--why-modulo-hashing-breaks` |
+| Mod-N | `/system-design/algorithms/consistent-hashing/#the-problem---why-modulo-hashing-breaks` |
 | Range | `/system-design/algorithms/sharding-strategies/#range-sharding` |
 | Directory | `/system-design/algorithms/sharding-strategies/#directory-based-lookup-table-sharding` |
 | Ring | `/system-design/algorithms/consistent-hashing/#the-ring` |
@@ -287,22 +295,22 @@ Mini-run results (start → after Add D, moved): Mod-N 5/6 · Range 2/6 · Direc
 
 ## Files
 
-`lib/visualizer/data-partitioning/`: `module.ts`, `types.ts`, `hash.ts` (h, the virtual-node table, rendezvous score, shares), `schemes/{mod-n,range,directory,ring,virtual-nodes,bounded-load,rendezvous}.ts` (each implementing one interface: place, add, remove), `engine.ts` (phases → steps, moved counts), `keys.ts` (keys and events grammar), `trace.ts` (workloads, Remove pick), `view.ts` (state → Bins / Scale / Table / Ranking / Composite models; split per scheme if it nears 400 lines), `frames.ts`, `revision.ts`, `copy.ts`.
+`lib/visualizer/data-partitioning/`: `module.ts`, `types.ts`, `hash.ts` (h, the virtual-node table, ring shares, rendezvous score, cap), `schemes/{membership,mod-n,range,directory,ring,bounded-load,rendezvous,index}.ts` (each scheme implements one interface: init, place, add, remove, order; `ring.ts` serves both Ring and Virtual nodes; `membership.ts` is the shared node-list world), `engine.ts` (phases → steps, moved counts), `keys.ts` (keys and events grammar), `trace.ts` (workloads, Remove pick), `view.ts` (state → Bins / Scale / Table / Ranking / Composite models), `frames.ts`, `revision.ts`, `copy.ts`, `test-helpers.ts`.
 
-Also: `core/types.ts` (`neutral`), `core/fields.ts` (`action`), `core/shapes.ts`, `core/geometry.ts`, `components/visualizer/shapes/{BinsShape,ScaleShape,TableShape}.tsx`, `CompositeShape.tsx` (`side`), `Shape.tsx`, `components/visualizer/frame/{ConfigFields,TimelineStrip}.tsx` and the log row, CSS in `css/view-visualizer/stage.css` (and `ui.css` for the action button) with `--viz-*` tokens only and breakpoints only in `css/responsive.css`, `data/glossary.json`, `registry.ts`, `modules.ts`, the README (Bins, Scale and Table in the shape table; Ring's reuse note corrected; roadmap), `docs/_meta/visualizer/backlog.md` (topic removed) and the CLAUDE.md FILE MAP (`lib/visualizer/data-partitioning/`, new shapes).
+Also: `core/{types,fields,url-state,shapes,geometry}.ts`, `components/visualizer/shapes/{BinsShape,ScaleShape,TableShape}.tsx`, `CompositeShape.tsx` (`side`), `RankingShape.tsx` (suffix), `Shape.tsx`, `components/visualizer/frame/{ConfigFields,ConfigPanel,VisualizerApp}.tsx`, `components/visualizer/ui/ChoiceGroup.tsx` (disabled); CSS in new `css/view-visualizer/{bins,scale}.css` plus `playback.css` (neutral strip cell), `ui.css` (neutral badge), `panels.css` (action field) and `timeline.css` (side composite), with four new aliases in `tokens.css` (`--viz-slot-alt`, `--viz-ink`, `--viz-ink-strong`, `--viz-ink-muted`) and breakpoints only in `css/responsive.css`; `data/glossary.json`, `registry.ts`, `modules.ts`, the README (Bins, Scale and Table in the shape table; Ring's reuse note corrected; roadmap), `docs/_meta/visualizer/backlog.md` (topic removed) and the CLAUDE.md FILE MAP (`lib/visualizer/data-partitioning/`, new shapes).
 
 ## Testing
 
 Vitest, fixture-first, against hand-checked frames:
 
-- `hash`: h for every default key; the table's 80 distinct positions and r = 0 equal to h(i); the shares spread shrinking across 1 → 2 → 4 → 8 for 2 to 7 nodes; a rendezvous tie resolved to the earlier letter.
+- `hash`: h for every default key; the table's 80 distinct positions and r = 0 equal to h(i); the shares spread shrinking across 1 → 2 → 4 → 8 for starting sets of 2 to 6 nodes; a rendezvous tie resolved to the earlier letter.
 - One file per scheme over scripted keys: place, add, remove; Range's median split, the m = lo fallback, the one-value range skipped, merge into the lower and the upper neighbour; Directory's load-based placement and balancer stop rule, including the hot key; Bounded-load's cap and walk past full nodes, for each c; ring wrap past 99 and a key exactly on a node position.
 - Engine: step count K + E(1 + K), outcomes per phase, the moved count and fewest-possible per event, equal frame counts across schemes for one input, letters never reused after a remove.
-- Grammar and errors for keys and events; the Remove pick deterministic per seed and written into the token; the slider and events interplay (Add moves the slider; dragging clears events); Add/Remove disabled at their limits.
+- Grammar and errors for keys and events; the Remove pick deterministic per seed and written into the token; the slider and events interplay (Add moves the slider; dragging clears events; a direct Events edit keeps the starting count and moves the slider; a running count outside 1–6 is rejected); Add/Remove disabled at their limits.
 - Generator determinism per seed, independence from the scheme, each chip's shape.
 - The default keys under every scheme (the table above) and every Try preset, each run after moving the inputs away from the defaults.
 - Revision: seven cards in order, 13 steps each, unique `stepsText`, the finished state held; every `glossaryTerm` exists in `data/glossary.json`.
-- Shapes: Bins (order, slots, limit line, meter scale and mark, move animation and its reduced-motion form, removed and new bins), Scale (line and circle geometry, wrap, offset of close points, walk arc, anchor labels), Table, Composite `side` and its fallback at narrow widths; a component test for every new component; the `neutral` strip cell and log row; the action field.
+- Shapes: Bins (order, slots, pending items after settled ones, limit line counting settled items only, two-column wrap below 16px and the hot chip spanning both, meter scale and mark, move animation and its reduced-motion form, removed and new bins), Scale (line and circle geometry, wrap, offset of close points, walk arc, anchor labels), Table (pending and changed rows), Composite `side` and its fallback at narrow widths, `compositeWidths` shares, and `compositeHeights` with the 48px line Scale and the 40/60 circle split; a component test for every new component; the `neutral` strip cell and log row; the action field.
 - URL round trip with keys, hot key and events; the article-anchor content test.
 - One browser e2e check for the new page.
 
@@ -312,6 +320,9 @@ Vitest, fixture-first, against hand-checked frames:
 - **Visible hash** `37k + 11 mod 100`, so every placement can be checked by hand; Mod-N's caption shows the arithmetic with N filled in.
 - **Add and Remove are buttons** that append events and move the slider; up to four events, so a student can add, add and remove and watch movement accumulate. Remove picks a seeded random node and records it.
 - **Default slider shows 4,** not 3: the default run includes one Add so the first view shows the remap, and the slider reports the count after events. The starting count is 3.
+- **Editing events never changes the starting count;** the slider follows instead, so deleting an Add means "undo the add", not "start with one more node".
+- **Pending keys are drawn faded** during a re-check, and the cap counts settled keys only, so Bounded-load's cap fills visibly and never looks broken mid-phase.
+- **Directory rows change with their chips,** not at the event step, so the table and bins always agree; the event step only marks the rows the balancer picked.
 - **Range bins follow key-space order;** a split's new node sits next to its source range.
 - **Range splits at the median key,** as real range-sharded systems split a hot range; a value midpoint would hand a sequential burst to the new node whole.
 - **Directory balances by load,** which is what lets it isolate a hot key.

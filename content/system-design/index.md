@@ -77,6 +77,22 @@ End-to-end system design walkthroughs. Each page includes prerequisites, a TLDR,
 
 ---
 
+## HLD: Interview Walkthroughs
+
+Step-by-step answers to classic HLD questions, in the order an interview runs: scope, scale, API and data model, architecture, deep dives, failure modes, tech lead layer. Each starts with a one-screen recap.
+
+| Walkthrough                                                      | Key Themes                                                        |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [HLD Interview Framework](./hld/hld-questions/hld-framework.md)                 | The method: seven steps, what to say at each, reusable moves      |
+| [HLD Walkthrough Plan](./hld/hld-questions/hld-walkthrough-plan.md)             | Question list, ground rules, file layout standard                 |
+| [Q1: URL Shortener](./hld/hld-questions/q1-url-shortener.md)                    | Read-heavy key-value lookup, code generation, caching             |
+| [Q2: News Feed (Twitter)](./hld/hld-questions/q2-news-feed.md)                  | Fan-out on write vs read, the celebrity problem                   |
+| [Q3: Chat (WhatsApp)](./hld/hld-questions/q3-chat.md)                           | Persistent connections, delivery guarantees, message ordering     |
+| [Q4: Video Streaming (YouTube)](./hld/hld-questions/q4-video-streaming.md)      | Blob storage, transcoding pipeline, CDN                           |
+| [Q5: Ride Hailing (Uber)](./hld/hld-questions/q5-ride-hailing.md)               | Geospatial indexing, real-time matching                           |
+
+---
+
 ## Learning Paths
 
 Structured sequences through the vertical - pick one, work it in order, track completion per article.

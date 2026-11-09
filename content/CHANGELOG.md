@@ -9,6 +9,16 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 - `filename.md` - what changed (new article / new section: "Section Name" / expanded: "Section Name" / new stub: "Topic")
 ```
 
+## 2026-11-04
+- `system-design/hld/hld-questions/q1-url-shortener.md` - new article: HLD interview walkthrough, URL shortener
+- `system-design/hld/hld-questions/q2-news-feed.md` - new article: HLD interview walkthrough, news feed (Twitter)
+- `system-design/hld/hld-questions/q3-chat.md` - new article: HLD interview walkthrough, chat (WhatsApp)
+- `system-design/hld/hld-questions/q4-video-streaming.md` - new article: HLD interview walkthrough, video streaming (YouTube)
+- `system-design/hld/hld-questions/q5-ride-hailing.md` - new article: HLD interview walkthrough, ride hailing (Uber)
+- `system-design/hld/hld-questions/hld-framework.md` - new article: the seven-step HLD interview method
+- `system-design/hld/hld-questions/hld-walkthrough-plan.md` - new article: walkthrough series plan and file layout standard
+- `system-design/index.md` - new section: "HLD: Interview Walkthroughs"
+
 ## 2026-10-08
 - `system-design/components/caching.md` - new section: "Write-Around" (with Strategy Selection Matrix row and decision-tree branch)
 

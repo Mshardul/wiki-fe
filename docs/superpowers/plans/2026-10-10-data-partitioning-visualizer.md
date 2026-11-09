@@ -6,52 +6,16 @@
 
 **Architecture:** A `VisualizerModule` under `lib/visualizer/data-partitioning/` resolves the inputs, runs a per-scheme `Scheme` (init, place, add, remove, order) through an engine that emits one step per key placement, per event and per key re-check, and turns each step into a `VizFrame` whose `model` comes from an adapter (`view.ts`) that builds vocabulary-neutral Bins / Scale / Table / Ranking / Composite models. The frame gains a `neutral` outcome, an `action` field kind (buttons that rewrite inputs and name the step to play from), sequence parsers that see the other inputs, per-field resolved sequences, disabled chips, a Ranking suffix and a side-by-side Composite.
 
-**Tech Stack:** Next.js App Router (static export), React, TypeScript (strict, `noUncheckedIndexedAccess`), Vitest + Testing Library, Biome + ESLint, pytest + Playwright for the one e2e check.
-
-**Spec:** `docs/superpowers/specs/2026-10-10-data-partitioning-visualizer-design.md`. Read it first. "Spec deltas" below lists where planning against the code changed a detail; Task 10 writes them back into the spec.
+**Spec:** `docs/superpowers/specs/2026-10-10-data-partitioning-visualizer-design.md`. Read it first; it is the authority for every rule this plan implements.
 
 ## Global Constraints
 
-- Never run `git add`, `git commit` or `git push`; the user owns version control. This plan has no git steps.
-- Write tests alongside the code: fixture-first against hand-checked expectations for everything in `lib/visualizer/**`, and a component test for every new component. Do **not** run any test, typecheck or lint command until Task 11; Task 11 is the single verification run, then one e2e test for the new page only.
-- Every fixture value below was checked by hand against the spec's rules (and cross-checked by an independent reference simulation written while planning). If a value looks wrong while implementing, re-derive it by hand from the spec's rules before touching the code or the test; never copy a value from the implementation's output.
-- Comments are one line, sparse, and say why, never what. No ticket IDs (`WIKI-xxx`, `DSA-xxx`, `SD-xxx`) anywhere in code, CSS or tests. No `console.*`.
-- Generic code (`components/visualizer/**`, `lib/visualizer/core/**`) uses structural vocabulary only (bin, item, segment, anchor, point, walk, row, limit, meter, mark, new, removed, changed, heavy). Words like key, node, shard, hash, partition, scheme, ring appear only under `lib/visualizer/data-partitioning/`.
-- Colours only through `--viz-*` aliases in `css/tokens.css`; CSS classes are `viz-*`; breakpoints only in `css/responsive.css`; nothing may break at 320px.
-- Every new on-screen element has an enter animation using `--viz-move`, and every animation and transition is off under `prefers-reduced-motion`.
-- React keys are stable and unique (bins by id, items by id, rows by first cell, Revision lines by index).
-- Frames are pure and deterministic: the same inputs and seed always give the same frames; `run` has no side effects.
-- Hash `h(k) = (37k + 11) mod 100`; keys 0–99, 1–12 of them, at most one hot (`*`, weight 5); nodes A–J, 1–6 alive, at most 4 events; the virtual-node table is the spec's table verbatim.
-- Glossary keys are lowercase and singular.
-- Markdown prose: one line per paragraph or list item, no hard wrapping outside code fences and tables.
-- No new runtime dependencies. Use `.venv/bin/python3`, never bare `python3`.
-- Do not start or stop daemons. A dev server is usually already on `http://localhost:3000` (base path `/wiki-fe/`).
-
-## Review Focus
-
-The spec implies these inputs but no ordinary task test would exercise them. Each has a test in the task that owns the code.
-
-1. Typing events that remove a node already gone (`-B -B`), push the count outside 1–6 (`+` at 6 nodes), or use a bad token (`x`, `+B`) must show the matching one-line error in the Events field, and a junk `e=` in the URL must fall back to no events instead of throwing. (Task 4 keys test, Task 8 module test.)
-2. All 12 keys landing on one node (Sequential on Range, or 12 typed keys in one range) must keep every chip inside the stage at 320×380 and inside a 250×200 Revision card; the Range composite's bins part is exempt from the 180px flex cap. (Task 2 geometry test, Task 3 Bins test.)
-3. Removing down to one node and adding again must never reuse a letter, Mod-N at N = 1 must put every key on the one node, and a ring with one position must own the whole circle. (Task 4 hash test, Task 5 engine test.)
-4. Seeking to any step of any scheme, including the step right after an event where the previous step has no bin for the new node, and switching scheme mid re-check, must build a model without throwing. (Task 6 view sweep test.)
-5. Pressing Add node must keep the generated keys, move the slider, extend Events and jump playback to the new event step; dragging the slider afterwards must clear the events to an empty list that survives a URL round trip. (Task 1 fields test, Task 8 module and app tests.)
-
-## Spec deltas found while planning
-
-Task 10 applies these to the spec.
-
-- The Mod-N heading id is `the-problem---why-modulo-hashing-breaks` (three hyphens: the build slugs " - " that way); the spec's two-hyphen anchor would not resolve.
-- Keys reset on `workload` and `seed`, as in the other visualizers (a new seed means new generated keys).
-- Extra generic changes the code needs: `SequenceField.parse` receives the current values (Events validates against the slider), `SequenceField.resetEmpty` (dragging the slider clears Events to `[]`, which round-trips through the URL, instead of `null`, which would fall back to the default), `RunResult.sequences` (each sequence field shows its own resolved tokens; the panel fed one run-sequence to every field), chips honour `availability.disabled`, and `RankingModel.suffix` (scores are not "96×").
-- Composite `side` uses the stage aspect: side by side when `width ≥ 1.1 × height`, otherwise stacked; bins parts are exempt from the 180px flex cap so twelve chips fit a stacked 320px stage.
-- The ring-based schemes get a fourth Step line for the event step, and Bounded-load's "keep walking" line lights only when a full node was skipped.
-- Ring anchors are labelled with the node letter only; the virtual-node name and position (`B·3 at 62`) appear in the variables, the caption and the screen-reader text, because 48 labels do not fit a ring.
-- The moved chip's flight is a CSS transition of the same element's position (it keeps its React key across frames); the trail draws in the same `--viz-move` time and its arrowhead appears when the trail completes.
-- Title is "Data partitioning" (sentence case, like the other visualizers).
-- New aliases in `tokens.css`: `--viz-slot-alt`, `--viz-ink`, `--viz-ink-strong`, `--viz-ink-muted`.
-
----
+- `CONVENTIONS.md` (TypeScript / React, CSS, Visualizer, Testing) and `docs/_meta/visualizer/README.md` (Playback & interaction rules, Rules) apply to every task and are not repeated here.
+- Write tests with the code: fixture-first for `lib/visualizer/**`, a component test for every new component. Run no test, typecheck or lint until Task 11, the single verification run plus one e2e test for the new page.
+- Fixture values are hand-checked against the spec's rules, with the derivation next to each test. When a value disagrees with the code, re-derive it by hand from the spec before changing either; never copy a value from the implementation's output.
+- Domain words (key, node, shard, hash, partition, scheme, ring) appear only under `lib/visualizer/data-partitioning/`; generic code says bin, item, segment, anchor, point, walk, row, limit, meter, mark, new, removed, changed, heavy.
+- Every new on-screen element has an enter animation using `--viz-move`.
+- React keys: bins and items by id, table rows by first cell, Revision lines by index.
 
 ## File Structure
 
@@ -79,535 +43,20 @@ Task 10 applies these to the spec.
 - `components/visualizer/frame/{ConfigFields,ConfigPanel,VisualizerApp}.tsx`, `components/visualizer/ui/ChoiceGroup.tsx`, `components/visualizer/shapes/{Shape,CompositeShape,RankingShape}.tsx`.
 - `css/tokens.css`, `css/wiki.css`, `css/view-visualizer/{playback,ui,panels,timeline}.css`.
 - `data/glossary.json`, `lib/visualizer/registry.ts`, `lib/visualizer/modules.ts`, `app/visualizer.test.tsx`, `tests/content/artifacts.test.ts`, `tests/e2e/test_visualizer.py`, `components/visualizer/frame/VisualizerApp.test.tsx`, `components/visualizer/shapes/CompositeShape.test.tsx`.
-- Docs: the spec, `docs/_meta/visualizer/README.md`, `docs/_meta/visualizer/backlog.md`, `CLAUDE.md`.
+- Docs: `docs/_meta/visualizer/README.md`, `docs/_meta/visualizer/backlog.md`, `CLAUDE.md`.
 
 ---
 
-### Task 1: Frame — neutral outcome, action fields, value-aware sequence parsing, per-field sequences, disabled chips, Ranking suffix
-
-**Files:**
-- Modify: `lib/visualizer/core/types.ts`, `lib/visualizer/core/fields.ts`, `lib/visualizer/core/url-state.ts`, `lib/visualizer/core/shapes.ts` (Ranking suffix only), `components/visualizer/frame/ConfigFields.tsx`, `components/visualizer/frame/ConfigPanel.tsx`, `components/visualizer/frame/VisualizerApp.tsx`, `components/visualizer/ui/ChoiceGroup.tsx`, `components/visualizer/shapes/RankingShape.tsx`, `css/view-visualizer/playback.css`, `css/view-visualizer/ui.css`, `css/view-visualizer/panels.css`
-- Test: `lib/visualizer/core/fields.test.ts`, `lib/visualizer/core/url-state.test.ts`, `components/visualizer/frame/action-field.test.tsx`, `components/visualizer/shapes/shapes.test.tsx`
-
-**Interfaces:**
-- Produces: `Outcome = "good" | "bad" | "neutral"`; `RunResult.sequences?: Record<string, string[]>`; `ActionField { kind: "action"; key; label; apply(values): ActionResult }`; `ActionResult { values: InputValues; step?: number }`; `SequenceField.parse?: (raw: string, values: InputValues) => SequenceParse`; `SequenceField.resetEmpty?: boolean`; `parseSequenceField(field, raw, values = {})`; `RankingModel.suffix?: string`; `ConfigField` props `values`, `onAction`; `ConfigPanel` props `sequences`, `onAction`; `ChoiceGroup` prop `disabled`.
-
-- [ ] **Step 1: Core types.** In `lib/visualizer/core/types.ts` change `Outcome` and add `sequences` to `RunResult`:
-
-```ts
-export type Outcome = "good" | "bad" | "neutral";
-```
-
-```ts
-export interface RunResult {
-  frames: VizFrame[];
-  info: InfoContent;
-  metricLabel: string;
-  sequence: string[];
-  // Resolved tokens per sequence field when a module has more than one; falls back to sequence.
-  sequences?: Record<string, string[]>;
-}
-```
-
-- [ ] **Step 2: Fields.** In `lib/visualizer/core/fields.ts` replace `SequenceField`, add the action field, widen the union, and update `applyChange` and `parseSequenceField`:
-
-```ts
-export interface SequenceField extends FieldBase {
-  kind: "sequence";
-  maxLen: number;
-  hint: string;
-  resetBy: string[];
-  // A module with its own grammar supplies this; it sees the other inputs for rules that span fields.
-  parse?: (raw: string, values: InputValues) => SequenceParse;
-  // Separator between tokens in the URL; tokens that can run together (numbers) need one.
-  join?: string;
-  // Clears to an empty list instead of null (regenerate) when a resetBy field changes.
-  resetEmpty?: boolean;
-}
-export interface SeedField extends FieldBase {
-  kind: "seed";
-}
-export interface ActionResult {
-  values: InputValues;
-  step?: number;
-}
-// A button: it rewrites the inputs itself and may name the step to play from; it has no URL param.
-export interface ActionField {
-  kind: "action";
-  key: string;
-  label: string;
-  apply: (values: InputValues) => ActionResult;
-}
-export type FieldSpec = ChipsField | SliderField | SequenceField | SeedField | ActionField;
-```
-
-```ts
-export function applyChange(
-  sections: FieldSection[],
-  values: InputValues,
-  key: string,
-  value: FieldValue,
-): InputValues {
-  const next: InputValues = { ...values, [key]: value };
-  for (const f of allFields(sections)) {
-    if (f.kind === "sequence" && f.resetBy.includes(key)) next[f.key] = f.resetEmpty ? [] : null;
-  }
-  return next;
-}
-```
-
-```ts
-export function parseSequenceField(
-  field: SequenceField,
-  raw: string,
-  values: InputValues = {},
-): SequenceParse {
-  if (field.parse) return field.parse(raw, values);
-  const keys = parseSequence(raw, field.maxLen);
-  return keys ? { ok: true, tokens: keys } : { ok: false, error: "Use letters A–Z" };
-}
-```
-
-Then run `grep -rn "\.param\b" lib components app --include=*.ts --include=*.tsx` and make every place that reads `param` from a `FieldSpec` skip or narrow out `kind === "action"` (only `url-state.ts` is expected; fix any other hit the same way).
-
-- [ ] **Step 3: URL state.** In `lib/visualizer/core/url-state.ts`, `encodeState` loop starts with `if (f.kind === "action") continue;`. In `parseState` the loop also starts with `if (f.kind === "action") continue;`, and the sequence branch becomes:
-
-```ts
-    } else {
-      const parsed = parseSequenceField(f, raw, values);
-      values[f.key] = parsed.ok ? parsed.tokens : null;
-    }
-```
-
-An empty array already encodes as `param=` (via `joinSequence`) and parses back through the field's parser; no other change.
-
-- [ ] **Step 4: Ranking suffix.** In `lib/visualizer/core/shapes.ts` add to `RankingModel`:
-
-```ts
-  // Printed after each count; defaults to "×" (times seen).
-  suffix?: string;
-```
-
-In `components/visualizer/shapes/RankingShape.tsx` replace `<span className="viz-rank__count">{r.count}×</span>` with:
-
-```tsx
-            <span className="viz-rank__count">
-              {r.count}
-              {model.suffix ?? "×"}
-            </span>
-```
-
-- [ ] **Step 5: ChoiceGroup disabled.** In `components/visualizer/ui/ChoiceGroup.tsx` add `disabled?: boolean` to the props, destructure it, and give each button `disabled={disabled}`.
-
-- [ ] **Step 6: ConfigFields.** In `components/visualizer/frame/ConfigFields.tsx`:
-
-Import `ActionField` and `InputValues` alongside the other field types.
-
-`ChipsInput` honours `availability.disabled`:
-
-```tsx
-  const disabled = availability?.disabled === true;
-  return (
-    <div className={`viz-field${disabled ? " is-disabled" : ""}`}>
-      {!field.hideLabel && <div className="viz-field__label">{field.label}</div>}
-      <div className="viz-field__chips-row">
-        <ChoiceGroup
-          label={field.label}
-          options={field.options}
-          value={typeof value === "string" ? value : ""}
-          onChange={onChange}
-          disabled={disabled}
-        />
-```
-
-(the rest of `ChipsInput` is unchanged).
-
-`SequenceInput` takes `values: InputValues` and parses with it: change its props to `FieldProps<SequenceField> & { sequence: string[]; values: InputValues }` and the Enter handler to `const parsed = parseSequenceField(field, draft, values);`.
-
-Add the action input:
-
-```tsx
-function ActionInput({
-  field,
-  onAction,
-  availability,
-}: {
-  field: ActionField;
-  onAction: () => void;
-  availability?: FieldAvailability;
-}) {
-  const disabled = availability?.disabled === true;
-  return (
-    <div className={`viz-field viz-field--action${disabled ? " is-disabled" : ""}`}>
-      <button type="button" className="viz-btn" disabled={disabled} onClick={onAction}>
-        {field.label}
-      </button>
-      {availability?.hint && <p className="viz-field__hint">{availability.hint}</p>}
-    </div>
-  );
-}
-```
-
-`ConfigFieldProps` gains `values?: InputValues` (optional, so existing callers and tests keep compiling) and `onAction?: (field: ActionField) => void`; `ConfigField` destructures them with `values = {}`, passes `values={values}` to `SequenceInput`, and adds:
-
-```tsx
-    case "action":
-      return (
-        <ActionInput
-          field={field}
-          onAction={() => onAction?.(field)}
-          availability={availability}
-        />
-      );
-```
-
-- [ ] **Step 7: ConfigPanel.** In `components/visualizer/frame/ConfigPanel.tsx` add props `sequences?: Record<string, string[]>` and `onAction?: (field: ActionField) => void` (import `ActionField`), and pass to each `ConfigField`:
-
-```tsx
-              values={values}
-              sequence={sequences?.[f.key] ?? sequence}
-              onAction={onAction}
-```
-
-Also change the field's React key to `key={f.key}` (already) and keep `onChange={(v) => onChange(f.key, v)}`.
-
-- [ ] **Step 8: VisualizerApp.** In `components/visualizer/frame/VisualizerApp.tsx` import `ActionField` from `@/lib/visualizer/core/fields`, then after `runTry` add:
-
-```tsx
-  // An action names the step to play from; seek once the rebuilt frames have landed.
-  const pendingSeek = useRef<number | null>(null);
-  const act = useCallback(
-    (field: ActionField) => {
-      const r = field.apply(values);
-      pendingSeek.current = r.step ?? null;
-      setValues(r.values);
-      restart();
-    },
-    [values, restart],
-  );
-  useEffect(() => {
-    const at = pendingSeek.current;
-    if (at === null) return;
-    pendingSeek.current = null;
-    seek(at);
-  }, [result.frames, seek]);
-```
-
-and pass to `ConfigPanel`: `sequences={result.sequences}` and `onAction={act}`.
-
-- [ ] **Step 9: CSS.** `css/view-visualizer/playback.css`, after `.viz-strip__cell.is-bad`:
-
-```css
-.viz-strip__cell.is-neutral {
-  border-color: var(--viz-slot-border);
-  background: var(--viz-slot-bg);
-}
-```
-
-`css/view-visualizer/ui.css`, after `.viz-badge--bad`:
-
-```css
-.viz-badge--neutral {
-  color: var(--viz-ink-muted);
-  background: var(--viz-slot-bg);
-}
-```
-
-`css/view-visualizer/panels.css`, after `.viz-field.is-disabled .viz-field__range`:
-
-```css
-.viz-field.is-disabled .viz-choice__btn,
-.viz-field.is-disabled .viz-btn {
-  cursor: not-allowed;
-}
-.viz-field--action {
-  display: inline-flex;
-  margin-right: var(--s2);
-}
-```
-
-(`--viz-ink-muted` is added in Task 3; the alias must exist before the CSS is used, which is true once Task 3 lands.)
-
-- [ ] **Step 10: Tests — fields.** Append to `lib/visualizer/core/fields.test.ts`:
-
-```ts
-describe("resetEmpty and value-aware parsing", () => {
-  const seq = (extra: Partial<SequenceField> = {}): SequenceField => ({
-    kind: "sequence",
-    key: "events",
-    label: "Events",
-    param: "e",
-    maxLen: 4,
-    hint: "",
-    resetBy: ["nodes"],
-    ...extra,
-  });
-
-  it("a resetEmpty sequence clears to [] and a plain one to null", () => {
-    const sections: FieldSection[] = [
-      { title: "", fields: [seq({ resetEmpty: true }), { ...seq(), key: "keys", param: "k" }] },
-    ];
-    const next = applyChange(sections, { events: ["+"], keys: ["1"] }, "nodes", 5);
-    expect(next.events).toEqual([]);
-    expect(next.keys).toBeNull();
-  });
-
-  it("parseSequenceField hands the current values to the field's parser", () => {
-    const parse = vi.fn((raw: string, values: InputValues) => ({
-      ok: true as const,
-      tokens: [raw, String(values.nodes)],
-    }));
-    expect(parseSequenceField(seq({ parse }), "+", { nodes: 4 })).toEqual({
-      ok: true,
-      tokens: ["+", "4"],
-    });
-    expect(parse).toHaveBeenCalledWith("+", { nodes: 4 });
-  });
-});
-```
-
-(add `vi` to the vitest import and `type FieldSection, type InputValues, type SequenceField, parseSequenceField` to the fields import if missing).
-
-- [ ] **Step 11: Tests — URL state.** Append to `lib/visualizer/core/url-state.test.ts`:
-
-```ts
-describe("action fields and empty sequences", () => {
-  const sections: FieldSection[] = [
-    {
-      title: "",
-      fields: [
-        { kind: "slider", key: "nodes", label: "Nodes", param: "n", min: 1, max: 6 },
-        { kind: "action", key: "add", label: "Add", apply: (v) => ({ values: v }) },
-        {
-          kind: "sequence",
-          key: "events",
-          label: "Events",
-          param: "e",
-          maxLen: 4,
-          hint: "",
-          resetBy: ["nodes"],
-          resetEmpty: true,
-          join: "_",
-          parse: (raw, values) =>
-            values.nodes === 3
-              ? { ok: true, tokens: raw.split("_").filter(Boolean) }
-              : { ok: false, error: "needs 3 nodes" },
-        },
-      ],
-    },
-  ];
-
-  it("an action has no URL param", () => {
-    const search = encodeState(sections, { nodes: 3, events: ["+"] }, { frame: 0, rotated: false });
-    expect(search).toBe("?n=3&e=%2B&i=1");
-  });
-
-  it("an empty sequence round-trips as an empty list", () => {
-    const search = encodeState(sections, { nodes: 3, events: [] }, { frame: 0, rotated: false });
-    expect(search).toBe("?n=3&e=&i=1");
-    expect(parseState(search, sections, { nodes: 4, events: ["+"] }).values.events).toEqual([]);
-  });
-
-  it("the parser sees fields parsed before it", () => {
-    expect(parseState("?n=3&e=%2B", sections, { nodes: 4, events: [] }).values.events).toEqual([
-      "+",
-    ]);
-    expect(parseState("?n=5&e=%2B", sections, { nodes: 4, events: [] }).values.events).toBeNull();
-  });
-});
-```
-
-(import `type FieldSection` from `./fields` if missing).
-
-- [ ] **Step 12: Tests — action field, disabled chips, neutral strip.** Create `components/visualizer/frame/action-field.test.tsx`:
-
-```tsx
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import type { ActionField, ChipsField, SequenceField } from "@/lib/visualizer/core/fields";
-import type { VizFrame } from "@/lib/visualizer/core/types";
-import { ConfigField } from "./ConfigFields";
-import { LogTab } from "./InfoTabs";
-import { TimelineStrip } from "./TimelineStrip";
-
-const action: ActionField = {
-  kind: "action",
-  key: "grow",
-  label: "Grow",
-  apply: (v) => ({ values: v }),
-};
-
-describe("action field", () => {
-  it("renders a button that reports the press", () => {
-    const onAction = vi.fn();
-    render(
-      <ConfigField
-        field={action}
-        value={null}
-        values={{}}
-        sequence={[]}
-        onChange={vi.fn()}
-        onAction={onAction}
-      />,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Grow" }));
-    expect(onAction).toHaveBeenCalledWith(action);
-  });
-
-  it("is disabled, with its hint, when availability says so", () => {
-    const onAction = vi.fn();
-    render(
-      <ConfigField
-        field={action}
-        value={null}
-        values={{}}
-        sequence={[]}
-        onChange={vi.fn()}
-        onAction={onAction}
-        availability={{ disabled: true, hint: "At most 4" }}
-      />,
-    );
-    const btn = screen.getByRole<HTMLButtonElement>("button", { name: "Grow" });
-    expect(btn.disabled).toBe(true);
-    fireEvent.click(btn);
-    expect(onAction).not.toHaveBeenCalled();
-    expect(screen.getByText("At most 4")).toBeTruthy();
-  });
-});
-
-describe("chips availability", () => {
-  it("a disabled chips field dims and disables every chip", () => {
-    const chips: ChipsField = {
-      kind: "chips",
-      key: "v",
-      label: "Size",
-      param: "v",
-      options: [
-        { value: "1", label: "1" },
-        { value: "2", label: "2" },
-      ],
-    };
-    const { container } = render(
-      <ConfigField
-        field={chips}
-        value="1"
-        values={{}}
-        sequence={[]}
-        onChange={vi.fn()}
-        availability={{ disabled: true }}
-      />,
-    );
-    expect(container.querySelector(".viz-field.is-disabled")).toBeTruthy();
-    for (const b of screen.getAllByRole<HTMLButtonElement>("button")) expect(b.disabled).toBe(true);
-  });
-});
-
-describe("sequence parsing sees the other inputs", () => {
-  it("passes the current values to the parser on Enter", () => {
-    const parse = vi.fn(() => ({ ok: false as const, error: "Too many" }));
-    const field: SequenceField = {
-      kind: "sequence",
-      key: "events",
-      label: "Events",
-      param: "e",
-      maxLen: 4,
-      hint: "hint",
-      resetBy: [],
-      parse,
-    };
-    render(
-      <ConfigField
-        field={field}
-        value={["+"]}
-        values={{ nodes: 6 }}
-        sequence={["+"]}
-        onChange={vi.fn()}
-      />,
-    );
-    const input = screen.getByLabelText("Events");
-    fireEvent.change(input, { target: { value: "+ +" } });
-    fireEvent.keyDown(input, { key: "Enter" });
-    expect(parse).toHaveBeenCalledWith("+ +", { nodes: 6 });
-    expect(screen.getByText("Too many")).toBeTruthy();
-  });
-});
-
-describe("neutral outcome", () => {
-  const frame = (index: number): VizFrame => ({
-    index,
-    label: String(index),
-    outcome: "neutral",
-    badge: "PLACED",
-    caption: [],
-    lines: [],
-    path: [0],
-    vars: [],
-    logNote: [],
-    metric: "—",
-    model: {
-      kind: "table",
-      head: ["a", "b"],
-      rows: [],
-      active: null,
-    },
-  });
-
-  it("a played neutral step gets the neutral strip cell and log badge", () => {
-    const frames = [frame(0), frame(1)];
-    const { container } = render(
-      <TimelineStrip frames={frames} current={1} unit="step" onSeek={vi.fn()} />,
-    );
-    expect(container.querySelector(".viz-strip__cell.is-neutral")).toBeTruthy();
-    const log = render(<LogTab frames={frames} current={1} onSeek={vi.fn()} />);
-    expect(log.container.querySelector(".viz-badge--neutral")).toBeTruthy();
-  });
-});
-```
-
-(the `table` model kind is added in Task 2; this test compiles once Task 2 lands, and nothing runs before Task 11).
-
-- [ ] **Step 13: Tests — Ranking suffix.** Append to `components/visualizer/shapes/shapes.test.tsx`:
-
-```tsx
-describe("Ranking suffix", () => {
-  it("prints the module's suffix instead of ×", () => {
-    const { container } = render(
-      <RankingShape
-        model={{
-          kind: "ranking",
-          rows: [
-            { key: "B", count: 89 },
-            { key: "A", count: 72 },
-          ],
-          capacity: 3,
-          next: null,
-          active: "B",
-          tone: "new",
-          removed: null,
-          suffix: "",
-        }}
-        subject="Scores"
-      />,
-    );
-    const counts = [...container.querySelectorAll(".viz-rank__count")].map((c) => c.textContent);
-    expect(counts.sort()).toEqual(["72", "89"]);
-  });
-});
-```
-
-(import `RankingShape` from `./RankingShape` if the file does not already).
-
----
-
-### Task 2: Core shape models and geometry — Bins, Scale, Table, Composite side
+### Task 1: Core shape models and geometry — Bins, Scale, Table, Composite side
 
 **Files:**
 - Modify: `lib/visualizer/core/shapes.ts`, `lib/visualizer/core/geometry.ts`
 - Test: `lib/visualizer/core/partition-shapes.test.ts`
 
+**Must hold:** twelve chips in one bin fit the bins part of a stacked Range at 320 × 380 and of a 250 × 200 Revision card, because bins parts are exempt from the Composite's 180px flex cap (Step 3).
+
 **Interfaces:**
-- Consumes: nothing new.
-- Produces (exact names used by Tasks 3, 6): `ItemTone`, `PartState`, `BinItem`, `Bin`, `BinMove`, `BinsModel`, `ScaleSegment`, `ScaleAnchor`, `ScalePoint`, `ScaleModel`, `TableRow`, `TableModel`, `CompositeModel.layout`, `binsLabel`, `scaleLabel`; geometry `binsLayout`, `BinsLayout`, `trailBetween`, `Trail`, `scaleLine`, `ScaleLine`, `scaleCircle`, `ScaleCircle`, `arcPath`, `labelLanes`, `compositeColumns`, `compositeSideHeight`, `SCALE_LINE_H`, `SCALE_LINE_H_DENSE`.
+- Produces (exact names used by Tasks 2, 6): `ItemTone`, `PartState`, `BinItem`, `Bin`, `BinMove`, `BinsModel`, `ScaleSegment`, `ScaleAnchor`, `ScalePoint`, `ScaleModel`, `TableRow`, `TableModel`, `CompositeModel.layout`, `binsLabel`, `scaleLabel`; geometry `binsLayout`, `BinsLayout`, `trailBetween`, `Trail`, `scaleLine`, `ScaleLine`, `scaleCircle`, `ScaleCircle`, `arcPath`, `labelLanes`, `compositeColumns`, `compositeSideHeight`, `SCALE_LINE_H`, `SCALE_LINE_H_DENSE`.
 
 - [ ] **Step 1: Models.** In `lib/visualizer/core/shapes.ts`, before `export type LeafModel`, add:
 
@@ -738,7 +187,7 @@ export function scaleLabel(model: ScaleModel, subject: string): string {
 }
 ```
 
-Then run `grep -rn "model.kind ===\|case \"" components/visualizer lib/visualizer/core --include=*.ts --include=*.tsx` and confirm no exhaustive switch over `ShapeModel` kinds exists outside `Shape.tsx` and `modelKeys`; if one does, add the three kinds there.
+`Shape.tsx` (Task 2 Step 5) and `modelKeys` (above) are the only code that branches on `ShapeModel` kinds.
 
 - [ ] **Step 2: Geometry.** In `lib/visualizer/core/geometry.ts`:
 
@@ -1126,15 +575,17 @@ Hand-checks for the values above: 800 × 520 → side height 440, scale width `m
 
 ---
 
-### Task 3: Shape components — Bins, Scale, Table, Composite side — and their CSS
+### Task 2: Shape components — Bins, Scale, Table, Composite side — and their CSS
 
 **Files:**
 - Create: `components/visualizer/shapes/BinsShape.tsx`, `components/visualizer/shapes/ScaleShape.tsx`, `components/visualizer/shapes/TableShape.tsx`, `css/view-visualizer/bins.css`, `css/view-visualizer/scale.css`
 - Modify: `components/visualizer/shapes/Shape.tsx`, `components/visualizer/shapes/CompositeShape.tsx`, `css/tokens.css`, `css/wiki.css`, `css/view-visualizer/timeline.css`
 - Test: `components/visualizer/shapes/partition-shapes.test.tsx`, `components/visualizer/shapes/CompositeShape.test.tsx`
 
+**Must hold:** twelve chips in one of six bins stay inside a 320 × 380 stage (Step 7).
+
 **Interfaces:**
-- Consumes: Task 2 models and geometry.
+- Consumes: Task 1 models and geometry.
 - Produces: `BinsShape`, `ScaleShape`, `TableShape` (props `{ model; size; subject; dense }`, Table `{ model; subject }`), Composite `side` rendering; `--viz-slot-alt`, `--viz-ink`, `--viz-ink-strong`, `--viz-ink-muted`.
 
 - [ ] **Step 1: Tokens.** In `css/tokens.css`, right after `--viz-slot-border: var(--border-2);`:
@@ -2084,11 +1535,520 @@ Append to `components/visualizer/shapes/CompositeShape.test.tsx` (inside the `de
 
 ---
 
+### Task 3: Frame — neutral outcome, action fields, value-aware sequence parsing, per-field sequences, disabled chips, Ranking suffix
+
+**Files:**
+- Modify: `lib/visualizer/core/types.ts`, `lib/visualizer/core/fields.ts`, `lib/visualizer/core/url-state.ts`, `lib/visualizer/core/shapes.ts` (Ranking suffix only), `components/visualizer/frame/ConfigFields.tsx`, `components/visualizer/frame/ConfigPanel.tsx`, `components/visualizer/frame/VisualizerApp.tsx`, `components/visualizer/ui/ChoiceGroup.tsx`, `components/visualizer/shapes/RankingShape.tsx`, `css/view-visualizer/playback.css`, `css/view-visualizer/ui.css`, `css/view-visualizer/panels.css`
+- Test: `lib/visualizer/core/fields.test.ts`, `lib/visualizer/core/url-state.test.ts`, `components/visualizer/frame/action-field.test.tsx`, `components/visualizer/shapes/shapes.test.tsx`
+
+**Must hold:** a `resetEmpty` sequence cleared by a `resetBy` change is `[]`, and `[]` survives a URL round trip (Steps 10–11).
+
+**Interfaces:**
+- Consumes: Task 1 (`table` model kind, used by the Step 12 test) and Task 2 (`--viz-ink-muted`, used by the Step 9 CSS).
+- Produces: `Outcome = "good" | "bad" | "neutral"`; `RunResult.sequences?: Record<string, string[]>`; `ActionField { kind: "action"; key; label; apply(values): ActionResult }`; `ActionResult { values: InputValues; step?: number }`; `SequenceField.parse?: (raw: string, values: InputValues) => SequenceParse`; `SequenceField.resetEmpty?: boolean`; `parseSequenceField(field, raw, values = {})`; `RankingModel.suffix?: string`; `ConfigField` props `values`, `onAction`; `ConfigPanel` props `sequences`, `onAction`; `ChoiceGroup` prop `disabled`.
+
+- [ ] **Step 1: Core types.** In `lib/visualizer/core/types.ts` change `Outcome` and add `sequences` to `RunResult`:
+
+```ts
+export type Outcome = "good" | "bad" | "neutral";
+```
+
+```ts
+export interface RunResult {
+  frames: VizFrame[];
+  info: InfoContent;
+  metricLabel: string;
+  sequence: string[];
+  // Resolved tokens per sequence field when a module has more than one; falls back to sequence.
+  sequences?: Record<string, string[]>;
+}
+```
+
+- [ ] **Step 2: Fields.** In `lib/visualizer/core/fields.ts` replace `SequenceField`, add the action field, widen the union, and update `applyChange` and `parseSequenceField`:
+
+```ts
+export interface SequenceField extends FieldBase {
+  kind: "sequence";
+  maxLen: number;
+  hint: string;
+  resetBy: string[];
+  // A module with its own grammar supplies this; it sees the other inputs for rules that span fields.
+  parse?: (raw: string, values: InputValues) => SequenceParse;
+  // Separator between tokens in the URL; tokens that can run together (numbers) need one.
+  join?: string;
+  // Clears to an empty list instead of null (regenerate) when a resetBy field changes.
+  resetEmpty?: boolean;
+}
+export interface SeedField extends FieldBase {
+  kind: "seed";
+}
+export interface ActionResult {
+  values: InputValues;
+  step?: number;
+}
+// A button: it rewrites the inputs itself and may name the step to play from; it has no URL param.
+export interface ActionField {
+  kind: "action";
+  key: string;
+  label: string;
+  apply: (values: InputValues) => ActionResult;
+}
+export type FieldSpec = ChipsField | SliderField | SequenceField | SeedField | ActionField;
+```
+
+```ts
+export function applyChange(
+  sections: FieldSection[],
+  values: InputValues,
+  key: string,
+  value: FieldValue,
+): InputValues {
+  const next: InputValues = { ...values, [key]: value };
+  for (const f of allFields(sections)) {
+    if (f.kind === "sequence" && f.resetBy.includes(key)) next[f.key] = f.resetEmpty ? [] : null;
+  }
+  return next;
+}
+```
+
+```ts
+export function parseSequenceField(
+  field: SequenceField,
+  raw: string,
+  values: InputValues = {},
+): SequenceParse {
+  if (field.parse) return field.parse(raw, values);
+  const keys = parseSequence(raw, field.maxLen);
+  return keys ? { ok: true, tokens: keys } : { ok: false, error: "Use letters A–Z" };
+}
+```
+
+`url-state.ts` is the only code that reads `FieldSpec.param` (Step 3). The other `allFields` callers (`core/variants.ts`, `caching/module.ts`, `eviction/module.ts`) filter by `kind` first.
+
+- [ ] **Step 3: URL state.** In `lib/visualizer/core/url-state.ts`, `encodeState` loop starts with `if (f.kind === "action") continue;`. In `parseState` the loop also starts with `if (f.kind === "action") continue;`, and the sequence branch becomes:
+
+```ts
+    } else {
+      const parsed = parseSequenceField(f, raw, values);
+      values[f.key] = parsed.ok ? parsed.tokens : null;
+    }
+```
+
+An empty array encodes as `param=` (`joinSequence` joins nothing), and `parseState` hands the empty string to the field's parser because it skips only a missing param (`raw === null`).
+
+- [ ] **Step 4: Ranking suffix.** In `lib/visualizer/core/shapes.ts` add to `RankingModel`:
+
+```ts
+  // Printed after each count; defaults to "×" (times seen).
+  suffix?: string;
+```
+
+In `components/visualizer/shapes/RankingShape.tsx` replace `<span className="viz-rank__count">{r.count}×</span>` with:
+
+```tsx
+            <span className="viz-rank__count">
+              {r.count}
+              {model.suffix ?? "×"}
+            </span>
+```
+
+- [ ] **Step 5: ChoiceGroup disabled.** In `components/visualizer/ui/ChoiceGroup.tsx` add `disabled?: boolean` to the props, destructure it, and give each button `disabled={disabled}`.
+
+- [ ] **Step 6: ConfigFields.** In `components/visualizer/frame/ConfigFields.tsx`:
+
+Import `ActionField` and `InputValues` alongside the other field types.
+
+`ChipsInput` honours `availability.disabled`: after `const noun = …` add `disabled`, and use it on the wrapper and `ChoiceGroup`:
+
+```tsx
+  const disabled = availability?.disabled === true;
+  return (
+    <div className={`viz-field${disabled ? " is-disabled" : ""}`}>
+      {!field.hideLabel && <div className="viz-field__label">{field.label}</div>}
+      <div className="viz-field__chips-row">
+        <ChoiceGroup
+          label={field.label}
+          options={field.options}
+          value={typeof value === "string" ? value : ""}
+          onChange={onChange}
+          disabled={disabled}
+        />
+```
+
+`SequenceInput` takes `values: InputValues` and parses with it: change its props to `FieldProps<SequenceField> & { sequence: string[]; values: InputValues }` and the Enter handler to `const parsed = parseSequenceField(field, draft, values);`.
+
+Add the action input:
+
+```tsx
+function ActionInput({
+  field,
+  onAction,
+  availability,
+}: {
+  field: ActionField;
+  onAction: () => void;
+  availability?: FieldAvailability;
+}) {
+  const disabled = availability?.disabled === true;
+  return (
+    <div className={`viz-field viz-field--action${disabled ? " is-disabled" : ""}`}>
+      <button type="button" className="viz-btn" disabled={disabled} onClick={onAction}>
+        {field.label}
+      </button>
+      {availability?.hint && <p className="viz-field__hint">{availability.hint}</p>}
+    </div>
+  );
+}
+```
+
+`ConfigFieldProps` gains `values?: InputValues` (optional: `sequence-field.test.tsx` renders `ConfigField` without it) and `onAction?: (field: ActionField) => void`; `ConfigField` destructures them with `values = {}`, passes `values={values}` to `SequenceInput`, and adds:
+
+```tsx
+    case "action":
+      return (
+        <ActionInput
+          field={field}
+          onAction={() => onAction?.(field)}
+          availability={availability}
+        />
+      );
+```
+
+- [ ] **Step 7: ConfigPanel.** In `components/visualizer/frame/ConfigPanel.tsx` add props `sequences?: Record<string, string[]>` and `onAction?: (field: ActionField) => void` (import `ActionField`), and pass to each `ConfigField`:
+
+```tsx
+              values={values}
+              sequence={sequences?.[f.key] ?? sequence}
+              onAction={onAction}
+```
+
+- [ ] **Step 8: VisualizerApp.** In `components/visualizer/frame/VisualizerApp.tsx` import `ActionField` from `@/lib/visualizer/core/fields`, then after `runTry` add:
+
+```tsx
+  // An action names the step to play from; seek once the rebuilt frames have landed.
+  const pendingSeek = useRef<number | null>(null);
+  const act = useCallback(
+    (field: ActionField) => {
+      const r = field.apply(values);
+      pendingSeek.current = r.step ?? null;
+      setValues(r.values);
+      restart();
+    },
+    [values, restart],
+  );
+  useEffect(() => {
+    const at = pendingSeek.current;
+    if (at === null) return;
+    pendingSeek.current = null;
+    seek(at);
+  }, [result.frames, seek]);
+```
+
+and pass to `ConfigPanel`: `sequences={result.sequences}` and `onAction={act}`.
+
+- [ ] **Step 9: CSS.** `css/view-visualizer/playback.css`, after `.viz-strip__cell.is-bad`:
+
+```css
+.viz-strip__cell.is-neutral {
+  border-color: var(--viz-slot-border);
+  background: var(--viz-slot-bg);
+}
+```
+
+`css/view-visualizer/ui.css`, after `.viz-badge--bad`:
+
+```css
+.viz-badge--neutral {
+  color: var(--viz-ink-muted);
+  background: var(--viz-slot-bg);
+}
+```
+
+`css/view-visualizer/panels.css`, after `.viz-field.is-disabled .viz-field__range`:
+
+```css
+.viz-field.is-disabled .viz-choice__btn,
+.viz-field.is-disabled .viz-btn {
+  cursor: not-allowed;
+}
+.viz-field--action {
+  display: inline-flex;
+  margin-right: var(--s2);
+}
+```
+
+- [ ] **Step 10: Tests — fields.** Append to `lib/visualizer/core/fields.test.ts`:
+
+```ts
+describe("resetEmpty and value-aware parsing", () => {
+  const seq = (extra: Partial<SequenceField> = {}): SequenceField => ({
+    kind: "sequence",
+    key: "events",
+    label: "Events",
+    param: "e",
+    maxLen: 4,
+    hint: "",
+    resetBy: ["nodes"],
+    ...extra,
+  });
+
+  it("a resetEmpty sequence clears to [] and a plain one to null", () => {
+    const sections: FieldSection[] = [
+      { title: "", fields: [seq({ resetEmpty: true }), { ...seq(), key: "keys", param: "k" }] },
+    ];
+    const next = applyChange(sections, { events: ["+"], keys: ["1"] }, "nodes", 5);
+    expect(next.events).toEqual([]);
+    expect(next.keys).toBeNull();
+  });
+
+  it("parseSequenceField hands the current values to the field's parser", () => {
+    const parse = vi.fn((raw: string, values: InputValues) => ({
+      ok: true as const,
+      tokens: [raw, String(values.nodes)],
+    }));
+    expect(parseSequenceField(seq({ parse }), "+", { nodes: 4 })).toEqual({
+      ok: true,
+      tokens: ["+", "4"],
+    });
+    expect(parse).toHaveBeenCalledWith("+", { nodes: 4 });
+  });
+});
+```
+
+Add `vi` to the `vitest` import and `type InputValues, type SequenceField, parseSequenceField` to the `./fields` import (it has `applyChange, clampInt, type FieldSection, parseSequence`).
+
+- [ ] **Step 11: Tests — URL state.** Append to `lib/visualizer/core/url-state.test.ts`:
+
+```ts
+describe("action fields and empty sequences", () => {
+  const sections: FieldSection[] = [
+    {
+      title: "",
+      fields: [
+        { kind: "slider", key: "nodes", label: "Nodes", param: "n", min: 1, max: 6 },
+        { kind: "action", key: "add", label: "Add", apply: (v) => ({ values: v }) },
+        {
+          kind: "sequence",
+          key: "events",
+          label: "Events",
+          param: "e",
+          maxLen: 4,
+          hint: "",
+          resetBy: ["nodes"],
+          resetEmpty: true,
+          join: "_",
+          parse: (raw, values) =>
+            values.nodes === 3
+              ? { ok: true, tokens: raw.split("_").filter(Boolean) }
+              : { ok: false, error: "needs 3 nodes" },
+        },
+      ],
+    },
+  ];
+
+  it("an action has no URL param", () => {
+    const search = encodeState(sections, { nodes: 3, events: ["+"] }, { frame: 0, rotated: false });
+    expect(search).toBe("?n=3&e=%2B&i=1");
+  });
+
+  it("an empty sequence round-trips as an empty list", () => {
+    const search = encodeState(sections, { nodes: 3, events: [] }, { frame: 0, rotated: false });
+    expect(search).toBe("?n=3&e=&i=1");
+    expect(parseState(search, sections, { nodes: 4, events: ["+"] }).values.events).toEqual([]);
+  });
+
+  it("the parser sees fields parsed before it", () => {
+    expect(parseState("?n=3&e=%2B", sections, { nodes: 4, events: [] }).values.events).toEqual([
+      "+",
+    ]);
+    expect(parseState("?n=5&e=%2B", sections, { nodes: 4, events: [] }).values.events).toBeNull();
+  });
+});
+```
+
+- [ ] **Step 12: Tests — action field, disabled chips, neutral strip.** Create `components/visualizer/frame/action-field.test.tsx`:
+
+```tsx
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import type { ActionField, ChipsField, SequenceField } from "@/lib/visualizer/core/fields";
+import type { VizFrame } from "@/lib/visualizer/core/types";
+import { ConfigField } from "./ConfigFields";
+import { LogTab } from "./InfoTabs";
+import { TimelineStrip } from "./TimelineStrip";
+
+const action: ActionField = {
+  kind: "action",
+  key: "grow",
+  label: "Grow",
+  apply: (v) => ({ values: v }),
+};
+
+describe("action field", () => {
+  it("renders a button that reports the press", () => {
+    const onAction = vi.fn();
+    render(
+      <ConfigField
+        field={action}
+        value={null}
+        values={{}}
+        sequence={[]}
+        onChange={vi.fn()}
+        onAction={onAction}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Grow" }));
+    expect(onAction).toHaveBeenCalledWith(action);
+  });
+
+  it("is disabled, with its hint, when availability says so", () => {
+    const onAction = vi.fn();
+    render(
+      <ConfigField
+        field={action}
+        value={null}
+        values={{}}
+        sequence={[]}
+        onChange={vi.fn()}
+        onAction={onAction}
+        availability={{ disabled: true, hint: "At most 4" }}
+      />,
+    );
+    const btn = screen.getByRole<HTMLButtonElement>("button", { name: "Grow" });
+    expect(btn.disabled).toBe(true);
+    fireEvent.click(btn);
+    expect(onAction).not.toHaveBeenCalled();
+    expect(screen.getByText("At most 4")).toBeTruthy();
+  });
+});
+
+describe("chips availability", () => {
+  it("a disabled chips field dims and disables every chip", () => {
+    const chips: ChipsField = {
+      kind: "chips",
+      key: "v",
+      label: "Size",
+      param: "v",
+      options: [
+        { value: "1", label: "1" },
+        { value: "2", label: "2" },
+      ],
+    };
+    const { container } = render(
+      <ConfigField
+        field={chips}
+        value="1"
+        values={{}}
+        sequence={[]}
+        onChange={vi.fn()}
+        availability={{ disabled: true }}
+      />,
+    );
+    expect(container.querySelector(".viz-field.is-disabled")).toBeTruthy();
+    for (const b of screen.getAllByRole<HTMLButtonElement>("button")) expect(b.disabled).toBe(true);
+  });
+});
+
+describe("sequence parsing sees the other inputs", () => {
+  it("passes the current values to the parser on Enter", () => {
+    const parse = vi.fn(() => ({ ok: false as const, error: "Too many" }));
+    const field: SequenceField = {
+      kind: "sequence",
+      key: "events",
+      label: "Events",
+      param: "e",
+      maxLen: 4,
+      hint: "hint",
+      resetBy: [],
+      parse,
+    };
+    render(
+      <ConfigField
+        field={field}
+        value={["+"]}
+        values={{ nodes: 6 }}
+        sequence={["+"]}
+        onChange={vi.fn()}
+      />,
+    );
+    const input = screen.getByLabelText("Events");
+    fireEvent.change(input, { target: { value: "+ +" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(parse).toHaveBeenCalledWith("+ +", { nodes: 6 });
+    expect(screen.getByText("Too many")).toBeTruthy();
+  });
+});
+
+describe("neutral outcome", () => {
+  const frame = (index: number): VizFrame => ({
+    index,
+    label: String(index),
+    outcome: "neutral",
+    badge: "PLACED",
+    caption: [],
+    lines: [],
+    path: [0],
+    vars: [],
+    logNote: [],
+    metric: "—",
+    model: {
+      kind: "table",
+      head: ["a", "b"],
+      rows: [],
+      active: null,
+    },
+  });
+
+  it("a played neutral step gets the neutral strip cell and log badge", () => {
+    const frames = [frame(0), frame(1)];
+    const { container } = render(
+      <TimelineStrip frames={frames} current={1} unit="step" onSeek={vi.fn()} />,
+    );
+    expect(container.querySelector(".viz-strip__cell.is-neutral")).toBeTruthy();
+    const log = render(<LogTab frames={frames} current={1} onSeek={vi.fn()} />);
+    expect(log.container.querySelector(".viz-badge--neutral")).toBeTruthy();
+  });
+});
+```
+
+- [ ] **Step 13: Tests — Ranking suffix.** Append to `components/visualizer/shapes/shapes.test.tsx`:
+
+```tsx
+describe("Ranking suffix", () => {
+  it("prints the module's suffix instead of ×", () => {
+    const { container } = render(
+      <RankingShape
+        model={{
+          kind: "ranking",
+          rows: [
+            { key: "B", count: 89 },
+            { key: "A", count: 72 },
+          ],
+          capacity: 3,
+          next: null,
+          active: "B",
+          tone: "new",
+          removed: null,
+          suffix: "",
+        }}
+        subject="Scores"
+      />,
+    );
+    const counts = [...container.querySelectorAll(".viz-rank__count")].map((c) => c.textContent);
+    expect(counts.sort()).toEqual(["72", "89"]);
+  });
+});
+```
+
+---
+
 ### Task 4: Partitioning types, hashing, grammar and workloads
 
 **Files:**
 - Create: `lib/visualizer/data-partitioning/types.ts`, `hash.ts`, `keys.ts`, `trace.ts`, `test-helpers.ts`
 - Test: `lib/visualizer/data-partitioning/hash.test.ts`, `keys.test.ts`, `trace.test.ts`
+
+**Must hold:** events that remove a node already gone (`-B -B`), push the count outside 1–6 (`+` at 6 nodes) or use a bad token (`x`, `+B`) return the matching one-line error; a removed node's letter is never reused; one ring point owns the whole circle (Steps 6–7).
 
 **Interfaces:**
 - Produces: everything in `types.ts`; `hashKey`, `nodeNumber`, `VNODE_TABLE`, `RingPoint`, `ringPoints`, `clockwiseIndex`, `ringShares`, `rendezvousScore`, `capOf`; `parseKeys`, `toKeyItems`, `parseEventTokens`, `toEvents`, `netChange`, `replay`, `aliveAfter`, `parseEvents`, the error constants; `generateKeys`, `pickRemoval`.
@@ -2660,6 +2620,8 @@ describe("workloads", () => {
 **Files:**
 - Create: `lib/visualizer/data-partitioning/schemes/{membership,mod-n,range,directory,ring,bounded-load,rendezvous,index}.ts`, `lib/visualizer/data-partitioning/engine.ts`
 - Test: `lib/visualizer/data-partitioning/schemes/{mod-n,range,directory,ring,bounded-load,rendezvous}.test.ts`, `lib/visualizer/data-partitioning/engine.test.ts`
+
+**Must hold:** Mod-N with one node puts every key on it; removing down to one node and adding again works for every scheme and never reuses a letter (Steps 10–11).
 
 **Interfaces:**
 - Consumes: Task 4.
@@ -3407,8 +3369,10 @@ Derivation: re-check order 12 18 29 61 65 66 79 97; Mod-N moves all but 29 and 9
 - Create: `lib/visualizer/data-partitioning/view.ts`
 - Test: `lib/visualizer/data-partitioning/view.test.ts`
 
+**Must hold:** every step of every scheme builds a model without throwing, including the step right after an event (whose previous step has no bin for the new node) and a scheme switch mid re-check (Step 2).
+
 **Interfaces:**
-- Consumes: Tasks 2, 4, 5.
+- Consumes: Tasks 1, 3 (Ranking `suffix`), 4, 5.
 - Produces: `ViewCtx`, `positionsOf(scheme, settings)`, `makeContext(scheme, keys, settings, steps, compact)`, `viewOf(ctx, i)` (`i = -1` is the empty start).
 
 - [ ] **Step 1: view.ts.**
@@ -3809,7 +3773,7 @@ Derivation: Mod-N slots: start 2/3/3; during the re-check A grows to 4 (29 61 65
 - Test: `lib/visualizer/data-partitioning/copy.test.ts`, `lib/visualizer/data-partitioning/frames.test.ts`
 
 **Interfaces:**
-- Consumes: Tasks 4–6.
+- Consumes: Tasks 3 (`neutral` outcome), 4–6.
 - Produces: `CONSISTENT_HASHING_ARTICLE`, `SHARDING_ARTICLE`, `SchemeMeta`, `SCHEME_META`, `DEFAULT_KEY_TOKENS`; `BuiltRun`, `explainLookup(lookup, key)`, `buildFrames(input, opts?)`.
 
 - [ ] **Step 1: copy.ts.**
@@ -4489,8 +4453,10 @@ Derivation: Range split as in Task 5; removing B merges B 33–65 into A 0–32 
 - Modify: `lib/visualizer/registry.ts`, `lib/visualizer/modules.ts`, `data/glossary.json`, `app/visualizer.test.tsx`, `components/visualizer/frame/VisualizerApp.test.tsx`
 - Test: `lib/visualizer/data-partitioning/revision.test.ts`, `lib/visualizer/data-partitioning/module.test.ts`
 
+**Must hold:** Add node keeps the generated keys, moves the slider, extends Events and jumps playback to the new event's step; dragging the slider afterwards clears Events to `[]`, which survives a URL round trip; junk in the URL falls back instead of throwing (Steps 6–7).
+
 **Interfaces:**
-- Consumes: Tasks 1, 4–7.
+- Consumes: Tasks 3, 4–7.
 - Produces: `MINI_KEYS`, `MINI_SETTINGS`, `partitionRevision()`; `PARTITION_SECTIONS`, `Resolved`, `resolve(values)`, `partitionModule`.
 
 - [ ] **Step 1: revision.ts.**
@@ -4812,7 +4778,7 @@ export const partitionModule: VisualizerModule = {
     expect(html).toContain("Data partitioning");
 ```
 
-- [ ] **Step 4: Glossary.** Open `data/glossary.json`, see how keys are ordered, and add these six entries in the same style (keys lowercase and singular; `consistent hashing` already exists):
+- [ ] **Step 4: Glossary.** Append these six entries at the end of `data/glossary.json` (insertion-ordered, not sorted; `consistent hashing` is at line 27):
 
 ```json
   "modulo hashing": "Assigning a key to node number hash(key) mod N; simple and even, but changing N moves almost every key.",
@@ -5066,7 +5032,7 @@ describe("Try presets", () => {
 });
 ```
 
-Derivation for the preset table: each line restates a Task 5 derivation (Mod-N add and remove; Range sequential and split; Directory default and hot; Ring add and remove; Virtual nodes at 8 with no events: A 61 79 97, B 12 29 65 66, C 18, cross-checked by the reference simulation; Virtual nodes remove B at 4; Bounded c = 1.0 and the hot key 29 at c = 1.25 (B 18 + 29* + 61 = 1 + 5 + 1 = 7; total 8 − 1 + 5 = 12 over 4 nodes = 3); Rendezvous add and remove B). Junk URL: `n=9` clamps to 6; `e=x_+` fails the grammar → null; `k=1_1` repeats → null; `sc=nope` is not an option → default kept.
+Derivation for the preset table: each line restates a Task 5 derivation (Mod-N add and remove; Range sequential and split; Directory default and hot; Ring add and remove; Virtual nodes at 8 with no events: A 61 79 97, B 12 29 65 66, C 18; Virtual nodes remove B at 4; Bounded c = 1.0 and the hot key 29 at c = 1.25 (B 18 + 29* + 61 = 1 + 5 + 1 = 7; total 8 − 1 + 5 = 12 over 4 nodes = 3); Rendezvous add and remove B). Junk URL: `n=9` clamps to 6; `e=x_+` fails the grammar → null; `k=1_1` repeats → null; `sc=nope` is not an option → default kept.
 
 - [ ] **Step 7: App test for the action button.** Append to `components/visualizer/frame/VisualizerApp.test.tsx` inside `describe("VisualizerApp", …)`:
 
@@ -5135,14 +5101,12 @@ def test_data_partitioning_add_node_and_switch_scheme(page, base_url):
 
 ---
 
-### Task 10: Docs — spec deltas, README, backlog, CLAUDE.md
+### Task 10: Docs — README, backlog, CLAUDE.md
 
 **Files:**
-- Modify: `docs/superpowers/specs/2026-10-10-data-partitioning-visualizer-design.md`, `docs/_meta/visualizer/README.md`, `docs/_meta/visualizer/backlog.md`, `CLAUDE.md`
+- Modify: `docs/_meta/visualizer/README.md`, `docs/_meta/visualizer/backlog.md`, `CLAUDE.md`
 
-- [ ] **Step 1: Spec.** Apply every bullet of "Spec deltas found while planning" above: fix the Mod-N anchor to `#the-problem---why-modulo-hashing-breaks` in the Article links table; Keys `resetBy: ["workload", "seed"]` in Parameters; add the five extra generic changes to Frame changes; state the side-by-side rule and the bins flex exemption under Views; add the fourth ring-family Step line and the Bounded-load skip line to the Step tab table; note letter-only ring anchors under Views; describe the flight as a transition of the same chip with the head appearing on arrival; title "Data partitioning"; the four new `--viz-*` aliases in Files.
-
-- [ ] **Step 2: README.** In `docs/_meta/visualizer/README.md`:
+- [ ] **Step 1: README.** In `docs/_meta/visualizer/README.md`:
   - Shape table: add rows
 
     `| **Bins** | labelled columns of chips; a moved chip slides to its new column along a trail; optional limit line and load meters on one scale with an average mark | data partitioning (nodes and their keys) | buckets, shards, worker queues |`
@@ -5155,9 +5119,9 @@ def test_data_partitioning_add_node_and_switch_scheme(page, base_url):
   - Composite row: add `; side-by-side when the stage is wide (data partitioning)`.
   - Add a sentence under Variants and Revision: `A module may also add action fields (buttons that rewrite inputs and name the step to play from) and steps with a neutral outcome.`
 
-- [ ] **Step 3: Backlog.** Remove the `Data Partitioning` row from `docs/_meta/visualizer/backlog.md`.
+- [ ] **Step 2: Backlog.** Remove the `Data Partitioning` row (line 11) from `docs/_meta/visualizer/backlog.md`.
 
-- [ ] **Step 4: CLAUDE.md FILE MAP.** In `CLAUDE.md`:
+- [ ] **Step 3: CLAUDE.md FILE MAP.** In `CLAUDE.md`:
   - `visualizer/shapes/` row: add `BinsShape`, `ScaleShape`, `TableShape` to the shape list.
   - Add a Lib row after rate-limiting:
 
@@ -5172,23 +5136,16 @@ def test_data_partitioning_add_node_and_switch_scheme(page, base_url):
 - [ ] **Step 1: Static checks and the full unit/content run.**
 
 Run: `cd wiki-fe && pnpm typecheck && pnpm lint && pnpm test:all`
-Expected: all three pass. On a failure, find the root cause; if a fixture disagrees with the code, re-derive the value by hand from the spec before changing either.
+Expected: all three pass. On a failure, find the root cause (fixtures: see Global Constraints).
 
 - [ ] **Step 2: The one e2e test for the new page.**
 
 Run: `cd wiki-fe && pnpm build:e2e && PLAYWRIGHT_BROWSERS_PATH=$HOME/Library/Caches/ms-playwright .venv/bin/python3 -m pytest tests/e2e/test_visualizer.py -k data_partitioning -q --timeout=60`
 Expected: 1 passed.
 
-- [ ] **Step 3: Look at it in a real browser.** With the dev server already on `http://localhost:3000/wiki-fe/` (do not start one; ask if it is down), write a throwaway script in the session scratchpad that uses `.venv/bin/python3` with `PLAYWRIGHT_BROWSERS_PATH=$HOME/Library/Caches/ms-playwright` and screenshots to the scratchpad:
+- [ ] **Step 3: Look at it in a real browser.** Screenshot the page on the dev server (`http://localhost:3000/wiki-fe/`):
   - Single view at 1440 × 900 for each scheme at step 10 (`?sc=<id>&n=4&e=%2B&k=12_18_29_61_65_66_79_97&i=10`), plus one mid-flight frame captured ~300 ms after pressing Next on a moved step.
   - Revision view at 1440 × 900 (`&view=revision`) after the cards have played.
   - 320 × 700 for Mod-N, Range, Directory and Ring.
   - Extreme input at 320 × 700 and 1440 × 900: `?sc=range&n=6&e=-A_-B_%2B_%2B&k=0_7_15_22_33_41*_48_59_66_77_85_99&i=60` and the same on `directory` and `bounded-load`.
   Check each screenshot: no chip, label or arrow outside the stage; captions readable; Revision cards' bins and ring inside 200px; the hot key's meter visible. Fix anything that breaks, then re-run only the affected checks.
-
-## Self-review (done)
-
-- Spec coverage: scope, step model, hashing, every scheme rule, parameters and grammar, defaults, workloads, metric and variables, views, generic layer, frame changes, Revision, module content (lines, About, Try, links), files and testing each map to Tasks 1–10; the browser look is Task 11.
-- No placeholders: every code step carries its code; every expected value has its derivation next to it.
-- Types: `Step`, `World`, `Lookup`, `ViewCtx`, `BinsModel`, `ScaleModel`, `TableModel`, `ActionField`, `ActionResult` and helper names match across tasks.
-- Review Focus: each of the five lines has its test in the named task.

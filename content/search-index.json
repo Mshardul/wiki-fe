@@ -292,6 +292,53 @@
       ]
     },
     {
+      "heading": "HLD: Interview Walkthroughs",
+      "cards": [
+        {
+          "title": "HLD Interview Framework",
+          "path": "./content/system-design/hld/hld-questions/hld-framework.md",
+          "slug": "hld-framework",
+          "description": "The method: seven steps, what to say at each, reusable moves"
+        },
+        {
+          "title": "HLD Walkthrough Plan",
+          "path": "./content/system-design/hld/hld-questions/hld-walkthrough-plan.md",
+          "slug": "hld-walkthrough-plan",
+          "description": "Question list, ground rules, file layout standard"
+        },
+        {
+          "title": "Q1: URL Shortener",
+          "path": "./content/system-design/hld/hld-questions/q1-url-shortener.md",
+          "slug": "q1-url-shortener",
+          "description": "Read-heavy key-value lookup, code generation, caching"
+        },
+        {
+          "title": "Q2: News Feed (Twitter)",
+          "path": "./content/system-design/hld/hld-questions/q2-news-feed.md",
+          "slug": "q2-news-feed",
+          "description": "Fan-out on write vs read, the celebrity problem"
+        },
+        {
+          "title": "Q3: Chat (WhatsApp)",
+          "path": "./content/system-design/hld/hld-questions/q3-chat.md",
+          "slug": "q3-chat",
+          "description": "Persistent connections, delivery guarantees, message ordering"
+        },
+        {
+          "title": "Q4: Video Streaming (YouTube)",
+          "path": "./content/system-design/hld/hld-questions/q4-video-streaming.md",
+          "slug": "q4-video-streaming",
+          "description": "Blob storage, transcoding pipeline, CDN"
+        },
+        {
+          "title": "Q5: Ride Hailing (Uber)",
+          "path": "./content/system-design/hld/hld-questions/q5-ride-hailing.md",
+          "slug": "q5-ride-hailing",
+          "description": "Geospatial indexing, real-time matching"
+        }
+      ]
+    },
+    {
       "heading": "Learning Paths",
       "cards": [
         {
