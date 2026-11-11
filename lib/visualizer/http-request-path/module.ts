@@ -1,0 +1,123 @@
+import type { InputValues } from "@/lib/visualizer/core/fields";
+import type { Rich } from "@/lib/visualizer/core/rich";
+import { keyText } from "@/lib/visualizer/core/rich";
+import type { ScheduleSwatch } from "@/lib/visualizer/core/shapes";
+import type { InfoContent, RunResult, VisualizerModule } from "@/lib/visualizer/core/types";
+import { frameModel } from "./model";
+import { HTTP_SCENARIOS } from "./scenarios";
+import type { HttpPipelineScenario } from "./types";
+
+export const HTTP_KICKER = "AWS ALB · nginx · gunicorn (sync workers) · Django";
+export const HTTP_FOOTNOTE =
+  "Defaults shown are the stock values of each tool; scenario 2 sets its timeouts explicitly.";
+
+export const HTTP_LEGEND: { label: string; swatch: ScheduleSwatch }[] = [
+  { label: "Request path", swatch: "http-req" },
+  { label: "Response path", swatch: "http-res" },
+  { label: "Never ran", swatch: "http-skip" },
+  { label: "Failed or killed", swatch: "http-fail" },
+  { label: "Timeout clock", swatch: "http-clock" },
+  { label: "Busy worker", swatch: "http-worker" },
+];
+
+function richFromHtml(html: string): Rich {
+  const out: Rich = [];
+  const re = /<(code|b)>(.*?)<\/\1>/g;
+  let last = 0;
+  for (const match of html.matchAll(re)) {
+    const at = match.index ?? 0;
+    if (at > last) out.push(html.slice(last, at));
+    const tag = match[1];
+    const inner = match[2] ?? "";
+    if (tag === "code") out.push(keyText(inner));
+    else out.push(keyText(inner));
+    last = at + match[0].length;
+  }
+  if (last < html.length) out.push(html.slice(last));
+  return out.length > 0 ? out : [html];
+}
+
+function scenarioOf(values: InputValues): HttpPipelineScenario {
+  const id = String(values.scenario ?? "happy");
+  const found = HTTP_SCENARIOS.find((s) => s.id === id) ?? HTTP_SCENARIOS[0];
+  if (!found) throw new Error("http pipeline scenarios missing");
+  return found;
+}
+
+function infoFor(sc: HttpPipelineScenario): InfoContent {
+  return {
+    heading: sc.q,
+    name: sc.short,
+    chip: sc.tab,
+    rule: sc.q,
+    about: [
+      ["Takeaway", sc.take],
+      ["Generalizes to", sc.gen],
+    ],
+    tries: [],
+    articleHref: "",
+  };
+}
+
+export function httpRequestPathFrames(sc: HttpPipelineScenario) {
+  return sc.frames.map((frame, index) => {
+    const bad = Boolean(frame.statusErr || frame.token.err);
+    return {
+      index,
+      label: frame.h,
+      outcome: bad ? ("bad" as const) : ("good" as const),
+      badge: "",
+      caption: [frame.h],
+      lines: [richFromHtml(frame.b)],
+      path: [],
+      vars: [],
+      logNote: [],
+      metric: "",
+      model: frameModel(frame),
+    };
+  });
+}
+
+export function runHttpRequestPath(values: InputValues): RunResult {
+  const sc = scenarioOf(values);
+  return {
+    frames: httpRequestPathFrames(sc),
+    info: infoFor(sc),
+    metricLabel: "",
+    sequence: [],
+  };
+}
+
+export const httpRequestPathModule: VisualizerModule = {
+  slug: "inside-an-http-request",
+  title: "Inside an HTTP Request",
+  subtitle:
+    "The arrow between client and server hides seven layers. Request down the left rail, response up the right — and see which layer answers first.",
+  unit: "step",
+  subject: "HTTP",
+  kicker: HTTP_KICKER,
+  legend: HTTP_LEGEND,
+  footnote: HTTP_FOOTNOTE,
+  variants: { key: "scenario", restartOnSwitch: true },
+  sections: [
+    {
+      title: "Scenario",
+      fields: [
+        {
+          key: "scenario",
+          label: "Scenario",
+          param: "s",
+          hideLabel: true,
+          kind: "chips",
+          options: HTTP_SCENARIOS.map((s) => ({
+            value: s.id,
+            label: s.tab,
+            detail: s.short,
+          })),
+        },
+      ],
+    },
+  ],
+  defaults: () => ({ scenario: "happy" }),
+  run: runHttpRequestPath,
+};

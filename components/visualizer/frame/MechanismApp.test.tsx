@@ -6,12 +6,12 @@ import { MechanismApp } from "./MechanismApp";
 describe("MechanismApp", () => {
   beforeEach(() => {
     vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("reduce") }));
-    window.history.replaceState(null, "", "/visualizer/python-gil/");
+    window.history.replaceState(null, "", "/visualizer/inside-the-python-gil/");
   });
 
   it("opens the happy path and steps into scenario 1 from the start", async () => {
     const user = userEvent.setup();
-    render(<MechanismApp slug="python-gil" glossary={{}} />);
+    render(<MechanismApp slug="inside-the-python-gil" glossary={{}} />);
     expect(screen.getByRole("heading", { level: 1, name: "Inside the Python GIL" })).toBeTruthy();
     expect(screen.getByText("CPython 3.12+ · default build · switch interval 5 ms")).toBeTruthy();
     expect(screen.getByText(/I\/O-bound threads interleave/)).toBeTruthy();

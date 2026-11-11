@@ -17,9 +17,15 @@ describe("visualizer routes", () => {
     expect(generateStaticParams()).toEqual([
       { slug: "eviction-policies" },
       { slug: "caching-strategies" },
+      { slug: "inside-an-http-request" },
       { slug: "rate-limiting" },
-      { slug: "python-gil" },
-      { slug: "asyncio-event-loop" },
+      { slug: "inside-the-python-gil" },
+      { slug: "inside-the-asyncio-event-loop" },
+      { slug: "inside-redis-single-thread" },
+      { slug: "inside-the-go-scheduler" },
+      { slug: "inside-postgres-mvcc" },
+      { slug: "inside-a-b-tree-index" },
+      { slug: "inside-the-postgres-wal" },
     ]);
   });
 
@@ -45,11 +51,17 @@ describe("visualizer routes", () => {
     expect(html).toMatch(/href="\/visualizer\/caching-strategies\/?"/);
     expect(html).toContain("Caching strategies");
     expect(html).toMatch(/href="\/visualizer\/rate-limiting\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-an-http-request\/?"/);
     expect(html).toContain("Rate limiting");
     expect(html).toContain("Compare algorithms");
     expect(html).toContain("Watch a mechanism");
-    expect(html).toMatch(/href="\/visualizer\/python-gil\/?"/);
-    expect(html).toMatch(/href="\/visualizer\/asyncio-event-loop\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-the-python-gil\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-the-asyncio-event-loop\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-redis-single-thread\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-the-go-scheduler\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-postgres-mvcc\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-a-b-tree-index\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-the-postgres-wal\/?"/);
   });
 
   it("the visualizer page ships the app shell without a baked-in run", async () => {

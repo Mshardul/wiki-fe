@@ -6,7 +6,7 @@ Section-wide principles live in `docs/_meta/visualizer/README.md`. This spec is 
 
 Let a reader step through who holds the CPython GIL, then through the three cases where that story breaks. The page is a visualizer in the same app as eviction: same top bar, same fonts, same theme tokens, same step list. The diagram is a new generic **schedule** shape (rows over continuous time, revealed up to now), described below. The first build mapped the draft onto the rate-limiting timeline; that lost the reveal, the lock-holder row, the arrows, the timer bars and the counter, so it was replaced.
 
-Success: opening `/visualizer/python-gil/` shows the four scenarios from `content/Visualizer/Inside the Python GIL.html`, stepped with the shared playback controls, and Preferences recolors the page and the diagram. Eviction still opens on its current page.
+Success: opening `/visualizer/inside-the-python-gil/` shows the four scenarios from `content/Visualizer/Inside the Python GIL.html`, stepped with the shared playback controls, and Preferences recolors the page and the diagram. Eviction still opens on its current page.
 
 Audience: the author plus a small known circle.
 
@@ -26,7 +26,7 @@ The index at `/visualizer/` is one card grid with two groups, in this order:
 
 The card title is the topic. The GIL card description is: "Step through who holds the lock, then the cases where a CPU thread, a convoy, or a checkpoint breaks it."
 
-URLs stay `/visualizer/<slug>/`. This page's slug is `python-gil`.
+URLs stay `/visualizer/<slug>/`. This page's slug is `inside-the-python-gil`.
 
 ## Mechanism page
 

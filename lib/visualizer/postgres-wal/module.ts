@@ -1,0 +1,116 @@
+import type { InputValues } from "@/lib/visualizer/core/fields";
+import type { Rich } from "@/lib/visualizer/core/rich";
+import { keyText } from "@/lib/visualizer/core/rich";
+import type { ScheduleSwatch } from "@/lib/visualizer/core/shapes";
+import type { InfoContent, RunResult, VisualizerModule } from "@/lib/visualizer/core/types";
+import { frameModel } from "./model";
+import { POSTGRES_WAL_SCENARIOS } from "./scenarios";
+import type { WalScenario } from "./types";
+
+export const WAL_KICKER = "PostgreSQL 16+ · default settings unless a scenario changes one";
+export const WAL_FOOTNOTE = "LSNs and values are illustrative.";
+
+export const WAL_LEGEND: { label: string; swatch: ScheduleSwatch }[] = [
+  { label: "WAL record (LSN = position)", swatch: "wal-rec" },
+  { label: "Commit record", swatch: "wal-commit" },
+  { label: "Full-page image", swatch: "wal-fpi" },
+  { label: "Checkpoint", swatch: "wal-ckpt" },
+  { label: "Dirty page (newer than disk)", swatch: "wal-dirty" },
+  { label: "Changed in this step", swatch: "wal-step" },
+];
+
+function richFromHtml(html: string): Rich {
+  const out: Rich = [];
+  const re = /<code>(.*?)<\/code>/g;
+  let last = 0;
+  for (const match of html.matchAll(re)) {
+    const at = match.index ?? 0;
+    if (at > last) out.push(html.slice(last, at));
+    out.push(keyText(match[1] ?? ""));
+    last = at + match[0].length;
+  }
+  if (last < html.length) out.push(html.slice(last));
+  return out.length > 0 ? out : [html];
+}
+
+function scenarioOf(values: InputValues): WalScenario {
+  const id = String(values.scenario ?? "happy");
+  const found = POSTGRES_WAL_SCENARIOS.find((s) => s.id === id) ?? POSTGRES_WAL_SCENARIOS[0];
+  if (!found) throw new Error("postgres wal scenarios missing");
+  return found;
+}
+
+function infoFor(sc: WalScenario): InfoContent {
+  return {
+    heading: sc.q,
+    name: sc.short,
+    chip: sc.tab,
+    rule: sc.q,
+    about: [
+      ["Takeaway", sc.take],
+      ["Generalizes to", sc.gen],
+    ],
+    tries: [],
+    articleHref: "",
+  };
+}
+
+export function postgresWalFrames(sc: WalScenario) {
+  return sc.frames.map((frame, index) => ({
+    index,
+    label: frame.h,
+    outcome: frame.bad ? ("bad" as const) : ("good" as const),
+    badge: frame.badge,
+    caption: [frame.h],
+    lines: [richFromHtml(frame.b)],
+    path: [],
+    vars: [],
+    logNote: [],
+    metric: "",
+    model: frameModel(frame),
+  }));
+}
+
+export function runPostgresWal(values: InputValues): RunResult {
+  const sc = scenarioOf(values);
+  return {
+    frames: postgresWalFrames(sc),
+    info: infoFor(sc),
+    metricLabel: "",
+    sequence: [],
+  };
+}
+
+export const postgresWalModule: VisualizerModule = {
+  slug: "inside-the-postgres-wal",
+  title: "Inside the Postgres WAL",
+  subtitle:
+    "A commit is durable when WAL is on disk, not when the table is. Step through flush and ack, async commit, crash replay, and what synchronous replication actually promises.",
+  unit: "step",
+  subject: "Postgres",
+  kicker: WAL_KICKER,
+  legend: WAL_LEGEND,
+  footnote: WAL_FOOTNOTE,
+  variants: { key: "scenario", restartOnSwitch: true },
+  sections: [
+    {
+      title: "Scenario",
+      fields: [
+        {
+          key: "scenario",
+          label: "Scenario",
+          param: "s",
+          hideLabel: true,
+          kind: "chips",
+          options: POSTGRES_WAL_SCENARIOS.map((s) => ({
+            value: s.id,
+            label: s.tab,
+            detail: s.short,
+          })),
+        },
+      ],
+    },
+  ],
+  defaults: () => ({ scenario: "happy" }),
+  run: runPostgresWal,
+};

@@ -93,7 +93,7 @@ export function runAsyncio(values: InputValues): RunResult {
 }
 
 export const asyncioModule: VisualizerModule = {
-  slug: "asyncio-event-loop",
+  slug: "inside-the-asyncio-event-loop",
   title: "Inside the asyncio Event Loop",
   subtitle:
     "One thread serves every request. Each request is a lane; the Loop row shows which coroutine is running. Step through the happy path, then blocking I/O, CPU hogs, and FastAPI's def vs async def.",

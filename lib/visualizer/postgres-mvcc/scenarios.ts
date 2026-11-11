@@ -1,0 +1,307 @@
+import type { MvccTuple } from "@/lib/visualizer/core/shapes";
+import type { MvccScenario } from "./types";
+
+const tup = (
+  slot: string | number,
+  val: string,
+  xmin: string,
+  xmax: string,
+  state: MvccTuple["state"],
+  sub?: string,
+): MvccTuple => ({
+  slot,
+  val,
+  xmin,
+  xmax,
+  state,
+  ...(sub ? { sub } : {}),
+});
+
+export const POSTGRES_MVCC_SCENARIOS: MvccScenario[] = [
+  {
+    id: "happy",
+    tab: "Happy path",
+    short: "UPDATE, dead version, vacuum",
+    q: "An UPDATE is an INSERT plus a stamp on the old version",
+    take: "MVCC trades space for concurrency. Every UPDATE and DELETE leaves garbage, and vacuum is the other half of the write path, not optional maintenance.",
+    gen: "Any MVCC store: InnoDB keeps old versions in its undo log and purges them; CockroachDB and Spanner keep versioned keys with a GC TTL.",
+    frames: [
+      {
+        view: "page",
+        h: "One live version",
+        b: "Slot 1 holds the row, created by transaction 100. No xmax: nothing has deleted or replaced it.",
+        txns: [{ id: "100", st: "committed", n: "INSERT" }],
+        tuples: [tup(1, "id=1 · balance=100", "100", "—", "live")],
+      },
+      {
+        view: "page",
+        h: "Transaction 101 updates it",
+        b: "Postgres writes a whole new version in slot 2 and stamps slot 1 with xmax 101. Until 101 commits, every other reader keeps seeing slot 1. Readers never wait for the writer.",
+        txns: [{ id: "101", st: "active", n: "UPDATE balance=150" }],
+        tuples: [
+          tup(1, "id=1 · balance=100", "100", "101", "live", "still what everyone else sees"),
+          tup(2, "id=1 · balance=150", "101", "—", "new", "only 101 can see this"),
+        ],
+      },
+      {
+        view: "page",
+        h: "101 commits",
+        b: "Slot 2 is now the live version. Slot 1 is dead: new snapshots skip it. But it still occupies space on the page.",
+        txns: [{ id: "101", st: "committed", n: "UPDATE" }],
+        tuples: [
+          tup(1, "id=1 · balance=100", "100", "101", "dead", "no new snapshot sees it"),
+          tup(2, "id=1 · balance=150", "101", "—", "live"),
+        ],
+      },
+      {
+        view: "page",
+        h: "Vacuum reclaims it",
+        b: "No open transaction is older than 101, so nobody can need slot 1. Autovacuum marks its space free. The table file does not shrink; the space is reused.",
+        txns: [],
+        tuples: [
+          tup(1, "free space", "", "", "free", "reusable by the next insert or update"),
+          tup(2, "id=1 · balance=150", "101", "—", "live"),
+        ],
+        log: "autovacuum: removed 1 dead row version",
+      },
+    ],
+  },
+  {
+    id: "horizon",
+    tab: "Scenario 1",
+    short: "One long transaction",
+    q: "One long-running transaction. Why do tables it never touched bloat?",
+    take: "The horizon is shared. Watch xact_start and backend_xid in pg_stat_activity, set idle_in_transaction_session_timeout, and check for stale replication slots and prepared transactions, which pin it the same way.",
+    gen: "Snapshot-based systems everywhere: long readers block InnoDB purge, and long-lived snapshots in RocksDB-based stores keep old versions through compaction.",
+    frames: [
+      {
+        view: "pages",
+        h: "Session X goes idle",
+        b: "An app opens a transaction (xid 200), writes one row to <code>audit_log</code>, and never commits. Everything from 200 onward must now be treated as possibly visible to someone.",
+        table: "accounts",
+        txns: [{ id: "200", st: "idle", n: "idle in transaction · wrote to audit_log" }],
+        cells: { live: 30, pinned: 0, free: 30 },
+        pages: 1,
+      },
+      {
+        view: "pages",
+        h: "Updates pile up elsewhere",
+        b: "A hot row in <code>accounts</code> is updated over and over. Every update leaves a dead version with an xmax above 200.",
+        table: "accounts",
+        txns: [{ id: "200", st: "idle", n: "idle in transaction" }],
+        cells: { live: 30, pinned: 80, free: 10 },
+        pages: 2,
+      },
+      {
+        view: "pages",
+        h: "Autovacuum removes nothing",
+        b: "Vacuum may only remove versions dead to every possible snapshot. The oldest open transaction, 200, sets that line (the xmin horizon), so every red tuple is pinned.",
+        table: "accounts",
+        txns: [{ id: "200", st: "idle", n: "idle in transaction" }],
+        cells: { live: 30, pinned: 80, free: 10 },
+        pages: 2,
+        log: "autovacuum on accounts: 0 removed; dead row versions are not yet removable, oldest xmin: 200",
+      },
+      {
+        view: "pages",
+        h: "Bloat spreads",
+        b: "The table keeps growing page by page, and scans walk past dead versions. Session X never touched <code>accounts</code>; the horizon is shared across the database.",
+        table: "accounts",
+        txns: [{ id: "200", st: "idle", n: "idle in transaction · 2 hours" }],
+        cells: { live: 30, pinned: 200, free: 10 },
+        pages: 4,
+      },
+      {
+        view: "pages",
+        h: "X ends; cleanup, but no shrinking",
+        b: "The next vacuum removes everything at once. The file stays at 4 pages; only <code>VACUUM FULL</code> or <code>pg_repack</code> gives the space back to the OS.",
+        table: "accounts",
+        txns: [],
+        cells: { live: 30, pinned: 0, free: 210 },
+        pages: 4,
+        log: "autovacuum on accounts: removed 200 dead row versions",
+      },
+    ],
+  },
+  {
+    id: "hot",
+    tab: "Scenario 2",
+    short: "HOT updates",
+    q: "Why does updating one column write to every index, and when doesn't it?",
+    take: "Every index multiplies the cost of non-HOT updates. Avoid indexing columns you update constantly, and consider a lower fillfactor for update-heavy tables. Check n_tup_hot_upd in pg_stat_user_tables.",
+    gen: "Write amplification in any engine whose secondary indexes point at physical row locations. InnoDB sidesteps part of it: secondary indexes point at the primary key instead.",
+    frames: [
+      {
+        view: "page",
+        idx: true,
+        h: "Two indexes, one row",
+        b: "<code>users</code> has a primary key on <code>id</code> and an index on <code>email</code>. <code>last_seen</code> is not indexed. Both indexes point at slot 1.",
+        txns: [],
+        tuples: [tup(1, "id=1 · a@x.com · seen 10:00", "100", "—", "live")],
+        indexes: [
+          { n: "users_pkey (id)", e: [{ k: "1", s: "slot 1" }] },
+          { n: "users_email_idx (email)", e: [{ k: "a@x.com", s: "slot 1" }] },
+        ],
+        badge: "last_seen is not indexed",
+      },
+      {
+        view: "page",
+        idx: true,
+        h: "Update an unindexed column: HOT",
+        b: "No indexed column changed and the page has room, so the new version stays on the same page and slot 1 points to it. The indexes are untouched.",
+        txns: [{ id: "110", st: "committed", n: "UPDATE last_seen" }],
+        tuples: [
+          tup(1, "id=1 · a@x.com · seen 10:00", "100", "110", "dead", "redirects → slot 2"),
+          tup(2, "id=1 · a@x.com · seen 10:05", "110", "—", "live", "heap-only tuple"),
+        ],
+        indexes: [
+          { n: "users_pkey (id)", e: [{ k: "1", s: "slot 1 → 2" }] },
+          { n: "users_email_idx (email)", e: [{ k: "a@x.com", s: "slot 1 → 2" }] },
+        ],
+        badge: "HOT update · 0 index writes",
+        good: true,
+      },
+      {
+        view: "page",
+        idx: true,
+        h: "Update an indexed column: every index",
+        b: "<code>email</code> changed, so this is a regular update. Both indexes get a new entry, including the primary key, whose value did not change. Old entries stay until vacuum.",
+        txns: [{ id: "111", st: "committed", n: "UPDATE email" }],
+        tuples: [
+          tup(1, "id=1 · a@x.com · seen 10:00", "100", "110", "dead", "redirects → slot 2"),
+          tup(2, "id=1 · a@x.com · seen 10:05", "110", "111", "dead"),
+          tup(3, "id=1 · b@x.com · seen 10:05", "111", "—", "live"),
+        ],
+        indexes: [
+          {
+            n: "users_pkey (id)",
+            e: [
+              { k: "1", s: "slot 1 → 2", stale: true },
+              { k: "1", s: "slot 3", nw: true },
+            ],
+          },
+          {
+            n: "users_email_idx (email)",
+            e: [
+              { k: "a@x.com", s: "slot 1 → 2", stale: true },
+              { k: "b@x.com", s: "slot 3", nw: true },
+            ],
+          },
+        ],
+        badge: "regular update · 2 index writes",
+      },
+      {
+        view: "page",
+        idx: true,
+        full: true,
+        h: "A full page breaks HOT",
+        b: "Same unindexed column as step 2, but the page has no room. The new version goes to another page, so every index needs a new entry. A lower <code>fillfactor</code> (say 90) leaves room for HOT updates.",
+        txns: [{ id: "112", st: "committed", n: "UPDATE last_seen" }],
+        tuples: [
+          tup(3, "id=1 · b@x.com · seen 10:05", "111", "112", "dead"),
+          tup("p2·1", "id=1 · b@x.com · seen 10:09", "112", "—", "live", "landed on page 2"),
+        ],
+        indexes: [
+          {
+            n: "users_pkey (id)",
+            e: [
+              { k: "1", s: "slot 3", stale: true },
+              { k: "1", s: "page 2 · 1", nw: true },
+            ],
+          },
+          {
+            n: "users_email_idx (email)",
+            e: [
+              { k: "b@x.com", s: "slot 3", stale: true },
+              { k: "b@x.com", s: "page 2 · 1", nw: true },
+            ],
+          },
+        ],
+        badge: "page full → not HOT · 2 index writes",
+      },
+      {
+        view: "page",
+        idx: true,
+        h: "Cleanup without vacuum",
+        b: "Versions in a HOT chain can be pruned during ordinary page access, even by a SELECT. The first slot becomes a redirect so existing index entries still lead somewhere valid.",
+        txns: [],
+        tuples: [
+          tup(1, "redirect → slot 3", "", "", "free", "line pointer kept for the index"),
+          tup(2, "free space", "", "", "free", "pruned by an ordinary SELECT"),
+          tup(3, "id=1 · b@x.com · seen 10:05", "111", "112", "dead"),
+        ],
+        indexes: [
+          {
+            n: "users_pkey (id)",
+            e: [
+              { k: "1", s: "slot 1 → 3" },
+              { k: "1", s: "page 2 · 1" },
+            ],
+          },
+          {
+            n: "users_email_idx (email)",
+            e: [
+              { k: "b@x.com", s: "slot 3" },
+              { k: "b@x.com", s: "page 2 · 1" },
+            ],
+          },
+        ],
+        badge: "HOT chain pruned without vacuum",
+        good: true,
+      },
+    ],
+  },
+  {
+    id: "wrap",
+    tab: "Scenario 3",
+    short: "XID wraparound",
+    q: "Why does Postgres force an aggressive vacuum on a table nobody updates?",
+    take: "Monitor age(datfrozenxid) per database and age(relfrozenxid) per table. Anti-wraparound vacuums can't be skipped, so make sure nothing pins the horizon for long.",
+    gen: "Fixed-width counters compared modulo their size: TCP sequence numbers (PAWS), 32-bit timestamps (the year 2038 problem).",
+    frames: [
+      {
+        view: "xid",
+        h: "A row nobody touches",
+        b: 'A <code>countries</code> row was inserted at xid 1,000 and never updated. XIDs are 32-bit, and Postgres treats the 2.1 billion IDs before "now" as the past. The row\'s xmin is well inside that window.',
+        now: 1_000_100,
+        frozen: false,
+        txns: [],
+      },
+      {
+        view: "xid",
+        h: "200 million transactions later",
+        b: "The table's oldest unfrozen xid is now past <code>autovacuum_freeze_max_age</code> (200M by default). Autovacuum starts an aggressive, anti-wraparound vacuum on a table with zero dead rows.",
+        now: 200e6,
+        frozen: false,
+        trigger: true,
+        txns: [],
+      },
+      {
+        view: "xid",
+        h: "The row is frozen",
+        b: "Vacuum marks the row as frozen: visible to every transaction regardless of how the xids compare. The clock can keep moving safely.",
+        now: 210e6,
+        frozen: true,
+        txns: [],
+      },
+      {
+        view: "xid",
+        h: "If freezing can't keep up",
+        b: "A pinned horizon (scenario 1) can block freezing. Postgres logs warnings with roughly 40 million IDs left, and with roughly 3 million left it refuses new xids: reads work, writes fail until vacuum catches up.",
+        now: 2_147_483_648 - 3e6,
+        frozen: false,
+        danger: true,
+        txns: [{ id: "200", st: "idle", n: "still idle in transaction" }],
+      },
+      {
+        view: "xid",
+        h: "Counterfactual: what the limits prevent",
+        b: 'Without freezing, once "now" passes xid 1,000 + 2³¹, the row\'s xmin falls outside the past window. It would look like it was created in the future, and silently vanish.',
+        now: 2_147_483_648 + 5e7,
+        frozen: false,
+        lost: true,
+        txns: [],
+      },
+    ],
+  },
+];

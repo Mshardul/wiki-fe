@@ -95,7 +95,7 @@ export function runGil(values: InputValues): RunResult {
 }
 
 export const gilModule: VisualizerModule = {
-  slug: "python-gil",
+  slug: "inside-the-python-gil",
   title: "Inside the Python GIL",
   subtitle:
     "One timeline, four situations. Each thread is a lane; the GIL row on top shows who holds the lock. Step through a scenario to see exactly when the lock changes hands, and why.",

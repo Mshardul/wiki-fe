@@ -1,0 +1,195 @@
+.viz-btree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+.viz-btree__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+}
+.viz-btree__plan {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--viz-slot-bg);
+  border-left: 3px solid var(--viz-exit);
+}
+.viz-btree__plan--good {
+  border-left-color: var(--viz-good);
+}
+.viz-btree__plan--bad {
+  border-left-color: var(--viz-bad);
+}
+.viz-btree__counter {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.viz-btree__counter b {
+  color: var(--text-body);
+  font-weight: 500;
+}
+.viz-btree__treewrap {
+  overflow-x: auto;
+  margin: 0 calc(-1 * var(--s1));
+}
+.viz-btree__treewrap svg {
+  display: block;
+  width: 100%;
+  min-width: 320px;
+  height: auto;
+}
+.viz-btree__heading {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  fill: var(--text-muted);
+}
+.viz-btree__pagelabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: var(--text-muted);
+}
+.viz-btree__pagetext {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  fill: var(--text-body);
+}
+.viz-btree__entry {
+  font-family: var(--font-mono);
+  fill: var(--text-body);
+  font-weight: 400;
+}
+.viz-btree__entry--on {
+  font-weight: 600;
+}
+.viz-btree__heaplabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--text-body);
+}
+.viz-btree__heapnote {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  fill: var(--text-muted);
+}
+.viz-btree__nopecallout {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: var(--viz-bad);
+}
+.viz-btree__page--idle {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1.2;
+}
+.viz-btree__page--read {
+  fill: color-mix(in srgb, var(--viz-active) 16%, var(--surface));
+  stroke: var(--viz-active);
+  stroke-width: 2;
+}
+.viz-btree__page--waste {
+  fill: color-mix(in srgb, var(--viz-bad) 14%, var(--surface));
+  stroke: var(--viz-bad);
+  stroke-width: 2;
+}
+.viz-btree__page--nope {
+  fill: var(--surface);
+  stroke: var(--viz-bad);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+.viz-btree__page--write {
+  fill: var(--surface);
+  stroke: var(--viz-exit);
+  stroke-width: 2.5;
+}
+.viz-btree__edge {
+  stroke: var(--border);
+  stroke-width: 1.2;
+}
+.viz-btree__edge--on {
+  stroke: var(--viz-active);
+  stroke-width: 2;
+}
+.viz-btree__edge--waste {
+  stroke: var(--viz-bad);
+  stroke-width: 2;
+}
+.viz-btree__leaflink {
+  stroke: var(--text-muted);
+  stroke-width: 1.2;
+}
+.viz-btree__hl {
+  fill: color-mix(in srgb, var(--viz-exit) 45%, var(--surface));
+}
+.viz-btree__hl--bad {
+  fill: color-mix(in srgb, var(--viz-bad) 22%, var(--surface));
+}
+.viz-btree__probe {
+  stroke: var(--viz-bad);
+  stroke-width: 2;
+}
+.viz-btree__probelabel {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  fill: var(--viz-bad);
+}
+.viz-btree__arrowhead {
+  fill: var(--viz-bad);
+}
+.viz-btree__heaplink {
+  stroke: var(--viz-active);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.viz-btree__heaplink--bad {
+  stroke: var(--viz-bad);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.viz-btree__vm--on {
+  fill: var(--viz-good);
+  stroke: var(--viz-good);
+  stroke-width: 1.5;
+}
+.viz-btree__vm--off {
+  fill: var(--surface);
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+}
+
+.viz-mech__swatch--btree-read {
+  border: 1.5px solid var(--viz-active);
+  background: color-mix(in srgb, var(--viz-active) 16%, var(--surface));
+}
+.viz-mech__swatch--btree-waste {
+  border: 1.5px solid var(--viz-bad);
+  background: color-mix(in srgb, var(--viz-bad) 14%, var(--surface));
+}
+.viz-mech__swatch--btree-nope {
+  border: 1.5px dashed var(--viz-bad);
+  background: transparent;
+}
+.viz-mech__swatch--btree-vm-on {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--viz-good);
+  border: 1.5px solid var(--viz-good);
+}
+.viz-mech__swatch--btree-vm-off {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid var(--text-muted);
+}

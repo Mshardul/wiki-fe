@@ -103,7 +103,7 @@ describe("python GIL module", () => {
   });
 
   it("is the registered module shape", () => {
-    expect(gilModule.slug).toBe("python-gil");
+    expect(gilModule.slug).toBe("inside-the-python-gil");
     expect(gilModule.revision).toBeUndefined();
     expect(gilModule.defaults()).toEqual({ scenario: "happy" });
   });

@@ -1,0 +1,289 @@
+.viz-mvcc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+.viz-mvcc__txns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+  min-height: 30px;
+}
+.viz-mvcc__txlabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.viz-mvcc__tx {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+}
+.viz-mvcc__tx--active {
+  border-color: var(--viz-active);
+  color: var(--viz-active);
+}
+.viz-mvcc__tx--idle {
+  border-color: var(--viz-bad);
+  color: var(--viz-bad);
+}
+.viz-mvcc__tx--committed {
+  border-color: var(--viz-good);
+  color: var(--viz-good);
+}
+.viz-mvcc__view {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--s4);
+  align-items: start;
+}
+.viz-mvcc__view--solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+.viz-mvcc__panel {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: var(--s3);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.viz-mvcc__ptitle {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+.viz-mvcc__tup {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 52px 52px;
+  gap: var(--s2);
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  padding: 7px 8px;
+  border-radius: 6px;
+  border: 1.5px solid transparent;
+  background: var(--viz-slot-bg);
+  font-variant-numeric: tabular-nums;
+}
+.viz-mvcc__tup--hdr {
+  background: none;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  padding-block: 0;
+  text-transform: uppercase;
+}
+.viz-mvcc__val {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.viz-mvcc__sub {
+  display: block;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+}
+.viz-mvcc__tup--live {
+  background: var(--viz-good-bg);
+  border-color: var(--viz-good);
+}
+.viz-mvcc__tup--new {
+  background: var(--surface);
+  border: 1.5px dashed var(--viz-active);
+}
+.viz-mvcc__tup--dead {
+  opacity: 0.75;
+}
+.viz-mvcc__tup--dead .viz-mvcc__val {
+  text-decoration: line-through;
+}
+.viz-mvcc__tup--free {
+  background: none;
+  border: 1.5px dashed var(--border);
+  color: var(--text-muted);
+}
+.viz-mvcc__tup--free .viz-mvcc__val {
+  text-decoration: none;
+}
+.viz-mvcc__idx {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.viz-mvcc__iname {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.viz-mvcc__ent {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--viz-slot-bg);
+  border: 1.5px solid transparent;
+}
+.viz-mvcc__ent--new {
+  border-color: var(--viz-bad);
+}
+.viz-mvcc__ent--stale {
+  opacity: 0.6;
+}
+.viz-mvcc__badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--viz-slot-bg);
+  border-left: 3px solid var(--viz-exit);
+}
+.viz-mvcc__badge--good {
+  border-left-color: var(--viz-good);
+}
+.viz-mvcc__log {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--viz-slot-bg);
+  border-radius: 6px;
+  padding: 8px 10px;
+  overflow-wrap: anywhere;
+}
+.viz-mvcc__grid {
+  display: grid;
+  grid-template-columns: repeat(20, minmax(0, 1fr));
+  gap: 3px;
+}
+.viz-mvcc__cell {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  max-width: 100%;
+  display: block;
+}
+.viz-mvcc__cell--live {
+  background: var(--viz-good);
+}
+.viz-mvcc__cell--pinned {
+  background: var(--viz-bad);
+}
+.viz-mvcc__cell--free {
+  outline: 1px dashed var(--border);
+  outline-offset: -1px;
+}
+.viz-mvcc__pagesbar {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin: 0;
+}
+.viz-mvcc__xidwrap {
+  overflow-x: auto;
+}
+.viz-mvcc__xidwrap svg {
+  display: block;
+  width: 100%;
+  min-width: 320px;
+  height: auto;
+}
+.viz-mvcc__xidtrack {
+  fill: var(--viz-slot-bg);
+}
+.viz-mvcc__xidpast {
+  fill: var(--viz-good-bg);
+  stroke: var(--viz-good);
+  stroke-width: 1;
+}
+.viz-mvcc__xidpastlabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--viz-good);
+}
+.viz-mvcc__xidfuture {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--text-muted);
+}
+.viz-mvcc__xidnow {
+  stroke: var(--text-body);
+  stroke-width: 2.5;
+}
+.viz-mvcc__xidnowlabel {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--text-body);
+}
+.viz-mvcc__xidrow--ok {
+  fill: var(--viz-good);
+  stroke: var(--viz-good);
+}
+.viz-mvcc__xidrow--frozen {
+  fill: var(--viz-active);
+  stroke: var(--viz-active);
+}
+.viz-mvcc__xidrow--lost {
+  fill: var(--viz-bad);
+  stroke: var(--viz-bad);
+}
+.viz-mvcc__xidwarn,
+.viz-mvcc__xiddanger {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  fill: var(--viz-bad);
+}
+.viz-mvcc__xiddanger {
+  stroke: var(--viz-bad);
+  stroke-width: 2;
+}
+.viz-mvcc__xidtick {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: var(--text-muted);
+}
+.viz-mvcc__xidrow--ok,
+.viz-mvcc__xidrow--frozen,
+.viz-mvcc__xidrow--lost {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.viz-mech__swatch--mvcc-live {
+  border: 1.5px solid var(--viz-good);
+  background: var(--viz-good-bg);
+}
+.viz-mech__swatch--mvcc-new {
+  border: 1.5px dashed var(--viz-active);
+  background: var(--surface);
+}
+.viz-mech__swatch--mvcc-dead {
+  background: var(--viz-slot-bg);
+  opacity: 0.75;
+}
+.viz-mech__swatch--mvcc-pinned {
+  border: 1.5px solid var(--viz-bad);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--surface) 0 3px,
+    color-mix(in srgb, var(--viz-bad) 18%, var(--surface)) 3px 6px
+  );
+}
+.viz-mech__swatch--mvcc-free {
+  border: 1.5px dashed var(--border);
+  background: transparent;
+}

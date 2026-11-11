@@ -14,6 +14,8 @@ v1 list of 17 zoom-in visualizers for engineers with 5+ years. Each topic follow
 2. The upstream is slow. Why a 504 in one setup and a 502 in another, and which timeout fires first?
 3. A 50 MB upload. Where is the body buffered, and where is it rejected (413) before the app sees it?
 
+Done. Visualizer built at `/visualizer/inside-an-http-request/`.
+
 ### 2. Connection pooling vs LB idle timeouts
 
 **Happy path:** the client reuses a keep-alive connection from its pool for each request.
@@ -42,11 +44,11 @@ v1 list of 17 zoom-in visualizers for engineers with 5+ years. Each topic follow
 
 ### 5. Python GIL
 
-Done. Content doc and visualizer built.
+Done. Visualizer built at `/visualizer/inside-the-python-gil/`.
 
 ### 6. asyncio event loop
 
-Done. Visualizer built at `/visualizer/asyncio-event-loop/`.
+Done. Visualizer built at `/visualizer/inside-the-asyncio-event-loop/`.
 
 **Happy path:** one thread; the loop waits for ready sockets, runs each coroutine until its next `await`, then moves on.
 
@@ -55,6 +57,8 @@ Done. Visualizer built at `/visualizer/asyncio-event-loop/`.
 3. FastAPI: why is a blocking call fine in a plain `def` endpoint but fatal in an `async def` one? (`def` runs in a threadpool.)
 
 ### 7. Go scheduler (G-M-P)
+
+Done. Visualizer built at `/visualizer/inside-the-go-scheduler/`.
 
 **Happy path:** goroutines wait in a P's run queue; an OS thread (M) attached to that P runs them; idle Ps steal work.
 
@@ -66,6 +70,8 @@ Done. Visualizer built at `/visualizer/asyncio-event-loop/`.
 
 ### 8. Postgres MVCC & vacuum
 
+Done. Visualizer built at `/visualizer/inside-postgres-mvcc/`.
+
 **Happy path:** UPDATE writes a new row version and marks the old one dead; vacuum reclaims it once no snapshot can still see it.
 
 1. One long-running or idle-in-transaction session. Why do tables it never touched bloat?
@@ -73,6 +79,8 @@ Done. Visualizer built at `/visualizer/asyncio-event-loop/`.
 3. Transaction ID wraparound. Why does Postgres eventually force an aggressive vacuum, and what is freezing?
 
 ### 9. B-tree indexes
+
+Done. Visualizer built at `/visualizer/inside-a-b-tree-index/`.
 
 **Happy path:** an index on (a, b) is sorted by a, then b; `WHERE a = ?` descends the tree straight to the matching range.
 
@@ -82,6 +90,8 @@ Done. Visualizer built at `/visualizer/asyncio-event-loop/`.
 
 ### 10. WAL & fsync
 
+Done. Visualizer built at `/visualizer/inside-the-postgres-wal/`.
+
 **Happy path:** COMMIT writes a WAL record, fsyncs it, then acknowledges; data pages are written later at checkpoints.
 
 1. With `synchronous_commit = off`, what can be lost in a crash, and why is nothing corrupted?
@@ -89,6 +99,8 @@ Done. Visualizer built at `/visualizer/asyncio-event-loop/`.
 3. The primary says committed, but a read on the replica doesn't see the row. What did "committed" actually promise?
 
 ### 11. Redis single thread
+
+Done. Visualizer built at `/visualizer/inside-redis-single-thread/`.
 
 **Happy path:** one event loop runs commands one at a time for many clients, each in microseconds.
 

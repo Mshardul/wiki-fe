@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship `/visualizer/python-gil/` as a mechanism visualizer that steps through the four GIL scenarios on the shared timeline component.
+**Goal:** Ship `/visualizer/inside-the-python-gil/` as a mechanism visualizer that steps through the four GIL scenarios on the shared timeline component.
 
 **Architecture:** Registry entries gain `kind`. Compare slugs keep `VisualizerApp`. Mechanism slugs render `MechanismApp`, which plays a `VizFrame[]` from the module. A new generic `ScheduleModel` / `ScheduleShape` draws rows over continuous time, revealed up to `now`. The timeline component is untouched. The GIL module copies its scenario copy from the HTML draft and builds one `ScheduleModel` per frame.
 
@@ -15,7 +15,7 @@
 ## Global Constraints
 
 - `kind` is `"compare"` or `"mechanism"`. Eviction, caching, and rate limiting are `"compare"`.
-- Slug `python-gil`. Title `Inside the Python GIL`.
+- Slug `inside-the-python-gil`. Title `Inside the Python GIL`.
 - Index group headings, in order: `Compare algorithms`, `Watch a mechanism`. Subtitles: `Pick one, change the inputs, and watch what changes.` and `Step through it, then through the cases where it breaks it.`
 - GIL card description: `Step through who holds the lock, then the cases where a CPU thread, a convoy, or a checkpoint breaks it.`
 - Kicker: `CPython 3.12+ · default build · switch interval 5 ms`.
@@ -56,11 +56,11 @@
 
 **Interfaces:**
 - Consumes: `VISUALIZERS`, `getVisualizer`
-- Produces: `VisualizerEntry.kind: "compare" | "mechanism"`. `getVisualizer("python-gil")` returns the GIL entry. Existing slugs return `kind: "compare"`.
+- Produces: `VisualizerEntry.kind: "compare" | "mechanism"`. `getVisualizer("inside-the-python-gil")` returns the GIL entry. Existing slugs return `kind: "compare"`.
 
 - [ ] **Step 1: Write the failing test**
 
-Assert `getVisualizer("eviction-policies")?.kind === "compare"`, the same for `caching-strategies` and `rate-limiting`, and that a `python-gil` entry has `kind: "mechanism"`, title `Inside the Python GIL`, and the card description from Global Constraints.
+Assert `getVisualizer("eviction-policies")?.kind === "compare"`, the same for `caching-strategies` and `rate-limiting`, and that an `inside-the-python-gil` entry has `kind: "mechanism"`, title `Inside the Python GIL`, and the card description from Global Constraints.
 
 - [ ] **Step 2: Run the test and confirm it fails**
 
@@ -110,7 +110,7 @@ Run: `pnpm exec vitest run lib/visualizer/core/schedule-layout.test.ts component
 
 **Interfaces:**
 - Consumes: `ScheduleModel`, `VisualizerModule`
-- Produces: `gilModule: VisualizerModule` with `slug "python-gil"`, `sections` containing only the `scenario` chips, `defaults()` returning `{ scenario: "happy" }`, no `revision`. `gilModule.run(values).frames` is the `VizFrame[]` for that scenario. `run(values).info.about` is `[["Takeaway", take], ["Generalizes to", gen]]`.
+- Produces: `gilModule: VisualizerModule` with `slug "inside-the-python-gil"`, `sections` containing only the `scenario` chips, `defaults()` returning `{ scenario: "happy" }`, no `revision`. `gilModule.run(values).frames` is the `VizFrame[]` for that scenario. `run(values).info.about` is `[["Takeaway", take], ["Generalizes to", gen]]`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -142,7 +142,7 @@ Run: `pnpm exec vitest run lib/visualizer/gil/module.test.ts`
 
 - [ ] **Step 1: Write the failing test**
 
-Render `MechanismApp` with slug `python-gil`. Assert the title, the kicker, the happy-path question, the takeaway, a button named `Copy link`, and legend text `Running Python` and `Drop request`. Assert no button named `Revision` and no link named `Read article`. Click `Scenario 1` and assert the CPU-bound question and that the step counter reads step 1.
+Render `MechanismApp` with slug `inside-the-python-gil`. Assert the title, the kicker, the happy-path question, the takeaway, a button named `Copy link`, and legend text `Running Python` and `Drop request`. Assert no button named `Revision` and no link named `Read article`. Click `Scenario 1` and assert the CPU-bound question and that the step counter reads step 1.
 
 - [ ] **Step 2: Run the test and confirm it fails**
 
@@ -160,6 +160,6 @@ Expected: PASS. The eviction tests still find Single and Revision.
 
 ### Task 5: Look at it in the browser
 
-- [ ] **Step 1: Open `/visualizer/python-gil/` and `/visualizer/`.**
+- [ ] **Step 1: Open `/visualizer/inside-the-python-gil/` and `/visualizer/`.**
 
 Confirm the two index groups, the four scenarios, next and previous, the theme from Preferences recoloring the bars, and that `/visualizer/eviction-policies/` is unchanged. Leave the HTML draft in place.

@@ -23,15 +23,39 @@ describe("visualizer registry", () => {
     expect(getVisualizer("eviction-policies")?.kind).toBe("compare");
     expect(getVisualizer("caching-strategies")?.kind).toBe("compare");
     expect(getVisualizer("rate-limiting")?.kind).toBe("compare");
-    expect(getVisualizer("python-gil")).toMatchObject({
+    expect(getVisualizer("inside-the-python-gil")).toMatchObject({
       kind: "mechanism",
       title: "Inside the Python GIL",
       description:
         "Step through who holds the lock, then the cases where a CPU thread, a convoy, or a checkpoint breaks it.",
     });
-    expect(getVisualizer("asyncio-event-loop")).toMatchObject({
+    expect(getVisualizer("inside-the-asyncio-event-loop")).toMatchObject({
       kind: "mechanism",
       title: "Inside the asyncio Event Loop",
+    });
+    expect(getVisualizer("inside-redis-single-thread")).toMatchObject({
+      kind: "mechanism",
+      title: "Inside Redis's Single Thread",
+    });
+    expect(getVisualizer("inside-the-go-scheduler")).toMatchObject({
+      kind: "mechanism",
+      title: "Inside the Go Scheduler",
+    });
+    expect(getVisualizer("inside-postgres-mvcc")).toMatchObject({
+      kind: "mechanism",
+      title: "Inside Postgres MVCC",
+    });
+    expect(getVisualizer("inside-a-b-tree-index")).toMatchObject({
+      kind: "mechanism",
+      title: "Inside a B-tree Index",
+    });
+    expect(getVisualizer("inside-the-postgres-wal")).toMatchObject({
+      kind: "mechanism",
+      title: "Inside the Postgres WAL",
+    });
+    expect(getVisualizer("inside-an-http-request")).toMatchObject({
+      kind: "mechanism",
+      title: "Inside an HTTP Request",
     });
   });
 });

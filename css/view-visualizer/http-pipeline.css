@@ -1,0 +1,176 @@
+.viz-http {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  margin: 0 auto;
+  font-family: var(--font-mono);
+}
+.viz-http__fade {
+  transition: opacity 0.35s ease;
+}
+.viz-http__token {
+  transition: transform 0.55s cubic-bezier(0.4, 0.1, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .viz-http__token,
+  .viz-http__fade {
+    transition: none;
+  }
+}
+
+:root {
+  --viz-http-req: color-mix(in srgb, var(--accent) 88%, #1a4d8c);
+  --viz-http-res: var(--viz-good);
+  --viz-http-alert: var(--viz-bad);
+  --viz-http-skip: var(--text-muted);
+  --viz-http-clock: var(--viz-exit);
+}
+
+.viz-http__marker--req {
+  fill: var(--viz-http-req);
+}
+.viz-http__marker--res {
+  fill: var(--viz-http-res);
+}
+.viz-http__buf-bg {
+  fill: var(--surface);
+}
+.viz-http__buf-line {
+  stroke: var(--viz-http-clock);
+  stroke-width: 2.5;
+}
+.viz-http__django-frame {
+  fill: none;
+  stroke: var(--border);
+  stroke-dasharray: 4 4;
+}
+.viz-http__banner-bg {
+  fill: var(--surface);
+}
+.viz-http__banner-text {
+  fill: var(--text-muted);
+}
+.viz-http__banner-text--alert {
+  fill: var(--viz-http-alert);
+}
+.viz-http__rail--req {
+  stroke: var(--viz-http-req);
+  stroke-width: 2.5;
+}
+.viz-http__rail--res {
+  stroke: var(--viz-http-res);
+  stroke-width: 2.5;
+}
+.viz-http__spoke--req {
+  stroke: var(--viz-http-req);
+  stroke-width: 1.5;
+}
+.viz-http__spoke--res {
+  stroke: var(--viz-http-res);
+  stroke-width: 1.5;
+}
+.viz-http__dot--req {
+  fill: var(--viz-http-req);
+}
+.viz-http__dot--res {
+  fill: var(--viz-http-res);
+}
+.viz-http__node {
+  stroke: var(--border);
+  stroke-width: 1.2;
+}
+.viz-http__node--skip {
+  stroke: var(--viz-http-skip);
+  stroke-dasharray: 5 4;
+}
+.viz-http__node--fail {
+  stroke: var(--viz-http-alert);
+  stroke-width: 2;
+}
+.viz-http__node--active {
+  stroke: var(--text);
+  stroke-width: 2;
+}
+.viz-http__name {
+  fill: var(--text);
+  font-family: var(--font-sans);
+}
+.viz-http__sub,
+.viz-http__note,
+.viz-http__note--skip,
+.viz-http__note--fail,
+.viz-http__clock {
+  fill: var(--text-muted);
+}
+.viz-http__note {
+  fill: var(--text);
+}
+.viz-http__note--skip {
+  fill: var(--text-muted);
+}
+.viz-http__note--fail {
+  fill: var(--viz-http-alert);
+}
+.viz-http__meter-bg {
+  fill: var(--border);
+}
+.viz-http__meter {
+  fill: var(--viz-http-clock);
+}
+.viz-http__meter--fired {
+  fill: var(--viz-http-alert);
+}
+.viz-http__worker--idle {
+  fill: none;
+  stroke: var(--viz-http-req);
+  stroke-width: 1.2;
+}
+.viz-http__worker--busy {
+  fill: var(--viz-http-req);
+  stroke: var(--viz-http-req);
+  stroke-width: 1.2;
+}
+.viz-http__worker--killed {
+  fill: var(--viz-http-alert);
+  stroke: var(--viz-http-alert);
+  stroke-width: 1.2;
+}
+.viz-http__status--ok {
+  fill: var(--viz-http-res);
+}
+.viz-http__status--err {
+  fill: var(--viz-http-alert);
+}
+.viz-http__status-text,
+.viz-http__token-text {
+  fill: var(--viz-on-accent);
+}
+
+.viz-mech__swatch--http-req {
+  background: var(--viz-http-req);
+  width: 3px;
+  height: 14px;
+}
+.viz-mech__swatch--http-res {
+  background: var(--viz-http-res);
+  width: 3px;
+  height: 14px;
+}
+.viz-mech__swatch--http-skip {
+  border: 1.5px dashed var(--viz-http-skip);
+  background: transparent;
+}
+.viz-mech__swatch--http-fail {
+  border: 1.5px solid var(--viz-http-alert);
+  background: transparent;
+}
+.viz-mech__swatch--http-clock {
+  background: var(--viz-http-clock);
+  height: 4px;
+}
+.viz-mech__swatch--http-worker {
+  background: var(--viz-http-req);
+  width: 8px;
+  height: 8px;
+}

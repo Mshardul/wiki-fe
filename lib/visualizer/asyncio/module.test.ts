@@ -70,7 +70,7 @@ describe("asyncio event loop module", () => {
   });
 
   it("is the registered module shape", () => {
-    expect(asyncioModule.slug).toBe("asyncio-event-loop");
+    expect(asyncioModule.slug).toBe("inside-the-asyncio-event-loop");
     expect(asyncioModule.revision).toBeUndefined();
     expect(asyncioModule.defaults()).toEqual({ scenario: "happy" });
   });

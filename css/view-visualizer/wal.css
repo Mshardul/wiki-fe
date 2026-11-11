@@ -1,0 +1,289 @@
+.viz-wal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+.viz-wal__badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--viz-slot-bg);
+  border-left: 3px solid var(--viz-exit);
+  align-self: flex-start;
+}
+.viz-wal__badge--good {
+  border-left-color: var(--viz-good);
+}
+.viz-wal__badge--bad {
+  border-left-color: var(--viz-bad);
+}
+.viz-wal__clients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+  min-height: 30px;
+}
+.viz-wal__txlabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.viz-wal__tx {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+}
+.viz-wal__tx--committed {
+  border-color: var(--viz-good);
+  color: var(--viz-good);
+}
+.viz-wal__tx--idle {
+  border-color: var(--viz-bad);
+  color: var(--viz-bad);
+}
+.viz-wal__machines {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s4);
+}
+.viz-wal__machines--two {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+}
+.viz-wal__machine {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: var(--s3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+.viz-wal__mname {
+  font-weight: 600;
+  font-size: var(--text-base);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  align-items: baseline;
+}
+.viz-wal__mname small {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.viz-wal__tier {
+  border-radius: 8px;
+  padding: var(--s3);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: var(--s3);
+  position: relative;
+  min-width: 0;
+}
+.viz-wal__tier--mem {
+  background: var(--viz-slot-bg);
+}
+.viz-wal__tier--disk {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+}
+.viz-wal__tier--lost {
+  opacity: 0.4;
+}
+.viz-wal__tier--lost::after {
+  content: "RAM contents lost";
+  position: absolute;
+  inset: auto 10px 8px auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--viz-bad);
+  font-weight: 600;
+}
+.viz-wal__tlabel {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.viz-wal__strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 30px;
+  align-items: flex-start;
+}
+.viz-wal__rec {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 4px 7px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+.viz-wal__rec small {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.viz-wal__rec--commit {
+  border-color: var(--viz-good);
+}
+.viz-wal__rec--fpi {
+  border-color: var(--callout-thought-border);
+}
+.viz-wal__rec--ckpt {
+  border-style: dashed;
+  border-color: var(--text-body);
+}
+.viz-wal__rec--new {
+  box-shadow: 0 0 0 2px var(--viz-exit);
+}
+.viz-wal__rec--replay {
+  background: color-mix(in srgb, var(--viz-exit) 40%, var(--surface));
+}
+.viz-wal__rec--lost {
+  border-color: var(--viz-bad);
+  color: var(--viz-bad);
+  text-decoration: line-through;
+}
+.viz-wal__rec--old {
+  opacity: 0.45;
+}
+.viz-wal__pg {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.viz-wal__pg b {
+  font-weight: 500;
+}
+.viz-wal__pg small {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.viz-wal__pg--dirty {
+  border-color: var(--viz-exit);
+  border-style: dashed;
+}
+.viz-wal__pg--new {
+  box-shadow: 0 0 0 2px var(--viz-exit);
+}
+.viz-wal__pg--torn {
+  border-color: var(--viz-bad);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--viz-active) 18%, var(--surface)) 50%,
+    color-mix(in srgb, var(--viz-bad) 16%, var(--surface)) 50%
+  );
+}
+.viz-wal__pg--stale {
+  color: var(--text-muted);
+}
+.viz-wal__empty {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 5px 0;
+}
+.viz-wal__pipe {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.viz-wal__stage-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--viz-slot-bg);
+  border: 1.5px solid transparent;
+}
+.viz-wal__stage-row--done {
+  border-color: var(--viz-good);
+}
+.viz-wal__tick {
+  width: 14px;
+  text-align: center;
+  color: var(--viz-good);
+  font-weight: 600;
+}
+.viz-wal__ack {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--surface);
+  background: var(--text-body);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.viz-wal__readres {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border-left: 3px solid var(--viz-bad);
+  background: var(--viz-slot-bg);
+}
+.viz-wal__readres--ok {
+  border-left-color: var(--viz-good);
+}
+
+.viz-mech__swatch--wal-rec {
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+}
+.viz-mech__swatch--wal-commit {
+  border: 1.5px solid var(--viz-good);
+  background: var(--surface);
+}
+.viz-mech__swatch--wal-fpi {
+  border: 1.5px solid var(--callout-thought-border);
+  background: var(--surface);
+}
+.viz-mech__swatch--wal-ckpt {
+  border: 1.5px dashed var(--text-body);
+  background: var(--surface);
+}
+.viz-mech__swatch--wal-dirty {
+  border: 1.5px dashed var(--viz-exit);
+  background: var(--surface);
+}
+.viz-mech__swatch--wal-step {
+  box-shadow: 0 0 0 2px var(--viz-exit);
+  background: var(--surface);
+  border: none;
+}
+
+@media (max-width: 640px) {
+  .viz-wal__tier {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .viz-wal__machines--two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

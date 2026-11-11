@@ -656,6 +656,9 @@
   .viz-mech {
     --viz-mech-pad: var(--s3);
   }
+  .viz-mvcc__view {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .viz-head__actions {
     margin-left: 0;
   }

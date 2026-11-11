@@ -1,13 +1,17 @@
 import { isDense, type Size } from "@/lib/visualizer/core/geometry";
 import { resolveAxis, type ShapeModel } from "@/lib/visualizer/core/shapes";
+import { BtreeShape } from "./BtreeShape";
 import { CompositeShape } from "./CompositeShape";
 import { HistogramShape } from "./HistogramShape";
+import { HttpPipelineShape } from "./HttpPipelineShape";
 import { LanesShape } from "./LanesShape";
 import { LinearShape } from "./LinearShape";
+import { MvccShape } from "./MvccShape";
 import { RankingShape } from "./RankingShape";
 import { RingShape } from "./RingShape";
 import { ScheduleShape } from "./ScheduleShape";
 import { TimelineShape } from "./TimelineShape";
+import { WalShape } from "./WalShape";
 
 interface ShapeProps {
   model: ShapeModel;
@@ -22,6 +26,10 @@ export function Shape({ model, rotated, size, subject, dense = isDense(size) }: 
   if (model.kind === "ranking") return <RankingShape model={model} subject={subject} />;
   if (model.kind === "lanes") return <LanesShape model={model} subject={subject} />;
   if (model.kind === "schedule") return <ScheduleShape model={model} subject={subject} />;
+  if (model.kind === "mvcc") return <MvccShape model={model} subject={subject} />;
+  if (model.kind === "btree") return <BtreeShape model={model} subject={subject} />;
+  if (model.kind === "wal") return <WalShape model={model} subject={subject} />;
+  if (model.kind === "http-pipeline") return <HttpPipelineShape model={model} subject={subject} />;
   if (model.kind === "timeline")
     return <TimelineShape model={model} size={size} subject={subject} dense={dense} />;
   if (model.kind === "composite") {
