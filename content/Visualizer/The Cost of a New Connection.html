@@ -1,0 +1,469 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>The Cost of a New Connection</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: packet ladder (client and server lanes, time downward) with a round-trip counter; an ephemeral-port grid with a connection-rate chart for TIME_WAIT. Same series identity. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --fg:#152230; --muted:#5a6878; --line:#d6dce4; --soft:#eef2f6;
+  --run:#3776ab; --run-ink:#ffffff; --loop:#e8b923; --wait:#8d99a8; --io:#2f9474; --io-bg:#e3f3ed;
+  --thr:#7a5cc4; --thr-ink:#ffffff; --alert:#c9412f;
+  --f-display:"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding-block:28px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font:500 13px/1.2 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 12px;border-radius:8px;cursor:pointer;text-align:left}
+.tab small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-bottom:2px}
+.tab[aria-selected="true"]{border-color:var(--run);box-shadow:inset 0 0 0 1px var(--run)}
+.tab:focus-visible,.btn:focus-visible,.dot:focus-visible{outline:2px solid var(--loop);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(19px,3vw,23px);line-height:1.25;margin:0;text-wrap:balance}
+.trace{overflow-x:auto;margin:0 -4px}
+.trace svg{display:block;width:100%;min-width:620px;height:auto}
+.share{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px;font-variant-numeric:tabular-nums}
+.share b{color:var(--fg);font-weight:500}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--soft);color:var(--fg);padding:7px 12px;border-radius:7px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.dots{display:flex;gap:6px;flex:1;min-width:0}
+.dot{width:28px;height:6px;border-radius:3px;border:0;background:var(--line);cursor:pointer;padding:0}
+.dot[aria-current="true"]{background:var(--run)}
+.step{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.caption{border-left:3px solid var(--loop);padding:2px 0 2px 14px;min-height:78px}
+.caption h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.caption p{margin:0;max-width:68ch}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 4px;border-radius:4px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.note{background:var(--soft);border-radius:10px;padding:12px 14px;min-width:0}
+.note .eyebrow{margin-bottom:4px}
+.note p{margin:0;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:10px;border-radius:2px;display:inline-block}
+.foot{font-size:13px;color:var(--muted)}
+.txns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:30px}
+.txlabel{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.tx{font-family:var(--f-mono);font-size:12px;padding:3px 9px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface)}
+.tx.active{border-color:var(--run);color:var(--run)}
+.tx.idle{border-color:var(--alert);color:var(--alert)}
+.tx.committed{border-color:var(--io);color:var(--io)}
+.view{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+.view.solo{grid-template-columns:minmax(0,1fr)}
+@media (max-width:720px){.view{grid-template-columns:minmax(0,1fr)}}
+.panel{border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ptitle{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;justify-content:space-between;gap:8px}
+.tup{display:grid;grid-template-columns:34px minmax(0,1fr) 52px 52px;gap:8px;align-items:center;font-family:var(--f-mono);font-size:12.5px;padding:7px 8px;border-radius:6px;border:1.5px solid transparent;background:var(--soft);font-variant-numeric:tabular-nums;transition:background .3s,border-color .3s,opacity .3s}
+.tup.hdr{background:none;font-size:10.5px;color:var(--muted);padding-block:0;text-transform:uppercase}
+.tup .val{min-width:0;overflow-wrap:anywhere}
+.tup .sub{display:block;font-size:10.5px;color:var(--muted);font-family:var(--f-body)}
+.tup.live{background:var(--io-bg);border-color:var(--io)}
+.tup.new{background:var(--surface);border:1.5px dashed var(--run)}
+.tup.dead{opacity:.75}
+.tup.dead .val{text-decoration:line-through}
+.tup.pinned{background:repeating-linear-gradient(45deg,var(--surface) 0 5px,color-mix(in srgb,var(--alert) 18%,var(--surface)) 5px 10px);border-color:var(--alert)}
+.tup.free{background:none;border:1.5px dashed var(--line);color:var(--muted)}
+.tup.free .val{text-decoration:none}
+.idx{font-family:var(--f-mono);font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.idx .iname{font-size:11px;color:var(--muted)}
+.ent{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:6px;background:var(--soft);border:1.5px solid transparent}
+.ent.new{border-color:var(--alert)}
+.ent.stale{opacity:.6}
+.badge{display:inline-block;font-family:var(--f-mono);font-size:12px;padding:4px 10px;border-radius:6px;background:var(--soft);border-left:3px solid var(--loop)}
+.badge.bad{border-left-color:var(--alert)}
+.badge.good{border-left-color:var(--io)}
+.log{font-family:var(--f-mono);font-size:12px;background:var(--soft);border-radius:6px;padding:8px 10px;color:var(--fg);overflow-wrap:anywhere}
+.grid{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:3px}
+.cell{aspect-ratio:1;border-radius:2px;max-width:100%}
+.c-live{background:var(--io)}
+.c-pinned{background:var(--alert)}
+.c-free{background:none;outline:1px dashed var(--line);outline-offset:-1px}
+.pagesbar{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.xidwrap{overflow-x:auto}
+.xidwrap svg{display:block;width:100%;min-width:560px;height:auto}
+.rowlegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.rowlegend span{display:inline-flex;align-items:center;gap:6px}
+.term{font-family:var(--f-mono);font-size:12px;background:var(--fg);color:var(--bg);border-radius:8px;padding:8px 10px;white-space:pre-wrap;overflow-wrap:anywhere;min-height:20px}
+.hub{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:820px){.hub{grid-template-columns:minmax(0,1fr)}}
+.colttl{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.stack{display:flex;flex-direction:column;gap:8px;min-width:0}
+.actor{border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;display:flex;flex-direction:column;gap:3px;font-size:13px;transition:all .3s;min-width:0}
+.actor b{font-weight:600}
+.actor .watch{font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.actor .ln{font-family:var(--f-mono);font-size:11.5px;overflow-wrap:anywhere}
+.actor .ln i{font-style:normal;color:var(--muted)}
+.actor.on{border-color:var(--loop);box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent);background:color-mix(in srgb,var(--loop) 10%,var(--surface))}
+.actor.idle{opacity:.6}
+.api{border:1.5px solid var(--fg);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.api.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.apihead{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.apihead small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted)}
+.obj{font-family:var(--f-mono);font-size:11.5px;padding:6px 8px;border-radius:6px;background:var(--soft);border:1.5px solid transparent;display:flex;flex-direction:column;gap:1px;overflow-wrap:anywhere;transition:all .3s}
+.obj .k{color:var(--muted);font-size:10.5px}
+.obj.new{border-color:var(--loop);background:color-mix(in srgb,var(--loop) 18%,var(--surface))}
+.obj.bad{border-color:var(--alert)}
+.obj.gone{opacity:.5;text-decoration:line-through}
+.node{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.node.bad{border-color:var(--alert);border-style:dashed;opacity:.7}
+.node.new{border-color:var(--io);border-style:dashed}
+.nhead{display:flex;justify-content:space-between;gap:6px;font-weight:600;font-size:13px}
+.nhead small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted)}
+.pod{font-family:var(--f-mono);font-size:11px;padding:5px 7px;border-radius:6px;border:1.5px solid var(--line);display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;transition:all .3s}
+.pod .st{font-weight:600}
+.pod.ready{border-color:var(--io);background:var(--io-bg)}
+.pod.running{border-color:var(--run)}
+.pod.creating{border-style:dashed;border-color:var(--run)}
+.pod.crash{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 12%,var(--surface))}
+.pod.term{opacity:.5;border-style:dashed}
+.pod.new{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.nopods{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.epstrip{border:1.5px solid var(--fg);border-radius:10px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;transition:box-shadow .3s}
+.epstrip.on,.rules.on,.client.on,.bpod.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.epstrip .lbl{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.ep{font-family:var(--f-mono);font-size:11.5px;padding:4px 8px;border-radius:6px;border:1.5px solid var(--io);background:var(--io-bg)}
+.ep.no{border-color:var(--wait);background:var(--soft);color:var(--muted)}
+.ep.term{border-color:var(--alert);border-style:dashed;background:var(--surface);color:var(--alert)}
+.cols3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:820px){.cols3{grid-template-columns:minmax(0,1fr)}}
+.client,.rules,.bpod{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:5px;min-width:0;transition:all .3s}
+.chd{display:flex;justify-content:space-between;gap:6px;font-weight:600;font-size:13px}
+.chd small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted);text-align:right}
+.sub{font-family:var(--f-mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.conn{font-family:var(--f-mono);font-size:11px;padding:4px 7px;border-radius:6px;border:1.5px solid var(--line);overflow-wrap:anywhere}
+.conn.ok{border-color:var(--io);background:var(--io-bg)}
+.conn.new{border-color:var(--loop);background:color-mix(in srgb,var(--loop) 22%,var(--surface))}
+.conn.fail{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 14%,var(--surface));color:var(--alert)}
+.conn.old{opacity:.6}
+.rt{font-family:var(--f-mono);font-size:11px;display:flex;flex-wrap:wrap;gap:4px}
+.rt span{padding:2px 6px;border-radius:5px;background:var(--soft)}
+.rt span.gone{background:color-mix(in srgb,var(--alert) 14%,var(--surface));color:var(--alert)}
+.rstate{font-family:var(--f-mono);font-size:10.5px;font-weight:600}
+.rstate.ok{color:var(--io)}.rstate.stale{color:var(--alert)}.rstate.new{color:var(--run)}.rstate.na{color:var(--muted)}
+.bpod.ready{border-color:var(--io)}
+.bpod.notready{border-color:var(--wait);background:var(--soft)}
+.bpod.term{border-color:var(--alert);border-style:dashed}
+.bpod.exited{border-color:var(--alert);opacity:.6}
+.bpod.new{border-color:var(--run);border-style:dashed}
+.load{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.load i{display:block;height:100%;background:var(--run)}
+.load i.hot{background:var(--alert)}
+.colttl{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.stack{display:flex;flex-direction:column;gap:8px;min-width:0}
+.nodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.ctrs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.card{border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:6px;min-width:0;transition:all .3s}
+.card.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.card.warn{border-color:var(--loop)}
+.card.killed{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 10%,var(--surface))}
+.card.evicted{border-color:var(--alert);border-style:dashed;opacity:.65}
+.card.new{border-color:var(--run);border-style:dashed}
+.card.rejected{border-color:var(--alert);border-style:dashed}
+.chead{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:13.5px;align-items:baseline}
+.chead small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted);text-align:right}
+.gauge{display:flex;flex-direction:column;gap:3px}
+.glab{display:flex;justify-content:space-between;gap:8px;font-family:var(--f-mono);font-size:10.5px;color:var(--muted);flex-wrap:wrap}
+.glab b{color:var(--fg);font-weight:500}
+.track{position:relative;height:12px;border-radius:4px;background:var(--soft);border:1px solid var(--line);overflow:visible}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--run);transition:width .4s}
+.fill.over{background:var(--loop)}
+.fill.hit{background:var(--alert)}
+.fill.used2{background:color-mix(in srgb,var(--fg) 30%,transparent);top:auto;height:4px;bottom:-7px}
+.mk{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed var(--fg)}
+.mk.lim{border-left:2.5px solid var(--alert)}
+.mk.thr{border-left:2px dotted var(--alert)}
+.cnote{font-family:var(--f-mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.cnote.bad{color:var(--alert);font-weight:500}
+.tlwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;padding:6px}
+.tlwrap svg{display:block;width:100%;min-width:600px;height:auto}
+.sum{font-family:var(--f-mono);font-size:12px;display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--muted)}
+.sum b{color:var(--fg);font-weight:500}
+.board{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px;align-items:start}
+@media (max-width:760px){.board{grid-template-columns:minmax(0,1fr)}}
+.panel2{border:1.5px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0;transition:box-shadow .3s}
+.panel2.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.panel2.down{border-color:var(--alert);border-style:dashed;background:color-mix(in srgb,var(--alert) 6%,var(--surface))}
+.ph{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:13.5px;align-items:baseline}
+.ph small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted);text-align:right}
+.slab{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.chips{display:flex;flex-wrap:wrap;gap:5px;min-height:28px;align-items:flex-start}
+.chip{font-family:var(--f-mono);font-size:11.5px;padding:4px 8px;border-radius:6px;border:1.5px solid var(--run);background:color-mix(in srgb,var(--run) 12%,var(--surface));display:inline-flex;flex-direction:column;line-height:1.25;transition:all .3s}
+.chip small{font-size:9.5px;color:var(--muted)}
+.chip.slow{border-color:var(--thr);background:color-mix(in srgb,var(--thr) 14%,var(--surface))}
+.chip.pay,.chip.rem{border-color:var(--io);background:var(--io-bg)}
+.chip.new{box-shadow:0 0 0 2px var(--loop)}
+.chip.lost{border-color:var(--alert);color:var(--alert);background:var(--surface);text-decoration:line-through}
+.chip.dup{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 16%,var(--surface))}
+.chip.bad small{color:var(--alert)}
+.slot{min-width:64px;min-height:30px;border:1.5px dashed var(--line);border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.wnote{font-family:var(--f-mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.wnote.bad{color:var(--alert);font-weight:500}
+.clock{font-family:var(--f-mono);font-size:12px;padding:4px 10px;border-radius:6px;background:var(--fg);color:var(--bg)}
+.empty2{font-family:var(--f-mono);font-size:11px;color:var(--muted);padding:5px 0}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">TCP · TLS 1.3 · Linux · RTT 100 ms (illustrative)</div>
+    <h1>The Cost of a New Connection</h1>
+    <p class="lede">A request on an open connection costs one round trip. A request on a new one first pays for setting it up, and closing it leaves a record behind. Step through the packets, round trip by round trip.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="stage">
+    <h2 class="q" id="q"></h2>
+    <div class="meta" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="clock" id="clock"></span><span class="badge" id="badge"></span></div>
+    <div class="term" id="term"></div>
+    <div class="tlwrap" id="viz"></div>
+    <div class="sum" id="sum"></div>
+    <div class="controls">
+      <button class="btn" id="prev">Back</button>
+      <button class="btn" id="next">Next</button>
+      <button class="btn" id="play">Play</button>
+      <div class="dots" id="dots"></div>
+      <span class="step" id="stepno"></span>
+    </div>
+    <div class="caption" aria-live="polite"><h3 id="fh"></h3><p id="fb"></p></div>
+    <div class="rowlegend" id="legend"></div>
+  </section>
+
+  <section class="notes">
+    <div class="note"><div class="eyebrow">Takeaway</div><p id="take"></p></div>
+    <div class="note"><div class="eyebrow">Generalizes to</div><p id="gen"></p></div>
+  </section>
+
+  <p class="foot">RTT, request rate and response size are illustrative. Protocol behaviour and Linux defaults are from the sources listed in the content doc. Keyboard: ← → to step.</p>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const MONO='font-family="var(--f-mono)"';
+const T=(x,y,s,o={})=>`<text x="${x}" y="${y}" font-size="${o.fs||11}" ${o.mono===false?'':MONO} fill="${o.col||'var(--muted)'}" text-anchor="${o.a||'start'}" font-weight="${o.fw||400}">${esc(s)}</text>`;
+const KC={tcp:'var(--wait)',tls:'var(--thr)',req:'var(--run)',ticket:'var(--io)',early:'var(--loop)',bad:'var(--alert)'};
+
+/* ---------- ladder view ---------- */
+function svgLadder(f){
+  const L=f.lanes||[{n:'Client',x:250},{n:'Server',x:700}];
+  const tmax=f.tmax||Math.max(...f.msgs.map(m=>m.t1))+20, k=Math.min(1.25,560/tmax), top=58, ys=t=>top+t*k, H=top+tmax*k+30;
+  let s=`<svg viewBox="0 0 900 ${H}" role="img" aria-label="Packet ladder diagram">`;
+  s+='<defs>'+Object.keys(KC).map(c=>`<marker id="a${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${KC[c]}"/></marker>`).join('')+'</defs>';
+  // lanes
+  for(const l of L){s+=`<rect x="${l.x-62}" y="8" width="124" height="30" rx="7" fill="var(--surface)" stroke="${l.bad?'var(--alert)':'var(--line)'}" stroke-width="1.5"/>`+T(l.x,28,l.n,{a:'middle',fs:12.5,fw:600,col:l.bad?'var(--alert)':'var(--fg)',mono:false});
+    s+=`<line x1="${l.x}" x2="${l.x}" y1="38" y2="${H-20}" stroke="var(--line)" stroke-width="2" ${l.dash?'stroke-dasharray="5 4"':''}/>`;}
+  // time ticks + phase brackets
+  for(let t=0;t<=tmax;t+=100){const y=ys(t);s+=T(14,y+4,t+' ms',{fs:10.5})+`<line x1="56" x2="64" y1="${y}" y2="${y}" stroke="var(--muted)"/>`;}
+  for(const p of (f.phases||[])){if(p.t0>=f.now)continue;const y0=ys(p.t0),y1=ys(Math.min(p.t1,f.now));const c=KC[p.c]||'var(--muted)';
+    s+=`<path d="M${88},${y0+2} h-6 v${Math.max(0,y1-y0-4)} h6" fill="none" stroke="${c}" stroke-width="2"/>`;
+    if(y1-y0>22) s+=`<text x="${78}" y="${(y0+y1)/2}" font-size="10.5" ${MONO} fill="${c}" text-anchor="middle" transform="rotate(-90 ${78} ${(y0+y1)/2})" font-weight="500">${esc(p.label)}</text>`;}
+  // messages
+  for(const m of f.msgs){if(m.t0>=f.now)continue;
+    const A=L[m.a],B=L[m.b],frac=Math.min(1,(f.now-m.t0)/(m.t1-m.t0));
+    const x1=A.x,y1=ys(m.t0),x2=A.x+(B.x-A.x)*frac,y2=ys(m.t0+(m.t1-m.t0)*frac);
+    const c=KC[m.k]||'var(--run)';
+    s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${m.w||2}" ${m.dash?'stroke-dasharray="6 4"':''} ${frac>=1?`marker-end="url(#a${m.k})"`:''}/>`;
+    if(frac>=1&&m.label){const lp=m.lp??0.5;const lx=x1+(x2-x1)*lp,ly=y1+(y2-y1)*lp;
+      const tw=m.label.length*6.4+10;const bx=lx-tw/2;
+      s+=`<rect x="${bx}" y="${ly-11}" width="${tw}" height="15" rx="3" fill="var(--surface)" opacity="0.92"/>`+T(lx,ly,m.label,{a:'middle',fs:10.5,col:c,fw:500});}
+  }
+  for(const mk of (f.marks||[])){if(mk.t>f.now)continue;const l=L[mk.lane],y=ys(mk.t),c=mk.col?`var(--${mk.col})`:'var(--fg)';
+    s+=`<circle cx="${l.x}" cy="${y}" r="4.5" fill="${c}"/>`+T(l.x+(mk.left?-10:10),y+4,mk.label,{fs:10.5,col:c,fw:600,a:mk.left?'end':'start'});}
+  if(f.now<tmax){const y=ys(f.now);s+=`<line x1="96" x2="886" y1="${y}" y2="${y}" stroke="var(--fg)" stroke-dasharray="2 4" opacity="0.5"/>`;}
+  return s+'</svg>';
+}
+
+/* ---------- message sets (one-way delay 50 ms) ---------- */
+const C=0,S=1;
+const tcp=(t=0)=>[{a:C,b:S,t0:t,t1:t+50,k:'tcp',label:'SYN'},{a:S,b:C,t0:t+50,t1:t+100,k:'tcp',label:'SYN-ACK'}];
+const tls13=(t=100)=>[{a:C,b:S,t0:t,t1:t+50,k:'tls',label:'ACK · ClientHello (key share)'},{a:S,b:C,t0:t+50,t1:t+100,k:'tls',label:'ServerHello · Certificate · Finished'}];
+const req=(t,l1,l2,k2='req')=>[{a:C,b:S,t0:t,t1:t+50,k:'req',label:l1},{a:S,b:C,t0:t+50,t1:t+100,k:k2,label:l2}];
+const PH=(t0,t1,label,c)=>({t0,t1,label,c});
+const happyMsgs=[...tcp(),...tls13(),...req(200,'Finished · GET /orders/1','200 OK'),...req(340,'GET /orders/2 (reused)','200 OK')];
+const happyPh=[PH(0,100,'TCP 1 RTT','tcp'),PH(100,200,'TLS 1 RTT','tls'),PH(200,300,'request','req'),PH(340,440,'reuse','req')];
+const tls12=[...tcp(),{a:C,b:S,t0:100,t1:150,k:'tls',label:'ACK · ClientHello'},{a:S,b:C,t0:150,t1:200,k:'tls',label:'ServerHello · Certificate · HelloDone'},{a:C,b:S,t0:200,t1:250,k:'tls',label:'ClientKeyExchange · Finished'},{a:S,b:C,t0:250,t1:300,k:'tls',label:'ChangeCipherSpec · Finished'},...req(300,'GET /orders/1','200 OK')];
+const ss=(t)=>[{a:S,b:C,t0:t,t1:t+50,k:'req',label:'10 segments ≈ 14.6 KB',w:2},{a:C,b:S,t0:t+50,t1:t+100,k:'tcp',label:'ACKs'},{a:S,b:C,t0:t+100,t1:t+150,k:'req',label:'20 segments ≈ 29 KB',w:3},{a:C,b:S,t0:t+150,t1:t+200,k:'tcp',label:'ACKs'},{a:S,b:C,t0:t+200,t1:t+250,k:'req',label:'40 segments ≈ 58 KB · done',w:4.5}];
+const slowMsgs=[...tcp(),...tls13(),{a:C,b:S,t0:200,t1:250,k:'req',label:'Finished · GET /report (100 KB)'},...ss(250)];
+const idleMsgs=[{a:C,b:S,t0:0,t1:50,k:'req',label:'GET /report (pooled, idle)'},...ss(50)];
+const warmMsgs=[{a:C,b:S,t0:0,t1:50,k:'req',label:'GET /report (pooled, busy)'},{a:S,b:C,t0:50,t1:100,k:'req',label:'100 KB in one window',w:5}];
+const firstVisit=[...tcp(),...tls13(),{a:C,b:S,t0:200,t1:250,k:'req',label:'Finished · GET /orders/1'},{a:S,b:C,t0:250,t1:300,k:'req',label:'200 OK'},{a:S,b:C,t0:262,t1:312,k:'ticket',label:'NewSessionTicket (≤ 7 days)'}];
+const resume=[...tcp(),{a:C,b:S,t0:100,t1:150,k:'tls',label:'ClientHello + ticket (PSK) + key share'},{a:S,b:C,t0:150,t1:200,k:'tls',label:'ServerHello (PSK ok) · Finished · no cert'},...req(200,'Finished · GET /orders/1','200 OK')];
+const zrtt=[...tcp(),{a:C,b:S,t0:100,t1:150,k:'tls',label:'ClientHello + ticket',lp:0.3},{a:C,b:S,t0:108,t1:158,k:'early',label:'early data: GET /orders/1',w:2.5,lp:0.72},{a:S,b:C,t0:158,t1:208,k:'req',label:'ServerHello · Finished · 200 OK'}];
+const L4=[{n:'Client',x:150},{n:'Attacker',x:360,dash:true,bad:true},{n:'Server A',x:590},{n:'Server B',x:810}];
+const replay=[{a:0,b:2,t0:0,t1:60,k:'early',label:'ClientHello + early: POST /transfer',w:2.5},{a:1,b:3,t0:45,t1:105,k:'bad',label:'same bytes, replayed',dash:true,w:2.5,lp:0.78},{a:2,b:0,t0:60,t1:120,k:'req',label:'200 OK',lp:0.3}];
+const defend=[{a:0,b:2,t0:0,t1:60,k:'early',label:'ClientHello + early: POST /transfer',w:2.5},{a:1,b:3,t0:45,t1:105,k:'bad',label:'same bytes, replayed',dash:true,w:2.5,lp:0.78},{a:2,b:0,t0:60,t1:120,k:'tls',label:'Finished · 425 Too Early',lp:0.3},{a:3,b:1,t0:105,t1:165,k:'tls',label:'425 Too Early'},{a:0,b:2,t0:120,t1:180,k:'req',label:'Finished · POST /transfer (after handshake)'},{a:2,b:0,t0:180,t1:240,k:'req',label:'200 OK'}];
+
+/* ---------- port grid view ---------- */
+const PORTS=28232,TW=60,RATE=1000,CELL=20;
+const SIM=(()=>{const dt=0.1,steps=1200;let free=PORTS;const rel=new Array(steps+700).fill(0);const ok=[],tw=[];
+  for(let i=0;i<steps;i++){free+=rel[i];const want=RATE*dt,got=Math.min(free,want);free-=got;rel[i+TW/dt]+=got;ok.push(got/dt);tw.push(PORTS-free);}
+  return {dt,ok,tw}})();
+function svgPorts(f){
+  let s=`<svg viewBox="0 0 900 420" role="img" aria-label="Client ephemeral ports and connection rate">`;
+  // single-port strip
+  s+=T(10,18,'One port\'s life',{fs:11.5,fw:600,col:'var(--fg)',mono:false});
+  const sx=150,sw=720,sxs=t=>sx+t/70*sw;
+  if(f.fix){s+=`<rect x="${sx}" y="8" width="${sw}" height="16" fill="var(--run)"/>`+T(sx+sw/2,20,'one connection, open and reused: nothing closes, nothing waits',{fs:10.5,a:'middle',col:'var(--surface)'});}
+  else{s+=`<rect x="${sx}" y="8" width="${sxs(0.6)-sx}" height="16" fill="var(--run)"/><rect x="${sxs(0.6)}" y="8" width="${sxs(60.6)-sxs(0.6)}" height="16" fill="color-mix(in srgb,var(--loop) 75%,var(--surface))"/><rect x="${sxs(60.6)}" y="8" width="${sxs(70)-sxs(60.6)}" height="16" fill="var(--soft)" stroke="var(--line)"/>`;
+  s+=T(sx+4,38,'open',{fs:10,col:'var(--run)'})+T(sxs(30),20,f.why?'TIME_WAIT 60 s: a delayed old segment can\'t land in a new connection':'TIME_WAIT 60 s (client closed first)',{fs:10.5,a:'middle',col:'var(--fg)'})+T(sxs(65),20,'free',{fs:10.5,a:'middle'});}
+  // grid
+  const t=f.t,idx=Math.min(SIM.tw.length-1,Math.max(0,Math.round(t/SIM.dt)-1)),used=f.fix?2:(t<=0?0:SIM.tw[idx]);
+  const cols=59,rows=24,cw=12.4,ch=8.6,gx=150,gy=54,nCells=Math.ceil(PORTS/CELL),usedCells=Math.round(used/CELL);
+  s+=T(10,66,'Ephemeral ports',{fs:11.5,fw:600,col:'var(--fg)',mono:false})+T(10,82,'32768–60999',{fs:10.5})+T(10,96,'1 cell ≈ 20 ports',{fs:10.5});
+  for(let i=0;i<nCells;i++){const r=Math.floor(i/cols),c=i%cols;const x=gx+c*cw,y=gy+r*ch;
+    const st=f.fix?(i<1?'use':'free'):(i<usedCells?'tw':'free');
+    const fill=st==='tw'?'color-mix(in srgb,var(--loop) 75%,var(--surface))':st==='use'?'var(--run)':'var(--soft)';
+    s+=`<rect x="${x}" y="${y}" width="${cw-1.6}" height="${ch-1.6}" rx="1" fill="${fill}"/>`;}
+  const full=!f.fix&&used>=PORTS-1;
+  if(full) s+=`<rect x="${gx-2}" y="${gy-2}" width="${cols*cw+2}" height="${rows*ch+2}" fill="none" stroke="var(--alert)" stroke-width="2"/>`;
+  // chart
+  const cx0=150,cx1=874,cy0=290,cy1=392,tm=120,xs=v=>cx0+v/tm*(cx1-cx0),ym=1100,ys=v=>cy1-v/ym*(cy1-cy0);
+  s+=T(10,cy0+10,f.fix?'Requests':'New connections',{fs:11.5,fw:600,col:'var(--fg)',mono:false})+T(10,cy0+26,'that succeed, per s',{fs:10.5});
+  for(const v of [0,500,1000]){const y=ys(v);s+=`<line x1="${cx0}" x2="${cx1}" y1="${y}" y2="${y}" stroke="var(--line)"/>`+T(cx0-6,y+4,String(v),{a:'end',fs:10.5});}
+  for(let v=0;v<=tm;v+=20)s+=T(xs(v),cy1+16,v+' s',{a:'middle',fs:10.5});
+  if(!f.fix){const ay=ys(PORTS/TW);s+=`<line x1="${cx0}" x2="${cx1}" y1="${ay}" y2="${ay}" stroke="var(--alert)" stroke-dasharray="6 4"/>`+T(cx1-4,ay-5,'average ≈ 470/s = 28,232 ports ÷ 60 s',{a:'end',fs:10.5,col:'var(--alert)'});}
+  let p='';const lim=Math.min(t,tm);
+  for(let i=0;i*SIM.dt<lim;i++){const v=f.fix?RATE:SIM.ok[i];p+=(p?' L':'M')+xs(i*SIM.dt).toFixed(1)+','+ys(v).toFixed(1)}
+  if(p)s+=`<path d="${p}" fill="none" stroke="${f.fix?'var(--io)':'var(--run)'}" stroke-width="2.2"/>`;
+  if(!f.fix&&t>28.3){const x=xs(28.2);s+=`<line x1="${x}" x2="${x}" y1="${cy0}" y2="${cy1}" stroke="var(--alert)" stroke-width="1.5"/>`+T(x+5,cy0+8,'Errno 99 from here',{fs:10.5,col:'var(--alert)',fw:500});}
+  if(t<tm){const x=xs(t);s+=`<line x1="${x}" x2="${x}" y1="${cy0}" y2="${cy1}" stroke="var(--fg)" stroke-dasharray="2 3"/>`;}
+  return {svg:s+'</svg>',used,full};
+}
+
+const LEG={
+ ladder:[[KC.tcp,'TCP'],[KC.tls,'TLS handshake'],[KC.req,'Request / response'],[KC.ticket,'Session ticket'],[KC.early,'0-RTT early data'],[KC.bad,'Replay']],
+ ports:[['var(--run)','In use'],['color-mix(in srgb,var(--loop) 75%,var(--surface))','TIME_WAIT (60 s)'],['var(--soft)','Free','var(--line)'],['var(--alert)','Out of ports',null,'bar']]};
+
+const SC=[
+{id:'happy',tab:'Happy path',short:'One new connection, then reuse',view:'ladder',
+ q:'What happens, round trip by round trip, before the first request is answered, and what do later requests skip?',
+ frames:[
+  {clock:'0 ms',badge:'DNS: a few ms if cached nearby',now:4,msgs:happyMsgs,phases:happyPh,tmax:460,rtt:0,marks:[{lane:0,t:2,label:'DNS lookup: api.example.com',left:true,col:'muted'}],
+   term:'s = requests.Session()\ns.get("https://api.example.com/orders/1")   # new connection',
+   h:'DNS',b:'The client resolves the name. A nearby resolver with it cached answers in a few milliseconds; a miss can cost much more (that\'s the DNS caching topic). No round trip to the server yet.'},
+  {clock:'0 – 100 ms',badge:'TCP handshake: 1 RTT',now:100,msgs:happyMsgs,phases:happyPh,tmax:460,rtt:1,marks:[{lane:0,t:2,label:'DNS',left:true,col:'muted'}],
+   h:'TCP handshake',b:'SYN goes out; SYN-ACK comes back 100 ms later. The client\'s ACK needs no reply, so it can go out together with the next packet.'},
+  {clock:'100 – 200 ms',badge:'TLS 1.3 handshake: 1 RTT',now:200,msgs:happyMsgs,phases:happyPh,tmax:460,rtt:2,marks:[{lane:0,t:2,label:'DNS',left:true,col:'muted'},{lane:0,t:200,label:'checks certificate · has keys',left:true,col:'muted'}],
+   h:'TLS 1.3 handshake',b:'The ClientHello carries the client\'s key share. The server answers with ServerHello, its certificate and Finished in one flight. The client checks the certificate, and both sides now have keys.'},
+  {clock:'200 – 300 ms',badge:'first request answered: 3 RTT ≈ 300 ms',now:300,msgs:happyMsgs,phases:happyPh,tmax:460,rtt:3,marks:[{lane:0,t:2,label:'DNS',left:true,col:'muted'},{lane:0,t:300,label:'response · 300 ms',left:true,col:'run'}],
+   h:'The request',b:'The client sends its Finished and the encrypted GET together, and the response comes back one round trip later. Three round trips for one request.'},
+  {clock:'340 – 440 ms',badge:'reused: 1 RTT ≈ 100 ms',now:460,msgs:happyMsgs,phases:happyPh,tmax:460,rtt:1,marks:[{lane:0,t:2,label:'DNS',left:true,col:'muted'},{lane:0,t:300,label:'response · 300 ms',left:true,col:'run'},{lane:0,t:440,label:'response · 100 ms',left:true,col:'io'}],
+   term:'s.get("https://api.example.com/orders/2")   # reused from the pool',
+   h:'Reuse',b:'The connection went back into the pool. The second request goes straight out on it: no DNS, no TCP, no TLS. The server did the same work both times; two thirds of the first request\'s latency was spent agreeing to talk.'}],
+ take:'Setup is paid in round trips, and a round trip costs the same whether you send 1 byte or 1,000.',
+ gen:'Every protocol on TCP: database connections, Redis, gRPC, message brokers.'},
+
+{id:'round-trips',tab:'Scenario 1',short:'Count the round trips',view:'ladder',
+ q:'Why is the first request so much slower than the rest? Count the round trips before the request is sent, then see what makes the count grow.',
+ frames:[
+  {clock:'TLS 1.3',badge:'new: 3 RTT = 300 ms · reused: 1 RTT = 100 ms',now:300,msgs:happyMsgs.slice(0,6),phases:happyPh.slice(0,3),tmax:520,rtt:3,marks:[{lane:0,t:300,label:'300 ms',left:true,col:'run'}],
+   h:'The baseline',b:'TCP 1 RTT plus TLS 1.3 1 RTT means two round trips before the request can even leave, and a third for the request itself. Because the cost is round trips, it scales with distance: at 10 ms RTT that\'s 30 ms vs 10 ms; at 200 ms RTT, 600 ms vs 200 ms.'},
+  {clock:'TLS 1.2',badge:'new: 4 RTT = 400 ms',bad:true,now:400,msgs:tls12,phases:[PH(0,100,'TCP 1 RTT','tcp'),PH(100,300,'TLS 1.2: 2 RTT','tls'),PH(300,400,'request','req')],tmax:520,rtt:4,marks:[{lane:0,t:400,label:'400 ms',left:true,col:'alert'}],
+   h:'TLS 1.2 adds a round trip',b:'Its full handshake needs two round trips before encrypted data can flow. TLS 1.3 can also cost an extra round trip, a HelloRetryRequest, when the client guessed a key-share group the server doesn\'t accept.'},
+  {clock:'100 KB response',badge:'new + slow start: ≈ 5 RTT = 500 ms',bad:true,now:500,msgs:slowMsgs,phases:[PH(0,100,'TCP','tcp'),PH(100,200,'TLS','tls'),PH(200,500,'request + slow start','req')],tmax:520,rtt:5,marks:[{lane:0,t:500,label:'≈ 500 ms',left:true,col:'alert'}],
+   h:'A big response pays slow start',b:'A new TCP connection doesn\'t know how fast the path is. The server starts with 10 segments (about 14.6 KB, RFC 6928) and doubles each round trip as ACKs return: 14.6 KB, then 29 KB, then 58 KB. A 100 KB response takes about 3 round trips to arrive instead of 1.'},
+  {clock:'idle reuse',badge:'no handshakes, but window restarted: ≈ 3 RTT',bad:true,now:300,msgs:idleMsgs,phases:[PH(0,300,'request + slow start again','req')],tmax:520,rtt:3,marks:[{lane:0,t:300,label:'≈ 300 ms',left:true,col:'loop'}],
+   term:'net.ipv4.tcp_slow_start_after_idle = 1   # Linux default',
+   h:'Idle reuse doesn\'t save slow start',b:'Linux resets the congestion window after a connection sits idle. A pooled connection that was idle still skips both handshakes, but a large response on it ramps up again. Connections in steady use keep their larger window.'},
+  {clock:'fix',badge:'busy pooled connection: 1 RTT = 100 ms',now:100,msgs:warmMsgs,phases:[PH(0,100,'1 RTT','req')],tmax:520,rtt:1,marks:[{lane:0,t:100,label:'100 ms',left:true,col:'io'}],
+   h:'Fixes',b:'Reuse connections (a pool, or HTTP/2 to carry many requests on one). Open them before you need them: warm the pool at startup, before taking traffic. Use TLS 1.3. For servers sending large responses on rarely used connections, consider <code>tcp_slow_start_after_idle=0</code>.'}],
+ take:'None of these costs depend on request size or server speed. They are paid in round trips.',
+ gen:'Cold starts in serverless functions, the first query after a deploy, and any client that connects per request.'},
+
+{id:'time-wait',tab:'Scenario 2',short:'TIME_WAIT runs out the ports',view:'ports',
+ q:'A worker opens a new connection for every call to one destination. Why does it start failing with "Cannot assign requested address" when the server is fine?',
+ frames:[
+  {clock:'1 s',badge:'each closed connection holds its port for 60 s',t:1,term:'for item in batch:\n    requests.get(url)  # new connection; client closes it',
+   h:'One connection\'s life',b:'A connection is identified by source IP, source port, destination IP and destination port. Here only the client\'s source port can change. Each call takes a free port, does its request, and the client closes. The side that closes first keeps its socket in TIME_WAIT, here for 60 s, and the port can\'t be reused for this destination until then.'},
+  {clock:'1 s',badge:'why: stray segments, lost final ACK',t:1,why:true,
+   h:'Why TIME_WAIT exists',b:'A segment from the old connection might still be delayed in the network. If a new connection reused the same four values immediately, that stray segment could be accepted into it. TIME_WAIT also lets the closer resend its final ACK if that was lost. The spec says 2 × MSL; Linux uses a fixed 60 s.'},
+  {clock:'10 s',badge:'≈ 10,000 ports in TIME_WAIT',t:10,
+   h:'The grid fills',b:'At 1,000 connections a second, each one parks a port for 60 s. After 10 s, about 10,000 of the ~28,000 ports are in TIME_WAIT.'},
+  {clock:'28 s → 120 s',badge:'out of ports: Errno 99 · ≈ 470/s on average',bad:true,t:120,term:'OSError: [Errno 99] Cannot assign requested address',
+   h:'Out of ports',b:'At about 28 s every port is taken and <code>connect()</code> fails; <code>requests</code> raises a <code>ConnectionError</code>. New connections now succeed only as ports leave TIME_WAIT, in bursts, averaging 28,232 ÷ 60 ≈ 470 a second. The server is idle the whole time.'},
+  {clock:'fix',badge:'one Session: a handful of ports, no TIME_WAIT',t:120,fix:true,term:'s = requests.Session()\nfor item in batch:\n    s.get(url)  # reuses the same connection',
+   h:'Fix: keep-alive',b:'One <code>requests.Session</code> (or a small pool) carries all 1,000 requests a second on a few connections. Nothing closes, so nothing enters TIME_WAIT. If connections really must be short-lived: more destination IPs or ports, a wider port range, or <code>tcp_tw_reuse=1</code> for outgoing connections (Linux default 2 allows it for loopback only). Never <code>tcp_tw_recycle</code>, removed in Linux 4.12.'}],
+ take:'TIME_WAIT sits on whichever side closes first. On a client talking to one destination, it uses up the only value in the four-tuple that can change.',
+ gen:'Proxies and sidecars opening a connection per request, NAT gateways with many clients behind one IP, load tests run without keep-alive.'},
+
+{id:'resumption',tab:'Scenario 3',short:'Resumption and 0-RTT',view:'ladder',
+ q:'When a client reconnects to a server it talked to before, what can it skip? And why is 0-RTT data replayable?',
+ frames:[
+  {clock:'first visit',badge:'full handshake, then a session ticket',now:320,msgs:firstVisit,phases:happyPh.slice(0,3),tmax:340,rtt:3,marks:[{lane:0,t:312,label:'stores ticket (PSK)',left:true,col:'io'}],
+   h:'First visit: a ticket',b:'The full handshake runs as in the happy path. Afterwards the server sends a NewSessionTicket. The client gets a pre-shared key for later connections, valid at most 7 days ("Servers MUST NOT use any value greater than 604800 seconds").'},
+  {clock:'resumption',badge:'no certificate · still 3 RTT = 300 ms',now:300,msgs:resume,phases:happyPh.slice(0,3),tmax:340,rtt:3,marks:[{lane:0,t:300,label:'300 ms',left:true,col:'run'}],
+   h:'Reconnect with resumption',b:'The ClientHello offers the ticket and the server accepts it: no certificate is sent and no signature is checked, saving bytes and CPU. But it\'s still one round trip of TLS. With <code>psk_dhe_ke</code> both sides still do a fresh key exchange, so forward secrecy is kept. (In TLS 1.2, resumption did save a round trip; in TLS 1.3 the full handshake is already 1 RTT.)'},
+  {clock:'0-RTT',badge:'request rides with the hello: 2 RTT = 200 ms',now:210,msgs:zrtt,phases:[PH(0,100,'TCP 1 RTT','tcp'),PH(100,208,'hello + request','early')],tmax:340,rtt:2,marks:[{lane:0,t:208,label:'200 ms',left:true,col:'io'}],
+   h:'0-RTT: send the request with the hello',b:'The client encrypts the request as early data under the ticket\'s key and sends it with the ClientHello. The server can answer in its first flight. TCP\'s own round trip remains; QUIC/HTTP/3 merges the transport and TLS handshakes to remove it.'},
+  {clock:'replay',badge:'the same POST runs twice',bad:true,now:130,lanes:L4,msgs:replay,phases:[],tmax:200,rtt:null,marks:[{lane:2,t:60,label:'POST runs',col:'io'},{lane:3,t:105,label:'POST runs again',col:'alert',left:true}],
+   h:'The catch: replay',b:'Nothing in early data proves it\'s new: the server hasn\'t yet said anything fresh in this connection. An attacker copies the ClientHello and early data and sends the same bytes to another server that shares the ticket key but keeps no record of what it has seen. TLS 1.3: "There are no guarantees of non-replay between connections." (TCP handshakes omitted here.)'},
+  {clock:'defenses',badge:'425 Too Early: nothing runs twice',now:250,lanes:L4,msgs:defend,phases:[],tmax:260,rtt:null,marks:[{lane:3,t:105,label:'refuses early POST',col:'io',left:true},{lane:2,t:180,label:'POST runs once',col:'io'}],
+   h:'Defenses',b:'Clients put only replay-safe requests in early data, in practice idempotent reads like GET. Servers add anti-replay: single-use tickets, recording ClientHellos, freshness checks. In HTTP, RFC 8470 lets a proxy mark early requests (<code>Early-Data: 1</code>). The app answers <b>425 Too Early</b> and the client retries after the handshake. Or leave 0-RTT off, a common server default.'}],
+ take:'In TLS 1.3, resumption saves work, not round trips. Only 0-RTT saves the round trip, and it gives up the guarantee that a request arrives once.',
+ gen:'QUIC/HTTP/3 0-RTT has the same replay caveat; any "retry on timeout" logic raises the same question: is this request safe to run twice?'}
+];
+
+let si=0,fi=0,playTimer=null;
+function render(){
+  const sc=SC[si],f=sc.frames[fi];
+  $('clock').textContent=(/^[\d+]/.test(f.clock)?'t = ':'')+f.clock;
+  const b=$('badge');b.textContent=f.badge;b.className='badge '+(f.bad?'bad':'good');
+  const t=$('term');t.textContent=f.term||'';t.hidden=!f.term;
+  let sum='';
+  if(sc.view==='ladder'){$('viz').innerHTML=svgLadder(f);
+    if(f.rtt!=null) sum=`<span>round trips to the response <b>${f.rtt}</b></span><span>at 100 ms RTT <b>≈ ${f.rtt*100} ms</b></span><span>packets shown <b>${f.msgs.filter(m=>m.t0<f.now).length}</b></span>`;
+    else sum=`<span>servers that ran the POST <b>${f.marks.filter(m=>m.col==='io'&&/runs/.test(m.label)).length+f.marks.filter(m=>m.col==='alert').length}</b></span><span>TLS-layer replay protection between connections <b>none</b></span>`;}
+  else {const r=svgPorts(f);$('viz').innerHTML=r.svg;
+    sum=`<span>ports in TIME_WAIT <b>${f.fix?0:Math.round(r.used).toLocaleString('en-US')}</b></span><span>free <b>${(PORTS-Math.round(r.used)).toLocaleString('en-US')}</b></span><span>connections open <b>${f.fix?'a few':'≈ 0 (each lasts ms)'}</b></span><span>server load <b>idle</b></span>`;}
+  $('sum').innerHTML=sum;
+  $('fh').textContent=f.h;$('fb').innerHTML=f.b;
+  $('stepno').textContent=`${fi+1} / ${sc.frames.length}`;
+  $('prev').disabled=fi===0;$('next').disabled=fi===sc.frames.length-1;
+  [...$('dots').children].forEach((d,i)=>d.setAttribute('aria-current',i===fi?'true':'false'));
+}
+function show(n){fi=Math.max(0,Math.min(n,SC[si].frames.length-1));render()}
+function select(i){
+  stopPlay();si=i;fi=0;const sc=SC[si];
+  [...$('tabs').children].forEach((b,k)=>b.setAttribute('aria-selected',k===si?'true':'false'));
+  $('q').textContent=sc.q;$('take').textContent=sc.take;$('gen').textContent=sc.gen;
+  $('legend').innerHTML=LEG[sc.view].map(([c,l,st,shape])=>`<span><i class="sw" style="background:${c};${st?`border:1.5px solid ${st}`:''}${shape==='bar'?';width:6px;height:14px':''}"></i>${esc(l)}</span>`).join('');
+  const dots=$('dots');dots.innerHTML='';
+  sc.frames.forEach((_,k)=>{const d=document.createElement('button');d.className='dot';d.setAttribute('aria-label','Step '+(k+1));d.onclick=()=>{stopPlay();show(k)};dots.appendChild(d)});
+  render();
+}
+function stopPlay(){clearInterval(playTimer);playTimer=null;$('play').textContent='Play'}
+$('play').onclick=()=>{
+  if(playTimer){stopPlay();return}
+  show(fi===SC[si].frames.length-1?0:fi+1);$('play').textContent='Pause';
+  playTimer=setInterval(()=>{if(fi>=SC[si].frames.length-1){stopPlay();return}show(fi+1)},5600);
+};
+$('prev').onclick=()=>{stopPlay();show(fi-1)};
+$('next').onclick=()=>{stopPlay();show(fi+1)};
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){stopPlay();show(fi+1)}else if(e.key==='ArrowLeft'){stopPlay();show(fi-1)}});
+SC.forEach((sc,i)=>{const b=document.createElement('button');b.className='tab';b.setAttribute('role','tab');b.innerHTML=`<small>${sc.tab}</small>${sc.short}`;b.onclick=()=>{try{history.replaceState(null,'','#'+sc.id)}catch(_){location.hash=sc.id}select(i)};$('tabs').appendChild(b)});
+const fromHash=()=>{const i=SC.findIndex(x=>x.id===(location.hash||'').slice(1));return i<0?0:i};
+window.addEventListener('hashchange',()=>select(fromHash()));
+select(fromHash());
+})();
+</script>
+
+</body></html>

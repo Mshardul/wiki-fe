@@ -1,0 +1,96 @@
+.viz-stampede {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  font-size: var(--text-sm);
+  min-width: 0;
+}
+
+.viz-stampede__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+}
+
+.viz-stampede__clock {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  background: var(--text);
+  color: var(--surface);
+}
+
+.viz-stampede__badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--viz-exit);
+  background: var(--viz-slot-bg);
+}
+.viz-stampede__badge--bad {
+  border-left-color: var(--viz-bad);
+}
+
+.viz-stampede__term {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-md);
+  background: var(--text);
+  color: var(--surface);
+}
+
+.viz-stampede__tlwrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s2);
+}
+
+.viz-stampede__tlwrap svg {
+  display: block;
+  width: 100%;
+  min-width: 600px;
+  height: auto;
+}
+
+.viz-stampede__sum {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  color: var(--text-muted);
+}
+.viz-stampede__sum b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.viz-stampede__legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.viz-stampede__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.viz-stampede__sw {
+  width: 22px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}

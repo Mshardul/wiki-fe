@@ -26,6 +26,14 @@ describe("visualizer routes", () => {
       { slug: "inside-postgres-mvcc" },
       { slug: "inside-a-b-tree-index" },
       { slug: "inside-the-postgres-wal" },
+      { slug: "inside-kubectl-apply" },
+      { slug: "inside-a-kubernetes-service" },
+      { slug: "inside-pod-resource-limits" },
+      { slug: "inside-dns-caching" },
+      { slug: "cost-of-a-new-connection" },
+      { slug: "inside-a-connection-pool" },
+      { slug: "inside-a-cache-stampede" },
+      { slug: "inside-celery-prefetch" },
     ]);
   });
 
@@ -62,6 +70,14 @@ describe("visualizer routes", () => {
     expect(html).toMatch(/href="\/visualizer\/inside-postgres-mvcc\/?"/);
     expect(html).toMatch(/href="\/visualizer\/inside-a-b-tree-index\/?"/);
     expect(html).toMatch(/href="\/visualizer\/inside-the-postgres-wal\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-kubectl-apply\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-a-kubernetes-service\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-pod-resource-limits\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-dns-caching\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/cost-of-a-new-connection\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-a-connection-pool\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-a-cache-stampede\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/inside-celery-prefetch\/?"/);
   });
 
   it("the visualizer page ships the app shell without a baked-in run", async () => {

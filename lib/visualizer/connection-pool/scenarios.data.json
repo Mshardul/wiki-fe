@@ -1,0 +1,835 @@
+{
+  "scenarios": [
+    {
+      "id": "happy",
+      "tab": "Happy path",
+      "short": "A pooled connection, reused",
+      "view": "lanes",
+      "q": "What does the pool save, and who is keeping track of the connection?",
+      "frames": [
+        {
+          "clock": "0 s",
+          "badge": "pool empty: open a connection",
+          "axis": [0, 12, [0, 2, 4, 6, 8, 10, 12]],
+          "now": 0,
+          "term": "s = requests.Session()\ns.get(\"https://api.internal/orders\")   # pool empty → new connection",
+          "parties": [
+            {
+              "name": "requests pool",
+              "view": "client",
+              "limitTxt": "idle limit: none",
+              "segs": [],
+              "offTxt": "no limit"
+            },
+            {
+              "name": "NLB",
+              "view": "tracks the flow",
+              "pass": true,
+              "limitTxt": "idle limit: 350 s",
+              "segs": [],
+              "offTxt": "limit 350 s, off this scale →"
+            },
+            {
+              "name": "Go API",
+              "view": "server",
+              "limitTxt": "idle limit: none",
+              "segs": [],
+              "offTxt": "no limit"
+            }
+          ],
+          "lane": {
+            "st": "active",
+            "note": "one TCP connection end to end · the NLB passes it through",
+            "arrows": [
+              {
+                "from": 0,
+                "to": 2,
+                "label": "TCP handshake · TLS handshake · request",
+                "y": 14
+              }
+            ]
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "request"
+            }
+          ],
+          "h": "First request",
+          "b": "The pool is empty, so urllib3 opens a connection: TCP handshake, TLS handshake, then the request. An NLB passes TCP straight through, so this is one connection from client to server; the NLB only tracks the flow so it can forward packets."
+        },
+        {
+          "clock": "0 – 1.5 s",
+          "badge": "idle in the pool; three timers start",
+          "axis": [0, 12, [0, 2, 4, 6, 8, 10, 12]],
+          "now": 1.5,
+          "parties": [
+            {
+              "name": "requests pool",
+              "view": "client",
+              "limitTxt": "idle limit: none",
+              "segs": [[0.05, 2], [2.05, 4.5], [4.55, 7], [7.05, 9.5], [9.55, 12]],
+              "offTxt": "no limit"
+            },
+            {
+              "name": "NLB",
+              "view": "tracks the flow",
+              "pass": true,
+              "limitTxt": "idle limit: 350 s",
+              "segs": [[0.05, 2], [2.05, 4.5], [4.55, 7], [7.05, 9.5], [9.55, 12]],
+              "offTxt": "limit 350 s, off this scale →"
+            },
+            {
+              "name": "Go API",
+              "view": "server",
+              "limitTxt": "idle limit: none",
+              "segs": [[0.05, 2], [2.05, 4.5], [4.55, 7], [7.05, 9.5], [9.55, 12]],
+              "offTxt": "no limit"
+            }
+          ],
+          "lane": {
+            "st": "idle",
+            "note": "idle in the pool"
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "request"
+            }
+          ],
+          "h": "Back to the pool",
+          "b": "The response arrives and the connection goes back into the pool, idle. Each party starts its own idle timer: the client pool and the Go server have no limit; the NLB will forget the flow at 350 s."
+        },
+        {
+          "clock": "2 s",
+          "badge": "reused: no handshake, timers reset",
+          "axis": [0, 12, [0, 2, 4, 6, 8, 10, 12]],
+          "now": 2.2,
+          "parties": [
+            {
+              "name": "requests pool",
+              "view": "client",
+              "limitTxt": "idle limit: none",
+              "segs": [[0.05, 2], [2.05, 4.5], [4.55, 7], [7.05, 9.5], [9.55, 12]],
+              "offTxt": "no limit"
+            },
+            {
+              "name": "NLB",
+              "view": "tracks the flow",
+              "pass": true,
+              "limitTxt": "idle limit: 350 s",
+              "segs": [[0.05, 2], [2.05, 4.5], [4.55, 7], [7.05, 9.5], [9.55, 12]],
+              "offTxt": "limit 350 s, off this scale →"
+            },
+            {
+              "name": "Go API",
+              "view": "server",
+              "limitTxt": "idle limit: none",
+              "segs": [[0.05, 2], [2.05, 4.5], [4.55, 7], [7.05, 9.5], [9.55, 12]],
+              "offTxt": "no limit"
+            }
+          ],
+          "lane": {
+            "st": "active",
+            "note": "same connection, taken from the pool",
+            "arrows": [
+              {
+                "from": 0,
+                "to": 2,
+                "label": "request (no handshake)",
+                "y": 14
+              }
+            ]
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "request"
+            },
+            {
+              "t": 2,
+              "label": "request"
+            }
+          ],
+          "h": "Reuse",
+          "b": "The next request takes the same connection from the pool. No handshake: the request goes straight out, and every timer drops back to zero."
+        },
+        {
+          "clock": "0 – 12 s",
+          "badge": "steady traffic: timers never get close",
+          "axis": [0, 12, [0, 2, 4, 6, 8, 10, 12]],
+          "now": 12,
+          "parties": [
+            {
+              "name": "requests pool",
+              "view": "client",
+              "limitTxt": "idle limit: none",
+              "segs": [[0.05, 2], [2.05, 4.5], [4.55, 7], [7.05, 9.5], [9.55, 12]],
+              "offTxt": "no limit"
+            },
+            {
+              "name": "NLB",
+              "view": "tracks the flow",
+              "pass": true,
+              "limitTxt": "idle limit: 350 s",
+              "segs": [[0.05, 2], [2.05, 4.5], [4.55, 7], [7.05, 9.5], [9.55, 12]],
+              "offTxt": "limit 350 s, off this scale →"
+            },
+            {
+              "name": "Go API",
+              "view": "server",
+              "limitTxt": "idle limit: none",
+              "segs": [[0.05, 2], [2.05, 4.5], [4.55, 7], [7.05, 9.5], [9.55, 12]],
+              "offTxt": "no limit"
+            }
+          ],
+          "lane": {
+            "st": "idle",
+            "note": "one connection, many requests"
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "requests"
+            },
+            {
+              "t": 2,
+              "label": ""
+            },
+            {
+              "t": 4.5,
+              "label": ""
+            },
+            {
+              "t": 7,
+              "label": ""
+            },
+            {
+              "t": 9.5,
+              "label": ""
+            }
+          ],
+          "h": "Steady traffic",
+          "b": "Requests every few seconds keep resetting the timers, so none gets anywhere near its limit. The pool works because every party still believes the connection is open, and steady traffic hides that they each decide that separately."
+        }
+      ],
+      "take": "A pooled connection is alive only while every party along it agrees it is.",
+      "gen": "Database pools, gRPC channels, Redis clients: anything that keeps a connection open between uses."
+    },
+    {
+      "id": "lb-forgets",
+      "tab": "Scenario 1",
+      "short": "The load balancer forgets first",
+      "view": "lanes",
+      "q": "The NLB forgets an idle flow after 350 s; the pool keeps it forever. Traffic pauses for 10 minutes. Why does the next request fail with \"connection reset\"?",
+      "frames": [
+        {
+          "clock": "0 – 100 s",
+          "badge": "traffic stops; connection idle in the pool",
+          "axis": [0, 650, [0, 100, 200, 300, 400, 500, 600]],
+          "now": 100,
+          "parties": [
+            {
+              "name": "requests pool",
+              "view": "client",
+              "limitTxt": "idle limit: none",
+              "segs": [[0, 650]]
+            },
+            {
+              "name": "NLB",
+              "view": "tracks the flow",
+              "pass": true,
+              "limitTxt": "idle limit: 350 s",
+              "segs": [[0, 350], [350, 650, "gone"]],
+              "limit": 350,
+              "limitLab": "350 s",
+              "labLeft": true
+            },
+            {
+              "name": "Go API",
+              "view": "server",
+              "limitTxt": "idle limit: none",
+              "segs": [[0, 650]]
+            }
+          ],
+          "lane": {
+            "st": "idle",
+            "note": "idle in the pool"
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "last request"
+            }
+          ],
+          "h": "Traffic stops",
+          "b": "The last response comes back and the connection waits in the pool. The client and server timers fill with no limit in sight. The NLB's timer fills toward 350 s."
+        },
+        {
+          "clock": "350 s",
+          "badge": "NLB stops tracking the flow · tells nobody",
+          "bad": true,
+          "axis": [0, 650, [0, 100, 200, 300, 400, 500, 600]],
+          "now": 350,
+          "parties": [
+            {
+              "name": "requests pool",
+              "view": "thinks: open",
+              "limitTxt": "idle limit: none",
+              "segs": [[0, 650]]
+            },
+            {
+              "name": "NLB",
+              "view": "flow forgotten",
+              "pass": true,
+              "limitTxt": "idle limit: 350 s",
+              "segs": [[0, 350], [350, 650, "gone"]],
+              "limit": 350,
+              "limitLab": "350 s: forgets",
+              "labLeft": true,
+              "bad": true
+            },
+            {
+              "name": "Go API",
+              "view": "thinks: open",
+              "limitTxt": "idle limit: none",
+              "segs": [[0, 650]]
+            }
+          ],
+          "lane": {
+            "st": "dropped",
+            "note": "no FIN, no RST: both ends still think it's open"
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "last request"
+            }
+          ],
+          "h": "A silent drop",
+          "b": "At 350 s idle, the NLB stops tracking the flow. It sends nothing to either side. The client and the server both still list the connection as open."
+        },
+        {
+          "clock": "600 s",
+          "badge": "ConnectionResetError: request never reached the server",
+          "bad": true,
+          "axis": [0, 650, [0, 100, 200, 300, 400, 500, 600]],
+          "now": 600,
+          "term": "requests.exceptions.ConnectionError: ('Connection aborted.',\n    ConnectionResetError(104, 'Connection reset by peer'))",
+          "parties": [
+            {
+              "name": "requests pool",
+              "view": "got RST",
+              "limitTxt": "idle limit: none",
+              "segs": [[0, 600]],
+              "bad": true
+            },
+            {
+              "name": "NLB",
+              "view": "no such flow",
+              "pass": true,
+              "limitTxt": "idle limit: 350 s",
+              "segs": [[0, 350], [350, 650, "gone"]],
+              "limit": 350,
+              "limitLab": "350 s: forgets",
+              "labLeft": true,
+              "bad": true
+            },
+            {
+              "name": "Go API",
+              "view": "never sees it",
+              "limitTxt": "idle limit: none",
+              "segs": [[0, 650]]
+            }
+          ],
+          "lane": {
+            "st": "rst",
+            "note": "request → NLB has no flow → RST",
+            "arrows": [
+              {
+                "from": 0,
+                "to": 1,
+                "label": "request",
+                "y": 14
+              },
+              {
+                "from": 1,
+                "to": 0,
+                "label": "RST",
+                "y": 106,
+                "col": "alert"
+              }
+            ]
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "last request"
+            },
+            {
+              "t": 600,
+              "label": "next request",
+              "col": "alert",
+              "left": true
+            }
+          ],
+          "h": "The next request",
+          "b": "Before reuse, urllib3 checks whether the other side closed the connection. No FIN ever arrived, so it looks fine. The request goes out, the NLB has no flow for it and answers with a TCP RST. Both services are healthy; the request never reached the server."
+        },
+        {
+          "clock": "contrast",
+          "badge": "ALB closes gracefully: client notices, reconnects",
+          "axis": [0, 650, [0, 100, 200, 300, 400, 500, 600]],
+          "now": 600,
+          "parties": [
+            {
+              "name": "requests pool",
+              "view": "saw FIN, discarded it",
+              "limitTxt": "idle limit: none",
+              "segs": [[0, 60]]
+            },
+            {
+              "name": "ALB",
+              "view": "closed it at 60 s",
+              "limitTxt": "idle limit: 60 s",
+              "segs": [[0, 60]],
+              "limit": 60,
+              "limitLab": "60 s: closes, sends FIN"
+            }
+          ],
+          "lane": {
+            "st": "active",
+            "note": "next request opens a new connection and succeeds",
+            "arrows": [
+              {
+                "from": 1,
+                "to": 0,
+                "label": "FIN at 60 s",
+                "y": 106,
+                "col": "muted"
+              },
+              {
+                "from": 0,
+                "to": 1,
+                "label": "new connection + request",
+                "y": 14
+              }
+            ]
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "last request"
+            },
+            {
+              "t": 600,
+              "label": "next request: works",
+              "col": "io",
+              "left": true
+            }
+          ],
+          "h": "Contrast: a graceful close",
+          "b": "An ALB at its 60 s idle limit closes the connection and sends a FIN. urllib3's check before reuse sees it, throws the connection away and opens a fresh one, so usually nothing fails. Only a request sent at the instant the FIN is on its way loses. A silent drop fails every request after a long enough pause."
+        },
+        {
+          "clock": "fix 1",
+          "badge": "client gives up first",
+          "axis": [0, 650, [0, 100, 200, 300, 400, 500, 600]],
+          "now": 600,
+          "parties": [
+            {
+              "name": "pool, expiry 300 s",
+              "view": "closed it first",
+              "limitTxt": "idle limit: 300 s",
+              "segs": [[0, 300]],
+              "limit": 300,
+              "limitLab": "300 s: closes, FIN",
+              "labLeft": true
+            },
+            {
+              "name": "NLB",
+              "view": "flow ended cleanly",
+              "pass": true,
+              "limitTxt": "idle limit: 350 s",
+              "segs": [[0, 300]],
+              "limit": 350,
+              "limitLab": "350 s"
+            },
+            {
+              "name": "Go API",
+              "view": "got FIN, closed",
+              "limitTxt": "idle limit: none",
+              "segs": [[0, 300]]
+            }
+          ],
+          "lane": {
+            "st": "active",
+            "note": "next request opens a new connection and succeeds",
+            "arrows": [
+              {
+                "from": 0,
+                "to": 2,
+                "label": "new connection + request",
+                "y": 14
+              }
+            ]
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "last request"
+            },
+            {
+              "t": 600,
+              "label": "next request: works",
+              "col": "io",
+              "left": true
+            }
+          ],
+          "h": "Fix: the client gives up first",
+          "b": "Use a pool whose idle expiry is under the load balancer's limit. <code>requests</code> has none; <code>httpx</code> defaults to <code>keepalive_expiry=5.0</code>; Go's default transport uses 90 s, which is under an NLB's 350 s but over an ALB's 60 s. 300 s is drawn here so it shows on the scale."
+        },
+        {
+          "clock": "fix 2",
+          "badge": "TCP keepalive keeps the flow alive",
+          "axis": [0, 650, [0, 100, 200, 300, 400, 500, 600]],
+          "now": 600,
+          "term": "# SO_KEEPALIVE with an idle time under 350 s (Linux default first probe: 7,200 s)",
+          "parties": [
+            {
+              "name": "requests pool",
+              "view": "client",
+              "limitTxt": "idle limit: none",
+              "segs": [[0, 600]]
+            },
+            {
+              "name": "NLB",
+              "view": "probe resets timer",
+              "pass": true,
+              "limitTxt": "idle limit: 350 s",
+              "segs": [[0, 300], [300, 600]],
+              "limit": 350,
+              "limitLab": "350 s"
+            },
+            {
+              "name": "Go API",
+              "view": "server",
+              "limitTxt": "idle limit: none",
+              "segs": [[0, 600]]
+            }
+          ],
+          "lane": {
+            "st": "active",
+            "note": "same connection, still tracked",
+            "arrows": [
+              {
+                "from": 0,
+                "to": 2,
+                "label": "request",
+                "y": 14
+              }
+            ]
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "last request"
+            },
+            {
+              "t": 300,
+              "label": "keepalive probe",
+              "col": "io"
+            },
+            {
+              "t": 600,
+              "label": "next request: works",
+              "col": "io",
+              "left": true
+            }
+          ],
+          "h": "Fix: keep the flow alive",
+          "b": "A TCP keepalive probe every few minutes counts as traffic, so the NLB keeps tracking the flow. AWS recommends a keepalive under 350 s for NLB and NAT gateway. As a last line, retry idempotent requests once on a reused connection; urllib3 retries only GET, PUT, DELETE, HEAD, OPTIONS and TRACE by default, and <code>requests</code> sets retries to 0 unless you mount an adapter."
+        }
+      ],
+      "take": "The only party that knew the connection was dead never said so. Make the side that sends requests give up first.",
+      "gen": "AWS NAT gateways (350 s, RST, no FIN) on calls to third-party APIs; database pools that sit idle overnight; stateful firewalls."
+    },
+    {
+      "id": "server-closes",
+      "tab": "Scenario 2",
+      "short": "The app server closes first",
+      "view": "lanes",
+      "q": "uvicorn closes idle connections after 5 s; the ALB keeps them for 60 s. Why do random 502s appear under light traffic, with nothing in the app's logs?",
+      "frames": [
+        {
+          "clock": "0 – 3 s",
+          "badge": "ALB → target connection idle in the ALB's pool",
+          "axis": [0, 8, [0, 1, 2, 3, 4, 5, 6, 7, 8]],
+          "now": 3,
+          "parties": [
+            {
+              "name": "ALB",
+              "view": "pool to targets",
+              "limitTxt": "idle limit: 60 s",
+              "segs": [[0, 8]],
+              "offTxt": "limit 60 s, off this scale →"
+            },
+            {
+              "name": "uvicorn",
+              "view": "FastAPI target",
+              "limitTxt": "keep-alive: 5 s",
+              "segs": [[0, 5]],
+              "limit": 5,
+              "limitLab": "5 s"
+            }
+          ],
+          "lane": {
+            "st": "idle",
+            "note": "connection X, idle in the ALB's pool"
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "request on X"
+            }
+          ],
+          "h": "The other hop",
+          "b": "An ALB terminates the client's connection and keeps its own pool of connections to each target. On this hop the ALB is the client sending requests and uvicorn is the server. A request just passed on connection X; both timers are filling."
+        },
+        {
+          "clock": "5.000 s",
+          "badge": "uvicorn closes X: FIN on its way",
+          "axis": [0, 8, [0, 1, 2, 3, 4, 5, 6, 7, 8]],
+          "now": 5,
+          "parties": [
+            {
+              "name": "ALB",
+              "view": "hasn't seen the FIN yet",
+              "limitTxt": "idle limit: 60 s",
+              "segs": [[0, 8]],
+              "offTxt": "limit 60 s, off this scale →"
+            },
+            {
+              "name": "uvicorn",
+              "view": "closed X",
+              "limitTxt": "keep-alive: 5 s",
+              "segs": [[0, 5]],
+              "limit": 5,
+              "limitLab": "5 s: closes, FIN"
+            }
+          ],
+          "lane": {
+            "st": "fin",
+            "note": "graceful, but it takes a moment to arrive",
+            "arrows": [
+              {
+                "from": 1,
+                "to": 0,
+                "label": "FIN",
+                "y": 106,
+                "col": "muted"
+              }
+            ]
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "request on X"
+            }
+          ],
+          "h": "The server closes",
+          "b": "At 5 s idle, uvicorn closes connection X and sends a FIN. That's graceful, but the FIN needs a moment to reach the ALB and be processed."
+        },
+        {
+          "clock": "5.000 s",
+          "badge": "502 Bad Gateway · no app log line",
+          "bad": true,
+          "axis": [0, 8, [0, 1, 2, 3, 4, 5, 6, 7, 8]],
+          "now": 5.02,
+          "parties": [
+            {
+              "name": "ALB",
+              "view": "returns 502 to client",
+              "bad": true,
+              "limitTxt": "idle limit: 60 s",
+              "segs": [[0, 5]],
+              "offTxt": "limit 60 s, off this scale →"
+            },
+            {
+              "name": "uvicorn",
+              "view": "socket closed → RST",
+              "bad": true,
+              "limitTxt": "keep-alive: 5 s",
+              "segs": [[0, 5]],
+              "limit": 5,
+              "limitLab": "5 s: closes, FIN"
+            }
+          ],
+          "lane": {
+            "st": "rst",
+            "note": "request sent on X before the FIN was processed",
+            "arrows": [
+              {
+                "from": 0,
+                "to": 1,
+                "label": "GET /orders on X",
+                "y": 14,
+                "col": "alert"
+              },
+              {
+                "from": 1,
+                "to": 0,
+                "label": "FIN … then RST",
+                "y": 106,
+                "col": "alert"
+              }
+            ]
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "request on X"
+            },
+            {
+              "t": 5,
+              "label": "new request picks X",
+              "col": "alert"
+            }
+          ],
+          "h": "The race",
+          "b": "A client request arrives in that moment. The ALB picks connection X from its pool, because it hasn't processed the FIN yet, and sends the request. uvicorn's socket is closed, so it answers with an RST. The ALB has nothing to forward and returns <b>502 Bad Gateway</b>. The app never saw the request, so there is no log line."
+        },
+        {
+          "clock": "0 – 30 s",
+          "badge": "light traffic: closes everywhere, an occasional loss",
+          "bad": true,
+          "view": "fleet",
+          "h": "Why light traffic",
+          "b": "Each grey diamond is uvicorn closing a connection after 5 s idle. Under steady load, connections are reused well within 5 s and never reach the limit. Under light or bursty traffic, closes happen all the time, and each is a small window for the race. Most closes are harmless; at that rate, some aren't: a trickle of 502s."
+        },
+        {
+          "clock": "fix",
+          "badge": "target keep-alive 65 s > ALB 60 s",
+          "axis": [0, 70, [0, 10, 20, 30, 40, 50, 60, 70]],
+          "now": 70,
+          "term": "uvicorn app:app --timeout-keep-alive 65",
+          "parties": [
+            {
+              "name": "ALB",
+              "view": "closes first, sends FIN",
+              "limitTxt": "idle limit: 60 s",
+              "segs": [[0, 60]],
+              "limit": 60,
+              "limitLab": "60 s: ALB closes",
+              "labLeft": true
+            },
+            {
+              "name": "uvicorn",
+              "view": "gets FIN, closes cleanly",
+              "limitTxt": "keep-alive: 65 s",
+              "segs": [[0, 60]],
+              "limit": 65,
+              "limitLab": "65 s"
+            }
+          ],
+          "lane": {
+            "st": "fin",
+            "note": "the side that sends requests closes it, so never sends on it again",
+            "arrows": [
+              {
+                "from": 0,
+                "to": 1,
+                "label": "FIN at 60 s",
+                "y": 14,
+                "col": "muted"
+              }
+            ]
+          },
+          "ev": [
+            {
+              "t": 0,
+              "label": "request on X"
+            }
+          ],
+          "h": "Fix: the side sending requests gives up first",
+          "b": "Set the target's keep-alive above the ALB's idle timeout. Now the ALB always reaches its limit first and closes the connection itself, and a side never sends a request on a connection it closed. AWS's 502 checklist says exactly this: check \"whether the keep-alive duration of the target is shorter than the idle timeout value of the load balancer.\" Watch <code>HTTPCode_ELB_502_Count</code>; app error rates won't show it."
+        }
+      ],
+      "take": "Same mistake as scenario 1, on the other hop. Here it surfaces as a 502 at the load balancer, not an exception in the client.",
+      "gen": "nginx or Envoy upstream keep-alive vs the app behind them; Node.js (keepAliveTimeout 5 s) behind any load balancer. gunicorn's sync worker doesn't keep connections alive, so it can't hit this race."
+    },
+    {
+      "id": "pool-exhausted",
+      "tab": "Scenario 3",
+      "short": "The pool runs out",
+      "view": "pool",
+      "q": "The pool is exhausted. Why does latency climb while the API's CPU sits idle?",
+      "frames": [
+        {
+          "clock": "150 req/s",
+          "badge": "7.5 of 10 busy · ~50 ms",
+          "slots": 10,
+          "busy": 7.5,
+          "need": "7.5",
+          "queue": 0,
+          "now": -0.01,
+          "term": "client = httpx.AsyncClient(limits=httpx.Limits(max_connections=10))\n# API answers every call in 50 ms; pool timeout: httpx default 5 s",
+          "h": "Under capacity",
+          "b": "Little's law: connections in use = request rate × time each request holds one. 150 × 0.05 s = 7.5 of 10. A free connection is almost always there. Ten connections at 50 ms can serve at most 10 ÷ 0.05 = 200 requests a second."
+        },
+        {
+          "clock": "300 req/s",
+          "badge": "needs 15 · pool has 10 · 100 req/s start queueing",
+          "bad": true,
+          "slots": 10,
+          "busy": 10,
+          "need": "15",
+          "queue": 20,
+          "now": 0.2,
+          "h": "Traffic doubles",
+          "b": "300 × 0.05 = 15 connections needed, but the pool allows 10. It still serves 200 req/s; the other 100 req/s wait in the client for a connection to free up."
+        },
+        {
+          "clock": "+4 s",
+          "badge": "≈ 2 s latency · API CPU flat",
+          "bad": true,
+          "slots": 10,
+          "busy": 10,
+          "need": "15",
+          "queue": 400,
+          "now": 4,
+          "h": "Latency climbs, nothing is busy",
+          "b": "About 400 requests are queued. A new arrival waits 400 ÷ 200 = 2 s for a connection, then 50 ms for the call. Latency climbs about 0.5 s every second. The API still handles only 10 requests at a time, so its CPU is flat; the client's coroutines are just waiting."
+        },
+        {
+          "clock": "+10 s",
+          "badge": "PoolTimeout: ≈ 100 of 300 req/s fail",
+          "bad": true,
+          "slots": 10,
+          "busy": 10,
+          "need": "15",
+          "queue": 1000,
+          "now": 13,
+          "term": "httpx.PoolTimeout",
+          "h": "The pool timeout",
+          "b": "Waits reach the 5 s pool timeout and requests start failing with <code>PoolTimeout</code>: about 100 of every 300 per second. The 200 that get through each waited nearly 5 s."
+        },
+        {
+          "clock": "fix",
+          "badge": "pool of 20 · 15 busy · ~50 ms",
+          "slots": 20,
+          "busy": 15,
+          "need": "15",
+          "queue": 0,
+          "now": 13,
+          "fix": true,
+          "term": "client = httpx.AsyncClient(limits=httpx.Limits(max_connections=20))",
+          "h": "Fix: size the pool by Little's law",
+          "b": "Size it for peak rate × p99 latency with headroom (here at least 15, so 20–30), within what the API can actually handle. Keep the pool timeout short so overload fails fast instead of piling up, and measure time <em>waiting for a connection</em> separately from time <em>on the call</em>, or this looks like \"the API got slow\"."
+        }
+      ],
+      "take": "Nothing is slow and nothing is out of CPU. The bottleneck is a number in a config file, and the latency is all queueing in the client.",
+      "gen": "Database pools, thread pools, worker pools, semaphores: any fixed set of slots with a queue in front. Not every client waits: requests opens and discards extra connections instead."
+    }
+  ]
+}

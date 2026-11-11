@@ -1,0 +1,186 @@
+.viz-k8s-svc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  font-size: var(--text-sm);
+  min-width: 0;
+}
+
+.viz-k8s-svc__badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--viz-exit);
+  background: var(--viz-slot-bg);
+}
+.viz-k8s-svc__badge--bad {
+  border-left-color: var(--viz-bad);
+}
+
+.viz-k8s-svc__epstrip {
+  border: 1.5px solid var(--text);
+  border-radius: var(--r-md);
+  padding: var(--s2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+}
+.viz-k8s-svc__epstrip--on {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--viz-exit) 55%, transparent);
+}
+.viz-k8s-svc__eplbl {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.viz-k8s-svc__ep {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  border: 1.5px solid var(--viz-good);
+  background: var(--viz-good-bg);
+}
+.viz-k8s-svc__ep--no {
+  border-color: var(--text-muted);
+  background: var(--viz-slot-bg);
+  color: var(--text-muted);
+}
+.viz-k8s-svc__ep--term {
+  border-color: var(--viz-bad);
+  border-style: dashed;
+  background: var(--surface);
+  color: var(--viz-bad);
+}
+
+.viz-k8s-svc__cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s3);
+}
+@media (max-width: 720px) {
+  .viz-k8s-svc__cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.viz-k8s-svc__colttl {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0 0 var(--s1);
+}
+
+.viz-k8s-svc__client,
+.viz-k8s-svc__rules,
+.viz-k8s-svc__bpod {
+  border: 1.5px solid var(--viz-slot-border);
+  border-radius: var(--r-md);
+  padding: var(--s2);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: var(--s2);
+}
+.viz-k8s-svc__panel--on {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--viz-exit) 55%, transparent);
+}
+
+.viz-k8s-svc__chd {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s1);
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+.viz-k8s-svc__chd small {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  text-align: right;
+}
+.viz-k8s-svc__sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.viz-k8s-svc__conn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 6px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--viz-slot-border);
+}
+.viz-k8s-svc__conn--new {
+  border-color: var(--viz-exit);
+  background: color-mix(in srgb, var(--viz-exit) 12%, var(--surface));
+}
+.viz-k8s-svc__conn--fail,
+.viz-k8s-svc__conn--old {
+  border-color: var(--viz-bad);
+}
+.viz-k8s-svc__conn--ok {
+  border-color: var(--viz-good);
+}
+
+.viz-k8s-svc__rstate {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+.viz-k8s-svc__rstate--stale {
+  color: var(--viz-bad);
+}
+.viz-k8s-svc__rt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.viz-k8s-svc__rt-gone {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.viz-k8s-svc__load {
+  height: 6px;
+  background: var(--viz-slot-bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.viz-k8s-svc__load i {
+  display: block;
+  height: 100%;
+  background: var(--viz-good);
+}
+.viz-k8s-svc__load i.hot {
+  background: var(--viz-bad);
+}
+
+.viz-mech__swatch--k8s-ep-ready {
+  border: 1.5px solid var(--viz-good);
+  background: var(--viz-good-bg);
+}
+.viz-mech__swatch--k8s-ep-wait {
+  border: 1.5px solid var(--text-muted);
+  background: var(--viz-slot-bg);
+}
+.viz-mech__swatch--k8s-ep-term {
+  border: 1.5px dashed var(--viz-bad);
+  background: transparent;
+}
+.viz-mech__swatch--k8s-conn-new {
+  border: 1.5px solid var(--viz-exit);
+  background: color-mix(in srgb, var(--viz-exit) 22%, var(--surface));
+}
+.viz-mech__swatch--k8s-conn-fail {
+  border: 1.5px solid var(--viz-bad);
+  background: color-mix(in srgb, var(--viz-bad) 14%, var(--surface));
+}

@@ -1,0 +1,290 @@
+.viz-conn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  font-size: var(--text-sm);
+  min-width: 0;
+}
+
+.viz-conn__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+}
+
+.viz-conn__clock {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  background: var(--text);
+  color: var(--surface);
+}
+
+.viz-conn__badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--viz-exit);
+  background: var(--viz-slot-bg);
+}
+.viz-conn__badge--bad {
+  border-left-color: var(--viz-bad);
+}
+
+.viz-conn__term {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: pre-wrap;
+  margin: 0;
+  padding: var(--s2);
+  border-radius: var(--r-md);
+  background: var(--text);
+  color: var(--surface);
+}
+
+.viz-conn__tlwrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 6px;
+}
+.viz-conn__tlwrap svg {
+  display: block;
+  width: 100%;
+  min-width: 600px;
+  height: auto;
+}
+
+.viz-conn__sum {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--text-muted);
+}
+.viz-conn__sum b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.viz-conn__lane-head {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+.viz-conn__lane-head--bad {
+  stroke: var(--viz-bad);
+}
+.viz-conn__lane-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--text);
+  font-family: var(--font-sans);
+}
+.viz-conn__lane-line {
+  stroke: var(--border);
+  stroke-width: 2;
+}
+
+.viz-conn__tick {
+  font-size: 10.5px;
+  fill: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.viz-conn__tick-line {
+  stroke: var(--text-muted);
+}
+
+.viz-conn__pkt--tcp,
+.viz-conn__phase--tcp,
+.viz-conn__marker--tcp {
+  stroke: var(--text-muted);
+  fill: var(--text-muted);
+}
+.viz-conn__pkt--tls,
+.viz-conn__phase--tls,
+.viz-conn__marker--tls {
+  stroke: #7a5cc4;
+  fill: #7a5cc4;
+}
+.viz-conn__pkt--req,
+.viz-conn__phase--req,
+.viz-conn__marker--req {
+  stroke: var(--color-info);
+  fill: var(--color-info);
+}
+.viz-conn__pkt--ticket,
+.viz-conn__marker--ticket {
+  stroke: var(--viz-good);
+  fill: var(--viz-good);
+}
+.viz-conn__pkt--early,
+.viz-conn__phase--early,
+.viz-conn__marker--early {
+  stroke: var(--viz-exit);
+  fill: var(--viz-exit);
+}
+.viz-conn__pkt--bad,
+.viz-conn__marker--bad {
+  stroke: var(--viz-bad);
+  fill: var(--viz-bad);
+}
+
+.viz-conn__phase {
+  stroke-width: 2;
+}
+.viz-conn__phase-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.viz-conn__pkt-label-bg {
+  fill: var(--surface);
+  opacity: 0.92;
+}
+.viz-conn__pkt-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.viz-conn__mark-dot--run {
+  fill: var(--color-info);
+}
+.viz-conn__mark-dot--io {
+  fill: var(--viz-good);
+}
+.viz-conn__mark-dot--alert {
+  fill: var(--viz-bad);
+}
+.viz-conn__mark-dot--muted {
+  fill: var(--text-muted);
+}
+.viz-conn__mark-dot--fg {
+  fill: var(--text);
+}
+.viz-conn__mark-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+.viz-conn__mark-label--run {
+  fill: var(--color-info);
+}
+.viz-conn__mark-label--io {
+  fill: var(--viz-good);
+}
+.viz-conn__mark-label--alert {
+  fill: var(--viz-bad);
+}
+.viz-conn__mark-label--muted {
+  fill: var(--text-muted);
+}
+.viz-conn__mark-label--fg {
+  fill: var(--text);
+}
+
+.viz-conn__now {
+  stroke: var(--text);
+  stroke-dasharray: 2 4;
+  opacity: 0.5;
+}
+
+.viz-conn__ports-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: var(--text);
+  font-family: var(--font-sans);
+}
+.viz-conn__port-open {
+  fill: var(--color-info);
+}
+.viz-conn__port-tw {
+  fill: color-mix(in srgb, var(--viz-exit) 75%, var(--surface));
+}
+.viz-conn__port-free {
+  fill: var(--surface-raised);
+  stroke: var(--border);
+}
+.viz-conn__port-strip-label {
+  font-size: 10.5px;
+  fill: var(--text);
+  font-family: var(--font-mono);
+}
+
+.viz-conn__cell--use {
+  fill: var(--color-info);
+}
+.viz-conn__cell--tw {
+  fill: color-mix(in srgb, var(--viz-exit) 75%, var(--surface));
+}
+.viz-conn__cell--free {
+  fill: var(--surface-raised);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.viz-conn__grid-alert {
+  stroke: var(--viz-bad);
+  stroke-width: 2;
+}
+
+.viz-conn__chart-grid {
+  stroke: var(--border);
+}
+.viz-conn__chart-cap {
+  stroke: var(--viz-bad);
+  stroke-dasharray: 6 4;
+}
+.viz-conn__chart-cap-label {
+  font-size: 10.5px;
+  fill: var(--viz-bad);
+  font-family: var(--font-mono);
+}
+.viz-conn__chart-line {
+  stroke: var(--color-info);
+  stroke-width: 2.2;
+  fill: none;
+}
+.viz-conn__chart-line--fix {
+  stroke: var(--viz-good);
+  stroke-width: 2.2;
+  fill: none;
+}
+.viz-conn__chart-fail {
+  stroke: var(--viz-bad);
+  stroke-width: 1.5;
+}
+.viz-conn__chart-fail-label {
+  font-size: 10.5px;
+  fill: var(--viz-bad);
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.viz-mech__swatch--conn-tcp {
+  background: var(--text-muted);
+}
+.viz-mech__swatch--conn-tls {
+  background: #7a5cc4;
+}
+.viz-mech__swatch--conn-req {
+  background: var(--color-info);
+}
+.viz-mech__swatch--conn-ticket {
+  background: var(--viz-good);
+}
+.viz-mech__swatch--conn-early {
+  background: var(--viz-exit);
+}
+.viz-mech__swatch--conn-bad {
+  background: var(--viz-bad);
+}
+.viz-mech__swatch--conn-tw {
+  background: color-mix(in srgb, var(--viz-exit) 75%, var(--surface));
+  border: 1px solid var(--border);
+}

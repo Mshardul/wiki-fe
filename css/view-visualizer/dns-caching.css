@@ -1,0 +1,276 @@
+.viz-dns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  font-size: var(--text-sm);
+  min-width: 0;
+}
+
+.viz-dns__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+}
+
+.viz-dns__clock {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  background: var(--text);
+  color: var(--surface);
+}
+
+.viz-dns__badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--viz-exit);
+  background: var(--viz-slot-bg);
+}
+.viz-dns__badge--bad {
+  border-left-color: var(--viz-bad);
+}
+
+.viz-dns__term {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: pre-wrap;
+  margin: 0;
+  padding: var(--s2);
+  border-radius: var(--r-md);
+  background: var(--text);
+  color: var(--surface);
+}
+
+.viz-dns__tlwrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 6px;
+}
+.viz-dns__tlwrap svg {
+  display: block;
+  width: 100%;
+  min-width: 620px;
+  height: auto;
+}
+
+.viz-dns__sum {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--text-muted);
+}
+.viz-dns__sum b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.viz-dns__box {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+.viz-dns__box--hl {
+  stroke: var(--text);
+  stroke-width: 2;
+}
+
+.viz-dns__box-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--text);
+  font-family: var(--font-sans);
+}
+
+.viz-dns__svg-meta {
+  font-size: 10px;
+  fill: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.viz-dns__svg-val {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--text);
+  font-family: var(--font-mono);
+}
+.viz-dns__svg-alert {
+  font-size: 10.5px;
+  fill: var(--viz-bad);
+  font-family: var(--font-mono);
+}
+.viz-dns__svg-io {
+  font-size: 10px;
+  fill: var(--viz-good);
+  font-family: var(--font-mono);
+}
+.viz-dns__svg-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: var(--text);
+  font-family: var(--font-sans);
+}
+
+.viz-dns__card--ok {
+  fill: color-mix(in srgb, var(--color-info) 14%, var(--surface));
+  stroke: var(--color-info);
+}
+.viz-dns__card--old {
+  fill: color-mix(in srgb, var(--viz-exit) 14%, var(--surface));
+  stroke: var(--viz-exit);
+}
+.viz-dns__card--new {
+  fill: color-mix(in srgb, var(--viz-good) 14%, var(--surface));
+  stroke: var(--viz-good);
+}
+.viz-dns__card--nx {
+  fill: color-mix(in srgb, var(--viz-bad) 14%, var(--surface));
+  stroke: var(--viz-bad);
+}
+
+.viz-dns__ttl-bg {
+  fill: var(--surface-raised);
+}
+.viz-dns__ttl-fill--ok {
+  fill: var(--color-info);
+}
+.viz-dns__ttl-fill--old {
+  fill: var(--viz-exit);
+}
+.viz-dns__ttl-fill--new {
+  fill: var(--viz-good);
+}
+.viz-dns__ttl-fill--nx {
+  fill: var(--viz-bad);
+}
+
+.viz-dns__marker--ok {
+  fill: var(--color-info);
+}
+.viz-dns__marker--old {
+  fill: var(--viz-exit);
+}
+.viz-dns__marker--new {
+  fill: var(--viz-good);
+}
+.viz-dns__marker--nx {
+  fill: var(--viz-bad);
+}
+.viz-dns__marker--muted {
+  fill: var(--text-muted);
+}
+
+.viz-dns__arrow {
+  stroke-width: 2;
+  fill: none;
+}
+.viz-dns__arrow--ok,
+.viz-dns__arrow-label--ok {
+  stroke: var(--color-info);
+  fill: var(--color-info);
+}
+.viz-dns__arrow--old,
+.viz-dns__arrow-label--old {
+  stroke: var(--viz-exit);
+  fill: var(--viz-exit);
+}
+.viz-dns__arrow--new,
+.viz-dns__arrow-label--new {
+  stroke: var(--viz-good);
+  fill: var(--viz-good);
+}
+.viz-dns__arrow--nx,
+.viz-dns__arrow-label--nx {
+  stroke: var(--viz-bad);
+  fill: var(--viz-bad);
+}
+.viz-dns__arrow-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.viz-dns__extra-line {
+  stroke: var(--color-info);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+  fill: none;
+}
+.viz-dns__extra-panel {
+  fill: var(--surface);
+  stroke: var(--border);
+}
+
+.viz-dns__tl-grid {
+  stroke: var(--border);
+}
+.viz-dns__tl-track {
+  fill: var(--surface-raised);
+}
+.viz-dns__tl-seg--ok {
+  fill: var(--color-info);
+  opacity: 0.85;
+}
+.viz-dns__tl-seg--old {
+  fill: var(--viz-exit);
+  opacity: 0.85;
+}
+.viz-dns__tl-seg--new {
+  fill: var(--viz-good);
+  opacity: 0.85;
+}
+.viz-dns__tl-seg--nx {
+  fill: var(--viz-bad);
+  opacity: 0.85;
+}
+.viz-dns__tl-seg-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  fill: var(--surface);
+  font-family: var(--font-mono);
+}
+.viz-dns__svg-lane {
+  font-size: 10.5px;
+  fill: var(--text);
+  font-family: var(--font-mono);
+}
+.viz-dns__mark {
+  stroke: var(--text);
+  stroke-width: 2;
+}
+.viz-dns__mark--io {
+  stroke: var(--viz-good);
+  stroke-width: 2;
+}
+.viz-dns__mark--muted {
+  stroke: var(--text-muted);
+  stroke-width: 2;
+}
+.viz-dns__mark-label {
+  font-size: 10px;
+  font-weight: 500;
+  fill: var(--text);
+  font-family: var(--font-mono);
+}
+.viz-dns__now {
+  stroke: var(--text);
+  stroke-dasharray: 2 3;
+}
+
+.viz-mech__swatch--dns-ok {
+  background: var(--color-info);
+}
+.viz-mech__swatch--dns-old {
+  background: var(--viz-exit);
+}
+.viz-mech__swatch--dns-new {
+  background: var(--viz-good);
+}
+.viz-mech__swatch--dns-nx {
+  background: var(--viz-bad);
+}

@@ -1,0 +1,363 @@
+.viz-cpool {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  font-size: var(--text-sm);
+  min-width: 0;
+}
+
+.viz-cpool__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+}
+
+.viz-cpool__clock {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  background: var(--text);
+  color: var(--surface);
+}
+
+.viz-cpool__badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--viz-exit);
+  background: var(--viz-slot-bg);
+}
+.viz-cpool__badge--bad {
+  border-left-color: var(--viz-bad);
+}
+
+.viz-cpool__term {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: pre-wrap;
+  margin: 0;
+  padding: var(--s2);
+  border-radius: var(--r-md);
+  background: var(--text);
+  color: var(--surface);
+}
+
+.viz-cpool__tlwrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 6px;
+}
+.viz-cpool__tlwrap svg {
+  display: block;
+  width: 100%;
+  min-width: 600px;
+  height: auto;
+}
+
+.viz-cpool__sum {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--text-muted);
+}
+.viz-cpool__sum b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.viz-cpool__section-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: var(--text);
+  font-family: var(--font-sans);
+}
+
+.viz-cpool__party {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+.viz-cpool__party--bad {
+  stroke: var(--viz-bad);
+  stroke-width: 2.5;
+}
+.viz-cpool__party-fill {
+  fill: var(--surface);
+}
+.viz-cpool__party-name {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--text);
+  font-family: var(--font-sans);
+}
+.viz-cpool__party-view {
+  font-size: 10.5px;
+  fill: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.viz-cpool__party-view--bad {
+  fill: var(--viz-bad);
+}
+
+.viz-cpool__conn {
+  fill: none;
+  stroke-width: 3;
+}
+.viz-cpool__conn--active {
+  stroke: var(--color-info);
+}
+.viz-cpool__conn--idle {
+  stroke: var(--viz-good);
+}
+.viz-cpool__conn--fin {
+  stroke: var(--text-muted);
+  opacity: 0.55;
+}
+.viz-cpool__conn--dropped {
+  stroke: var(--text-muted);
+  stroke-dasharray: 7 6;
+}
+.viz-cpool__conn--rst {
+  stroke: var(--viz-bad);
+  stroke-dasharray: 7 6;
+}
+
+.viz-cpool__lane-note {
+  font-size: 11px;
+  fill: var(--text);
+  font-family: var(--font-mono);
+}
+.viz-cpool__lane-note--bad {
+  fill: var(--viz-bad);
+}
+
+.viz-cpool__arrow {
+  stroke-width: 2;
+  fill: none;
+}
+.viz-cpool__arrow--run {
+  stroke: var(--color-info);
+}
+.viz-cpool__arrow--alert {
+  stroke: var(--viz-bad);
+}
+.viz-cpool__arrow--io {
+  stroke: var(--viz-good);
+}
+.viz-cpool__arrow--muted {
+  stroke: var(--text-muted);
+}
+.viz-cpool__arrow-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+.viz-cpool__arrow-label--run {
+  fill: var(--color-info);
+}
+.viz-cpool__arrow-label--alert {
+  fill: var(--viz-bad);
+}
+.viz-cpool__arrow-label--io {
+  fill: var(--viz-good);
+}
+.viz-cpool__arrow-label--muted {
+  fill: var(--text-muted);
+}
+
+.viz-cpool__marker--run {
+  fill: var(--color-info);
+}
+.viz-cpool__marker--alert {
+  fill: var(--viz-bad);
+}
+.viz-cpool__marker--io {
+  fill: var(--viz-good);
+}
+.viz-cpool__marker--muted {
+  fill: var(--text-muted);
+}
+
+.viz-cpool__grid {
+  stroke: var(--border);
+}
+.viz-cpool__tick {
+  font-size: 10.5px;
+  fill: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.viz-cpool__tick--muted {
+  fill: var(--text-muted);
+}
+
+.viz-cpool__timer-track {
+  fill: var(--surface-raised);
+}
+.viz-cpool__timer-name {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--text);
+  font-family: var(--font-sans);
+}
+.viz-cpool__timer-seg--idle {
+  fill: color-mix(in srgb, var(--viz-exit) 70%, var(--surface));
+}
+.viz-cpool__timer-seg--gone {
+  fill: none;
+  stroke: var(--viz-bad);
+  stroke-dasharray: 4 3;
+}
+.viz-cpool__timer-seg--ka {
+  fill: var(--viz-good);
+}
+.viz-cpool__gone-label {
+  font-size: 10.5px;
+  fill: var(--viz-bad);
+  font-family: var(--font-mono);
+}
+.viz-cpool__limit-line {
+  stroke: var(--viz-bad);
+  stroke-width: 2.5;
+}
+.viz-cpool__limit-label {
+  font-size: 10.5px;
+  fill: var(--viz-bad);
+  font-family: var(--font-mono);
+}
+
+.viz-cpool__ev-line {
+  stroke-width: 2;
+}
+.viz-cpool__ev-line--run,
+.viz-cpool__ev-dot--run,
+.viz-cpool__ev-label--run {
+  stroke: var(--color-info);
+  fill: var(--color-info);
+}
+.viz-cpool__ev-line--alert,
+.viz-cpool__ev-dot--alert,
+.viz-cpool__ev-label--alert {
+  stroke: var(--viz-bad);
+  fill: var(--viz-bad);
+}
+.viz-cpool__ev-line--io,
+.viz-cpool__ev-dot--io,
+.viz-cpool__ev-label--io {
+  stroke: var(--viz-good);
+  fill: var(--viz-good);
+}
+.viz-cpool__ev-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.viz-cpool__now {
+  stroke: var(--text);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 3;
+}
+
+.viz-cpool__req-mark {
+  fill: var(--color-info);
+}
+.viz-cpool__diamond {
+  fill: var(--text-muted);
+}
+.viz-cpool__diamond--bad {
+  fill: var(--viz-bad);
+}
+.viz-cpool__race-bg {
+  fill: var(--surface);
+}
+.viz-cpool__race-label {
+  font-size: 10.5px;
+  fill: var(--viz-bad);
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.viz-cpool__slot {
+  fill: var(--surface-raised);
+  stroke: var(--border);
+}
+.viz-cpool__slot-busy {
+  fill: var(--color-info);
+}
+.viz-cpool__queue-dot {
+  fill: var(--viz-exit);
+}
+
+.viz-cpool__chart-grid {
+  stroke: var(--border);
+}
+.viz-cpool__pool-timeout-line {
+  stroke: var(--viz-bad);
+  stroke-dasharray: 6 4;
+  stroke-width: 1.5;
+}
+.viz-cpool__pool-timeout-label {
+  font-size: 10.5px;
+  fill: var(--viz-bad);
+  font-family: var(--font-mono);
+}
+.viz-cpool__traffic-line {
+  stroke: var(--text);
+  stroke-dasharray: 3 3;
+}
+.viz-cpool__latency-line {
+  stroke: var(--color-info);
+  stroke-width: 2.5;
+  fill: none;
+}
+.viz-cpool__fail-zone {
+  fill: color-mix(in srgb, var(--viz-bad) 10%, transparent);
+}
+.viz-cpool__fail-label {
+  font-size: 10.5px;
+  fill: var(--viz-bad);
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+.viz-cpool__latency-now {
+  fill: var(--color-info);
+}
+
+.viz-mech__swatch--pool-idle {
+  background: color-mix(in srgb, var(--viz-exit) 70%, var(--surface));
+}
+.viz-mech__swatch--pool-limit {
+  width: 6px;
+  height: 14px;
+  background: transparent;
+  border-left: 2.5px solid var(--viz-bad);
+  border-radius: 0;
+}
+.viz-mech__swatch--pool-gone {
+  background: transparent;
+  border: 1.5px dashed var(--viz-bad);
+}
+.viz-mech__swatch--pool-req {
+  width: 4px;
+  background: var(--color-info);
+  border-radius: 0;
+}
+.viz-mech__swatch--pool-ok {
+  background: var(--viz-good);
+}
+.viz-mech__swatch--pool-busy {
+  background: var(--color-info);
+}
+.viz-mech__swatch--pool-free {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+}
+.viz-mech__swatch--pool-wait {
+  background: var(--viz-exit);
+}

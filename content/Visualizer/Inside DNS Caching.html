@@ -1,0 +1,465 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Inside DNS Caching</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a chain of cache boxes (runtime, OS stub, recursive resolver, authoritative) holding record cards with TTL bars; a "traffic goes to" strip on a time axis. Same series identity. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --fg:#152230; --muted:#5a6878; --line:#d6dce4; --soft:#eef2f6;
+  --run:#3776ab; --run-ink:#ffffff; --loop:#e8b923; --wait:#8d99a8; --io:#2f9474; --io-bg:#e3f3ed;
+  --thr:#7a5cc4; --thr-ink:#ffffff; --alert:#c9412f;
+  --f-display:"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding-block:28px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font:500 13px/1.2 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 12px;border-radius:8px;cursor:pointer;text-align:left}
+.tab small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-bottom:2px}
+.tab[aria-selected="true"]{border-color:var(--run);box-shadow:inset 0 0 0 1px var(--run)}
+.tab:focus-visible,.btn:focus-visible,.dot:focus-visible{outline:2px solid var(--loop);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(19px,3vw,23px);line-height:1.25;margin:0;text-wrap:balance}
+.trace{overflow-x:auto;margin:0 -4px}
+.trace svg{display:block;width:100%;min-width:620px;height:auto}
+.share{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px;font-variant-numeric:tabular-nums}
+.share b{color:var(--fg);font-weight:500}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--soft);color:var(--fg);padding:7px 12px;border-radius:7px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.dots{display:flex;gap:6px;flex:1;min-width:0}
+.dot{width:28px;height:6px;border-radius:3px;border:0;background:var(--line);cursor:pointer;padding:0}
+.dot[aria-current="true"]{background:var(--run)}
+.step{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.caption{border-left:3px solid var(--loop);padding:2px 0 2px 14px;min-height:78px}
+.caption h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.caption p{margin:0;max-width:68ch}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 4px;border-radius:4px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.note{background:var(--soft);border-radius:10px;padding:12px 14px;min-width:0}
+.note .eyebrow{margin-bottom:4px}
+.note p{margin:0;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:10px;border-radius:2px;display:inline-block}
+.foot{font-size:13px;color:var(--muted)}
+.txns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:30px}
+.txlabel{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.tx{font-family:var(--f-mono);font-size:12px;padding:3px 9px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface)}
+.tx.active{border-color:var(--run);color:var(--run)}
+.tx.idle{border-color:var(--alert);color:var(--alert)}
+.tx.committed{border-color:var(--io);color:var(--io)}
+.view{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+.view.solo{grid-template-columns:minmax(0,1fr)}
+@media (max-width:720px){.view{grid-template-columns:minmax(0,1fr)}}
+.panel{border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ptitle{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;justify-content:space-between;gap:8px}
+.tup{display:grid;grid-template-columns:34px minmax(0,1fr) 52px 52px;gap:8px;align-items:center;font-family:var(--f-mono);font-size:12.5px;padding:7px 8px;border-radius:6px;border:1.5px solid transparent;background:var(--soft);font-variant-numeric:tabular-nums;transition:background .3s,border-color .3s,opacity .3s}
+.tup.hdr{background:none;font-size:10.5px;color:var(--muted);padding-block:0;text-transform:uppercase}
+.tup .val{min-width:0;overflow-wrap:anywhere}
+.tup .sub{display:block;font-size:10.5px;color:var(--muted);font-family:var(--f-body)}
+.tup.live{background:var(--io-bg);border-color:var(--io)}
+.tup.new{background:var(--surface);border:1.5px dashed var(--run)}
+.tup.dead{opacity:.75}
+.tup.dead .val{text-decoration:line-through}
+.tup.pinned{background:repeating-linear-gradient(45deg,var(--surface) 0 5px,color-mix(in srgb,var(--alert) 18%,var(--surface)) 5px 10px);border-color:var(--alert)}
+.tup.free{background:none;border:1.5px dashed var(--line);color:var(--muted)}
+.tup.free .val{text-decoration:none}
+.idx{font-family:var(--f-mono);font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.idx .iname{font-size:11px;color:var(--muted)}
+.ent{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:6px;background:var(--soft);border:1.5px solid transparent}
+.ent.new{border-color:var(--alert)}
+.ent.stale{opacity:.6}
+.badge{display:inline-block;font-family:var(--f-mono);font-size:12px;padding:4px 10px;border-radius:6px;background:var(--soft);border-left:3px solid var(--loop)}
+.badge.bad{border-left-color:var(--alert)}
+.badge.good{border-left-color:var(--io)}
+.log{font-family:var(--f-mono);font-size:12px;background:var(--soft);border-radius:6px;padding:8px 10px;color:var(--fg);overflow-wrap:anywhere}
+.grid{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:3px}
+.cell{aspect-ratio:1;border-radius:2px;max-width:100%}
+.c-live{background:var(--io)}
+.c-pinned{background:var(--alert)}
+.c-free{background:none;outline:1px dashed var(--line);outline-offset:-1px}
+.pagesbar{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.xidwrap{overflow-x:auto}
+.xidwrap svg{display:block;width:100%;min-width:560px;height:auto}
+.rowlegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.rowlegend span{display:inline-flex;align-items:center;gap:6px}
+.term{font-family:var(--f-mono);font-size:12px;background:var(--fg);color:var(--bg);border-radius:8px;padding:8px 10px;white-space:pre-wrap;overflow-wrap:anywhere;min-height:20px}
+.hub{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:820px){.hub{grid-template-columns:minmax(0,1fr)}}
+.colttl{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.stack{display:flex;flex-direction:column;gap:8px;min-width:0}
+.actor{border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;display:flex;flex-direction:column;gap:3px;font-size:13px;transition:all .3s;min-width:0}
+.actor b{font-weight:600}
+.actor .watch{font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.actor .ln{font-family:var(--f-mono);font-size:11.5px;overflow-wrap:anywhere}
+.actor .ln i{font-style:normal;color:var(--muted)}
+.actor.on{border-color:var(--loop);box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent);background:color-mix(in srgb,var(--loop) 10%,var(--surface))}
+.actor.idle{opacity:.6}
+.api{border:1.5px solid var(--fg);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.api.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.apihead{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.apihead small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted)}
+.obj{font-family:var(--f-mono);font-size:11.5px;padding:6px 8px;border-radius:6px;background:var(--soft);border:1.5px solid transparent;display:flex;flex-direction:column;gap:1px;overflow-wrap:anywhere;transition:all .3s}
+.obj .k{color:var(--muted);font-size:10.5px}
+.obj.new{border-color:var(--loop);background:color-mix(in srgb,var(--loop) 18%,var(--surface))}
+.obj.bad{border-color:var(--alert)}
+.obj.gone{opacity:.5;text-decoration:line-through}
+.node{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.node.bad{border-color:var(--alert);border-style:dashed;opacity:.7}
+.node.new{border-color:var(--io);border-style:dashed}
+.nhead{display:flex;justify-content:space-between;gap:6px;font-weight:600;font-size:13px}
+.nhead small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted)}
+.pod{font-family:var(--f-mono);font-size:11px;padding:5px 7px;border-radius:6px;border:1.5px solid var(--line);display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;transition:all .3s}
+.pod .st{font-weight:600}
+.pod.ready{border-color:var(--io);background:var(--io-bg)}
+.pod.running{border-color:var(--run)}
+.pod.creating{border-style:dashed;border-color:var(--run)}
+.pod.crash{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 12%,var(--surface))}
+.pod.term{opacity:.5;border-style:dashed}
+.pod.new{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.nopods{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.epstrip{border:1.5px solid var(--fg);border-radius:10px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;transition:box-shadow .3s}
+.epstrip.on,.rules.on,.client.on,.bpod.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.epstrip .lbl{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.ep{font-family:var(--f-mono);font-size:11.5px;padding:4px 8px;border-radius:6px;border:1.5px solid var(--io);background:var(--io-bg)}
+.ep.no{border-color:var(--wait);background:var(--soft);color:var(--muted)}
+.ep.term{border-color:var(--alert);border-style:dashed;background:var(--surface);color:var(--alert)}
+.cols3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:820px){.cols3{grid-template-columns:minmax(0,1fr)}}
+.client,.rules,.bpod{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:5px;min-width:0;transition:all .3s}
+.chd{display:flex;justify-content:space-between;gap:6px;font-weight:600;font-size:13px}
+.chd small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted);text-align:right}
+.sub{font-family:var(--f-mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.conn{font-family:var(--f-mono);font-size:11px;padding:4px 7px;border-radius:6px;border:1.5px solid var(--line);overflow-wrap:anywhere}
+.conn.ok{border-color:var(--io);background:var(--io-bg)}
+.conn.new{border-color:var(--loop);background:color-mix(in srgb,var(--loop) 22%,var(--surface))}
+.conn.fail{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 14%,var(--surface));color:var(--alert)}
+.conn.old{opacity:.6}
+.rt{font-family:var(--f-mono);font-size:11px;display:flex;flex-wrap:wrap;gap:4px}
+.rt span{padding:2px 6px;border-radius:5px;background:var(--soft)}
+.rt span.gone{background:color-mix(in srgb,var(--alert) 14%,var(--surface));color:var(--alert)}
+.rstate{font-family:var(--f-mono);font-size:10.5px;font-weight:600}
+.rstate.ok{color:var(--io)}.rstate.stale{color:var(--alert)}.rstate.new{color:var(--run)}.rstate.na{color:var(--muted)}
+.bpod.ready{border-color:var(--io)}
+.bpod.notready{border-color:var(--wait);background:var(--soft)}
+.bpod.term{border-color:var(--alert);border-style:dashed}
+.bpod.exited{border-color:var(--alert);opacity:.6}
+.bpod.new{border-color:var(--run);border-style:dashed}
+.load{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.load i{display:block;height:100%;background:var(--run)}
+.load i.hot{background:var(--alert)}
+.colttl{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.stack{display:flex;flex-direction:column;gap:8px;min-width:0}
+.nodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.ctrs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.card{border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:6px;min-width:0;transition:all .3s}
+.card.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.card.warn{border-color:var(--loop)}
+.card.killed{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 10%,var(--surface))}
+.card.evicted{border-color:var(--alert);border-style:dashed;opacity:.65}
+.card.new{border-color:var(--run);border-style:dashed}
+.card.rejected{border-color:var(--alert);border-style:dashed}
+.chead{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:13.5px;align-items:baseline}
+.chead small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted);text-align:right}
+.gauge{display:flex;flex-direction:column;gap:3px}
+.glab{display:flex;justify-content:space-between;gap:8px;font-family:var(--f-mono);font-size:10.5px;color:var(--muted);flex-wrap:wrap}
+.glab b{color:var(--fg);font-weight:500}
+.track{position:relative;height:12px;border-radius:4px;background:var(--soft);border:1px solid var(--line);overflow:visible}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--run);transition:width .4s}
+.fill.over{background:var(--loop)}
+.fill.hit{background:var(--alert)}
+.fill.used2{background:color-mix(in srgb,var(--fg) 30%,transparent);top:auto;height:4px;bottom:-7px}
+.mk{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed var(--fg)}
+.mk.lim{border-left:2.5px solid var(--alert)}
+.mk.thr{border-left:2px dotted var(--alert)}
+.cnote{font-family:var(--f-mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.cnote.bad{color:var(--alert);font-weight:500}
+.tlwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;padding:6px}
+.tlwrap svg{display:block;width:100%;min-width:600px;height:auto}
+.sum{font-family:var(--f-mono);font-size:12px;display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--muted)}
+.sum b{color:var(--fg);font-weight:500}
+.board{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px;align-items:start}
+@media (max-width:760px){.board{grid-template-columns:minmax(0,1fr)}}
+.panel2{border:1.5px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0;transition:box-shadow .3s}
+.panel2.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.panel2.down{border-color:var(--alert);border-style:dashed;background:color-mix(in srgb,var(--alert) 6%,var(--surface))}
+.ph{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:13.5px;align-items:baseline}
+.ph small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted);text-align:right}
+.slab{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.chips{display:flex;flex-wrap:wrap;gap:5px;min-height:28px;align-items:flex-start}
+.chip{font-family:var(--f-mono);font-size:11.5px;padding:4px 8px;border-radius:6px;border:1.5px solid var(--run);background:color-mix(in srgb,var(--run) 12%,var(--surface));display:inline-flex;flex-direction:column;line-height:1.25;transition:all .3s}
+.chip small{font-size:9.5px;color:var(--muted)}
+.chip.slow{border-color:var(--thr);background:color-mix(in srgb,var(--thr) 14%,var(--surface))}
+.chip.pay,.chip.rem{border-color:var(--io);background:var(--io-bg)}
+.chip.new{box-shadow:0 0 0 2px var(--loop)}
+.chip.lost{border-color:var(--alert);color:var(--alert);background:var(--surface);text-decoration:line-through}
+.chip.dup{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 16%,var(--surface))}
+.chip.bad small{color:var(--alert)}
+.slot{min-width:64px;min-height:30px;border:1.5px dashed var(--line);border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.wnote{font-family:var(--f-mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.wnote.bad{color:var(--alert);font-weight:500}
+.clock{font-family:var(--f-mono);font-size:12px;padding:4px 10px;border-radius:6px;background:var(--fg);color:var(--bg)}
+.empty2{font-family:var(--f-mono);font-size:11px;color:var(--muted);padding:5px 0}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Runtime → systemd-resolved → VPC resolver → Route 53 · illustrative times and IPs</div>
+    <h1>Inside DNS Caching</h1>
+    <p class="lede">A DNS answer isn't looked up once. It's copied, and every copy keeps its own countdown. Step through to watch each layer's copy drain, and see which IP the traffic actually reaches.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="stage">
+    <h2 class="q" id="q"></h2>
+    <div class="meta" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="clock" id="clock"></span><span class="badge" id="badge"></span></div>
+    <div class="term" id="term"></div>
+    <div class="tlwrap" id="viz"></div>
+    <div class="sum" id="sum"></div>
+    <div class="controls">
+      <button class="btn" id="prev">Back</button>
+      <button class="btn" id="next">Next</button>
+      <button class="btn" id="play">Play</button>
+      <div class="dots" id="dots"></div>
+      <span class="step" id="stepno"></span>
+    </div>
+    <div class="caption" aria-live="polite"><h3 id="fh"></h3><p id="fb"></p></div>
+    <div class="rowlegend" id="legend"></div>
+  </section>
+
+  <section class="notes">
+    <div class="note"><div class="eyebrow">Takeaway</div><p id="take"></p></div>
+    <div class="note"><div class="eyebrow">Generalizes to</div><p id="gen"></p></div>
+  </section>
+
+  <p class="foot">Times and IPs are illustrative. TTL rules and defaults are from the sources listed in the content doc. Keyboard: ← → to step.</p>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const MONO='font-family="var(--f-mono)"';
+const T=(x,y,s,o={})=>`<text x="${x}" y="${y}" font-size="${o.fs||11}" ${o.mono===false?'':MONO} fill="${o.col||'var(--muted)'}" text-anchor="${o.a||'start'}" font-weight="${o.fw||400}">${esc(s)}</text>`;
+const KC={old:'var(--loop)',new:'var(--io)',nx:'var(--alert)',ok:'var(--run)',src:'var(--fg)'};
+
+function svgChain(f){
+  const B=f.boxes,n=B.length,BW=n===4?190:240,gap=(860-n*BW)/(n-1),bx=i=>20+i*(BW+gap),BY=58,BH=118;
+  const tl=f.tl,rows=tl.rows.length,extraH=f.extra?96:0,TY=BY+BH+70+extraH,H=TY+30+rows*30+28;
+  let s=`<svg viewBox="0 0 900 ${H}" role="img" aria-label="DNS cache chain and where traffic goes">`;
+  s+='<defs>'+Object.keys(KC).concat(['muted']).map(k=>`<marker id="d${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${KC[k]||'var(--muted)'}"/></marker>`).join('')+'</defs>';
+  const card=(x,y,w,c)=>{if(!c)return '';const col=KC[c.k]||'var(--run)';let o=`<rect x="${x}" y="${y}" width="${w}" height="56" rx="6" fill="color-mix(in srgb,${col} 14%,var(--surface))" stroke="${col}" stroke-width="1.5"/>`;
+    o+=T(x+8,y+16,c.l1,{fs:10.5,col:'var(--muted)'})+T(x+8,y+32,c.l2,{fs:12,fw:600,col:'var(--fg)'});
+    if(c.max){const fr=Math.max(0,Math.min(1,c.left/c.max));o+=`<rect x="${x+8}" y="${y+40}" width="${w-16}" height="8" rx="3" fill="var(--soft)"/><rect x="${x+8}" y="${y+40}" width="${(w-16)*fr}" height="8" rx="3" fill="${col}"/>`;
+      o+=T(x+w-8,y+32,c.left<=0?'expired':`${fmt(c.left)} ${c.unit} left`,{fs:10.5,a:'end',col:c.left<=0?'var(--alert)':'var(--fg)'});}
+    else if(c.tag) o+=T(x+w-8,y+32,c.tag,{fs:10.5,a:'end',col:'var(--fg)'});
+    return o;};
+  B.forEach((b,i)=>{const x=bx(i);s+=`<rect x="${x}" y="${BY}" width="${BW}" height="${BH}" rx="10" fill="var(--surface)" stroke="${b.hl?'var(--fg)':'var(--line)'}" stroke-width="${b.hl?2:1.5}"/>`;
+    s+=T(x+10,BY+18,b.n,{fs:12.5,fw:600,col:'var(--fg)',mono:false})+T(x+10,BY+33,b.sub||'',{fs:10});
+    if(b.card) s+=card(x+10,BY+44,BW-20,b.card); else if(b.note) s+=T(x+10,BY+72,b.note,{fs:10.5,col:'var(--muted)'});
+    if(b.note2) s+=T(x+10,BY+BH-8,b.note2,{fs:10,col:b.note2c?`var(--${b.note2c})`:'var(--muted)'});});
+  const arrow=(i,j,y,label,col,ly)=>{const right=j>i;const x1=right?bx(i)+BW*0.5:bx(i)+BW*0.5,x2=bx(j)+BW*0.5;const c=KC[col]||`var(--${col})`;
+    return `<line x1="${x1+(right?8:-8)}" x2="${x2+(right?-8:8)}" y1="${y}" y2="${y}" stroke="${c}" stroke-width="2" marker-end="url(#d${KC[col]?col:'muted'})"/>`+T((x1+x2)/2,ly,label,{a:'middle',fs:10.5,col:c,fw:500});};
+  for(const [i,j,l,c] of (f.req||[])) s+=arrow(i,j,BY-14,l,c||'ok',BY-20);
+  for(const [i,j,l,c] of (f.ans||[])) s+=arrow(i,j,BY+BH+16,l,c||'ok',BY+BH+32);
+  if(f.extra){const e=f.extra,x=bx(e.under)+(BW-210)/2,y=BY+BH+46;
+    s+=`<line x1="${bx(e.under)+BW/2}" x2="${bx(e.under)+BW/2}" y1="${BY+BH+20}" y2="${y-2}" stroke="var(--run)" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#dok)"/>`;
+    s+=`<rect x="${x}" y="${y}" width="210" height="80" rx="9" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>`+T(x+10,y+16,e.n,{fs:11.5,fw:600,col:'var(--fg)',mono:false})+card(x+10,y+22,190,e.card);}
+  // timeline
+  const X0=200,X1=880,ax=tl.axis,xs=t=>X0+(t-ax[0])/(ax[1]-ax[0])*(X1-X0);
+  s+=T(10,TY,tl.title||'Traffic goes to',{fs:11.5,fw:600,col:'var(--fg)',mono:false});
+  for(const [t,l] of tl.ticks){const x=xs(t);s+=`<line x1="${x}" x2="${x}" y1="${TY+8}" y2="${TY+12+rows*30}" stroke="var(--line)"/>`+T(x,TY+28+rows*30,l,{a:'middle',fs:10.5});}
+  tl.rows.forEach((r,i)=>{const y=TY+12+i*30;s+=T(10,y+16,r.label,{fs:10.5,col:'var(--fg)'});s+=`<rect x="${X0}" y="${y+2}" width="${X1-X0}" height="20" rx="3" fill="var(--soft)"/>`;
+    for(const [a,b,k,lab] of r.segs){const bb=Math.min(b,tl.now);if(bb<=a)continue;const w=xs(bb)-xs(a);s+=`<rect x="${xs(a)}" y="${y+2}" width="${Math.max(1.5,w)}" height="20" fill="${KC[k]}" opacity="0.85"/>`;
+      const txt=lab||{old:'10.0.1.5',new:'10.0.2.9',nx:'NXDOMAIN',ok:'10.0.1.5'}[k];if(w>txt.length*6.6+8)s+=T(xs(a)+5,y+16,txt,{fs:10.5,col:'var(--surface)',fw:600});}});
+  for(const [t,l,c] of (tl.marks||[])){if(t>tl.now)continue;const x=xs(t);s+=`<line x1="${x}" x2="${x}" y1="${TY+6}" y2="${TY+12+rows*30}" stroke="var(--${c||'fg'})" stroke-width="2"/>`+T(x+4,TY+4,l,{fs:10,col:`var(--${c||'fg'})`,fw:500});}
+  if(tl.now<ax[1]){const x=xs(tl.now);s+=`<line x1="${x}" x2="${x}" y1="${TY+8}" y2="${TY+12+rows*30}" stroke="var(--fg)" stroke-dasharray="2 3"/>`;}
+  return s+'</svg>';
+}
+const fmt=v=>v>=1000?v.toLocaleString('en-US'):String(Math.round(v*10)/10);
+
+/* ---------- helpers ---------- */
+const RT=(o={})=>Object.assign({n:'App runtime',sub:'Python: no lookup cache',note:'asks the OS every time'},o);
+const OS=(o={})=>Object.assign({n:'OS stub',sub:'systemd-resolved (caches)'},o);
+const VPC=(o={})=>Object.assign({n:'VPC resolver',sub:'Route 53 Resolver'},o);
+const AUTH=(o={})=>Object.assign({n:'Authoritative',sub:'Route 53 hosted zone'},o);
+const C=(k,l1,l2,left,max,unit='s')=>({k,l1,l2,left,max,unit});
+const SRC=(k,l2,tag)=>({k,l1:'api.example.com',l2,tag});
+const ticksS=(a,b,st,u='s')=>{const r=[];for(let t=a;t<=b;t+=st)r.push([t,t+' '+u]);return r};
+
+const SC=[
+{id:'happy',tab:'Happy path',short:'One lookup, copied down the chain',
+ q:'Where does an answer get cached on the way back, and how do the copies stay in step?',
+ frames:[
+  {clock:'0 s',badge:'cold: every layer misses',term:'socket.getaddrinfo("api.example.com", 443)',
+   boxes:[RT({hl:true}),OS({note:'no copy'}),VPC({note:'no copy'}),AUTH({card:SRC('ok','A 10.0.1.5','TTL 300')})],
+   req:[[0,1,'query'],[1,2,'miss'],[2,3,'miss → root, .com, example.com']],
+   tl:{axis:[0,320],ticks:ticksS(0,300,60),rows:[{label:'app traffic',segs:[]}],now:0},
+   h:'Cold',b:'Python and glibc keep no cache, so the query goes to systemd-resolved (miss), then the VPC resolver (miss). The VPC resolver walks the hierarchy, usually with root and .com already cached, and gets the answer from Route 53: A 10.0.1.5, TTL 300 s.'},
+  {clock:'0 s',badge:'answer cached at two layers, 300 s each',
+   boxes:[RT(),OS({card:C('ok','api.example.com','A 10.0.1.5',300,300)}),VPC({card:C('ok','api.example.com','A 10.0.1.5',300,300)}),AUTH({card:SRC('ok','A 10.0.1.5','TTL 300')})],
+   ans:[[3,2,'A 10.0.1.5 · TTL 300'],[2,1,'TTL 300'],[1,0,'10.0.1.5']],
+   tl:{axis:[0,320],ticks:ticksS(0,300,60),rows:[{label:'app traffic',segs:[[0,320,'ok']]}],now:2},
+   h:'The answer leaves copies',b:'On the way back, the VPC resolver and systemd-resolved each keep a copy with 300 s on its TTL bar. The app connects to 10.0.1.5.'},
+  {clock:'120 s',badge:'local hit: no network request',
+   boxes:[RT({hl:true}),OS({hl:true,card:C('ok','api.example.com','A 10.0.1.5',180,300),note2:'hit',note2c:'io'}),VPC({card:C('ok','api.example.com','A 10.0.1.5',180,300)}),AUTH({card:SRC('ok','A 10.0.1.5','TTL 300')})],
+   req:[[0,1,'query']],ans:[[1,0,'10.0.1.5 (180 s left)']],
+   tl:{axis:[0,320],ticks:ticksS(0,300,60),rows:[{label:'app traffic',segs:[[0,320,'ok']]}],now:120},
+   h:'A local hit',b:'The app asks again. systemd-resolved still has a valid copy with 180 s left and answers without touching the network.'},
+  {clock:'200 s',badge:'another instance gets the remaining TTL: 100 s',
+   boxes:[RT(),OS({card:C('ok','api.example.com','A 10.0.1.5',100,300)}),VPC({hl:true,card:C('ok','api.example.com','A 10.0.1.5',100,300),note2:'hit: hands out 100 s, not 300',note2c:'io'}),AUTH({card:SRC('ok','A 10.0.1.5','TTL 300')})],
+   extra:{under:2,n:'Instance 2\'s cache',card:C('ok','api.example.com','A 10.0.1.5',100,300)},
+   tl:{axis:[0,320],ticks:ticksS(0,300,60),rows:[{label:'app traffic',segs:[[0,320,'ok']]}],now:200},
+   h:'Another instance asks',b:'A second instance asks the VPC resolver, which answers from cache with the remaining TTL: 100 s, not 300. That copy expires at the same moment as the resolver\'s. A copy never outlives the deadline the authoritative server set.'},
+  {clock:'300 s',badge:'all copies expire together; fresh 300 s',
+   boxes:[RT({hl:true}),OS({card:C('ok','api.example.com','A 10.0.1.5',300,300),note2:'expired → refetched'}),VPC({card:C('ok','api.example.com','A 10.0.1.5',300,300),note2:'expired → refetched'}),AUTH({card:SRC('ok','A 10.0.1.5','TTL 300')})],
+   req:[[0,1,'query'],[1,2,'miss'],[2,3,'miss']],ans:[[3,2,'TTL 300'],[2,1,'TTL 300'],[1,0,'10.0.1.5']],
+   tl:{axis:[0,320],ticks:ticksS(0,300,60),rows:[{label:'app traffic',segs:[[0,320,'ok']]}],now:320,marks:[[300,'TTL ends','muted']]},
+   h:'Everything expires together',b:'Both copies drain to zero and are thrown away. The next lookup goes all the way down again and comes back with a fresh 300 s. When every layer respects the TTL, a change is visible everywhere within one TTL.'}],
+ take:'TTL is a deadline that travels with the answer. Each layer counts down from what it was handed.',
+ gen:'Any cache with a TTL: a copy\'s deadline is set when it\'s handed out, and changing the source changes only future copies.'},
+
+{id:'old-ip',tab:'Scenario 1',short:'Traffic still goes to the old IP',
+ q:'The record was changed hours ago (TTL 300 s). Why is traffic still going to the old IP?',
+ frames:[
+  {clock:'0 s',badge:'record changed · caches still hold the old IP',
+   boxes:[RT({note:'—'}),OS({card:C('old','api.example.com','A 10.0.1.5',240,300)}),VPC({card:C('old','api.example.com','A 10.0.1.5',240,300)}),AUTH({hl:true,card:SRC('new','A 10.0.2.9','changed')})],
+   tl:{axis:[-60,600],ticks:[[0,'change'],[120,'120 s'],[240,'240 s'],[360,'360 s'],[480,'480 s'],[600,'600 s']],rows:[{label:'new conns (Python)',segs:[[-60,240,'old'],[240,600,'new']]},{label:'JVM, default 30 s',segs:[[-60,270,'old'],[270,600,'new']]},{label:'JVM, cache forever',segs:[[-60,600,'old']]},{label:'pooled connections',segs:[[-60,600,'old']]}],now:0,marks:[[0,'record changed','fg']]},
+   h:'The record changes',b:'Route 53 now answers 10.0.2.9. The VPC resolver and systemd-resolved still hold 10.0.1.5 with 240 s left. New lookups still get the old IP, which is correct: each copy may live until its deadline.'},
+  {clock:'240 s',badge:'DNS caches caught up: new lookups get 10.0.2.9',
+   boxes:[RT({note:'—'}),OS({card:C('new','api.example.com','A 10.0.2.9',300,300)}),VPC({card:C('new','api.example.com','A 10.0.2.9',300,300)}),AUTH({card:SRC('new','A 10.0.2.9','TTL 300')})],
+   req:[[1,2,'expired → miss'],[2,3,'miss']],ans:[[3,2,'A 10.0.2.9'],[2,1,'A 10.0.2.9']],
+   tl:{axis:[-60,600],ticks:[[0,'change'],[120,'120 s'],[240,'240 s'],[360,'360 s'],[480,'480 s'],[600,'600 s']],rows:[{label:'new conns (Python)',segs:[[-60,240,'old'],[240,600,'new']]},{label:'JVM, default 30 s',segs:[[-60,270,'old'],[270,600,'new']]},{label:'JVM, cache forever',segs:[[-60,600,'old']]},{label:'pooled connections',segs:[[-60,600,'old']]}],now:245,marks:[[0,'record changed','fg']]},
+   h:'The DNS caches catch up',b:'Both copies expire and the next lookup fetches 10.0.2.9. Services that open new connections now reach the new server. The DNS layers did their part within one TTL.'},
+  {clock:'270 s',badge:'runtime cache: +30 s by default, or forever',bad:true,term:'networkaddress.cache.ttl=-1   # "cache forever"',
+   boxes:[RT({hl:true,n:'JVM runtime',sub:'OpenJDK: 30 s default',card:{k:'old',l1:'if set to cache forever',l2:'10.0.1.5',tag:'until restart'}}),OS({card:C('new','api.example.com','A 10.0.2.9',270,300)}),VPC({card:C('new','api.example.com','A 10.0.2.9',270,300)}),AUTH({card:SRC('new','A 10.0.2.9','TTL 300')})],
+   tl:{axis:[-60,600],ticks:[[0,'change'],[120,'120 s'],[240,'240 s'],[360,'360 s'],[480,'480 s'],[600,'600 s']],rows:[{label:'new conns (Python)',segs:[[-60,240,'old'],[240,600,'new']]},{label:'JVM, default 30 s',segs:[[-60,270,'old'],[270,600,'new']]},{label:'JVM, cache forever',segs:[[-60,600,'old']]},{label:'pooled connections',segs:[[-60,600,'old']]}],now:360,marks:[[0,'record changed','fg']]},
+   h:'The runtime cache',b:'A Java service keeps its own lookup cache. OpenJDK\'s default is 30 s without a security manager, so it lags 30 s more. With a security manager, or <code>networkaddress.cache.ttl=-1</code>, the policy is "cache forever" and it keeps the old IP until it restarts. Python and Go keep no lookup cache of their own.'},
+  {clock:'600 s … hours',badge:'pooled connections never look again',bad:true,term:'s = requests.Session()   # connections opened to 10.0.1.5 before the change',
+   boxes:[RT({hl:true,n:'Connection pool',sub:'requests.Session',card:{k:'old',l1:'open TCP connections',l2:'→ 10.0.1.5',tag:'no lookup'}}),OS({card:C('new','api.example.com','A 10.0.2.9',300,300)}),VPC({card:C('new','api.example.com','A 10.0.2.9',300,300)}),AUTH({card:SRC('new','A 10.0.2.9','TTL 300')})],
+   tl:{axis:[-60,600],ticks:[[0,'change'],[120,'120 s'],[240,'240 s'],[360,'360 s'],[480,'480 s'],[600,'600 s']],rows:[{label:'new conns (Python)',segs:[[-60,240,'old'],[240,600,'new']]},{label:'JVM, default 30 s',segs:[[-60,270,'old'],[270,600,'new']]},{label:'JVM, cache forever',segs:[[-60,600,'old']]},{label:'pooled connections',segs:[[-60,600,'old']]}],now:600,marks:[[0,'record changed','fg']]},
+   h:'The pooled connection',b:'This service opened its connections to 10.0.1.5 before the change. DNS is consulted only when a new connection opens, and a busy pool never needs one. Every request keeps going to the old server for as long as it stays up and keeps the connections open.'},
+  {clock:'fix',badge:'old server drains its connections → clients re-resolve',term:'# old server, after the TTL has passed:\n# HTTP/1.1: Connection: close   HTTP/2, gRPC: GOAWAY',
+   boxes:[RT({n:'Connection pool',sub:'requests.Session',card:{k:'new',l1:'reconnected after close',l2:'→ 10.0.2.9',tag:'fresh lookup'}}),OS({card:C('new','api.example.com','A 10.0.2.9',300,300)}),VPC({card:C('new','api.example.com','A 10.0.2.9',300,300)}),AUTH({card:SRC('new','A 10.0.2.9','TTL 300')})],
+   tl:{axis:[-60,600],ticks:[[0,'change'],[120,'120 s'],[240,'240 s'],[360,'360 s'],[480,'480 s'],[600,'600 s']],rows:[{label:'new conns (Python)',segs:[[-60,240,'old'],[240,600,'new']]},{label:'JVM, default 30 s',segs:[[-60,270,'old'],[270,600,'new']]},{label:'JVM, cache forever',segs:[[-60,600,'old',' 10.0.1.5 · fix: never cache forever']]},{label:'pooled connections',segs:[[-60,400,'old'],[400,600,'new']]}],now:600,marks:[[0,'record changed','fg'],[400,'old server drains','io']]},
+   h:'Fixes',b:'After the TTL has passed, have the old server close its connections gracefully: clients reconnect, and reconnecting forces a fresh lookup. Cap connection lifetime (gRPC max connection age, Envoy <code>max_connection_duration</code>) so connections get recycled anyway. Never configure a runtime DNS cache to last forever. Keep the old server up until its traffic actually drains to zero.'}],
+ take:'The DNS caches were the fast part: one TTL. The hours came from layers that stopped asking.',
+ gen:'Blue/green and DNS failover: cutover speed is bounded by the slowest layer, TTLs, runtime caches and connection lifetimes.'},
+
+{id:'ttl-too-late',tab:'Scenario 2',short:'The TTL was lowered too late',
+ q:'The record had a 1-day TTL. The team lowered it to 60 s right before changing the IP. Why did some clients keep the old IP for most of a day?',
+ frames:[
+  {clock:'Mon 08:00',badge:'resolver caches the old IP for 86,400 s',
+   boxes:[{n:'Clients',sub:'of resolver X',note:'ask resolver X'},{n:'Resolver X',sub:'somewhere on the internet',hl:true,card:C('old','api.example.com','A 10.0.1.5',24,24,'h')},{n:'Route 53',sub:'authoritative',card:SRC('old','A 10.0.1.5','TTL 86,400')}],
+   req:[[1,2,'query']],ans:[[2,1,'A 10.0.1.5 · TTL 86,400']],
+   tl:{axis:[0,50],ticks:[[0,'Sun 09:00'],[12,'Sun 21:00'],[24,'Mon 09:00'],[36,'Mon 21:00'],[48,'Tue 09:00']],rows:[{label:'clients of X',segs:[[0,47,'old'],[47,50,'new']]}],now:23},
+   h:'A day-long copy',b:'At Monday 08:00 a resolver caches 10.0.1.5 with 86,400 s on its TTL bar. It may keep that copy until Tuesday 08:00.'},
+  {clock:'Mon 09:00',badge:'TTL lowered to 60 s · resolver doesn\'t know',
+   boxes:[{n:'Clients',sub:'of resolver X',note:'ask resolver X'},{n:'Resolver X',sub:'won\'t ask for 23 h',card:C('old','api.example.com','A 10.0.1.5',23,24,'h')},{n:'Route 53',sub:'authoritative',hl:true,card:SRC('old','A 10.0.1.5','TTL 60')}],
+   tl:{axis:[0,50],ticks:[[0,'Sun 09:00'],[12,'Sun 21:00'],[24,'Mon 09:00'],[36,'Mon 21:00'],[48,'Tue 09:00']],rows:[{label:'clients of X',segs:[[0,47,'old'],[47,50,'new']]}],now:24,marks:[[24,'TTL → 60 s','fg']]},
+   h:'The TTL is lowered',b:'Only the authoritative copy changes. Resolver X still holds 10.0.1.5 with about 23 hours left, and won\'t ask again, so it never learns the TTL is now 60 s.'},
+  {clock:'Mon 09:05',badge:'IP changed · X\'s clients stay on old IP until Tue 08:00',bad:true,
+   boxes:[{n:'Clients',sub:'of resolver X',hl:true,card:{k:'old',l1:'still answered',l2:'10.0.1.5',tag:'until Tue 08:00'}},{n:'Resolver X',sub:'still the cached copy',card:C('old','api.example.com','A 10.0.1.5',23,24,'h')},{n:'Route 53',sub:'authoritative',hl:true,card:SRC('new','A 10.0.2.9','TTL 60')}],
+   req:[[0,1,'query']],ans:[[1,0,'10.0.1.5 (cached)','old']],
+   tl:{axis:[0,50],ticks:[[0,'Sun 09:00'],[12,'Sun 21:00'],[24,'Mon 09:00'],[36,'Mon 21:00'],[48,'Tue 09:00']],rows:[{label:'clients of X',segs:[[0,47,'old'],[47,50,'new']]}],now:50,marks:[[24,'TTL → 60 s','fg'],[47,'X expires','io']]},
+   h:'The IP changes',b:'Lookups that reach Route 53 now get 10.0.2.9 with a 60 s TTL. But resolver X keeps answering 10.0.1.5 until Tuesday 08:00. Every resolver that cached the name in the 24 hours before 09:00 holds the old answer for the rest of its day.'},
+  {clock:'the right timeline',badge:'lower the TTL one old TTL early: everyone moves in 60 s',
+   boxes:[{n:'Clients',sub:'of resolver X',note:'ask resolver X'},{n:'Resolver X',sub:'Mon 09:00: holds a 60 s copy',card:{k:'old',l1:'api.example.com',l2:'A 10.0.1.5',tag:'TTL 60'}},{n:'Route 53',sub:'authoritative',card:SRC('new','A 10.0.2.9','TTL 60')}],
+   tl:{axis:[0,50],ticks:[[0,'Sun 09:00'],[12,'Sun 21:00'],[24,'Mon 09:00'],[36,'Mon 21:00'],[48,'Tue 09:00']],rows:[{label:'lowered Mon 09:00',segs:[[0,47,'old'],[47,50,'new']]},{label:'lowered Sun 09:00',segs:[[0,24.1,'old'],[24.1,50,'new']]}],now:50,marks:[[0,'TTL → 60 s','io'],[24.1,'IP change','fg']]},
+   h:'The right timeline',b:'Lower the TTL at least one old TTL before the change: Sunday 09:00. By Monday 09:00 every day-long copy has expired, and any cache that refreshed since then holds the 60 s version. Change the IP at 09:05 and every well-behaved cache moves within 60 s. Raise the TTL again once the migration is stable.'}],
+ take:'A TTL is a promise made when the answer was handed out. Lowering it changes only future answers.',
+ gen:'Any planned cutover: prepare the caches one old TTL ahead, not one minute ahead.'},
+
+{id:'negative',tab:'Scenario 3',short:'The NXDOMAIN that keeps coming back',
+ q:'A lookup failed once because the record didn\'t exist yet. It was created two minutes later. Why does the lookup keep failing for another quarter of an hour?',
+ frames:[
+  {clock:'10:00',badge:'NXDOMAIN: the name doesn\'t exist yet',
+   boxes:[RT({hl:true,sub:'orders consumer'}),OS({note:'no copy'}),VPC({note:'no copy'}),AUTH({card:{k:'nx',l1:'orders-v2.example.com',l2:'no record',tag:'SOA 900 / 86400'}})],
+   req:[[0,1,'query'],[1,2,'miss'],[2,3,'miss']],ans:[[3,2,'NXDOMAIN + SOA','nx']],
+   tl:{axis:[0,20],ticks:[[0,'10:00'],[5,'10:05'],[10,'10:10'],[15,'10:15'],[20,'10:20']],title:'Lookups get',rows:[{label:'consumer lookups',segs:[[0,15,'nx'],[15,20,'ok','A 10.0.3.7']]}],now:0.2},
+   h:'The name doesn\'t exist yet',b:'The pipeline started the consumer before the step that creates the record. Route 53 answers NXDOMAIN ("no record of any type with that name") and includes the zone\'s SOA record, which tells the resolver how long to remember the failure.'},
+  {clock:'10:00',badge:'negative answer cached for min(900, 86400) = 900 s',bad:true,
+   boxes:[RT({sub:'orders consumer'}),OS({card:{k:'nx',l1:'orders-v2.example.com',l2:'NXDOMAIN',left:900,max:900,unit:'s'}}),VPC({hl:true,card:{k:'nx',l1:'orders-v2.example.com',l2:'NXDOMAIN',left:900,max:900,unit:'s'}}),AUTH({card:{k:'nx',l1:'orders-v2.example.com',l2:'no record',tag:'SOA 900 / 86400'}})],
+   ans:[[2,1,'NXDOMAIN','nx'],[1,0,'NXDOMAIN','nx']],
+   tl:{axis:[0,20],ticks:[[0,'10:00'],[5,'10:05'],[10,'10:10'],[15,'10:15'],[20,'10:20']],title:'Lookups get',rows:[{label:'consumer lookups',segs:[[0,15,'nx'],[15,20,'ok','A 10.0.3.7']]}],now:0.3},
+   h:'A negative copy',b:'The resolver caches the NXDOMAIN with its own TTL: the lesser of the SOA record\'s TTL and the SOA minimum field (RFC 2308). Route 53\'s defaults are 900 s and 86,400 s, so 900 s. systemd-resolved caches the negative answer too.'},
+  {clock:'10:02',badge:'record exists · nobody asks Route 53',bad:true,
+   boxes:[RT({hl:true,sub:'orders consumer'}),OS({card:{k:'nx',l1:'orders-v2.example.com',l2:'NXDOMAIN',left:780,max:900,unit:'s'},note2:'hit (negative)',note2c:'alert'}),VPC({card:{k:'nx',l1:'orders-v2.example.com',l2:'NXDOMAIN',left:780,max:900,unit:'s'}}),AUTH({hl:true,card:{k:'ok',l1:'orders-v2.example.com',l2:'A 10.0.3.7',tag:'created'}})],
+   req:[[0,1,'retry']],ans:[[1,0,'NXDOMAIN (cached)','nx']],
+   tl:{axis:[0,20],ticks:[[0,'10:00'],[5,'10:05'],[10,'10:10'],[15,'10:15'],[20,'10:20']],title:'Lookups get',rows:[{label:'consumer lookups',segs:[[0,15,'nx'],[15,20,'ok','A 10.0.3.7']]}],now:2,marks:[[2,'record created','io']]},
+   h:'The record is created',b:'Route 53 would now answer with the IP, but nobody asks it. Every lookup until 10:15 is answered from the negative copy. Retries inside that window just hit the cache.'},
+  {clock:'10:15',badge:'negative copy expires · lookup succeeds',
+   boxes:[RT({sub:'orders consumer'}),OS({card:C('ok','orders-v2.example.com','A 10.0.3.7',300,300)}),VPC({card:C('ok','orders-v2.example.com','A 10.0.3.7',300,300)}),AUTH({card:{k:'ok',l1:'orders-v2.example.com',l2:'A 10.0.3.7',tag:'TTL 300'}})],
+   req:[[0,1,'query'],[1,2,'miss'],[2,3,'miss']],ans:[[3,2,'A 10.0.3.7'],[2,1,'A 10.0.3.7'],[1,0,'10.0.3.7']],
+   tl:{axis:[0,20],ticks:[[0,'10:00'],[5,'10:05'],[10,'10:10'],[15,'10:15'],[20,'10:20']],title:'Lookups get',rows:[{label:'consumer lookups',segs:[[0,15,'nx'],[15,20,'ok','A 10.0.3.7']]}],now:20,marks:[[2,'record created','io'],[15,'negative TTL ends','fg']]},
+   h:'The negative copy expires',b:'The next lookup reaches Route 53 and gets the A record. The service connects 13 minutes after the record existed.'},
+  {clock:'fix',badge:'create records before anything looks them up',term:'resolvectl flush-caches   # only for caches you control',
+   boxes:[RT({sub:'orders consumer'}),OS({card:C('ok','orders-v2.example.com','A 10.0.3.7',300,300)}),VPC({card:C('ok','orders-v2.example.com','A 10.0.3.7',300,300)}),AUTH({card:{k:'ok',l1:'orders-v2.example.com',l2:'A 10.0.3.7',tag:'created 09:55'}})],
+   tl:{axis:[0,20],ticks:[[0,'10:00'],[5,'10:05'],[10,'10:10'],[15,'10:15'],[20,'10:20']],title:'Lookups get',rows:[{label:'records first',segs:[[0,20,'ok','A 10.0.3.7']]}],now:20},
+   h:'Fixes',b:'Create DNS records before deploying anything that looks them up: pipeline order is the real fix. If you need it shorter, lower the SOA TTL or minimum (Route 53 lets you edit the SOA, at the cost of more negative queries). Flush caches you control; you usually can\'t flush a managed or public resolver. In the app, don\'t treat a startup NXDOMAIN as permanent. The same applies to NODATA, such as an AAAA lookup for a name with only an A record.'}],
+ take:'"Doesn\'t exist" is an answer too, and it\'s cached like any other.',
+ gen:'Any cache that stores misses: a negative cache entry outlives the moment the thing starts to exist.'}
+];
+
+const LEG=[['var(--run)','Answer (happy path)'],['var(--loop)','Old IP 10.0.1.5'],['var(--io)','New IP 10.0.2.9'],['var(--alert)','NXDOMAIN (negative)']];
+
+let si=0,fi=0,playTimer=null;
+function render(){
+  const sc=SC[si],f=sc.frames[fi];
+  $('clock').textContent=(/^[\d+]/.test(f.clock)?'t = ':'')+f.clock;
+  const b=$('badge');b.textContent=f.badge;b.className='badge '+(f.bad?'bad':'good');
+  const t=$('term');t.textContent=f.term||'';t.hidden=!f.term;
+  $('viz').innerHTML=svgChain(f);
+  const cards=f.boxes.filter(x=>x.card&&x.card.max);
+  $('sum').innerHTML=f.boxes.map(x=>{const c=x.card;let v=c?(c.max?`${c.l2} · ${c.left<=0?'expired':fmt(c.left)+' '+c.unit+' left'}`:`${c.l2}${c.tag?' · '+c.tag:''}`):(x.note||'—');return `<span>${esc(x.n)} <b>${esc(v)}</b></span>`}).join('');
+  $('fh').textContent=f.h;$('fb').innerHTML=f.b;
+  $('stepno').textContent=`${fi+1} / ${sc.frames.length}`;
+  $('prev').disabled=fi===0;$('next').disabled=fi===sc.frames.length-1;
+  [...$('dots').children].forEach((d,i)=>d.setAttribute('aria-current',i===fi?'true':'false'));
+}
+function show(n){fi=Math.max(0,Math.min(n,SC[si].frames.length-1));render()}
+function select(i){
+  stopPlay();si=i;fi=0;const sc=SC[si];
+  [...$('tabs').children].forEach((b,k)=>b.setAttribute('aria-selected',k===si?'true':'false'));
+  $('q').textContent=sc.q;$('take').textContent=sc.take;$('gen').textContent=sc.gen;
+  $('legend').innerHTML=LEG.map(([c,l])=>`<span><i class="sw" style="background:${c}"></i>${esc(l)}</span>`).join('');
+  const dots=$('dots');dots.innerHTML='';
+  sc.frames.forEach((_,k)=>{const d=document.createElement('button');d.className='dot';d.setAttribute('aria-label','Step '+(k+1));d.onclick=()=>{stopPlay();show(k)};dots.appendChild(d)});
+  render();
+}
+function stopPlay(){clearInterval(playTimer);playTimer=null;$('play').textContent='Play'}
+$('play').onclick=()=>{
+  if(playTimer){stopPlay();return}
+  show(fi===SC[si].frames.length-1?0:fi+1);$('play').textContent='Pause';
+  playTimer=setInterval(()=>{if(fi>=SC[si].frames.length-1){stopPlay();return}show(fi+1)},5600);
+};
+$('prev').onclick=()=>{stopPlay();show(fi-1)};
+$('next').onclick=()=>{stopPlay();show(fi+1)};
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){stopPlay();show(fi+1)}else if(e.key==='ArrowLeft'){stopPlay();show(fi-1)}});
+SC.forEach((sc,i)=>{const b=document.createElement('button');b.className='tab';b.setAttribute('role','tab');b.innerHTML=`<small>${sc.tab}</small>${sc.short}`;b.onclick=()=>{try{history.replaceState(null,'','#'+sc.id)}catch(_){location.hash=sc.id}select(i)};$('tabs').appendChild(b)});
+const fromHash=()=>{const i=SC.findIndex(x=>x.id===(location.hash||'').slice(1));return i<0?0:i};
+window.addEventListener('hashchange',()=>select(fromHash()));
+select(fromHash());
+})();
+</script>
+
+</body></html>

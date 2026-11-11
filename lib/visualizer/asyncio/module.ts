@@ -1,6 +1,4 @@
 import type { InputValues } from "@/lib/visualizer/core/fields";
-import type { Rich } from "@/lib/visualizer/core/rich";
-import { keyText } from "@/lib/visualizer/core/rich";
 import type { ScheduleSwatch } from "@/lib/visualizer/core/shapes";
 import type {
   InfoContent,
@@ -10,6 +8,7 @@ import type {
 } from "@/lib/visualizer/core/types";
 import { mechanismInfo } from "../mechanism/info";
 import { MECHANISM_GLOSSARY_TERM } from "../mechanism/links";
+import { richFromHtml } from "../mechanism/rich";
 import { ASYNCIO_SCENARIOS } from "./scenarios";
 import { traceModel } from "./schedule";
 import type { AsyncioScenario } from "./types";
@@ -24,20 +23,6 @@ export const ASYNCIO_LEGEND: { label: string; swatch: ScheduleSwatch }[] = [
   { label: "Suspended at an await (loop free)", swatch: "outline" },
   { label: "In a worker thread", swatch: "thread" },
 ];
-
-function richFromHtml(html: string): Rich {
-  const out: Rich = [];
-  const re = /<code>(.*?)<\/code>/g;
-  let last = 0;
-  for (const match of html.matchAll(re)) {
-    const at = match.index ?? 0;
-    if (at > last) out.push(html.slice(last, at));
-    out.push(keyText(match[1] ?? ""));
-    last = at + match[0].length;
-  }
-  if (last < html.length) out.push(html.slice(last));
-  return out.length > 0 ? out : [html];
-}
 
 function scenarioOf(values: InputValues): AsyncioScenario {
   const id = String(values.scenario ?? "happy");

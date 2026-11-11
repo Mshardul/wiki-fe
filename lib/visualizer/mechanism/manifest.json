@@ -1,0 +1,68 @@
+{
+  "slugs": {
+    "inside-an-http-request": {
+      "scenarioCount": 4,
+      "expectReadArticle": true
+    },
+    "inside-the-python-gil": {
+      "scenarioCount": 4,
+      "expectReadArticle": false
+    },
+    "inside-the-asyncio-event-loop": {
+      "scenarioCount": 4,
+      "expectReadArticle": false
+    },
+    "inside-redis-single-thread": {
+      "scenarioCount": 4,
+      "expectReadArticle": false
+    },
+    "inside-the-go-scheduler": {
+      "scenarioCount": 4,
+      "expectReadArticle": false
+    },
+    "inside-postgres-mvcc": {
+      "scenarioCount": 4,
+      "expectReadArticle": true
+    },
+    "inside-a-b-tree-index": {
+      "scenarioCount": 4,
+      "expectReadArticle": true
+    },
+    "inside-the-postgres-wal": {
+      "scenarioCount": 4,
+      "expectReadArticle": true
+    },
+    "inside-kubectl-apply": {
+      "scenarioCount": 4,
+      "expectReadArticle": false
+    },
+    "inside-a-kubernetes-service": {
+      "scenarioCount": 4,
+      "expectReadArticle": false
+    },
+    "inside-pod-resource-limits": {
+      "scenarioCount": 4,
+      "expectReadArticle": false
+    },
+    "inside-dns-caching": {
+      "scenarioCount": 4,
+      "expectReadArticle": true
+    },
+    "cost-of-a-new-connection": {
+      "scenarioCount": 4,
+      "expectReadArticle": true
+    },
+    "inside-a-connection-pool": {
+      "scenarioCount": 4,
+      "expectReadArticle": true
+    },
+    "inside-a-cache-stampede": {
+      "scenarioCount": 3,
+      "expectReadArticle": true
+    },
+    "inside-celery-prefetch": {
+      "scenarioCount": 4,
+      "expectReadArticle": true
+    }
+  }
+}

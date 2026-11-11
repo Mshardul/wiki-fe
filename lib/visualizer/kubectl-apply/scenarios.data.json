@@ -1,0 +1,1384 @@
+{
+  "actors": [
+    {
+      "id": "deploy",
+      "name": "Deployment controller",
+      "watch": "watches Deployments"
+    },
+    {
+      "id": "rs",
+      "name": "ReplicaSet controller",
+      "watch": "watches ReplicaSets and Pods"
+    },
+    {
+      "id": "sched",
+      "name": "Scheduler",
+      "watch": "watches Pods with no node"
+    },
+    {
+      "id": "eps",
+      "name": "EndpointSlice controller",
+      "watch": "watches Ready Pods for Services"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "happy",
+      "tab": "Happy path",
+      "short": "apply → Ready",
+      "q": "From kubectl apply to a pod that receives traffic",
+      "frames": [
+        {
+          "api": true,
+          "term": "$ kubectl apply -f web.yaml\ndeployment.apps/web created\nservice/web created",
+          "badge": "containers running: 0",
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 3 · image web:1.0",
+              "st": "new"
+            },
+            {
+              "k": "Service",
+              "n": "web",
+              "f": "endpoints: (none)",
+              "st": "new"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": []
+            },
+            {
+              "n": "node-2",
+              "pods": []
+            }
+          ],
+          "h": "The API server stores the Deployment",
+          "b": "It authenticates and authorizes the request, runs admission checks, validates the object and saves it to etcd. kubectl prints <code>created</code> and exits. Nothing is running yet."
+        },
+        {
+          "on": {
+            "deploy": {
+              "saw": "Deployment web, no ReplicaSet for it",
+              "wrote": "ReplicaSet web-7d4b9 (replicas 3)"
+            }
+          },
+          "badge": "containers running: 0",
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 3 · image web:1.0"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9",
+              "f": "replicas: 3 · pods: 0",
+              "st": "new"
+            },
+            {
+              "k": "Service",
+              "n": "web",
+              "f": "endpoints: (none)"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": []
+            },
+            {
+              "n": "node-2",
+              "pods": []
+            }
+          ],
+          "h": "Deployment controller",
+          "b": "It sees a Deployment with no ReplicaSet and writes one. The suffix <code>7d4b9</code> is a hash of the pod template, so a different template gets a different ReplicaSet."
+        },
+        {
+          "on": {
+            "rs": {
+              "saw": "web-7d4b9 wants 3 pods, has 0",
+              "wrote": "Pods -a1, -b2, -c3 (no node)"
+            }
+          },
+          "badge": "containers running: 0",
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 3"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9",
+              "f": "replicas: 3 · pods: 3"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node: — · Pending",
+              "st": "new"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-b2",
+              "f": "node: — · Pending",
+              "st": "new"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node: — · Pending",
+              "st": "new"
+            },
+            {
+              "k": "Service",
+              "n": "web",
+              "f": "endpoints: (none)"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": []
+            },
+            {
+              "n": "node-2",
+              "pods": []
+            }
+          ],
+          "h": "ReplicaSet controller",
+          "b": "It compares desired (3) with actual (0) and writes three Pod objects. They have no node yet, so they are Pending. They are only records in the API server."
+        },
+        {
+          "on": {
+            "sched": {
+              "saw": "3 pods with no node",
+              "wrote": "bindings: a1, b2 → node-1 · c3 → node-2"
+            }
+          },
+          "badge": "containers running: 0",
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 3"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9",
+              "f": "replicas: 3 · pods: 3"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node: node-1 · Pending",
+              "st": "new"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-b2",
+              "f": "node: node-1 · Pending",
+              "st": "new"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node: node-2 · Pending",
+              "st": "new"
+            },
+            {
+              "k": "Service",
+              "n": "web",
+              "f": "endpoints: (none)"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": []
+            },
+            {
+              "n": "node-2",
+              "pods": []
+            }
+          ],
+          "h": "Scheduler",
+          "b": "For each pod it filters out nodes that can't fit its resource requests, scores the rest, and writes a binding. Still no container exists: the scheduler only decides where."
+        },
+        {
+          "kub": {
+            "node-1": {
+              "saw": "a1, b2 bound to me",
+              "wrote": "started containers · status Running"
+            },
+            "node-2": {
+              "saw": "c3 bound to me",
+              "wrote": "started container · status Running"
+            }
+          },
+          "badge": "containers running: 3 · serving: 0",
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 3"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9",
+              "f": "replicas: 3 · pods: 3"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node-1 · Running · 10.1.0.4"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-b2",
+              "f": "node-1 · Running · 10.1.0.5"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node-2 · Running · 10.1.1.7"
+            },
+            {
+              "k": "Service",
+              "n": "web",
+              "f": "endpoints: (none)"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": [
+                {
+                  "n": "a1",
+                  "img": "web:1.0",
+                  "st": "running",
+                  "ip": "10.1.0.4",
+                  "nw": 1
+                },
+                {
+                  "n": "b2",
+                  "img": "web:1.0",
+                  "st": "running",
+                  "ip": "10.1.0.5",
+                  "nw": 1
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "pods": [
+                {
+                  "n": "c3",
+                  "img": "web:1.0",
+                  "st": "running",
+                  "ip": "10.1.1.7",
+                  "nw": 1
+                }
+              ]
+            }
+          ],
+          "h": "Kubelets start containers",
+          "b": "Each kubelet sees pods bound to its node, asks the container runtime to pull the image and start the containers, and the network plugin gives each pod an IP. While the image downloads the pod is still Pending; then it is Running. Running is not yet Ready."
+        },
+        {
+          "on": {
+            "eps": {
+              "saw": "a1, b2, c3 Ready, match Service web",
+              "wrote": "endpoints: 10.1.0.4, 10.1.0.5, 10.1.1.7"
+            }
+          },
+          "badge": "containers running: 3 · serving: 3",
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 3 · available: 3"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9",
+              "f": "replicas: 3 · ready: 3"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node-1 · Ready"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-b2",
+              "f": "node-1 · Ready"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node-2 · Ready"
+            },
+            {
+              "k": "Service",
+              "n": "web",
+              "f": "endpoints: 10.1.0.4, 10.1.0.5, 10.1.1.7",
+              "st": "new"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": [
+                {
+                  "n": "a1",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.0.4"
+                },
+                {
+                  "n": "b2",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.0.5"
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "pods": [
+                {
+                  "n": "c3",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.1.7"
+                }
+              ]
+            }
+          ],
+          "h": "Ready, then traffic",
+          "b": "When the readiness probe passes, the kubelet reports the pod Ready. The EndpointSlice controller adds its IP to Service <code>web</code>. Only now does traffic reach it."
+        }
+      ],
+      "take": "apply only records intent. The cluster converges on it through a chain of independent loops, connected only by objects in the API server.",
+      "gen": "Declarative systems generally. Terraform also diffs desired against actual state, but only when you run it; Kubernetes runs the diff continuously. Operators use the same controller pattern."
+    },
+    {
+      "id": "pending",
+      "tab": "Scenario 1",
+      "short": "Pending forever",
+      "q": "The pod has been Pending for ten minutes and nothing has errored. What's wrong?",
+      "frames": [
+        {
+          "api": true,
+          "term": "$ kubectl apply -f web.yaml\ndeployment.apps/web created",
+          "badge": "apply: success",
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 3 · requests cpu: 4"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9",
+              "f": "replicas: 3 · pods: 3"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node: — · Pending"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-b2",
+              "f": "node: — · Pending"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node: — · Pending"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "cap": "~2 CPU free",
+              "pods": []
+            },
+            {
+              "n": "node-2",
+              "cap": "~2 CPU free",
+              "pods": []
+            }
+          ],
+          "h": "Apply succeeds",
+          "b": "The object is valid, so the API server accepts it. The Deployment and ReplicaSet controllers do their jobs exactly as in the happy path: three Pod objects exist."
+        },
+        {
+          "on": {
+            "sched": {
+              "saw": "3 pods with no node",
+              "wrote": "event FailedScheduling · PodScheduled=False (Unschedulable)"
+            }
+          },
+          "badge": "0/2 nodes are available: 2 Insufficient cpu",
+          "bad": true,
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 3 · requests cpu: 4"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9",
+              "f": "replicas: 3 · pods: 3"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node: — · Pending · Unschedulable",
+              "st": "bad"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-b2",
+              "f": "node: — · Pending · Unschedulable",
+              "st": "bad"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node: — · Pending · Unschedulable",
+              "st": "bad"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "cap": "~2 CPU free",
+              "pods": []
+            },
+            {
+              "n": "node-2",
+              "cap": "~2 CPU free",
+              "pods": []
+            }
+          ],
+          "h": "No node fits",
+          "b": "Filtering removes both nodes for insufficient CPU. The scheduler records a FailedScheduling event on each pod and marks it Unschedulable. It doesn't fail or delete anything."
+        },
+        {
+          "kub": {
+            "node-1": {
+              "saw": "no pods bound to me",
+              "wrote": "nothing"
+            },
+            "node-2": {
+              "saw": "no pods bound to me",
+              "wrote": "nothing"
+            }
+          },
+          "badge": "no container, no crash, no restarts",
+          "bad": true,
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 3 · available: 0"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9",
+              "f": "replicas: 3 · ready: 0"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node: — · Pending"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-b2",
+              "f": "node: — · Pending"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node: — · Pending"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "cap": "~2 CPU free",
+              "pods": []
+            },
+            {
+              "n": "node-2",
+              "cap": "~2 CPU free",
+              "pods": []
+            }
+          ],
+          "h": "Nothing else happens",
+          "b": "No kubelet sees these pods, because none is bound to a node. There is no container to crash and no log to read. <code>kubectl describe pod</code> and its events are the only place the reason appears."
+        },
+        {
+          "on": {
+            "sched": {
+              "saw": "still 3 unschedulable pods",
+              "wrote": "requeued · retries when the cluster changes"
+            }
+          },
+          "badge": "waiting for capacity",
+          "bad": true,
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 3 · available: 0"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node: — · Pending"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-b2",
+              "f": "node: — · Pending"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node: — · Pending"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "cap": "~2 CPU free",
+              "pods": []
+            },
+            {
+              "n": "node-2",
+              "cap": "~2 CPU free",
+              "pods": []
+            }
+          ],
+          "h": "The scheduler keeps retrying",
+          "b": "It retries when the cluster changes: a node joins, another pod is deleted. If a cluster autoscaler is installed, it sees the unschedulable pods and adds a node big enough; then the scheduler places them."
+        },
+        {
+          "on": {
+            "deploy": {
+              "saw": "no progress for 600 s",
+              "wrote": "condition Progressing=False · ProgressDeadlineExceeded"
+            }
+          },
+          "term": "$ kubectl rollout status deployment/web\n… fails: progress deadline exceeded",
+          "badge": "reported, not rolled back",
+          "bad": true,
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "available: 0 · Progressing=False (ProgressDeadlineExceeded)",
+              "st": "bad"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node: — · Pending"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-b2",
+              "f": "node: — · Pending"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node: — · Pending"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "cap": "~2 CPU free",
+              "pods": []
+            },
+            {
+              "n": "node-2",
+              "cap": "~2 CPU free",
+              "pods": []
+            }
+          ],
+          "h": "The Deployment finally reports it",
+          "b": "After <code>progressDeadlineSeconds</code> (600 s by default) without progress, the Deployment's <code>Progressing</code> condition turns False with reason <code>ProgressDeadlineExceeded</code>. In CI, wait on <code>kubectl rollout status</code>, not on <code>apply</code>."
+        }
+      ],
+      "take": "In a declarative system, success means \"accepted\", not \"done\". Look at pod events with kubectl describe, and gate deploys on kubectl rollout status.",
+      "gen": "Any system where submitting and executing are separate: a job queued with no worker that can take it, an infrastructure plan waiting on capacity."
+    },
+    {
+      "id": "heal",
+      "tab": "Scenario 2",
+      "short": "Delete vs crash",
+      "q": "I delete a pod and it comes back. When my container crashes, it doesn't. Who reacts to what?",
+      "frames": [
+        {
+          "api": true,
+          "term": "$ kubectl delete pod web-7d4b9-b2\npod \"web-7d4b9-b2\" deleted",
+          "on": {
+            "rs": {
+              "saw": "web-7d4b9 wants 3, has 2",
+              "wrote": "(next step)"
+            }
+          },
+          "badge": "pods: 2 of 3",
+          "objs": [
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9",
+              "f": "replicas: 3 · pods: 2"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node-1 · Ready"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-b2",
+              "f": "deleted",
+              "st": "gone"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node-2 · Ready"
+            },
+            {
+              "k": "Service",
+              "n": "web",
+              "f": "endpoints: 10.1.0.4, 10.1.1.7"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": [
+                {
+                  "n": "a1",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.0.4"
+                },
+                {
+                  "n": "b2",
+                  "img": "web:1.0",
+                  "st": "term",
+                  "ip": "10.1.0.5"
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "pods": [
+                {
+                  "n": "c3",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.1.7"
+                }
+              ]
+            }
+          ],
+          "h": "Delete a pod",
+          "b": "The Pod object is removed and its container stopped. The ReplicaSet controller sees 2 pods where it wants 3."
+        },
+        {
+          "on": {
+            "rs": {
+              "saw": "2 of 3 pods",
+              "wrote": "Pod web-7d4b9-x9"
+            },
+            "sched": {
+              "saw": "x9 has no node",
+              "wrote": "x9 → node-2"
+            }
+          },
+          "badge": "a new pod, not the old one",
+          "objs": [
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9",
+              "f": "replicas: 3 · pods: 3"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node-1 · Ready"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node-2 · Ready"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-x9",
+              "f": "node-2 · Ready · 10.1.1.9",
+              "st": "new"
+            },
+            {
+              "k": "Service",
+              "n": "web",
+              "f": "endpoints: 10.1.0.4, 10.1.1.7, 10.1.1.9"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": [
+                {
+                  "n": "a1",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.0.4"
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "pods": [
+                {
+                  "n": "c3",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.1.7"
+                },
+                {
+                  "n": "x9",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.1.9",
+                  "nw": 1
+                }
+              ]
+            }
+          ],
+          "h": "A replacement with a new identity",
+          "b": "The ReplicaSet controller writes a new Pod with a new name and UID. The scheduler puts it on node-2 this time, so it has a new IP too. The Service updates itself; anything that remembered the old name or IP is now wrong."
+        },
+        {
+          "kub": {
+            "node-1": {
+              "saw": "container in a1 exited (code 1)",
+              "wrote": "restarted it in the same pod"
+            }
+          },
+          "on": {
+            "rs": {
+              "saw": "3 pods exist",
+              "wrote": "nothing to do"
+            }
+          },
+          "badge": "same pod · RESTARTS 1",
+          "objs": [
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9",
+              "f": "replicas: 3 · pods: 3"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node-1 · restarts: 1",
+              "st": "new"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node-2 · Ready"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-x9",
+              "f": "node-2 · Ready"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": [
+                {
+                  "n": "a1",
+                  "img": "web:1.0",
+                  "st": "running",
+                  "ip": "10.1.0.4",
+                  "r": 1,
+                  "nw": 1
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "pods": [
+                {
+                  "n": "c3",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.1.7"
+                },
+                {
+                  "n": "x9",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.1.9"
+                }
+              ]
+            }
+          ],
+          "h": "Now the container crashes instead",
+          "b": "The Pod object still exists, so the ReplicaSet controller counts 3 and does nothing. The kubelet on node-1 restarts the container inside the same pod: same name, same IP, restart count 1."
+        },
+        {
+          "kub": {
+            "node-1": {
+              "saw": "a1 keeps crashing",
+              "wrote": "back-off: 10 s, 20 s, 40 s, 80 s, 160 s…"
+            }
+          },
+          "on": {
+            "eps": {
+              "saw": "a1 not Ready",
+              "wrote": "removed 10.1.0.4 from web"
+            }
+          },
+          "badge": "CrashLoopBackOff · no new pod, ever",
+          "bad": true,
+          "objs": [
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9",
+              "f": "replicas: 3 · ready: 2"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-a1",
+              "f": "node-1 · CrashLoopBackOff · restarts: 5",
+              "st": "bad"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "node-2 · Ready"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-x9",
+              "f": "node-2 · Ready"
+            },
+            {
+              "k": "Service",
+              "n": "web",
+              "f": "endpoints: 10.1.1.7, 10.1.1.9",
+              "st": "new"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": [
+                {
+                  "n": "a1",
+                  "img": "web:1.0",
+                  "st": "crash",
+                  "ip": "10.1.0.4",
+                  "r": 5
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "pods": [
+                {
+                  "n": "c3",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.1.7"
+                },
+                {
+                  "n": "x9",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.1.9"
+                }
+              ]
+            }
+          ],
+          "h": "CrashLoopBackOff",
+          "b": "The kubelet waits longer before each restart: 10 s, doubling, capped at 5 minutes, and reset after 10 minutes of clean running. The pod drops out of the Service. Deleting it would just produce a new pod that crashes the same way."
+        },
+        {
+          "kub": {
+            "node-2": {
+              "saw": "(unreachable: can't report)",
+              "wrote": "—"
+            }
+          },
+          "on": {
+            "rs": {
+              "saw": "c3, x9 evicted after ~5 min",
+              "wrote": "Pods -k4, -m7"
+            },
+            "sched": {
+              "saw": "k4, m7 have no node",
+              "wrote": "both → node-1"
+            }
+          },
+          "badge": "node lost: minutes of reduced capacity",
+          "bad": true,
+          "objs": [
+            {
+              "k": "Node",
+              "n": "node-2",
+              "f": "Unreachable",
+              "st": "bad"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-c3",
+              "f": "evicted",
+              "st": "gone"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-x9",
+              "f": "evicted",
+              "st": "gone"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-k4",
+              "f": "node-1 · Ready",
+              "st": "new"
+            },
+            {
+              "k": "Pod",
+              "n": "web-7d4b9-m7",
+              "f": "node-1 · Ready",
+              "st": "new"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": [
+                {
+                  "n": "a1",
+                  "img": "web:1.0",
+                  "st": "crash",
+                  "ip": "10.1.0.4",
+                  "r": 7
+                },
+                {
+                  "n": "k4",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.0.8",
+                  "nw": 1
+                },
+                {
+                  "n": "m7",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.0.9",
+                  "nw": 1
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "bad": true,
+              "cap": "unreachable",
+              "pods": []
+            }
+          ],
+          "h": "A whole node dies",
+          "b": "The kubelet there stops reporting and the node is marked unreachable. Its pods are evicted only after a default toleration of about 5 minutes; then the ReplicaSet controller creates replacements on the healthy node."
+        }
+      ],
+      "take": "\"Self-healing\" is several separate loops: the kubelet restarts containers in place, controllers replace missing pods, and node failure adds its own delay. A crash loop is fixed by fixing the app, not by deleting the pod.",
+      "gen": "Supervision trees in Erlang/OTP and systemd restart policies (restart in place, with back-off), as distinct from autoscaling groups that replace failed machines."
+    },
+    {
+      "id": "rollout",
+      "tab": "Scenario 3",
+      "short": "Rolling update",
+      "q": "How does a rolling update swap pods without downtime, and what happens when the new version is broken?",
+      "frames": [
+        {
+          "api": true,
+          "term": "$ kubectl set image deployment/web web=web:1.1",
+          "on": {
+            "deploy": {
+              "saw": "pod template changed",
+              "wrote": "ReplicaSet web-5f8c2 (web:1.1, replicas 0)"
+            }
+          },
+          "badge": "limits: ≤ 5 pods total · ≥ 3 available",
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 4 · image web:1.1",
+              "st": "new"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9 (web:1.0)",
+              "f": "replicas: 4 · ready: 4"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-5f8c2 (web:1.1)",
+              "f": "replicas: 0",
+              "st": "new"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": [
+                {
+                  "n": "a1",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.0.4"
+                },
+                {
+                  "n": "b2",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.0.5"
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "pods": [
+                {
+                  "n": "c3",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.1.7"
+                },
+                {
+                  "n": "d4",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.1.8"
+                }
+              ]
+            }
+          ],
+          "h": "A second ReplicaSet",
+          "b": "The new image changes the pod template's hash, so the Deployment controller creates ReplicaSet <code>web-5f8c2</code> with 0 replicas. The old one keeps all 4."
+        },
+        {
+          "on": {
+            "deploy": {
+              "saw": "old 4 · new 0",
+              "wrote": "new → 1 (total 5) · old → 3 (available 3)"
+            }
+          },
+          "badge": "old 3 + new 1 · available 3",
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 4 · image web:1.1"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9 (web:1.0)",
+              "f": "replicas: 3",
+              "st": "new"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-5f8c2 (web:1.1)",
+              "f": "replicas: 1",
+              "st": "new"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": [
+                {
+                  "n": "a1",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.0.4"
+                },
+                {
+                  "n": "b2",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.0.5"
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "pods": [
+                {
+                  "n": "c3",
+                  "img": "web:1.0",
+                  "st": "ready",
+                  "ip": "10.1.1.7"
+                },
+                {
+                  "n": "d4",
+                  "img": "web:1.0",
+                  "st": "term",
+                  "ip": ""
+                },
+                {
+                  "n": "n1",
+                  "img": "web:1.1",
+                  "st": "creating",
+                  "ip": "",
+                  "nw": 1
+                }
+              ]
+            }
+          ],
+          "h": "The first move",
+          "b": "Surge allows one extra pod, so the new ReplicaSet goes to 1. Unavailability allows one fewer, so the old one goes to 3. The new pod is starting and is not Ready yet."
+        },
+        {
+          "on": {
+            "deploy": {
+              "saw": "each new pod Ready",
+              "wrote": "old 2 + new 2 → old 1 + new 3 → old 0 + new 4"
+            }
+          },
+          "badge": "available never below 3",
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 4 · available: 4 · image web:1.1"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-7d4b9 (web:1.0)",
+              "f": "replicas: 0",
+              "st": "new"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-5f8c2 (web:1.1)",
+              "f": "replicas: 4 · ready: 4",
+              "st": "new"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": [
+                {
+                  "n": "n2",
+                  "img": "web:1.1",
+                  "st": "ready",
+                  "ip": "10.1.0.6"
+                },
+                {
+                  "n": "n4",
+                  "img": "web:1.1",
+                  "st": "ready",
+                  "ip": "10.1.0.7"
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "pods": [
+                {
+                  "n": "n1",
+                  "img": "web:1.1",
+                  "st": "ready",
+                  "ip": "10.1.1.9"
+                },
+                {
+                  "n": "n3",
+                  "img": "web:1.1",
+                  "st": "ready",
+                  "ip": "10.1.1.10"
+                }
+              ]
+            }
+          ],
+          "h": "Step by step",
+          "b": "Each time a new pod becomes Ready there is room to remove an old one and add another new one. The old ReplicaSet is kept at 0 replicas so <code>kubectl rollout undo</code> can scale it back up."
+        },
+        {
+          "term": "$ kubectl set image deployment/web web=web:1.2",
+          "on": {
+            "deploy": {
+              "saw": "new pods never Ready",
+              "wrote": "nothing: no room to move"
+            }
+          },
+          "badge": "stuck: total 5 = max · available 3 = min",
+          "bad": true,
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "replicas: 4 · image web:1.2"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-5f8c2 (web:1.1)",
+              "f": "replicas: 3 · ready: 3"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-9a1e6 (web:1.2)",
+              "f": "replicas: 2 · ready: 0",
+              "st": "bad"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": [
+                {
+                  "n": "n2",
+                  "img": "web:1.1",
+                  "st": "ready",
+                  "ip": "10.1.0.6"
+                },
+                {
+                  "n": "n4",
+                  "img": "web:1.1",
+                  "st": "ready",
+                  "ip": "10.1.0.7"
+                },
+                {
+                  "n": "z1",
+                  "img": "web:1.2",
+                  "st": "running",
+                  "ip": "10.1.0.12"
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "pods": [
+                {
+                  "n": "n1",
+                  "img": "web:1.1",
+                  "st": "ready",
+                  "ip": "10.1.1.9"
+                },
+                {
+                  "n": "z2",
+                  "img": "web:1.2",
+                  "st": "running",
+                  "ip": "10.1.1.12"
+                }
+              ]
+            }
+          ],
+          "h": "A broken version: web:1.2 fails its readiness probe",
+          "b": "After the first moves: 3 old pods Ready, 2 new pods Running but never Ready. Total is 5 (no surge room) and available is 3 (no room to remove an old pod). The rollout stops, and the 3 old pods keep serving."
+        },
+        {
+          "on": {
+            "deploy": {
+              "saw": "no progress for 600 s",
+              "wrote": "Progressing=False · ProgressDeadlineExceeded"
+            }
+          },
+          "term": "$ kubectl rollout undo deployment/web\ndeployment.apps/web rolled back",
+          "badge": "no automatic rollback · undo is your call",
+          "bad": true,
+          "objs": [
+            {
+              "k": "Deployment",
+              "n": "web",
+              "f": "Progressing=False (ProgressDeadlineExceeded) → undo",
+              "st": "bad"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-5f8c2 (web:1.1)",
+              "f": "replicas: 4 · ready: 4",
+              "st": "new"
+            },
+            {
+              "k": "ReplicaSet",
+              "n": "web-9a1e6 (web:1.2)",
+              "f": "replicas: 0",
+              "st": "new"
+            }
+          ],
+          "nodes": [
+            {
+              "n": "node-1",
+              "pods": [
+                {
+                  "n": "n2",
+                  "img": "web:1.1",
+                  "st": "ready",
+                  "ip": "10.1.0.6"
+                },
+                {
+                  "n": "n4",
+                  "img": "web:1.1",
+                  "st": "ready",
+                  "ip": "10.1.0.7"
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "pods": [
+                {
+                  "n": "n1",
+                  "img": "web:1.1",
+                  "st": "ready",
+                  "ip": "10.1.1.9"
+                },
+                {
+                  "n": "n5",
+                  "img": "web:1.1",
+                  "st": "ready",
+                  "ip": "10.1.1.13",
+                  "nw": 1
+                }
+              ]
+            }
+          ],
+          "h": "The deadline passes; you roll back",
+          "b": "After 600 s the Deployment reports <code>ProgressDeadlineExceeded</code> but changes nothing by itself. <code>kubectl rollout undo</code> scales the previous ReplicaSet back to 4 and the broken one to 0."
+        }
+      ],
+      "take": "Zero-downtime rollouts depend on an honest readiness probe: it is how the controller knows a new pod is safe to count. Without one, a broken version is \"ready\" as soon as it starts, and the rollout replaces every working pod.",
+      "gen": "Blue/green and canary deployments (the same old/new swap with different limits and traffic control), and rolling restarts in any cluster manager."
+    }
+  ]
+}

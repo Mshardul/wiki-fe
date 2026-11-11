@@ -1,0 +1,1125 @@
+{
+  "scenarios": [
+    {
+      "id": "happy",
+      "tab": "Happy path",
+      "short": "Publish, reserve, ack, run",
+      "q": "With the defaults, a worker reserves several messages and acks each one just before it runs",
+      "frames": [
+        {
+          "clock": "0:00",
+          "badge": "3 messages on the queue",
+          "term": ">>> send_email.delay(user_id)   # × 3\n# each call becomes a message; nothing has run yet",
+          "queue": [
+            {
+              "id": "T1",
+              "st": "new",
+              "meta": ""
+            },
+            {
+              "id": "T2",
+              "st": "new",
+              "meta": ""
+            },
+            {
+              "id": "T3",
+              "st": "new",
+              "meta": ""
+            }
+          ],
+          "unacked": [],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "concurrency 2 · may reserve up to 2 × 4 = 8",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["broker"],
+          "h": "Publish",
+          "b": "Each <code>.delay()</code> call is serialized into a message and put on the queue. The app moves on; nothing has run."
+        },
+        {
+          "clock": "0:00",
+          "badge": "reserved: in A's buffer, unacked in the broker",
+          "queue": [],
+          "unacked": [
+            {
+              "id": "T1",
+              "st": "new",
+              "meta": "delivered to A"
+            },
+            {
+              "id": "T2",
+              "st": "new",
+              "meta": "delivered to A"
+            },
+            {
+              "id": "T3",
+              "st": "new",
+              "meta": "delivered to A"
+            }
+          ],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [
+                {
+                  "id": "T1",
+                  "st": "new",
+                  "meta": ""
+                },
+                {
+                  "id": "T2",
+                  "st": "new",
+                  "meta": ""
+                },
+                {
+                  "id": "T3",
+                  "st": "new",
+                  "meta": ""
+                }
+              ],
+              "note": "reserved 3 of its 8 slots",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["worker A", "broker"],
+          "h": "Reserve",
+          "b": "The worker asks for messages and receives all three, since it may hold up to 8. They leave the queue and sit in its prefetch buffer. In the broker they are delivered but not yet acknowledged."
+        },
+        {
+          "clock": "0:00",
+          "badge": "ack, then run",
+          "queue": [],
+          "unacked": [
+            {
+              "id": "T3",
+              "st": "",
+              "meta": "delivered to A"
+            }
+          ],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [
+                {
+                  "id": "T1",
+                  "st": "new",
+                  "meta": ""
+                },
+                {
+                  "id": "T2",
+                  "st": "new",
+                  "meta": ""
+                }
+              ],
+              "buf": [
+                {
+                  "id": "T3",
+                  "st": "",
+                  "meta": ""
+                }
+              ],
+              "note": "acked T1 and T2 just before running them",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["worker A"],
+          "h": "Ack, then run",
+          "b": "For T1 and T2, the worker acknowledges each message just before handing it to a free process, and the broker forgets them. T3 waits in the buffer for a free process."
+        },
+        {
+          "clock": "0:02",
+          "badge": "\"acknowledged\" means \"started\", not \"finished\"",
+          "queue": [],
+          "unacked": [],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [
+                {
+                  "id": "T3",
+                  "st": "new",
+                  "meta": ""
+                },
+                null
+              ],
+              "buf": [],
+              "note": "acked T3 and started it",
+              "st": ""
+            }
+          ],
+          "done": [
+            {
+              "id": "T1",
+              "st": "new",
+              "meta": ""
+            },
+            {
+              "id": "T2",
+              "st": "new",
+              "meta": ""
+            }
+          ],
+          "on": ["worker A"],
+          "h": "Done",
+          "b": "T1 and T2 finish; T3 is acknowledged and starts. Nothing is left in the broker. By default, the broker forgot each task when it started, not when it finished."
+        }
+      ],
+      "take": "By default, \"acknowledged\" means \"started\", not \"finished\". Prefetching trades fairness between workers for fewer broker round trips.",
+      "gen": "Consumer prefetch (QoS) in AMQP, SQS receive-then-delete, and Kafka consumer batching: the client holds work before doing it, and the ack decides what survives a crash."
+    },
+    {
+      "id": "prefetch",
+      "tab": "Scenario 1",
+      "short": "Stuck behind a slow task",
+      "q": "Why do quick tasks wait minutes while another worker sits idle?",
+      "frames": [
+        {
+          "clock": "0:00",
+          "badge": "A reserved all 8 (limit 2 × 4)",
+          "bad": true,
+          "queue": [],
+          "unacked": [
+            {
+              "id": "S1",
+              "st": "new",
+              "meta": "delivered to A"
+            },
+            {
+              "id": "S2",
+              "st": "new",
+              "meta": "delivered to A"
+            },
+            {
+              "id": "F1",
+              "st": "new",
+              "meta": "delivered to A"
+            },
+            {
+              "id": "F2",
+              "st": "new",
+              "meta": "delivered to A"
+            },
+            {
+              "id": "F3",
+              "st": "new",
+              "meta": "delivered to A"
+            },
+            {
+              "id": "F4",
+              "st": "new",
+              "meta": "delivered to A"
+            },
+            {
+              "id": "F5",
+              "st": "new",
+              "meta": "delivered to A"
+            },
+            {
+              "id": "F6",
+              "st": "new",
+              "meta": "delivered to A"
+            }
+          ],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [
+                {
+                  "id": "S1",
+                  "st": "new",
+                  "meta": ""
+                },
+                {
+                  "id": "S2",
+                  "st": "new",
+                  "meta": ""
+                },
+                {
+                  "id": "F1",
+                  "st": "new",
+                  "meta": ""
+                },
+                {
+                  "id": "F2",
+                  "st": "new",
+                  "meta": ""
+                },
+                {
+                  "id": "F3",
+                  "st": "new",
+                  "meta": ""
+                },
+                {
+                  "id": "F4",
+                  "st": "new",
+                  "meta": ""
+                },
+                {
+                  "id": "F5",
+                  "st": "new",
+                  "meta": ""
+                },
+                {
+                  "id": "F6",
+                  "st": "new",
+                  "meta": ""
+                }
+              ],
+              "note": "took the whole queue",
+              "st": ""
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "asked a moment later: queue empty",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["worker A"],
+          "h": "A reserves all eight",
+          "b": "The queue holds two slow tasks (about 5 minutes each) and six quick ones (about 1 second each). Worker A asks first and may hold up to 8, so it takes everything. Worker B finds the queue empty."
+        },
+        {
+          "clock": "0:01",
+          "badge": "F1–F6 stuck in A's buffer · B idle",
+          "bad": true,
+          "queue": [],
+          "unacked": [
+            {
+              "id": "F1",
+              "st": "",
+              "meta": "held by A"
+            },
+            {
+              "id": "F2",
+              "st": "",
+              "meta": "held by A"
+            },
+            {
+              "id": "F3",
+              "st": "",
+              "meta": "held by A"
+            },
+            {
+              "id": "F4",
+              "st": "",
+              "meta": "held by A"
+            },
+            {
+              "id": "F5",
+              "st": "",
+              "meta": "held by A"
+            },
+            {
+              "id": "F6",
+              "st": "",
+              "meta": "held by A"
+            }
+          ],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [
+                {
+                  "id": "S1",
+                  "st": "new",
+                  "meta": ""
+                },
+                {
+                  "id": "S2",
+                  "st": "new",
+                  "meta": ""
+                }
+              ],
+              "buf": [
+                {
+                  "id": "F1",
+                  "st": "",
+                  "meta": "waiting"
+                },
+                {
+                  "id": "F2",
+                  "st": "",
+                  "meta": "waiting"
+                },
+                {
+                  "id": "F3",
+                  "st": "",
+                  "meta": "waiting"
+                },
+                {
+                  "id": "F4",
+                  "st": "",
+                  "meta": "waiting"
+                },
+                {
+                  "id": "F5",
+                  "st": "",
+                  "meta": "waiting"
+                },
+                {
+                  "id": "F6",
+                  "st": "",
+                  "meta": "waiting"
+                }
+              ],
+              "note": "both processes busy for ~5 min",
+              "st": "",
+              "bad": true
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "idle: nothing to take",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["worker A", "worker B"],
+          "h": "The slow tasks fill A's processes",
+          "b": "S1 and S2 run. F1–F6 wait in A's buffer, where no other worker can reach them. The queue is empty and B is idle."
+        },
+        {
+          "clock": "5:01",
+          "badge": "1 s of work, 5 min of waiting",
+          "bad": true,
+          "queue": [],
+          "unacked": [],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "finished everything",
+              "st": ""
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "idle the whole time",
+              "st": ""
+            }
+          ],
+          "done": [
+            {
+              "id": "S1",
+              "st": "",
+              "meta": ""
+            },
+            {
+              "id": "S2",
+              "st": "",
+              "meta": ""
+            },
+            {
+              "id": "F1",
+              "st": "bad",
+              "meta": "waited ~5 min"
+            },
+            {
+              "id": "F2",
+              "st": "bad",
+              "meta": "waited ~5 min"
+            },
+            {
+              "id": "F3",
+              "st": "bad",
+              "meta": "waited ~5 min"
+            },
+            {
+              "id": "F4",
+              "st": "bad",
+              "meta": "waited ~5 min"
+            },
+            {
+              "id": "F5",
+              "st": "bad",
+              "meta": "waited ~5 min"
+            },
+            {
+              "id": "F6",
+              "st": "bad",
+              "meta": "waited ~5 min"
+            }
+          ],
+          "on": ["worker A"],
+          "h": "Five minutes later",
+          "b": "S1 and S2 finish and A works through F1–F6 in seconds. Each quick task waited about 5 minutes for 1 second of work."
+        },
+        {
+          "clock": "0:00",
+          "badge": "acks_late + multiplier 1: reserve only what you run",
+          "term": "task_acks_late = True\nworker_prefetch_multiplier = 1",
+          "queue": [
+            {
+              "id": "F3",
+              "st": "",
+              "meta": ""
+            },
+            {
+              "id": "F4",
+              "st": "",
+              "meta": ""
+            },
+            {
+              "id": "F5",
+              "st": "",
+              "meta": ""
+            },
+            {
+              "id": "F6",
+              "st": "",
+              "meta": ""
+            }
+          ],
+          "unacked": [
+            {
+              "id": "S1",
+              "st": "",
+              "meta": "held by A until finished"
+            },
+            {
+              "id": "S2",
+              "st": "",
+              "meta": "held by A until finished"
+            },
+            {
+              "id": "F1",
+              "st": "new",
+              "meta": "held by B until finished"
+            },
+            {
+              "id": "F2",
+              "st": "new",
+              "meta": "held by B until finished"
+            }
+          ],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 2,
+              "slots": [
+                {
+                  "id": "S1",
+                  "st": "",
+                  "meta": ""
+                },
+                {
+                  "id": "S2",
+                  "st": "",
+                  "meta": ""
+                }
+              ],
+              "buf": [],
+              "note": "running tasks keep their prefetch slots: nothing extra reserved",
+              "st": ""
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 2,
+              "slots": [
+                {
+                  "id": "F1",
+                  "st": "new",
+                  "meta": ""
+                },
+                {
+                  "id": "F2",
+                  "st": "new",
+                  "meta": ""
+                }
+              ],
+              "buf": [],
+              "note": "takes the quick tasks",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["worker A", "worker B", "broker"],
+          "h": "Fix: reserve only what you run",
+          "b": "With late acks, a running task stays unacknowledged and keeps its prefetch slot. With a multiplier of 1, A reserves only S1 and S2. F1–F6 stay in the queue, and B takes them."
+        },
+        {
+          "clock": "0:04",
+          "badge": "quick tasks done in seconds",
+          "queue": [],
+          "unacked": [
+            {
+              "id": "S1",
+              "st": "",
+              "meta": "held by A until finished"
+            },
+            {
+              "id": "S2",
+              "st": "",
+              "meta": "held by A until finished"
+            }
+          ],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 2,
+              "slots": [
+                {
+                  "id": "S1",
+                  "st": "",
+                  "meta": ""
+                },
+                {
+                  "id": "S2",
+                  "st": "",
+                  "meta": ""
+                }
+              ],
+              "buf": [],
+              "note": "still running the slow tasks",
+              "st": ""
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 2,
+              "slots": [null, null],
+              "buf": [],
+              "note": "idle again",
+              "st": ""
+            }
+          ],
+          "done": [
+            {
+              "id": "F1",
+              "st": "new",
+              "meta": "~1 s each"
+            },
+            {
+              "id": "F2",
+              "st": "new",
+              "meta": "~1 s each"
+            },
+            {
+              "id": "F3",
+              "st": "new",
+              "meta": "~1 s each"
+            },
+            {
+              "id": "F4",
+              "st": "new",
+              "meta": "~1 s each"
+            },
+            {
+              "id": "F5",
+              "st": "new",
+              "meta": "~1 s each"
+            },
+            {
+              "id": "F6",
+              "st": "new",
+              "meta": "~1 s each"
+            }
+          ],
+          "on": ["worker B"],
+          "h": "B takes the quick tasks",
+          "b": "B works through F1–F6 as its processes free up. All six finish within seconds while S1 and S2 are still running on A. Separate queues for slow and quick tasks achieve the same."
+        }
+      ],
+      "take": "For a mix of long and short tasks, use acks_late with a prefetch multiplier of 1, or route slow and quick tasks to separate queues. Multiplier 1 with early acks still lets each process reserve one extra task.",
+      "gen": "Consumer prefetch in any message queue, and head-of-line blocking in general: work assigned too early to one consumer can't be picked up by another."
+    },
+    {
+      "id": "acks",
+      "tab": "Scenario 2",
+      "short": "Worker dies mid-task",
+      "q": "A worker died mid-task. Was the task lost, or will it run twice?",
+      "frames": [
+        {
+          "clock": "0:00",
+          "badge": "early ack: broker already forgot it",
+          "term": "task_acks_late = False   # default",
+          "queue": [],
+          "unacked": [],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [
+                {
+                  "id": "charge#42",
+                  "st": "new",
+                  "meta": ""
+                },
+                null
+              ],
+              "buf": [],
+              "note": "acked just before running · calling the payment API…",
+              "st": ""
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "idle",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["worker A"],
+          "h": "Default: early ack",
+          "b": "A acknowledged <code>charge_order(42)</code> just before running it. The broker's unacked list is empty: the task now exists only in A's memory."
+        },
+        {
+          "clock": "0:03",
+          "badge": "lost: nothing retries it",
+          "bad": true,
+          "queue": [],
+          "unacked": [],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [
+                {
+                  "id": "charge#42",
+                  "st": "lost",
+                  "meta": "never finished"
+                },
+                null
+              ],
+              "buf": [],
+              "note": "machine died mid-task",
+              "st": "down",
+              "bad": true
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "idle: nothing to retry",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["worker A"],
+          "h": "A's machine dies",
+          "b": "The broker forgot the message when it started, so nothing retries it. Whether the customer was charged depends on how far the task got."
+        },
+        {
+          "clock": "0:00",
+          "badge": "late ack: broker holds it until finished",
+          "term": "task_acks_late = True",
+          "queue": [],
+          "unacked": [
+            {
+              "id": "charge#42",
+              "st": "new",
+              "meta": "held by A until finished"
+            }
+          ],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [
+                {
+                  "id": "charge#42",
+                  "st": "",
+                  "meta": ""
+                },
+                null
+              ],
+              "buf": [],
+              "note": "payment API called ✓ · marking order paid…",
+              "st": ""
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "idle",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["broker", "worker A"],
+          "h": "With task_acks_late = True",
+          "b": "A will acknowledge only after the task finishes. While it runs, the message stays unacknowledged in the broker."
+        },
+        {
+          "clock": "0:03",
+          "badge": "redelivered: charged twice unless idempotent",
+          "bad": true,
+          "queue": [],
+          "unacked": [
+            {
+              "id": "charge#42",
+              "st": "new",
+              "meta": "redelivered to B"
+            }
+          ],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [
+                {
+                  "id": "charge#42",
+                  "st": "lost",
+                  "meta": "died after charging"
+                },
+                null
+              ],
+              "buf": [],
+              "note": "machine died before the ack",
+              "st": "down",
+              "bad": true
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [
+                {
+                  "id": "charge#42",
+                  "st": "dup",
+                  "meta": "runs again"
+                },
+                null
+              ],
+              "buf": [],
+              "note": "calls the payment API again",
+              "st": "",
+              "bad": true
+            }
+          ],
+          "done": [],
+          "on": ["worker B", "broker"],
+          "h": "A's machine dies again",
+          "b": "The message was never acknowledged, so the broker redelivers it (RabbitMQ when it notices the connection is gone, Redis after the visibility timeout). B runs it again. If the first run had already charged the card, the customer is charged twice unless the task is idempotent."
+        },
+        {
+          "clock": "0:03",
+          "badge": "child killed: acked anyway, not retried",
+          "bad": true,
+          "term": "task_acks_late = True\ntask_reject_on_worker_lost = False   # default → task acked, not retried\n# True → re-queued instead (beware loops if the task always kills its process)",
+          "queue": [],
+          "unacked": [],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [
+                {
+                  "id": "charge#42",
+                  "st": "lost",
+                  "meta": "process killed (e.g. OOM)"
+                },
+                null
+              ],
+              "buf": [],
+              "note": "worker survived and acked the message anyway",
+              "st": "",
+              "bad": true
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "idle: nothing to retry",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["worker A"],
+          "h": "Only the child process dies",
+          "b": "If the task's process is killed but the worker survives, the worker acknowledges the message even with late acks, so it isn't retried. <code>task_reject_on_worker_lost = True</code> re-queues it instead."
+        }
+      ],
+      "take": "Choose between at most once (early ack, can lose tasks) and at least once (late ack, can repeat tasks). With late acks, make tasks idempotent: an idempotency key with the payment provider, or a state check before charging.",
+      "gen": "Delivery guarantees in every queue: auto versus manual ack in RabbitMQ, deleting an SQS message before or after processing, committing Kafka offsets before or after processing."
+    },
+    {
+      "id": "visibility",
+      "tab": "Scenario 3",
+      "short": "Redis visibility timeout",
+      "q": "With Redis as the broker, why did a task scheduled two hours ahead run twice?",
+      "frames": [
+        {
+          "clock": "0:00",
+          "badge": "held unacked until it's due",
+          "term": ">>> send_reminder.apply_async(countdown=7200)   # due at 2:00\n# Redis visibility timeout: 1 hour (default)",
+          "queue": [],
+          "unacked": [
+            {
+              "id": "R1",
+              "st": "new",
+              "meta": "held by A since 0:00"
+            }
+          ],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [
+                {
+                  "id": "R1",
+                  "st": "new",
+                  "meta": "due 2:00"
+                }
+              ],
+              "note": "holds R1 in memory until it's due",
+              "st": ""
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "idle",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["worker A", "broker"],
+          "h": "A reserves a delayed task",
+          "b": "Worker A reserves the message and holds it until it's due. It won't be acknowledged until it runs, so it sits in the broker's unacked list."
+        },
+        {
+          "clock": "1:00",
+          "badge": "unacked > visibility timeout → redelivered",
+          "bad": true,
+          "queue": [
+            {
+              "id": "R1",
+              "st": "new",
+              "meta": "redelivered copy"
+            }
+          ],
+          "unacked": [
+            {
+              "id": "R1",
+              "st": "bad",
+              "meta": "held by A since 0:00 · over 1 h"
+            }
+          ],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [
+                {
+                  "id": "R1",
+                  "st": "",
+                  "meta": "due 2:00"
+                }
+              ],
+              "note": "still holding it",
+              "st": ""
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "idle",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["broker"],
+          "h": "The visibility timeout passes",
+          "b": "The message has been unacknowledged for longer than 1 hour. The broker treats it as lost and makes it available again, though A still holds it."
+        },
+        {
+          "clock": "1:00",
+          "badge": "two workers hold the same task",
+          "bad": true,
+          "queue": [],
+          "unacked": [
+            {
+              "id": "R1",
+              "st": "bad",
+              "meta": "held by A"
+            },
+            {
+              "id": "R1",
+              "st": "new",
+              "meta": "held by B"
+            }
+          ],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [
+                {
+                  "id": "R1",
+                  "st": "",
+                  "meta": "due 2:00"
+                }
+              ],
+              "note": "",
+              "st": ""
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [
+                {
+                  "id": "R1",
+                  "st": "new",
+                  "meta": "due 2:00"
+                }
+              ],
+              "note": "reserved the redelivered copy",
+              "st": ""
+            }
+          ],
+          "done": [],
+          "on": ["worker B"],
+          "h": "B reserves the copy",
+          "b": "B takes the redelivered message and also holds it until it's due. Two workers now plan to run the same task."
+        },
+        {
+          "clock": "2:00",
+          "badge": "reminder sent twice",
+          "bad": true,
+          "queue": [],
+          "unacked": [],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "ran R1",
+              "st": ""
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "ran R1 again",
+              "st": ""
+            }
+          ],
+          "done": [
+            {
+              "id": "R1",
+              "st": "",
+              "meta": "by A"
+            },
+            {
+              "id": "R1",
+              "st": "dup",
+              "meta": "by B: duplicate"
+            }
+          ],
+          "on": ["worker A", "worker B"],
+          "h": "Both copies run",
+          "b": "At 2:00 both copies are due, and the reminder is sent twice. The Celery docs warn such tasks can run \"again, and again in a loop\". A long task with <code>acks_late</code> hits the same problem if it runs past the timeout."
+        },
+        {
+          "clock": "2:00",
+          "badge": "timeout above the longest delay: runs once",
+          "term": "broker_transport_options = {\"visibility_timeout\": 10800}\nresult_backend_transport_options = {\"visibility_timeout\": 10800}\nvisibility_timeout = 10800   # all three, same value (3 h)",
+          "queue": [],
+          "unacked": [],
+          "workers": [
+            {
+              "n": "worker A",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "ran R1",
+              "st": ""
+            },
+            {
+              "n": "worker B",
+              "conc": 2,
+              "limit": 8,
+              "slots": [null, null],
+              "buf": [],
+              "note": "idle",
+              "st": ""
+            }
+          ],
+          "done": [
+            {
+              "id": "R1",
+              "st": "new",
+              "meta": "once"
+            }
+          ],
+          "on": ["worker A"],
+          "h": "Fixes",
+          "b": "Raise the visibility timeout above your longest countdown, ETA or late-acked task, using the same value in all three settings. Better still on Redis, avoid long countdowns: store the due time in your database and have a periodic task pick up what's due."
+        }
+      ],
+      "take": "On Redis, \"unacknowledged for too long\" means \"lost\". Keep countdowns and late-acked tasks well under the visibility timeout, and keep tasks idempotent anyway.",
+      "gen": "Visibility timeouts in SQS and leases in general: a lease that expires while work is still in progress causes duplicate processing, the same failure as Kafka's max.poll.interval.ms."
+    }
+  ]
+}

@@ -1,0 +1,1593 @@
+{
+  "scenarios": [
+    {
+      "id": "happy",
+      "tab": "Happy path",
+      "short": "ClusterIP → a pod",
+      "q": "How a connection to a ClusterIP reaches one pod",
+      "frames": [
+        {
+          "on": ["A"],
+          "badge": "web → 10.96.0.20 (virtual)",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "note": "nslookup web → 10.96.0.20",
+              "conns": []
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready"
+            }
+          ],
+          "h": "DNS returns the ClusterIP",
+          "b": "The cluster DNS resolves <code>web</code> (in full, <code>web.default.svc.cluster.local</code>) to <code>10.96.0.20</code>. The client has no idea how many pods are behind it."
+        },
+        {
+          "on": ["node-1", "node-2", "eps"],
+          "badge": "no interface owns 10.96.0.20",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "note": "connecting to 10.96.0.20:80",
+              "conns": []
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready"
+            }
+          ],
+          "h": "The ClusterIP is virtual",
+          "b": "No network interface has <code>10.96.0.20</code> and no process listens on it. kube-proxy on every node has turned the EndpointSlice into rules that match packets sent to it."
+        },
+        {
+          "on": ["node-1"],
+          "badge": "random pick per new connection",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.1.7",
+                  "st": "new",
+                  "label": "conn 1: 10.96.0.20 ⇒ 10.1.1.7"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "ok",
+              "note": "picked 10.1.1.7 at random",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 1
+            }
+          ],
+          "h": "The rules on the client's node pick a pod",
+          "b": "The first packet of the new connection matches node-1's rules, which choose one of the three ready pods at random, here <code>10.1.1.7</code> on node-2, and rewrite the destination (DNAT). The packet goes straight there."
+        },
+        {
+          "on": ["A"],
+          "badge": "the choice sticks for the connection",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "note": "conntrack remembers each connection",
+              "conns": [
+                {
+                  "to": "10.1.1.7",
+                  "st": "ok",
+                  "label": "conn 1 ⇒ 10.1.1.7 · every packet, both ways"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 1
+            }
+          ],
+          "h": "The kernel remembers the choice",
+          "b": "Connection tracking records client → <code>10.96.0.20</code> ⇒ <code>10.1.1.7</code>. Every later packet of this connection goes to the same pod, and replies are rewritten so they appear to come from the ClusterIP."
+        },
+        {
+          "on": ["node-1"],
+          "badge": "balanced per connection, not per request",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.1.7",
+                  "st": "ok",
+                  "label": "conn 1 ⇒ 10.1.1.7"
+                },
+                {
+                  "to": "10.1.0.4",
+                  "st": "new",
+                  "label": "conn 2 ⇒ 10.1.0.4 (new pick)"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "ok",
+              "note": "picked 10.1.0.4 at random",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready",
+              "conns": 1
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 1
+            }
+          ],
+          "h": "The next connection is a new pick",
+          "b": "A second connection from the same client may land on a different pod. Requests sent over one connection all go to the same pod."
+        }
+      ],
+      "take": "A ClusterIP is an entry in rules that exist on every node, kept in sync from the EndpointSlice. There is no central load balancer in the path.",
+      "gen": "L4 load balancing with NAT anywhere: Linux IPVS and LVS, cloud network load balancers. They balance connections, not requests."
+    },
+    {
+      "id": "ready",
+      "tab": "Scenario 1",
+      "short": "Readiness fails",
+      "q": "A pod fails its readiness probe. How does it stop getting traffic without being restarted?",
+      "frames": [
+        {
+          "on": ["b2"],
+          "badge": "container still running · restarts 0",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.0.5",
+                  "st": "ok",
+                  "label": "conn 1 ⇒ 10.1.0.5 (opened earlier)"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "notready",
+              "note": "readiness: 503 × 3 · Ready=False · restarts 0",
+              "conns": 1
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready"
+            }
+          ],
+          "h": "Readiness fails",
+          "b": "Pod b2 loses its database, and its readiness endpoint returns 503. After the probe's failure threshold, the kubelet sets <code>Ready</code> to False. The container keeps running; nothing restarts it."
+        },
+        {
+          "on": ["eps"],
+          "badge": "EndpointSlice: 10.1.0.5 ready: false",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "no"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.0.5",
+                  "st": "ok",
+                  "label": "conn 1 ⇒ 10.1.0.5"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "stale",
+              "note": "not updated yet",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "stale",
+              "note": "not updated yet",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "notready",
+              "note": "Ready=False · restarts 0",
+              "conns": 1
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready"
+            }
+          ],
+          "h": "The EndpointSlice is updated",
+          "b": "The EndpointSlice controller marks <code>10.1.0.5</code> as <code>ready: false</code>. The pod is still listed; it just isn't a target any more."
+        },
+        {
+          "on": ["node-1", "node-2"],
+          "badge": "every node rebuilds its rules",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "no"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.0.5",
+                  "st": "ok",
+                  "label": "conn 1 ⇒ 10.1.0.5"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.1.7"],
+              "st": "new",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.1.7"],
+              "st": "new",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "notready",
+              "note": "Ready=False · restarts 0",
+              "conns": 1
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready"
+            }
+          ],
+          "h": "Every node's rules are rewritten",
+          "b": "kube-proxy on node-1 and node-2 each see the change and rebuild their rules with two targets."
+        },
+        {
+          "on": ["A"],
+          "badge": "new connections skip it",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "no"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.0.5",
+                  "st": "old",
+                  "label": "conn 1 ⇒ 10.1.0.5 · already open, not moved by the Service"
+                },
+                {
+                  "to": "10.1.1.7",
+                  "st": "new",
+                  "label": "conn 2 ⇒ 10.1.1.7"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "notready",
+              "note": "Ready=False · restarts 0",
+              "conns": 1
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 1
+            }
+          ],
+          "h": "New connections skip it",
+          "b": "The next connection can only land on <code>10.1.0.4</code> or <code>10.1.1.7</code>. kube-proxy only decides where new connections go; a connection already open to b2 isn't moved by the Service."
+        },
+        {
+          "on": ["b2", "eps"],
+          "badge": "back in the rules · still restarts 0",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.1.7",
+                  "st": "ok",
+                  "label": "conn 2 ⇒ 10.1.1.7"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "new",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "new",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "ready",
+              "note": "Ready=True · restarts 0"
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 1
+            }
+          ],
+          "h": "It recovers",
+          "b": "The database comes back, the probe passes, and b2 is Ready again. It returns to the EndpointSlice and the rules, all without a restart. A failed liveness probe, by contrast, would have restarted the container."
+        }
+      ],
+      "take": "Readiness means \"don't send me traffic right now\"; liveness means \"restart me\". A readiness check that depends on a shared database can take every pod out at once, so keep it about the pod itself.",
+      "gen": "Health checks on any load balancer: an AWS target group or an nginx upstream marks a target unhealthy and stops sending it new traffic, without touching the process."
+    },
+    {
+      "id": "shutdown",
+      "tab": "Scenario 2",
+      "short": "Shutdown race",
+      "q": "During a rollout, why do some requests hit a pod that's already shutting down?",
+      "frames": [
+        {
+          "on": ["b2", "eps"],
+          "badge": "shutdown and removal start in parallel",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "term"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": []
+            },
+            {
+              "n": "client B",
+              "node": "node-2",
+              "conns": []
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "stale",
+              "note": "not updated yet",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "stale",
+              "note": "not updated yet",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "term",
+              "note": "Terminating · no preStop hook"
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready"
+            }
+          ],
+          "h": "The pod is deleted",
+          "b": "A rolling update deletes b2. At the same time the kubelet starts shutting it down and the EndpointSlice marks <code>10.1.0.5</code> as terminating, not ready. The rules on each node still have to catch up."
+        },
+        {
+          "on": ["b2"],
+          "badge": "nothing listening on 10.1.0.5",
+          "bad": true,
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "term"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": []
+            },
+            {
+              "n": "client B",
+              "node": "node-2",
+              "conns": []
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "stale",
+              "note": "not updated yet",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "stale",
+              "note": "not updated yet",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "exited",
+              "note": "SIGTERM → exited immediately"
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready"
+            }
+          ],
+          "h": "The app exits at once",
+          "b": "With no <code>preStop</code> hook, the kubelet sends SIGTERM straight away and the process quits. Nothing is listening on <code>10.1.0.5</code> any more."
+        },
+        {
+          "on": ["node-1"],
+          "badge": "node-1 updated · node-2 not yet",
+          "bad": true,
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "term"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": []
+            },
+            {
+              "n": "client B",
+              "node": "node-2",
+              "conns": []
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.1.7"],
+              "st": "new",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "stale",
+              "note": "still includes 10.1.0.5",
+              "gone": ["10.1.0.5"]
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready"
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "exited",
+              "note": "exited"
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready"
+            }
+          ],
+          "h": "The nodes briefly disagree",
+          "b": "kube-proxy on node-1 has already removed b2 from its rules. node-2's kube-proxy hasn't processed the change yet, so it can still pick <code>10.1.0.5</code> for new connections."
+        },
+        {
+          "on": ["A", "B"],
+          "badge": "errors only from clients on node-2",
+          "bad": true,
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "term"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.0.4",
+                  "st": "new",
+                  "label": "new conn ⇒ 10.1.0.4 ✓"
+                }
+              ]
+            },
+            {
+              "n": "client B",
+              "node": "node-2",
+              "conns": [
+                {
+                  "to": "10.1.0.5",
+                  "st": "fail",
+                  "label": "new conn ⇒ 10.1.0.5 ✗ connection refused"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.0.5", "10.1.1.7"],
+              "st": "stale",
+              "note": "still includes 10.1.0.5",
+              "gone": ["10.1.0.5"]
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready",
+              "conns": 1
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "exited",
+              "note": "exited"
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready"
+            }
+          ],
+          "h": "Those connections fail",
+          "b": "Client A on node-1 is fine. Client B on node-2 is sent to a pod that no longer listens and gets connection refused (or a 502 from a proxy in front). The errors line up with every deploy and are hard to reproduce."
+        },
+        {
+          "on": ["b2", "node-2", "B"],
+          "badge": "with a preStop sleep: no errors",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "a1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.5",
+              "pod": "b2",
+              "st": "term"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "c3",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.0.4",
+                  "st": "ok",
+                  "label": "conn ⇒ 10.1.0.4 ✓"
+                }
+              ]
+            },
+            {
+              "n": "client B",
+              "node": "node-2",
+              "conns": [
+                {
+                  "to": "10.1.1.7",
+                  "st": "new",
+                  "label": "new conn ⇒ 10.1.1.7 ✓"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.1.7"],
+              "st": "new",
+              "note": "caught up during the sleep",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "a1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready",
+              "conns": 1
+            },
+            {
+              "n": "b2",
+              "ip": "10.1.0.5",
+              "node": "node-1",
+              "st": "term",
+              "note": "preStop sleep 5 s · still serving · then SIGTERM, drain"
+            },
+            {
+              "n": "c3",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 1
+            }
+          ],
+          "h": "The fix: keep serving briefly",
+          "b": "A <code>preStop</code> hook that waits a few seconds (the built-in <code>sleep</code> action is stable since 1.34) runs before SIGTERM. Every node stops sending new connections during the wait; then SIGTERM arrives and the app drains in-flight requests. The wait counts against the 30-second grace period."
+        }
+      ],
+      "take": "Removing a pod from traffic and stopping the pod are not ordered for you. Make the pod outlive its removal: a preStop wait, then graceful handling of SIGTERM.",
+      "gen": "Connection draining and deregistration delay on cloud load balancers: a target must stay up until every load balancer node has stopped sending it traffic."
+    },
+    {
+      "id": "grpc",
+      "tab": "Scenario 3",
+      "short": "gRPC after scaling",
+      "q": "We scaled from 2 to 4 pods. Why are the new ones getting no gRPC traffic?",
+      "frames": [
+        {
+          "on": ["A", "B"],
+          "badge": "one long-lived connection per client",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "p1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "p2",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.0.4",
+                  "st": "ok",
+                  "label": "HTTP/2 conn ⇒ p1 · 3,000 req/s"
+                }
+              ]
+            },
+            {
+              "n": "client B",
+              "node": "node-2",
+              "conns": [
+                {
+                  "to": "10.1.1.7",
+                  "st": "ok",
+                  "label": "HTTP/2 conn ⇒ p2 · 3,000 req/s"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.1.7"],
+              "st": "ok",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "p1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready",
+              "conns": 1,
+              "load": 95
+            },
+            {
+              "n": "p2",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 1,
+              "load": 95
+            }
+          ],
+          "h": "Two connections, two pods",
+          "b": "Each gRPC client opened one connection at startup and sends every request over it. Client A landed on p1 and client B on p2. Both pods are near their limit."
+        },
+        {
+          "on": ["eps", "node-1", "node-2"],
+          "badge": "4 targets in every node's rules",
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "p1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "p2",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.6",
+              "pod": "p3",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.9",
+              "pod": "p4",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.0.4",
+                  "st": "ok",
+                  "label": "HTTP/2 conn ⇒ p1 · 3,000 req/s"
+                }
+              ]
+            },
+            {
+              "n": "client B",
+              "node": "node-2",
+              "conns": [
+                {
+                  "to": "10.1.1.7",
+                  "st": "ok",
+                  "label": "HTTP/2 conn ⇒ p2 · 3,000 req/s"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.1.7", "10.1.0.6", "10.1.1.9"],
+              "st": "new",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.1.7", "10.1.0.6", "10.1.1.9"],
+              "st": "new",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "p1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready",
+              "conns": 1,
+              "load": 95
+            },
+            {
+              "n": "p2",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 1,
+              "load": 95
+            },
+            {
+              "n": "p3",
+              "ip": "10.1.0.6",
+              "node": "node-1",
+              "st": "new",
+              "conns": 0,
+              "load": 2
+            },
+            {
+              "n": "p4",
+              "ip": "10.1.1.9",
+              "node": "node-2",
+              "st": "new",
+              "conns": 0,
+              "load": 2
+            }
+          ],
+          "h": "Scale to 4",
+          "b": "p3 and p4 become Ready, the EndpointSlice lists four pods, and every node's rules now have four targets."
+        },
+        {
+          "on": ["p3", "p4"],
+          "badge": "p3 and p4 idle",
+          "bad": true,
+          "eps": [
+            {
+              "ip": "10.1.0.4",
+              "pod": "p1",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.7",
+              "pod": "p2",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.6",
+              "pod": "p3",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.9",
+              "pod": "p4",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.0.4",
+                  "st": "ok",
+                  "label": "still the same conn ⇒ p1"
+                }
+              ]
+            },
+            {
+              "n": "client B",
+              "node": "node-2",
+              "conns": [
+                {
+                  "to": "10.1.1.7",
+                  "st": "ok",
+                  "label": "still the same conn ⇒ p2"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.4", "10.1.1.7", "10.1.0.6", "10.1.1.9"],
+              "st": "ok",
+              "note": "only used for new connections",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.4", "10.1.1.7", "10.1.0.6", "10.1.1.9"],
+              "st": "ok",
+              "note": "only used for new connections",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "p1",
+              "ip": "10.1.0.4",
+              "node": "node-1",
+              "st": "ready",
+              "conns": 1,
+              "load": 95
+            },
+            {
+              "n": "p2",
+              "ip": "10.1.1.7",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 1,
+              "load": 95
+            },
+            {
+              "n": "p3",
+              "ip": "10.1.0.6",
+              "node": "node-1",
+              "st": "ready",
+              "conns": 0,
+              "load": 2
+            },
+            {
+              "n": "p4",
+              "ip": "10.1.1.9",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 0,
+              "load": 2
+            }
+          ],
+          "h": "Nothing moves",
+          "b": "The rules only apply to new connections, and the clients never open one. p1 and p2 stay overloaded while p3 and p4 sit idle. The Service and the rules are all correct."
+        },
+        {
+          "on": ["A", "B"],
+          "badge": "after a rolling restart: still uneven",
+          "bad": true,
+          "eps": [
+            {
+              "ip": "10.1.0.6",
+              "pod": "p3",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.9",
+              "pod": "p4",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.8",
+              "pod": "p5",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.11",
+              "pod": "p6",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "conns": [
+                {
+                  "to": "10.1.0.6",
+                  "st": "new",
+                  "label": "reconnected ⇒ p3"
+                }
+              ]
+            },
+            {
+              "n": "client B",
+              "node": "node-2",
+              "conns": [
+                {
+                  "to": "10.1.0.6",
+                  "st": "new",
+                  "label": "reconnected ⇒ p3"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": ["10.1.0.6", "10.1.1.9", "10.1.0.8", "10.1.1.11"],
+              "st": "ok",
+              "gone": []
+            },
+            "node-2": {
+              "t": ["10.1.0.6", "10.1.1.9", "10.1.0.8", "10.1.1.11"],
+              "st": "ok",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "p3",
+              "ip": "10.1.0.6",
+              "node": "node-1",
+              "st": "ready",
+              "conns": 2,
+              "load": 100
+            },
+            {
+              "n": "p4",
+              "ip": "10.1.1.9",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 0,
+              "load": 2
+            },
+            {
+              "n": "p5",
+              "ip": "10.1.0.8",
+              "node": "node-1",
+              "st": "ready",
+              "conns": 0,
+              "load": 2
+            },
+            {
+              "n": "p6",
+              "ip": "10.1.1.11",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 0,
+              "load": 2
+            }
+          ],
+          "h": "Reconnecting doesn't fix it either",
+          "b": "When p1 and p2 are replaced, both clients reconnect. Each pick is random, and both can land on the same pod, which then carries all the traffic until the next reconnect."
+        },
+        {
+          "on": ["A", "B"],
+          "badge": "balanced per request",
+          "eps": [
+            {
+              "ip": "10.1.0.6",
+              "pod": "p3",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.9",
+              "pod": "p4",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.0.8",
+              "pod": "p5",
+              "st": "ready"
+            },
+            {
+              "ip": "10.1.1.11",
+              "pod": "p6",
+              "st": "ready"
+            }
+          ],
+          "clients": [
+            {
+              "n": "client A",
+              "node": "node-1",
+              "note": "headless Service: DNS returns all 4 pod IPs",
+              "conns": [
+                {
+                  "to": "",
+                  "st": "ok",
+                  "label": "round-robin over p3, p4, p5, p6"
+                }
+              ]
+            },
+            {
+              "n": "client B",
+              "node": "node-2",
+              "note": "headless Service: DNS returns all 4 pod IPs",
+              "conns": [
+                {
+                  "to": "",
+                  "st": "ok",
+                  "label": "round-robin over p3, p4, p5, p6"
+                }
+              ]
+            }
+          ],
+          "rules": {
+            "node-1": {
+              "t": [],
+              "st": "na",
+              "note": "not used: clients connect to pod IPs directly",
+              "gone": []
+            },
+            "node-2": {
+              "t": [],
+              "st": "na",
+              "note": "not used: clients connect to pod IPs directly",
+              "gone": []
+            }
+          },
+          "pods": [
+            {
+              "n": "p3",
+              "ip": "10.1.0.6",
+              "node": "node-1",
+              "st": "ready",
+              "conns": 2,
+              "load": 50
+            },
+            {
+              "n": "p4",
+              "ip": "10.1.1.9",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 2,
+              "load": 50
+            },
+            {
+              "n": "p5",
+              "ip": "10.1.0.8",
+              "node": "node-1",
+              "st": "ready",
+              "conns": 2,
+              "load": 50
+            },
+            {
+              "n": "p6",
+              "ip": "10.1.1.11",
+              "node": "node-2",
+              "st": "ready",
+              "conns": 2,
+              "load": 50
+            }
+          ],
+          "h": "The fix: balance requests, not connections",
+          "b": "A headless Service (<code>clusterIP: None</code>) makes DNS return every pod IP, and the gRPC client's round-robin policy spreads requests across them. Alternatives: an L7 proxy or service mesh, or a server-side max connection age so clients reconnect regularly."
+        }
+      ],
+      "take": "A Service balances connections, not requests. With long-lived connections (gRPC, WebSockets, database pools), scaling out doesn't spread load until clients reconnect, and even then only by chance.",
+      "gen": "Any L4 load balancer in front of HTTP/2, WebSocket or connection-pooled clients, including cloud network load balancers."
+    }
+  ]
+}

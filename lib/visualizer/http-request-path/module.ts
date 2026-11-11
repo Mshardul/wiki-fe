@@ -1,10 +1,9 @@
 import type { InputValues } from "@/lib/visualizer/core/fields";
-import type { Rich } from "@/lib/visualizer/core/rich";
-import { keyText } from "@/lib/visualizer/core/rich";
 import type { ScheduleSwatch } from "@/lib/visualizer/core/shapes";
 import type { InfoContent, RunResult, VisualizerModule } from "@/lib/visualizer/core/types";
 import { mechanismInfo } from "../mechanism/info";
 import { MECHANISM_GLOSSARY_TERM } from "../mechanism/links";
+import { richFromHtml } from "../mechanism/rich";
 import { frameModel } from "./model";
 import { HTTP_SCENARIOS } from "./scenarios";
 import type { HttpPipelineScenario } from "./types";
@@ -21,23 +20,6 @@ export const HTTP_LEGEND: { label: string; swatch: ScheduleSwatch }[] = [
   { label: "Timeout clock", swatch: "http-clock" },
   { label: "Busy worker", swatch: "http-worker" },
 ];
-
-function richFromHtml(html: string): Rich {
-  const out: Rich = [];
-  const re = /<(code|b)>(.*?)<\/\1>/g;
-  let last = 0;
-  for (const match of html.matchAll(re)) {
-    const at = match.index ?? 0;
-    if (at > last) out.push(html.slice(last, at));
-    const tag = match[1];
-    const inner = match[2] ?? "";
-    if (tag === "code") out.push(keyText(inner));
-    else out.push(keyText(inner));
-    last = at + match[0].length;
-  }
-  if (last < html.length) out.push(html.slice(last));
-  return out.length > 0 ? out : [html];
-}
 
 function scenarioOf(values: InputValues): HttpPipelineScenario {
   const id = String(values.scenario ?? "happy");

@@ -5,6 +5,7 @@ import { manifestSchema } from "../../lib/content/manifest.schema";
 import { STRATEGIES } from "../../lib/visualizer/caching/strategies";
 import { CACHING_ARTICLE, POLICIES } from "../../lib/visualizer/eviction/module";
 import { ALGORITHM_META, RATE_LIMITING_ARTICLE } from "../../lib/visualizer/rate-limiting/copy";
+import { MECHANISM_ARTICLE_HREF } from "../../lib/visualizer/mechanism/links";
 
 // globalSetup runs buildContent() once. These asserts lock the emit contract
 // without a second full-corpus render (see vitest content project).
@@ -49,6 +50,24 @@ describe("content build artifacts", () => {
     expect(article, CACHING_ARTICLE).toBeDefined();
     const ids = new Set(article?.headings.map((h) => h.id));
     for (const def of Object.values(STRATEGIES)) expect(ids.has(def.anchor), def.anchor).toBe(true);
+  });
+
+  it("mechanism visualizer Read article anchors resolve to corpus headings", () => {
+    const manifest = manifestSchema.parse(readJson("manifest.json"));
+    for (const href of Object.values(MECHANISM_ARTICLE_HREF)) {
+      if (href === "") continue;
+      const hashAt = href.indexOf("#");
+      const pathRaw = hashAt === -1 ? href : href.slice(0, hashAt);
+      const anchor = hashAt === -1 ? undefined : href.slice(hashAt + 1);
+      const path = pathRaw.endsWith("/") ? pathRaw : `${pathRaw}/`;
+      const article = manifest.articles.find(
+        (a) => `/${a.verticalId}/${a.slug.join("/")}/` === path,
+      );
+      expect(article, href).toBeDefined();
+      if (!anchor) continue;
+      const ids = new Set(article?.headings.map((h) => h.id));
+      expect(ids.has(anchor), href).toBe(true);
+    }
   });
 
   it("rate-limiting visualizer deep links resolve to the rate-limiting article headings", () => {

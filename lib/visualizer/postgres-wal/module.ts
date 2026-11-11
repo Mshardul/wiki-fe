@@ -1,10 +1,9 @@
 import type { InputValues } from "@/lib/visualizer/core/fields";
-import type { Rich } from "@/lib/visualizer/core/rich";
-import { keyText } from "@/lib/visualizer/core/rich";
 import type { ScheduleSwatch } from "@/lib/visualizer/core/shapes";
 import type { InfoContent, RunResult, VisualizerModule } from "@/lib/visualizer/core/types";
 import { mechanismInfo } from "../mechanism/info";
 import { MECHANISM_GLOSSARY_TERM } from "../mechanism/links";
+import { richFromHtml } from "../mechanism/rich";
 import { frameModel } from "./model";
 import { POSTGRES_WAL_SCENARIOS } from "./scenarios";
 import type { WalScenario } from "./types";
@@ -20,20 +19,6 @@ export const WAL_LEGEND: { label: string; swatch: ScheduleSwatch }[] = [
   { label: "Dirty page (newer than disk)", swatch: "wal-dirty" },
   { label: "Changed in this step", swatch: "wal-step" },
 ];
-
-function richFromHtml(html: string): Rich {
-  const out: Rich = [];
-  const re = /<code>(.*?)<\/code>/g;
-  let last = 0;
-  for (const match of html.matchAll(re)) {
-    const at = match.index ?? 0;
-    if (at > last) out.push(html.slice(last, at));
-    out.push(keyText(match[1] ?? ""));
-    last = at + match[0].length;
-  }
-  if (last < html.length) out.push(html.slice(last));
-  return out.length > 0 ? out : [html];
-}
 
 function scenarioOf(values: InputValues): WalScenario {
   const id = String(values.scenario ?? "happy");

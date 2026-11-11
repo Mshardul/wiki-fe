@@ -159,7 +159,400 @@ export type ScheduleSwatch =
   | "http-skip"
   | "http-fail"
   | "http-clock"
-  | "http-worker";
+  | "http-worker"
+  | "k8s-act"
+  | "k8s-creating"
+  | "k8s-running"
+  | "k8s-ready"
+  | "k8s-fail"
+  | "k8s-ep-ready"
+  | "k8s-ep-wait"
+  | "k8s-ep-term"
+  | "k8s-conn-new"
+  | "k8s-conn-fail"
+  | "gauge-in"
+  | "gauge-over"
+  | "gauge-hit"
+  | "gauge-req"
+  | "gauge-cap"
+  | "gauge-thr"
+  | "dns-ok"
+  | "dns-old"
+  | "dns-new"
+  | "dns-nx"
+  | "conn-tcp"
+  | "conn-tls"
+  | "conn-req"
+  | "conn-ticket"
+  | "conn-early"
+  | "conn-bad"
+  | "conn-tw"
+  | "pool-idle"
+  | "pool-limit"
+  | "pool-gone"
+  | "pool-req"
+  | "pool-ok"
+  | "pool-busy"
+  | "pool-free"
+  | "pool-wait";
+
+export interface K8sHubActorRow {
+  id: string;
+  name: string;
+  watch: string;
+  on?: { saw: string; wrote: string };
+}
+
+export interface K8sHubObjectRow {
+  k: string;
+  n: string;
+  f: string;
+  st?: string;
+}
+
+export interface K8sHubPodRow {
+  n: string;
+  img: string;
+  st: string;
+  ip?: string;
+  nw?: boolean;
+  r?: number;
+}
+
+export interface K8sHubNodeRow {
+  n: string;
+  cap?: string;
+  bad?: boolean;
+  pods: K8sHubPodRow[];
+}
+
+export interface K8sHubKubeletRow {
+  saw: string;
+  wrote: string;
+}
+
+export interface K8sHubModel {
+  kind: "k8s-hub";
+  actors: K8sHubActorRow[];
+  apiOn: boolean;
+  objects: K8sHubObjectRow[];
+  nodes: K8sHubNodeRow[];
+  kubelets: Record<string, K8sHubKubeletRow | undefined>;
+  term?: string;
+  badge: string;
+  badgeBad?: boolean;
+}
+
+export interface K8sServiceEndpointRow {
+  ip: string;
+  pod: string;
+  st: string;
+}
+
+export interface K8sServiceConnRow {
+  to: string;
+  st: string;
+  label: string;
+}
+
+export interface K8sServiceClientRow {
+  n: string;
+  node: string;
+  note?: string;
+  conns: K8sServiceConnRow[];
+  on?: boolean;
+}
+
+export interface K8sServiceRuleRow {
+  t: string[];
+  st: string;
+  note?: string;
+  gone?: string[];
+  on?: boolean;
+}
+
+export interface K8sServiceBackendRow {
+  n: string;
+  ip: string;
+  node: string;
+  st: string;
+  note?: string;
+  conns?: number;
+  load?: number;
+  on?: boolean;
+}
+
+export interface K8sServiceModel {
+  kind: "k8s-service";
+  badge: string;
+  badgeBad?: boolean;
+  endpointsOn?: boolean;
+  endpoints: K8sServiceEndpointRow[];
+  clients: K8sServiceClientRow[];
+  rules: Record<string, K8sServiceRuleRow>;
+  backends: K8sServiceBackendRow[];
+}
+
+export type ResourceGaugeKind = "cpu" | "mem";
+
+export interface ResourceGaugeRow {
+  kind: ResourceGaugeKind;
+  label: string;
+  use: number;
+  req: number | null;
+  lim: number | null;
+  max?: number;
+  add?: number;
+  plain?: boolean;
+  thr?: number;
+  thrLabel?: string;
+}
+
+export interface ResourceCardRow {
+  n: string;
+  sub?: string;
+  pod?: string;
+  qos?: string;
+  g: ResourceGaugeRow[];
+  note?: string;
+  st?: string;
+  bad?: boolean;
+  restarts?: number;
+  status?: string;
+  on?: boolean;
+}
+
+export interface CpuTimelineLaneRow {
+  n: string;
+  segs: [number, number, "run" | "thr"][];
+}
+
+export interface CpuTimelineModel {
+  lanes: CpuTimelineLaneRow[];
+  marks?: { t: number; l: string }[];
+}
+
+export interface ResourceGaugesModel {
+  kind: "resource-gauges";
+  badge: string;
+  badgeBad?: boolean;
+  term?: string;
+  nodesTitle?: string;
+  nodes: ResourceCardRow[];
+  containers: ResourceCardRow[];
+  timeline?: CpuTimelineModel;
+  sum: string[];
+}
+
+export type DnsCardKey = "old" | "new" | "nx" | "ok";
+
+export interface DnsCacheCard {
+  k: DnsCardKey;
+  l1: string;
+  l2: string;
+  left?: number;
+  max?: number;
+  unit?: string;
+  tag?: string;
+}
+
+export interface DnsBoxRow {
+  n: string;
+  sub?: string;
+  hl?: boolean;
+  note?: string;
+  note2?: string;
+  note2c?: string;
+  card?: DnsCacheCard;
+}
+
+export interface DnsTimelineRow {
+  label: string;
+  segs: [number, number, DnsCardKey, string?][];
+}
+
+export interface DnsTrafficTimeline {
+  axis: [number, number];
+  ticks: [number, string][];
+  rows: DnsTimelineRow[];
+  now: number;
+  marks?: [number, string, string?][];
+  title?: string;
+}
+
+export interface DnsExtraPanel {
+  under: number;
+  n: string;
+  card: DnsCacheCard;
+}
+
+export interface DnsCachingModel {
+  kind: "dns-caching";
+  clock: string;
+  badge: string;
+  badgeBad?: boolean;
+  term?: string;
+  boxes: DnsBoxRow[];
+  req?: [number, number, string, string?][];
+  answerArrows?: [number, number, string, string?][];
+  extra?: DnsExtraPanel;
+  timeline: DnsTrafficTimeline;
+}
+
+export type ConnPacketKind = "tcp" | "tls" | "req" | "ticket" | "early" | "bad";
+
+export interface ConnLadderMsg {
+  a: number;
+  b: number;
+  t0: number;
+  t1: number;
+  k: ConnPacketKind;
+  label?: string;
+  w?: number;
+  dash?: boolean;
+  lp?: number;
+}
+
+export interface ConnPhase {
+  t0: number;
+  t1: number;
+  label: string;
+  c: ConnPacketKind;
+}
+
+export interface ConnLane {
+  n: string;
+  x: number;
+  dash?: boolean;
+  bad?: boolean;
+}
+
+export interface ConnMark {
+  lane: number;
+  t: number;
+  label: string;
+  left?: boolean;
+  col?: string;
+}
+
+export type ConnCostView = "ladder" | "ports";
+
+export interface ConnLadderModel {
+  kind: "conn-ladder";
+  view: ConnCostView;
+  clock: string;
+  badge: string;
+  badgeBad?: boolean;
+  term?: string;
+  lanes?: ConnLane[];
+  msgs?: ConnLadderMsg[];
+  phases?: ConnPhase[];
+  tmax?: number;
+  now?: number;
+  rtt?: number | null;
+  marks?: ConnMark[];
+  t?: number;
+  fix?: boolean;
+  why?: boolean;
+}
+
+export type ConnPoolView = "lanes" | "fleet" | "pool";
+
+export interface ConnPoolParty {
+  name: string;
+  view?: string;
+  limitTxt?: string;
+  pass?: boolean;
+  bad?: boolean;
+  segs?: [number, number, string?][];
+  limit?: number;
+  limitLab?: string;
+  labLeft?: boolean;
+  offTxt?: string;
+}
+
+export interface ConnPoolLaneArrow {
+  from: number;
+  to: number;
+  label: string;
+  y?: number;
+  col?: string;
+}
+
+export interface ConnPoolLane {
+  st?: string;
+  note?: string;
+  arrows?: ConnPoolLaneArrow[];
+}
+
+export interface ConnPoolEvent {
+  t: number;
+  label?: string;
+  col?: string;
+  left?: boolean;
+}
+
+export interface ConnectionPoolModel {
+  kind: "connection-pool";
+  view: ConnPoolView;
+  clock: string;
+  badge: string;
+  badgeBad?: boolean;
+  term?: string;
+  axis?: [number, number, number[]];
+  now?: number;
+  parties?: ConnPoolParty[];
+  lane?: ConnPoolLane;
+  ev?: ConnPoolEvent[];
+  slots?: number;
+  busy?: number;
+  need?: string;
+  queue?: number;
+  fix?: boolean;
+}
+
+export type StampedeView = "happy" | "hot" | "sync";
+
+export interface CacheStampedeModel {
+  kind: "cache-stampede";
+  view: StampedeView;
+  clock: string;
+  badge: string;
+  badgeBad?: boolean;
+  term?: string;
+  diagramSvg: string;
+  summaryHtml: string;
+}
+
+export interface CeleryChip {
+  id: string;
+  st: string;
+  meta?: string;
+}
+
+export interface CeleryWorkerBoard {
+  n: string;
+  conc: number;
+  limit: number;
+  slots: (CeleryChip | null)[];
+  buf: CeleryChip[];
+  note?: string;
+  bad?: boolean;
+  st?: string;
+}
+
+export interface CeleryBoardModel {
+  kind: "celery-board";
+  clock: string;
+  badge: string;
+  badgeBad?: boolean;
+  term?: string;
+  queue: CeleryChip[];
+  unacked: CeleryChip[];
+  workers: CeleryWorkerBoard[];
+  done: CeleryChip[];
+  on: string[];
+}
 
 export type MvccTupleState = "live" | "new" | "dead" | "free";
 
@@ -403,7 +796,15 @@ export type ShapeModel =
   | MvccModel
   | BtreeModel
   | WalModel
-  | HttpPipelineModel;
+  | HttpPipelineModel
+  | K8sHubModel
+  | K8sServiceModel
+  | ResourceGaugesModel
+  | DnsCachingModel
+  | ConnLadderModel
+  | ConnectionPoolModel
+  | CacheStampedeModel
+  | CeleryBoardModel;
 
 export function defaultAxis(model: ShapeModel): Axis | null {
   return model.kind === "linear" || model.kind === "histogram" ? model.defaultAxis : null;
@@ -425,7 +826,15 @@ export function modelKeys(model: ShapeModel): string[] {
     model.kind === "mvcc" ||
     model.kind === "btree" ||
     model.kind === "wal" ||
-    model.kind === "http-pipeline"
+    model.kind === "http-pipeline" ||
+    model.kind === "k8s-hub" ||
+    model.kind === "k8s-service" ||
+    model.kind === "resource-gauges" ||
+    model.kind === "dns-caching" ||
+    model.kind === "conn-ladder" ||
+    model.kind === "connection-pool" ||
+    model.kind === "cache-stampede" ||
+    model.kind === "celery-board"
   )
     return [];
   if (model.kind === "composite") return model.parts.flatMap(modelKeys);

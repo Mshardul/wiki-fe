@@ -132,7 +132,7 @@ Markup for articles comes from the build pipeline. Islands add behaviour; they d
 | `admin/` | Admin view + report tables |
 | `changelog/` | Changelog filter |
 | `visualizer/frame/` | Shared visualizer page: `VisualizerApp`, header, config/info side panels, `Stage`, playback bar, timeline strip; Revision view: `RevisionView`, `RevisionGrid`, `RevisionPopup`, `RevisionFooter` |
-| `visualizer/shapes/` | Generic, vocabulary-neutral data-structure shapes (`LinearShape`, `RankingShape`, `HistogramShape`, `RingShape`, `LanesShape`, `TimelineShape`, `ScheduleShape`, `CompositeShape`) picked by `Shape`, plus `FlowDiagram` for revision cards; fed models by each visualizer's adapter in `lib/visualizer/<name>/`, never domain words (see CONVENTIONS Visualizer) |
+| `visualizer/shapes/` | Generic structural shapes plus mechanism **presentation** shapes (`MvccShape`, `BtreeShape`, `WalShape`, `HttpPipelineShape`, …) picked by `Shape`; compare modules use structural shapes only (see CONVENTIONS Visualizer) |
 | `visualizer/ui/` / `visualizer/hooks/` | Reusable primitives (buttons, tabs, choice group, rich text, vars table) / playback, URL sync, hotkeys, follow-scroll, panel prefs |
 
 ### Lib (`lib/`) — non-UI logic
@@ -157,6 +157,7 @@ Markup for articles comes from the build pipeline. Islands add behaviour; they d
 | `visualizer/eviction/` | Eviction-policies module: trace, simulate, `policies/{lru,fifo,lfu,clock}` |
 | `visualizer/caching/` | Caching-strategies module: `strategies/*` (one file per strategy), `engine` (frames), `lanes` (world → lanes model), `tokens`, `trace`, `copy` |
 | `visualizer/rate-limiting/` | Rate-limiting module: `algorithms/*` (one limiter per algorithm), `engine` (steps, peak), `view` (state → Timeline / Linear / Composite models), `frames`, `trace`, `ticks`, `copy`, `revision` |
+| `visualizer/mechanism/` | Mechanism shared layer: `rich.ts` (HTML step bodies), `legend.ts` (footer swatches), `manifest.json` + `manifest.ts` (e2e/Vitest scenario + Read article contract), `links.ts`, `info.ts` |
 | `visualizer/registry.ts` / `modules.ts` | Server-safe visualizer list (landing/home) / slug → module loader (client only) |
 
 ### CSS (`css/`)

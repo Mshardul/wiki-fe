@@ -1,0 +1,391 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Inside a Kubernetes Service</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the Service's EndpointSlice across the top; clients and their connection tables, kube-proxy rules per node, and backend pods in three columns. Same series identity. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --fg:#152230; --muted:#5a6878; --line:#d6dce4; --soft:#eef2f6;
+  --run:#3776ab; --run-ink:#ffffff; --loop:#e8b923; --wait:#8d99a8; --io:#2f9474; --io-bg:#e3f3ed;
+  --thr:#7a5cc4; --thr-ink:#ffffff; --alert:#c9412f;
+  --f-display:"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding-block:28px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font:500 13px/1.2 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 12px;border-radius:8px;cursor:pointer;text-align:left}
+.tab small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-bottom:2px}
+.tab[aria-selected="true"]{border-color:var(--run);box-shadow:inset 0 0 0 1px var(--run)}
+.tab:focus-visible,.btn:focus-visible,.dot:focus-visible{outline:2px solid var(--loop);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(19px,3vw,23px);line-height:1.25;margin:0;text-wrap:balance}
+.trace{overflow-x:auto;margin:0 -4px}
+.trace svg{display:block;width:100%;min-width:620px;height:auto}
+.share{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px;font-variant-numeric:tabular-nums}
+.share b{color:var(--fg);font-weight:500}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--soft);color:var(--fg);padding:7px 12px;border-radius:7px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.dots{display:flex;gap:6px;flex:1;min-width:0}
+.dot{width:28px;height:6px;border-radius:3px;border:0;background:var(--line);cursor:pointer;padding:0}
+.dot[aria-current="true"]{background:var(--run)}
+.step{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.caption{border-left:3px solid var(--loop);padding:2px 0 2px 14px;min-height:78px}
+.caption h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.caption p{margin:0;max-width:68ch}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 4px;border-radius:4px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.note{background:var(--soft);border-radius:10px;padding:12px 14px;min-width:0}
+.note .eyebrow{margin-bottom:4px}
+.note p{margin:0;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:10px;border-radius:2px;display:inline-block}
+.foot{font-size:13px;color:var(--muted)}
+.txns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:30px}
+.txlabel{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.tx{font-family:var(--f-mono);font-size:12px;padding:3px 9px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface)}
+.tx.active{border-color:var(--run);color:var(--run)}
+.tx.idle{border-color:var(--alert);color:var(--alert)}
+.tx.committed{border-color:var(--io);color:var(--io)}
+.view{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+.view.solo{grid-template-columns:minmax(0,1fr)}
+@media (max-width:720px){.view{grid-template-columns:minmax(0,1fr)}}
+.panel{border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ptitle{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;justify-content:space-between;gap:8px}
+.tup{display:grid;grid-template-columns:34px minmax(0,1fr) 52px 52px;gap:8px;align-items:center;font-family:var(--f-mono);font-size:12.5px;padding:7px 8px;border-radius:6px;border:1.5px solid transparent;background:var(--soft);font-variant-numeric:tabular-nums;transition:background .3s,border-color .3s,opacity .3s}
+.tup.hdr{background:none;font-size:10.5px;color:var(--muted);padding-block:0;text-transform:uppercase}
+.tup .val{min-width:0;overflow-wrap:anywhere}
+.tup .sub{display:block;font-size:10.5px;color:var(--muted);font-family:var(--f-body)}
+.tup.live{background:var(--io-bg);border-color:var(--io)}
+.tup.new{background:var(--surface);border:1.5px dashed var(--run)}
+.tup.dead{opacity:.75}
+.tup.dead .val{text-decoration:line-through}
+.tup.pinned{background:repeating-linear-gradient(45deg,var(--surface) 0 5px,color-mix(in srgb,var(--alert) 18%,var(--surface)) 5px 10px);border-color:var(--alert)}
+.tup.free{background:none;border:1.5px dashed var(--line);color:var(--muted)}
+.tup.free .val{text-decoration:none}
+.idx{font-family:var(--f-mono);font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.idx .iname{font-size:11px;color:var(--muted)}
+.ent{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:6px;background:var(--soft);border:1.5px solid transparent}
+.ent.new{border-color:var(--alert)}
+.ent.stale{opacity:.6}
+.badge{display:inline-block;font-family:var(--f-mono);font-size:12px;padding:4px 10px;border-radius:6px;background:var(--soft);border-left:3px solid var(--loop)}
+.badge.bad{border-left-color:var(--alert)}
+.badge.good{border-left-color:var(--io)}
+.log{font-family:var(--f-mono);font-size:12px;background:var(--soft);border-radius:6px;padding:8px 10px;color:var(--fg);overflow-wrap:anywhere}
+.grid{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:3px}
+.cell{aspect-ratio:1;border-radius:2px;max-width:100%}
+.c-live{background:var(--io)}
+.c-pinned{background:var(--alert)}
+.c-free{background:none;outline:1px dashed var(--line);outline-offset:-1px}
+.pagesbar{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.xidwrap{overflow-x:auto}
+.xidwrap svg{display:block;width:100%;min-width:560px;height:auto}
+.rowlegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.rowlegend span{display:inline-flex;align-items:center;gap:6px}
+.term{font-family:var(--f-mono);font-size:12px;background:var(--fg);color:var(--bg);border-radius:8px;padding:8px 10px;white-space:pre-wrap;overflow-wrap:anywhere;min-height:20px}
+.hub{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:820px){.hub{grid-template-columns:minmax(0,1fr)}}
+.colttl{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.stack{display:flex;flex-direction:column;gap:8px;min-width:0}
+.actor{border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;display:flex;flex-direction:column;gap:3px;font-size:13px;transition:all .3s;min-width:0}
+.actor b{font-weight:600}
+.actor .watch{font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.actor .ln{font-family:var(--f-mono);font-size:11.5px;overflow-wrap:anywhere}
+.actor .ln i{font-style:normal;color:var(--muted)}
+.actor.on{border-color:var(--loop);box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent);background:color-mix(in srgb,var(--loop) 10%,var(--surface))}
+.actor.idle{opacity:.6}
+.api{border:1.5px solid var(--fg);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.api.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.apihead{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.apihead small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted)}
+.obj{font-family:var(--f-mono);font-size:11.5px;padding:6px 8px;border-radius:6px;background:var(--soft);border:1.5px solid transparent;display:flex;flex-direction:column;gap:1px;overflow-wrap:anywhere;transition:all .3s}
+.obj .k{color:var(--muted);font-size:10.5px}
+.obj.new{border-color:var(--loop);background:color-mix(in srgb,var(--loop) 18%,var(--surface))}
+.obj.bad{border-color:var(--alert)}
+.obj.gone{opacity:.5;text-decoration:line-through}
+.node{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.node.bad{border-color:var(--alert);border-style:dashed;opacity:.7}
+.node.new{border-color:var(--io);border-style:dashed}
+.nhead{display:flex;justify-content:space-between;gap:6px;font-weight:600;font-size:13px}
+.nhead small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted)}
+.pod{font-family:var(--f-mono);font-size:11px;padding:5px 7px;border-radius:6px;border:1.5px solid var(--line);display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;transition:all .3s}
+.pod .st{font-weight:600}
+.pod.ready{border-color:var(--io);background:var(--io-bg)}
+.pod.running{border-color:var(--run)}
+.pod.creating{border-style:dashed;border-color:var(--run)}
+.pod.crash{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 12%,var(--surface))}
+.pod.term{opacity:.5;border-style:dashed}
+.pod.new{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.nopods{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.epstrip{border:1.5px solid var(--fg);border-radius:10px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;transition:box-shadow .3s}
+.epstrip.on,.rules.on,.client.on,.bpod.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.epstrip .lbl{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.ep{font-family:var(--f-mono);font-size:11.5px;padding:4px 8px;border-radius:6px;border:1.5px solid var(--io);background:var(--io-bg)}
+.ep.no{border-color:var(--wait);background:var(--soft);color:var(--muted)}
+.ep.term{border-color:var(--alert);border-style:dashed;background:var(--surface);color:var(--alert)}
+.cols3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:820px){.cols3{grid-template-columns:minmax(0,1fr)}}
+.client,.rules,.bpod{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:5px;min-width:0;transition:all .3s}
+.chd{display:flex;justify-content:space-between;gap:6px;font-weight:600;font-size:13px}
+.chd small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted);text-align:right}
+.sub{font-family:var(--f-mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.conn{font-family:var(--f-mono);font-size:11px;padding:4px 7px;border-radius:6px;border:1.5px solid var(--line);overflow-wrap:anywhere}
+.conn.ok{border-color:var(--io);background:var(--io-bg)}
+.conn.new{border-color:var(--loop);background:color-mix(in srgb,var(--loop) 22%,var(--surface))}
+.conn.fail{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 14%,var(--surface));color:var(--alert)}
+.conn.old{opacity:.6}
+.rt{font-family:var(--f-mono);font-size:11px;display:flex;flex-wrap:wrap;gap:4px}
+.rt span{padding:2px 6px;border-radius:5px;background:var(--soft)}
+.rt span.gone{background:color-mix(in srgb,var(--alert) 14%,var(--surface));color:var(--alert)}
+.rstate{font-family:var(--f-mono);font-size:10.5px;font-weight:600}
+.rstate.ok{color:var(--io)}.rstate.stale{color:var(--alert)}.rstate.new{color:var(--run)}.rstate.na{color:var(--muted)}
+.bpod.ready{border-color:var(--io)}
+.bpod.notready{border-color:var(--wait);background:var(--soft)}
+.bpod.term{border-color:var(--alert);border-style:dashed}
+.bpod.exited{border-color:var(--alert);opacity:.6}
+.bpod.new{border-color:var(--run);border-style:dashed}
+.load{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.load i{display:block;height:100%;background:var(--run)}
+.load i.hot{background:var(--alert)}
+.colttl{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.stack{display:flex;flex-direction:column;gap:8px;min-width:0}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Kubernetes 1.33+ · kube-proxy in iptables mode (the Linux default)</div>
+    <h1>Inside a Kubernetes Service</h1>
+    <p class="lede">A Service's ClusterIP belongs to no machine. kube-proxy on every node turns the Service's list of ready pods (its EndpointSlice) into rules that rewrite each new connection to one pod. Step through to follow single connections, and see what happens when pods stop being ready, shut down, or get added.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="stage">
+    <h2 class="q" id="q"></h2>
+    <div class="meta" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="badge" id="badge"></span></div>
+    <div class="epstrip" id="eps"></div>
+    <div class="cols3">
+      <div><div class="colttl">Clients · open connections</div><div class="stack" id="clients"></div></div>
+      <div><div class="colttl">kube-proxy rules on each node</div><div class="stack" id="rules"></div></div>
+      <div><div class="colttl">Backend pods</div><div class="stack" id="pods"></div></div>
+    </div>
+    <div class="controls">
+      <button class="btn" id="prev">Back</button>
+      <button class="btn" id="next">Next</button>
+      <button class="btn" id="play">Play</button>
+      <div class="dots" id="dots"></div>
+      <span class="step" id="stepno"></span>
+    </div>
+    <div class="caption" aria-live="polite"><h3 id="fh"></h3><p id="fb"></p></div>
+    <div class="rowlegend">
+      <span><i class="sw" style="border:1.5px solid var(--io);background:var(--io-bg)"></i>Ready endpoint / working connection</span>
+      <span><i class="sw" style="border:1.5px solid var(--wait);background:var(--soft)"></i>Not ready</span>
+      <span><i class="sw" style="border:1.5px dashed var(--alert)"></i>Terminating</span>
+      <span><i class="sw" style="border:1.5px solid var(--loop);background:color-mix(in srgb,var(--loop) 22%,var(--surface))"></i>New connection this step</span>
+      <span><i class="sw" style="border:1.5px solid var(--alert);background:color-mix(in srgb,var(--alert) 14%,var(--surface))"></i>Failed connection</span>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="note"><div class="eyebrow">Takeaway</div><p id="take"></p></div>
+    <div class="note"><div class="eyebrow">Generalizes to</div><p id="gen"></p></div>
+  </section>
+
+  <p class="foot">Names and IPs are illustrative; behaviour and defaults are from the Kubernetes docs listed in the content doc. Reproduce each scenario with the checks there before quoting it. Keyboard: ← → to step.</p>
+</div>
+
+<script>
+(function(){
+const E=(ip,pod,st)=>({ip,pod,st});            // st: ready | no | term
+const C=(to,st,label)=>({to,st,label});         // st: ok | new | fail | old
+const R=(t,st,note,gone)=>({t,st,note,gone:gone||[]}); // st: ok | stale | new | na
+const P=(n,ip,node,st,o)=>Object.assign({n,ip,node,st},o||{});
+const EP3=[E('10.1.0.4','a1','ready'),E('10.1.0.5','b2','ready'),E('10.1.1.7','c3','ready')];
+const T3=['10.1.0.4','10.1.0.5','10.1.1.7'];
+const PODS3=(o)=>[P('a1','10.1.0.4','node-1','ready',o&&o.a1),P('b2','10.1.0.5','node-1','ready',o&&o.b2),P('c3','10.1.1.7','node-2','ready',o&&o.c3)];
+
+const SC=[
+{id:'happy',tab:'Happy path',short:'ClusterIP → a pod',
+ q:'How a connection to a ClusterIP reaches one pod',
+ frames:[
+  {on:['A'],badge:'web → 10.96.0.20 (virtual)',eps:EP3,
+   clients:[{n:'client A',node:'node-1',note:'nslookup web → 10.96.0.20',conns:[]}],
+   rules:{'node-1':R(T3,'ok'),'node-2':R(T3,'ok')},pods:PODS3(),
+   h:'DNS returns the ClusterIP',b:'The cluster DNS resolves <code>web</code> (in full, <code>web.default.svc.cluster.local</code>) to <code>10.96.0.20</code>. The client has no idea how many pods are behind it.'},
+  {on:['node-1','node-2','eps'],badge:'no interface owns 10.96.0.20',eps:EP3,
+   clients:[{n:'client A',node:'node-1',note:'connecting to 10.96.0.20:80',conns:[]}],
+   rules:{'node-1':R(T3,'ok'),'node-2':R(T3,'ok')},pods:PODS3(),
+   h:'The ClusterIP is virtual',b:'No network interface has <code>10.96.0.20</code> and no process listens on it. kube-proxy on every node has turned the EndpointSlice into rules that match packets sent to it.'},
+  {on:['node-1'],badge:'random pick per new connection',eps:EP3,
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.1.7','new','conn 1: 10.96.0.20 ⇒ 10.1.1.7')]}],
+   rules:{'node-1':R(T3,'ok','picked 10.1.1.7 at random'),'node-2':R(T3,'ok')},pods:PODS3({c3:{conns:1}}),
+   h:'The rules on the client\'s node pick a pod',b:'The first packet of the new connection matches node-1\'s rules, which choose one of the three ready pods at random, here <code>10.1.1.7</code> on node-2, and rewrite the destination (DNAT). The packet goes straight there.'},
+  {on:['A'],badge:'the choice sticks for the connection',eps:EP3,
+   clients:[{n:'client A',node:'node-1',note:'conntrack remembers each connection',conns:[C('10.1.1.7','ok','conn 1 ⇒ 10.1.1.7 · every packet, both ways')]}],
+   rules:{'node-1':R(T3,'ok'),'node-2':R(T3,'ok')},pods:PODS3({c3:{conns:1}}),
+   h:'The kernel remembers the choice',b:'Connection tracking records client → <code>10.96.0.20</code> ⇒ <code>10.1.1.7</code>. Every later packet of this connection goes to the same pod, and replies are rewritten so they appear to come from the ClusterIP.'},
+  {on:['node-1'],badge:'balanced per connection, not per request',eps:EP3,
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.1.7','ok','conn 1 ⇒ 10.1.1.7'),C('10.1.0.4','new','conn 2 ⇒ 10.1.0.4 (new pick)')]}],
+   rules:{'node-1':R(T3,'ok','picked 10.1.0.4 at random'),'node-2':R(T3,'ok')},pods:PODS3({a1:{conns:1},c3:{conns:1}}),
+   h:'The next connection is a new pick',b:'A second connection from the same client may land on a different pod. Requests sent over one connection all go to the same pod.'}],
+ take:'A ClusterIP is an entry in rules that exist on every node, kept in sync from the EndpointSlice. There is no central load balancer in the path.',
+ gen:'L4 load balancing with NAT anywhere: Linux IPVS and LVS, cloud network load balancers. They balance connections, not requests.'},
+
+{id:'ready',tab:'Scenario 1',short:'Readiness fails',
+ q:'A pod fails its readiness probe. How does it stop getting traffic without being restarted?',
+ frames:[
+  {on:['b2'],badge:'container still running · restarts 0',eps:EP3,
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.0.5','ok','conn 1 ⇒ 10.1.0.5 (opened earlier)')]}],
+   rules:{'node-1':R(T3,'ok'),'node-2':R(T3,'ok')},pods:[P('a1','10.1.0.4','node-1','ready'),P('b2','10.1.0.5','node-1','notready',{note:'readiness: 503 × 3 · Ready=False · restarts 0',conns:1}),P('c3','10.1.1.7','node-2','ready')],
+   h:'Readiness fails',b:'Pod b2 loses its database, and its readiness endpoint returns 503. After the probe\'s failure threshold, the kubelet sets <code>Ready</code> to False. The container keeps running; nothing restarts it.'},
+  {on:['eps'],badge:'EndpointSlice: 10.1.0.5 ready: false',eps:[E('10.1.0.4','a1','ready'),E('10.1.0.5','b2','no'),E('10.1.1.7','c3','ready')],
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.0.5','ok','conn 1 ⇒ 10.1.0.5')]}],
+   rules:{'node-1':R(T3,'stale','not updated yet'),'node-2':R(T3,'stale','not updated yet')},pods:[P('a1','10.1.0.4','node-1','ready'),P('b2','10.1.0.5','node-1','notready',{note:'Ready=False · restarts 0',conns:1}),P('c3','10.1.1.7','node-2','ready')],
+   h:'The EndpointSlice is updated',b:'The EndpointSlice controller marks <code>10.1.0.5</code> as <code>ready: false</code>. The pod is still listed; it just isn\'t a target any more.'},
+  {on:['node-1','node-2'],badge:'every node rebuilds its rules',eps:[E('10.1.0.4','a1','ready'),E('10.1.0.5','b2','no'),E('10.1.1.7','c3','ready')],
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.0.5','ok','conn 1 ⇒ 10.1.0.5')]}],
+   rules:{'node-1':R(['10.1.0.4','10.1.1.7'],'new'),'node-2':R(['10.1.0.4','10.1.1.7'],'new')},pods:[P('a1','10.1.0.4','node-1','ready'),P('b2','10.1.0.5','node-1','notready',{note:'Ready=False · restarts 0',conns:1}),P('c3','10.1.1.7','node-2','ready')],
+   h:'Every node\'s rules are rewritten',b:'kube-proxy on node-1 and node-2 each see the change and rebuild their rules with two targets.'},
+  {on:['A'],badge:'new connections skip it',eps:[E('10.1.0.4','a1','ready'),E('10.1.0.5','b2','no'),E('10.1.1.7','c3','ready')],
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.0.5','old','conn 1 ⇒ 10.1.0.5 · already open, not moved by the Service'),C('10.1.1.7','new','conn 2 ⇒ 10.1.1.7')]}],
+   rules:{'node-1':R(['10.1.0.4','10.1.1.7'],'ok'),'node-2':R(['10.1.0.4','10.1.1.7'],'ok')},pods:[P('a1','10.1.0.4','node-1','ready'),P('b2','10.1.0.5','node-1','notready',{note:'Ready=False · restarts 0',conns:1}),P('c3','10.1.1.7','node-2','ready',{conns:1})],
+   h:'New connections skip it',b:'The next connection can only land on <code>10.1.0.4</code> or <code>10.1.1.7</code>. kube-proxy only decides where new connections go; a connection already open to b2 isn\'t moved by the Service.'},
+  {on:['b2','eps'],badge:'back in the rules · still restarts 0',eps:EP3,
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.1.7','ok','conn 2 ⇒ 10.1.1.7')]}],
+   rules:{'node-1':R(T3,'new'),'node-2':R(T3,'new')},pods:[P('a1','10.1.0.4','node-1','ready'),P('b2','10.1.0.5','node-1','ready',{note:'Ready=True · restarts 0'}),P('c3','10.1.1.7','node-2','ready',{conns:1})],
+   h:'It recovers',b:'The database comes back, the probe passes, and b2 is Ready again. It returns to the EndpointSlice and the rules, all without a restart. A failed liveness probe, by contrast, would have restarted the container.'}],
+ take:'Readiness means "don\'t send me traffic right now"; liveness means "restart me". A readiness check that depends on a shared database can take every pod out at once, so keep it about the pod itself.',
+ gen:'Health checks on any load balancer: an AWS target group or an nginx upstream marks a target unhealthy and stops sending it new traffic, without touching the process.'},
+
+{id:'shutdown',tab:'Scenario 2',short:'Shutdown race',
+ q:'During a rollout, why do some requests hit a pod that\'s already shutting down?',
+ frames:[
+  {on:['b2','eps'],badge:'shutdown and removal start in parallel',eps:[E('10.1.0.4','a1','ready'),E('10.1.0.5','b2','term'),E('10.1.1.7','c3','ready')],
+   clients:[{n:'client A',node:'node-1',conns:[]},{n:'client B',node:'node-2',conns:[]}],
+   rules:{'node-1':R(T3,'stale','not updated yet'),'node-2':R(T3,'stale','not updated yet')},pods:[P('a1','10.1.0.4','node-1','ready'),P('b2','10.1.0.5','node-1','term',{note:'Terminating · no preStop hook'}),P('c3','10.1.1.7','node-2','ready')],
+   h:'The pod is deleted',b:'A rolling update deletes b2. At the same time the kubelet starts shutting it down and the EndpointSlice marks <code>10.1.0.5</code> as terminating, not ready. The rules on each node still have to catch up.'},
+  {on:['b2'],badge:'nothing listening on 10.1.0.5',bad:true,eps:[E('10.1.0.4','a1','ready'),E('10.1.0.5','b2','term'),E('10.1.1.7','c3','ready')],
+   clients:[{n:'client A',node:'node-1',conns:[]},{n:'client B',node:'node-2',conns:[]}],
+   rules:{'node-1':R(T3,'stale','not updated yet'),'node-2':R(T3,'stale','not updated yet')},pods:[P('a1','10.1.0.4','node-1','ready'),P('b2','10.1.0.5','node-1','exited',{note:'SIGTERM → exited immediately'}),P('c3','10.1.1.7','node-2','ready')],
+   h:'The app exits at once',b:'With no <code>preStop</code> hook, the kubelet sends SIGTERM straight away and the process quits. Nothing is listening on <code>10.1.0.5</code> any more.'},
+  {on:['node-1'],badge:'node-1 updated · node-2 not yet',bad:true,eps:[E('10.1.0.4','a1','ready'),E('10.1.0.5','b2','term'),E('10.1.1.7','c3','ready')],
+   clients:[{n:'client A',node:'node-1',conns:[]},{n:'client B',node:'node-2',conns:[]}],
+   rules:{'node-1':R(['10.1.0.4','10.1.1.7'],'new'),'node-2':R(T3,'stale','still includes 10.1.0.5',['10.1.0.5'])},pods:[P('a1','10.1.0.4','node-1','ready'),P('b2','10.1.0.5','node-1','exited',{note:'exited'}),P('c3','10.1.1.7','node-2','ready')],
+   h:'The nodes briefly disagree',b:'kube-proxy on node-1 has already removed b2 from its rules. node-2\'s kube-proxy hasn\'t processed the change yet, so it can still pick <code>10.1.0.5</code> for new connections.'},
+  {on:['A','B'],badge:'errors only from clients on node-2',bad:true,eps:[E('10.1.0.4','a1','ready'),E('10.1.0.5','b2','term'),E('10.1.1.7','c3','ready')],
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.0.4','new','new conn ⇒ 10.1.0.4 ✓')]},{n:'client B',node:'node-2',conns:[C('10.1.0.5','fail','new conn ⇒ 10.1.0.5 ✗ connection refused')]}],
+   rules:{'node-1':R(['10.1.0.4','10.1.1.7'],'ok'),'node-2':R(T3,'stale','still includes 10.1.0.5',['10.1.0.5'])},pods:[P('a1','10.1.0.4','node-1','ready',{conns:1}),P('b2','10.1.0.5','node-1','exited',{note:'exited'}),P('c3','10.1.1.7','node-2','ready')],
+   h:'Those connections fail',b:'Client A on node-1 is fine. Client B on node-2 is sent to a pod that no longer listens and gets connection refused (or a 502 from a proxy in front). The errors line up with every deploy and are hard to reproduce.'},
+  {on:['b2','node-2','B'],badge:'with a preStop sleep: no errors',eps:[E('10.1.0.4','a1','ready'),E('10.1.0.5','b2','term'),E('10.1.1.7','c3','ready')],
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.0.4','ok','conn ⇒ 10.1.0.4 ✓')]},{n:'client B',node:'node-2',conns:[C('10.1.1.7','new','new conn ⇒ 10.1.1.7 ✓')]}],
+   rules:{'node-1':R(['10.1.0.4','10.1.1.7'],'ok'),'node-2':R(['10.1.0.4','10.1.1.7'],'new','caught up during the sleep')},pods:[P('a1','10.1.0.4','node-1','ready',{conns:1}),P('b2','10.1.0.5','node-1','term',{note:'preStop sleep 5 s · still serving · then SIGTERM, drain'}),P('c3','10.1.1.7','node-2','ready',{conns:1})],
+   h:'The fix: keep serving briefly',b:'A <code>preStop</code> hook that waits a few seconds (the built-in <code>sleep</code> action is stable since 1.34) runs before SIGTERM. Every node stops sending new connections during the wait; then SIGTERM arrives and the app drains in-flight requests. The wait counts against the 30-second grace period.'}],
+ take:'Removing a pod from traffic and stopping the pod are not ordered for you. Make the pod outlive its removal: a preStop wait, then graceful handling of SIGTERM.',
+ gen:'Connection draining and deregistration delay on cloud load balancers: a target must stay up until every load balancer node has stopped sending it traffic.'},
+
+{id:'grpc',tab:'Scenario 3',short:'gRPC after scaling',
+ q:'We scaled from 2 to 4 pods. Why are the new ones getting no gRPC traffic?',
+ frames:[
+  {on:['A','B'],badge:'one long-lived connection per client',eps:[E('10.1.0.4','p1','ready'),E('10.1.1.7','p2','ready')],
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.0.4','ok','HTTP/2 conn ⇒ p1 · 3,000 req/s')]},{n:'client B',node:'node-2',conns:[C('10.1.1.7','ok','HTTP/2 conn ⇒ p2 · 3,000 req/s')]}],
+   rules:{'node-1':R(['10.1.0.4','10.1.1.7'],'ok'),'node-2':R(['10.1.0.4','10.1.1.7'],'ok')},
+   pods:[P('p1','10.1.0.4','node-1','ready',{conns:1,load:95}),P('p2','10.1.1.7','node-2','ready',{conns:1,load:95})],
+   h:'Two connections, two pods',b:'Each gRPC client opened one connection at startup and sends every request over it. Client A landed on p1 and client B on p2. Both pods are near their limit.'},
+  {on:['eps','node-1','node-2'],badge:'4 targets in every node\'s rules',eps:[E('10.1.0.4','p1','ready'),E('10.1.1.7','p2','ready'),E('10.1.0.6','p3','ready'),E('10.1.1.9','p4','ready')],
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.0.4','ok','HTTP/2 conn ⇒ p1 · 3,000 req/s')]},{n:'client B',node:'node-2',conns:[C('10.1.1.7','ok','HTTP/2 conn ⇒ p2 · 3,000 req/s')]}],
+   rules:{'node-1':R(['10.1.0.4','10.1.1.7','10.1.0.6','10.1.1.9'],'new'),'node-2':R(['10.1.0.4','10.1.1.7','10.1.0.6','10.1.1.9'],'new')},
+   pods:[P('p1','10.1.0.4','node-1','ready',{conns:1,load:95}),P('p2','10.1.1.7','node-2','ready',{conns:1,load:95}),P('p3','10.1.0.6','node-1','new',{conns:0,load:2}),P('p4','10.1.1.9','node-2','new',{conns:0,load:2})],
+   h:'Scale to 4',b:'p3 and p4 become Ready, the EndpointSlice lists four pods, and every node\'s rules now have four targets.'},
+  {on:['p3','p4'],badge:'p3 and p4 idle',bad:true,eps:[E('10.1.0.4','p1','ready'),E('10.1.1.7','p2','ready'),E('10.1.0.6','p3','ready'),E('10.1.1.9','p4','ready')],
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.0.4','ok','still the same conn ⇒ p1')]},{n:'client B',node:'node-2',conns:[C('10.1.1.7','ok','still the same conn ⇒ p2')]}],
+   rules:{'node-1':R(['10.1.0.4','10.1.1.7','10.1.0.6','10.1.1.9'],'ok','only used for new connections'),'node-2':R(['10.1.0.4','10.1.1.7','10.1.0.6','10.1.1.9'],'ok','only used for new connections')},
+   pods:[P('p1','10.1.0.4','node-1','ready',{conns:1,load:95}),P('p2','10.1.1.7','node-2','ready',{conns:1,load:95}),P('p3','10.1.0.6','node-1','ready',{conns:0,load:2}),P('p4','10.1.1.9','node-2','ready',{conns:0,load:2})],
+   h:'Nothing moves',b:'The rules only apply to new connections, and the clients never open one. p1 and p2 stay overloaded while p3 and p4 sit idle. The Service and the rules are all correct.'},
+  {on:['A','B'],badge:'after a rolling restart: still uneven',bad:true,eps:[E('10.1.0.6','p3','ready'),E('10.1.1.9','p4','ready'),E('10.1.0.8','p5','ready'),E('10.1.1.11','p6','ready')],
+   clients:[{n:'client A',node:'node-1',conns:[C('10.1.0.6','new','reconnected ⇒ p3')]},{n:'client B',node:'node-2',conns:[C('10.1.0.6','new','reconnected ⇒ p3')]}],
+   rules:{'node-1':R(['10.1.0.6','10.1.1.9','10.1.0.8','10.1.1.11'],'ok'),'node-2':R(['10.1.0.6','10.1.1.9','10.1.0.8','10.1.1.11'],'ok')},
+   pods:[P('p3','10.1.0.6','node-1','ready',{conns:2,load:100}),P('p4','10.1.1.9','node-2','ready',{conns:0,load:2}),P('p5','10.1.0.8','node-1','ready',{conns:0,load:2}),P('p6','10.1.1.11','node-2','ready',{conns:0,load:2})],
+   h:'Reconnecting doesn\'t fix it either',b:'When p1 and p2 are replaced, both clients reconnect. Each pick is random, and both can land on the same pod, which then carries all the traffic until the next reconnect.'},
+  {on:['A','B'],badge:'balanced per request',eps:[E('10.1.0.6','p3','ready'),E('10.1.1.9','p4','ready'),E('10.1.0.8','p5','ready'),E('10.1.1.11','p6','ready')],
+   clients:[{n:'client A',node:'node-1',note:'headless Service: DNS returns all 4 pod IPs',conns:[C('','ok','round-robin over p3, p4, p5, p6')]},{n:'client B',node:'node-2',note:'headless Service: DNS returns all 4 pod IPs',conns:[C('','ok','round-robin over p3, p4, p5, p6')]}],
+   rules:{'node-1':R([],'na','not used: clients connect to pod IPs directly'),'node-2':R([],'na','not used: clients connect to pod IPs directly')},
+   pods:[P('p3','10.1.0.6','node-1','ready',{conns:2,load:50}),P('p4','10.1.1.9','node-2','ready',{conns:2,load:50}),P('p5','10.1.0.8','node-1','ready',{conns:2,load:50}),P('p6','10.1.1.11','node-2','ready',{conns:2,load:50})],
+   h:'The fix: balance requests, not connections',b:'A headless Service (<code>clusterIP: None</code>) makes DNS return every pod IP, and the gRPC client\'s round-robin policy spreads requests across them. Alternatives: an L7 proxy or service mesh, or a server-side max connection age so clients reconnect regularly.'}],
+ take:'A Service balances connections, not requests. With long-lived connections (gRPC, WebSockets, database pools), scaling out doesn\'t spread load until clients reconnect, and even then only by chance.',
+ gen:'Any L4 load balancer in front of HTTP/2, WebSocket or connection-pooled clients, including cloud network load balancers.'}
+];
+
+const $=id=>document.getElementById(id);
+const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+let si=0, fi=0, playTimer=null;
+const epLabel={ready:'ready',no:'ready: false',term:'terminating'};
+const podLabel={ready:'Ready',notready:'Not ready',term:'Terminating',exited:'Exited',new:'Ready (new)'};
+const rLabel={ok:'up to date',stale:'stale',new:'just updated',na:'not in use'};
+function render(){
+  const sc=SC[si], f=sc.frames[fi], on=new Set(f.on||[]);
+  const b=$('badge'); b.textContent=f.badge; b.className='badge '+(f.bad?'bad':'good');
+  $('eps').className='epstrip '+(on.has('eps')?'on':'');
+  $('eps').innerHTML='<span class="lbl">EndpointSlice web · API server</span>'+f.eps.map(e=>`<span class="ep ${e.st==='ready'?'':e.st}">${esc(e.pod)} ${esc(e.ip)} · ${epLabel[e.st]}</span>`).join('');
+  $('clients').innerHTML=f.clients.map(c=>{const key=c.n.split(' ')[1];
+    return `<div class="client ${on.has(key)?'on':''}"><div class="chd"><span>${esc(c.n)}</span><small>on ${esc(c.node)}</small></div>
+    <span class="sub">${esc(c.note||'calls http://web → 10.96.0.20:80')}</span>
+    ${c.conns.length?c.conns.map(x=>`<div class="conn ${x.st}">${esc(x.label)}</div>`).join(''):'<span class="sub">no open connections</span>'}</div>`}).join('');
+  $('rules').innerHTML=Object.keys(f.rules).map(n=>{const r=f.rules[n];
+    return `<div class="rules ${on.has(n)?'on':''}"><div class="chd"><span>${esc(n)}</span><span class="rstate ${r.st}">${rLabel[r.st]}</span></div>
+    <span class="sub">10.96.0.20:80 → ${r.t.length?'random pick from:':'—'}</span>
+    ${r.t.length?`<div class="rt">${r.t.map(ip=>`<span class="${r.gone.includes(ip)?'gone':''}">${esc(ip)}</span>`).join('')}</div>`:''}
+    ${r.note?`<span class="sub">${esc(r.note)}</span>`:''}</div>`}).join('');
+  $('pods').innerHTML=f.pods.map(p=>`<div class="bpod ${p.st} ${on.has(p.n)?'on':''}"><div class="chd"><span>${esc(p.n)} · ${esc(p.ip)}</span><small>${esc(p.node)} · ${podLabel[p.st]}</small></div>
+    ${p.note?`<span class="sub">${esc(p.note)}</span>`:''}
+    <span class="sub">open connections: ${p.conns||0}</span>
+    ${p.load!=null?`<div class="load" title="load ${p.load}%"><i class="${p.load>=90?'hot':''}" style="width:${p.load}%"></i></div>`:''}</div>`).join('');
+  $('fh').textContent=f.h; $('fb').innerHTML=f.b;
+  $('stepno').textContent=`${fi+1} / ${sc.frames.length}`;
+  $('prev').disabled=fi===0; $('next').disabled=fi===sc.frames.length-1;
+  [...$('dots').children].forEach((d,i)=>d.setAttribute('aria-current',i===fi?'true':'false'));
+}
+function show(n){fi=Math.max(0,Math.min(n,SC[si].frames.length-1));render()}
+function select(i){
+  stopPlay(); si=i; fi=0; const sc=SC[si];
+  [...$('tabs').children].forEach((b,k)=>b.setAttribute('aria-selected',k===si?'true':'false'));
+  $('q').textContent=sc.q; $('take').textContent=sc.take; $('gen').textContent=sc.gen;
+  const dots=$('dots'); dots.innerHTML='';
+  sc.frames.forEach((_,k)=>{const d=document.createElement('button');d.className='dot';d.setAttribute('aria-label','Step '+(k+1));d.onclick=()=>{stopPlay();show(k)};dots.appendChild(d)});
+  render();
+}
+function stopPlay(){clearInterval(playTimer);playTimer=null;$('play').textContent='Play'}
+$('play').onclick=()=>{
+  if(playTimer){stopPlay();return}
+  show(fi===SC[si].frames.length-1?0:fi+1); $('play').textContent='Pause';
+  playTimer=setInterval(()=>{if(fi>=SC[si].frames.length-1){stopPlay();return} show(fi+1)},4800);
+};
+$('prev').onclick=()=>{stopPlay();show(fi-1)};
+$('next').onclick=()=>{stopPlay();show(fi+1)};
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){stopPlay();show(fi+1)}else if(e.key==='ArrowLeft'){stopPlay();show(fi-1)}});
+SC.forEach((sc,i)=>{const b=document.createElement('button');b.className='tab';b.setAttribute('role','tab');b.innerHTML=`<small>${sc.tab}</small>${sc.short}`;b.onclick=()=>{try{history.replaceState(null,'','#'+sc.id)}catch(_){location.hash=sc.id} select(i)};$('tabs').appendChild(b)});
+const fromHash=()=>{const i=SC.findIndex(x=>x.id===(location.hash||'').slice(1));return i<0?0:i};
+window.addEventListener('hashchange',()=>select(fromHash()));
+select(fromHash());
+})();
+</script>
+
+</body></html>

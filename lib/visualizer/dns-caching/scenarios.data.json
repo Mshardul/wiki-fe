@@ -1,0 +1,1330 @@
+{
+  "scenarios": [
+    {
+      "id": "happy",
+      "tab": "Happy path",
+      "short": "One lookup, copied down the chain",
+      "q": "Where does an answer get cached on the way back, and how do the copies stay in step?",
+      "frames": [
+        {
+          "clock": "0 s",
+          "badge": "cold: every layer misses",
+          "term": "socket.getaddrinfo(\"api.example.com\", 443)",
+          "boxes": [
+            {
+              "n": "App runtime",
+              "sub": "Python: no lookup cache",
+              "note": "asks the OS every time",
+              "hl": true
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "note": "no copy"
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "note": "no copy"
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "tag": "TTL 300"
+              }
+            }
+          ],
+          "req": [[0, 1, "query"], [1, 2, "miss"], [2, 3, "miss → root, .com, example.com"]],
+          "tl": {
+            "axis": [0, 320],
+            "ticks": [
+              [0, "0 s"],
+              [60, "60 s"],
+              [120, "120 s"],
+              [180, "180 s"],
+              [240, "240 s"],
+              [300, "300 s"]
+            ],
+            "rows": [
+              {
+                "label": "app traffic",
+                "segs": []
+              }
+            ],
+            "now": 0
+          },
+          "h": "Cold",
+          "b": "Python and glibc keep no cache, so the query goes to systemd-resolved (miss), then the VPC resolver (miss). The VPC resolver walks the hierarchy, usually with root and .com already cached, and gets the answer from Route 53: A 10.0.1.5, TTL 300 s."
+        },
+        {
+          "clock": "0 s",
+          "badge": "answer cached at two layers, 300 s each",
+          "boxes": [
+            {
+              "n": "App runtime",
+              "sub": "Python: no lookup cache",
+              "note": "asks the OS every time"
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "tag": "TTL 300"
+              }
+            }
+          ],
+          "answerArrows": [[3, 2, "A 10.0.1.5 · TTL 300"], [2, 1, "TTL 300"], [1, 0, "10.0.1.5"]],
+          "tl": {
+            "axis": [0, 320],
+            "ticks": [
+              [0, "0 s"],
+              [60, "60 s"],
+              [120, "120 s"],
+              [180, "180 s"],
+              [240, "240 s"],
+              [300, "300 s"]
+            ],
+            "rows": [
+              {
+                "label": "app traffic",
+                "segs": [[0, 320, "ok"]]
+              }
+            ],
+            "now": 2
+          },
+          "h": "The answer leaves copies",
+          "b": "On the way back, the VPC resolver and systemd-resolved each keep a copy with 300 s on its TTL bar. The app connects to 10.0.1.5."
+        },
+        {
+          "clock": "120 s",
+          "badge": "local hit: no network request",
+          "boxes": [
+            {
+              "n": "App runtime",
+              "sub": "Python: no lookup cache",
+              "note": "asks the OS every time",
+              "hl": true
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "hl": true,
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 180,
+                "max": 300,
+                "unit": "s"
+              },
+              "note2": "hit",
+              "note2c": "io"
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 180,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "tag": "TTL 300"
+              }
+            }
+          ],
+          "req": [[0, 1, "query"]],
+          "answerArrows": [[1, 0, "10.0.1.5 (180 s left)"]],
+          "tl": {
+            "axis": [0, 320],
+            "ticks": [
+              [0, "0 s"],
+              [60, "60 s"],
+              [120, "120 s"],
+              [180, "180 s"],
+              [240, "240 s"],
+              [300, "300 s"]
+            ],
+            "rows": [
+              {
+                "label": "app traffic",
+                "segs": [[0, 320, "ok"]]
+              }
+            ],
+            "now": 120
+          },
+          "h": "A local hit",
+          "b": "The app asks again. systemd-resolved still has a valid copy with 180 s left and answers without touching the network."
+        },
+        {
+          "clock": "200 s",
+          "badge": "another instance gets the remaining TTL: 100 s",
+          "boxes": [
+            {
+              "n": "App runtime",
+              "sub": "Python: no lookup cache",
+              "note": "asks the OS every time"
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 100,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "hl": true,
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 100,
+                "max": 300,
+                "unit": "s"
+              },
+              "note2": "hit: hands out 100 s, not 300",
+              "note2c": "io"
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "tag": "TTL 300"
+              }
+            }
+          ],
+          "extra": {
+            "under": 2,
+            "n": "Instance 2's cache",
+            "card": {
+              "k": "ok",
+              "l1": "api.example.com",
+              "l2": "A 10.0.1.5",
+              "left": 100,
+              "max": 300,
+              "unit": "s"
+            }
+          },
+          "tl": {
+            "axis": [0, 320],
+            "ticks": [
+              [0, "0 s"],
+              [60, "60 s"],
+              [120, "120 s"],
+              [180, "180 s"],
+              [240, "240 s"],
+              [300, "300 s"]
+            ],
+            "rows": [
+              {
+                "label": "app traffic",
+                "segs": [[0, 320, "ok"]]
+              }
+            ],
+            "now": 200
+          },
+          "h": "Another instance asks",
+          "b": "A second instance asks the VPC resolver, which answers from cache with the remaining TTL: 100 s, not 300. That copy expires at the same moment as the resolver's. A copy never outlives the deadline the authoritative server set."
+        },
+        {
+          "clock": "300 s",
+          "badge": "all copies expire together; fresh 300 s",
+          "boxes": [
+            {
+              "n": "App runtime",
+              "sub": "Python: no lookup cache",
+              "note": "asks the OS every time",
+              "hl": true
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              },
+              "note2": "expired → refetched"
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              },
+              "note2": "expired → refetched"
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "ok",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "tag": "TTL 300"
+              }
+            }
+          ],
+          "req": [[0, 1, "query"], [1, 2, "miss"], [2, 3, "miss"]],
+          "answerArrows": [[3, 2, "TTL 300"], [2, 1, "TTL 300"], [1, 0, "10.0.1.5"]],
+          "tl": {
+            "axis": [0, 320],
+            "ticks": [
+              [0, "0 s"],
+              [60, "60 s"],
+              [120, "120 s"],
+              [180, "180 s"],
+              [240, "240 s"],
+              [300, "300 s"]
+            ],
+            "rows": [
+              {
+                "label": "app traffic",
+                "segs": [[0, 320, "ok"]]
+              }
+            ],
+            "now": 320,
+            "marks": [[300, "TTL ends", "muted"]]
+          },
+          "h": "Everything expires together",
+          "b": "Both copies drain to zero and are thrown away. The next lookup goes all the way down again and comes back with a fresh 300 s. When every layer respects the TTL, a change is visible everywhere within one TTL."
+        }
+      ],
+      "take": "TTL is a deadline that travels with the answer. Each layer counts down from what it was handed.",
+      "gen": "Any cache with a TTL: a copy's deadline is set when it's handed out, and changing the source changes only future copies."
+    },
+    {
+      "id": "old-ip",
+      "tab": "Scenario 1",
+      "short": "Traffic still goes to the old IP",
+      "q": "The record was changed hours ago (TTL 300 s). Why is traffic still going to the old IP?",
+      "frames": [
+        {
+          "clock": "0 s",
+          "badge": "record changed · caches still hold the old IP",
+          "boxes": [
+            {
+              "n": "App runtime",
+              "sub": "Python: no lookup cache",
+              "note": "—"
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "card": {
+                "k": "old",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 240,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "card": {
+                "k": "old",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 240,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "hl": true,
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "tag": "changed"
+              }
+            }
+          ],
+          "tl": {
+            "axis": [-60, 600],
+            "ticks": [
+              [0, "change"],
+              [120, "120 s"],
+              [240, "240 s"],
+              [360, "360 s"],
+              [480, "480 s"],
+              [600, "600 s"]
+            ],
+            "rows": [
+              {
+                "label": "new conns (Python)",
+                "segs": [[-60, 240, "old"], [240, 600, "new"]]
+              },
+              {
+                "label": "JVM, default 30 s",
+                "segs": [[-60, 270, "old"], [270, 600, "new"]]
+              },
+              {
+                "label": "JVM, cache forever",
+                "segs": [[-60, 600, "old"]]
+              },
+              {
+                "label": "pooled connections",
+                "segs": [[-60, 600, "old"]]
+              }
+            ],
+            "now": 0,
+            "marks": [[0, "record changed", "fg"]]
+          },
+          "h": "The record changes",
+          "b": "Route 53 now answers 10.0.2.9. The VPC resolver and systemd-resolved still hold 10.0.1.5 with 240 s left. New lookups still get the old IP, which is correct: each copy may live until its deadline."
+        },
+        {
+          "clock": "240 s",
+          "badge": "DNS caches caught up: new lookups get 10.0.2.9",
+          "boxes": [
+            {
+              "n": "App runtime",
+              "sub": "Python: no lookup cache",
+              "note": "—"
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "tag": "TTL 300"
+              }
+            }
+          ],
+          "req": [[1, 2, "expired → miss"], [2, 3, "miss"]],
+          "answerArrows": [[3, 2, "A 10.0.2.9"], [2, 1, "A 10.0.2.9"]],
+          "tl": {
+            "axis": [-60, 600],
+            "ticks": [
+              [0, "change"],
+              [120, "120 s"],
+              [240, "240 s"],
+              [360, "360 s"],
+              [480, "480 s"],
+              [600, "600 s"]
+            ],
+            "rows": [
+              {
+                "label": "new conns (Python)",
+                "segs": [[-60, 240, "old"], [240, 600, "new"]]
+              },
+              {
+                "label": "JVM, default 30 s",
+                "segs": [[-60, 270, "old"], [270, 600, "new"]]
+              },
+              {
+                "label": "JVM, cache forever",
+                "segs": [[-60, 600, "old"]]
+              },
+              {
+                "label": "pooled connections",
+                "segs": [[-60, 600, "old"]]
+              }
+            ],
+            "now": 245,
+            "marks": [[0, "record changed", "fg"]]
+          },
+          "h": "The DNS caches catch up",
+          "b": "Both copies expire and the next lookup fetches 10.0.2.9. Services that open new connections now reach the new server. The DNS layers did their part within one TTL."
+        },
+        {
+          "clock": "270 s",
+          "badge": "runtime cache: +30 s by default, or forever",
+          "bad": true,
+          "term": "networkaddress.cache.ttl=-1   # \"cache forever\"",
+          "boxes": [
+            {
+              "n": "JVM runtime",
+              "sub": "OpenJDK: 30 s default",
+              "note": "asks the OS every time",
+              "hl": true,
+              "card": {
+                "k": "old",
+                "l1": "if set to cache forever",
+                "l2": "10.0.1.5",
+                "tag": "until restart"
+              }
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "left": 270,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "left": 270,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "tag": "TTL 300"
+              }
+            }
+          ],
+          "tl": {
+            "axis": [-60, 600],
+            "ticks": [
+              [0, "change"],
+              [120, "120 s"],
+              [240, "240 s"],
+              [360, "360 s"],
+              [480, "480 s"],
+              [600, "600 s"]
+            ],
+            "rows": [
+              {
+                "label": "new conns (Python)",
+                "segs": [[-60, 240, "old"], [240, 600, "new"]]
+              },
+              {
+                "label": "JVM, default 30 s",
+                "segs": [[-60, 270, "old"], [270, 600, "new"]]
+              },
+              {
+                "label": "JVM, cache forever",
+                "segs": [[-60, 600, "old"]]
+              },
+              {
+                "label": "pooled connections",
+                "segs": [[-60, 600, "old"]]
+              }
+            ],
+            "now": 360,
+            "marks": [[0, "record changed", "fg"]]
+          },
+          "h": "The runtime cache",
+          "b": "A Java service keeps its own lookup cache. OpenJDK's default is 30 s without a security manager, so it lags 30 s more. With a security manager, or <code>networkaddress.cache.ttl=-1</code>, the policy is \"cache forever\" and it keeps the old IP until it restarts. Python and Go keep no lookup cache of their own."
+        },
+        {
+          "clock": "600 s … hours",
+          "badge": "pooled connections never look again",
+          "bad": true,
+          "term": "s = requests.Session()   # connections opened to 10.0.1.5 before the change",
+          "boxes": [
+            {
+              "n": "Connection pool",
+              "sub": "requests.Session",
+              "note": "asks the OS every time",
+              "hl": true,
+              "card": {
+                "k": "old",
+                "l1": "open TCP connections",
+                "l2": "→ 10.0.1.5",
+                "tag": "no lookup"
+              }
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "tag": "TTL 300"
+              }
+            }
+          ],
+          "tl": {
+            "axis": [-60, 600],
+            "ticks": [
+              [0, "change"],
+              [120, "120 s"],
+              [240, "240 s"],
+              [360, "360 s"],
+              [480, "480 s"],
+              [600, "600 s"]
+            ],
+            "rows": [
+              {
+                "label": "new conns (Python)",
+                "segs": [[-60, 240, "old"], [240, 600, "new"]]
+              },
+              {
+                "label": "JVM, default 30 s",
+                "segs": [[-60, 270, "old"], [270, 600, "new"]]
+              },
+              {
+                "label": "JVM, cache forever",
+                "segs": [[-60, 600, "old"]]
+              },
+              {
+                "label": "pooled connections",
+                "segs": [[-60, 600, "old"]]
+              }
+            ],
+            "now": 600,
+            "marks": [[0, "record changed", "fg"]]
+          },
+          "h": "The pooled connection",
+          "b": "This service opened its connections to 10.0.1.5 before the change. DNS is consulted only when a new connection opens, and a busy pool never needs one. Every request keeps going to the old server for as long as it stays up and keeps the connections open."
+        },
+        {
+          "clock": "fix",
+          "badge": "old server drains its connections → clients re-resolve",
+          "term": "# old server, after the TTL has passed:\n# HTTP/1.1: Connection: close   HTTP/2, gRPC: GOAWAY",
+          "boxes": [
+            {
+              "n": "Connection pool",
+              "sub": "requests.Session",
+              "note": "asks the OS every time",
+              "card": {
+                "k": "new",
+                "l1": "reconnected after close",
+                "l2": "→ 10.0.2.9",
+                "tag": "fresh lookup"
+              }
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "tag": "TTL 300"
+              }
+            }
+          ],
+          "tl": {
+            "axis": [-60, 600],
+            "ticks": [
+              [0, "change"],
+              [120, "120 s"],
+              [240, "240 s"],
+              [360, "360 s"],
+              [480, "480 s"],
+              [600, "600 s"]
+            ],
+            "rows": [
+              {
+                "label": "new conns (Python)",
+                "segs": [[-60, 240, "old"], [240, 600, "new"]]
+              },
+              {
+                "label": "JVM, default 30 s",
+                "segs": [[-60, 270, "old"], [270, 600, "new"]]
+              },
+              {
+                "label": "JVM, cache forever",
+                "segs": [[-60, 600, "old", " 10.0.1.5 · fix: never cache forever"]]
+              },
+              {
+                "label": "pooled connections",
+                "segs": [[-60, 400, "old"], [400, 600, "new"]]
+              }
+            ],
+            "now": 600,
+            "marks": [[0, "record changed", "fg"], [400, "old server drains", "io"]]
+          },
+          "h": "Fixes",
+          "b": "After the TTL has passed, have the old server close its connections gracefully: clients reconnect, and reconnecting forces a fresh lookup. Cap connection lifetime (gRPC max connection age, Envoy <code>max_connection_duration</code>) so connections get recycled anyway. Never configure a runtime DNS cache to last forever. Keep the old server up until its traffic actually drains to zero."
+        }
+      ],
+      "take": "The DNS caches were the fast part: one TTL. The hours came from layers that stopped asking.",
+      "gen": "Blue/green and DNS failover: cutover speed is bounded by the slowest layer, TTLs, runtime caches and connection lifetimes."
+    },
+    {
+      "id": "ttl-too-late",
+      "tab": "Scenario 2",
+      "short": "The TTL was lowered too late",
+      "q": "The record had a 1-day TTL. The team lowered it to 60 s right before changing the IP. Why did some clients keep the old IP for most of a day?",
+      "frames": [
+        {
+          "clock": "Mon 08:00",
+          "badge": "resolver caches the old IP for 86,400 s",
+          "boxes": [
+            {
+              "n": "Clients",
+              "sub": "of resolver X",
+              "note": "ask resolver X"
+            },
+            {
+              "n": "Resolver X",
+              "sub": "somewhere on the internet",
+              "hl": true,
+              "card": {
+                "k": "old",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 24,
+                "max": 24,
+                "unit": "h"
+              }
+            },
+            {
+              "n": "Route 53",
+              "sub": "authoritative",
+              "card": {
+                "k": "old",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "tag": "TTL 86,400"
+              }
+            }
+          ],
+          "req": [[1, 2, "query"]],
+          "answerArrows": [[2, 1, "A 10.0.1.5 · TTL 86,400"]],
+          "tl": {
+            "axis": [0, 50],
+            "ticks": [
+              [0, "Sun 09:00"],
+              [12, "Sun 21:00"],
+              [24, "Mon 09:00"],
+              [36, "Mon 21:00"],
+              [48, "Tue 09:00"]
+            ],
+            "rows": [
+              {
+                "label": "clients of X",
+                "segs": [[0, 47, "old"], [47, 50, "new"]]
+              }
+            ],
+            "now": 23
+          },
+          "h": "A day-long copy",
+          "b": "At Monday 08:00 a resolver caches 10.0.1.5 with 86,400 s on its TTL bar. It may keep that copy until Tuesday 08:00."
+        },
+        {
+          "clock": "Mon 09:00",
+          "badge": "TTL lowered to 60 s · resolver doesn't know",
+          "boxes": [
+            {
+              "n": "Clients",
+              "sub": "of resolver X",
+              "note": "ask resolver X"
+            },
+            {
+              "n": "Resolver X",
+              "sub": "won't ask for 23 h",
+              "card": {
+                "k": "old",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 23,
+                "max": 24,
+                "unit": "h"
+              }
+            },
+            {
+              "n": "Route 53",
+              "sub": "authoritative",
+              "hl": true,
+              "card": {
+                "k": "old",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "tag": "TTL 60"
+              }
+            }
+          ],
+          "tl": {
+            "axis": [0, 50],
+            "ticks": [
+              [0, "Sun 09:00"],
+              [12, "Sun 21:00"],
+              [24, "Mon 09:00"],
+              [36, "Mon 21:00"],
+              [48, "Tue 09:00"]
+            ],
+            "rows": [
+              {
+                "label": "clients of X",
+                "segs": [[0, 47, "old"], [47, 50, "new"]]
+              }
+            ],
+            "now": 24,
+            "marks": [[24, "TTL → 60 s", "fg"]]
+          },
+          "h": "The TTL is lowered",
+          "b": "Only the authoritative copy changes. Resolver X still holds 10.0.1.5 with about 23 hours left, and won't ask again, so it never learns the TTL is now 60 s."
+        },
+        {
+          "clock": "Mon 09:05",
+          "badge": "IP changed · X's clients stay on old IP until Tue 08:00",
+          "bad": true,
+          "boxes": [
+            {
+              "n": "Clients",
+              "sub": "of resolver X",
+              "hl": true,
+              "card": {
+                "k": "old",
+                "l1": "still answered",
+                "l2": "10.0.1.5",
+                "tag": "until Tue 08:00"
+              }
+            },
+            {
+              "n": "Resolver X",
+              "sub": "still the cached copy",
+              "card": {
+                "k": "old",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "left": 23,
+                "max": 24,
+                "unit": "h"
+              }
+            },
+            {
+              "n": "Route 53",
+              "sub": "authoritative",
+              "hl": true,
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "tag": "TTL 60"
+              }
+            }
+          ],
+          "req": [[0, 1, "query"]],
+          "answerArrows": [[1, 0, "10.0.1.5 (cached)", "old"]],
+          "tl": {
+            "axis": [0, 50],
+            "ticks": [
+              [0, "Sun 09:00"],
+              [12, "Sun 21:00"],
+              [24, "Mon 09:00"],
+              [36, "Mon 21:00"],
+              [48, "Tue 09:00"]
+            ],
+            "rows": [
+              {
+                "label": "clients of X",
+                "segs": [[0, 47, "old"], [47, 50, "new"]]
+              }
+            ],
+            "now": 50,
+            "marks": [[24, "TTL → 60 s", "fg"], [47, "X expires", "io"]]
+          },
+          "h": "The IP changes",
+          "b": "Lookups that reach Route 53 now get 10.0.2.9 with a 60 s TTL. But resolver X keeps answering 10.0.1.5 until Tuesday 08:00. Every resolver that cached the name in the 24 hours before 09:00 holds the old answer for the rest of its day."
+        },
+        {
+          "clock": "the right timeline",
+          "badge": "lower the TTL one old TTL early: everyone moves in 60 s",
+          "boxes": [
+            {
+              "n": "Clients",
+              "sub": "of resolver X",
+              "note": "ask resolver X"
+            },
+            {
+              "n": "Resolver X",
+              "sub": "Mon 09:00: holds a 60 s copy",
+              "card": {
+                "k": "old",
+                "l1": "api.example.com",
+                "l2": "A 10.0.1.5",
+                "tag": "TTL 60"
+              }
+            },
+            {
+              "n": "Route 53",
+              "sub": "authoritative",
+              "card": {
+                "k": "new",
+                "l1": "api.example.com",
+                "l2": "A 10.0.2.9",
+                "tag": "TTL 60"
+              }
+            }
+          ],
+          "tl": {
+            "axis": [0, 50],
+            "ticks": [
+              [0, "Sun 09:00"],
+              [12, "Sun 21:00"],
+              [24, "Mon 09:00"],
+              [36, "Mon 21:00"],
+              [48, "Tue 09:00"]
+            ],
+            "rows": [
+              {
+                "label": "lowered Mon 09:00",
+                "segs": [[0, 47, "old"], [47, 50, "new"]]
+              },
+              {
+                "label": "lowered Sun 09:00",
+                "segs": [[0, 24.1, "old"], [24.1, 50, "new"]]
+              }
+            ],
+            "now": 50,
+            "marks": [[0, "TTL → 60 s", "io"], [24.1, "IP change", "fg"]]
+          },
+          "h": "The right timeline",
+          "b": "Lower the TTL at least one old TTL before the change: Sunday 09:00. By Monday 09:00 every day-long copy has expired, and any cache that refreshed since then holds the 60 s version. Change the IP at 09:05 and every well-behaved cache moves within 60 s. Raise the TTL again once the migration is stable."
+        }
+      ],
+      "take": "A TTL is a promise made when the answer was handed out. Lowering it changes only future answers.",
+      "gen": "Any planned cutover: prepare the caches one old TTL ahead, not one minute ahead."
+    },
+    {
+      "id": "negative",
+      "tab": "Scenario 3",
+      "short": "The NXDOMAIN that keeps coming back",
+      "q": "A lookup failed once because the record didn't exist yet. It was created two minutes later. Why does the lookup keep failing for another quarter of an hour?",
+      "frames": [
+        {
+          "clock": "10:00",
+          "badge": "NXDOMAIN: the name doesn't exist yet",
+          "boxes": [
+            {
+              "n": "App runtime",
+              "sub": "orders consumer",
+              "note": "asks the OS every time",
+              "hl": true
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "note": "no copy"
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "note": "no copy"
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "nx",
+                "l1": "orders-v2.example.com",
+                "l2": "no record",
+                "tag": "SOA 900 / 86400"
+              }
+            }
+          ],
+          "req": [[0, 1, "query"], [1, 2, "miss"], [2, 3, "miss"]],
+          "answerArrows": [[3, 2, "NXDOMAIN + SOA", "nx"]],
+          "tl": {
+            "axis": [0, 20],
+            "ticks": [[0, "10:00"], [5, "10:05"], [10, "10:10"], [15, "10:15"], [20, "10:20"]],
+            "title": "Lookups get",
+            "rows": [
+              {
+                "label": "consumer lookups",
+                "segs": [[0, 15, "nx"], [15, 20, "ok", "A 10.0.3.7"]]
+              }
+            ],
+            "now": 0.2
+          },
+          "h": "The name doesn't exist yet",
+          "b": "The pipeline started the consumer before the step that creates the record. Route 53 answers NXDOMAIN (\"no record of any type with that name\") and includes the zone's SOA record, which tells the resolver how long to remember the failure."
+        },
+        {
+          "clock": "10:00",
+          "badge": "negative answer cached for min(900, 86400) = 900 s",
+          "bad": true,
+          "boxes": [
+            {
+              "n": "App runtime",
+              "sub": "orders consumer",
+              "note": "asks the OS every time"
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "card": {
+                "k": "nx",
+                "l1": "orders-v2.example.com",
+                "l2": "NXDOMAIN",
+                "left": 900,
+                "max": 900,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "hl": true,
+              "card": {
+                "k": "nx",
+                "l1": "orders-v2.example.com",
+                "l2": "NXDOMAIN",
+                "left": 900,
+                "max": 900,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "nx",
+                "l1": "orders-v2.example.com",
+                "l2": "no record",
+                "tag": "SOA 900 / 86400"
+              }
+            }
+          ],
+          "answerArrows": [[2, 1, "NXDOMAIN", "nx"], [1, 0, "NXDOMAIN", "nx"]],
+          "tl": {
+            "axis": [0, 20],
+            "ticks": [[0, "10:00"], [5, "10:05"], [10, "10:10"], [15, "10:15"], [20, "10:20"]],
+            "title": "Lookups get",
+            "rows": [
+              {
+                "label": "consumer lookups",
+                "segs": [[0, 15, "nx"], [15, 20, "ok", "A 10.0.3.7"]]
+              }
+            ],
+            "now": 0.3
+          },
+          "h": "A negative copy",
+          "b": "The resolver caches the NXDOMAIN with its own TTL: the lesser of the SOA record's TTL and the SOA minimum field (RFC 2308). Route 53's defaults are 900 s and 86,400 s, so 900 s. systemd-resolved caches the negative answer too."
+        },
+        {
+          "clock": "10:02",
+          "badge": "record exists · nobody asks Route 53",
+          "bad": true,
+          "boxes": [
+            {
+              "n": "App runtime",
+              "sub": "orders consumer",
+              "note": "asks the OS every time",
+              "hl": true
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "card": {
+                "k": "nx",
+                "l1": "orders-v2.example.com",
+                "l2": "NXDOMAIN",
+                "left": 780,
+                "max": 900,
+                "unit": "s"
+              },
+              "note2": "hit (negative)",
+              "note2c": "alert"
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "card": {
+                "k": "nx",
+                "l1": "orders-v2.example.com",
+                "l2": "NXDOMAIN",
+                "left": 780,
+                "max": 900,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "hl": true,
+              "card": {
+                "k": "ok",
+                "l1": "orders-v2.example.com",
+                "l2": "A 10.0.3.7",
+                "tag": "created"
+              }
+            }
+          ],
+          "req": [[0, 1, "retry"]],
+          "answerArrows": [[1, 0, "NXDOMAIN (cached)", "nx"]],
+          "tl": {
+            "axis": [0, 20],
+            "ticks": [[0, "10:00"], [5, "10:05"], [10, "10:10"], [15, "10:15"], [20, "10:20"]],
+            "title": "Lookups get",
+            "rows": [
+              {
+                "label": "consumer lookups",
+                "segs": [[0, 15, "nx"], [15, 20, "ok", "A 10.0.3.7"]]
+              }
+            ],
+            "now": 2,
+            "marks": [[2, "record created", "io"]]
+          },
+          "h": "The record is created",
+          "b": "Route 53 would now answer with the IP, but nobody asks it. Every lookup until 10:15 is answered from the negative copy. Retries inside that window just hit the cache."
+        },
+        {
+          "clock": "10:15",
+          "badge": "negative copy expires · lookup succeeds",
+          "boxes": [
+            {
+              "n": "App runtime",
+              "sub": "orders consumer",
+              "note": "asks the OS every time"
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "card": {
+                "k": "ok",
+                "l1": "orders-v2.example.com",
+                "l2": "A 10.0.3.7",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "card": {
+                "k": "ok",
+                "l1": "orders-v2.example.com",
+                "l2": "A 10.0.3.7",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "ok",
+                "l1": "orders-v2.example.com",
+                "l2": "A 10.0.3.7",
+                "tag": "TTL 300"
+              }
+            }
+          ],
+          "req": [[0, 1, "query"], [1, 2, "miss"], [2, 3, "miss"]],
+          "answerArrows": [[3, 2, "A 10.0.3.7"], [2, 1, "A 10.0.3.7"], [1, 0, "10.0.3.7"]],
+          "tl": {
+            "axis": [0, 20],
+            "ticks": [[0, "10:00"], [5, "10:05"], [10, "10:10"], [15, "10:15"], [20, "10:20"]],
+            "title": "Lookups get",
+            "rows": [
+              {
+                "label": "consumer lookups",
+                "segs": [[0, 15, "nx"], [15, 20, "ok", "A 10.0.3.7"]]
+              }
+            ],
+            "now": 20,
+            "marks": [[2, "record created", "io"], [15, "negative TTL ends", "fg"]]
+          },
+          "h": "The negative copy expires",
+          "b": "The next lookup reaches Route 53 and gets the A record. The service connects 13 minutes after the record existed."
+        },
+        {
+          "clock": "fix",
+          "badge": "create records before anything looks them up",
+          "term": "resolvectl flush-caches   # only for caches you control",
+          "boxes": [
+            {
+              "n": "App runtime",
+              "sub": "orders consumer",
+              "note": "asks the OS every time"
+            },
+            {
+              "n": "OS stub",
+              "sub": "systemd-resolved (caches)",
+              "card": {
+                "k": "ok",
+                "l1": "orders-v2.example.com",
+                "l2": "A 10.0.3.7",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "VPC resolver",
+              "sub": "Route 53 Resolver",
+              "card": {
+                "k": "ok",
+                "l1": "orders-v2.example.com",
+                "l2": "A 10.0.3.7",
+                "left": 300,
+                "max": 300,
+                "unit": "s"
+              }
+            },
+            {
+              "n": "Authoritative",
+              "sub": "Route 53 hosted zone",
+              "card": {
+                "k": "ok",
+                "l1": "orders-v2.example.com",
+                "l2": "A 10.0.3.7",
+                "tag": "created 09:55"
+              }
+            }
+          ],
+          "tl": {
+            "axis": [0, 20],
+            "ticks": [[0, "10:00"], [5, "10:05"], [10, "10:10"], [15, "10:15"], [20, "10:20"]],
+            "title": "Lookups get",
+            "rows": [
+              {
+                "label": "records first",
+                "segs": [[0, 20, "ok", "A 10.0.3.7"]]
+              }
+            ],
+            "now": 20
+          },
+          "h": "Fixes",
+          "b": "Create DNS records before deploying anything that looks them up: pipeline order is the real fix. If you need it shorter, lower the SOA TTL or minimum (Route 53 lets you edit the SOA, at the cost of more negative queries). Flush caches you control; you usually can't flush a managed or public resolver. In the app, don't treat a startup NXDOMAIN as permanent. The same applies to NODATA, such as an AAAA lookup for a name with only an A record."
+        }
+      ],
+      "take": "\"Doesn't exist\" is an answer too, and it's cached like any other.",
+      "gen": "Any cache that stores misses: a negative cache entry outlives the moment the thing starts to exist."
+    }
+  ]
+}

@@ -96,6 +96,70 @@ export const VISUALIZERS: VisualizerEntry[] = [
     icon: "📜",
     kind: "mechanism",
   },
+  {
+    slug: "inside-kubectl-apply",
+    title: "Inside kubectl apply",
+    description:
+      "Step through declarative apply: the API server stores intent, then controllers and kubelets reconcile without talking to each other.",
+    icon: "☸️",
+    kind: "mechanism",
+  },
+  {
+    slug: "inside-a-kubernetes-service",
+    title: "Inside a Kubernetes Service",
+    description:
+      "Step through ClusterIP DNS, kube-proxy rules on every node, EndpointSlices, readiness, rollout races, and gRPC connection stickiness.",
+    icon: "🔀",
+    kind: "mechanism",
+  },
+  {
+    slug: "inside-pod-resource-limits",
+    title: "Inside Pod Resource Limits",
+    description:
+      "Step through scheduler requests vs cgroup limits: bursting, OOMKilled at the container cap, CPU CFS throttling, and kubelet eviction.",
+    icon: "📊",
+    kind: "mechanism",
+  },
+  {
+    slug: "inside-dns-caching",
+    title: "Inside DNS Caching",
+    description:
+      "Step through resolver chains, TTL countdowns per cache layer, stale IPs, late TTL cuts, and negative NXDOMAIN caching.",
+    icon: "🔍",
+    kind: "mechanism",
+  },
+  {
+    slug: "cost-of-a-new-connection",
+    title: "The Cost of a New Connection",
+    description:
+      "Step through TCP and TLS round trips, slow start, TIME_WAIT port exhaustion, session resumption, and 0-RTT replay risk.",
+    icon: "🔌",
+    kind: "mechanism",
+  },
+  {
+    slug: "inside-a-connection-pool",
+    title: "Inside a Connection Pool",
+    description:
+      "Step through keep-alive reuse, NLB silent drops, ALB vs uvicorn idle races, and client-side pool exhaustion.",
+    icon: "🏊",
+    kind: "mechanism",
+  },
+  {
+    slug: "inside-a-cache-stampede",
+    title: "Inside a Cache Stampede",
+    description:
+      "Step through cache-aside hits, a hot-key expiry under load, synchronized TTL avalanches, and single-flight vs jitter fixes.",
+    icon: "🐂",
+    kind: "mechanism",
+  },
+  {
+    slug: "inside-celery-prefetch",
+    title: "Inside Celery Prefetch",
+    description:
+      "Step through publish and reserve, head-of-line blocking, early vs late acks, and Redis visibility timeouts.",
+    icon: "📬",
+    kind: "mechanism",
+  },
 ];
 
 export function getVisualizer(slug: string): VisualizerEntry | undefined {

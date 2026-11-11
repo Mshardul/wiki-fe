@@ -3,8 +3,8 @@
 import { useCallback, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { writeToClipboard } from "@/lib/clipboard";
 import { showToast } from "@/lib/toast";
-import { swatchesIn } from "@/lib/visualizer/core/schedule";
 import { encodeState, parseState } from "@/lib/visualizer/core/url-state";
+import { legendForFrame } from "@/lib/visualizer/mechanism/legend";
 import { MODULES } from "@/lib/visualizer/modules";
 import { useElementSize } from "../hooks/useElementSize";
 import { usePlayback } from "../hooks/usePlayback";
@@ -82,8 +82,7 @@ function MechanismBody({ slug, glossary }: MechanismAppProps) {
 
   const frame = result.frames[pb.frame];
   if (!frame) return null;
-  const drawn = swatchesIn(result.frames);
-  const legend = (mod.legend ?? []).filter((item) => drawn === null || drawn.has(item.swatch));
+  const legend = legendForFrame(mod.legend ?? [], frame);
   const glossaryDef =
     mod.glossaryTerm && glossary[mod.glossaryTerm] ? glossary[mod.glossaryTerm] : null;
   const related = result.info.related ?? [];

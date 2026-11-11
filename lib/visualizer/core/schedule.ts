@@ -54,10 +54,7 @@ export function skippedEvents(frames: VizFrame[]): { step: number; at: number[] 
   let prev: ScheduleModel | null = null;
   frames.forEach((frame, step) => {
     const m = frame.model;
-    if (m.kind !== "schedule") {
-      prev = null;
-      return;
-    }
+    if (m.kind !== "schedule") return;
     const from = prev && prev.track === m.track ? prev.now : 0;
     const at = scheduleEvents(m).filter((t) => t > from + EPS && t < m.now - EPS);
     if (at.length > 0) out.push({ step, at });

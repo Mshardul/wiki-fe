@@ -64,6 +64,8 @@ Shapes are generic components fed a shape model; they never know which visualize
 | **Schedule** | rows over continuous time that fill in up to now: solid / hatched / outlined segments with optional faint marks, an optional summary row above (who holds a shared resource), countdown meters, arrows between rows, pins, an optional values row, and an optional share readout or note underneath; dashed playhead that glides between steps; drawn at the stage width so it stays readable down to a phone, with axis labels thinning instead of overlapping | Python GIL (threads, lock holder, switch timer, drop requests, checkpoints, counter, "GIL held at") | Go scheduler, asyncio event loop, Redis single thread, lock contention |
 | **Composite** | several shapes stacked in one stage, each at its natural or remaining height | rate limiting (log + list, token pile, leaky queue + rows) | ARC, LSM tree, multi-level caches |
 
+**Mechanism presentation shapes** (not in the table above): integrated stage renderers for mechanism visualizers only (`mvcc`, `wal`, `btree`, `http-pipeline`, …). Each gets a `kind` in `lib/visualizer/core/shapes.ts`, a component in `components/visualizer/shapes/`, and domain copy in the module adapter. See CONVENTIONS.md § Visualizer.
+
 **Rotate:** shapes with an axis (linear, histogram) get an icon-only Rotate toggle in the playback footer that swaps the axis and keeps text upright — never a literal 90° CSS rotation. Its label names the default view while rotated. Shapes without an axis (ring) hide the button.
 
 ---
@@ -156,7 +158,15 @@ interface VizFrame {
 - **Frames are pure and deterministic.** `run` has no side effects; the same inputs + seed always give the same frames.
 - **Tests:** Vitest fixture-first for everything in `lib/visualizer/**`, against hand-checked expected frames. Component tests for every frame component and hook. Browser e2e only for what needs a real browser (`tests/e2e/test_visualizer.py`).
 - **CSS:** tokens only (`--viz-*` aliases for roles); `viz-*` classes; breakpoints only in `css/responsive.css`; must not break at 320px.
-- **Article links:** "Read article" deep-links to the matching article section; a content test asserts every target anchor exists so a heading rename fails loudly.
+- **Article links:** Set `MECHANISM_ARTICLE_HREF` in `lib/visualizer/mechanism/links.ts` only when a corpus article section truly matches the visualizer. Use `""` and `expectReadArticle: false` in `mechanism/manifest.json` otherwise — the frame hides **Read article**. Non-empty hrefs must resolve to real headings; `tests/content/artifacts.test.ts` asserts that.
+
+### Porting standalone HTML prototypes
+
+Record-keeping copies of early standalone visualizers live under `content/Visualizer/*.html`. They are **not** part of the content build (corpus discovery is markdown-only).
+
+To integrate a new prototype: run the matching `scripts/extract-*-scenarios.mjs` (or add one alongside the HTML) to emit `lib/visualizer/<name>/scenarios.data.json`, then implement the module adapter, presentation shape, and CSS. **Canonical runtime data is the JSON under `lib/visualizer/`**, not the HTML.
+
+Mechanism step copy may use small HTML fragments in scenario JSON; render those only through `lib/visualizer/mechanism/trusted-scenario-html.tsx` (checked-in scenario data, not user input).
 
 ## How UI decisions are made
 

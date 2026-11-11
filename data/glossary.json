@@ -66,5 +66,13 @@
   "multi-version concurrency control": "Keeping multiple versions of a row so readers use a snapshot while writers add new versions instead of locking reads.",
   "b-tree index": "A balanced sorted tree of index pages used by most relational engines for range and equality lookups on ordered keys.",
   "write-ahead log": "An append-only durability log written before data pages change; crash recovery replays it to reconstruct committed work.",
-  "reverse proxy": "A server-facing proxy that receives client requests, forwards them to backends, and returns responses—hiding backend topology from clients."
+  "reverse proxy": "A server-facing proxy that receives client requests, forwards them to backends, and returns responses—hiding backend topology from clients.",
+  "kubectl apply": "Writes desired object state to the API server and returns; Deployment, ReplicaSet, scheduler, and kubelet loops reconcile later—apply succeeding is not the workload being ready.",
+  "kubernetes service": "A stable virtual IP and DNS name whose EndpointSlice lists ready pod backends; kube-proxy (or the dataplane equivalent) on every node programs rules so new connections to the ClusterIP reach a ready endpoint—conntrack keeps an existing connection on its first backend.",
+  "pod resource limits": "Kubernetes schedules on requests but enforces caps with cgroups: memory above the container limit triggers OOMKilled (exit 137) even when the node has free RAM; CPU limits throttle with CFS; kubelet may evict pods when the node is pressure-bound.",
+  "dns time to live": "Seconds an authoritative server attaches to an answer; every downstream cache may hold its copy only until that deadline—lowering TTL later does not shorten copies already handed out.",
+  "tcp time wait": "After the side that closes TCP first, the socket (and client ephemeral port for that four-tuple) stays unusable for about 60s so late segments cannot land in a new connection—per-request closes exhaust ports long before the server does.",
+  "keep-alive pool": "A client holds open TCP connections between requests; reuse skips handshakes only while every hop—the pool, any load balancer, and the server—still agrees the connection is alive.",
+  "cache stampede": "Many concurrent cache misses for the same key before one refill finishes—each miss can hit the origin, so one expiry can spawn hundreds of identical queries.",
+  "celery prefetch": "How many broker messages a worker reserves ahead of time; combined with when it acks, this decides whether fast tasks wait behind slow ones or survive a worker crash."
 }

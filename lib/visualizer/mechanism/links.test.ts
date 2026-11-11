@@ -1,18 +1,31 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { MECHANISM_GLOSSARY_TERM, mechanismArticleHref, mechanismRelated } from "./links";
+import { VISUALIZERS } from "../registry";
+import {
+  MECHANISM_GLOSSARY_TERM,
+  type MechanismSlug,
+  mechanismArticleHref,
+  mechanismRelated,
+} from "./links";
+import { MECHANISM_MANIFEST, mechanismKeyForRouteSlug } from "./manifest";
 
 describe("mechanism links", () => {
   const glossary = JSON.parse(
     readFileSync(join(process.cwd(), "data/glossary.json"), "utf8"),
   ) as Record<string, string>;
+  const vizSlugs = new Set(VISUALIZERS.map((v) => v.slug));
 
-  it("sets a non-empty article href for every mechanism visualizer", () => {
-    for (const slug of Object.keys(MECHANISM_GLOSSARY_TERM) as Array<
-      keyof typeof MECHANISM_GLOSSARY_TERM
-    >) {
-      expect(mechanismArticleHref(slug).startsWith("/system-design/"), slug).toBe(true);
+  it("article href matches manifest expectReadArticle", () => {
+    for (const [slug, row] of Object.entries(MECHANISM_MANIFEST.slugs)) {
+      const key = mechanismKeyForRouteSlug(slug);
+      expect(key, slug).toBeDefined();
+      const href = mechanismArticleHref(key!);
+      if (row.expectReadArticle) {
+        expect(href.startsWith("/system-design/"), slug).toBe(true);
+      } else {
+        expect(href, slug).toBe("");
+      }
     }
   });
 
@@ -26,5 +39,15 @@ describe("mechanism links", () => {
     const related = mechanismRelated("mvcc");
     expect(related.length).toBeGreaterThan(0);
     expect(related.every((r) => r.href && r.label)).toBe(true);
+  });
+
+  it("points See also visualizer hrefs at registered slugs only", () => {
+    for (const slug of Object.keys(MECHANISM_GLOSSARY_TERM) as MechanismSlug[]) {
+      for (const link of mechanismRelated(slug)) {
+        const match = link.href.match(/^\/visualizer\/([^/]+)\/$/);
+        if (!match) continue;
+        expect(vizSlugs.has(match[1]!), `${slug} → ${link.href}`).toBe(true);
+      }
+    }
   });
 });

@@ -877,9 +877,12 @@ def test_practice_answers_preference_applies_live_and_on_the_next_visit(page, ba
 def test_reader_controls_reattach_once_after_client_side_navigation_away_and_back(page, base_url):
     _canary(page, base_url, "interactive")
     page.keyboard.press("Meta+k")
-    page.get_by_role("dialog").get_by_role("textbox").fill("linked list")
+    page.wait_for_selector('[role="dialog"][aria-label="Search"]', timeout=5_000)
+    page.locator(".gsearch-input").fill("linked list")
+    # Enter navigates only once loadSearchEntries() has scored results (see test_search.py).
+    page.wait_for_selector(".gsearch-result", timeout=10_000)
     page.keyboard.press("Enter")
-    page.wait_for_url("**/dsa/data-structures/linked-list/")
+    page.wait_for_url("**/dsa/data-structures/linked-list/", timeout=30_000)
     page.go_back()
     page.wait_for_url("**/e2e-canary/interactive/")
 

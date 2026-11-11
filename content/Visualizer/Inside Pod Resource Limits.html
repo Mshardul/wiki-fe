@@ -1,0 +1,441 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Inside Pod Resource Limits</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: node capacity panels above per-container resource gauges (usage bar, dashed request, solid limit); scenario 2 swaps in a timeline of 100 ms CPU periods. Same series identity. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --fg:#152230; --muted:#5a6878; --line:#d6dce4; --soft:#eef2f6;
+  --run:#3776ab; --run-ink:#ffffff; --loop:#e8b923; --wait:#8d99a8; --io:#2f9474; --io-bg:#e3f3ed;
+  --thr:#7a5cc4; --thr-ink:#ffffff; --alert:#c9412f;
+  --f-display:"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d26; --fg:#e5ebf1; --muted:#95a3b3; --line:#2a3542; --soft:#1c2530;
+  --run:#5b9bd5; --run-ink:#0b1219; --loop:#ffd43b; --wait:#6f7c8c; --io:#4fc29b; --io-bg:#15302a;
+  --thr:#a68be8; --thr-ink:#140d24; --alert:#ff6b5b; color-scheme:dark }
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding-block:28px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font:500 13px/1.2 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 12px;border-radius:8px;cursor:pointer;text-align:left}
+.tab small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-bottom:2px}
+.tab[aria-selected="true"]{border-color:var(--run);box-shadow:inset 0 0 0 1px var(--run)}
+.tab:focus-visible,.btn:focus-visible,.dot:focus-visible{outline:2px solid var(--loop);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.q{font-family:var(--f-display);font-weight:600;font-size:clamp(19px,3vw,23px);line-height:1.25;margin:0;text-wrap:balance}
+.trace{overflow-x:auto;margin:0 -4px}
+.trace svg{display:block;width:100%;min-width:620px;height:auto}
+.share{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px;font-variant-numeric:tabular-nums}
+.share b{color:var(--fg);font-weight:500}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--soft);color:var(--fg);padding:7px 12px;border-radius:7px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.dots{display:flex;gap:6px;flex:1;min-width:0}
+.dot{width:28px;height:6px;border-radius:3px;border:0;background:var(--line);cursor:pointer;padding:0}
+.dot[aria-current="true"]{background:var(--run)}
+.step{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.caption{border-left:3px solid var(--loop);padding:2px 0 2px 14px;min-height:78px}
+.caption h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.caption p{margin:0;max-width:68ch}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--soft);padding:1px 4px;border-radius:4px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.note{background:var(--soft);border-radius:10px;padding:12px 14px;min-width:0}
+.note .eyebrow{margin-bottom:4px}
+.note p{margin:0;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:10px;border-radius:2px;display:inline-block}
+.foot{font-size:13px;color:var(--muted)}
+.txns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:30px}
+.txlabel{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.tx{font-family:var(--f-mono);font-size:12px;padding:3px 9px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface)}
+.tx.active{border-color:var(--run);color:var(--run)}
+.tx.idle{border-color:var(--alert);color:var(--alert)}
+.tx.committed{border-color:var(--io);color:var(--io)}
+.view{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+.view.solo{grid-template-columns:minmax(0,1fr)}
+@media (max-width:720px){.view{grid-template-columns:minmax(0,1fr)}}
+.panel{border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ptitle{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;justify-content:space-between;gap:8px}
+.tup{display:grid;grid-template-columns:34px minmax(0,1fr) 52px 52px;gap:8px;align-items:center;font-family:var(--f-mono);font-size:12.5px;padding:7px 8px;border-radius:6px;border:1.5px solid transparent;background:var(--soft);font-variant-numeric:tabular-nums;transition:background .3s,border-color .3s,opacity .3s}
+.tup.hdr{background:none;font-size:10.5px;color:var(--muted);padding-block:0;text-transform:uppercase}
+.tup .val{min-width:0;overflow-wrap:anywhere}
+.tup .sub{display:block;font-size:10.5px;color:var(--muted);font-family:var(--f-body)}
+.tup.live{background:var(--io-bg);border-color:var(--io)}
+.tup.new{background:var(--surface);border:1.5px dashed var(--run)}
+.tup.dead{opacity:.75}
+.tup.dead .val{text-decoration:line-through}
+.tup.pinned{background:repeating-linear-gradient(45deg,var(--surface) 0 5px,color-mix(in srgb,var(--alert) 18%,var(--surface)) 5px 10px);border-color:var(--alert)}
+.tup.free{background:none;border:1.5px dashed var(--line);color:var(--muted)}
+.tup.free .val{text-decoration:none}
+.idx{font-family:var(--f-mono);font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.idx .iname{font-size:11px;color:var(--muted)}
+.ent{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:6px;background:var(--soft);border:1.5px solid transparent}
+.ent.new{border-color:var(--alert)}
+.ent.stale{opacity:.6}
+.badge{display:inline-block;font-family:var(--f-mono);font-size:12px;padding:4px 10px;border-radius:6px;background:var(--soft);border-left:3px solid var(--loop)}
+.badge.bad{border-left-color:var(--alert)}
+.badge.good{border-left-color:var(--io)}
+.log{font-family:var(--f-mono);font-size:12px;background:var(--soft);border-radius:6px;padding:8px 10px;color:var(--fg);overflow-wrap:anywhere}
+.grid{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:3px}
+.cell{aspect-ratio:1;border-radius:2px;max-width:100%}
+.c-live{background:var(--io)}
+.c-pinned{background:var(--alert)}
+.c-free{background:none;outline:1px dashed var(--line);outline-offset:-1px}
+.pagesbar{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.xidwrap{overflow-x:auto}
+.xidwrap svg{display:block;width:100%;min-width:560px;height:auto}
+.rowlegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.rowlegend span{display:inline-flex;align-items:center;gap:6px}
+.term{font-family:var(--f-mono);font-size:12px;background:var(--fg);color:var(--bg);border-radius:8px;padding:8px 10px;white-space:pre-wrap;overflow-wrap:anywhere;min-height:20px}
+.hub{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:820px){.hub{grid-template-columns:minmax(0,1fr)}}
+.colttl{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.stack{display:flex;flex-direction:column;gap:8px;min-width:0}
+.actor{border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;display:flex;flex-direction:column;gap:3px;font-size:13px;transition:all .3s;min-width:0}
+.actor b{font-weight:600}
+.actor .watch{font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.actor .ln{font-family:var(--f-mono);font-size:11.5px;overflow-wrap:anywhere}
+.actor .ln i{font-style:normal;color:var(--muted)}
+.actor.on{border-color:var(--loop);box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent);background:color-mix(in srgb,var(--loop) 10%,var(--surface))}
+.actor.idle{opacity:.6}
+.api{border:1.5px solid var(--fg);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.api.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.apihead{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.apihead small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted)}
+.obj{font-family:var(--f-mono);font-size:11.5px;padding:6px 8px;border-radius:6px;background:var(--soft);border:1.5px solid transparent;display:flex;flex-direction:column;gap:1px;overflow-wrap:anywhere;transition:all .3s}
+.obj .k{color:var(--muted);font-size:10.5px}
+.obj.new{border-color:var(--loop);background:color-mix(in srgb,var(--loop) 18%,var(--surface))}
+.obj.bad{border-color:var(--alert)}
+.obj.gone{opacity:.5;text-decoration:line-through}
+.node{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.node.bad{border-color:var(--alert);border-style:dashed;opacity:.7}
+.node.new{border-color:var(--io);border-style:dashed}
+.nhead{display:flex;justify-content:space-between;gap:6px;font-weight:600;font-size:13px}
+.nhead small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted)}
+.pod{font-family:var(--f-mono);font-size:11px;padding:5px 7px;border-radius:6px;border:1.5px solid var(--line);display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;transition:all .3s}
+.pod .st{font-weight:600}
+.pod.ready{border-color:var(--io);background:var(--io-bg)}
+.pod.running{border-color:var(--run)}
+.pod.creating{border-style:dashed;border-color:var(--run)}
+.pod.crash{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 12%,var(--surface))}
+.pod.term{opacity:.5;border-style:dashed}
+.pod.new{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.nopods{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.epstrip{border:1.5px solid var(--fg);border-radius:10px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;transition:box-shadow .3s}
+.epstrip.on,.rules.on,.client.on,.bpod.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.epstrip .lbl{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.ep{font-family:var(--f-mono);font-size:11.5px;padding:4px 8px;border-radius:6px;border:1.5px solid var(--io);background:var(--io-bg)}
+.ep.no{border-color:var(--wait);background:var(--soft);color:var(--muted)}
+.ep.term{border-color:var(--alert);border-style:dashed;background:var(--surface);color:var(--alert)}
+.cols3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:820px){.cols3{grid-template-columns:minmax(0,1fr)}}
+.client,.rules,.bpod{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:5px;min-width:0;transition:all .3s}
+.chd{display:flex;justify-content:space-between;gap:6px;font-weight:600;font-size:13px}
+.chd small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted);text-align:right}
+.sub{font-family:var(--f-mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.conn{font-family:var(--f-mono);font-size:11px;padding:4px 7px;border-radius:6px;border:1.5px solid var(--line);overflow-wrap:anywhere}
+.conn.ok{border-color:var(--io);background:var(--io-bg)}
+.conn.new{border-color:var(--loop);background:color-mix(in srgb,var(--loop) 22%,var(--surface))}
+.conn.fail{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 14%,var(--surface));color:var(--alert)}
+.conn.old{opacity:.6}
+.rt{font-family:var(--f-mono);font-size:11px;display:flex;flex-wrap:wrap;gap:4px}
+.rt span{padding:2px 6px;border-radius:5px;background:var(--soft)}
+.rt span.gone{background:color-mix(in srgb,var(--alert) 14%,var(--surface));color:var(--alert)}
+.rstate{font-family:var(--f-mono);font-size:10.5px;font-weight:600}
+.rstate.ok{color:var(--io)}.rstate.stale{color:var(--alert)}.rstate.new{color:var(--run)}.rstate.na{color:var(--muted)}
+.bpod.ready{border-color:var(--io)}
+.bpod.notready{border-color:var(--wait);background:var(--soft)}
+.bpod.term{border-color:var(--alert);border-style:dashed}
+.bpod.exited{border-color:var(--alert);opacity:.6}
+.bpod.new{border-color:var(--run);border-style:dashed}
+.load{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.load i{display:block;height:100%;background:var(--run)}
+.load i.hot{background:var(--alert)}
+.colttl{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.stack{display:flex;flex-direction:column;gap:8px;min-width:0}
+.nodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.ctrs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.card{border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:6px;min-width:0;transition:all .3s}
+.card.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--loop) 55%,transparent)}
+.card.warn{border-color:var(--loop)}
+.card.killed{border-color:var(--alert);background:color-mix(in srgb,var(--alert) 10%,var(--surface))}
+.card.evicted{border-color:var(--alert);border-style:dashed;opacity:.65}
+.card.new{border-color:var(--run);border-style:dashed}
+.card.rejected{border-color:var(--alert);border-style:dashed}
+.chead{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:13.5px;align-items:baseline}
+.chead small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted);text-align:right}
+.gauge{display:flex;flex-direction:column;gap:3px}
+.glab{display:flex;justify-content:space-between;gap:8px;font-family:var(--f-mono);font-size:10.5px;color:var(--muted);flex-wrap:wrap}
+.glab b{color:var(--fg);font-weight:500}
+.track{position:relative;height:12px;border-radius:4px;background:var(--soft);border:1px solid var(--line);overflow:visible}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--run);transition:width .4s}
+.fill.over{background:var(--loop)}
+.fill.hit{background:var(--alert)}
+.fill.used2{background:color-mix(in srgb,var(--fg) 30%,transparent);top:auto;height:4px;bottom:-7px}
+.mk{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed var(--fg)}
+.mk.lim{border-left:2.5px solid var(--alert)}
+.mk.thr{border-left:2px dotted var(--alert)}
+.cnote{font-family:var(--f-mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.cnote.bad{color:var(--alert);font-weight:500}
+.tlwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;padding:6px}
+.tlwrap svg{display:block;width:100%;min-width:600px;height:auto}
+.sum{font-family:var(--f-mono);font-size:12px;display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--muted)}
+.sum b{color:var(--fg);font-weight:500}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Kubernetes 1.33+ · Linux nodes · kubelet defaults</div>
+    <h1>Inside Pod Resource Limits</h1>
+    <p class="lede">Every container has a request and a limit for CPU and memory. The scheduler uses requests once, to decide where a pod fits. The kernel enforces limits all the time, through cgroups on the node. Each gauge shows usage as a bar, the request as a dashed line and the limit as a solid red line.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <section class="stage">
+    <h2 class="q" id="q"></h2>
+    <div class="meta" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="badge" id="badge"></span></div>
+    <div class="term" id="term"></div>
+    <div><div class="colttl" id="nodesttl">Nodes</div><div class="nodes" id="nodes"></div></div>
+    <div id="tlbox" hidden><div class="colttl">CPU time, in 100 ms periods (quota 50 ms per period)</div><div class="tlwrap"><svg id="tl" viewBox="0 0 720 200" role="img" aria-label="CPU periods timeline"></svg></div></div>
+    <div class="sum" id="sum"></div>
+    <div><div class="colttl">Containers</div><div class="ctrs" id="ctrs"></div></div>
+    <div class="controls">
+      <button class="btn" id="prev">Back</button>
+      <button class="btn" id="next">Next</button>
+      <button class="btn" id="play">Play</button>
+      <div class="dots" id="dots"></div>
+      <span class="step" id="stepno"></span>
+    </div>
+    <div class="caption" aria-live="polite"><h3 id="fh"></h3><p id="fb"></p></div>
+    <div class="rowlegend">
+      <span><i class="sw" style="background:var(--run)"></i>Usage within request</span>
+      <span><i class="sw" style="background:var(--loop)"></i>Usage above request</span>
+      <span><i class="sw" style="background:var(--alert)"></i>At the limit</span>
+      <span><i class="sw" style="border-left:2px dashed var(--fg);width:4px;border-radius:0"></i>Request</span>
+      <span><i class="sw" style="border-left:2.5px solid var(--alert);width:4px;border-radius:0"></i>Limit / node capacity</span>
+      <span><svg width="22" height="10"><defs><pattern id="hatchL" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" style="stroke:var(--alert)" stroke-width="2"/></pattern></defs><rect width="22" height="10" fill="url(#hatchL)" style="stroke:var(--alert)" stroke-width="1"/></svg>Throttled (scenario 2)</span>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="note"><div class="eyebrow">Takeaway</div><p id="take"></p></div>
+    <div class="note"><div class="eyebrow">Generalizes to</div><p id="gen"></p></div>
+  </section>
+
+  <p class="foot">Sizes and timings are illustrative; defaults are from the Kubernetes docs listed in the content doc. Reproduce each scenario with the checks there before quoting it. Keyboard: ← → to step.</p>
+</div>
+
+<script>
+(function(){
+// gauges: kind 'cpu' (millicores) or 'mem' (MiB)
+const G=(kind,label,use,req,lim,max,o)=>Object.assign({kind,label,use,req,lim,max},o||{});
+const fmt=(k,v)=>k==='cpu'?(v>=1000&&v%1000===0?(v/1000)+' CPU':v+'m'):(v>=1024?(v/1024).toFixed(v%1024?1:0)+' GiB':Math.round(v)+' MiB');
+const WEB=(cpu,mem,o)=>Object.assign({n:'web',pod:'web-7d4b9-a1',qos:'Burstable',g:[G('cpu','CPU',cpu,500,1000),G('mem','memory',mem,512,1024)]},o||{});
+const CACHE=(mem,o)=>Object.assign({n:'cache-svc',pod:'cache-svc-5c1',qos:'Burstable',g:[G('mem','memory',mem,256,512)]},o||{});
+const NODE_MEM=(used,o)=>Object.assign({n:'node-2',sub:'8 GiB memory',g:[G('mem','node memory used',used,null,8192,8192,{thr:8092,thrLabel:'eviction at < 100 MiB free'})]},o||{});
+const API_TL_CTR={n:'worker',pod:'worker-0',qos:'Burstable',g:[G('cpu','CPU (1-minute average)',200,250,500)]};
+
+const SC=[
+{id:'happy',tab:'Happy path',short:'Requests vs limits',
+ q:'Requests decide where a pod goes; limits are enforced on the node',
+ frames:[
+  {on:['node-1','node-2'],badge:'placement uses requests, not usage',nodesTitle:'Nodes · as the scheduler sees them',
+   nodes:[{n:'node-1',sub:'4 CPU allocatable',st:'rejected',note:'3.8 + 0.5 = 4.3 CPU requested > 4: doesn\'t fit',bad:true,g:[G('cpu','CPU requested',3800,null,4000,4000,{add:500}),G('cpu','CPU actually used',1000,null,4000,4000,{plain:true})]},
+          {n:'node-2',sub:'4 CPU allocatable',st:'new',note:'1.5 + 0.5 = 2 CPU requested: fits',g:[G('cpu','CPU requested',1500,null,4000,4000,{add:500}),G('cpu','CPU actually used',900,null,4000,4000,{plain:true})]}],
+   ctrs:[WEB(0,0,{note:'not running yet: being placed',st:'new'})],
+   h:'Placement by requests',b:'On node-1, 3.8 CPU is already requested; adding this pod\'s 0.5 would exceed its 4 CPU allocatable, so the scheduler rules it out, though node-1 is mostly idle. node-2 has room.'},
+  {on:['web'],badge:'within its requests',nodesTitle:'Node',
+   nodes:[{n:'node-2',sub:'4 CPU allocatable',g:[G('cpu','CPU requested',2000,null,4000,4000)]}],
+   ctrs:[WEB(300,400,{note:'running on node-2'})],
+   h:'Running within its request',b:'The container uses 300m CPU and 400 MiB, below both requests.'},
+  {on:['web'],badge:'above request, below limit: allowed',nodesTitle:'Node',
+   nodes:[{n:'node-2',sub:'4 CPU allocatable',g:[G('cpu','CPU requested',2000,null,4000,4000)]}],
+   ctrs:[WEB(900,800,{st:'warn',note:'using 288 MiB that nobody reserved for it'})],
+   h:'Bursting above the request',b:'Under load it uses 900m CPU and 800 MiB. That\'s allowed: above the request, below the limit. But that extra memory was never reserved for it, which matters in scenario 3.'},
+  {on:['web'],badge:'limits are now the kernel\'s job',term:'container cgroup (v2)\ncpu.max     100000 100000      # 100 ms of CPU per 100 ms period = 1 CPU\nmemory.max  1073741824         # 1 GiB',nodesTitle:'Node',
+   nodes:[{n:'node-2',sub:'4 CPU allocatable',g:[G('cpu','CPU requested',2000,null,4000,4000)]}],
+   ctrs:[WEB(900,800,{st:'warn',note:'kernel enforces: CPU ≤ 1, memory ≤ 1 GiB'})],
+   h:'Limits live in the kernel',b:'The kubelet writes the limits into the container\'s cgroup: a CPU quota of 100 ms per 100 ms period, and a 1 GiB memory ceiling. From here on the kernel enforces them, not Kubernetes.'}],
+ take:'Requests size the cluster; limits protect neighbours. Requests that are too high waste nodes; requests that are too low pack pods too tightly and lead to eviction under pressure.',
+ gen:'Reservations versus caps in any shared system: VM sizing with overcommit, connection pools with a guaranteed minimum and a maximum.'},
+
+{id:'oom',tab:'Scenario 1',short:'OOMKilled, node has room',
+ q:'Why was my container OOMKilled when the node had gigabytes free?',
+ frames:[
+  {on:['cache-svc'],badge:'node: ~5 GiB free',nodesTitle:'Node',nodes:[NODE_MEM(3072,{note:'about 5 GiB free'})],
+   ctrs:[CACHE(300,{note:'above request, below limit'})],
+   h:'Normal',b:'The container uses 300 MiB: above its 256 MiB request, below its 512 MiB limit. The node has about 5 GiB free.'},
+  {on:['cache-svc'],badge:'node: still ~5 GiB free',nodesTitle:'Node',nodes:[NODE_MEM(3272,{note:'about 5 GiB free'})],
+   ctrs:[CACHE(500,{st:'warn',note:'kernel reclaims file cache inside this cgroup'})],
+   h:'Approaching the limit',b:'The app\'s in-memory cache grows to about 500 MiB. The kernel reclaims what it can inside the container\'s cgroup. The node\'s free memory doesn\'t help: the limit is on this cgroup.'},
+  {on:['cache-svc'],badge:'OOMKilled · exit code 137',bad:true,term:'$ kubectl describe pod cache-svc-5c1\n    Last State:  Terminated\n      Reason:    OOMKilled\n      Exit Code: 137',nodesTitle:'Node',nodes:[NODE_MEM(2772,{note:'about 5 GiB free, unchanged'})],
+   ctrs:[CACHE(512,{st:'killed',note:'killed by the kernel at its 512 MiB limit',bad:true,restarts:1})],
+   h:'The kernel kills it',b:'The container needs more than 512 MiB and nothing more can be reclaimed. The kernel\'s OOM killer kills its main process: exit code 137 (SIGKILL), reason <code>OOMKilled</code>. The node still has about 5 GiB free.'},
+  {on:['cache-svc'],badge:'restarted in place, then CrashLoopBackOff',bad:true,nodesTitle:'Node',nodes:[NODE_MEM(2332,{note:'about 5 GiB free'})],
+   ctrs:[CACHE(60,{st:'killed',note:'restarted in the same pod · cache grows again',bad:true,restarts:4,status:'CrashLoopBackOff'})],
+   h:'Restart in place, then a loop',b:'The kubelet restarts the container in the same pod. Memory starts near zero, the cache grows again, and it\'s killed again. After a few rounds the pod shows <code>CrashLoopBackOff</code>.'}],
+ take:'Size the memory limit from the container\'s real peak, and make the runtime aware of it: bound caches and heaps (JVM MaxRAMPercentage, Go GOMEMLIMIT, Node --max-old-space-size). The node\'s free memory is irrelevant to a container at its limit.',
+ gen:'Any cgroup-limited process: Docker --memory, systemd MemoryMax, and serverless functions that fail with out-of-memory at their configured size.'},
+
+{id:'cpu',tab:'Scenario 2',short:'CPU throttling',
+ q:'CPU usage averages 40% of the limit. Why is latency spiking?',
+ frames:[
+  {badge:'quota never exhausted',tl:{lanes:[{n:'thread 1',segs:[[0,20,'run'],[100,120,'run'],[200,220,'run']]}]},
+   sum:['limit 500m = 50 ms of CPU per 100 ms period','used ~20 ms per period','throttled: 0 ms'],ctrs:[API_TL_CTR],
+   h:'Light, steady work',b:'Each 100 ms period the app uses about 20 ms of CPU, well under its 50 ms quota. Nothing is throttled.'},
+  {badge:'60 ms of work takes 100 ms',bad:true,tl:{lanes:[{n:'thread 1',segs:[[10,60,'run'],[60,100,'thr'],[100,110,'run']]}],marks:[{t:10,l:'request starts'},{t:110,l:'done'}]},
+   sum:['needs 60 ms of CPU','quota gone at 60 ms','throttled 40 ms','latency 100 ms'],ctrs:[API_TL_CTR],
+   h:'One request needs 60 ms on one thread',b:'It runs from 10 ms until the 50 ms quota is spent at 60 ms, then waits until the period ends at 100 ms. It finishes 10 ms into the next period: 100 ms of latency for 60 ms of work.'},
+  {badge:'4 threads: ~30 ms of work takes 205 ms',bad:true,tl:{lanes:[1,2,3,4].map(i=>({n:'thread '+i,segs:[[0,12.5,'run'],[12.5,100,'thr'],[100,112.5,'run'],[112.5,200,'thr'],[200,205,'run']]})),marks:[{t:0,l:'request starts'},{t:205,l:'done'}]},
+   sum:['4 threads × 30 ms = 120 ms of CPU','quota burned in 12.5 ms each period','done at 205 ms instead of ~30 ms'],ctrs:[API_TL_CTR],
+   h:'Four threads share one quota',b:'A request fans out to 4 threads needing 30 ms each. Together they burn the 50 ms quota in 12.5 ms of wall time, then all wait 87.5 ms. The work spans three periods and finishes at about 205 ms.'},
+  {badge:'average 40% · throttling is the signal',bad:true,tl:{lanes:[1,2,3,4].map(i=>({n:'thread '+i,segs:[[0,12.5,'run'],[12.5,100,'thr'],[100,112.5,'run'],[112.5,200,'thr'],[200,205,'run']]}))},
+   sum:['1-minute average: 200m (40% of limit)','watch: throttled-period counters, not averages'],ctrs:[API_TL_CTR],
+   h:'The average hides it',b:'Averaged over a minute, usage is still 200m, 40% of the limit, so dashboards look healthy. The throttled-period counter (<code>nr_throttled</code> in the cgroup\'s <code>cpu.stat</code>) is what shows the problem.'}],
+ take:'Set CPU requests for scheduling and fairness; be careful with CPU limits on latency-sensitive services. If you keep a limit, size thread pools and runtimes to it (for example Go\'s GOMAXPROCS), and alert on throttling rather than average usage.',
+ gen:'Any quota or token-bucket limit evaluated over short windows: API rate limits per second, burstable cloud VM CPU credits, disk IOPS caps.'},
+
+{id:'evict',tab:'Scenario 3',short:'Evicted vs OOMKilled',
+ q:'Evicted or OOMKilled: which one hit my pod, and why that one?',
+ frames:[
+  {on:['node-2'],badge:'node: ~1.5 GiB free',nodesTitle:'Node',nodes:[NODE_MEM(6615,{note:'about 1.5 GiB free · other pods and system: 1.7 GiB'})],
+   ctrs:[{n:'batch',pod:'batch-x1',qos:'BestEffort',g:[G('mem','memory',1024,null,null,4096)],note:'no request, no limit'},
+         {n:'api',pod:'api-2f3',qos:'Burstable',g:[G('mem','memory',2048,1024,4096)],st:'warn'},
+         {n:'db',pod:'db-0',qos:'Guaranteed',g:[G('mem','memory',1843,2048,2048)]}],
+   h:'Normal',b:'Three pods of equal priority. <code>api</code> is already above its request but well under its own limit. The node has about 1.5 GiB free.'},
+  {on:['node-2','api'],badge:'MemoryPressure: < 100 MiB free',bad:true,nodesTitle:'Node',nodes:[NODE_MEM(8151,{note:'about 40 MiB free: below the hard eviction threshold',bad:true})],
+   ctrs:[{n:'batch',pod:'batch-x1',qos:'BestEffort',g:[G('mem','memory',1024,null,null,4096)]},
+         {n:'api',pod:'api-2f3',qos:'Burstable',g:[G('mem','memory',3584,1024,4096)],st:'warn',note:'still under its own 4 GiB limit'},
+         {n:'db',pod:'db-0',qos:'Guaranteed',g:[G('mem','memory',1843,2048,2048)]}],
+   h:'Node pressure',b:'<code>api</code> grows to 3.5 GiB, still under its own limit. But free memory on the node drops below the 100 MiB hard eviction threshold, and the node reports <code>MemoryPressure</code>.'},
+  {on:['api','batch','db'],badge:'kubelet ranks: furthest over request first',bad:true,nodesTitle:'Node',nodes:[NODE_MEM(8151,{note:'about 40 MiB free',bad:true})],
+   ctrs:[{n:'batch',pod:'batch-x1',qos:'BestEffort',g:[G('mem','memory',1024,null,null,4096)],note:'over its request (0) by 1 GiB · 2nd'},
+         {n:'api',pod:'api-2f3',qos:'Burstable',g:[G('mem','memory',3584,1024,4096)],st:'warn',note:'over its request by 2.5 GiB · 1st',bad:true},
+         {n:'db',pod:'db-0',qos:'Guaranteed',g:[G('mem','memory',1843,2048,2048)],note:'within its request · last'}],
+   h:'The kubelet ranks pods',b:'Candidates are pods using more than they requested: <code>api</code> (2.5 GiB over) and <code>batch</code> (1 GiB over). <code>db</code> is within its request, so it goes last. With equal priority, the pod furthest over its request goes first: <code>api</code>, not the BestEffort pod.'},
+  {on:['api'],badge:'evicted: whole pod, phase Failed',bad:true,nodesTitle:'Node',nodes:[NODE_MEM(4567,{note:'about 3.5 GiB free'})],
+   ctrs:[{n:'batch',pod:'batch-x1',qos:'BestEffort',g:[G('mem','memory',1024,null,null,4096)]},
+         {n:'api',pod:'api-2f3',qos:'Burstable',g:[G('mem','memory',0,1024,4096)],st:'evicted',note:'evicted · phase Failed · not restarted here',bad:true},
+         {n:'api',pod:'api-9k1 (new)',qos:'Burstable',g:[G('mem','memory',0,1024,4096)],st:'new',note:'replacement from its Deployment, placed wherever it fits'},
+         {n:'db',pod:'db-0',qos:'Guaranteed',g:[G('mem','memory',1843,2048,2048)]}],
+   h:'Eviction',b:'The kubelet stops the whole <code>api</code> pod and sets its phase to Failed. It isn\'t restarted in place; its Deployment creates a replacement pod, wherever the scheduler finds room.'},
+  {on:['api','batch','db'],badge:'if memory runs out first: the kernel OOM killer',bad:true,nodesTitle:'Node',nodes:[NODE_MEM(8192,{note:'out of memory before the kubelet could act',bad:true})],
+   ctrs:[{n:'batch',pod:'batch-x1',qos:'BestEffort',g:[G('mem','memory',1024,null,null,4096)],note:'oom_score_adj 1000'},
+         {n:'api',pod:'api-2f3',qos:'Burstable',g:[G('mem','memory',3584,1024,4096)],st:'killed',note:'oom_score_adj 875 · highest combined score (most memory) → process killed',bad:true,restarts:1},
+         {n:'db',pod:'db-0',qos:'Guaranteed',g:[G('mem','memory',1843,2048,2048)],note:'oom_score_adj −997'}],
+   h:'If memory runs out faster than the kubelet reacts',b:'The kernel\'s OOM killer kills one process instead, choosing by a score that combines memory use with an adjustment set per QoS class: −997 Guaranteed, 1000 BestEffort, 2 to 999 Burstable (875 for <code>api</code>). Here <code>api</code>\'s large usage gives it the highest score. Its container restarts in place, like scenario 1.'}],
+ take:'Memory above your request is borrowed. Set memory requests close to real usage for anything you don\'t want evicted, and limit equal to request (Guaranteed) for the workloads that matter most. Priority classes decide who goes first when usage is equal.',
+ gen:'Memory management on any shared host: the Linux OOM killer and oom_score_adj on plain servers, and preemption of low-priority or spot workloads in batch schedulers.'}
+];
+
+const $=id=>document.getElementById(id);
+const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+let si=0, fi=0, playTimer=null;
+
+function gauge(g){
+  const max=g.max||Math.max(g.lim||0,g.use,g.req||0)*1.15||1;
+  const pct=v=>Math.min(100,v/max*100);
+  const hit=g.lim&&g.use>=g.lim, over=g.req!=null&&g.use>g.req;
+  const cls=g.plain?'':hit?'hit':over?'over':'';
+  const parts=[`<b>${fmt(g.kind,g.use)}</b>`];
+  if(g.add) parts.push(`+ ${fmt(g.kind,g.add)} incoming`);
+  if(g.req!=null) parts.push(`request ${fmt(g.kind,g.req)}`);
+  if(g.lim!=null) parts.push(`${g.max&&!g.req&&g.lim===g.max?'capacity':'limit'} ${fmt(g.kind,g.lim)}`);
+  else if(g.req==null) parts.push('no request · no limit');
+  return `<div class="gauge"><div class="glab"><span>${esc(g.label)}</span><span>${parts.join(' · ')}</span></div>
+    <div class="track"><span class="fill ${cls}" style="width:${pct(g.use)}%"></span>
+    ${g.add?`<span class="fill" style="left:${pct(g.use)}%;width:${Math.min(pct(g.add),100-pct(g.use))}%;opacity:.5;background:${g.use+g.add>g.lim?'var(--alert)':'var(--io)'}"></span>`:''}
+    ${g.req!=null?`<span class="mk" style="left:${pct(g.req)}%"></span>`:''}
+    ${g.lim!=null?`<span class="mk lim" style="left:calc(${pct(g.lim)}% - 2px)"></span>`:''}
+    ${g.thr!=null?`<span class="mk thr" style="left:${pct(g.thr)}%" title="${esc(g.thrLabel||'')}"></span>`:''}</div>
+    ${g.thr!=null?`<div class="glab"><span></span><span>${esc(g.thrLabel)}</span></div>`:''}</div>`;
+}
+function card(c,on,isNode){
+  const key=c.n;
+  return `<div class="card ${c.st||''} ${on.has(key)?'on':''}"><div class="chead"><span>${esc(isNode?c.n:c.pod)}</span><small>${esc(isNode?c.sub:c.qos)}${c.restarts?` · restarts ${c.restarts}`:''}${c.status?` · ${esc(c.status)}`:''}</small></div>
+    ${c.g.map(gauge).join('')}${c.note?`<span class="cnote ${c.bad?'bad':''}">${esc(c.note)}</span>`:''}</div>`;
+}
+function drawTL(tl){
+  const svg=$('tl'), W=720, L=76, R=16, top=30, lh=30, n=tl.lanes.length, H=top+n*lh+30;
+  const x=t=>L+t/300*(W-L-R);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  let o=`<defs><pattern id="th" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" style="fill:var(--surface)"/><line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--alert)" stroke-width="2"/></pattern></defs>`;
+  for(let p=0;p<3;p++){
+    const used=tl.lanes.reduce((a,l)=>a+l.segs.filter(s=>s[2]==='run').reduce((b,s)=>b+Math.max(0,Math.min(s[1],(p+1)*100)-Math.max(s[0],p*100)),0),0);
+    o+=`<text x="${x(p*100+50)}" y="14" text-anchor="middle" font-size="10.5" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">period ${p+1} · quota used ${+used.toFixed(1)}/50 ms</text>`;
+  }
+  for(let t=0;t<=300;t+=100){
+    o+=`<line x1="${x(t)}" y1="20" x2="${x(t)}" y2="${H-18}" style="stroke:var(--fg)" stroke-opacity=".35" stroke-dasharray="4 3"/>`;
+    o+=`<text x="${x(t)}" y="${H-5}" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" style="fill:var(--muted)">${t} ms${t>0&&t<300?' · quota refilled':''}</text>`;
+  }
+  tl.lanes.forEach((l,i)=>{const y=top+i*lh;
+    o+=`<text x="${L-8}" y="${y+15}" text-anchor="end" font-size="11" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">${esc(l.n)}</text>`;
+    o+=`<line x1="${L}" y1="${y+11}" x2="${W-R}" y2="${y+11}" style="stroke:var(--line)" stroke-dasharray="2 4"/>`;
+    l.segs.forEach(s=>{const w=Math.max(x(s[1])-x(s[0]),1);
+      if(s[2]==='run') o+=`<rect x="${x(s[0])}" y="${y}" width="${w}" height="22" rx="2" style="fill:var(--run)"/>`;
+      else o+=`<rect x="${x(s[0])+.5}" y="${y+.5}" width="${w-1}" height="21" rx="2" fill="url(#th)" style="stroke:var(--alert)" stroke-width="1"/>`;
+      if(s[2]==='thr'&&w>70) o+=`<text x="${x(s[0])+w/2}" y="${y+15}" text-anchor="middle" font-size="10" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--alert)">throttled</text>`;
+    });
+  });
+  (tl.marks||[]).forEach(m=>{o+=`<line x1="${x(m.t)}" y1="${top-6}" x2="${x(m.t)}" y2="${top+n*lh}" style="stroke:var(--loop)" stroke-width="2.5"/>`;
+    const anc=m.t>250?'end':'start'; o+=`<text x="${x(m.t)+(anc==='end'?-4:4)}" y="${top+n*lh+8}" text-anchor="${anc}" font-size="10" font-weight="600" font-family="IBM Plex Mono, monospace" style="fill:var(--fg)">${esc(m.l)}</text>`;});
+  svg.innerHTML=o;
+}
+function render(){
+  const sc=SC[si], f=sc.frames[fi], on=new Set(f.on||[]);
+  const b=$('badge'); b.textContent=f.badge; b.className='badge '+(f.bad?'bad':'good');
+  const t=$('term'); t.textContent=f.term||''; t.hidden=!f.term;
+  const hasNodes=!!(f.nodes&&f.nodes.length);
+  $('nodes').parentElement.hidden=!hasNodes;
+  if(hasNodes){$('nodesttl').textContent=f.nodesTitle||'Nodes';$('nodes').innerHTML=f.nodes.map(nd=>card(nd,on,true)).join('');}
+  $('tlbox').hidden=!f.tl; if(f.tl) drawTL(f.tl);
+  $('sum').innerHTML=(f.sum||[]).map(s=>`<span><b>${esc(s)}</b></span>`).join('');
+  $('sum').hidden=!f.sum;
+  $('ctrs').innerHTML=f.ctrs.map(c=>card(c,on,false)).join('');
+  $('fh').textContent=f.h; $('fb').innerHTML=f.b;
+  $('stepno').textContent=`${fi+1} / ${sc.frames.length}`;
+  $('prev').disabled=fi===0; $('next').disabled=fi===sc.frames.length-1;
+  [...$('dots').children].forEach((d,i)=>d.setAttribute('aria-current',i===fi?'true':'false'));
+}
+function show(n){fi=Math.max(0,Math.min(n,SC[si].frames.length-1));render()}
+function select(i){
+  stopPlay(); si=i; fi=0; const sc=SC[si];
+  [...$('tabs').children].forEach((b,k)=>b.setAttribute('aria-selected',k===si?'true':'false'));
+  $('q').textContent=sc.q; $('take').textContent=sc.take; $('gen').textContent=sc.gen;
+  const dots=$('dots'); dots.innerHTML='';
+  sc.frames.forEach((_,k)=>{const d=document.createElement('button');d.className='dot';d.setAttribute('aria-label','Step '+(k+1));d.onclick=()=>{stopPlay();show(k)};dots.appendChild(d)});
+  render();
+}
+function stopPlay(){clearInterval(playTimer);playTimer=null;$('play').textContent='Play'}
+$('play').onclick=()=>{
+  if(playTimer){stopPlay();return}
+  show(fi===SC[si].frames.length-1?0:fi+1); $('play').textContent='Pause';
+  playTimer=setInterval(()=>{if(fi>=SC[si].frames.length-1){stopPlay();return} show(fi+1)},4800);
+};
+$('prev').onclick=()=>{stopPlay();show(fi-1)};
+$('next').onclick=()=>{stopPlay();show(fi+1)};
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){stopPlay();show(fi+1)}else if(e.key==='ArrowLeft'){stopPlay();show(fi-1)}});
+SC.forEach((sc,i)=>{const b=document.createElement('button');b.className='tab';b.setAttribute('role','tab');b.innerHTML=`<small>${sc.tab}</small>${sc.short}`;b.onclick=()=>{try{history.replaceState(null,'','#'+sc.id)}catch(_){location.hash=sc.id} select(i)};$('tabs').appendChild(b)});
+const fromHash=()=>{const i=SC.findIndex(x=>x.id===(location.hash||'').slice(1));return i<0?0:i};
+window.addEventListener('hashchange',()=>select(fromHash()));
+select(fromHash());
+})();
+</script>
+
+</body></html>

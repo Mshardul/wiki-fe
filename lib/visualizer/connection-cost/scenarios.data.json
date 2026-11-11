@@ -1,0 +1,1550 @@
+{
+  "scenarios": [
+    {
+      "id": "happy",
+      "tab": "Happy path",
+      "short": "One new connection, then reuse",
+      "view": "ladder",
+      "q": "What happens, round trip by round trip, before the first request is answered, and what do later requests skip?",
+      "frames": [
+        {
+          "clock": "0 ms",
+          "badge": "DNS: a few ms if cached nearby",
+          "now": 4,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "tcp",
+              "label": "SYN"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "tcp",
+              "label": "SYN-ACK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 100,
+              "t1": 150,
+              "k": "tls",
+              "label": "ACK · ClientHello (key share)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 150,
+              "t1": 200,
+              "k": "tls",
+              "label": "ServerHello · Certificate · Finished"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 200,
+              "t1": 250,
+              "k": "req",
+              "label": "Finished · GET /orders/1"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 250,
+              "t1": 300,
+              "k": "req",
+              "label": "200 OK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 340,
+              "t1": 390,
+              "k": "req",
+              "label": "GET /orders/2 (reused)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 390,
+              "t1": 440,
+              "k": "req",
+              "label": "200 OK"
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 100,
+              "label": "TCP 1 RTT",
+              "c": "tcp"
+            },
+            {
+              "t0": 100,
+              "t1": 200,
+              "label": "TLS 1 RTT",
+              "c": "tls"
+            },
+            {
+              "t0": 200,
+              "t1": 300,
+              "label": "request",
+              "c": "req"
+            },
+            {
+              "t0": 340,
+              "t1": 440,
+              "label": "reuse",
+              "c": "req"
+            }
+          ],
+          "tmax": 460,
+          "rtt": 0,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 2,
+              "label": "DNS lookup: api.example.com",
+              "left": true,
+              "col": "muted"
+            }
+          ],
+          "term": "s = requests.Session()\ns.get(\"https://api.example.com/orders/1\")   # new connection",
+          "h": "DNS",
+          "b": "The client resolves the name. A nearby resolver with it cached answers in a few milliseconds; a miss can cost much more (that's the DNS caching topic). No round trip to the server yet."
+        },
+        {
+          "clock": "0 – 100 ms",
+          "badge": "TCP handshake: 1 RTT",
+          "now": 100,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "tcp",
+              "label": "SYN"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "tcp",
+              "label": "SYN-ACK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 100,
+              "t1": 150,
+              "k": "tls",
+              "label": "ACK · ClientHello (key share)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 150,
+              "t1": 200,
+              "k": "tls",
+              "label": "ServerHello · Certificate · Finished"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 200,
+              "t1": 250,
+              "k": "req",
+              "label": "Finished · GET /orders/1"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 250,
+              "t1": 300,
+              "k": "req",
+              "label": "200 OK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 340,
+              "t1": 390,
+              "k": "req",
+              "label": "GET /orders/2 (reused)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 390,
+              "t1": 440,
+              "k": "req",
+              "label": "200 OK"
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 100,
+              "label": "TCP 1 RTT",
+              "c": "tcp"
+            },
+            {
+              "t0": 100,
+              "t1": 200,
+              "label": "TLS 1 RTT",
+              "c": "tls"
+            },
+            {
+              "t0": 200,
+              "t1": 300,
+              "label": "request",
+              "c": "req"
+            },
+            {
+              "t0": 340,
+              "t1": 440,
+              "label": "reuse",
+              "c": "req"
+            }
+          ],
+          "tmax": 460,
+          "rtt": 1,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 2,
+              "label": "DNS",
+              "left": true,
+              "col": "muted"
+            }
+          ],
+          "h": "TCP handshake",
+          "b": "SYN goes out; SYN-ACK comes back 100 ms later. The client's ACK needs no reply, so it can go out together with the next packet."
+        },
+        {
+          "clock": "100 – 200 ms",
+          "badge": "TLS 1.3 handshake: 1 RTT",
+          "now": 200,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "tcp",
+              "label": "SYN"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "tcp",
+              "label": "SYN-ACK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 100,
+              "t1": 150,
+              "k": "tls",
+              "label": "ACK · ClientHello (key share)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 150,
+              "t1": 200,
+              "k": "tls",
+              "label": "ServerHello · Certificate · Finished"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 200,
+              "t1": 250,
+              "k": "req",
+              "label": "Finished · GET /orders/1"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 250,
+              "t1": 300,
+              "k": "req",
+              "label": "200 OK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 340,
+              "t1": 390,
+              "k": "req",
+              "label": "GET /orders/2 (reused)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 390,
+              "t1": 440,
+              "k": "req",
+              "label": "200 OK"
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 100,
+              "label": "TCP 1 RTT",
+              "c": "tcp"
+            },
+            {
+              "t0": 100,
+              "t1": 200,
+              "label": "TLS 1 RTT",
+              "c": "tls"
+            },
+            {
+              "t0": 200,
+              "t1": 300,
+              "label": "request",
+              "c": "req"
+            },
+            {
+              "t0": 340,
+              "t1": 440,
+              "label": "reuse",
+              "c": "req"
+            }
+          ],
+          "tmax": 460,
+          "rtt": 2,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 2,
+              "label": "DNS",
+              "left": true,
+              "col": "muted"
+            },
+            {
+              "lane": 0,
+              "t": 200,
+              "label": "checks certificate · has keys",
+              "left": true,
+              "col": "muted"
+            }
+          ],
+          "h": "TLS 1.3 handshake",
+          "b": "The ClientHello carries the client's key share. The server answers with ServerHello, its certificate and Finished in one flight. The client checks the certificate, and both sides now have keys."
+        },
+        {
+          "clock": "200 – 300 ms",
+          "badge": "first request answered: 3 RTT ≈ 300 ms",
+          "now": 300,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "tcp",
+              "label": "SYN"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "tcp",
+              "label": "SYN-ACK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 100,
+              "t1": 150,
+              "k": "tls",
+              "label": "ACK · ClientHello (key share)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 150,
+              "t1": 200,
+              "k": "tls",
+              "label": "ServerHello · Certificate · Finished"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 200,
+              "t1": 250,
+              "k": "req",
+              "label": "Finished · GET /orders/1"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 250,
+              "t1": 300,
+              "k": "req",
+              "label": "200 OK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 340,
+              "t1": 390,
+              "k": "req",
+              "label": "GET /orders/2 (reused)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 390,
+              "t1": 440,
+              "k": "req",
+              "label": "200 OK"
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 100,
+              "label": "TCP 1 RTT",
+              "c": "tcp"
+            },
+            {
+              "t0": 100,
+              "t1": 200,
+              "label": "TLS 1 RTT",
+              "c": "tls"
+            },
+            {
+              "t0": 200,
+              "t1": 300,
+              "label": "request",
+              "c": "req"
+            },
+            {
+              "t0": 340,
+              "t1": 440,
+              "label": "reuse",
+              "c": "req"
+            }
+          ],
+          "tmax": 460,
+          "rtt": 3,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 2,
+              "label": "DNS",
+              "left": true,
+              "col": "muted"
+            },
+            {
+              "lane": 0,
+              "t": 300,
+              "label": "response · 300 ms",
+              "left": true,
+              "col": "run"
+            }
+          ],
+          "h": "The request",
+          "b": "The client sends its Finished and the encrypted GET together, and the response comes back one round trip later. Three round trips for one request."
+        },
+        {
+          "clock": "340 – 440 ms",
+          "badge": "reused: 1 RTT ≈ 100 ms",
+          "now": 460,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "tcp",
+              "label": "SYN"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "tcp",
+              "label": "SYN-ACK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 100,
+              "t1": 150,
+              "k": "tls",
+              "label": "ACK · ClientHello (key share)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 150,
+              "t1": 200,
+              "k": "tls",
+              "label": "ServerHello · Certificate · Finished"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 200,
+              "t1": 250,
+              "k": "req",
+              "label": "Finished · GET /orders/1"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 250,
+              "t1": 300,
+              "k": "req",
+              "label": "200 OK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 340,
+              "t1": 390,
+              "k": "req",
+              "label": "GET /orders/2 (reused)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 390,
+              "t1": 440,
+              "k": "req",
+              "label": "200 OK"
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 100,
+              "label": "TCP 1 RTT",
+              "c": "tcp"
+            },
+            {
+              "t0": 100,
+              "t1": 200,
+              "label": "TLS 1 RTT",
+              "c": "tls"
+            },
+            {
+              "t0": 200,
+              "t1": 300,
+              "label": "request",
+              "c": "req"
+            },
+            {
+              "t0": 340,
+              "t1": 440,
+              "label": "reuse",
+              "c": "req"
+            }
+          ],
+          "tmax": 460,
+          "rtt": 1,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 2,
+              "label": "DNS",
+              "left": true,
+              "col": "muted"
+            },
+            {
+              "lane": 0,
+              "t": 300,
+              "label": "response · 300 ms",
+              "left": true,
+              "col": "run"
+            },
+            {
+              "lane": 0,
+              "t": 440,
+              "label": "response · 100 ms",
+              "left": true,
+              "col": "io"
+            }
+          ],
+          "term": "s.get(\"https://api.example.com/orders/2\")   # reused from the pool",
+          "h": "Reuse",
+          "b": "The connection went back into the pool. The second request goes straight out on it: no DNS, no TCP, no TLS. The server did the same work both times; two thirds of the first request's latency was spent agreeing to talk."
+        }
+      ],
+      "take": "Setup is paid in round trips, and a round trip costs the same whether you send 1 byte or 1,000.",
+      "gen": "Every protocol on TCP: database connections, Redis, gRPC, message brokers."
+    },
+    {
+      "id": "round-trips",
+      "tab": "Scenario 1",
+      "short": "Count the round trips",
+      "view": "ladder",
+      "q": "Why is the first request so much slower than the rest? Count the round trips before the request is sent, then see what makes the count grow.",
+      "frames": [
+        {
+          "clock": "TLS 1.3",
+          "badge": "new: 3 RTT = 300 ms · reused: 1 RTT = 100 ms",
+          "now": 300,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "tcp",
+              "label": "SYN"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "tcp",
+              "label": "SYN-ACK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 100,
+              "t1": 150,
+              "k": "tls",
+              "label": "ACK · ClientHello (key share)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 150,
+              "t1": 200,
+              "k": "tls",
+              "label": "ServerHello · Certificate · Finished"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 200,
+              "t1": 250,
+              "k": "req",
+              "label": "Finished · GET /orders/1"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 250,
+              "t1": 300,
+              "k": "req",
+              "label": "200 OK"
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 100,
+              "label": "TCP 1 RTT",
+              "c": "tcp"
+            },
+            {
+              "t0": 100,
+              "t1": 200,
+              "label": "TLS 1 RTT",
+              "c": "tls"
+            },
+            {
+              "t0": 200,
+              "t1": 300,
+              "label": "request",
+              "c": "req"
+            }
+          ],
+          "tmax": 520,
+          "rtt": 3,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 300,
+              "label": "300 ms",
+              "left": true,
+              "col": "run"
+            }
+          ],
+          "h": "The baseline",
+          "b": "TCP 1 RTT plus TLS 1.3 1 RTT means two round trips before the request can even leave, and a third for the request itself. Because the cost is round trips, it scales with distance: at 10 ms RTT that's 30 ms vs 10 ms; at 200 ms RTT, 600 ms vs 200 ms."
+        },
+        {
+          "clock": "TLS 1.2",
+          "badge": "new: 4 RTT = 400 ms",
+          "bad": true,
+          "now": 400,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "tcp",
+              "label": "SYN"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "tcp",
+              "label": "SYN-ACK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 100,
+              "t1": 150,
+              "k": "tls",
+              "label": "ACK · ClientHello"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 150,
+              "t1": 200,
+              "k": "tls",
+              "label": "ServerHello · Certificate · HelloDone"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 200,
+              "t1": 250,
+              "k": "tls",
+              "label": "ClientKeyExchange · Finished"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 250,
+              "t1": 300,
+              "k": "tls",
+              "label": "ChangeCipherSpec · Finished"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 300,
+              "t1": 350,
+              "k": "req",
+              "label": "GET /orders/1"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 350,
+              "t1": 400,
+              "k": "req",
+              "label": "200 OK"
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 100,
+              "label": "TCP 1 RTT",
+              "c": "tcp"
+            },
+            {
+              "t0": 100,
+              "t1": 300,
+              "label": "TLS 1.2: 2 RTT",
+              "c": "tls"
+            },
+            {
+              "t0": 300,
+              "t1": 400,
+              "label": "request",
+              "c": "req"
+            }
+          ],
+          "tmax": 520,
+          "rtt": 4,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 400,
+              "label": "400 ms",
+              "left": true,
+              "col": "alert"
+            }
+          ],
+          "h": "TLS 1.2 adds a round trip",
+          "b": "Its full handshake needs two round trips before encrypted data can flow. TLS 1.3 can also cost an extra round trip, a HelloRetryRequest, when the client guessed a key-share group the server doesn't accept."
+        },
+        {
+          "clock": "100 KB response",
+          "badge": "new + slow start: ≈ 5 RTT = 500 ms",
+          "bad": true,
+          "now": 500,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "tcp",
+              "label": "SYN"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "tcp",
+              "label": "SYN-ACK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 100,
+              "t1": 150,
+              "k": "tls",
+              "label": "ACK · ClientHello (key share)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 150,
+              "t1": 200,
+              "k": "tls",
+              "label": "ServerHello · Certificate · Finished"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 200,
+              "t1": 250,
+              "k": "req",
+              "label": "Finished · GET /report (100 KB)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 250,
+              "t1": 300,
+              "k": "req",
+              "label": "10 segments ≈ 14.6 KB",
+              "w": 2
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 300,
+              "t1": 350,
+              "k": "tcp",
+              "label": "ACKs"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 350,
+              "t1": 400,
+              "k": "req",
+              "label": "20 segments ≈ 29 KB",
+              "w": 3
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 400,
+              "t1": 450,
+              "k": "tcp",
+              "label": "ACKs"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 450,
+              "t1": 500,
+              "k": "req",
+              "label": "40 segments ≈ 58 KB · done",
+              "w": 4.5
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 100,
+              "label": "TCP",
+              "c": "tcp"
+            },
+            {
+              "t0": 100,
+              "t1": 200,
+              "label": "TLS",
+              "c": "tls"
+            },
+            {
+              "t0": 200,
+              "t1": 500,
+              "label": "request + slow start",
+              "c": "req"
+            }
+          ],
+          "tmax": 520,
+          "rtt": 5,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 500,
+              "label": "≈ 500 ms",
+              "left": true,
+              "col": "alert"
+            }
+          ],
+          "h": "A big response pays slow start",
+          "b": "A new TCP connection doesn't know how fast the path is. The server starts with 10 segments (about 14.6 KB, RFC 6928) and doubles each round trip as ACKs return: 14.6 KB, then 29 KB, then 58 KB. A 100 KB response takes about 3 round trips to arrive instead of 1."
+        },
+        {
+          "clock": "idle reuse",
+          "badge": "no handshakes, but window restarted: ≈ 3 RTT",
+          "bad": true,
+          "now": 300,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "req",
+              "label": "GET /report (pooled, idle)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "req",
+              "label": "10 segments ≈ 14.6 KB",
+              "w": 2
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 100,
+              "t1": 150,
+              "k": "tcp",
+              "label": "ACKs"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 150,
+              "t1": 200,
+              "k": "req",
+              "label": "20 segments ≈ 29 KB",
+              "w": 3
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 200,
+              "t1": 250,
+              "k": "tcp",
+              "label": "ACKs"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 250,
+              "t1": 300,
+              "k": "req",
+              "label": "40 segments ≈ 58 KB · done",
+              "w": 4.5
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 300,
+              "label": "request + slow start again",
+              "c": "req"
+            }
+          ],
+          "tmax": 520,
+          "rtt": 3,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 300,
+              "label": "≈ 300 ms",
+              "left": true,
+              "col": "loop"
+            }
+          ],
+          "term": "net.ipv4.tcp_slow_start_after_idle = 1   # Linux default",
+          "h": "Idle reuse doesn't save slow start",
+          "b": "Linux resets the congestion window after a connection sits idle. A pooled connection that was idle still skips both handshakes, but a large response on it ramps up again. Connections in steady use keep their larger window."
+        },
+        {
+          "clock": "fix",
+          "badge": "busy pooled connection: 1 RTT = 100 ms",
+          "now": 100,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "req",
+              "label": "GET /report (pooled, busy)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "req",
+              "label": "100 KB in one window",
+              "w": 5
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 100,
+              "label": "1 RTT",
+              "c": "req"
+            }
+          ],
+          "tmax": 520,
+          "rtt": 1,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 100,
+              "label": "100 ms",
+              "left": true,
+              "col": "io"
+            }
+          ],
+          "h": "Fixes",
+          "b": "Reuse connections (a pool, or HTTP/2 to carry many requests on one). Open them before you need them: warm the pool at startup, before taking traffic. Use TLS 1.3. For servers sending large responses on rarely used connections, consider <code>tcp_slow_start_after_idle=0</code>."
+        }
+      ],
+      "take": "None of these costs depend on request size or server speed. They are paid in round trips.",
+      "gen": "Cold starts in serverless functions, the first query after a deploy, and any client that connects per request."
+    },
+    {
+      "id": "time-wait",
+      "tab": "Scenario 2",
+      "short": "TIME_WAIT runs out the ports",
+      "view": "ports",
+      "q": "A worker opens a new connection for every call to one destination. Why does it start failing with \"Cannot assign requested address\" when the server is fine?",
+      "frames": [
+        {
+          "clock": "1 s",
+          "badge": "each closed connection holds its port for 60 s",
+          "t": 1,
+          "term": "for item in batch:\n    requests.get(url)  # new connection; client closes it",
+          "h": "One connection's life",
+          "b": "A connection is identified by source IP, source port, destination IP and destination port. Here only the client's source port can change. Each call takes a free port, does its request, and the client closes. The side that closes first keeps its socket in TIME_WAIT, here for 60 s, and the port can't be reused for this destination until then."
+        },
+        {
+          "clock": "1 s",
+          "badge": "why: stray segments, lost final ACK",
+          "t": 1,
+          "why": true,
+          "h": "Why TIME_WAIT exists",
+          "b": "A segment from the old connection might still be delayed in the network. If a new connection reused the same four values immediately, that stray segment could be accepted into it. TIME_WAIT also lets the closer resend its final ACK if that was lost. The spec says 2 × MSL; Linux uses a fixed 60 s."
+        },
+        {
+          "clock": "10 s",
+          "badge": "≈ 10,000 ports in TIME_WAIT",
+          "t": 10,
+          "h": "The grid fills",
+          "b": "At 1,000 connections a second, each one parks a port for 60 s. After 10 s, about 10,000 of the ~28,000 ports are in TIME_WAIT."
+        },
+        {
+          "clock": "28 s → 120 s",
+          "badge": "out of ports: Errno 99 · ≈ 470/s on average",
+          "bad": true,
+          "t": 120,
+          "term": "OSError: [Errno 99] Cannot assign requested address",
+          "h": "Out of ports",
+          "b": "At about 28 s every port is taken and <code>connect()</code> fails; <code>requests</code> raises a <code>ConnectionError</code>. New connections now succeed only as ports leave TIME_WAIT, in bursts, averaging 28,232 ÷ 60 ≈ 470 a second. The server is idle the whole time."
+        },
+        {
+          "clock": "fix",
+          "badge": "one Session: a handful of ports, no TIME_WAIT",
+          "t": 120,
+          "fix": true,
+          "term": "s = requests.Session()\nfor item in batch:\n    s.get(url)  # reuses the same connection",
+          "h": "Fix: keep-alive",
+          "b": "One <code>requests.Session</code> (or a small pool) carries all 1,000 requests a second on a few connections. Nothing closes, so nothing enters TIME_WAIT. If connections really must be short-lived: more destination IPs or ports, a wider port range, or <code>tcp_tw_reuse=1</code> for outgoing connections (Linux default 2 allows it for loopback only). Never <code>tcp_tw_recycle</code>, removed in Linux 4.12."
+        }
+      ],
+      "take": "TIME_WAIT sits on whichever side closes first. On a client talking to one destination, it uses up the only value in the four-tuple that can change.",
+      "gen": "Proxies and sidecars opening a connection per request, NAT gateways with many clients behind one IP, load tests run without keep-alive."
+    },
+    {
+      "id": "resumption",
+      "tab": "Scenario 3",
+      "short": "Resumption and 0-RTT",
+      "view": "ladder",
+      "q": "When a client reconnects to a server it talked to before, what can it skip? And why is 0-RTT data replayable?",
+      "frames": [
+        {
+          "clock": "first visit",
+          "badge": "full handshake, then a session ticket",
+          "now": 320,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "tcp",
+              "label": "SYN"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "tcp",
+              "label": "SYN-ACK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 100,
+              "t1": 150,
+              "k": "tls",
+              "label": "ACK · ClientHello (key share)"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 150,
+              "t1": 200,
+              "k": "tls",
+              "label": "ServerHello · Certificate · Finished"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 200,
+              "t1": 250,
+              "k": "req",
+              "label": "Finished · GET /orders/1"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 250,
+              "t1": 300,
+              "k": "req",
+              "label": "200 OK"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 262,
+              "t1": 312,
+              "k": "ticket",
+              "label": "NewSessionTicket (≤ 7 days)"
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 100,
+              "label": "TCP 1 RTT",
+              "c": "tcp"
+            },
+            {
+              "t0": 100,
+              "t1": 200,
+              "label": "TLS 1 RTT",
+              "c": "tls"
+            },
+            {
+              "t0": 200,
+              "t1": 300,
+              "label": "request",
+              "c": "req"
+            }
+          ],
+          "tmax": 340,
+          "rtt": 3,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 312,
+              "label": "stores ticket (PSK)",
+              "left": true,
+              "col": "io"
+            }
+          ],
+          "h": "First visit: a ticket",
+          "b": "The full handshake runs as in the happy path. Afterwards the server sends a NewSessionTicket. The client gets a pre-shared key for later connections, valid at most 7 days (\"Servers MUST NOT use any value greater than 604800 seconds\")."
+        },
+        {
+          "clock": "resumption",
+          "badge": "no certificate · still 3 RTT = 300 ms",
+          "now": 300,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "tcp",
+              "label": "SYN"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "tcp",
+              "label": "SYN-ACK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 100,
+              "t1": 150,
+              "k": "tls",
+              "label": "ClientHello + ticket (PSK) + key share"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 150,
+              "t1": 200,
+              "k": "tls",
+              "label": "ServerHello (PSK ok) · Finished · no cert"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 200,
+              "t1": 250,
+              "k": "req",
+              "label": "Finished · GET /orders/1"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 250,
+              "t1": 300,
+              "k": "req",
+              "label": "200 OK"
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 100,
+              "label": "TCP 1 RTT",
+              "c": "tcp"
+            },
+            {
+              "t0": 100,
+              "t1": 200,
+              "label": "TLS 1 RTT",
+              "c": "tls"
+            },
+            {
+              "t0": 200,
+              "t1": 300,
+              "label": "request",
+              "c": "req"
+            }
+          ],
+          "tmax": 340,
+          "rtt": 3,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 300,
+              "label": "300 ms",
+              "left": true,
+              "col": "run"
+            }
+          ],
+          "h": "Reconnect with resumption",
+          "b": "The ClientHello offers the ticket and the server accepts it: no certificate is sent and no signature is checked, saving bytes and CPU. But it's still one round trip of TLS. With <code>psk_dhe_ke</code> both sides still do a fresh key exchange, so forward secrecy is kept. (In TLS 1.2, resumption did save a round trip; in TLS 1.3 the full handshake is already 1 RTT.)"
+        },
+        {
+          "clock": "0-RTT",
+          "badge": "request rides with the hello: 2 RTT = 200 ms",
+          "now": 210,
+          "msgs": [
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 0,
+              "t1": 50,
+              "k": "tcp",
+              "label": "SYN"
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 50,
+              "t1": 100,
+              "k": "tcp",
+              "label": "SYN-ACK"
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 100,
+              "t1": 150,
+              "k": "tls",
+              "label": "ClientHello + ticket",
+              "lp": 0.3
+            },
+            {
+              "a": 0,
+              "b": 1,
+              "t0": 108,
+              "t1": 158,
+              "k": "early",
+              "label": "early data: GET /orders/1",
+              "w": 2.5,
+              "lp": 0.72
+            },
+            {
+              "a": 1,
+              "b": 0,
+              "t0": 158,
+              "t1": 208,
+              "k": "req",
+              "label": "ServerHello · Finished · 200 OK"
+            }
+          ],
+          "phases": [
+            {
+              "t0": 0,
+              "t1": 100,
+              "label": "TCP 1 RTT",
+              "c": "tcp"
+            },
+            {
+              "t0": 100,
+              "t1": 208,
+              "label": "hello + request",
+              "c": "early"
+            }
+          ],
+          "tmax": 340,
+          "rtt": 2,
+          "marks": [
+            {
+              "lane": 0,
+              "t": 208,
+              "label": "200 ms",
+              "left": true,
+              "col": "io"
+            }
+          ],
+          "h": "0-RTT: send the request with the hello",
+          "b": "The client encrypts the request as early data under the ticket's key and sends it with the ClientHello. The server can answer in its first flight. TCP's own round trip remains; QUIC/HTTP/3 merges the transport and TLS handshakes to remove it."
+        },
+        {
+          "clock": "replay",
+          "badge": "the same POST runs twice",
+          "bad": true,
+          "now": 130,
+          "lanes": [
+            {
+              "n": "Client",
+              "x": 150
+            },
+            {
+              "n": "Attacker",
+              "x": 360,
+              "dash": true,
+              "bad": true
+            },
+            {
+              "n": "Server A",
+              "x": 590
+            },
+            {
+              "n": "Server B",
+              "x": 810
+            }
+          ],
+          "msgs": [
+            {
+              "a": 0,
+              "b": 2,
+              "t0": 0,
+              "t1": 60,
+              "k": "early",
+              "label": "ClientHello + early: POST /transfer",
+              "w": 2.5
+            },
+            {
+              "a": 1,
+              "b": 3,
+              "t0": 45,
+              "t1": 105,
+              "k": "bad",
+              "label": "same bytes, replayed",
+              "dash": true,
+              "w": 2.5,
+              "lp": 0.78
+            },
+            {
+              "a": 2,
+              "b": 0,
+              "t0": 60,
+              "t1": 120,
+              "k": "req",
+              "label": "200 OK",
+              "lp": 0.3
+            }
+          ],
+          "phases": [],
+          "tmax": 200,
+          "rtt": null,
+          "marks": [
+            {
+              "lane": 2,
+              "t": 60,
+              "label": "POST runs",
+              "col": "io"
+            },
+            {
+              "lane": 3,
+              "t": 105,
+              "label": "POST runs again",
+              "col": "alert",
+              "left": true
+            }
+          ],
+          "h": "The catch: replay",
+          "b": "Nothing in early data proves it's new: the server hasn't yet said anything fresh in this connection. An attacker copies the ClientHello and early data and sends the same bytes to another server that shares the ticket key but keeps no record of what it has seen. TLS 1.3: \"There are no guarantees of non-replay between connections.\" (TCP handshakes omitted here.)"
+        },
+        {
+          "clock": "defenses",
+          "badge": "425 Too Early: nothing runs twice",
+          "now": 250,
+          "lanes": [
+            {
+              "n": "Client",
+              "x": 150
+            },
+            {
+              "n": "Attacker",
+              "x": 360,
+              "dash": true,
+              "bad": true
+            },
+            {
+              "n": "Server A",
+              "x": 590
+            },
+            {
+              "n": "Server B",
+              "x": 810
+            }
+          ],
+          "msgs": [
+            {
+              "a": 0,
+              "b": 2,
+              "t0": 0,
+              "t1": 60,
+              "k": "early",
+              "label": "ClientHello + early: POST /transfer",
+              "w": 2.5
+            },
+            {
+              "a": 1,
+              "b": 3,
+              "t0": 45,
+              "t1": 105,
+              "k": "bad",
+              "label": "same bytes, replayed",
+              "dash": true,
+              "w": 2.5,
+              "lp": 0.78
+            },
+            {
+              "a": 2,
+              "b": 0,
+              "t0": 60,
+              "t1": 120,
+              "k": "tls",
+              "label": "Finished · 425 Too Early",
+              "lp": 0.3
+            },
+            {
+              "a": 3,
+              "b": 1,
+              "t0": 105,
+              "t1": 165,
+              "k": "tls",
+              "label": "425 Too Early"
+            },
+            {
+              "a": 0,
+              "b": 2,
+              "t0": 120,
+              "t1": 180,
+              "k": "req",
+              "label": "Finished · POST /transfer (after handshake)"
+            },
+            {
+              "a": 2,
+              "b": 0,
+              "t0": 180,
+              "t1": 240,
+              "k": "req",
+              "label": "200 OK"
+            }
+          ],
+          "phases": [],
+          "tmax": 260,
+          "rtt": null,
+          "marks": [
+            {
+              "lane": 3,
+              "t": 105,
+              "label": "refuses early POST",
+              "col": "io",
+              "left": true
+            },
+            {
+              "lane": 2,
+              "t": 180,
+              "label": "POST runs once",
+              "col": "io"
+            }
+          ],
+          "h": "Defenses",
+          "b": "Clients put only replay-safe requests in early data, in practice idempotent reads like GET. Servers add anti-replay: single-use tickets, recording ClientHellos, freshness checks. In HTTP, RFC 8470 lets a proxy mark early requests (<code>Early-Data: 1</code>). The app answers <b>425 Too Early</b> and the client retries after the handshake. Or leave 0-RTT off, a common server default."
+        }
+      ],
+      "take": "In TLS 1.3, resumption saves work, not round trips. Only 0-RTT saves the round trip, and it gives up the guarantee that a request arrives once.",
+      "gen": "QUIC/HTTP/3 0-RTT has the same replay caveat; any \"retry on timeout\" logic raises the same question: is this request safe to run twice?"
+    }
+  ]
+}

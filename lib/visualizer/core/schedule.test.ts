@@ -77,4 +77,56 @@ describe("skippedEvents", () => {
   it("starts a new track from zero", () => {
     expect(skippedEvents(frames([4], [6, "other"]))).toEqual([{ step: 1, at: [4] }]);
   });
+
+  it("does not reset the schedule cursor across non-schedule steps", () => {
+    const lanes = {
+      index: 1,
+      label: "",
+      outcome: "good" as const,
+      badge: "",
+      caption: [],
+      lines: [],
+      path: [],
+      vars: [],
+      logNote: [],
+      metric: "",
+      model: {
+        kind: "lanes" as const,
+        lanes: [],
+        hops: [],
+        slots: 1,
+        cardRows: 1,
+      },
+    };
+    const last = frames([4], [20])[1]!;
+    expect(skippedEvents([frames([4])[0]!, lanes, last]).map((s) => s.step)).toEqual([2]);
+    expect(skippedEvents([frames([4])[0]!, lanes, last])).toEqual([{ step: 2, at: [9, 12] }]);
+  });
+
+  it("keeps the same schedule track across lanes and other non-schedule steps", () => {
+    const spacer = {
+      index: 0,
+      label: "",
+      outcome: "good" as const,
+      badge: "",
+      caption: [],
+      lines: [],
+      path: [],
+      vars: [],
+      logNote: [],
+      metric: "",
+      model: {
+        kind: "lanes" as const,
+        lanes: [],
+        hops: [],
+        slots: 1,
+        cardRows: 1,
+      },
+    };
+    const withBreaks: VizFrame[] = [frames([4])[0]!, { ...spacer, index: 1 }, frames([20])[0]!];
+    const contiguous = frames([4], [20])[1]!;
+    expect(skippedEvents(withBreaks).map((s) => s.at)).toEqual(
+      skippedEvents([frames([4])[0]!, contiguous]).map((s) => s.at),
+    );
+  });
 });

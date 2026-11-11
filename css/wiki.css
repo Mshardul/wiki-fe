@@ -22,6 +22,14 @@
 @import "./view-visualizer/btree.css";
 @import "./view-visualizer/wal.css";
 @import "./view-visualizer/http-pipeline.css";
+@import "./view-visualizer/k8s-hub.css";
+@import "./view-visualizer/k8s-service.css";
+@import "./view-visualizer/resource-gauges.css";
+@import "./view-visualizer/dns-caching.css";
+@import "./view-visualizer/conn-ladder.css";
+@import "./view-visualizer/connection-pool.css";
+@import "./view-visualizer/cache-stampede.css";
+@import "./view-visualizer/celery-board.css";
 @import "./view-visualizer/panels.css";
 @import "./view-visualizer/playback.css";
 @import "./view-visualizer/layout.css";

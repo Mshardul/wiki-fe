@@ -1,0 +1,280 @@
+.viz-rg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  font-size: var(--text-sm);
+  min-width: 0;
+}
+
+.viz-rg__badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--viz-good);
+  background: var(--viz-slot-bg);
+}
+.viz-rg__badge--bad {
+  border-left-color: var(--viz-bad);
+}
+
+.viz-rg__term {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: pre-wrap;
+  margin: 0;
+  padding: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-raised);
+}
+
+.viz-rg__colttl {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 var(--s2);
+}
+
+.viz-rg__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--s2);
+}
+
+.viz-rg__card {
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  transition: box-shadow 0.3s;
+}
+.viz-rg__card--on {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--viz-exit) 55%, transparent);
+}
+.viz-rg__card--warn {
+  border-color: var(--viz-exit);
+}
+.viz-rg__card--killed {
+  border-color: var(--viz-bad);
+  background: var(--viz-bad-bg);
+}
+.viz-rg__card--evicted {
+  border-color: var(--viz-bad);
+  border-style: dashed;
+  opacity: 0.65;
+}
+.viz-rg__card--new {
+  border-color: var(--viz-good);
+  border-style: dashed;
+}
+.viz-rg__card--rejected {
+  border-color: var(--viz-bad);
+  border-style: dashed;
+}
+
+.viz-rg__chead {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  font-weight: 600;
+  font-size: 13.5px;
+  align-items: baseline;
+}
+.viz-rg__chead small {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.viz-rg__gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.viz-rg__glab {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+.viz-rg__glab b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.viz-rg__track {
+  position: relative;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  overflow: visible;
+}
+
+.viz-rg__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+  background: var(--viz-good);
+  transition: width 0.4s;
+}
+.viz-rg__fill.over {
+  background: var(--viz-exit);
+}
+.viz-rg__fill.hit {
+  background: var(--viz-bad);
+}
+.viz-rg__fill--add {
+  opacity: 0.5;
+  background: var(--color-info);
+}
+.viz-rg__fill--add-hot {
+  background: var(--viz-bad);
+}
+
+.viz-rg__mk {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 0;
+  border-left: 2px dashed var(--text);
+}
+.viz-rg__mk--lim {
+  border-left: 2.5px solid var(--viz-bad);
+}
+.viz-rg__mk--thr {
+  border-left: 2px dotted var(--viz-bad);
+}
+
+.viz-rg__cnote {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.viz-rg__cnote--bad {
+  color: var(--viz-bad);
+  font-weight: 500;
+}
+
+.viz-rg__tlwrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 6px;
+}
+.viz-rg__tlwrap svg {
+  display: block;
+  width: 100%;
+  min-width: 600px;
+  height: auto;
+}
+
+.viz-rg__tl-meta {
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  fill: var(--text-muted);
+}
+.viz-rg__tl-grid {
+  stroke: var(--text);
+  stroke-opacity: 0.35;
+  stroke-dasharray: 4 3;
+}
+.viz-rg__tl-lane {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  fill: var(--text);
+}
+.viz-rg__tl-baseline {
+  stroke: var(--border);
+  stroke-dasharray: 2 4;
+}
+.viz-rg__tl-run {
+  fill: var(--viz-good);
+}
+.viz-rg__thr-bg {
+  fill: var(--surface);
+}
+.viz-rg__thr-line {
+  stroke: var(--viz-bad);
+  stroke-width: 2;
+}
+.viz-rg__tl-thr-rect {
+  stroke: var(--viz-bad);
+  stroke-width: 1;
+}
+.viz-rg__tl-thr-label {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  fill: var(--viz-bad);
+}
+.viz-rg__tl-mark {
+  stroke: var(--viz-exit);
+  stroke-width: 2.5;
+}
+.viz-rg__tl-mark-label {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  fill: var(--text);
+}
+
+.viz-rg__sum {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--text-muted);
+}
+.viz-rg__sum b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.viz-mech__swatch--gauge-in {
+  background: var(--viz-good);
+}
+.viz-mech__swatch--gauge-over {
+  background: var(--viz-exit);
+}
+.viz-mech__swatch--gauge-hit {
+  background: var(--viz-bad);
+}
+.viz-mech__swatch--gauge-req {
+  width: 4px;
+  border-radius: 0;
+  border-left: 2px dashed var(--text);
+  background: transparent;
+}
+.viz-mech__swatch--gauge-cap {
+  width: 4px;
+  border-radius: 0;
+  border-left: 2.5px solid var(--viz-bad);
+  background: transparent;
+}
+.viz-mech__swatch--gauge-thr {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--viz-bad),
+    var(--viz-bad) 2px,
+    var(--surface) 2px,
+    var(--surface) 5px
+  );
+  border: 1px solid var(--viz-bad);
+}

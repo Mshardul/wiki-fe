@@ -1,0 +1,1080 @@
+{
+  "scenarios": [
+    {
+      "id": "happy",
+      "tab": "Happy path",
+      "short": "Requests vs limits",
+      "q": "Requests decide where a pod goes; limits are enforced on the node",
+      "frames": [
+        {
+          "on": ["node-1", "node-2"],
+          "badge": "placement uses requests, not usage",
+          "nodesTitle": "Nodes · as the scheduler sees them",
+          "nodes": [
+            {
+              "n": "node-1",
+              "sub": "4 CPU allocatable",
+              "st": "rejected",
+              "note": "3.8 + 0.5 = 4.3 CPU requested > 4: doesn't fit",
+              "bad": true,
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU requested",
+                  "use": 3800,
+                  "req": null,
+                  "lim": 4000,
+                  "max": 4000,
+                  "add": 500
+                },
+                {
+                  "kind": "cpu",
+                  "label": "CPU actually used",
+                  "use": 1000,
+                  "req": null,
+                  "lim": 4000,
+                  "max": 4000,
+                  "plain": true
+                }
+              ]
+            },
+            {
+              "n": "node-2",
+              "sub": "4 CPU allocatable",
+              "st": "new",
+              "note": "1.5 + 0.5 = 2 CPU requested: fits",
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU requested",
+                  "use": 1500,
+                  "req": null,
+                  "lim": 4000,
+                  "max": 4000,
+                  "add": 500
+                },
+                {
+                  "kind": "cpu",
+                  "label": "CPU actually used",
+                  "use": 900,
+                  "req": null,
+                  "lim": 4000,
+                  "max": 4000,
+                  "plain": true
+                }
+              ]
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "web",
+              "pod": "web-7d4b9-a1",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU",
+                  "use": 0,
+                  "req": 500,
+                  "lim": 1000
+                },
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 0,
+                  "req": 512,
+                  "lim": 1024
+                }
+              ],
+              "note": "not running yet: being placed",
+              "st": "new"
+            }
+          ],
+          "h": "Placement by requests",
+          "b": "On node-1, 3.8 CPU is already requested; adding this pod's 0.5 would exceed its 4 CPU allocatable, so the scheduler rules it out, though node-1 is mostly idle. node-2 has room."
+        },
+        {
+          "on": ["web"],
+          "badge": "within its requests",
+          "nodesTitle": "Node",
+          "nodes": [
+            {
+              "n": "node-2",
+              "sub": "4 CPU allocatable",
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU requested",
+                  "use": 2000,
+                  "req": null,
+                  "lim": 4000,
+                  "max": 4000
+                }
+              ]
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "web",
+              "pod": "web-7d4b9-a1",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU",
+                  "use": 300,
+                  "req": 500,
+                  "lim": 1000
+                },
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 400,
+                  "req": 512,
+                  "lim": 1024
+                }
+              ],
+              "note": "running on node-2"
+            }
+          ],
+          "h": "Running within its request",
+          "b": "The container uses 300m CPU and 400 MiB, below both requests."
+        },
+        {
+          "on": ["web"],
+          "badge": "above request, below limit: allowed",
+          "nodesTitle": "Node",
+          "nodes": [
+            {
+              "n": "node-2",
+              "sub": "4 CPU allocatable",
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU requested",
+                  "use": 2000,
+                  "req": null,
+                  "lim": 4000,
+                  "max": 4000
+                }
+              ]
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "web",
+              "pod": "web-7d4b9-a1",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU",
+                  "use": 900,
+                  "req": 500,
+                  "lim": 1000
+                },
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 800,
+                  "req": 512,
+                  "lim": 1024
+                }
+              ],
+              "st": "warn",
+              "note": "using 288 MiB that nobody reserved for it"
+            }
+          ],
+          "h": "Bursting above the request",
+          "b": "Under load it uses 900m CPU and 800 MiB. That's allowed: above the request, below the limit. But that extra memory was never reserved for it, which matters in scenario 3."
+        },
+        {
+          "on": ["web"],
+          "badge": "limits are now the kernel's job",
+          "term": "container cgroup (v2)\ncpu.max     100000 100000      # 100 ms of CPU per 100 ms period = 1 CPU\nmemory.max  1073741824         # 1 GiB",
+          "nodesTitle": "Node",
+          "nodes": [
+            {
+              "n": "node-2",
+              "sub": "4 CPU allocatable",
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU requested",
+                  "use": 2000,
+                  "req": null,
+                  "lim": 4000,
+                  "max": 4000
+                }
+              ]
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "web",
+              "pod": "web-7d4b9-a1",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU",
+                  "use": 900,
+                  "req": 500,
+                  "lim": 1000
+                },
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 800,
+                  "req": 512,
+                  "lim": 1024
+                }
+              ],
+              "st": "warn",
+              "note": "kernel enforces: CPU ≤ 1, memory ≤ 1 GiB"
+            }
+          ],
+          "h": "Limits live in the kernel",
+          "b": "The kubelet writes the limits into the container's cgroup: a CPU quota of 100 ms per 100 ms period, and a 1 GiB memory ceiling. From here on the kernel enforces them, not Kubernetes."
+        }
+      ],
+      "take": "Requests size the cluster; limits protect neighbours. Requests that are too high waste nodes; requests that are too low pack pods too tightly and lead to eviction under pressure.",
+      "gen": "Reservations versus caps in any shared system: VM sizing with overcommit, connection pools with a guaranteed minimum and a maximum."
+    },
+    {
+      "id": "oom",
+      "tab": "Scenario 1",
+      "short": "OOMKilled, node has room",
+      "q": "Why was my container OOMKilled when the node had gigabytes free?",
+      "frames": [
+        {
+          "on": ["cache-svc"],
+          "badge": "node: ~5 GiB free",
+          "nodesTitle": "Node",
+          "nodes": [
+            {
+              "n": "node-2",
+              "sub": "8 GiB memory",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "node memory used",
+                  "use": 3072,
+                  "req": null,
+                  "lim": 8192,
+                  "max": 8192,
+                  "thr": 8092,
+                  "thrLabel": "eviction at < 100 MiB free"
+                }
+              ],
+              "note": "about 5 GiB free"
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "cache-svc",
+              "pod": "cache-svc-5c1",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 300,
+                  "req": 256,
+                  "lim": 512
+                }
+              ],
+              "note": "above request, below limit"
+            }
+          ],
+          "h": "Normal",
+          "b": "The container uses 300 MiB: above its 256 MiB request, below its 512 MiB limit. The node has about 5 GiB free."
+        },
+        {
+          "on": ["cache-svc"],
+          "badge": "node: still ~5 GiB free",
+          "nodesTitle": "Node",
+          "nodes": [
+            {
+              "n": "node-2",
+              "sub": "8 GiB memory",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "node memory used",
+                  "use": 3272,
+                  "req": null,
+                  "lim": 8192,
+                  "max": 8192,
+                  "thr": 8092,
+                  "thrLabel": "eviction at < 100 MiB free"
+                }
+              ],
+              "note": "about 5 GiB free"
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "cache-svc",
+              "pod": "cache-svc-5c1",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 500,
+                  "req": 256,
+                  "lim": 512
+                }
+              ],
+              "st": "warn",
+              "note": "kernel reclaims file cache inside this cgroup"
+            }
+          ],
+          "h": "Approaching the limit",
+          "b": "The app's in-memory cache grows to about 500 MiB. The kernel reclaims what it can inside the container's cgroup. The node's free memory doesn't help: the limit is on this cgroup."
+        },
+        {
+          "on": ["cache-svc"],
+          "badge": "OOMKilled · exit code 137",
+          "bad": true,
+          "term": "$ kubectl describe pod cache-svc-5c1\n    Last State:  Terminated\n      Reason:    OOMKilled\n      Exit Code: 137",
+          "nodesTitle": "Node",
+          "nodes": [
+            {
+              "n": "node-2",
+              "sub": "8 GiB memory",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "node memory used",
+                  "use": 2772,
+                  "req": null,
+                  "lim": 8192,
+                  "max": 8192,
+                  "thr": 8092,
+                  "thrLabel": "eviction at < 100 MiB free"
+                }
+              ],
+              "note": "about 5 GiB free, unchanged"
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "cache-svc",
+              "pod": "cache-svc-5c1",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 512,
+                  "req": 256,
+                  "lim": 512
+                }
+              ],
+              "st": "killed",
+              "note": "killed by the kernel at its 512 MiB limit",
+              "bad": true,
+              "restarts": 1
+            }
+          ],
+          "h": "The kernel kills it",
+          "b": "The container needs more than 512 MiB and nothing more can be reclaimed. The kernel's OOM killer kills its main process: exit code 137 (SIGKILL), reason <code>OOMKilled</code>. The node still has about 5 GiB free."
+        },
+        {
+          "on": ["cache-svc"],
+          "badge": "restarted in place, then CrashLoopBackOff",
+          "bad": true,
+          "nodesTitle": "Node",
+          "nodes": [
+            {
+              "n": "node-2",
+              "sub": "8 GiB memory",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "node memory used",
+                  "use": 2332,
+                  "req": null,
+                  "lim": 8192,
+                  "max": 8192,
+                  "thr": 8092,
+                  "thrLabel": "eviction at < 100 MiB free"
+                }
+              ],
+              "note": "about 5 GiB free"
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "cache-svc",
+              "pod": "cache-svc-5c1",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 60,
+                  "req": 256,
+                  "lim": 512
+                }
+              ],
+              "st": "killed",
+              "note": "restarted in the same pod · cache grows again",
+              "bad": true,
+              "restarts": 4,
+              "status": "CrashLoopBackOff"
+            }
+          ],
+          "h": "Restart in place, then a loop",
+          "b": "The kubelet restarts the container in the same pod. Memory starts near zero, the cache grows again, and it's killed again. After a few rounds the pod shows <code>CrashLoopBackOff</code>."
+        }
+      ],
+      "take": "Size the memory limit from the container's real peak, and make the runtime aware of it: bound caches and heaps (JVM MaxRAMPercentage, Go GOMEMLIMIT, Node --max-old-space-size). The node's free memory is irrelevant to a container at its limit.",
+      "gen": "Any cgroup-limited process: Docker --memory, systemd MemoryMax, and serverless functions that fail with out-of-memory at their configured size."
+    },
+    {
+      "id": "cpu",
+      "tab": "Scenario 2",
+      "short": "CPU throttling",
+      "q": "CPU usage averages 40% of the limit. Why is latency spiking?",
+      "frames": [
+        {
+          "badge": "quota never exhausted",
+          "tl": {
+            "lanes": [
+              {
+                "n": "thread 1",
+                "segs": [[0, 20, "run"], [100, 120, "run"], [200, 220, "run"]]
+              }
+            ]
+          },
+          "sum": [
+            "limit 500m = 50 ms of CPU per 100 ms period",
+            "used ~20 ms per period",
+            "throttled: 0 ms"
+          ],
+          "ctrs": [
+            {
+              "n": "worker",
+              "pod": "worker-0",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU (1-minute average)",
+                  "use": 200,
+                  "req": 250,
+                  "lim": 500
+                }
+              ]
+            }
+          ],
+          "h": "Light, steady work",
+          "b": "Each 100 ms period the app uses about 20 ms of CPU, well under its 50 ms quota. Nothing is throttled."
+        },
+        {
+          "badge": "60 ms of work takes 100 ms",
+          "bad": true,
+          "tl": {
+            "lanes": [
+              {
+                "n": "thread 1",
+                "segs": [[10, 60, "run"], [60, 100, "thr"], [100, 110, "run"]]
+              }
+            ],
+            "marks": [
+              {
+                "t": 10,
+                "l": "request starts"
+              },
+              {
+                "t": 110,
+                "l": "done"
+              }
+            ]
+          },
+          "sum": ["needs 60 ms of CPU", "quota gone at 60 ms", "throttled 40 ms", "latency 100 ms"],
+          "ctrs": [
+            {
+              "n": "worker",
+              "pod": "worker-0",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU (1-minute average)",
+                  "use": 200,
+                  "req": 250,
+                  "lim": 500
+                }
+              ]
+            }
+          ],
+          "h": "One request needs 60 ms on one thread",
+          "b": "It runs from 10 ms until the 50 ms quota is spent at 60 ms, then waits until the period ends at 100 ms. It finishes 10 ms into the next period: 100 ms of latency for 60 ms of work."
+        },
+        {
+          "badge": "4 threads: ~30 ms of work takes 205 ms",
+          "bad": true,
+          "tl": {
+            "lanes": [
+              {
+                "n": "thread 1",
+                "segs": [
+                  [0, 12.5, "run"],
+                  [12.5, 100, "thr"],
+                  [100, 112.5, "run"],
+                  [112.5, 200, "thr"],
+                  [200, 205, "run"]
+                ]
+              },
+              {
+                "n": "thread 2",
+                "segs": [
+                  [0, 12.5, "run"],
+                  [12.5, 100, "thr"],
+                  [100, 112.5, "run"],
+                  [112.5, 200, "thr"],
+                  [200, 205, "run"]
+                ]
+              },
+              {
+                "n": "thread 3",
+                "segs": [
+                  [0, 12.5, "run"],
+                  [12.5, 100, "thr"],
+                  [100, 112.5, "run"],
+                  [112.5, 200, "thr"],
+                  [200, 205, "run"]
+                ]
+              },
+              {
+                "n": "thread 4",
+                "segs": [
+                  [0, 12.5, "run"],
+                  [12.5, 100, "thr"],
+                  [100, 112.5, "run"],
+                  [112.5, 200, "thr"],
+                  [200, 205, "run"]
+                ]
+              }
+            ],
+            "marks": [
+              {
+                "t": 0,
+                "l": "request starts"
+              },
+              {
+                "t": 205,
+                "l": "done"
+              }
+            ]
+          },
+          "sum": [
+            "4 threads × 30 ms = 120 ms of CPU",
+            "quota burned in 12.5 ms each period",
+            "done at 205 ms instead of ~30 ms"
+          ],
+          "ctrs": [
+            {
+              "n": "worker",
+              "pod": "worker-0",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU (1-minute average)",
+                  "use": 200,
+                  "req": 250,
+                  "lim": 500
+                }
+              ]
+            }
+          ],
+          "h": "Four threads share one quota",
+          "b": "A request fans out to 4 threads needing 30 ms each. Together they burn the 50 ms quota in 12.5 ms of wall time, then all wait 87.5 ms. The work spans three periods and finishes at about 205 ms."
+        },
+        {
+          "badge": "average 40% · throttling is the signal",
+          "bad": true,
+          "tl": {
+            "lanes": [
+              {
+                "n": "thread 1",
+                "segs": [
+                  [0, 12.5, "run"],
+                  [12.5, 100, "thr"],
+                  [100, 112.5, "run"],
+                  [112.5, 200, "thr"],
+                  [200, 205, "run"]
+                ]
+              },
+              {
+                "n": "thread 2",
+                "segs": [
+                  [0, 12.5, "run"],
+                  [12.5, 100, "thr"],
+                  [100, 112.5, "run"],
+                  [112.5, 200, "thr"],
+                  [200, 205, "run"]
+                ]
+              },
+              {
+                "n": "thread 3",
+                "segs": [
+                  [0, 12.5, "run"],
+                  [12.5, 100, "thr"],
+                  [100, 112.5, "run"],
+                  [112.5, 200, "thr"],
+                  [200, 205, "run"]
+                ]
+              },
+              {
+                "n": "thread 4",
+                "segs": [
+                  [0, 12.5, "run"],
+                  [12.5, 100, "thr"],
+                  [100, 112.5, "run"],
+                  [112.5, 200, "thr"],
+                  [200, 205, "run"]
+                ]
+              }
+            ]
+          },
+          "sum": [
+            "1-minute average: 200m (40% of limit)",
+            "watch: throttled-period counters, not averages"
+          ],
+          "ctrs": [
+            {
+              "n": "worker",
+              "pod": "worker-0",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "cpu",
+                  "label": "CPU (1-minute average)",
+                  "use": 200,
+                  "req": 250,
+                  "lim": 500
+                }
+              ]
+            }
+          ],
+          "h": "The average hides it",
+          "b": "Averaged over a minute, usage is still 200m, 40% of the limit, so dashboards look healthy. The throttled-period counter (<code>nr_throttled</code> in the cgroup's <code>cpu.stat</code>) is what shows the problem."
+        }
+      ],
+      "take": "Set CPU requests for scheduling and fairness; be careful with CPU limits on latency-sensitive services. If you keep a limit, size thread pools and runtimes to it (for example Go's GOMAXPROCS), and alert on throttling rather than average usage.",
+      "gen": "Any quota or token-bucket limit evaluated over short windows: API rate limits per second, burstable cloud VM CPU credits, disk IOPS caps."
+    },
+    {
+      "id": "evict",
+      "tab": "Scenario 3",
+      "short": "Evicted vs OOMKilled",
+      "q": "Evicted or OOMKilled: which one hit my pod, and why that one?",
+      "frames": [
+        {
+          "on": ["node-2"],
+          "badge": "node: ~1.5 GiB free",
+          "nodesTitle": "Node",
+          "nodes": [
+            {
+              "n": "node-2",
+              "sub": "8 GiB memory",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "node memory used",
+                  "use": 6615,
+                  "req": null,
+                  "lim": 8192,
+                  "max": 8192,
+                  "thr": 8092,
+                  "thrLabel": "eviction at < 100 MiB free"
+                }
+              ],
+              "note": "about 1.5 GiB free · other pods and system: 1.7 GiB"
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "batch",
+              "pod": "batch-x1",
+              "qos": "BestEffort",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 1024,
+                  "req": null,
+                  "lim": null,
+                  "max": 4096
+                }
+              ],
+              "note": "no request, no limit"
+            },
+            {
+              "n": "api",
+              "pod": "api-2f3",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 2048,
+                  "req": 1024,
+                  "lim": 4096
+                }
+              ],
+              "st": "warn"
+            },
+            {
+              "n": "db",
+              "pod": "db-0",
+              "qos": "Guaranteed",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 1843,
+                  "req": 2048,
+                  "lim": 2048
+                }
+              ]
+            }
+          ],
+          "h": "Normal",
+          "b": "Three pods of equal priority. <code>api</code> is already above its request but well under its own limit. The node has about 1.5 GiB free."
+        },
+        {
+          "on": ["node-2", "api"],
+          "badge": "MemoryPressure: < 100 MiB free",
+          "bad": true,
+          "nodesTitle": "Node",
+          "nodes": [
+            {
+              "n": "node-2",
+              "sub": "8 GiB memory",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "node memory used",
+                  "use": 8151,
+                  "req": null,
+                  "lim": 8192,
+                  "max": 8192,
+                  "thr": 8092,
+                  "thrLabel": "eviction at < 100 MiB free"
+                }
+              ],
+              "note": "about 40 MiB free: below the hard eviction threshold",
+              "bad": true
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "batch",
+              "pod": "batch-x1",
+              "qos": "BestEffort",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 1024,
+                  "req": null,
+                  "lim": null,
+                  "max": 4096
+                }
+              ]
+            },
+            {
+              "n": "api",
+              "pod": "api-2f3",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 3584,
+                  "req": 1024,
+                  "lim": 4096
+                }
+              ],
+              "st": "warn",
+              "note": "still under its own 4 GiB limit"
+            },
+            {
+              "n": "db",
+              "pod": "db-0",
+              "qos": "Guaranteed",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 1843,
+                  "req": 2048,
+                  "lim": 2048
+                }
+              ]
+            }
+          ],
+          "h": "Node pressure",
+          "b": "<code>api</code> grows to 3.5 GiB, still under its own limit. But free memory on the node drops below the 100 MiB hard eviction threshold, and the node reports <code>MemoryPressure</code>."
+        },
+        {
+          "on": ["api", "batch", "db"],
+          "badge": "kubelet ranks: furthest over request first",
+          "bad": true,
+          "nodesTitle": "Node",
+          "nodes": [
+            {
+              "n": "node-2",
+              "sub": "8 GiB memory",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "node memory used",
+                  "use": 8151,
+                  "req": null,
+                  "lim": 8192,
+                  "max": 8192,
+                  "thr": 8092,
+                  "thrLabel": "eviction at < 100 MiB free"
+                }
+              ],
+              "note": "about 40 MiB free",
+              "bad": true
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "batch",
+              "pod": "batch-x1",
+              "qos": "BestEffort",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 1024,
+                  "req": null,
+                  "lim": null,
+                  "max": 4096
+                }
+              ],
+              "note": "over its request (0) by 1 GiB · 2nd"
+            },
+            {
+              "n": "api",
+              "pod": "api-2f3",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 3584,
+                  "req": 1024,
+                  "lim": 4096
+                }
+              ],
+              "st": "warn",
+              "note": "over its request by 2.5 GiB · 1st",
+              "bad": true
+            },
+            {
+              "n": "db",
+              "pod": "db-0",
+              "qos": "Guaranteed",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 1843,
+                  "req": 2048,
+                  "lim": 2048
+                }
+              ],
+              "note": "within its request · last"
+            }
+          ],
+          "h": "The kubelet ranks pods",
+          "b": "Candidates are pods using more than they requested: <code>api</code> (2.5 GiB over) and <code>batch</code> (1 GiB over). <code>db</code> is within its request, so it goes last. With equal priority, the pod furthest over its request goes first: <code>api</code>, not the BestEffort pod."
+        },
+        {
+          "on": ["api"],
+          "badge": "evicted: whole pod, phase Failed",
+          "bad": true,
+          "nodesTitle": "Node",
+          "nodes": [
+            {
+              "n": "node-2",
+              "sub": "8 GiB memory",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "node memory used",
+                  "use": 4567,
+                  "req": null,
+                  "lim": 8192,
+                  "max": 8192,
+                  "thr": 8092,
+                  "thrLabel": "eviction at < 100 MiB free"
+                }
+              ],
+              "note": "about 3.5 GiB free"
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "batch",
+              "pod": "batch-x1",
+              "qos": "BestEffort",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 1024,
+                  "req": null,
+                  "lim": null,
+                  "max": 4096
+                }
+              ]
+            },
+            {
+              "n": "api",
+              "pod": "api-2f3",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 0,
+                  "req": 1024,
+                  "lim": 4096
+                }
+              ],
+              "st": "evicted",
+              "note": "evicted · phase Failed · not restarted here",
+              "bad": true
+            },
+            {
+              "n": "api",
+              "pod": "api-9k1 (new)",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 0,
+                  "req": 1024,
+                  "lim": 4096
+                }
+              ],
+              "st": "new",
+              "note": "replacement from its Deployment, placed wherever it fits"
+            },
+            {
+              "n": "db",
+              "pod": "db-0",
+              "qos": "Guaranteed",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 1843,
+                  "req": 2048,
+                  "lim": 2048
+                }
+              ]
+            }
+          ],
+          "h": "Eviction",
+          "b": "The kubelet stops the whole <code>api</code> pod and sets its phase to Failed. It isn't restarted in place; its Deployment creates a replacement pod, wherever the scheduler finds room."
+        },
+        {
+          "on": ["api", "batch", "db"],
+          "badge": "if memory runs out first: the kernel OOM killer",
+          "bad": true,
+          "nodesTitle": "Node",
+          "nodes": [
+            {
+              "n": "node-2",
+              "sub": "8 GiB memory",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "node memory used",
+                  "use": 8192,
+                  "req": null,
+                  "lim": 8192,
+                  "max": 8192,
+                  "thr": 8092,
+                  "thrLabel": "eviction at < 100 MiB free"
+                }
+              ],
+              "note": "out of memory before the kubelet could act",
+              "bad": true
+            }
+          ],
+          "ctrs": [
+            {
+              "n": "batch",
+              "pod": "batch-x1",
+              "qos": "BestEffort",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 1024,
+                  "req": null,
+                  "lim": null,
+                  "max": 4096
+                }
+              ],
+              "note": "oom_score_adj 1000"
+            },
+            {
+              "n": "api",
+              "pod": "api-2f3",
+              "qos": "Burstable",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 3584,
+                  "req": 1024,
+                  "lim": 4096
+                }
+              ],
+              "st": "killed",
+              "note": "oom_score_adj 875 · highest combined score (most memory) → process killed",
+              "bad": true,
+              "restarts": 1
+            },
+            {
+              "n": "db",
+              "pod": "db-0",
+              "qos": "Guaranteed",
+              "g": [
+                {
+                  "kind": "mem",
+                  "label": "memory",
+                  "use": 1843,
+                  "req": 2048,
+                  "lim": 2048
+                }
+              ],
+              "note": "oom_score_adj −997"
+            }
+          ],
+          "h": "If memory runs out faster than the kubelet reacts",
+          "b": "The kernel's OOM killer kills one process instead, choosing by a score that combines memory use with an adjustment set per QoS class: −997 Guaranteed, 1000 BestEffort, 2 to 999 Burstable (875 for <code>api</code>). Here <code>api</code>'s large usage gives it the highest score. Its container restarts in place, like scenario 1."
+        }
+      ],
+      "take": "Memory above your request is borrowed. Set memory requests close to real usage for anything you don't want evicted, and limit equal to request (Guaranteed) for the workloads that matter most. Priority classes decide who goes first when usage is equal.",
+      "gen": "Memory management on any shared host: the Linux OOM killer and oom_score_adj on plain servers, and preemption of low-priority or spot workloads in batch schedulers."
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+{
+  "scenarios": [
+    {
+      "id": "happy",
+      "tab": "Happy path",
+      "short": "Cache-aside, low traffic",
+      "view": "happy",
+      "q": "What happens on a read, and why is the database almost idle?",
+      "frames": [
+        {
+          "clock": "0 s",
+          "badge": "cold key: one miss, one query",
+          "to": 1,
+          "arrows": ["get", "miss", "select", "rows", "set"],
+          "term": "v = redis.get(\"product:42\")   # nil\nv = db.query(\"SELECT ... WHERE id = %s\", 42)   # ~200 ms\nredis.set(\"product:42\", v, ex=300)",
+          "h": "Cold key",
+          "b": "The first request misses, queries the database (about 200 ms) and writes the value with a 300 s TTL. The application owns this logic; Redis knows nothing about the database."
+        },
+        {
+          "clock": "0.2 – 295 s",
+          "badge": "every request a hit",
+          "to": 295,
+          "arrows": ["get", "hit"],
+          "term": "v = redis.get(\"product:42\")   # hit, well under 1 ms",
+          "h": "Fresh",
+          "b": "Every later request is a hit, answered from memory. The database isn't involved."
+        },
+        {
+          "clock": "300 – 620 s",
+          "badge": "one query per expiry",
+          "bad": false,
+          "to": 620,
+          "arrows": ["get", "miss", "select", "rows", "set"],
+          "h": "Expiry, then one refill",
+          "b": "At 300 s Redis deletes the key. The next request, at 305 s, misses and refills it. At this traffic, the gap between \"expired\" and \"refilled\" holds one request, so one miss is harmless. The other two tabs are what happens when that gap holds hundreds."
+        }
+      ],
+      "take": "The danger isn't the miss. It's how many requests miss at the same moment, for the same key, before the value is back.",
+      "gen": "Any read-through layer with expiry: CDN caches, DNS caches, in-process memoization."
+    },
+    {
+      "id": "hot-key",
+      "tab": "Scenario 1",
+      "short": "A hot key expires",
+      "view": "hot",
+      "q": "The product page gets 1,000 requests a second. Its key expires. Why does the database fall over when it handled the same query fine a moment ago?",
+      "frames": [
+        {
+          "clock": "298.4 – 300.0 s",
+          "badge": "1,000 req/s, all hits",
+          "mode": "none",
+          "d": 200,
+          "to": 0,
+          "h": "Hot key, all hits",
+          "b": "Each bar is 50 ms of traffic, 50 requests. Every one is a hit, and the database row is flat."
+        },
+        {
+          "clock": "300.0 – 300.2 s",
+          "badge": "200 identical queries running · capacity ≈ 50",
+          "bad": true,
+          "mode": "none",
+          "d": 200,
+          "to": 200,
+          "h": "The key expires",
+          "b": "At 300.0 s Redis deletes the key. The first request misses and starts the 200 ms query. The value isn't back yet, so every request in the next 200 ms misses too and starts the <em>same</em> query: 1,000 req/s × 0.2 s ≈ 200 at once, four times what the database can run."
+        },
+        {
+          "clock": "300.2 – 301.2 s",
+          "badge": "value back; 199 of 200 queries were wasted",
+          "bad": true,
+          "mode": "none",
+          "d": 200,
+          "to": 1200,
+          "h": "Recovery",
+          "b": "The first query returns at 300.2 s and writes the key, and hits resume. The other 199 results arrive over the next 200 ms and overwrite it with the same value. That was pure wasted work."
+        },
+        {
+          "clock": "300.0 – 301.2 s",
+          "badge": "slower queries → wider miss window → more queries",
+          "bad": true,
+          "mode": "none",
+          "d": 600,
+          "to": 1200,
+          "h": "Load feeds itself",
+          "b": "Queued queries run slower, say 600 ms instead of 200 ms. The miss window stretches with them, so about 600 requests pile in. Other keys' queries slow down too, so their miss windows widen as well."
+        },
+        {
+          "clock": "Fix A",
+          "badge": "one query; the rest wait ~200 ms",
+          "mode": "lock",
+          "d": 200,
+          "to": 1200,
+          "term": "SET lock:product:42 <token> NX PX 5000   # OK → you rebuild; nil → wait, re-read cache\n# release: Lua script that DELs only if the value still equals <token>",
+          "h": "One rebuild per key: lock or singleflight",
+          "b": "Only the request that gets the Redis lock queries the database. The others wait and re-read the cache. <code>PX</code> frees the lock if the holder crashes. Go's <code>singleflight</code> does the same in memory, but per process: 20 app servers still send up to 20 queries. Cost: waiters' latency rises by the query time."
+        },
+        {
+          "clock": "Fix B",
+          "badge": "one query; nobody waits; some see old data",
+          "mode": "swr",
+          "d": 200,
+          "to": 1200,
+          "term": "# store {value, soft_expiry} with a longer real TTL\nif now > soft_expiry: serve value, refresh once in background (guarded by the lock)",
+          "h": "Serve stale while refreshing",
+          "b": "Past a logical expiry, keep returning the old value and let one request refresh it in the background. HTTP caches call this <code>stale-while-revalidate</code> (RFC 5861). Cost: users see data up to one refresh old. Fine for a product page, wrong for an account balance."
+        },
+        {
+          "clock": "Fix C",
+          "badge": "refreshed before it expires; no lock",
+          "mode": "xfetch",
+          "d": 200,
+          "to": 1200,
+          "term": "# XFetch: recompute early if  now − δ·β·ln(rand()) ≥ expiry\n# δ = recompute time (0.2 s), β = 1",
+          "h": "Refresh early, probabilistically (XFetch)",
+          "b": "Each request recomputes early with a probability that rises as expiry nears. At 1,000 req/s, one request almost always triggers it around a second early, occasionally two or three in the same 200 ms. The key gets a new TTL before it ever expires. No lock needed, but cold keys still miss normally."
+        }
+      ],
+      "take": "The database didn't get slower. It received 200 copies of a question it could have answered once.",
+      "gen": "Thundering herds anywhere one event releases many waiters at once: lock release, a connection pool refilling after a failover, a popular CDN object expiring."
+    },
+    {
+      "id": "sync-expiry",
+      "tab": "Scenario 2",
+      "short": "Many keys expire together",
+      "view": "sync",
+      "q": "A warm-up job loads 1,000 keys in 5 seconds, all with TTL 300 s. Five minutes later the database spikes, though no key is hot. Why doesn't the per-key lock help?",
+      "frames": [
+        {
+          "clock": "0 – 5 s",
+          "badge": "warm-up: 1,000 keys loaded",
+          "mode": "fixed",
+          "to": 10,
+          "h": "Warm-up",
+          "b": "After a deploy, a job loads 1,000 product keys in about 5 seconds, each with TTL 300 s. Each key's expiry is its write time plus 300 s, so all expiries land between 300 and 305 s."
+        },
+        {
+          "clock": "5 – 295 s",
+          "badge": "quiet: every key fresh",
+          "mode": "fixed",
+          "to": 295,
+          "h": "Quiet",
+          "b": "Every key is fresh, so the database sees nothing. Spread evenly, these keys would need about 1,000 ÷ 300 ≈ 3 queries a second."
+        },
+        {
+          "clock": "300 – 305 s",
+          "badge": "≈ 200 queries/s, all for different keys",
+          "bad": true,
+          "mode": "fixed",
+          "to": 310,
+          "h": "All 1,000 expire inside 5 seconds",
+          "b": "About 1,000 misses arrive in 5 s, roughly 200 queries a second instead of 3. Each miss is for a <em>different</em> key, so each one wins its own lock. Locks remove duplicate work, and there isn't any here. The problem is timing, not duplication."
+        },
+        {
+          "clock": "305 – 700 s",
+          "badge": "the spike repeats every 300 s",
+          "bad": true,
+          "mode": "fixed",
+          "to": 700,
+          "h": "It repeats",
+          "b": "Every key was refilled at almost the same moment, so they expire together again at about 600 s, and every 300 s after that."
+        },
+        {
+          "clock": "Fix",
+          "badge": "jitter: TTL = 300 ± 30 s",
+          "mode": "jit",
+          "to": 700,
+          "term": "ttl = 300 + random.uniform(-30, 30)\nredis.set(key, value, ex=int(ttl))",
+          "h": "Add jitter to the TTL",
+          "b": "Pick each key's TTL at random per write. The expiries spread over about 60 s instead of 5, roughly 17 queries a second at the peak instead of 200. Each refill picks a new random TTL, so the keys drift further apart every cycle instead of staying in step."
+        }
+      ],
+      "take": "Scenario 1 was many requests for one key; this is one request each for many keys at the same moment. They need different fixes, and most systems need both.",
+      "gen": "Retry storms (fix: jittered backoff), every server running a cron job at :00, every pool reconnecting after a database failover."
+    }
+  ]
+}
