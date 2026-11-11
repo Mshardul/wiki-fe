@@ -3,6 +3,8 @@ import type { Rich } from "@/lib/visualizer/core/rich";
 import { keyText } from "@/lib/visualizer/core/rich";
 import type { ScheduleSwatch } from "@/lib/visualizer/core/shapes";
 import type { InfoContent, RunResult, VisualizerModule } from "@/lib/visualizer/core/types";
+import { mechanismInfo } from "../mechanism/info";
+import { MECHANISM_GLOSSARY_TERM } from "../mechanism/links";
 import { frameModel } from "./model";
 import { POSTGRES_WAL_SCENARIOS } from "./scenarios";
 import type { WalScenario } from "./types";
@@ -41,18 +43,7 @@ function scenarioOf(values: InputValues): WalScenario {
 }
 
 function infoFor(sc: WalScenario): InfoContent {
-  return {
-    heading: sc.q,
-    name: sc.short,
-    chip: sc.tab,
-    rule: sc.q,
-    about: [
-      ["Takeaway", sc.take],
-      ["Generalizes to", sc.gen],
-    ],
-    tries: [],
-    articleHref: "",
-  };
+  return mechanismInfo(sc, "wal");
 }
 
 export function postgresWalFrames(sc: WalScenario) {
@@ -89,6 +80,7 @@ export const postgresWalModule: VisualizerModule = {
   unit: "step",
   subject: "Postgres",
   kicker: WAL_KICKER,
+  glossaryTerm: MECHANISM_GLOSSARY_TERM.wal,
   legend: WAL_LEGEND,
   footnote: WAL_FOOTNOTE,
   variants: { key: "scenario", restartOnSwitch: true },

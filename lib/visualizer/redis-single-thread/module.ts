@@ -8,6 +8,8 @@ import type {
   VisualizerModule,
   VizFrame,
 } from "@/lib/visualizer/core/types";
+import { mechanismInfo } from "../mechanism/info";
+import { MECHANISM_GLOSSARY_TERM } from "../mechanism/links";
 import { REDIS_SINGLE_THREAD_SCENARIOS } from "./scenarios";
 import { traceModel } from "./schedule";
 import type { RedisScenario } from "./types";
@@ -46,18 +48,7 @@ function scenarioOf(values: InputValues): RedisScenario {
 }
 
 function infoFor(sc: RedisScenario): InfoContent {
-  return {
-    heading: sc.q,
-    name: sc.short,
-    chip: sc.tab,
-    rule: sc.q,
-    about: [
-      ["Takeaway", sc.take],
-      ["Generalizes to", sc.gen],
-    ],
-    tries: [],
-    articleHref: "",
-  };
+  return mechanismInfo(sc, "redis");
 }
 
 export function redisFrames(sc: RedisScenario): VizFrame[] {
@@ -104,6 +95,7 @@ export const redisSingleThreadModule: VisualizerModule = {
   unit: "step",
   subject: "Redis",
   kicker: REDIS_KICKER,
+  glossaryTerm: MECHANISM_GLOSSARY_TERM.redis,
   legend: REDIS_LEGEND,
   footnote: REDIS_FOOTNOTE,
   variants: { key: "scenario", restartOnSwitch: true },

@@ -74,4 +74,20 @@ describe("asyncio event loop module", () => {
     expect(asyncioModule.revision).toBeUndefined();
     expect(asyncioModule.defaults()).toEqual({ scenario: "happy" });
   });
+
+  it("marks blocking and CPU-hog steps as bad outcomes", () => {
+    const blocking = runAsyncio({ scenario: "blocking" }).frames;
+    expect(blocking.slice(0, 2).every((f) => f.outcome === "good")).toBe(true);
+    expect(blocking.slice(2).every((f) => f.outcome === "bad")).toBe(true);
+    const cpu = runAsyncio({ scenario: "cpu" }).frames;
+    const hog = cpu.filter((f) => f.group === "No yields");
+    expect(hog.length).toBeGreaterThan(0);
+    expect(hog.every((f) => f.outcome === "bad")).toBe(true);
+  });
+
+  it("links to a wiki article", () => {
+    expect(runAsyncio({ scenario: "happy" }).info.articleHref).toContain(
+      "/system-design/components/tracing/",
+    );
+  });
 });

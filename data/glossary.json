@@ -58,5 +58,13 @@
   "sliding window log": "A rate-limiting algorithm that stores a timestamp for every allowed request and counts the ones inside the last window. Exact, at the cost of memory proportional to the limit.",
   "sliding window counter": "A rate-limiting algorithm that estimates the count in the last window from two fixed-window counters, weighting the previous window by how much of it the last window still covers.",
   "token bucket": "A rate-limiting algorithm where each request spends a token and tokens refill at a steady rate up to a cap, so idle time builds up a burst allowance.",
-  "leaky bucket": "A rate-limiting algorithm that queues requests and releases them at a constant rate, dropping new ones once the queue is full."
+  "leaky bucket": "A rate-limiting algorithm that queues requests and releases them at a constant rate, dropping new ones once the queue is full.",
+  "global interpreter lock": "CPython's mutex that lets only one thread execute Python bytecode at a time. Blocking C extensions and I/O can release it.",
+  "asyncio event loop": "A single-threaded scheduler that runs coroutines until they await, then switches to the next ready task.",
+  "redis command loop": "Redis's single main thread that executes every command atomically; long commands block all clients until they finish.",
+  "go scheduler": "Go's G-M-P runtime that multiplexes goroutines onto OS threads with work stealing and a netpoller for network I/O.",
+  "multi-version concurrency control": "Keeping multiple versions of a row so readers use a snapshot while writers add new versions instead of locking reads.",
+  "b-tree index": "A balanced sorted tree of index pages used by most relational engines for range and equality lookups on ordered keys.",
+  "write-ahead log": "An append-only durability log written before data pages change; crash recovery replays it to reconstruct committed work.",
+  "reverse proxy": "A server-facing proxy that receives client requests, forwards them to backends, and returns responses—hiding backend topology from clients."
 }

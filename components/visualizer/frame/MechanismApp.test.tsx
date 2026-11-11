@@ -11,7 +11,15 @@ describe("MechanismApp", () => {
 
   it("opens the happy path and steps into scenario 1 from the start", async () => {
     const user = userEvent.setup();
-    render(<MechanismApp slug="inside-the-python-gil" glossary={{}} />);
+    render(
+      <MechanismApp
+        slug="inside-the-python-gil"
+        glossary={{
+          "global interpreter lock":
+            "CPython's mutex that lets only one thread execute Python bytecode at a time.",
+        }}
+      />,
+    );
     expect(screen.getByRole("heading", { level: 1, name: "Inside the Python GIL" })).toBeTruthy();
     expect(screen.getByText("CPython 3.12+ · default build · switch interval 5 ms")).toBeTruthy();
     expect(screen.getByText(/I\/O-bound threads interleave/)).toBeTruthy();
@@ -21,6 +29,9 @@ describe("MechanismApp", () => {
       ),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Copy link" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Read article/ })).toBeTruthy();
+    expect(screen.getByText(/CPython's mutex/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Inside the asyncio Event Loop" })).toBeTruthy();
     expect(screen.getByText("Running Python (holds GIL)")).toBeTruthy();
     expect(screen.queryByText("Drop request")).toBeNull();
     expect(screen.getByRole("heading", { level: 3, name: "T1 runs" })).toBeTruthy();
@@ -28,8 +39,6 @@ describe("MechanismApp", () => {
       screen.getByRole("button", { name: /^Step 2: T1 hits a blocking call/ }).textContent,
     ).toBe("2");
     expect(screen.queryByRole("button", { name: "Revision" })).toBeNull();
-    expect(screen.queryByRole("link", { name: /Read article/ })).toBeNull();
-
     await user.click(screen.getByRole("tab", { name: /Scenario 1/ }));
     expect(screen.getByText("Why don't more threads speed up CPU-bound code?")).toBeTruthy();
     expect(screen.getByText(/step 1 \/ 8/)).toBeTruthy();

@@ -32,6 +32,11 @@ export interface Experiment {
   patch: InputValues;
 }
 
+export interface RelatedLink {
+  href: string;
+  label: string;
+}
+
 export interface InfoContent {
   heading: string;
   name: string;
@@ -40,6 +45,7 @@ export interface InfoContent {
   about: [string, string][];
   tries: Experiment[];
   articleHref: string;
+  related?: RelatedLink[];
 }
 
 export interface RunResult {
@@ -93,4 +99,6 @@ export interface VisualizerModule {
   kicker?: string;
   legend?: { label: string; swatch: ScheduleSwatch }[];
   footnote?: string;
+  /** Key in data/glossary.json; shown under the kicker when defined. */
+  glossaryTerm?: string;
 }

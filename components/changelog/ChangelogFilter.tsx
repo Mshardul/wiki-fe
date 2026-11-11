@@ -58,8 +58,8 @@ export function ChangelogFilter({ groups }: ChangelogFilterProps) {
         />
       </div>
       <div id="changelog-groups" className="changelog-groups">
-        {visible.map((group) => (
-          <section key={group.date} className="changelog-group">
+        {visible.map((group, groupIndex) => (
+          <section key={`${group.date}-${groupIndex}`} className="changelog-group">
             <h2 className="changelog-date">{group.date}</h2>
             <ul className="changelog-entry-list">
               {group.entries.map((entry, i) => (

@@ -8,6 +8,8 @@ import type {
   VisualizerModule,
   VizFrame,
 } from "@/lib/visualizer/core/types";
+import { mechanismInfo } from "../mechanism/info";
+import { MECHANISM_GLOSSARY_TERM } from "../mechanism/links";
 import { GO_SCHEDULER_SCENARIOS } from "./scenarios";
 import { traceModel } from "./schedule";
 import type { GoScenario } from "./types";
@@ -46,18 +48,7 @@ function scenarioOf(values: InputValues): GoScenario {
 }
 
 function infoFor(sc: GoScenario): InfoContent {
-  return {
-    heading: sc.q,
-    name: sc.short,
-    chip: sc.tab,
-    rule: sc.q,
-    about: [
-      ["Takeaway", sc.take],
-      ["Generalizes to", sc.gen],
-    ],
-    tries: [],
-    articleHref: "",
-  };
+  return mechanismInfo(sc, "go");
 }
 
 export function goSchedulerFrames(sc: GoScenario): VizFrame[] {
@@ -101,6 +92,7 @@ export const goSchedulerModule: VisualizerModule = {
   unit: "step",
   subject: "Go runtime",
   kicker: GO_KICKER,
+  glossaryTerm: MECHANISM_GLOSSARY_TERM.go,
   legend: GO_LEGEND,
   footnote: GO_FOOTNOTE,
   variants: { key: "scenario", restartOnSwitch: true },

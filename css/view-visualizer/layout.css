@@ -98,6 +98,25 @@
   font-family: var(--font-mono);
   font-size: var(--text-xs);
 }
+.viz-mech__glossary {
+  margin: var(--s2) 0 0;
+  max-width: 48rem;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--lh-relaxed);
+}
+.viz-mech__related {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.viz-mech__related a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.viz-mech__related a:hover {
+  text-decoration: underline;
+}
 .viz-mech__tabdetail {
   display: block;
   color: var(--text-muted);

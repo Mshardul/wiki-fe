@@ -154,6 +154,14 @@ def _stub_login_success(page):
     )
 
 
+def _stub_confirm_keep(page):
+    page.add_init_script("window.confirm = () => true;")
+
+
+def _stub_confirm_discard(page):
+    page.add_init_script("window.confirm = () => false;")
+
+
 @pytest.mark.smoke
 def test_login_success_flips_button_to_logout(page, base_url):
     _stub_logged_out(page)
@@ -495,28 +503,28 @@ def test_resend_button_shows_cooldown_after_send(page, base_url):
 def test_migrate_keep_imports_local_data(page, base_url, seed_bookmarks):
     _stub_logged_out(page)
     _stub_login_success(page)
-    import_bodies = []
-
-    def _capture_import(route):
-        import_bodies.append(route.request.post_data_json)
-        route.fulfill(status=200, content_type="application/json", body="{}")
-
-    page.route("**/api/v1/sync/import", _capture_import)
+    page.route(
+        "**/api/v1/sync/import",
+        lambda r: r.fulfill(status=200, content_type="application/json", body="{}"),
+    )
     _stub_synced_domains_empty(page)
+    _stub_confirm_keep(page)
     seed_bookmarks(_FOO_BOOKMARK)
     page.add_init_script("localStorage.setItem('wiki-completed-dsa', JSON.stringify(['content/dsa/foo.md']))")
-    page.on("dialog", lambda d: d.accept())
 
     page.goto(base_url, wait_until="domcontentloaded")
     page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
     _open_auth(page)
     _auth_dialog(page).get_by_label("Email").fill("a@example.com")
     _auth_dialog(page).get_by_label("Password", exact=True).fill("LongEnough1!xx")
-    _auth_dialog(page).get_by_role("button", name="Log in").click()
+    # Top bar flips to "Log out" as soon as setSession runs; import is still in flight.
+    with page.expect_request("**/api/v1/sync/import", timeout=10_000) as import_req:
+        _auth_dialog(page).get_by_role("button", name="Log in").click()
 
     expect(page.locator(".topbar-auth-btn:visible").first).to_contain_text("Log out")
-    assert import_bodies, "/sync/import must be called when the user keeps local data"
-    assert import_bodies[0]["completions"] == [{"wiki_id": "dsa", "path": "content/dsa/foo.md"}]
+    import_payload = import_req.value.post_data_json
+    assert import_payload is not None, "/sync/import must be called when the user keeps local data"
+    assert import_payload["completions"] == [{"wiki_id": "dsa", "path": "content/dsa/foo.md"}]
 
 
 def test_migrate_discard_clears_local_data_without_importing(page, base_url, seed_bookmarks):
@@ -528,8 +536,8 @@ def test_migrate_discard_clears_local_data_without_importing(page, base_url, see
         lambda r: (import_called.__setitem__("hit", True), r.fulfill(status=200, content_type="application/json", body="{}"))[1],
     )
     _stub_synced_domains_empty(page)
+    _stub_confirm_discard(page)
     seed_bookmarks(_FOO_BOOKMARK)
-    page.on("dialog", lambda d: d.dismiss())
 
     page.goto(base_url, wait_until="domcontentloaded")
     page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
@@ -557,15 +565,16 @@ def test_migrate_import_failure_shows_toast_and_skips_pull(page, base_url, seed_
             f"**/api/v1/{path}",
             lambda r: (pull_called.__setitem__("hit", True), r.fulfill(status=200, content_type="application/json", body="[]"))[1],
         )
+    _stub_confirm_keep(page)
     seed_bookmarks(_FOO_BOOKMARK)
-    page.on("dialog", lambda d: d.accept())
 
     page.goto(base_url, wait_until="domcontentloaded")
     page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
     _open_auth(page)
     _auth_dialog(page).get_by_label("Email").fill("a@example.com")
     _auth_dialog(page).get_by_label("Password", exact=True).fill("LongEnough1!xx")
-    _auth_dialog(page).get_by_role("button", name="Log in").click()
+    with page.expect_request("**/api/v1/sync/import", timeout=10_000):
+        _auth_dialog(page).get_by_role("button", name="Log in").click()
 
     expect(page.locator(".wiki-toast")).to_contain_text("Couldn't save your local data")
     assert not pull_called["hit"], "pullAll() must not run after a failed import - it would overwrite the kept local data"

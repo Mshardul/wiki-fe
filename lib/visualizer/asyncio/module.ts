@@ -8,6 +8,8 @@ import type {
   VisualizerModule,
   VizFrame,
 } from "@/lib/visualizer/core/types";
+import { mechanismInfo } from "../mechanism/info";
+import { MECHANISM_GLOSSARY_TERM } from "../mechanism/links";
 import { ASYNCIO_SCENARIOS } from "./scenarios";
 import { traceModel } from "./schedule";
 import type { AsyncioScenario } from "./types";
@@ -45,18 +47,7 @@ function scenarioOf(values: InputValues): AsyncioScenario {
 }
 
 function infoFor(sc: AsyncioScenario): InfoContent {
-  return {
-    heading: sc.q,
-    name: sc.short,
-    chip: sc.tab,
-    rule: sc.q,
-    about: [
-      ["Takeaway", sc.take],
-      ["Generalizes to", sc.gen],
-    ],
-    tries: [],
-    articleHref: "",
-  };
+  return mechanismInfo(sc, "asyncio");
 }
 
 export function asyncioFrames(sc: AsyncioScenario): VizFrame[] {
@@ -69,7 +60,7 @@ export function asyncioFrames(sc: AsyncioScenario): VizFrame[] {
       index,
       label: frame.h,
       ...(grouped && trace.label ? { group: trace.label } : {}),
-      outcome: "good",
+      outcome: frame.bad ? "bad" : "good",
       badge: "",
       caption: [frame.h],
       lines: [richFromHtml(frame.b)],
@@ -100,6 +91,7 @@ export const asyncioModule: VisualizerModule = {
   unit: "step",
   subject: "Concurrency",
   kicker: ASYNCIO_KICKER,
+  glossaryTerm: MECHANISM_GLOSSARY_TERM.asyncio,
   legend: ASYNCIO_LEGEND,
   footnote: ASYNCIO_FOOTNOTE,
   variants: { key: "scenario", restartOnSwitch: true },

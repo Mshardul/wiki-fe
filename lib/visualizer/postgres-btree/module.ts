@@ -8,6 +8,8 @@ import type {
   VisualizerModule,
   VizFrame,
 } from "@/lib/visualizer/core/types";
+import { mechanismInfo } from "../mechanism/info";
+import { MECHANISM_GLOSSARY_TERM } from "../mechanism/links";
 import { frameModel } from "./model";
 import { POSTGRES_BTREE_SCENARIOS } from "./scenarios";
 import type { BtreeScenario } from "./types";
@@ -46,18 +48,7 @@ function scenarioOf(values: InputValues): BtreeScenario {
 }
 
 function infoFor(sc: BtreeScenario): InfoContent {
-  return {
-    heading: sc.q,
-    name: sc.short,
-    chip: sc.tab,
-    rule: sc.q,
-    about: [
-      ["Takeaway", sc.take],
-      ["Generalizes to", sc.gen],
-    ],
-    tries: [],
-    articleHref: "",
-  };
+  return mechanismInfo(sc, "btree");
 }
 
 export function postgresBtreeFrames(sc: BtreeScenario): VizFrame[] {
@@ -94,6 +85,7 @@ export const postgresBtreeModule: VisualizerModule = {
   unit: "step",
   subject: "Postgres",
   kicker: BTREE_KICKER,
+  glossaryTerm: MECHANISM_GLOSSARY_TERM.btree,
   legend: BTREE_LEGEND,
   footnote: BTREE_FOOTNOTE,
   variants: { key: "scenario", restartOnSwitch: true },

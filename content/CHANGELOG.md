@@ -25,9 +25,6 @@ All notable changes to wiki articles. Filter by filename to track updates to a s
 ## 2026-10-07
 - `system-design/components/caching.md` - new section: "CLOCK (Second Chance)"
 
-## 2026-10-07
-- `system-design/components/caching.md` - new section: "CLOCK (Second Chance)"
-
 ## 2026-08-22
 - `system-design/algorithms/consensus-raft-paxos.md` - expanded: "Linearizable Reads Without a Log Append"
 - `system-design/components/mfa.md` - fixed gate failures: diagram, Appendices, failure-mode coverage, prereq fix

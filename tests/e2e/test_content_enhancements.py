@@ -491,9 +491,10 @@ def test_keyboard_enter_removes_focused_highlight(page, base_url):
 def test_emoji_marker_buttons_hidden_when_selection_in_code(page, base_url):
     _hl_article(page, base_url, slug="system-design/hld/url-shortener")
     _select_word(page, "url_mappings")
-    page.wait_for_selector(".highlight-toolbar:not(.hidden)", timeout=3_000)
-
-    assert page.locator(".highlight-toolbar-btn--highlight").is_visible()
+    toolbar = page.locator(".highlight-toolbar:not(.hidden)")
+    toolbar.wait_for(state="visible", timeout=3_000)
+    force_paint(page)
+    expect(toolbar.locator(".highlight-toolbar-btn--highlight")).to_be_visible()
     visible_emoji = page.evaluate(
         """() => [...document.querySelectorAll('.highlight-toolbar-btn--emoji')]
             .filter(b => !b.hidden && b.offsetParent !== null).length"""

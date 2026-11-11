@@ -23,6 +23,7 @@ export interface AsyncioFrame {
   h: string;
   b: string;
   trace?: string;
+  bad?: boolean;
 }
 
 export interface AsyncioScenario {

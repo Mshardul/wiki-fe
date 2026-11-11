@@ -8,6 +8,8 @@ import type {
   VisualizerModule,
   VizFrame,
 } from "@/lib/visualizer/core/types";
+import { mechanismInfo } from "../mechanism/info";
+import { MECHANISM_GLOSSARY_TERM } from "../mechanism/links";
 import { frameModel } from "./model";
 import { POSTGRES_MVCC_SCENARIOS } from "./scenarios";
 import type { MvccScenario } from "./types";
@@ -45,18 +47,7 @@ function scenarioOf(values: InputValues): MvccScenario {
 }
 
 function infoFor(sc: MvccScenario): InfoContent {
-  return {
-    heading: sc.q,
-    name: sc.short,
-    chip: sc.tab,
-    rule: sc.q,
-    about: [
-      ["Takeaway", sc.take],
-      ["Generalizes to", sc.gen],
-    ],
-    tries: [],
-    articleHref: "",
-  };
+  return mechanismInfo(sc, "mvcc");
 }
 
 export function postgresMvccFrames(sc: MvccScenario): VizFrame[] {
@@ -93,6 +84,7 @@ export const postgresMvccModule: VisualizerModule = {
   unit: "step",
   subject: "Postgres",
   kicker: MVCC_KICKER,
+  glossaryTerm: MECHANISM_GLOSSARY_TERM.mvcc,
   legend: MVCC_LEGEND,
   footnote: MVCC_FOOTNOTE,
   variants: { key: "scenario", restartOnSwitch: true },

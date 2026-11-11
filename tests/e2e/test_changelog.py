@@ -1,5 +1,22 @@
 """Changelog view (/changelog/): date groups, filename filter, filenames linking to articles."""
 
+def _wait_changelog_filtered(page, query: str, *, min_entries: int = 1, max_entries: int | None = None):
+    """Client filter matches data-filenames; wait until every visible row matches the query."""
+    page.wait_for_function(
+        """({ q, minEntries, maxEntries }) => {
+            const els = [...document.querySelectorAll('.changelog-entry')];
+            if (els.length < minEntries) return false;
+            if (maxEntries != null && els.length > maxEntries) return false;
+            return els.every(e => (e.getAttribute('data-filenames') || '').toLowerCase().includes(q));
+        }""",
+        arg={
+            "q": query.lower(),
+            "minEntries": min_entries,
+            "maxEntries": max_entries,
+        },
+        timeout=5_000,
+    )
+
 
 def _open_changelog(page, base_url):
     page.goto(f"{base_url}/", wait_until="domcontentloaded")
@@ -33,10 +50,11 @@ def test_changelog_filter_narrows_by_filename(page, base_url):
     total_groups = page.locator(".changelog-group").count()
 
     page.locator("#changelog-filter-input").fill("load-balancer-tls")
+    _wait_changelog_filtered(page, "load-balancer-tls", min_entries=1, max_entries=1)
 
     visible_entries = page.locator(".changelog-entry")
-    assert visible_entries.count() >= 1
-    assert all("load-balancer-tls" in t for t in visible_entries.all_inner_texts())
+    assert visible_entries.count() == 1
+    assert "load-balancer-tls" in (visible_entries.first.get_attribute("data-filenames") or "")
 
     visible_groups = page.locator(".changelog-group")
     assert visible_groups.count() >= 1
@@ -47,11 +65,20 @@ def test_changelog_filter_cleared_shows_all(page, base_url):
     _open_changelog(page, base_url)
     page.wait_for_selector(".changelog-group", timeout=5_000)
 
+    page.wait_for_function(
+        "() => document.querySelectorAll('.changelog-entry').length > 300",
+        timeout=5_000,
+    )
     total = page.locator(".changelog-entry").count()
-    page.locator("#changelog-filter-input").fill("load-balancer-tls")
-    page.locator("#changelog-filter-input").fill("")
 
-    assert page.locator(".changelog-entry").count() == total
+    page.locator("#changelog-filter-input").fill("load-balancer-tls")
+    _wait_changelog_filtered(page, "load-balancer-tls", min_entries=1, max_entries=1)
+    page.locator("#changelog-filter-input").fill("")
+    page.wait_for_function(
+        "(expected) => document.querySelectorAll('.changelog-entry').length === expected",
+        arg=total,
+        timeout=5_000,
+    )
 
 
 def test_changelog_filename_known_becomes_link(page, base_url):

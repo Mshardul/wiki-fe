@@ -68,4 +68,20 @@ describe("ChangelogFilter", () => {
     fireEvent.change(input, { target: { value: "" } });
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
+
+  it("renders sibling groups that share the same date heading without dropping entries", () => {
+    const duplicateDateGroups = [
+      {
+        date: "2026-10-07",
+        entries: [GROUPS[0]!.entries[0]!],
+      },
+      {
+        date: "2026-10-07",
+        entries: [GROUPS[0]!.entries[1]!],
+      },
+    ];
+    render(<ChangelogFilter groups={duplicateDateGroups} />);
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(2);
+  });
 });

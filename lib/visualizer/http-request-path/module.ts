@@ -3,6 +3,8 @@ import type { Rich } from "@/lib/visualizer/core/rich";
 import { keyText } from "@/lib/visualizer/core/rich";
 import type { ScheduleSwatch } from "@/lib/visualizer/core/shapes";
 import type { InfoContent, RunResult, VisualizerModule } from "@/lib/visualizer/core/types";
+import { mechanismInfo } from "../mechanism/info";
+import { MECHANISM_GLOSSARY_TERM } from "../mechanism/links";
 import { frameModel } from "./model";
 import { HTTP_SCENARIOS } from "./scenarios";
 import type { HttpPipelineScenario } from "./types";
@@ -45,18 +47,7 @@ function scenarioOf(values: InputValues): HttpPipelineScenario {
 }
 
 function infoFor(sc: HttpPipelineScenario): InfoContent {
-  return {
-    heading: sc.q,
-    name: sc.short,
-    chip: sc.tab,
-    rule: sc.q,
-    about: [
-      ["Takeaway", sc.take],
-      ["Generalizes to", sc.gen],
-    ],
-    tries: [],
-    articleHref: "",
-  };
+  return mechanismInfo(sc, "http");
 }
 
 export function httpRequestPathFrames(sc: HttpPipelineScenario) {
@@ -92,10 +83,11 @@ export const httpRequestPathModule: VisualizerModule = {
   slug: "inside-an-http-request",
   title: "Inside an HTTP Request",
   subtitle:
-    "The arrow between client and server hides seven layers. Request down the left rail, response up the right — and see which layer answers first.",
+    "One concrete stack (ALB → nginx → gunicorn → Django). Request down the left rail, response up the right — and see which layer answers first.",
   unit: "step",
   subject: "HTTP",
   kicker: HTTP_KICKER,
+  glossaryTerm: MECHANISM_GLOSSARY_TERM.http,
   legend: HTTP_LEGEND,
   footnote: HTTP_FOOTNOTE,
   variants: { key: "scenario", restartOnSwitch: true },

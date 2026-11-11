@@ -34,7 +34,7 @@ export function MechanismApp({ slug, glossary }: MechanismAppProps) {
   return <MechanismBody slug={slug} glossary={glossary} />;
 }
 
-function MechanismBody({ slug }: MechanismAppProps) {
+function MechanismBody({ slug, glossary }: MechanismAppProps) {
   const mod = MODULES[slug];
   if (!mod) throw new Error(`Unknown visualizer: ${slug}`);
   const [boot] = useState(() => parseState(window.location.search, mod.sections, mod.defaults()));
@@ -84,12 +84,16 @@ function MechanismBody({ slug }: MechanismAppProps) {
   if (!frame) return null;
   const drawn = swatchesIn(result.frames);
   const legend = (mod.legend ?? []).filter((item) => drawn === null || drawn.has(item.swatch));
+  const glossaryDef =
+    mod.glossaryTerm && glossary[mod.glossaryTerm] ? glossary[mod.glossaryTerm] : null;
+  const related = result.info.related ?? [];
 
   return (
     <main className="viz-mech">
       <header className="viz-head">
         <div className="viz-head__text">
           {mod.kicker && <p className="viz-mech__kicker">{mod.kicker}</p>}
+          {glossaryDef && <p className="viz-mech__glossary">{glossaryDef}</p>}
           <h1 className="viz-head__title">{mod.title}</h1>
           <p className="viz-head__sub">{mod.subtitle}</p>
         </div>
@@ -183,6 +187,18 @@ function MechanismBody({ slug }: MechanismAppProps) {
             <p>{body}</p>
           </div>
         ))}
+        {related.length > 0 && (
+          <div className="viz-mech__note">
+            <h3>See also</h3>
+            <ul className="viz-mech__related">
+              {related.map((link) => (
+                <li key={link.href}>
+                  <a href={link.href}>{link.label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
       {mod.footnote && <p className="viz-mech__foot">{mod.footnote}</p>}
     </main>
