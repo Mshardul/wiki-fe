@@ -29,7 +29,7 @@ describe("MechanismApp", () => {
       ),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Copy link" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Read article/ })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /Read article/ })).toBeNull();
     expect(screen.getByText(/CPython's mutex/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Inside the asyncio Event Loop" })).toBeTruthy();
     expect(screen.getByText("Running Python (holds GIL)")).toBeTruthy();

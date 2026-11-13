@@ -4,7 +4,9 @@ PY := $(VENV)/bin/python
 PYTEST := $(VENV)/bin/pytest
 PRECOMMIT := $(VENV)/bin/pre-commit
 
-.PHONY: help install test test-smoke test-headed test-debug precommit precommit-ci clean
+PW_BROWSERS ?= $(HOME)/Library/Caches/ms-playwright
+
+.PHONY: help install test test-smoke test-headed test-debug precommit precommit-ci clean screenshot-mechanism-visualizers
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -41,6 +43,10 @@ test-headed: ## Run tests with a visible browser
 
 test-debug: ## Run tests with Playwright inspector
 	PWDEBUG=1 $(PYTEST) tests/ -s
+
+screenshot-mechanism-visualizers: ## Full-page PNGs of mechanism visualizer scenario tabs (ARGS= e.g. --no-build)
+	PLAYWRIGHT_BROWSERS_PATH="$(PW_BROWSERS)" \
+		pnpm run screenshot:mechanism-visualizers -- $(ARGS)
 
 clean: ## Remove venv and pytest caches
 	rm -rf $(VENV) .pytest_cache tests/.pytest_cache

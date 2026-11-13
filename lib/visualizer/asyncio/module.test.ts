@@ -85,9 +85,7 @@ describe("asyncio event loop module", () => {
     expect(hog.every((f) => f.outcome === "bad")).toBe(true);
   });
 
-  it("links to a wiki article", () => {
-    expect(runAsyncio({ scenario: "happy" }).info.articleHref).toContain(
-      "/system-design/components/tracing/",
-    );
+  it("hides the article link until a dedicated article exists", () => {
+    expect(runAsyncio({ scenario: "happy" }).info.articleHref).toBe("");
   });
 });

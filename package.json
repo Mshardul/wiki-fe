@@ -21,6 +21,7 @@
     "test:all": "pnpm test && pnpm test:content",
     "test:watch": "vitest --project unit --project pipeline",
     "test:e2e": "PYTHONUNBUFFERED=1 PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH:-$HOME/Library/Caches/ms-playwright} .venv/bin/python3 -m pytest tests/e2e -q -n 2 --timeout=60 -o timeout_method=signal",
+    "screenshot:mechanism-visualizers": "PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH:-$HOME/Library/Caches/ms-playwright} node scripts/screenshot-mechanism-visualizers.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.sw.json",
     "lint": "eslint --no-error-on-unmatched-pattern 'lib/**/*.ts' 'tests/**/*.ts' 'app/**/*.{ts,tsx}' 'components/**/*.{ts,tsx}' && biome lint .",
     "format": "biome format --write ."
@@ -52,6 +53,7 @@
     "jsdom": "^30.0.1",
     "katex": "^0.18.5",
     "mdast-util-to-string": "^4.0.0",
+    "playwright": "^1.60.0",
     "rehype-autolink-headings": "^7.1.0",
     "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",
