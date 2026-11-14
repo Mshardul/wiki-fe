@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { linearLayout } from "./geometry";
+import { compositeHeights, linearLayout } from "./geometry";
+import type { GraphModel, HeapModel, LinearModel } from "./shapes";
 
 describe("linearLayout", () => {
   it("vertical: centred column, slots stacked top to bottom", () => {
@@ -24,5 +25,46 @@ describe("linearLayout", () => {
     expect(L.block.w).toBeGreaterThanOrEqual(18);
     const V = linearLayout({ w: 320, h: 300 }, 8, "vertical");
     expect(V.block.h).toBeGreaterThanOrEqual(28);
+  });
+});
+
+const graph: GraphModel = {
+  kind: "graph",
+  nodes: [],
+  edges: [],
+  rows: [],
+  cols: 1,
+  height: 1,
+  settled: false,
+};
+const strip: LinearModel = {
+  kind: "linear",
+  items: [],
+  capacity: 4,
+  next: null,
+  active: null,
+  tone: null,
+  removed: null,
+  labels: { entry: "in", exit: "out" },
+  defaultAxis: "horizontal",
+};
+const heap: HeapModel = { kind: "heap", nodes: [], capacity: 4, lit: null, leaving: null };
+
+describe("compositeHeights with a graph", () => {
+  it("gives a graph with two strips the rest of a 520px stage", () => {
+    expect(compositeHeights({ w: 800, h: 520 }, [graph, strip, strip])).toEqual([296, 72, 72]);
+  });
+
+  it("splits the rest 3 to 2 between a graph and a heap", () => {
+    expect(compositeHeights({ w: 800, h: 520 }, [graph, heap, strip])).toEqual([220, 148, 72]);
+  });
+
+  it("fits a graph and one strip in a 200px card", () => {
+    expect(compositeHeights({ w: 250, h: 200 }, [graph, strip])).toEqual([128, 72]);
+  });
+
+  it("leaves composites without a graph as they were", () => {
+    const heights = compositeHeights({ w: 800, h: 520 }, [strip, strip]);
+    expect(heights).toEqual([180, 180]);
   });
 });

@@ -13,7 +13,9 @@
 1. A **writer** agent drafts the slug doc (template below), in order: concept → steps → tracing device.
 2. A **different, fresh reviewer** agent checks it against the plan gate. Ping-pong until it passes.
 3. Shardul approves. Nothing is built before that.
-4. Implementation follows the approved doc exactly. A **new reviewer** diffs the code against the doc.
+4. Throwaway browser mockups with Shardul settle the look of the tracing device.
+5. Spec and plan, then the module is built directly in TypeScript, with scenario data as JSON or TS under `lib/visualizer/<slug>/`. No standalone HTML draft and no extract script; see "Building mechanism visualizers" in `docs/_meta/visualizer/README.md`.
+6. Implementation follows the approved doc exactly. A **new reviewer** diffs the code against the doc.
 
 One slug at a time unless Shardul says batch.
 

@@ -29,6 +29,7 @@ A module declares `variants: { key }` (the chips field whose options are its var
 - **Mobile layout** for Single and Revision (until then the page only guarantees no breakage at 320px).
 - **OPT and ARC** eviction — shapes not designed yet (OPT: next-use countdown; ARC: composite of 2 stacks + 2 ghost stacks + moving divider).
 - **"▶ Visualize" links** from articles into visualizers.
+- **Backlog visualizers** (Sorting, Heap, Hash Table and Graph Traversals are built, with fit-to-stage scaling and the Array, Heap, Table and Graph shapes; Data Partitioning, Load Balancer) with two new shapes still to build (Keyspace and Bins, Flow cards) — design in [`../../superpowers/specs/2026-11-14-backlog-visualizers-design.md`](../../superpowers/specs/2026-11-14-backlog-visualizers-design.md), topics in `backlog.md`.
 - **DSA visualizers** — prior thinking in [`../../superpowers/specs/2026-09-22-algo-visualizer-design.md`](../../superpowers/specs/2026-09-22-algo-visualizer-design.md) (superseded, never built).
 
 Remove an item when it ships.
@@ -62,6 +63,10 @@ Shapes are generic components fed a shape model; they never know which visualize
 | **Lanes** | actor lanes (App / Cache / DB) with state cards under each header and numbered messages between them | caching strategies | TCP handshake, consensus rounds, message queues, auth flows |
 | **Timeline** | tick axis with request marks in one or more rows, shaded window bands, boundaries, a bracket or labelled spans, a cursor at now; narrow stages thin the labels, then scroll | rate limiting (fixed window, sliding counter, the sliding log and the buckets' request strips) | TCP congestion windows, retry backoff, TTL expiry |
 | **Schedule** | rows over continuous time that fill in up to now: solid / hatched / outlined segments with optional faint marks, an optional summary row above (who holds a shared resource), countdown meters, arrows between rows, pins, an optional values row, and an optional share readout or note underneath; dashed playhead that glides between steps; drawn at the stage width so it stays readable down to a phone, with axis labels thinning instead of overlapping | Python GIL (threads, lock holder, switch timer, drop requests, checkpoints, counter, "GIL held at") | Go scheduler, asyncio event loop, Redis single thread, lock contention |
+| **Array** | bars with the value above each and an index row, pointer tags under the bars, shaded zones, a white glow on the compared bar, faded taken bars; extra rows below for an aux or counts or output row | Sorting (all eight algorithms), Heap (array row and taken-out row) | binary search, two pointers, sliding window, prefix sums, heap array row |
+| **Heap** | complete binary tree in array order (root on top), dashed empty slots, a lit edge for the compared pair, a ghost node leaving beside the root; layout fixed by capacity so nodes never move; the matching array with level bands sits under the tree inside the same shape | Heap (insert, extract, build-heap, heap sort, Top-K), Sorting (heap sort) | BST, segment tree, any complete tree |
+| **Graph** | nodes and edges in a hand-laid node-link layout or in layered rows (root on top, rows by hops or by longest path, the row being filled outlined, unreached nodes faded); node tones from the shared colour language, a visit number on each node, a small badge for a per-node value (in-degree, distance), a two-colour fill, weight labels, arrowheads on directed edges, edge states for tree, being checked, skipped, consumed and a flashing conflict; stacked in a Composite with Linear strips (queue, stack, ready list, visited order) or the Heap shape as a priority queue | Graph Traversals (BFS, DFS, Dijkstra, topological sort, bipartite check) | tries, dependency graphs, network topologies, state machines |
+| **Table** | vertical slot list with an index on the left: filled, empty and marked slots, items hanging to the right of a slot, arcs down the side between slots, a dashed outline over a run of occupied slots, a held chip with a dashed line to its slot, a fill meter with an optional mark; two lists sit side by side so one can fade while the other fills | Hash Table (chaining, linear, quadratic, double hashing, resize) | Data Partitioning directory and rendezvous score table, page tables, B-tree node contents |
 | **Composite** | several shapes stacked in one stage, each at its natural or remaining height | rate limiting (log + list, token pile, leaky queue + rows) | ARC, LSM tree, multi-level caches |
 
 **Mechanism presentation shapes** (not in the table above): integrated stage renderers for mechanism visualizers only (`mvcc`, `wal`, `btree`, `http-pipeline`, …). Each gets a `kind` in `lib/visualizer/core/shapes.ts`, a component in `components/visualizer/shapes/`, and domain copy in the module adapter. See CONVENTIONS.md § Visualizer.
@@ -89,7 +94,7 @@ Shapes are generic components fed a shape model; they never know which visualize
 ```
 
 - **Left panel — configure.** Only choice chips and inputs, in groups: *what to show* → *inputs* → *seed*. No playback controls. Collapses to an icon rail.
-- **Stage.** The shape fills it. A large metric in a corner, one-line caption at the bottom.
+- **Stage.** One block, the shape fills it. A large metric in a corner, one-line caption at the bottom. The figure fills the stage and scales with it: new shapes (Array, Heap and later ones) scale uniformly (aspect ratio kept) from their natural width and height to the stage size, capped at a token maximum, so the figure grows when the side panels are collapsed and shrinks when they are open; the shipped shapes keep their current sizing until moved. Counters and readouts go to frame `vars` (Step tab) and the corner metric, the colour legend is dropped (the shared colour language below is the key). Shared colour language: green done or smaller, amber waiting or larger-or-equal, indigo current or pivot, white ring being compared, grey untouched. Spec: `docs/superpowers/specs/2026-11-14-backlog-visualizers-design.md`.
 - **Footer row 1 — playback.** Counter left, controls centred; right group: Rotate (icon-only, axis shapes only), Repeat (icon-only, cycles off → once → forever; per-viewer, not in the URL), speed.
 - **Footer row 2 — timeline strip.** One cell per step, coloured by outcome once played, accent for the current one; click to jump. The current cell is always centred. Longer runs scroll with faded edges; follow mode keeps the current step centred, pauses on manual scroll and resumes after ~2 s idle.
 - **Right panel — inside the step.** Fixed top: name, shape chip, one-line rule. Tabs: **Step** (loop body + variables now/before), **Log** (every step so far, click to jump), **About** (cost, wins, loses, seen in), **Try** (guided experiments). Static tabs must not re-render per tick. Collapses to an icon rail; starts collapsed below 1200px.
@@ -100,7 +105,7 @@ Wording that differs per visualizer ("request", "Policy", "Hit rate") comes from
 
 Students lose the thread when Next skips ahead to the interesting state. A step may cover a long stretch of one activity (one thread spinning for 5 ms can be one or two steps), but every change gets its own step: a lock handoff, something new arriving, a blocking call starting or returning, a timer starting or expiring, a request being sent, a value changing. A step never passes over a change to land on a later, more "meaningful" moment. Repetition is shown too: if the cycle runs three times, the student steps through three cycles.
 
-For schedule pages this is enforced: `lib/visualizer/steps.test.ts` runs every scenario of every registered visualizer through `skippedEvents` (`lib/visualizer/core/schedule.ts`) and fails on any step that skips a change. New labels on a continuing segment of the same style, such as successive bytecodes, are not changes. Apply the same rule by hand to shapes the check does not cover yet, and when porting a draft, fix its steps rather than copying its gaps.
+For schedule pages this is enforced: `lib/visualizer/steps.test.ts` runs every scenario of every registered visualizer through `skippedEvents` (`lib/visualizer/core/schedule.ts`) and fails on any step that skips a change. New labels on a continuing segment of the same style, such as successive bytecodes, are not changes. Apply the same rule by hand to shapes the check does not cover yet.
 
 ## Playback & interaction rules
 
@@ -160,13 +165,13 @@ interface VizFrame {
 - **CSS:** tokens only (`--viz-*` aliases for roles); `viz-*` classes; breakpoints only in `css/responsive.css`; must not break at 320px.
 - **Article links:** Set `MECHANISM_ARTICLE_HREF` in `lib/visualizer/mechanism/links.ts` only when a corpus article section truly matches the visualizer. Use `""` and `expectReadArticle: false` in `mechanism/manifest.json` otherwise — the frame hides **Read article**. Non-empty hrefs must resolve to real headings; `tests/content/artifacts.test.ts` asserts that.
 
-### Porting standalone HTML prototypes
+### Building mechanism ("Inside X") visualizers
 
-Record-keeping copies of early standalone visualizers live under `content/Visualizer/*.html`. They are **not** part of the content build (corpus discovery is markdown-only).
+No standalone HTML draft is written or required. The `.html` files under `content/Visualizer/` are a record of early plans only; they are not part of the content build and not part of any workflow.
 
-To integrate a new prototype: run the matching `scripts/extract-*-scenarios.mjs` (or add one alongside the HTML) to emit `lib/visualizer/<name>/scenarios.data.json`, then implement the module adapter, presentation shape, and CSS. **Canonical runtime data is the JSON under `lib/visualizer/`**, not the HTML.
+Flow: pick a topic from `content/Visualizer/visualizer-topic-backlog-v2.md` (happy path plus 2-3 scenarios) → throwaway browser mockups with the owner to settle the look → spec and plan → build the module directly in TypeScript, with scenario data as JSON or TS under `lib/visualizer/<name>/` (no HTML source, no extract script). **Canonical runtime data is the data under `lib/visualizer/`.**
 
-Mechanism step copy may use small HTML fragments in scenario JSON; render those only through `lib/visualizer/mechanism/trusted-scenario-html.tsx` (checked-in scenario data, not user input).
+Mechanism step copy may use small HTML fragments in scenario data; render those only through `lib/visualizer/mechanism/trusted-scenario-html.tsx` (checked-in scenario data, not user input).
 
 ## How UI decisions are made
 

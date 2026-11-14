@@ -225,6 +225,13 @@
   transform: translateX(3px);
 }
 
-.wiki-grid--tools {
-  margin-top: var(--s6);
+.wiki-grid.wiki-grid--home {
+  grid-template-columns: repeat(3, minmax(0, 260px));
+}
+
+@media (max-width: 640px) {
+  .wiki-grid.wiki-grid--home {
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+  }
 }

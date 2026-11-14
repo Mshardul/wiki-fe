@@ -778,8 +778,163 @@ export interface ScheduleModel {
   note: string | null;
 }
 
+export type ArrayTone = "plain" | "good" | "warn" | "accent" | "focus";
+export interface ArrayBar {
+  value: number;
+  tone: ArrayTone;
+  // Identity tag such as "a" so equal values can be told apart.
+  tag?: string;
+  faded?: boolean;
+}
+export interface ArrayPointer {
+  label: string;
+  index: number;
+  tone?: "accent";
+}
+// Inclusive index range shaded under the bars.
+export interface ArrayZone {
+  from: number;
+  to: number;
+  label: string;
+  tone: "good" | "warn" | "plain";
+}
+export interface ArrayRow {
+  label?: string;
+  bars: (ArrayBar | null)[];
+  indices: string[];
+  pointers: ArrayPointer[];
+  zones: ArrayZone[];
+  // Empty slot outlined as the next one to fill.
+  next?: number;
+}
+export interface ArrayModel {
+  kind: "array";
+  rows: ArrayRow[];
+  // Largest value any row can hold; sets the bar height unit.
+  scale: number;
+}
+
+export interface HeapNode {
+  value: number;
+  tone: ArrayTone;
+  tag?: string;
+}
+// A complete binary tree in array order; capacity fixes the layout so nodes never move between frames.
+export interface HeapModel {
+  kind: "heap";
+  // Null is an empty dashed slot.
+  nodes: (HeapNode | null)[];
+  capacity: number;
+  // Pair of indexes whose edge is highlighted.
+  lit: [number, number] | null;
+  // A node leaving the tree, drawn beside the root with an arrow out.
+  leaving: HeapNode | null;
+  // The same values as bars with level bands, drawn under the tree as one picture; omitted for a tree alone.
+  array?: ArrayModel;
+}
+
+export type GraphEdgeState = "plain" | "tree" | "checking" | "skipped" | "consumed" | "flash";
+export interface GraphNode {
+  id: string;
+  label: string;
+  // Cell units: node centres run 0..cols across and 0..height down.
+  x: number;
+  y: number;
+  tone: ArrayTone;
+  faded?: boolean;
+  // Visit order, drawn as a small number on the node.
+  order?: number;
+  // A per-node value, drawn as a small pill on the node.
+  badge?: string;
+  // Two-colour fill that overrides the tone.
+  side?: "a" | "b";
+}
+export interface GraphEdge {
+  from: string;
+  to: string;
+  state: GraphEdgeState;
+  directed: boolean;
+  label?: string;
+}
+// A faint band across the drawing at one row; dashed when outlined.
+export interface GraphRow {
+  y: number;
+  label?: string;
+  outlined?: boolean;
+}
+export interface GraphModel {
+  kind: "graph";
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  rows: GraphRow[];
+  cols: number;
+  height: number;
+  // The run is over: the drawing shows its result.
+  settled: boolean;
+}
+
+// An item hanging to the right of a slot.
+export interface TableNode {
+  label: string;
+  tone: ArrayTone;
+  outlined?: boolean;
+}
+export interface TableSlot {
+  index: string;
+  // Marked is drawn hatched with a cross: a slot that was emptied but is still in the way.
+  state: "empty" | "filled" | "marked";
+  label?: string;
+  // Small trailing text on the slot.
+  note?: string;
+  tone: ArrayTone;
+  nodes: TableNode[];
+}
+// An arc down the side of a list from one slot to another.
+export interface TableHop {
+  from: number;
+  to: number;
+  label: string;
+  current?: boolean;
+}
+// A held item with a dashed line to one slot.
+export interface TableChip {
+  label: string;
+  lines: string[];
+  to: number | null;
+}
+export interface TableList {
+  title?: string;
+  slots: TableSlot[];
+  hops: TableHop[];
+  // Inclusive slot ranges outlined as one group.
+  runs: { from: number; to: number }[];
+  // Item widths reserved to the right of every slot, so the layout never moves between frames.
+  room: number;
+  // Reserve the arc lane.
+  lane: boolean;
+  faded?: boolean;
+  chip: TableChip | null;
+}
+export interface TableMeter {
+  label: string;
+  value: number;
+  max: number;
+  mark: number | null;
+  markLabel?: string;
+}
+// Vertical slot lists, side by side when more than one, with an optional fill meter under them.
+export interface TableModel {
+  kind: "table";
+  lists: TableList[];
+  meter: TableMeter | null;
+}
+
 export type LeafModel =
   | LinearModel
+  | ArrayModel
+  | HeapModel
+  | GraphModel
+  | TableModel
   | HistogramModel
   | RankingModel
   | RingModel
@@ -819,6 +974,15 @@ export function resolveAxis(model: ShapeModel, rotated: boolean): Axis | null {
 export function modelKeys(model: ShapeModel): string[] {
   if (model.kind === "linear") return model.items;
   if (model.kind === "ranking") return model.rows.map((r) => r.key);
+  if (model.kind === "heap") return model.nodes.flatMap((n) => (n ? [String(n.value)] : []));
+  if (model.kind === "graph") return model.nodes.map((n) => n.label);
+  if (model.kind === "table")
+    return (model.lists[model.lists.length - 1]?.slots ?? []).flatMap((s) => [
+      ...(s.label !== undefined && s.state === "filled" ? [s.label] : []),
+      ...s.nodes.map((n) => n.label),
+    ]);
+  if (model.kind === "array")
+    return (model.rows[0]?.bars ?? []).flatMap((b) => (b ? [String(b.value)] : []));
   if (
     model.kind === "lanes" ||
     model.kind === "timeline" ||

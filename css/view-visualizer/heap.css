@@ -1,0 +1,76 @@
+/* ═══════════════════════════════════════════════
+   VISUALIZER — HEAP SHAPE (tree)
+   ═══════════════════════════════════════════════ */
+.viz-heap {
+  position: absolute;
+  inset: 0;
+}
+.viz-heap__fit .viz-fit__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s5);
+}
+.viz-heap__svg {
+  flex: none;
+}
+.viz-heap__edge {
+  stroke: var(--border-2);
+  stroke-width: 2;
+  transition: stroke var(--t);
+}
+.viz-heap__edge--lit {
+  stroke: var(--viz-active);
+  stroke-width: 3;
+}
+.viz-heap__node circle {
+  fill: var(--border-2);
+  stroke: var(--surface-1);
+  stroke-width: 2;
+  transition: fill var(--t);
+}
+.viz-heap__node--good circle {
+  fill: var(--viz-good);
+}
+.viz-heap__node--warn circle {
+  fill: var(--viz-exit);
+}
+.viz-heap__node--accent circle {
+  fill: var(--viz-active);
+}
+.viz-heap__node--focus circle {
+  fill: var(--viz-active);
+  stroke: var(--viz-compare);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px var(--viz-compare));
+}
+.viz-heap__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  fill: var(--text-heading);
+  pointer-events: none;
+}
+.viz-heap__node--accent .viz-heap__value,
+.viz-heap__node--focus .viz-heap__value,
+.viz-heap__node--good .viz-heap__value {
+  fill: var(--viz-on-accent);
+}
+.viz-heap__tag {
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-heap__empty {
+  fill: none;
+  stroke: var(--viz-slot-border);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+.viz-heap__node--ghost {
+  opacity: 0.55;
+}
+.viz-heap__out {
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+}

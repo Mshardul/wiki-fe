@@ -1,5 +1,6 @@
 import { isDense, type Size } from "@/lib/visualizer/core/geometry";
 import { resolveAxis, type ShapeModel } from "@/lib/visualizer/core/shapes";
+import { ArrayShape } from "./ArrayShape";
 import { BtreeShape } from "./BtreeShape";
 import { CacheStampedeShape } from "./CacheStampedeShape";
 import { CeleryBoardShape } from "./CeleryBoardShape";
@@ -7,6 +8,8 @@ import { CompositeShape } from "./CompositeShape";
 import { ConnectionPoolShape } from "./ConnectionPoolShape";
 import { ConnLadderShape } from "./ConnLadderShape";
 import { DnsCachingShape } from "./DnsCachingShape";
+import { GraphShape } from "./GraphShape";
+import { HeapShape } from "./HeapShape";
 import { HistogramShape } from "./HistogramShape";
 import { HttpPipelineShape } from "./HttpPipelineShape";
 import { K8sHubShape } from "./K8sHubShape";
@@ -18,6 +21,7 @@ import { RankingShape } from "./RankingShape";
 import { ResourceGaugesShape } from "./ResourceGaugesShape";
 import { RingShape } from "./RingShape";
 import { ScheduleShape } from "./ScheduleShape";
+import { TableShape } from "./TableShape";
 import { TimelineShape } from "./TimelineShape";
 import { WalShape } from "./WalShape";
 
@@ -30,6 +34,10 @@ interface ShapeProps {
 }
 
 export function Shape({ model, rotated, size, subject, dense = isDense(size) }: ShapeProps) {
+  if (model.kind === "array") return <ArrayShape model={model} subject={subject} />;
+  if (model.kind === "heap") return <HeapShape model={model} subject={subject} />;
+  if (model.kind === "graph") return <GraphShape model={model} subject={subject} />;
+  if (model.kind === "table") return <TableShape model={model} subject={subject} />;
   if (model.kind === "ring") return <RingShape model={model} subject={subject} />;
   if (model.kind === "ranking") return <RankingShape model={model} subject={subject} />;
   if (model.kind === "lanes") return <LanesShape model={model} subject={subject} />;

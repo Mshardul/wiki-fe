@@ -1,3 +1,5 @@
+Historical: HTML drafts are no longer used for new visualizers.
+
 # Visualizer — Inside the Python GIL — Design
 
 Section-wide principles live in `docs/_meta/visualizer/README.md`. This spec is the first mechanism visualizer and the smallest shared changes it needs. Eviction, caching, and rate limiting stay compare visualizers on the current page.

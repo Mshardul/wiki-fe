@@ -1,0 +1,166 @@
+/* ═══════════════════════════════════════════════
+   VISUALIZER — TABLE SHAPE (vertical slots)
+   ═══════════════════════════════════════════════ */
+.viz-table {
+  position: absolute;
+  inset: 0;
+}
+.viz-table__fit .viz-fit__inner {
+  display: flex;
+  justify-content: center;
+}
+.viz-table__svg {
+  flex: none;
+}
+.viz-table__list--faded {
+  opacity: 0.35;
+}
+.viz-table__title,
+.viz-table__meter-label {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-extrabold);
+  letter-spacing: var(--viz-tracking);
+  text-transform: uppercase;
+  fill: var(--text-muted);
+}
+.viz-table__index {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-table__cell {
+  fill: var(--border-2);
+  stroke: var(--surface-1);
+  stroke-width: 2;
+  transition: fill var(--t);
+}
+.viz-table__slot--empty .viz-table__cell {
+  fill: none;
+  stroke: var(--viz-slot-border);
+  stroke-dasharray: 4 3;
+}
+.viz-table__slot--marked .viz-table__cell {
+  fill: var(--viz-slot-bg);
+  stroke: var(--viz-slot-border);
+}
+.viz-table__cross {
+  font-size: var(--text-base);
+  font-weight: var(--fw-bold);
+  fill: var(--text-muted);
+}
+.viz-table__slot--good .viz-table__cell,
+.viz-table__node--good rect {
+  fill: var(--viz-good);
+}
+.viz-table__slot--warn .viz-table__cell,
+.viz-table__node--warn rect {
+  fill: var(--viz-exit);
+}
+.viz-table__slot--accent .viz-table__cell,
+.viz-table__node--accent rect {
+  fill: var(--viz-active);
+}
+.viz-table__slot--focus .viz-table__cell,
+.viz-table__node--focus rect {
+  fill: var(--viz-active);
+  stroke: var(--viz-compare);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px var(--viz-compare));
+}
+.viz-table__label,
+.viz-table__node text {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  fill: var(--text-heading);
+  pointer-events: none;
+}
+.viz-table__slot--good .viz-table__label,
+.viz-table__slot--accent .viz-table__label,
+.viz-table__slot--focus .viz-table__label,
+.viz-table__slot--warn .viz-table__label,
+.viz-table__node--good text,
+.viz-table__node--accent text,
+.viz-table__node--focus text,
+.viz-table__node--warn text {
+  fill: var(--viz-on-accent);
+}
+.viz-table__note {
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-table__node rect {
+  fill: var(--border-2);
+  stroke: var(--surface-1);
+  stroke-width: 2;
+  transition: fill var(--t);
+}
+.viz-table__node--outlined rect {
+  stroke: var(--viz-compare);
+  stroke-width: 2;
+}
+.viz-table__link {
+  stroke: var(--text-muted);
+  stroke-width: 2;
+}
+.viz-table__run {
+  fill: none;
+  stroke: var(--viz-exit);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+.viz-table__hop path {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+}
+.viz-table__hop text {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-table__hop--current path {
+  stroke: var(--viz-active);
+  stroke-width: 3;
+}
+.viz-table__hop--current text {
+  fill: var(--viz-active);
+  font-weight: var(--fw-bold);
+}
+.viz-table__chip rect {
+  fill: var(--viz-slot-bg);
+  stroke: var(--viz-active);
+  stroke-width: 2;
+}
+.viz-table__chip-key {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: var(--fw-bold);
+  fill: var(--text-heading);
+}
+.viz-table__chip-line {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-table__pointer {
+  stroke: var(--viz-active);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+.viz-table__meter-track {
+  fill: var(--viz-slot-bg);
+  stroke: var(--viz-slot-border);
+}
+.viz-table__meter-fill {
+  fill: var(--viz-active);
+  transition: width var(--t);
+}
+.viz-table__meter-mark line {
+  stroke: var(--viz-exit);
+  stroke-width: 3;
+}
+.viz-table__meter-mark text {
+  font-size: var(--text-xs);
+  fill: var(--viz-exit);
+}

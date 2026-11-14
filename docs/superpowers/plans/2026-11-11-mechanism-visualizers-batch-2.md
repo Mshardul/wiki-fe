@@ -1,3 +1,5 @@
+Historical: HTML drafts are no longer used for new visualizers.
+
 # Mechanism visualizers batch 2 — integration plan
 
 **Status:** T4 complete (`inside-a-cache-stampede`, `inside-celery-prefetch`) — batch-2 mechanism visualizers shipped.

@@ -34,6 +34,10 @@ describe("visualizer routes", () => {
       { slug: "inside-a-connection-pool" },
       { slug: "inside-a-cache-stampede" },
       { slug: "inside-celery-prefetch" },
+      { slug: "sorting" },
+      { slug: "heap" },
+      { slug: "hash-table" },
+      { slug: "graph-traversals" },
     ]);
   });
 

@@ -239,10 +239,26 @@ const FLEX_MIN_H_DENSE = 90;
 // Capped so a tall stage keeps the parts together instead of stranding one in a large gap.
 const FLEX_MAX_H = 180;
 
+export const GRAPH_STRIP_H = 72;
+
+// Strips next to a graph keep a fixed height; the graph and a heap share the rest 3 to 2.
+function graphHeights(budget: number, parts: LeafModel[]): number[] {
+  const fixed: number[] = parts.map((p) =>
+    p.kind === "graph" || p.kind === "heap" ? 0 : GRAPH_STRIP_H,
+  );
+  const rest = Math.max(0, budget - fixed.reduce((a, b) => a + b, 0));
+  const graph = parts.some((p) => p.kind === "heap") ? Math.floor((rest * 3) / 5) : rest;
+  return parts.map((p, i) => {
+    if (p.kind === "graph") return graph;
+    return p.kind === "heap" ? rest - graph : (fixed[i] ?? 0);
+  });
+}
+
 // A timeline keeps its natural height; the other parts share what is left.
 // A tall single-view stage reserves room for the metric and caption; a 200px revision card does not.
 export function compositeHeights(size: Size, parts: LeafModel[]): number[] {
   const budget = size.h >= CHROME_MIN_H ? size.h - CHROME : size.h;
+  if (parts.some((p) => p.kind === "graph")) return graphHeights(budget, parts);
   const natural = parts.map((p) =>
     p.kind === "timeline"
       ? timelineLayout(size, {

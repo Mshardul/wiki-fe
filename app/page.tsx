@@ -27,7 +27,7 @@ export default function Home() {
           <h1 className="home-title">Wiki</h1>
           <p className="home-subtitle">System Design and DSA interview prep.</p>
         </header>
-        <div className="wiki-grid">
+        <div className="wiki-grid wiki-grid--home">
           {verticals.map((v) => (
             <div key={v.id} className="wiki-card-wrap" data-wiki-id={v.id}>
               {/* Outside the <a> — a button inside a link is nested interactive content. */}
@@ -52,9 +52,6 @@ export default function Home() {
               </Link>
             </div>
           ))}
-        </div>
-        {/* Separate grid: PinnedWikis and card key-nav only manage the vertical cards. */}
-        <div className="wiki-grid wiki-grid--tools">
           <Link href="/visualizer/" className="wiki-card">
             <div className="wiki-card-icon">🎞️</div>
             <div className="wiki-card-body">

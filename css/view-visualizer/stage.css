@@ -45,6 +45,31 @@
 }
 
 /* ═══════════════════════════════════════════════
+   VISUALIZER — FIT TO STAGE
+   ═══════════════════════════════════════════════ */
+.viz-fit {
+  position: absolute;
+  inset: var(--s4);
+  overflow: hidden;
+}
+.viz-stage .viz-fit {
+  top: var(--viz-stage-metric-room);
+  bottom: var(--viz-stage-caption-room);
+}
+.viz-composite .viz-fit {
+  top: var(--s4);
+  bottom: var(--s4);
+}
+.viz-fit__inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max-content;
+  transform-origin: center;
+  transition: transform var(--viz-move);
+}
+
+/* ═══════════════════════════════════════════════
    VISUALIZER — LINEAR SHAPE (stack / queue)
    ═══════════════════════════════════════════════ */
 .viz-linear {

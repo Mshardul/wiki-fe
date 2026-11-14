@@ -30,6 +30,10 @@
 @import "./view-visualizer/connection-pool.css";
 @import "./view-visualizer/cache-stampede.css";
 @import "./view-visualizer/celery-board.css";
+@import "./view-visualizer/array.css";
+@import "./view-visualizer/heap.css";
+@import "./view-visualizer/graph.css";
+@import "./view-visualizer/table.css";
 @import "./view-visualizer/panels.css";
 @import "./view-visualizer/playback.css";
 @import "./view-visualizer/layout.css";

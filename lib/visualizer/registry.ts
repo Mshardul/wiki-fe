@@ -160,6 +160,38 @@ export const VISUALIZERS: VisualizerEntry[] = [
     icon: "📬",
     kind: "mechanism",
   },
+  {
+    slug: "sorting",
+    title: "Sorting",
+    description:
+      "Insertion, selection, merge, quick, heap, counting, radix and bucket sort — watch the bars move and see what each one costs.",
+    icon: "📊",
+    kind: "compare",
+  },
+  {
+    slug: "heap",
+    title: "Heap",
+    description:
+      "Insert, extract, build-heap versus n inserts, heap sort and Top-K — watch the tree and its array change together.",
+    icon: "🌲",
+    kind: "compare",
+  },
+  {
+    slug: "hash-table",
+    title: "Hash Table",
+    description:
+      "Chaining, linear and quadratic probing, double hashing and resizing — watch keys land in slots and see what a collision costs.",
+    icon: "🗂️",
+    kind: "compare",
+  },
+  {
+    slug: "graph-traversals",
+    title: "Graph Traversals",
+    description:
+      "BFS, DFS, Dijkstra, topological sort and the bipartite check — watch a graph being walked, one neighbour at a time.",
+    icon: "🕸️",
+    kind: "compare",
+  },
 ];
 
 export function getVisualizer(slug: string): VisualizerEntry | undefined {

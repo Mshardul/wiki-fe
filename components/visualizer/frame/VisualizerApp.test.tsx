@@ -210,4 +210,19 @@ describe("VisualizerApp", () => {
     expect(screen.getByRole("heading", { name: "Sliding log" })).toBeTruthy();
     expect(screen.getByText("request 1 / 8")).toBeTruthy();
   });
+
+  it("draws a new shape as one picture filling the stage, with the counters in the Step tab and the corner metric", () => {
+    window.history.replaceState(null, "", "/visualizer/sorting/?a=insertion&q=3,1,2");
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 800,
+      height: 400,
+    } as DOMRect);
+    const { container } = render(<VisualizerApp slug="sorting" glossary={{}} />);
+    const stage = container.querySelector(".viz-stage") as HTMLElement;
+    expect(container.querySelectorAll(".viz-stage")).toHaveLength(1);
+    expect(container.querySelector(".viz-stage__aside, .viz-stage--split")).toBeNull();
+    expect(stage.querySelector(".viz-array")).not.toBeNull();
+    expect(stage.querySelector(".viz-stage__metric-label")?.textContent).toBe("Comparisons");
+    vi.restoreAllMocks();
+  });
 });

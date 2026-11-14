@@ -9,6 +9,9 @@ import { dnsCachingModule } from "./dns-caching/module";
 import { evictionModule } from "./eviction/module";
 import { gilModule } from "./gil/module";
 import { goSchedulerModule } from "./go-scheduler/module";
+import { graphModule } from "./graph/module";
+import { hashTableModule } from "./hash-table/module";
+import { heapModule } from "./heap/module";
 import { httpRequestPathModule } from "./http-request-path/module";
 import { kubectlApplyModule } from "./kubectl-apply/module";
 import { kubernetesServiceModule } from "./kubernetes-service/module";
@@ -18,6 +21,7 @@ import { postgresMvccModule } from "./postgres-mvcc/module";
 import { postgresWalModule } from "./postgres-wal/module";
 import { rateLimitingModule } from "./rate-limiting/module";
 import { redisSingleThreadModule } from "./redis-single-thread/module";
+import { sortingModule } from "./sorting/module";
 
 export const MODULES: Record<string, VisualizerModule> = {
   [evictionModule.slug]: evictionModule,
@@ -39,4 +43,8 @@ export const MODULES: Record<string, VisualizerModule> = {
   [connectionPoolModule.slug]: connectionPoolModule,
   [cacheStampedeModule.slug]: cacheStampedeModule,
   [celeryPrefetchModule.slug]: celeryPrefetchModule,
+  [sortingModule.slug]: sortingModule,
+  [heapModule.slug]: heapModule,
+  [graphModule.slug]: graphModule,
+  [hashTableModule.slug]: hashTableModule,
 };

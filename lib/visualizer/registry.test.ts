@@ -23,6 +23,13 @@ describe("visualizer registry", () => {
     expect(getVisualizer("eviction-policies")?.kind).toBe("compare");
     expect(getVisualizer("caching-strategies")?.kind).toBe("compare");
     expect(getVisualizer("rate-limiting")?.kind).toBe("compare");
+    expect(getVisualizer("sorting")).toMatchObject({ kind: "compare", title: "Sorting" });
+    expect(getVisualizer("heap")).toMatchObject({ kind: "compare", title: "Heap" });
+    expect(getVisualizer("graph-traversals")).toMatchObject({
+      kind: "compare",
+      title: "Graph Traversals",
+    });
+    expect(getVisualizer("hash-table")).toMatchObject({ kind: "compare", title: "Hash Table" });
     expect(getVisualizer("inside-the-python-gil")).toMatchObject({
       kind: "mechanism",
       title: "Inside the Python GIL",

@@ -188,4 +188,26 @@
   --viz-stage-narrow-h: 380px;
   --viz-card-min-w: 250px;
   --viz-card-stage-h: 200px;
+  --viz-array-pitch: 46px;
+  --viz-array-bar: 34px;
+  --viz-array-unit-max: 16px;
+  --viz-array-height-max: 180px;
+  --viz-heap-node: 34px;
+  --viz-heap-gap-x: 10px;
+  --viz-heap-gap-y: 46px;
+  --viz-graph-node: 34px;
+  --viz-graph-pitch: 64px;
+  --viz-graph-pad: 28px;
+  --viz-table-slot-w: 72px;
+  --viz-table-slot-h: 30px;
+  --viz-table-index-w: 28px;
+  --viz-table-node-w: 44px;
+  --viz-table-lane-w: 40px;
+  --viz-table-chip-w: 104px;
+  --viz-table-list-gap: 24px;
+  --viz-table-meter-h: 14px;
+  --viz-fit-scale-max: 2;
+  --viz-stage-metric-room: 56px;
+  --viz-stage-caption-room: 72px;
+  --viz-compare: #ffffff;
 }

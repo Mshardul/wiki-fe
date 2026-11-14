@@ -29,8 +29,10 @@ export function PinnedWikis() {
           );
         }
       }
+      // Non-wiki cards (Visualizer) stay after the pinned-sorted wiki cards.
+      const tail = grid.querySelector<HTMLElement>(":scope > :not(.wiki-card-wrap)");
       for (const item of sortByPin(wraps.map((el) => ({ id: el.dataset.wikiId ?? "", el })))) {
-        grid.appendChild(item.el);
+        grid.insertBefore(item.el, tail);
       }
     };
 
