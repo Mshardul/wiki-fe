@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-07-30
+last_updated: 2026-11-15
+status: dropped
+---
+
 # DSA Worked Problems Dedup - Per-File Steps
 
 Companion to `dsa-worked-problems-dedup.md` (the batch-fix stage: Skeleton removal, ToC cleanup, generic How-it-works, `dsa-writer.md`/`dsa-rater.md` spec edits - applies mechanically across all files). This file is the deep-dive stage: one file at a time, discussed in depth, final step list recorded here before implementation.

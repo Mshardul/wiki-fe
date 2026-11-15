@@ -1,3 +1,10 @@
+---
+role: decision
+created: 2026-05-02
+last_updated: 2026-11-15
+status: accepted
+---
+
 # Ticket Schema Decisions
 
 ## Columns

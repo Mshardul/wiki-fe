@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-01
+last_updated: 2026-11-15
+status: done
+---
+
 # App Skeleton + Deploy Pipeline Proof — Phase File (spec Sub-spec 2)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Phases in order, inline, stop for review at each boundary. `- [ ]` checkboxes. Read [`overview.md`](./overview.md) first — its **Global Constraints** bind every step (no git steps; TDD red-green for units; pnpm; Node 24; stack versions). `content-foundation.md` must be at **exit-criteria green** before this file starts — `lib/content/` is imported here unchanged.

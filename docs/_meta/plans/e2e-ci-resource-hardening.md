@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-08-03
+last_updated: 2026-11-15
+status: in-progress
+---
+
 # E2E CI Resource Hardening - Plan
 
 One-time plan from the 2026-08-03 discussion on CI e2e failures (`pytest tests/ -q -n auto`, 11/773 fails, 7 xdist worker crashes: "node down: Not properly terminated"). Goal: stop resource-starvation-driven crashes and cut wall-clock, without weakening test isolation. This doc is the decisions reached; execution happens as separate work (tickets/PRs), not inline here.

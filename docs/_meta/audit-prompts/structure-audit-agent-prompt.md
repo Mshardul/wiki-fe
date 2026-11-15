@@ -1,8 +1,11 @@
-# Structure Audit — Prompt (wiki-fe)
+---
+role: audit-prompt
+created: 2026-08-04
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-08-04 | 2026-10-01 | current |
+# Structure Audit — Prompt (wiki-fe)
 
 Paste this as the prompt to the **orchestrating** Claude Code session in `wiki-fe`. Like `practice-problems-audit-agent-prompt.md`, the orchestrator dispatches parallel subagents, each covering a slice of the repo, then assembles their output itself. Read this whole file before starting.
 

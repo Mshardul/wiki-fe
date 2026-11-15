@@ -258,6 +258,7 @@ After finishing any **content task**:
 - Never add `Co-Authored-By` to commit messages
 - Never put WIKI-xxx / DSA-xxx / SD-xxx IDs in code comments or CSS section headers
 - Never hard-wrap prose in Markdown files (one line per paragraph/list-item; soft-wrap in the editor). Manual breaks only inside code fences, tables, and where Markdown requires them.
+- Never create or edit a plan/spec/audit/instructions/decision doc under `docs/_meta/` or `docs/superpowers/` without its front-matter header (`role`, `created`, `last_updated`, `status`) - set `last_updated` to today on every edit (CONVENTIONS Doc headers)
 
 ---
 

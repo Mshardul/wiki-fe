@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-10-02
+last_updated: 2026-11-15
+status: open
+---
+
 # `lib/content` build/read split — Executable Spec (Phase 8b)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Phases in order, inline, stop for review at each boundary. `- [ ]` checkboxes. No git steps. `pnpm` only. Single-line comments. Read [`content-lib-split.md`](./content-lib-split.md) first for the problem and rationale; this file is the executable form and supersedes its "Scope when picked up" test list (several tests it names were deleted in Phase 8).

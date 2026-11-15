@@ -1,3 +1,10 @@
+---
+role: audit-report
+created: 2026-08-03
+last_updated: 2026-11-15
+status: closed
+---
+
 # Data Structures Content Audit (wiki-fe)
 
 **Date:** 2026-08-03

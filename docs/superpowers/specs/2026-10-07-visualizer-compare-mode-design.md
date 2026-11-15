@@ -1,3 +1,10 @@
+---
+role: spec
+created: 2026-10-10
+last_updated: 2026-11-15
+status: superseded
+---
+
 # Visualizer compare mode: design
 
 Date: 2026-10-07. Status: superseded by `2026-10-09-visualizer-variants-and-revision-design.md`; compare mode is retired.

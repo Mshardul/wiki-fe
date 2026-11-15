@@ -42,10 +42,16 @@ def test_mechanism_pages_load_stage_and_tabs(
     expect(page.locator(".viz-strip__cell").first).to_be_visible()
 
 
+def _pause_if_playing(page):
+    pause = page.get_by_role("button", name="Pause")
+    if pause.is_visible():
+        pause.click()
+
+
 def test_mechanism_strip_seek_updates_counter(page, base_url):
     page.goto(f"{base_url}/visualizer/inside-the-python-gil/")
     page.wait_for_selector(".viz-mech__stepwrap > .viz-mech__step h3", timeout=20_000)
-    page.get_by_role("button", name="Pause").click()
+    _pause_if_playing(page)
     page.locator(".viz-strip__cell").nth(3).click()
     expect(page.get_by_text(re.compile(r"step 4 /"))).to_be_visible()
     page.wait_for_function("() => location.search.includes('i=4')", timeout=5_000)
@@ -54,7 +60,7 @@ def test_mechanism_strip_seek_updates_counter(page, base_url):
 def test_asyncio_blocking_marks_bad_steps_on_strip(page, base_url):
     page.goto(f"{base_url}/visualizer/inside-the-asyncio-event-loop/?s=blocking")
     page.wait_for_selector(".viz-mech__stepwrap > .viz-mech__step h3", timeout=20_000)
-    page.get_by_role("button", name="Pause").click()
+    _pause_if_playing(page)
     page.locator(".viz-strip__cell").nth(5).click()
     expect(page.locator(".viz-strip__cell.is-bad").first).to_be_visible()
 

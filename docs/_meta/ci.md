@@ -1,3 +1,10 @@
+---
+role: reference
+created: 2026-04-27
+last_updated: 2026-11-15
+status: deprecated
+---
+
 # CI & Pre-commit Hooks
 
 **Phase 1 - language-agnostic, no node toolchain.** The FE is a build-free vanilla-JS static site (no `package.json`, no `node_modules`, ES modules loaded straight from disk). Hooks are deliberately limited to language-agnostic guardrails. JS/CSS linting and formatting (ESLint/Prettier/markdownlint) are **deferred** - they require introducing a node toolchain, which is postponed until a real trigger lands (most likely a TypeScript migration or a build step). See the discussion that produced this decision.

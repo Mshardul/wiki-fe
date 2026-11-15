@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { getSettings, subscribeSettings } from "@/lib/storage/settings";
 import { prefersReducedMotion } from "@/lib/visualizer/core/motion";
 import {
   clampFrame,
@@ -13,7 +14,7 @@ import {
 import type { VizFrame } from "@/lib/visualizer/core/types";
 
 export interface RestartOpts {
-  /** When set, forces play/pause. Default: play unless reduced-motion. */
+  /** When set, forces play/pause. Default: autoplay setting unless reduced-motion. */
   play?: boolean;
 }
 
@@ -36,10 +37,11 @@ function pathLen(run: VizFrame[], i: number): number {
   return run[i]?.path.length ?? 1;
 }
 
-export function usePlayback(frames: VizFrame[], initialFrame = 0): Playback {
+export function usePlayback(frames: VizFrame[], initialFrame = 0, autoplay?: boolean): Playback {
+  const auto = autoplay ?? getSettings().visualizerAutoplay;
   const [rawFrame, setFrame] = useState(() => clampFrame(initialFrame, frames.length));
   const [sub, setSub] = useState(0);
-  const [playing, setPlaying] = useState(() => !prefersReducedMotion());
+  const [playing, setPlaying] = useState(() => Boolean(auto && !prefersReducedMotion()));
   const [speed, setSpeedState] = useState<Speed>(1);
   const [repeat, setRepeat] = useState<RepeatMode>("off");
   const frame = clampFrame(rawFrame, frames.length);
@@ -54,6 +56,23 @@ export function usePlayback(frames: VizFrame[], initialFrame = 0): Playback {
   useEffect(() => {
     startedAt.current = Date.now();
   }, []);
+
+  useEffect(() => {
+    if (autoplay !== undefined) return;
+    let prevAutoplay = getSettings().visualizerAutoplay;
+    return subscribeSettings(() => {
+      const curAutoplay = getSettings().visualizerAutoplay;
+      if (curAutoplay === prevAutoplay) return;
+      prevAutoplay = curAutoplay;
+      if (curAutoplay && !live.current.playing && !prefersReducedMotion()) {
+        startedAt.current = Date.now();
+        setPlaying(true);
+      } else if (!curAutoplay && live.current.playing) {
+        live.current.playing = false;
+        setPlaying(false);
+      }
+    });
+  }, [autoplay]);
 
   const seek = useCallback((i: number) => {
     const { frames: run, playing: isPlaying } = live.current;
@@ -78,13 +97,19 @@ export function usePlayback(frames: VizFrame[], initialFrame = 0): Playback {
     setPlaying(false);
   }, []);
 
-  const restart = useCallback((opts?: RestartOpts) => {
-    passes.current = 0;
-    setFrame(0);
-    setSub(0);
-    setPlaying(opts?.play ?? !prefersReducedMotion());
-    startedAt.current = Date.now();
-  }, []);
+  const restart = useCallback(
+    (opts?: RestartOpts) => {
+      passes.current = 0;
+      setFrame(0);
+      setSub(0);
+      const shouldPlay =
+        opts?.play ??
+        Boolean((autoplay ?? getSettings().visualizerAutoplay) && !prefersReducedMotion());
+      setPlaying(shouldPlay);
+      startedAt.current = Date.now();
+    },
+    [autoplay],
+  );
 
   const toggle = useCallback(() => {
     const { frame: f, sub: s, playing: isPlaying, speed: sp, frames: run } = live.current;

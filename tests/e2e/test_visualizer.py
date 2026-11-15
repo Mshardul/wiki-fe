@@ -8,6 +8,12 @@ EVICTION = "/visualizer/eviction-policies/"
 TRACE = "q=ABCADEAFBAGC"
 
 
+def _pause_if_playing(page):
+    pause = page.get_by_role("button", name="Pause")
+    if pause.is_visible():
+        pause.click()
+
+
 def test_home_card_opens_visualizer_landing(page, base_url):
     """the home Visualizer card leads to the landing page, which lists eviction policies."""
     page.goto(f"{base_url}/")
@@ -19,16 +25,33 @@ def test_home_card_opens_visualizer_landing(page, base_url):
 
 
 def test_autoplay_advances_the_request_counter(page, base_url):
-    """with no interaction the run plays on its own."""
+    """by default visualizers do not autoplay; turning on autoplay in preferences starts playback."""
     page.goto(f"{base_url}{EVICTION}?{TRACE}")
     expect(page.get_by_text("request 1 / 12")).to_be_visible()
+    expect(page.get_by_role("button", name="Play")).to_be_visible()
+
+    page.keyboard.press(",")
+    dialog = page.locator('role=dialog[name="Preferences"]')
+    expect(dialog).to_be_visible()
+    dialog.get_by_role("tab", name="Advanced").click()
+
+    toggle = dialog.locator(
+        "xpath=.//div[contains(@class,'prefs-section')][.//div[contains(@class,'prefs-section-label') and normalize-space()='Visualizer autoplay']]//button"
+    )
+    expect(toggle).to_have_text("Off")
+    toggle.click()
+    expect(toggle).to_have_text("On")
+    page.keyboard.press("Escape")
+    expect(dialog).to_be_hidden()
+
+    expect(page.get_by_role("button", name="Pause")).to_be_visible()
     expect(page.get_by_text("request 2 / 12")).to_be_visible(timeout=8_000)
 
 
 def test_strip_click_jumps_and_centres(page, base_url):
     """clicking a strip cell jumps there and that cell becomes current."""
     page.goto(f"{base_url}{EVICTION}?{TRACE}")
-    page.get_by_role("button", name="Pause").click()
+    _pause_if_playing(page)
     page.get_by_role("button", name=re.compile(r"^Request 8: F")).click()
     expect(page.get_by_text("request 8 / 12")).to_be_visible()
     expect(page.locator(".viz-strip__cell.is-current")).to_have_text("F")
@@ -47,7 +70,7 @@ def test_collapsing_configure_widens_the_stage(page, base_url):
 def test_url_state_restores_policy_step_and_rotation(page, base_url):
     """a shared URL reopens the same policy, request and orientation."""
     page.goto(f"{base_url}{EVICTION}?p=fifo&{TRACE}&i=8&rot=1")
-    page.get_by_role("button", name="Pause").click()
+    _pause_if_playing(page)
     expect(page.get_by_text("request 8 / 12")).to_be_visible()
     expect(page.get_by_role("heading", name="FIFO")).to_be_visible()
     expect(page.get_by_role("button", name=re.compile(r"Back to the default"))).to_be_visible()
@@ -106,7 +129,7 @@ def test_sorting_fills_the_stage_steps_to_done_and_fits_a_phone(page, base_url):
     assert page.locator(".viz-stage .viz-fit__inner").bounding_box()["width"] > before
     page.get_by_role("button", name="Show Configure").click()
     page.get_by_role("button", name="Show Details").click()
-    page.get_by_role("button", name="Pause").click()
+    _pause_if_playing(page)
     page.get_by_role("button", name="Last step").click()
     expect(page.get_by_text("step 7 / 7")).to_be_visible()
     expect(page.locator(".viz-stage__caption")).to_contain_text("Sorted")
@@ -126,7 +149,7 @@ def test_heap_shows_tree_with_its_array_steps_to_done_and_fits_a_phone(page, bas
     expect(page.locator(".viz-stage .viz-heap")).to_be_visible()
     expect(page.locator(".viz-stage .viz-heap .viz-array__bar").first).to_be_visible()
     expect(page.locator(".viz-stage__aside")).to_have_count(0)
-    page.get_by_role("button", name="Pause").click()
+    _pause_if_playing(page)
     page.get_by_role("button", name="Last step").click()
     expect(page.get_by_text("step 9 / 9")).to_be_visible()
     page.get_by_role("button", name="Extract").click()
@@ -155,13 +178,13 @@ def test_hash_table_draws_slots_steps_to_done_grows_on_resize_and_fits_a_phone(p
     assert page.locator(".viz-stage .viz-fit__inner").bounding_box()["width"] > before
     page.get_by_role("button", name="Show Configure").click()
     page.get_by_role("button", name="Show Details").click()
-    page.get_by_role("button", name="Pause").click()
+    _pause_if_playing(page)
     page.get_by_role("button", name="Last step").click()
     expect(page.get_by_text("step 29 / 29")).to_be_visible()
     page.get_by_role("button", name="Chaining").click()
     expect(page.get_by_text("step 1 / 18")).to_be_visible()
     page.goto(f"{base_url}{HASH_TABLE}?a=resize&i=42")
-    page.get_by_role("button", name="Pause").click()
+    _pause_if_playing(page)
     expect(page.locator(".viz-table__list")).to_have_count(2)
     page.set_viewport_size({"width": 320, "height": 700})
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
@@ -185,13 +208,13 @@ def test_graph_draws_layers_with_a_queue_steps_to_done_and_fits_a_phone(page, ba
     assert page.locator(".viz-stage .viz-graph .viz-fit__inner").bounding_box()["width"] > before
     page.get_by_role("button", name="Show Configure").click()
     page.get_by_role("button", name="Show Details").click()
-    page.get_by_role("button", name="Pause").click()
+    _pause_if_playing(page)
     page.get_by_role("button", name="Last step").click()
     expect(page.get_by_text("step 51 / 51")).to_be_visible()
     page.get_by_role("button", name="DFS").click()
     expect(page.get_by_text("step 1 / 43")).to_be_visible()
     page.goto(f"{base_url}{GRAPH}?g=topo&gr=dag-cycle")
-    page.get_by_role("button", name="Pause").click()
+    _pause_if_playing(page)
     page.get_by_role("button", name="Last step").click()
     expect(page.get_by_text("step 17 / 17")).to_be_visible()
     page.set_viewport_size({"width": 320, "height": 700})

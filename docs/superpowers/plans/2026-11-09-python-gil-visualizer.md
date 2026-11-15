@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-11-10
+last_updated: 2026-11-15
+status: done
+---
+
 Historical: HTML drafts are no longer used for new visualizers.
 
 # Inside the Python GIL — Implementation Plan

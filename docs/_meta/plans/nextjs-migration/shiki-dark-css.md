@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-06
+last_updated: 2026-11-15
+status: done
+---
+
 # Shiki dual-theme — dark activation CSS (for `app-skeleton.md` Phase 3)
 
 `@shikijs/rehype` 4.4.3 with `themes: { light: "github-light", dark: "github-dark" }` emits **dual-theme output**, not an active dark mode:

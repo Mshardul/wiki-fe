@@ -1,3 +1,10 @@
+---
+role: reference
+created: 2026-06-18
+last_updated: 2026-11-15
+status: deprecated
+---
+
 # [Archive] Auth Integration - Frontend ↔ Backend
 
 **How** the auth + sync feature wires into the existing vanilla-JS SPA: the API client, session state, caching model, storage hooks, auth UI, migration, logout. Plus the current build status.

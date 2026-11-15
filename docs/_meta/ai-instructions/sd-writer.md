@@ -1,8 +1,11 @@
-# System Design Article Writer
+---
+role: instructions
+created: 2026-08-12
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-08-12 | 2026-08-22 | current |
+# System Design Article Writer
 
 The **source of truth** for writing a system design article (`content/system-design/**/*.md`). Given a topic, this file tells you what to write, in what shape, and in what order. Replaces `_base.md` + `components.md` + `algorithms.md` + `hld.md` + `devops-tools.md` + `devops-cheatsheets.md` - those six files are superseded by this one and [sd-rater.md](./sd-rater.md).
 

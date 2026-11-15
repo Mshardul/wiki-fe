@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-06
+last_updated: 2026-11-15
+status: done
+---
+
 # Full-corpus build benchmark
 
 Measured 2026-09-06, `app-skeleton.md` Phase 7. Local machine (Apple Silicon, 7 build workers). Numbers are indicative, not a CI SLA.

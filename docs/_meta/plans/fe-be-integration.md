@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-06-18
+last_updated: 2026-11-15
+status: done
+---
+
 # FE Auth + Sync Integration Implementation Plan
 
 > **Superseded 2026-10-02.** Vanilla-era plan (`js/api.js`, hash routes). The integration shipped in the Next app as `lib/api.ts`, `lib/storage/sync.ts`, `components/auth/` and `components/sync/`. Kept for history; do not execute.

@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-11-13
+last_updated: 2026-11-15
+status: draft
+---
+
 # Kafka Delivery Semantics (`inside-kafka-delivery-semantics`)
 
 **Status:** draft

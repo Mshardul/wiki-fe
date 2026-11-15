@@ -1,8 +1,11 @@
-# SD Writer - DevOps Tools
+---
+role: instructions
+created: 2026-08-22
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-08-22 | 2026-08-22 | current |
+# SD Writer - DevOps Tools
 
 Category file for **DevOps tool** articles (`content/system-design/devops-tools/**/*.md`, excluding `cheatsheets/`). Read [sd-writer.md](./sd-writer.md) first (article-kind detection, universal params, NEVER, format conventions, callouts, topic boundary) - this file adds only what's specific to DevOps tools.
 

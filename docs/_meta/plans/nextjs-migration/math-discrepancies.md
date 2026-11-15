@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-06
+last_updated: 2026-11-15
+status: done
+---
+
 # Math rendering — Showdown → KaTeX equivalence (spec §12 risk)
 
 **Result: no discrepancies. The risk is effectively empty.**

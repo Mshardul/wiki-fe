@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-11-13
+last_updated: 2026-11-15
+status: draft
+---
+
 # Retries, Timeouts and Retry Storms (`inside-retry-timeouts-and-storms`)
 
 **Status:** draft

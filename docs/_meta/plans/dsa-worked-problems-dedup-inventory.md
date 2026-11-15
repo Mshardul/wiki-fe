@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-07-31
+last_updated: 2026-11-15
+status: done
+---
+
 # DSA Worked Problems Dedup - Problem Inventory
 
 Per-file target problem list for each Patterns article's merged `## Practice problems` section. Each list applies the distinct-technique constraint (`dsa-writer.md` U6 / main plan decision 4): every problem in a section must exercise a different core mechanic, regardless of surface framing. Nested bullets are duplicate-problems entries - same technique as the parent, cited in the article's `**Duplicate problems:**` line, not a full worked entry.

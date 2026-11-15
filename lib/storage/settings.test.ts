@@ -62,6 +62,17 @@ describe("settings", () => {
     expect(document.documentElement.style.getPropertyValue("--layout-padding")).toBe("5%");
   });
 
+  it("applySettings writes lineHeight to --line-height", () => {
+    applySettings({ ...DEFAULT_SETTINGS, lineHeight: "Relaxed" });
+    expect(document.documentElement.style.getPropertyValue("--line-height")).toBe("1.9");
+  });
+
+  it("defaults visualizerAutoplay to false and updates when patched", () => {
+    expect(getSettings().visualizerAutoplay).toBe(false);
+    updateSettings({ visualizerAutoplay: true });
+    expect(getSettings().visualizerAutoplay).toBe(true);
+  });
+
   it("getSettingsSnapshot matches getSettings' OS-preference fallback with no stored settings", () => {
     vi.stubGlobal("matchMedia", (q: string) => ({
       matches: q === "(prefers-color-scheme: light)",

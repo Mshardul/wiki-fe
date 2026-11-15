@@ -610,8 +610,22 @@ def _open_advanced_tab(page):
 def test_advanced_tab_has_clear_data_and_toggles(wiki_page):
     _open_advanced_tab(wiki_page)
     dialog = _prefs_dialog(wiki_page)
+    assert dialog.get_by_text("Visualizer autoplay").count() == 1
     assert dialog.get_by_text("Practice problem answers").count() == 1
     assert dialog.get_by_role("button", name="Clear everything").count() == 1
+
+
+def test_visualizer_autoplay_preference_toggle(wiki_page):
+    _open_advanced_tab(wiki_page)
+    dialog = _prefs_dialog(wiki_page)
+    toggle = dialog.locator(
+        "xpath=.//div[contains(@class,'prefs-section')][.//div[contains(@class,'prefs-section-label') and normalize-space()='Visualizer autoplay']]//button"
+    )
+    assert toggle.inner_text().strip() == "Off"
+    toggle.click()
+    assert toggle.inner_text().strip() == "On"
+    toggle.click()
+    assert toggle.inner_text().strip() == "Off"
 
 
 def test_clear_everything_wipes_local_data(page, base_url, seed_bookmarks):

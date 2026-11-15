@@ -60,6 +60,15 @@ repos:
         types: [markdown]
         pass_filenames: true
 
+  # ── Doc headers (front-matter on non-code markdown; fix stale last_updated: make docs-headers-fix) ──
+  - repo: local
+    hooks:
+      - id: doc-headers
+        name: doc headers (front-matter)
+        language: python
+        entry: python scripts/check_doc_headers.py
+        files: '^docs/(_meta|superpowers)/.*\.md$'
+
   # Generated content indexes + bridges validation: produced/gated by `pnpm build` (`buildContent()`).
 
   # ── Hygiene ─────────────────────────────────────────────────────────────────

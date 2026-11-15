@@ -19,5 +19,17 @@ export function DistractionFree() {
     };
   }, []);
 
-  return null;
+  return (
+    <button
+      type="button"
+      id="distraction-free-exit-btn"
+      className="distraction-free-exit-btn"
+      aria-label="Exit distraction-free mode"
+      onClick={() => document.body.classList.remove("distraction-free")}
+    >
+      <svg className="icon" aria-hidden="true">
+        <use href="#icon-x" />
+      </svg>
+    </button>
+  );
 }

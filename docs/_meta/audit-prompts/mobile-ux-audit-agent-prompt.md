@@ -1,8 +1,11 @@
-# Mobile UX Audit Agent — Prompt
+---
+role: audit-prompt
+created: 2026-07-09
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-07-09 | 2026-10-01 | current |
+# Mobile UX Audit Agent — Prompt
 
 Paste this as the prompt when spawning the agent (e.g. `general-purpose` subagent, or a fresh Claude Code session in `wiki-fe`).
 

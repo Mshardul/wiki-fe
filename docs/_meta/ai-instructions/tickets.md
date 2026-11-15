@@ -1,8 +1,11 @@
-# AI Instructions - Tickets
+---
+role: instructions
+created: 2026-05-12
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-05-12 | 2026-10-02 | current |
+# AI Instructions - Tickets
 
 > Reference this file whenever ticket intent is detected: WIKI-xxx ID mentioned, or phrases like "work on tickets", "which ticket", "decide ticket", "let's pick a ticket".
 > Read `docs/tickets-backlog.md` for active tickets; `docs/tickets-archive.md` for Done/Dropped history.

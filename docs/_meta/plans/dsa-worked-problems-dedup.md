@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-07-30
+last_updated: 2026-11-15
+status: done
+---
+
 # DSA Worked Problems Dedup
 
 Tracking doc. Two steps: (1) rewrite the spec, (2) apply it per-article.

@@ -1,3 +1,10 @@
+---
+role: decision
+created: 2026-04-27
+last_updated: 2026-11-15
+status: accepted
+---
+
 # UI / UX Design Decisions
 
 ## Settings Page & Themes (018, 033)

@@ -1,8 +1,11 @@
-# AI Instructions - Interview Scenario Bank Sub-Pages
+---
+role: instructions
+created: 2026-07-20
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-07-20 | 2026-08-12 | current |
+# AI Instructions - Interview Scenario Bank Sub-Pages
 
 > **Read `ai-instructions/_base.md` first.** This file defines the format and generation rules for
 > `[parent-topic]-interview-scenarios.md` sub-pages, referenced from `components.md`, `algorithms.md`,

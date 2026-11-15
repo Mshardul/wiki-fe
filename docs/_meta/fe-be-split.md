@@ -1,3 +1,10 @@
+---
+role: reference
+created: 2026-06-18
+last_updated: 2026-11-15
+status: deprecated
+---
+
 # [Archive] FE/BE Repo Split - Decisions
 
 How the current single-folder wiki becomes two repos.

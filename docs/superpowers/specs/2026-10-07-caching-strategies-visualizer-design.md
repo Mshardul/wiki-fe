@@ -1,3 +1,10 @@
+---
+role: spec
+created: 2026-10-10
+last_updated: 2026-11-15
+status: implemented
+---
+
 # Visualizer — Caching Strategies — Design
 
 Section-wide principles and rules live in `docs/_meta/visualizer/README.md`; this spec is the detail for this visualizer. It builds on the frame from `2026-10-07-cache-visualizer-design.md` and with `2026-10-09-visualizer-variants-and-revision-design.md`.

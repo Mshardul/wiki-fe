@@ -61,6 +61,19 @@ describe("PreferencesModal", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Preferences" })).toBeNull());
   });
 
+  it("advanced tab: visualizer autoplay toggle updates settings", () => {
+    open("advanced");
+    const toggle = screen.getByRole("button", { name: "Off" });
+    expect(toggle).toBeTruthy();
+    expect(getSettings().visualizerAutoplay).toBe(false);
+    fireEvent.click(toggle);
+    expect(getSettings().visualizerAutoplay).toBe(true);
+    expect(screen.getByRole("button", { name: "On" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "On" }));
+    expect(getSettings().visualizerAutoplay).toBe(false);
+    expect(screen.getByRole("button", { name: "Off" })).toBeTruthy();
+  });
+
   it("advanced tab: clear-data confirms then clears", () => {
     localStorage.setItem(
       "wiki-bookmarks",

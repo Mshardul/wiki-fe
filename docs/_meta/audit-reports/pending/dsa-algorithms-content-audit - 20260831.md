@@ -1,3 +1,10 @@
+---
+role: audit-report
+created: 2026-08-31
+last_updated: 2026-11-15
+status: pending
+---
+
 # DSA Algorithms Content Audit (wiki-fe)
 
 **Date:** 2026-08-31

@@ -1,3 +1,10 @@
+---
+role: spec
+created: 2026-10-10
+last_updated: 2026-11-15
+status: implemented
+---
+
 # Visualizer — Rate Limiting — Design
 
 Section-wide principles and rules live in `docs/_meta/visualizer/README.md`; layering rules (generic shapes vs per-visualizer adapters) live in `CONVENTIONS.md` under Visualizer. This spec is the detail for this visualizer. It builds on the frame from `2026-10-07-cache-visualizer-design.md`, the Lanes and hook changes from `2026-10-07-caching-strategies-visualizer-design.md`, and the variants and Revision contract from `2026-10-09-visualizer-variants-and-revision-design.md`.

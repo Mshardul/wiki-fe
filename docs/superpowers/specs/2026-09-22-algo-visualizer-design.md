@@ -1,3 +1,10 @@
+---
+role: spec
+created: 2026-09-30
+last_updated: 2026-11-15
+status: superseded
+---
+
 # Algorithm Visualizer — Design
 
 > **Status 2026-10-07:** superseded by [2026-10-07-cache-visualizer-design.md](./2026-10-07-cache-visualizer-design.md). Never built; kept as reference for future DSA visualizers.

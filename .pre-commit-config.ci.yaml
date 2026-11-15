@@ -28,6 +28,14 @@ repos:
 
   # typecheck/lint/test run in ci.yml's `frontend` job; the hooks runner has no Node.
 
+  - repo: local
+    hooks:
+      - id: doc-headers
+        name: doc headers (front-matter)
+        language: python
+        entry: python scripts/check_doc_headers.py
+        files: '^docs/(_meta|superpowers)/.*\.md$'
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:

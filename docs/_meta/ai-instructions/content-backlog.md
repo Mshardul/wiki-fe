@@ -1,8 +1,11 @@
-# AI Instructions - Content backlog
+---
+role: instructions
+created: 2026-08-03
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-08-03 | 2026-08-03 | current |
+# AI Instructions - Content backlog
 
 > Reference this file whenever content-backlog intent is detected: `DSA-xxx` / `SD-xxx` IDs, or phrases like "content backlog", "work content backlog", "file content backlog items", or running `.prompts/fe-audit-reports-to-content-backlog.md`.
 >

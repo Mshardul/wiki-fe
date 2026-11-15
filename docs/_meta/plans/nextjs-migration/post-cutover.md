@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-01
+last_updated: 2026-11-15
+status: done
+---
+
 # Post-Cutover — Feature Port + Hardening — Phase File (spec Sub-specs 4 + 5)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Phases in order, inline, stop for review at each boundary. `- [ ]` checkboxes. Read [`overview.md`](./overview.md) first — **Global Constraints** bind every step (no git steps; TDD red-green for units; pnpm; drop list). `cutover.md` must be at **exit-criteria green** (the vanilla app deleted, the Next app live) before this file starts.

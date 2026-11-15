@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-10-02
+last_updated: 2026-11-15
+status: done
+---
+
 # Sub-spec 5 exit checklist — `post-cutover.md` Part B
 
 Part B (Phases 8–10) plus the Phase 11 confirmation. Recorded **2026-10-02**. Committed as `e560d33` + `a67d1e9`.

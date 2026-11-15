@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-01
+last_updated: 2026-11-15
+status: done
+---
+
 # Next.js Migration — Architecture Design
 
 **Status:** Draft for review

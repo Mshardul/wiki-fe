@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-11-13
+last_updated: 2026-11-15
+status: open
+---
+
 # Tier A v2 — slug plan index
 
 Planning only. Playbook: [mechanism-playbook.md](./mechanism-playbook.md). Implementation batch plans are **not** written until slug docs are `approved`.

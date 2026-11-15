@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-01
+last_updated: 2026-11-15
+status: done
+---
+
 # Content Foundation — Phase File (spec Sub-spec 1)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Run phases in order, inline in-session, stop for review at each phase boundary. Steps use `- [ ]` checkboxes. Read [`overview.md`](./overview.md) first — its **Global Constraints** apply to every step here (no git steps; TDD red-green for units; Vitest; stack versions).

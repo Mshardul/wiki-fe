@@ -1,8 +1,11 @@
-# Security Audit Agent — Prompt (wiki-fe)
+---
+role: audit-prompt
+created: 2026-08-01
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-08-01 | 2026-10-01 | current |
+# Security Audit Agent — Prompt (wiki-fe)
 
 Paste this as the prompt when spawning the agent (e.g. `general-purpose` subagent, or a fresh Claude Code session in `wiki-fe`).
 

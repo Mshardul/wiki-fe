@@ -1,3 +1,10 @@
+---
+role: decision
+created: 2026-06-18
+last_updated: 2026-11-15
+status: superseded
+---
+
 # Infra & Deploy - Decisions
 
 How v0 goes from zero to live. FE + BE hosting, deploy flow, backup, cost guard.

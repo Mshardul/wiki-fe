@@ -1,3 +1,10 @@
+---
+role: decision
+created: 2026-04-28
+last_updated: 2026-11-15
+status: accepted
+---
+
 # Story Points Estimation
 
 ## Scale

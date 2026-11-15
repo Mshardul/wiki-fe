@@ -293,18 +293,35 @@ For the full model and the *why*, see the decisions docs:
 
 ---
 
-## Meta docs
+## Doc headers
 
-- Living meta docs that can drift from the codebase they describe - currently `docs/_meta/audit-prompts/` and `docs/_meta/ai-instructions/` - open with a meta-info table, immediately under the title, before any other content:
+- Every non-code markdown doc under `docs/_meta/` and `docs/superpowers/` opens with this front-matter header, before the title and before any other content. Exactly these four fields, all required, no others:
 
-  ```markdown
-  | Created | Last updated | Status |
-  |---|---|---|
-  | YYYY-MM-DD | YYYY-MM-DD | current |
+  ```yaml
+  ---
+  role: plan
+  created: 2026-11-05
+  last_updated: 2026-11-10
+  status: open
+  ---
   ```
 
-  - **Created** - date of the file's first commit (`git log --follow --diff-filter=A --format=%ad --date=short -- <file> | tail -1`), not guessed.
-  - **Last updated** - date of the most recent substantive edit (today's date when you're making one).
-  - **Status** - one word only: `current` or `outdated`. No reasoning in this field - if an `outdated` file needs explaining, say why in the file's own body, not the table.
-  - Dated/historical-by-design docs (`docs/_meta/audit-reports/`, `docs/_meta/plans/`) are exempt - their filenames already carry a date and staleness is expected, not a defect to track.
-  - Don't backfill this table onto a file until it's actually touched for another reason, or a meta-doc sweep explicitly asks for it across a directory.
+- **role** - fixed set, each with its own valid `status` values:
+
+  | role | what it is | status |
+  |---|---|---|
+  | `plan` | work to be done | `draft`, `open`, `in-progress`, `done`, `dropped` |
+  | `spec` | design for a change | `draft`, `approved`, `implemented`, `superseded` |
+  | `audit-report` | findings from one audit run | `pending`, `triaged`, `closed` |
+  | `decision` | a recorded decision | `proposed`, `accepted`, `superseded` |
+  | `audit-prompt` | template to run an audit | `active`, `deprecated` |
+  | `instructions` | standing rules for agents | `active`, `deprecated` |
+  | `prompt` | paste-to-start session prompt | `active`, `deprecated` |
+  | `reference` | living reference doc | `active`, `deprecated` |
+
+- The role must fit the directory: `ai-instructions` → `instructions` or `reference`, `audit-prompts` → `audit-prompt`, `audit-reports` → `audit-report` or `reference` (the audit log), `plans` → `plan`, `specs` → `spec`, `decisions` → `decision`, `visualizer` → `reference`, `spec`, `plan` or `instructions`. A directory with no mapping is only warned about.
+- **created** - ISO `YYYY-MM-DD` of the file's first commit (`git log --follow --diff-filter=A --format=%ad --date=short -- <file> | tail -1`), not guessed.
+- **last_updated** - ISO date of the latest edit; set it to today whenever you change the doc, and never earlier than `created`. The `doc-headers` pre-commit hook fails a staged doc whose `last_updated` isn't today; `make docs-headers-fix` bumps it.
+- The header's `status` is the source of truth - moving a report in or out of `pending/` doesn't change it.
+- Out of scope: `CLAUDE.md`, `CONVENTIONS.md`, `readme.md`, `CHANGELOG.md`, `content/`, `tests/fixtures/`, `docs/_meta/practice-problems-index.md` (generated, a header would be overwritten), and the `docs/*.md` backlog files that scripts parse.
+- Checked by `scripts/check_doc_headers.py` (`make docs-headers`), run in pre-commit and CI. The script and this section are mirrored in wiki-be - change both.

@@ -1,8 +1,11 @@
-# DSA Writer - Patterns
+---
+role: instructions
+created: 2026-08-22
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-08-22 | 2026-08-22 | current |
+# DSA Writer - Patterns
 
 Category file for **Pattern** articles (`content/dsa/patterns/**/*.md`). Read [dsa-writer.md](./dsa-writer.md) first (article-kind detection, universal params, format conventions, depth bar) - this file adds only what's specific to Patterns. **Patterns have no family block.**
 

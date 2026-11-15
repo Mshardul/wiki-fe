@@ -1,3 +1,10 @@
+---
+role: decision
+created: 2026-06-18
+last_updated: 2026-11-15
+status: accepted
+---
+
 # Auth & Personal Layer - Decisions
 
 The **what & why** of adding login + per-user personal features to the wiki: product model, roadmap, tech choices, data model, and the contracts (password policy, session/cookie shape, error codes, security guards) that the implementation must match.

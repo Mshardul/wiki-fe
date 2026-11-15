@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-06
+last_updated: 2026-11-15
+status: done
+---
+
 # Sub-spec 1 exit checklist — `content-foundation.md`
 
 Signed off 2026-09-03. `lib/content/` is a complete, tested, typed build-time content library with the public surface `app-skeleton.md` imports. The vanilla app (`index.html`, `js/**`, `wiki-sw.js`) is byte-for-byte untouched.

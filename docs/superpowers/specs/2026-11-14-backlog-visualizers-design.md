@@ -1,3 +1,10 @@
+---
+role: spec
+created: 2026-11-14
+last_updated: 2026-11-15
+status: approved
+---
+
 # Backlog visualizers: shapes and stage layout
 
 Date: 2026-11-14. Status: awaiting review.
@@ -49,9 +56,9 @@ Node states: unseen, in frontier, current, done. Edge states: tree edge, being c
 
 Slots 0 to m-1 as a vertical list. Open addressing: occupied, empty and tombstone slots, hop arcs down the side for each probe, and a dashed amber outline over a cluster run. Chaining: a short slot cell with chain nodes growing to the right, visited nodes outlined. The key being inserted appears as a chip with a dashed line to its first slot. The hash maths (`32 mod 8 = 0`), probe count or chain length and the load factor go to Step-tab vars; a load factor meter with the resize threshold marked is drawn as part of the table picture. (Not designed in detail yet.) Quadratic probing shows jumps of 1, 4, 9; double hashing shows the second hash as the step; delete shows a tombstone; resize shows the old table fading while a larger one fills. The same Table shape draws the directory in Data Partitioning and the score table for rendezvous hashing. Default 8 slots (my call, so the clustering demo stays readable).
 
-### Keyspace (ring or line) and Bins
+### Circle (ring), Runs (range cells) and Bins
 
-Keyspace draws one hash space either as a ring (consistent hashing, virtual nodes as extra small markers in the node's colour) or unrolled as a straight line (range partitions). Arcs or segments are coloured by owning node, keys are dots in their owner's colour, node markers sit outside the ring, and keys that just changed owner get a white ring. On a ring a key goes clockwise to the next node. Bins draw one column per node holding the keys it owns, used for mod-N and hot-key skew. Keys per node (the busiest one flagged hot) show as bars that are part of the keyspace picture, and the "keys moved" readout against the ideal of 1/N goes to Step-tab vars. (Not designed in detail yet.) Add node and remove node animate the moved keys. The Revision cards pair mod-N with the ring on the same added node: mod-N moves about three times as many keys.
+Circle draws one hash space as a ring (consistent hashing, virtual nodes as extra small markers in the node's colour). Arcs are coloured by owning node, keys are dots in their owner's colour, node markers sit outside the ring, and keys that just changed owner get a white ring. On a ring a key goes clockwise to the next node. Bins draw one column per node holding the keys it owns, used for mod-N and hot-key skew. Each node marker carries a small badge with its key count and a bar against an ideal-load tick (keys ÷ nodes), the busiest node flagged hot; the badges are part of the one ring picture, not a second block, and the "keys moved" readout against the ideal of 1/N goes to Step-tab vars. Ring look approved from the browser mockup (option 1): arcs in the owner's colour, key dots on the ring, node markers outside with the badge, white ring on moved keys, hash space 0 to 99. Add node and remove node animate the moved keys. The Revision cards pair mod-N with the ring on the same added node: mod-N moves about three times as many keys.
 
 ### Flow cards (load balancer)
 
@@ -65,7 +72,7 @@ Incoming request, then the balancer, then one card per server with a large conne
 | Heap | Insert, Extract, Build-heap vs n inserts, Heapsort, Top-K | values, min or max heap | Heap, Array row, Linear for the stream |
 | Graph Traversals | BFS, DFS, Dijkstra, Topological sort, Bipartite check | graph preset, start node | Graph, Linear, Heap |
 | Hash Table | Chaining, Linear probing, Quadratic probing, Double hashing, Resize | keys, table size, load factor threshold | Table |
-| Data Partitioning | Mod-N, Range, Consistent hashing with virtual nodes, Directory, Rendezvous | node count, operation (add, remove, hot key) | Keyspace, Bins, Table |
+| Data Partitioning | Mod-N, Range, Consistent hashing with virtual nodes, Directory, Rendezvous | node count, operation (add, remove, hot key) | Circle, Bins, Table |
 | Load Balancer | Round robin, Weighted round robin, Least connections, IP hash | server count, request durations, server failure | Flow cards |
 
 Each module picks its own learning-first defaults, with a hand-picked starting sequence where one fits, never copied from another. Sorting shows the comparisons and writes counters in its `vars` and corner metric. Every change gets its own step (a swap, a pointer move, a probe, a hop, a dequeue); no step skips over a change, and the existing step-rule test is extended to the new shapes where it can be. Each visualizer gets Revision cards, one looping card per variant.
@@ -76,7 +83,7 @@ Each module picks its own learning-first defaults, with a hand-picked starting s
 2. Heap (reuses the Array row, builds Heap; also needed by heap sort and Dijkstra).
 3. Graph Traversals (builds Graph, reuses Heap for Dijkstra).
 4. Hash Table (builds Table).
-5. Data Partitioning (reuses Table, builds Keyspace and Bins).
+5. Data Partitioning (reuses Table, builds Circle and Bins).
 6. Load Balancer (builds Flow cards).
 
 Fit-to-stage scaling is built first, as part of the Sorting work (Array shape), since every later shape follows the same rule.
@@ -88,3 +95,12 @@ Fit-to-stage scaling is built first, as part of the Sorting work (Array shape), 
 - Model field names, adapter code, scenario data, copy for steps, About and Try tabs.
 - How resize is drawn in detail.
 - What each visualizer's frame `vars` hold. The rule is: whatever extra information helps the student understand what that visualizer is showing (for Sorting that likely includes the loop variables now versus before and the comparison and write counters, but each algorithm decides). The colour legend is dropped; the shared colour language below explains it.
+
+## Data Partitioning decisions
+
+- Variants in order: Mod-N, Range, Consistent hashing with virtual nodes, Directory, Rendezvous. Rendezvous is included (it reuses Table for the score table).
+- Virtual nodes are an input on the ring variant (virtual nodes per node), not a separate variant; the hand-picked sequence starts at 1 so the arcs are visibly uneven, then raises it to 4.
+- Operations: add node and remove node on every variant; hot key only on Mod-N, Range and the ring.
+- Hash space 0 to 99. Defaults: 3 nodes, about 16 keys, add one node (3 to 4), which makes the Revision contrast (Mod-N moves about three times as many keys as the ring) visible.
+- Range uses the Runs shape, not the ring or a line. It shows the keys as a sorted row of equal cells in their owner's colour, with a brace under each node's consecutive run carrying its range and key count; the point is that neighbours stay together. Add node cuts one run in two and the moved keys are white-ringed. Approved from the browser mockup (look R2). Whether this extends an existing shape or is a new one is decided in the plan by what teaches the student best, not by reuse.
+- Mod-N and hot-key skew use Bins on their own stage; the ring uses Circle and Range uses Runs, each on its own stage. A stage never holds two pictures.

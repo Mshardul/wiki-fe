@@ -1,8 +1,11 @@
-# DSA Article Writer
+---
+role: instructions
+created: 2026-06-16
+last_updated: 2026-11-15
+status: deprecated
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-06-16 | 2026-08-22 | outdated |
+# DSA Article Writer
 
 The **source of truth** for writing a DSA article (`content/dsa/**/*.md`). Given a topic, this file tells you what to write, in what shape, and in what order.
 

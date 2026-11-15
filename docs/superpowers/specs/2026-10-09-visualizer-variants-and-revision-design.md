@@ -1,3 +1,10 @@
+---
+role: spec
+created: 2026-10-10
+last_updated: 2026-11-15
+status: implemented
+---
+
 # Visualizer variants and revision view: design
 
 Date: 2026-10-09. Status: awaiting review. Supersedes `2026-10-07-visualizer-compare-mode-design.md`.

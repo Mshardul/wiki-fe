@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-07-31
+last_updated: 2026-11-15
+status: in-progress
+---
+
 # DSA Worked Problems Dedup - Data Structures Sweep Inventory
 
 Per-file target problem list for each Data Structures article's `## Practice problems` section, audited against the merged U6 spec (`dsa-writer.md`) and the distinct-technique constraint (main plan decision 4). Same format as `dsa-worked-problems-dedup-inventory.md` (Patterns) and `dsa-worked-problems-dedup-algo-inventory.md` (Algorithms). Nested bullets are duplicate-problems entries - same technique as the parent, cited in the article's `**Duplicate problems:**` line, not a full worked entry.

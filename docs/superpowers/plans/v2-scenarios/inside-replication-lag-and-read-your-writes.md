@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-11-13
+last_updated: 2026-11-15
+status: draft
+---
+
 # Replication Lag and Read-Your-Writes (`inside-replication-lag-and-read-your-writes`)
 
 **Status:** draft

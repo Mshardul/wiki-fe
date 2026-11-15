@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-06
+last_updated: 2026-11-15
+status: done
+---
+
 # Sub-spec 2 exit checklist — `app-skeleton.md`
 
 Signed off 2026-09-06. The Next.js App Router project, the skeleton route tree rendering real article HTML from `lib/content`, the faithful CSS port, PWA wiring via `@serwist/cli`, a CI `build` job (build + validate, no deploy), the full-corpus build benchmark, and the `wiki-be` CORS check + ticket are all complete and verified against a local production build. **No remote deploy** (that is `cutover.md` Phase 14). The vanilla app (`index.html`, `js/**`, `wiki-sw.js`, `manifest.json`, `icons/`, `sprite.svg`, `404.html`) is byte-for-byte untouched; `css/**` has only two additive changes the plan explicitly allows (see below).

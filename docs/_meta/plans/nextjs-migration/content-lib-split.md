@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-06
+last_updated: 2026-11-15
+status: open
+---
+
 # Epic: split `lib/content` into `build/` (renderer) and `read/` (accessor)
 
 **Status:** proposed, post-cutover. Not part of the Next.js migration's five sub-specs — a follow-on refactor with zero user-facing change.

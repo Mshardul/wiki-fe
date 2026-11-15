@@ -277,12 +277,49 @@ export function PreferencesModal() {
               </svg>
               <span className="prefs-action-label">Compare complexity</span>
             </button>
+            <button
+              type="button"
+              className="prefs-action-row"
+              data-action="find-open"
+              title="Find in article"
+              aria-label="Find in article"
+              onClick={() => {
+                setOpen(false);
+                document.dispatchEvent(new CustomEvent("wiki:open-article-find"));
+              }}
+            >
+              <svg className="icon" aria-hidden="true">
+                <use href="#icon-search" />
+              </svg>
+              <span className="prefs-action-label">Find in article</span>
+            </button>
+            <button
+              type="button"
+              className="prefs-action-row"
+              data-action="distraction-free-toggle"
+              title="Distraction-free mode"
+              aria-label="Distraction-free mode"
+              onClick={() => {
+                setOpen(false);
+                document.dispatchEvent(new CustomEvent("wiki:toggle-distraction-free"));
+              }}
+            >
+              <svg className="icon" aria-hidden="true">
+                <use href="#icon-maximize" />
+              </svg>
+              <span className="prefs-action-label">Distraction-free mode</span>
+            </button>
           </div>
         </div>
       )}
 
       {tab === "advanced" && (
         <div className="prefs-panel active">
+          <Toggle
+            label="Visualizer autoplay"
+            on={s.visualizerAutoplay}
+            onToggle={() => set({ visualizerAutoplay: !s.visualizerAutoplay })}
+          />
           <Toggle
             label="Practice problem answers"
             on={s.practiceAnswersHidden}

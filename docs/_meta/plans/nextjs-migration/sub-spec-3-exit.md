@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-10-01
+last_updated: 2026-11-15
+status: done
+---
+
 # Sub-spec 3 exit checklist — `cutover.md`
 
 Cutover shipped 2026-09-30 (`8261c57`, CI fixes `0965150`). The vanilla app is deleted, and the Next.js static export is live at `https://mshardul.github.io/wiki-fe/`, deployed by the CI `deploy` job (Pages source = GitHub Actions). CI is fully green on `96da42c`. One item stays open: logged-in sync against the live `wiki-be` (deferred by the user).

@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-01
+last_updated: 2026-11-15
+status: done
+---
+
 # Cutover-Critical App — Atomic Replacement — Phase File (spec Sub-spec 3)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:executing-plans`. Phases in order, inline, **stop for review at every phase boundary** — this file is large and the user reviews between phases (spec §12). `- [ ]` checkboxes. Read [`overview.md`](./overview.md) first — **Global Constraints** bind every step (no git steps; TDD red-green for units; pnpm; stack versions; drop list). `app-skeleton.md` must be at **exit-criteria green** before this file starts.

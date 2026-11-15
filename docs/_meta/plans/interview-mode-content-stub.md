@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-01
+last_updated: 2026-11-15
+status: draft
+---
+
 # Interview Mode — Content Strategy (STUB)
 
 **Status:** Stub. The Next.js migration shipped 2026-10-02, so this is unblocked; it still needs a full spec before any work.

@@ -1,8 +1,11 @@
-# DSA Article Rater
+---
+role: instructions
+created: 2026-06-16
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-06-16 | 2026-08-22 | current |
+# DSA Article Rater
 
 Scores a written DSA article (`content/dsa/**/*.md`) for interview-readiness and gives a **publish gate** (ship / no-ship). Given an article path, follow the steps below and produce a scored report. Scoring is LLM judgment - no separate parser. The same article may vary slightly run-to-run on judgment params; that is accepted. Filesystem params (U8/U11/U12) are deterministic and supplied by a script - see step 5.
 

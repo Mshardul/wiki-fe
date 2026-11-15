@@ -1,3 +1,10 @@
+---
+role: spec
+created: 2026-10-07
+last_updated: 2026-11-15
+status: implemented
+---
+
 # Visualizer — Eviction Policies (v1) — Design
 
 Section-wide principles and rules live in `docs/_meta/visualizer/README.md`; this spec is the v1 detail.

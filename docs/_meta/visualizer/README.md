@@ -1,8 +1,11 @@
-# Visualizer
+---
+role: reference
+created: 2026-10-07
+last_updated: 2026-11-15
+status: active
+---
 
-| Created |
-|---|
-| 2026-10-07 |
+# Visualizer
 
 The **Visualizer** section of the wiki: interactive, animated explanations of DSA and system-design concepts. This file is the durable reference — purpose, principles, shared page anatomy, architecture and rules. Read it before building or changing any visualizer.
 
@@ -29,7 +32,7 @@ A module declares `variants: { key }` (the chips field whose options are its var
 - **Mobile layout** for Single and Revision (until then the page only guarantees no breakage at 320px).
 - **OPT and ARC** eviction — shapes not designed yet (OPT: next-use countdown; ARC: composite of 2 stacks + 2 ghost stacks + moving divider).
 - **"▶ Visualize" links** from articles into visualizers.
-- **Backlog visualizers** (Sorting, Heap, Hash Table and Graph Traversals are built, with fit-to-stage scaling and the Array, Heap, Table and Graph shapes; Data Partitioning, Load Balancer) with two new shapes still to build (Keyspace and Bins, Flow cards) — design in [`../../superpowers/specs/2026-11-14-backlog-visualizers-design.md`](../../superpowers/specs/2026-11-14-backlog-visualizers-design.md), topics in `backlog.md`.
+- **Backlog visualizers** (Sorting, Heap, Hash Table and Graph Traversals are built, with fit-to-stage scaling and the Array, Heap, Table and Graph shapes; Data Partitioning, Load Balancer) with two new shapes still to build (Circle, Runs and Bins, Flow cards) — design in [`../../superpowers/specs/2026-11-14-backlog-visualizers-design.md`](../../superpowers/specs/2026-11-14-backlog-visualizers-design.md), topics in `backlog.md`.
 - **DSA visualizers** — prior thinking in [`../../superpowers/specs/2026-09-22-algo-visualizer-design.md`](../../superpowers/specs/2026-09-22-algo-visualizer-design.md) (superseded, never built).
 
 Remove an item when it ships.
@@ -40,7 +43,7 @@ Remove an item when it ships.
 
 1. **Shape follows structure.** Draw the concept in the shape of its real data structure — a vertical stack for LRU, a horizontal queue for FIFO, a ranked list for LFU, a ring for CLOCK, time lanes for strategies. *Why:* the shape teaches before any text does, and a wrong shape misleads.
 2. **Learn in Single, revise in Revision.** Single is for step-by-step depth on one variant; Revision is a cheat-sheet view of every variant with a simple looping animation.
-3. **Watch by default, drive when wanted.** Autoplay on load; full controls always available. No quizzes or "predict the next step".
+3. **Drive or watch as preferred.** Full controls always available; visualizers are paused by default and autoplay can be turned on from the preferences modal. No quizzes or "predict the next step".
 4. **Plain-English steps are the explanation.** The algorithm's loop body as 2–4 short plain-English lines, current line highlighted as it plays — never source code. The stage keeps only a one-line caption.
 5. **Show the variables, now vs before.** A table of the loop's variables for the current step, previous values faded beside them, changes marked. *Why:* turns watching boxes into tracing an algorithm.
 6. **Minimal information.** Every visible element must earn its place. No duplicated numbers, prose blocks or decorative panels.

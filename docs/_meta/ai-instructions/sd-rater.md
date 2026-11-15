@@ -1,8 +1,11 @@
-# System Design Article Rater
+---
+role: instructions
+created: 2026-08-12
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-08-12 | 2026-08-22 | current |
+# System Design Article Rater
 
 Scores a written system design article (`content/system-design/**/*.md`) for interview-readiness **and bloat**, and gives a **publish gate** (ship / no-ship). Given an article path, follow the steps below and produce a scored report. Scoring is LLM judgment - no separate parser, except U8/U9 which are deterministic (see step 5) - never LLM-guessed.
 

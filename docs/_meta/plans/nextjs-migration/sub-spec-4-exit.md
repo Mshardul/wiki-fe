@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-10-01
+last_updated: 2026-11-15
+status: done
+---
+
 # Sub-spec 4 exit checklist — `post-cutover.md` Part A
 
 Part A (Phases 1–6) ports the six features deferred from cutover onto the live Next app. Exit recorded **2026-10-01**. Phases 1–6 remain uncommitted pending user review.

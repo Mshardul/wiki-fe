@@ -1,3 +1,10 @@
+---
+role: spec
+created: 2026-05-25
+last_updated: 2026-11-15
+status: implemented
+---
+
 # Preferences Modal
 
 Replace `#settings-panel` (drawer) and `#help-modal` with a single tabbed modal `#prefs-modal`.

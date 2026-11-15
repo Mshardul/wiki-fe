@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-07-25
+last_updated: 2026-11-15
+status: done
+---
+
 # DSA Cheatsheets Rollout
 
 Tracking doc for `content/dsa/cheatsheets/*.md` generation. Format rules: `docs/_meta/ai-instructions/dsa-cheatsheets.md`.

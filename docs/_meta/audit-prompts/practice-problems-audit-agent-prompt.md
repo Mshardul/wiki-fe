@@ -1,8 +1,11 @@
-# Practice Problems Audit — Prompt (wiki-fe)
+---
+role: audit-prompt
+created: 2026-07-31
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-07-31 | 2026-08-12 | current |
+# Practice Problems Audit — Prompt (wiki-fe)
 
 Paste this as the prompt to the **orchestrating** Claude Code session in `wiki-fe`. Unlike the other audit prompts in this folder, this one is not handed to a single subagent — the orchestrator dispatches multiple subagents, each auditing a slice of files, then assembles their output itself. Read this whole file before starting; the dispatch/assembly steps are as load-bearing as the audit criteria.
 

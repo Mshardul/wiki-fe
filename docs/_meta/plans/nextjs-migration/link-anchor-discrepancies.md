@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-06
+last_updated: 2026-11-15
+status: done
+---
+
 # Link anchor discrepancies — content-side fixes
 
 `validateLinks` (Phase 7, `lib/content/links.ts`) hard-fails the content build on a link whose target file is missing. It also collects `#anchor` links that point at a heading id that does not exist on the target article, but those do **not** fail the build — they are pre-existing content drift, most of it unmasked by the Showdown → `github-slugger` (rehype-slug) change, and fixing them is a content task, not migration work. The live regenerated list is `lib/content/generated/anchor-discrepancies.json` after `pnpm run content:build`.

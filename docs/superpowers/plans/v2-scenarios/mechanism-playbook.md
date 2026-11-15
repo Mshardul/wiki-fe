@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-11-13
+last_updated: 2026-11-15
+status: open
+---
+
 # Mechanism visualizer — planning playbook
 
 **Priority:** student learning. Every choice (chips, steps, tracing device) is made for what teaches best — not for what already exists in code.

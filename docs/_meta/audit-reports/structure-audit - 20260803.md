@@ -1,3 +1,10 @@
+---
+role: audit-report
+created: 2026-08-03
+last_updated: 2026-11-15
+status: closed
+---
+
 # Structure Audit (wiki-fe)
 
 Periodic file/directory structure review - non-content files only (`content/` excluded). Not a bug hunt or UX audit. Findings discussed and decided with the user in-session; each item below records the decision, not just the observation. Zero implementation done as part of this audit - decisions only, for later execution.

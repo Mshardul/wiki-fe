@@ -23,6 +23,7 @@ export interface Settings {
   paraSpacing: "Tight" | "Normal" | "Relaxed";
   hapticFeedback: boolean;
   practiceAnswersHidden: boolean;
+  visualizerAutoplay: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -36,6 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   paraSpacing: "Normal",
   hapticFeedback: false,
   practiceAnswersHidden: true,
+  visualizerAutoplay: false,
 };
 
 const LIGHT_DEFAULTS: Partial<Settings> = {

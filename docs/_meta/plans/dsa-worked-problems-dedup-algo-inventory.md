@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-07-31
+last_updated: 2026-11-15
+status: in-progress
+---
+
 # DSA Worked Problems Dedup - Algorithms Sweep Inventory
 
 Per-file target problem list for each Algorithms article's `## Practice problems` section, audited against the merged U6 spec (`dsa-writer.md`) and the distinct-technique constraint (main plan decision 4). Same format as `dsa-worked-problems-dedup-inventory.md` (Patterns). Nested bullets are duplicate-problems entries - same technique as the parent, cited in the article's `**Duplicate problems:**` line, not a full worked entry.

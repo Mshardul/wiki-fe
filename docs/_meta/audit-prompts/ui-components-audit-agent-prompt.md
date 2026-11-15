@@ -1,8 +1,11 @@
-# UI Components Audit Agent — Prompt
+---
+role: audit-prompt
+created: 2026-07-17
+last_updated: 2026-11-15
+status: deprecated
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-07-17 | 2026-08-12 | outdated |
+# UI Components Audit Agent — Prompt
 
 Paste this as the prompt when spawning the agent (e.g. `general-purpose` subagent, or a fresh Claude Code session in `wiki-fe`).
 

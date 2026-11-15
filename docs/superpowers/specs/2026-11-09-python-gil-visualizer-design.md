@@ -1,3 +1,10 @@
+---
+role: spec
+created: 2026-11-10
+last_updated: 2026-11-15
+status: implemented
+---
+
 Historical: HTML drafts are no longer used for new visualizers.
 
 # Visualizer — Inside the Python GIL — Design

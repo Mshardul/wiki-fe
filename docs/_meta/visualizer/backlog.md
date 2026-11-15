@@ -1,8 +1,11 @@
-# Visualizer backlog
+---
+role: plan
+created: 2026-10-07
+last_updated: 2026-11-15
+status: open
+---
 
-| Created |
-|---|
-| 2026-10-07 |
+# Visualizer backlog
 
 Locked topics for future visualizers, built one by one. Design detail is decided when a topic is picked. Remove a topic when it ships.
 

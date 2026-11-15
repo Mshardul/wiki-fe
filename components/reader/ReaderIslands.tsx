@@ -28,6 +28,7 @@ import { ScrollRestore } from "./ScrollRestore";
 import { StickyHeader } from "./StickyHeader";
 import { TabbedCode } from "./TabbedCode";
 import { Toc } from "./Toc";
+import { TocCollapse } from "./TocCollapse";
 import { ZoomLightbox } from "./ZoomLightbox";
 
 interface ReaderIslandsProps {
@@ -52,8 +53,13 @@ export function ReaderIslands({ article }: ReaderIslandsProps) {
       <aside id="toc-sidebar" className="toc-sidebar">
         <div className="toc-header">
           <span className="toc-label">On this page</span>
+          <TocCollapse
+            wikiId={article.verticalId}
+            articlePath={articlePath}
+            headings={article.headings}
+          />
         </div>
-        <Toc headings={article.headings} />
+        <Toc headings={article.headings} wikiId={article.verticalId} articlePath={articlePath} />
         {!article.isStub && (
           <NotesScratchpad
             key={`${article.verticalId}:${articlePath}`}

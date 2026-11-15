@@ -1,3 +1,10 @@
+---
+role: spec
+created: 2026-10-07
+last_updated: 2026-11-15
+status: approved
+---
+
 # Glossary Terms and Links — Design
 
 ## Purpose

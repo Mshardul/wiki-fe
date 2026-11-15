@@ -1,5 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { updateSettings } from "@/lib/storage/settings";
 import { SETTLE_MS, STEP_MS, TICK_MS } from "@/lib/visualizer/core/playback";
 import type { VizFrame } from "@/lib/visualizer/core/types";
 import { usePlayback } from "./usePlayback";
@@ -20,8 +21,12 @@ const frames = (n: number): VizFrame[] =>
   }));
 const FRAME_MS = STEP_MS + SETTLE_MS + TICK_MS;
 
-beforeEach(() => vi.useFakeTimers());
+beforeEach(() => {
+  vi.useFakeTimers();
+  updateSettings({ visualizerAutoplay: true });
+});
 afterEach(() => {
+  localStorage.clear();
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
@@ -182,5 +187,43 @@ describe("usePlayback", () => {
     act(() => result.current.pause());
     expect(result.current.playing).toBe(false);
     expect(result.current.frame).toBe(2);
+  });
+
+  it("does not autoplay when visualizerAutoplay is false (default)", () => {
+    updateSettings({ visualizerAutoplay: false });
+    const run = frames(5);
+    const { result } = renderHook(() => usePlayback(run));
+    expect(result.current.playing).toBe(false);
+    expect(result.current.frame).toBe(0);
+    act(() => {
+      vi.advanceTimersByTime(STEP_MS * 3);
+    });
+    expect(result.current.frame).toBe(0);
+  });
+
+  it("honors explicit autoplay parameter override", () => {
+    updateSettings({ visualizerAutoplay: false });
+    const { result: withTrue } = renderHook(() => usePlayback(frames(5), 0, true));
+    expect(withTrue.current.playing).toBe(true);
+
+    updateSettings({ visualizerAutoplay: true });
+    const { result: withFalse } = renderHook(() => usePlayback(frames(5), 0, false));
+    expect(withFalse.current.playing).toBe(false);
+  });
+
+  it("reacts live when visualizerAutoplay setting changes", () => {
+    updateSettings({ visualizerAutoplay: false });
+    const { result } = renderHook(() => usePlayback(frames(5)));
+    expect(result.current.playing).toBe(false);
+
+    act(() => {
+      updateSettings({ visualizerAutoplay: true });
+    });
+    expect(result.current.playing).toBe(true);
+
+    act(() => {
+      updateSettings({ visualizerAutoplay: false });
+    });
+    expect(result.current.playing).toBe(false);
   });
 });

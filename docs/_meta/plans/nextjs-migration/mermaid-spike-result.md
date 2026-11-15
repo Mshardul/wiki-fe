@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-06
+last_updated: 2026-11-15
+status: done
+---
+
 # Mermaid CSS-Variable Theming Spike — Result
 
 **Date:** 2026-09-01

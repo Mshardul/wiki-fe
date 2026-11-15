@@ -1,3 +1,10 @@
+---
+role: reference
+created: 2026-08-16
+last_updated: 2026-11-15
+status: active
+---
+
 # Audit log
 
 Append-only record of every audit run: which audit, when, and the report filename. Not the reports themselves (those live alongside this file, or in `pending/` until filed) - just the ledger of what's been run.

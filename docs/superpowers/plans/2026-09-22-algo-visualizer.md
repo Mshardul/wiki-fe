@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-30
+last_updated: 2026-11-15
+status: dropped
+---
+
 # Algorithm Visualizer Implementation Plan
 
 > **Status 2026-10-02:** unblocked (cutover is done) but written against the deleted `js/**` stack. Re-target to `app/`, `components/`, `lib/` (React/TS) before any implementation; this plan is reference only until then.

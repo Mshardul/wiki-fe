@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-11-12
+last_updated: 2026-11-15
+status: done
+---
+
 Historical: HTML drafts are no longer used for new visualizers.
 
 # Mechanism visualizers batch 2 — integration plan

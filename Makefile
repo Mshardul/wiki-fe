@@ -6,7 +6,7 @@ PRECOMMIT := $(VENV)/bin/pre-commit
 
 PW_BROWSERS ?= $(HOME)/Library/Caches/ms-playwright
 
-.PHONY: help install test test-smoke test-headed test-debug precommit precommit-ci clean screenshot-mechanism-visualizers
+.PHONY: help install test test-smoke test-headed test-debug precommit precommit-ci docs-headers docs-headers-fix clean screenshot-mechanism-visualizers
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -25,6 +25,12 @@ precommit: ## Run all pre-commit hooks against all files (auto-fixes in place)
 
 precommit-ci: ## Run the CI gate locally (check-only, never writes; mirrors CI)
 	$(PRECOMMIT) run --all-files --config .pre-commit-config.ci.yaml
+
+docs-headers: ## Check front-matter headers on docs
+	$(PY) scripts/check_doc_headers.py
+
+docs-headers-fix: ## Set last_updated to today on staged docs
+	$(PY) scripts/check_doc_headers.py --fix
 
 test-verbose: ## Run the e2e test suite (headless)
 	$(PYTEST) tests/ -v

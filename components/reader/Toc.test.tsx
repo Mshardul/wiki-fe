@@ -11,7 +11,7 @@ const HEADINGS: Heading[] = [
 
 describe("Toc", () => {
   it("renders a nested nav from headings with depth classes", () => {
-    render(<Toc headings={HEADINGS} />);
+    render(<Toc headings={HEADINGS} wikiId="system-design" articlePath="caching" />);
     const links = screen.getAllByRole("link");
     expect(links.map((l) => l.textContent)).toEqual([
       "What it is",
@@ -23,7 +23,9 @@ describe("Toc", () => {
   });
 
   it("renders nothing without headings", () => {
-    const { container } = render(<Toc headings={[]} />);
+    const { container } = render(
+      <Toc headings={[]} wikiId="system-design" articlePath="caching" />,
+    );
     expect(container.firstChild).toBeNull();
   });
 
@@ -31,7 +33,7 @@ describe("Toc", () => {
     document.body.innerHTML = '<h2 id="how-it-works">How it works</h2>';
     const scrollIntoView = vi.fn();
     (document.getElementById("how-it-works") as HTMLElement).scrollIntoView = scrollIntoView;
-    render(<Toc headings={HEADINGS} />);
+    render(<Toc headings={HEADINGS} wikiId="system-design" articlePath="caching" />);
     fireEvent.click(screen.getByRole("link", { name: "How it works" }));
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
     expect(new URL(location.href).searchParams.get("a")).toBe("how-it-works");

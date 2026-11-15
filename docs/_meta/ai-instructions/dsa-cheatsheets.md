@@ -1,8 +1,11 @@
-# AI Instructions - DSA Cheatsheet Pages
+---
+role: instructions
+created: 2026-07-25
+last_updated: 2026-11-15
+status: active
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-07-25 | 2026-07-25 | current |
+# AI Instructions - DSA Cheatsheet Pages
 
 > This file is self-contained. Do NOT read `_base.md`, `dsa-writer.md`, or `dsa-rater.md` for cheatsheet pages - the format is fundamentally different (table-only, no prose, no code, cross-cutting not per-topic).
 

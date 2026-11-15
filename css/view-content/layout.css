@@ -105,7 +105,7 @@ body.distraction-free .sticky-section-header {
   word-break: break-word;
   color: var(--text-body);
   font-size: var(--text-base);
-  line-height: var(--line-height-body);
+  line-height: var(--line-height);
 }
 
 /* Loading state */

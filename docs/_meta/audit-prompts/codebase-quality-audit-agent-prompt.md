@@ -1,8 +1,11 @@
-# Codebase Quality Audit Agent — Prompt (wiki-fe)
+---
+role: audit-prompt
+created: 2026-07-17
+last_updated: 2026-11-15
+status: deprecated
+---
 
-| Created | Last updated | Status |
-|---|---|---|
-| 2026-07-17 | 2026-10-02 | retired |
+# Codebase Quality Audit Agent — Prompt (wiki-fe)
 
 > **Retired 2026-10-02.** Written for the vanilla `js/**` app (11 stale references). Its file-size and topology checks are now covered by the CONVENTIONS size signal and the structure audit. Do not run; kept for history.
 

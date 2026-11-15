@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-11-14
+last_updated: 2026-11-15
+status: done
+---
+
 # Fit-to-stage scaling and Sorting Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

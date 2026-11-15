@@ -1,3 +1,10 @@
+---
+role: spec
+created: 2026-10-10
+last_updated: 2026-11-15
+status: draft
+---
+
 # Visualizer mobile layout: design
 
 Date: 2026-10-09. Status: awaiting review. Builds on `2026-10-09-visualizer-variants-and-revision-design.md`, whose "Out of scope" line for touch drag and the mobile layout this spec replaces.

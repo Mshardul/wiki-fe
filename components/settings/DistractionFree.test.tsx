@@ -11,4 +11,15 @@ describe("DistractionFree", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(document.body.classList.contains("distraction-free")).toBe(false);
   });
+
+  it("clicking the exit button removes the distraction-free class", () => {
+    const { container } = render(<DistractionFree />);
+    document.dispatchEvent(new CustomEvent("wiki:toggle-distraction-free"));
+    expect(document.body.classList.contains("distraction-free")).toBe(true);
+
+    const btn = container.querySelector(".distraction-free-exit-btn") as HTMLButtonElement;
+    expect(btn).toBeTruthy();
+    fireEvent.click(btn);
+    expect(document.body.classList.contains("distraction-free")).toBe(false);
+  });
 });

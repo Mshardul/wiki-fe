@@ -1,3 +1,10 @@
+---
+role: plan
+created: 2026-09-01
+last_updated: 2026-11-15
+status: done
+---
+
 # Next.js Migration — Implementation Plan Overview
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use `superpowers:executing-plans` to run each phase file task-by-task, inline in-session, stopping for review at every phase boundary. Steps use checkbox (`- [ ]`) syntax for tracking.
