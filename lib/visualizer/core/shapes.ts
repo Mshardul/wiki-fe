@@ -888,6 +888,10 @@ export interface TableSlot {
   note?: string;
   tone: ArrayTone;
   nodes: TableNode[];
+  // One of the shared eight hues; the row takes that colour.
+  hue?: number;
+  // Drawn with a plain white ring: the row's value just changed.
+  changed?: boolean;
 }
 // An arc down the side of a list from one slot to another.
 export interface TableHop {
@@ -912,8 +916,16 @@ export interface TableList {
   room: number;
   // Reserve the arc lane.
   lane: boolean;
+  // No column reserved for a held item; the list starts at its index column.
+  compact?: boolean;
   faded?: boolean;
   chip: TableChip | null;
+}
+// A small labelled count under the lists, one per owner.
+export interface TableBadge {
+  label: string;
+  value: string;
+  hue: number;
 }
 export interface TableMeter {
   label: string;
@@ -927,6 +939,107 @@ export interface TableModel {
   kind: "table";
   lists: TableList[];
   meter: TableMeter | null;
+  badges?: TableBadge[];
+}
+
+export type BinState = "new" | "removed";
+export interface BinItem {
+  id: string;
+  label: string;
+  // Drawn with a plain white ring: the item just changed bins.
+  changed?: boolean;
+  // Not handled yet; faded.
+  pending?: boolean;
+  // Counts as two cells tall.
+  heavy?: boolean;
+}
+export interface Bin {
+  id: string;
+  label: string;
+  hue: number;
+  count: string;
+  state?: BinState;
+  // Settled items first, pending ones after; stacked from the bottom.
+  items: BinItem[];
+}
+// One column per bin with items stacked from the bottom.
+export interface BinsModel {
+  kind: "bins";
+  bins: Bin[];
+  // Cells in the tallest stack over the whole run, so the figure keeps one height.
+  slots: number;
+  // The item being handled now.
+  active: string | null;
+}
+
+export interface CircleArc {
+  // Owns the positions after `from` up to and including `to`, clockwise.
+  from: number;
+  to: number;
+  hue: number;
+}
+export interface CircleAnchor {
+  id: string;
+  at: number;
+  label: string;
+  hue: number;
+  // Small badge text, and the load drawn as a bar against the ideal tick.
+  count: string;
+  load: number;
+  hot?: boolean;
+  // Other positions of the same owner: small unlabelled markers.
+  extra: number[];
+  state?: BinState;
+}
+export interface CirclePoint {
+  id: string;
+  at: number;
+  label: string;
+  hue: number;
+  changed?: boolean;
+  pending?: boolean;
+  heavy?: boolean;
+}
+// A fixed space of positions drawn as a circle, 0 at the top and clockwise.
+export interface CircleModel {
+  kind: "circle";
+  size: number;
+  arcs: CircleArc[];
+  anchors: CircleAnchor[];
+  points: CirclePoint[];
+  active: string | null;
+  // The clockwise walk from an item to the anchor that takes it.
+  walk: { from: number; to: number } | null;
+  // The even-share load, drawn as a tick on every anchor's bar; the bar's full length is loadMax.
+  ideal: number;
+  loadMax: number;
+}
+
+export interface RunCell {
+  id: string;
+  label: string;
+  hue: number;
+  changed?: boolean;
+  pending?: boolean;
+  heavy?: boolean;
+  active?: boolean;
+}
+export interface RunBrace {
+  // Inclusive cell indexes; from > to means the brace sits under an empty placeholder before cell `from`.
+  from: number;
+  to: number;
+  hue: number;
+  label: string;
+  // A second line, such as a range.
+  detail: string;
+  note: string;
+  state?: BinState;
+}
+// A sorted row of equal cells with a brace under each owner's consecutive run.
+export interface RunsModel {
+  kind: "runs";
+  cells: RunCell[];
+  braces: RunBrace[];
 }
 
 export type LeafModel =
@@ -935,6 +1048,9 @@ export type LeafModel =
   | HeapModel
   | GraphModel
   | TableModel
+  | BinsModel
+  | CircleModel
+  | RunsModel
   | HistogramModel
   | RankingModel
   | RingModel
@@ -981,6 +1097,9 @@ export function modelKeys(model: ShapeModel): string[] {
       ...(s.label !== undefined && s.state === "filled" ? [s.label] : []),
       ...s.nodes.map((n) => n.label),
     ]);
+  if (model.kind === "bins") return model.bins.flatMap((b) => b.items.map((i) => i.label));
+  if (model.kind === "circle") return model.points.map((p) => p.label);
+  if (model.kind === "runs") return model.cells.map((c) => c.label);
   if (model.kind === "array")
     return (model.rows[0]?.bars ?? []).flatMap((b) => (b ? [String(b.value)] : []));
   if (

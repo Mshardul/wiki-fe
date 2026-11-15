@@ -211,4 +211,12 @@
   --viz-stage-metric-room: 56px;
   --viz-stage-caption-room: 72px;
   --viz-compare: #ffffff;
+  --viz-node-a: var(--callout-interview-border);
+  --viz-node-b: var(--color-success);
+  --viz-node-c: var(--color-warning);
+  --viz-node-d: color-mix(in srgb, var(--callout-interview-border) 40%, var(--color-success));
+  --viz-node-e: var(--callout-thought-border);
+  --viz-node-f: color-mix(in srgb, var(--color-error) 55%, var(--callout-thought-border));
+  --viz-node-g: color-mix(in srgb, var(--color-error) 45%, var(--color-warning));
+  --viz-node-h: color-mix(in srgb, var(--text-muted) 70%, var(--callout-interview-border));
 }

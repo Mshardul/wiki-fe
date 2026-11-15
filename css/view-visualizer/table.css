@@ -164,3 +164,31 @@
   font-size: var(--text-xs);
   fill: var(--viz-exit);
 }
+.viz-table__slot--hue .viz-table__cell {
+  fill: var(--hue);
+}
+.viz-table__slot--hue .viz-table__label,
+.viz-table__slot--hue .viz-table__note {
+  fill: var(--viz-on-accent);
+}
+.viz-table__slot--changed .viz-table__cell {
+  stroke: var(--viz-compare);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 1.5px var(--text-heading));
+}
+.viz-table__badge rect {
+  fill: var(--hue);
+  stroke: var(--surface-1);
+  stroke-width: 2;
+}
+.viz-table__badge text {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  fill: var(--viz-on-accent);
+}
+.viz-table__slot--warn.viz-table__slot--hue .viz-table__cell {
+  stroke: var(--viz-exit);
+  stroke-width: 3;
+  stroke-dasharray: 4 3;
+}

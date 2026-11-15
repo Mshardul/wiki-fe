@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { getFallbackSuggestions, type SearchEntry, scoreMatch } from "./score";
+import { getFallbackSuggestions, type SearchEntry, scoreMatch, searchEntries } from "./score";
 import { _setSynonyms } from "./synonyms";
 
 const entry = (over: Partial<SearchEntry> = {}): SearchEntry => ({
@@ -59,5 +59,68 @@ describe("getFallbackSuggestions", () => {
       entry({ title: "Array", slug: "array" }),
     ]);
     expect(fuzzy.map((e) => e.title)).toContain("Hash Table");
+  });
+});
+
+describe("searchEntries filters", () => {
+  beforeEach(() => _setSynonyms({}));
+
+  const dsa = entry({ verticalId: "dsa", verticalTitle: "DSA" });
+  const sd = entry({
+    title: "Caching",
+    verticalId: "system-design",
+    verticalTitle: "System Design",
+    path: "content/system-design/components/caching.md",
+    slug: "caching",
+    description: "A cache stores recently-accessed values for fast retrieval.",
+  });
+
+  it("includes both verticals by default", () => {
+    const r = searchEntries([dsa, sd], "table", { verticalId: null, unreadOnly: false }, new Set());
+    expect(r).toHaveLength(1);
+    expect(r[0]!.title).toBe("Hash Table");
+  });
+
+  it("filters by vertical", () => {
+    const r = searchEntries(
+      [dsa, sd],
+      "table",
+      { verticalId: "system-design", unreadOnly: false },
+      new Set(),
+    );
+    expect(r).toHaveLength(0);
+  });
+
+  it("filters by unread only", () => {
+    const r = searchEntries(
+      [dsa, sd],
+      "table",
+      { verticalId: null, unreadOnly: true },
+      new Set([`dsa:${dsa.path}`]),
+    );
+    expect(r).toHaveLength(0);
+  });
+
+  it("excludes completed entries but keeps others", () => {
+    // "caching" matches only the sd entry; with sd marked completed and unreadOnly on, nothing returns.
+    const r = searchEntries(
+      [dsa, sd],
+      "caching",
+      { verticalId: null, unreadOnly: true },
+      new Set([`system-design:${sd.path}`]),
+    );
+    expect(r).toHaveLength(0);
+  });
+
+  it("keeps an unread entry when another is completed", () => {
+    // "table" matches only the dsa entry; marking sd completed leaves dsa untouched.
+    const r = searchEntries(
+      [dsa, sd],
+      "table",
+      { verticalId: null, unreadOnly: true },
+      new Set([`system-design:${sd.path}`]),
+    );
+    expect(r).toHaveLength(1);
+    expect(r[0]!.title).toBe("Hash Table");
   });
 });

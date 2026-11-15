@@ -162,6 +162,18 @@ def _stub_confirm_discard(page):
     page.add_init_script("window.confirm = () => false;")
 
 
+def _migrate_dialog(page):
+    return page.locator('[role="dialog"][aria-label="Save your local data"]')
+
+
+def _click_keep(page):
+    _migrate_dialog(page).get_by_role("button", name="Keep").click()
+
+
+def _click_discard(page):
+    _migrate_dialog(page).get_by_role("button", name="Discard").click()
+
+
 @pytest.mark.smoke
 def test_login_success_flips_button_to_logout(page, base_url):
     _stub_logged_out(page)
@@ -508,7 +520,6 @@ def test_migrate_keep_imports_local_data(page, base_url, seed_bookmarks):
         lambda r: r.fulfill(status=200, content_type="application/json", body="{}"),
     )
     _stub_synced_domains_empty(page)
-    _stub_confirm_keep(page)
     seed_bookmarks(_FOO_BOOKMARK)
     page.add_init_script("localStorage.setItem('wiki-completed-dsa', JSON.stringify(['content/dsa/foo.md']))")
 
@@ -517,9 +528,11 @@ def test_migrate_keep_imports_local_data(page, base_url, seed_bookmarks):
     _open_auth(page)
     _auth_dialog(page).get_by_label("Email").fill("a@example.com")
     _auth_dialog(page).get_by_label("Password", exact=True).fill("LongEnough1!xx")
-    # Top bar flips to "Log out" as soon as setSession runs; import is still in flight.
+    # The migrate modal appears once the login request resolves; clicking Keep fires /sync/import.
+    _auth_dialog(page).get_by_role("button", name="Log in").click()
+    _migrate_dialog(page).wait_for(state="visible", timeout=5_000)
     with page.expect_request("**/api/v1/sync/import", timeout=10_000) as import_req:
-        _auth_dialog(page).get_by_role("button", name="Log in").click()
+        _click_keep(page)
 
     expect(page.locator(".topbar-auth-btn:visible").first).to_contain_text("Log out")
     import_payload = import_req.value.post_data_json
@@ -536,7 +549,6 @@ def test_migrate_discard_clears_local_data_without_importing(page, base_url, see
         lambda r: (import_called.__setitem__("hit", True), r.fulfill(status=200, content_type="application/json", body="{}"))[1],
     )
     _stub_synced_domains_empty(page)
-    _stub_confirm_discard(page)
     seed_bookmarks(_FOO_BOOKMARK)
 
     page.goto(base_url, wait_until="domcontentloaded")
@@ -545,6 +557,8 @@ def test_migrate_discard_clears_local_data_without_importing(page, base_url, see
     _auth_dialog(page).get_by_label("Email").fill("a@example.com")
     _auth_dialog(page).get_by_label("Password", exact=True).fill("LongEnough1!xx")
     _auth_dialog(page).get_by_role("button", name="Log in").click()
+    _migrate_dialog(page).wait_for(state="visible", timeout=5_000)
+    _click_discard(page)
 
     expect(page.locator(".topbar-auth-btn:visible").first).to_contain_text("Log out")
     assert not import_called["hit"], "/sync/import must not be called when the user discards local data"
@@ -565,7 +579,6 @@ def test_migrate_import_failure_shows_toast_and_skips_pull(page, base_url, seed_
             f"**/api/v1/{path}",
             lambda r: (pull_called.__setitem__("hit", True), r.fulfill(status=200, content_type="application/json", body="[]"))[1],
         )
-    _stub_confirm_keep(page)
     seed_bookmarks(_FOO_BOOKMARK)
 
     page.goto(base_url, wait_until="domcontentloaded")
@@ -573,13 +586,63 @@ def test_migrate_import_failure_shows_toast_and_skips_pull(page, base_url, seed_
     _open_auth(page)
     _auth_dialog(page).get_by_label("Email").fill("a@example.com")
     _auth_dialog(page).get_by_label("Password", exact=True).fill("LongEnough1!xx")
+    _auth_dialog(page).get_by_role("button", name="Log in").click()
+    _migrate_dialog(page).wait_for(state="visible", timeout=5_000)
     with page.expect_request("**/api/v1/sync/import", timeout=10_000):
-        _auth_dialog(page).get_by_role("button", name="Log in").click()
+        _click_keep(page)
 
     expect(page.locator(".wiki-toast")).to_contain_text("Couldn't save your local data")
     assert not pull_called["hit"], "pullAll() must not run after a failed import - it would overwrite the kept local data"
     stored = page.evaluate("() => localStorage.getItem('wiki-bookmarks')")
     assert "foo.md" in stored
+
+
+def test_migrate_modal_dismissed_on_escape_keeps_no_data(page, base_url, seed_bookmarks):
+    _stub_logged_out(page)
+    _stub_login_success(page)
+    import_called = {"hit": False}
+    page.route(
+        "**/api/v1/sync/import",
+        lambda r: (import_called.__setitem__("hit", True), r.fulfill(status=200, content_type="application/json", body="{}"))[1],
+    )
+    _stub_synced_domains_empty(page)
+    seed_bookmarks(_FOO_BOOKMARK)
+
+    page.goto(base_url, wait_until="domcontentloaded")
+    page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
+    _open_auth(page)
+    _auth_dialog(page).get_by_label("Email").fill("a@example.com")
+    _auth_dialog(page).get_by_label("Password", exact=True).fill("LongEnough1!xx")
+    _auth_dialog(page).get_by_role("button", name="Log in").click()
+    _migrate_dialog(page).wait_for(state="visible", timeout=5_000)
+    page.keyboard.press("Escape")
+    _migrate_dialog(page).wait_for(state="detached", timeout=3_000)
+    expect(page.locator(".topbar-auth-btn:visible").first).to_contain_text("Log out")
+    assert not import_called["hit"], "Escape on the migrate modal must not import local data"
+    stored = page.evaluate("() => localStorage.getItem('wiki-bookmarks')")
+    assert stored in (None, "[]")
+
+
+def test_migrate_modal_lists_data_types_in_copy(page, base_url, seed_bookmarks):
+    _stub_logged_out(page)
+    _stub_login_success(page)
+    _stub_synced_domains_empty(page)
+    seed_bookmarks(_FOO_BOOKMARK)
+
+    page.goto(base_url, wait_until="domcontentloaded")
+    page.wait_for_selector(".home-main .wiki-card", timeout=8_000)
+    _open_auth(page)
+    _auth_dialog(page).get_by_label("Email").fill("a@example.com")
+    _auth_dialog(page).get_by_label("Password", exact=True).fill("LongEnough1!xx")
+    _auth_dialog(page).get_by_role("button", name="Log in").click()
+    _migrate_dialog(page).wait_for(state="visible", timeout=5_000)
+    copy = _migrate_dialog(page).locator(".migrate-copy")
+    expect(copy).to_contain_text("bookmarks")
+    expect(copy).to_contain_text("history")
+    # The copy must be explicit that notes and highlights are never uploaded or cleared by this choice.
+    expect(copy).to_contain_text("Notes")
+    expect(copy).to_contain_text("highlights")
+    expect(copy).to_contain_text("never uploaded or cleared")
 
 
 # ── focus trap ───────────────────────────────────────────────────────────────

@@ -30,6 +30,10 @@ describe("visualizer registry", () => {
       title: "Graph Traversals",
     });
     expect(getVisualizer("hash-table")).toMatchObject({ kind: "compare", title: "Hash Table" });
+    expect(getVisualizer("data-partitioning")).toMatchObject({
+      kind: "compare",
+      title: "Data Partitioning",
+    });
     expect(getVisualizer("inside-the-python-gil")).toMatchObject({
       kind: "mechanism",
       title: "Inside the Python GIL",

@@ -9,6 +9,7 @@ interface ChoiceGroupProps<T extends string | number> {
   value: T;
   onChange: (value: T) => void;
   variant?: "chips" | "segmented";
+  disabled?: boolean;
 }
 
 export function ChoiceGroup<T extends string | number>({
@@ -17,6 +18,7 @@ export function ChoiceGroup<T extends string | number>({
   value,
   onChange,
   variant = "chips",
+  disabled = false,
 }: ChoiceGroupProps<T>) {
   return (
     <div className={`viz-choice viz-choice--${variant}`} role="group" aria-label={label}>
@@ -26,6 +28,7 @@ export function ChoiceGroup<T extends string | number>({
           type="button"
           className={`viz-choice__btn${o.value === value ? " is-on" : ""}`}
           aria-pressed={o.value === value}
+          disabled={disabled}
           onClick={() => onChange(o.value)}
         >
           {o.label}

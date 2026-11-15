@@ -1,9 +1,11 @@
 import { useId, useState } from "react";
 import {
+  type ActionField,
   type ChipsField,
   type FieldAvailability,
   type FieldSpec,
   type FieldValue,
+  type InputValues,
   parseSequenceField,
   type SeedField,
   type SequenceField,
@@ -39,6 +41,7 @@ function ChipsInput({
           options={field.options}
           value={typeof value === "string" ? value : ""}
           onChange={onChange}
+          disabled={availability?.disabled === true}
         />
         {nav && (
           <span className="viz-variant-nav">
@@ -92,8 +95,9 @@ function SliderInput({
 function SequenceInput({
   field,
   sequence,
+  values,
   onChange,
-}: FieldProps<SequenceField> & { sequence: string[] }) {
+}: FieldProps<SequenceField> & { sequence: string[]; values: InputValues }) {
   const id = useId();
   const [draft, setDraft] = useState(() => sequence.join(" "));
   const [error, setError] = useState<string | null>(null);
@@ -114,7 +118,7 @@ function SequenceInput({
         }}
         onKeyDown={(e) => {
           if (e.key !== "Enter") return;
-          const parsed = parseSequenceField(field, draft);
+          const parsed = parseSequenceField(field, draft, values);
           if (!parsed.ok) {
             setError(parsed.error);
             return;
@@ -144,11 +148,37 @@ function SeedInput({ field, value, onChange }: FieldProps<SeedField>) {
   );
 }
 
+function ActionInput({
+  field,
+  availability,
+  onRun,
+}: {
+  field: ActionField;
+  availability?: FieldAvailability;
+  onRun: () => void;
+}) {
+  return (
+    <div className="viz-field viz-field--action">
+      <button
+        type="button"
+        className="viz-btn"
+        disabled={availability?.disabled === true}
+        onClick={onRun}
+      >
+        {field.label}
+      </button>
+      {availability?.hint && <p className="viz-field__hint">{availability.hint}</p>}
+    </div>
+  );
+}
+
 interface ConfigFieldProps {
   field: FieldSpec;
   value: FieldValue;
+  values?: InputValues;
   sequence: string[];
   onChange: (value: FieldValue) => void;
+  onAction?: () => void;
   nav?: { onStep: (delta: number) => void };
   availability?: FieldAvailability;
 }
@@ -156,8 +186,10 @@ interface ConfigFieldProps {
 export function ConfigField({
   field,
   value,
+  values = {},
   sequence,
   onChange,
+  onAction,
   nav,
   availability,
 }: ConfigFieldProps) {
@@ -183,9 +215,12 @@ export function ConfigField({
           field={field}
           value={value}
           sequence={sequence}
+          values={values}
           onChange={onChange}
         />
       );
+    case "action":
+      return <ActionInput field={field} availability={availability} onRun={() => onAction?.()} />;
     case "seed":
       return <SeedInput field={field} value={value} onChange={onChange} />;
   }

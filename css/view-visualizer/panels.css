@@ -126,6 +126,10 @@
 .viz-field__hint.is-error {
   color: var(--viz-bad);
 }
+.viz-field--action .viz-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .viz-field__seed {
   display: flex;
   align-items: center;

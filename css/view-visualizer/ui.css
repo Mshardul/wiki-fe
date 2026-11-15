@@ -139,6 +139,9 @@
   text-align: left;
   white-space: nowrap;
 }
+.viz-vars__table td {
+  white-space: normal;
+}
 .viz-vars__table tr:last-child th,
 .viz-vars__table tr:last-child td {
   border-bottom: 0;
@@ -188,6 +191,10 @@
   color: var(--viz-bad);
   background: var(--viz-bad-bg);
 }
+.viz-badge--neutral {
+  color: var(--text-muted);
+  background: var(--viz-slot-bg);
+}
 .viz-pill {
   padding: 2px var(--s2);
   border-radius: var(--r-full);
@@ -229,4 +236,30 @@
 .viz-variant-nav {
   display: inline-flex;
   gap: var(--s1);
+}
+
+/* Shared owner hues: a class sets --hue for the shapes that colour by owner. */
+.viz-hue-0 {
+  --hue: var(--viz-node-a);
+}
+.viz-hue-1 {
+  --hue: var(--viz-node-b);
+}
+.viz-hue-2 {
+  --hue: var(--viz-node-c);
+}
+.viz-hue-3 {
+  --hue: var(--viz-node-d);
+}
+.viz-hue-4 {
+  --hue: var(--viz-node-e);
+}
+.viz-hue-5 {
+  --hue: var(--viz-node-f);
+}
+.viz-hue-6 {
+  --hue: var(--viz-node-g);
+}
+.viz-hue-7 {
+  --hue: var(--viz-node-h);
 }

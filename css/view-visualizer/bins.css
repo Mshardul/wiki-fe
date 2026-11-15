@@ -1,0 +1,83 @@
+/* ═══════════════════════════════════════════════
+   VISUALIZER — BINS SHAPE (columns of stacked items)
+   ═══════════════════════════════════════════════ */
+.viz-bins {
+  position: absolute;
+  inset: 0;
+}
+.viz-bins__fit .viz-fit__inner {
+  display: flex;
+  justify-content: center;
+}
+.viz-bins__svg {
+  flex: none;
+  overflow: visible;
+}
+.viz-bins__well {
+  fill: var(--viz-slot-bg);
+  stroke: var(--viz-slot-border);
+  stroke-dasharray: 4 3;
+}
+.viz-bins__name {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: var(--fw-extrabold);
+  fill: var(--hue);
+}
+.viz-bins__count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-bins__bin--new {
+  animation: viz-bins-enter var(--viz-move) both;
+}
+.viz-bins__bin--removed {
+  opacity: 0.45;
+}
+.viz-bins__bin--removed .viz-bins__well {
+  stroke: var(--viz-bad);
+}
+.viz-bins__item {
+  transition:
+    transform var(--viz-move),
+    opacity var(--t);
+}
+.viz-bins__item rect {
+  fill: var(--hue);
+  stroke: var(--surface-1);
+  stroke-width: 2;
+  transition: fill var(--t);
+}
+.viz-bins__item text {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  fill: var(--viz-on-accent);
+  pointer-events: none;
+}
+.viz-bins__item--pending {
+  opacity: 0.35;
+}
+.viz-bins__item--changed rect {
+  stroke: var(--viz-compare);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 1.5px var(--text-heading));
+}
+.viz-bins__item--active rect {
+  stroke: var(--viz-active);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px var(--viz-active));
+}
+@keyframes viz-bins-enter {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .viz-bins__item,
+  .viz-bins__bin--new {
+    transition: none;
+    animation: none;
+  }
+}

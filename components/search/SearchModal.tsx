@@ -3,16 +3,18 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Modal } from "@/components/common/Modal";
+import { verticalRegistry } from "@/lib/content/verticals";
 import { loadSearchEntries, routeFor } from "@/lib/search";
 import { fuzzyMatch } from "@/lib/search/fuzzy";
 import {
   getFallbackSuggestions,
   type SearchEntry,
-  scoreMatch,
+  searchEntries,
   titleHighlightTerm,
 } from "@/lib/search/score";
 import { extractSnippet } from "@/lib/search/snippet";
 import { loadSynonyms } from "@/lib/search/synonyms";
+import { listAllCompletionsSnapshot, subscribeCompletionsAll } from "@/lib/storage/completions";
 import {
   addRecentSearch,
   getRecentSearchesSnapshot,
@@ -23,6 +25,27 @@ import {
 interface ResultGroup {
   verticalTitle: string;
   items: SearchEntry[];
+}
+
+function FilterChip({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`gsearch-filter-chip${active ? " active" : ""}`}
+      aria-pressed={active}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
 }
 
 function Highlight({ text, term }: { text: string; term: string }) {
@@ -40,18 +63,30 @@ function Highlight({ text, term }: { text: string; term: string }) {
 
 // Stable server snapshot: a fresh [] per call makes useSyncExternalStore loop.
 const NO_RECENT_SEARCHES: string[] = [];
+const NO_COMPLETIONS: Array<{ wikiId: string; path: string }> = [];
 
 export function SearchModal() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [entries, setEntries] = useState<SearchEntry[]>([]);
   const [selected, setSelected] = useState(-1);
+  const [verticalId, setVerticalId] = useState<string | null>(null);
+  const [unreadOnly, setUnreadOnly] = useState(false);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const recents = useSyncExternalStore(
     subscribeRecentSearches,
     getRecentSearchesSnapshot,
     () => NO_RECENT_SEARCHES,
+  );
+  const completions = useSyncExternalStore(
+    subscribeCompletionsAll,
+    listAllCompletionsSnapshot,
+    () => NO_COMPLETIONS,
+  );
+  const completed = useMemo(
+    () => new Set(completions.map((c) => `${c.wikiId}:${c.path}`)),
+    [completions],
   );
 
   useEffect(() => {
@@ -98,6 +133,8 @@ export function SearchModal() {
       >();
       if (sq) {
         for (const e of entries) {
+          if (verticalId && e.verticalId !== verticalId) continue;
+          if (unreadOnly && completed.has(`${e.verticalId}:${e.path}`)) continue;
           const sl = e.section.toLowerCase();
           if (sl.includes(sq) || fuzzyMatch(sq, sl)) {
             const k = `${e.verticalId}::${e.section}`;
@@ -109,17 +146,18 @@ export function SearchModal() {
       }
       return { groups: [], sections: [...seen.values()], fallback: null, count: seen.size };
     }
-    const scored = entries
-      .map((e) => ({ e, score: scoreMatch(raw, e) }))
-      .filter((s) => s.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .map((s) => s.e);
+    const scored = searchEntries(entries, raw, { verticalId, unreadOnly }, completed);
 
     if (!scored.length) {
+      const filtered = entries.filter(
+        (e) =>
+          (!verticalId || e.verticalId === verticalId) &&
+          (!unreadOnly || !completed.has(`${e.verticalId}:${e.path}`)),
+      );
       return {
         groups: [],
         sections: [],
-        fallback: getFallbackSuggestions(raw, entries),
+        fallback: getFallbackSuggestions(raw, filtered),
         count: 0,
       };
     }
@@ -130,7 +168,7 @@ export function SearchModal() {
       byVertical.get(e.verticalId)?.items.push(e);
     }
     return { groups: [...byVertical.values()], sections: [], fallback: null, count: scored.length };
-  }, [raw, sectionMode, entries]);
+  }, [raw, sectionMode, entries, verticalId, unreadOnly, completed]);
 
   const flatItems = useMemo(
     () => (sectionMode ? sections.flatMap((s) => s.items) : groups.flatMap((g) => g.items)),
@@ -196,6 +234,31 @@ export function SearchModal() {
         <span className="gsearch-count" aria-live="polite">
           {!sectionMode && count > 0 ? `${count} result${count === 1 ? "" : "s"}` : ""}
         </span>
+      </div>
+      <div className="gsearch-filter-row" aria-label="Filter results">
+        <div className="gsearch-filter-chips">
+          {verticalRegistry().map((v) => (
+            <FilterChip
+              key={v.id}
+              active={verticalId === v.id}
+              label={v.title}
+              onClick={() => setVerticalId(verticalId === v.id ? null : v.id)}
+            />
+          ))}
+          <FilterChip active={unreadOnly} label="Unread" onClick={() => setUnreadOnly((u) => !u)} />
+        </div>
+        {(verticalId !== null || unreadOnly) && (
+          <button
+            type="button"
+            className="gsearch-filter-clear"
+            onClick={() => {
+              setVerticalId(null);
+              setUnreadOnly(false);
+            }}
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
       <div className="gsearch-results">

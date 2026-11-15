@@ -22,15 +22,27 @@ export interface SequenceField extends FieldBase {
   maxLen: number;
   hint: string;
   resetBy: string[];
-  // A module with its own token grammar supplies this; the default reads letters A–Z.
-  parse?: (raw: string) => SequenceParse;
+  // A module with its own token grammar supplies this; the default reads letters A–Z. It sees the other inputs.
+  parse?: (raw: string, values: InputValues) => SequenceParse;
   // Separator between tokens in the URL; tokens that can run together (numbers) need one.
   join?: string;
+  // A reset clears the field to an empty list instead of regenerating its default.
+  resetEmpty?: boolean;
+  // Replaces the default change for a direct edit: gets the values before the edit and the new tokens, returns every value to apply.
+  link?: (values: InputValues, tokens: string[]) => InputValues;
 }
 export interface SeedField extends FieldBase {
   kind: "seed";
 }
-export type FieldSpec = ChipsField | SliderField | SequenceField | SeedField;
+// A button: pressing it replaces the values wholesale and may jump playback to a 0-based frame.
+export interface ActionField {
+  kind: "action";
+  key: string;
+  label: string;
+  hideLabel?: boolean;
+  apply: (values: InputValues) => { values: InputValues; step?: number };
+}
+export type FieldSpec = ChipsField | SliderField | SequenceField | SeedField | ActionField;
 export interface FieldAvailability {
   disabled?: boolean;
   hint?: string;
@@ -54,7 +66,7 @@ export function applyChange(
 ): InputValues {
   const next: InputValues = { ...values, [key]: value };
   for (const f of allFields(sections)) {
-    if (f.kind === "sequence" && f.resetBy.includes(key)) next[f.key] = null;
+    if (f.kind === "sequence" && f.resetBy.includes(key)) next[f.key] = f.resetEmpty ? [] : null;
   }
   return next;
 }
@@ -68,8 +80,12 @@ export function parseSequence(raw: string, maxLen: number): string[] | null {
   return keys.length ? keys : null;
 }
 
-export function parseSequenceField(field: SequenceField, raw: string): SequenceParse {
-  if (field.parse) return field.parse(raw);
+export function parseSequenceField(
+  field: SequenceField,
+  raw: string,
+  values: InputValues = {},
+): SequenceParse {
+  if (field.parse) return field.parse(raw, values);
   const keys = parseSequence(raw, field.maxLen);
   return keys ? { ok: true, tokens: keys } : { ok: false, error: "Use letters A–Z" };
 }

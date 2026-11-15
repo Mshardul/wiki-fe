@@ -1,0 +1,86 @@
+/* ═══════════════════════════════════════════════
+   VISUALIZER — RUNS SHAPE (sorted cells with braces)
+   ═══════════════════════════════════════════════ */
+.viz-runs {
+  position: absolute;
+  inset: 0;
+}
+.viz-runs__fit .viz-fit__inner {
+  display: flex;
+  justify-content: center;
+}
+.viz-runs__svg {
+  flex: none;
+  overflow: visible;
+}
+.viz-runs__cell {
+  transition:
+    transform var(--viz-move),
+    opacity var(--t);
+}
+.viz-runs__cell rect {
+  fill: var(--hue);
+  stroke: var(--surface-1);
+  stroke-width: 2;
+  transition: fill var(--t);
+}
+.viz-runs__cell text {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  fill: var(--viz-on-accent);
+  pointer-events: none;
+}
+.viz-runs__cell--pending {
+  opacity: 0.35;
+}
+.viz-runs__cell--changed rect {
+  stroke: var(--viz-compare);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 1.5px var(--text-heading));
+}
+.viz-runs__cell--active rect {
+  stroke: var(--viz-active);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px var(--viz-active));
+}
+.viz-runs__hole {
+  fill: none;
+  stroke: var(--hue);
+  stroke-dasharray: 4 3;
+}
+.viz-runs__brace path {
+  fill: none;
+  stroke: var(--hue);
+  stroke-width: 2;
+}
+.viz-runs__owner {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-extrabold);
+  fill: var(--hue);
+}
+.viz-runs__range,
+.viz-runs__note {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-runs__brace--new {
+  animation: viz-runs-enter var(--viz-move) both;
+}
+.viz-runs__brace--removed {
+  opacity: 0.45;
+}
+@keyframes viz-runs-enter {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .viz-runs__cell,
+  .viz-runs__brace--new {
+    transition: none;
+    animation: none;
+  }
+}

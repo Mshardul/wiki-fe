@@ -3,7 +3,7 @@ import type { FlowModel } from "./flow";
 import type { Rich } from "./rich";
 import type { ScheduleSwatch, ShapeModel } from "./shapes";
 
-export type Outcome = "good" | "bad";
+export type Outcome = "good" | "bad" | "neutral";
 
 export interface VarRow {
   name: string;
@@ -53,6 +53,8 @@ export interface RunResult {
   info: InfoContent;
   metricLabel: string;
   sequence: string[];
+  // Each sequence field's own resolved tokens; a field without an entry shows `sequence`.
+  sequences?: Record<string, string[]>;
 }
 
 export interface VariantsSpec {

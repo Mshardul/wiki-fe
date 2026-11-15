@@ -219,3 +219,28 @@ def test_graph_draws_layers_with_a_queue_steps_to_done_and_fits_a_phone(page, ba
     expect(page.get_by_text("step 17 / 17")).to_be_visible()
     page.set_viewport_size({"width": 320, "height": 700})
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+
+
+PARTITION = "/visualizer/data-partitioning/"
+
+
+def test_data_partitioning_add_node_rings_the_moved_keys_and_fits_a_phone(page, base_url):
+    """data partitioning draws bins, Add node jumps to the new event, the moved keys are ringed, switching variant keeps the step and draws the ring, and it fits at 320px."""
+    page.goto(f"{base_url}{PARTITION}?p=mod-n&s=1&n=3&e=")
+    expect(page.get_by_role("heading", level=1, name="Data Partitioning")).to_be_visible()
+    expect(page.locator(".viz-stage .viz-bins")).to_be_visible()
+    expect(page.get_by_text("step 1 / 8")).to_be_visible()
+    page.get_by_role("button", name="Add node").click()
+    expect(page.get_by_text("step 9 / 17")).to_be_visible()
+    expect(page.locator(".viz-bins__bin")).to_have_count(4)
+    _pause_if_playing(page)
+    page.get_by_role("button", name="Last step").click()
+    expect(page.get_by_text("step 17 / 17")).to_be_visible()
+    expect(page.locator(".viz-bins__item--changed")).to_have_count(6)
+    expect(page.locator(".viz-stage__metric")).to_contain_text("6/8")
+    page.get_by_role("button", name="Hash ring").click()
+    expect(page.get_by_text("step 17 / 17")).to_be_visible()
+    expect(page.locator(".viz-stage .viz-circle")).to_be_visible()
+    expect(page.locator(".viz-circle__point--changed")).to_have_count(2)
+    page.set_viewport_size({"width": 320, "height": 700})
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")

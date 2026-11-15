@@ -435,3 +435,89 @@ def test_recent_chip_44px_on_coarse_pointer_tablet_width(browser, base_url):
         assert height >= 44, f"gsearch-recent-chip height too small at 800px: {height}px"
     finally:
         ctx.close()
+
+
+# ── Filter chips ─────────────────────────────────────────────────────────────
+
+
+def _filter_row(page):
+    return page.locator(".gsearch-filter-row")
+
+
+def _chip(page, name):
+    return _filter_row(page).get_by_role("button", name=name)
+
+
+def test_filter_chips_visible(wiki_page):
+    _open_search(wiki_page)
+    row = _filter_row(wiki_page)
+    expect(row).to_be_visible()
+    expect(_chip(wiki_page, "System Design")).to_be_visible()
+    expect(_chip(wiki_page, "Data Structures & Algorithms")).to_be_visible()
+    expect(_chip(wiki_page, "Unread")).to_be_visible()
+
+
+def test_filter_chips_filter_by_vertical(wiki_page):
+    _open_search(wiki_page)
+    wiki_page.fill(".gsearch-input", "caching")
+    wiki_page.wait_for_selector(".gsearch-result", timeout=8_000)
+    before = wiki_page.locator(".gsearch-result").count()
+    assert before > 0
+
+    _chip(wiki_page, "System Design").click()
+    wiki_page.wait_for_function(
+        "() => document.querySelectorAll('.gsearch-result').length > 0",
+        timeout=5_000,
+    )
+    after = wiki_page.locator(".gsearch-result").count()
+    assert after <= before, f"filtering by vertical should not add results: {before} -> {after}"
+    titles = wiki_page.locator(".gsearch-group-label").all_text_contents()
+    assert "System Design" in titles
+
+
+def test_filter_chips_clear_filter(wiki_page):
+    _open_search(wiki_page)
+    wiki_page.fill(".gsearch-input", "caching")
+    wiki_page.wait_for_selector(".gsearch-result", timeout=8_000)
+
+    _chip(wiki_page, "System Design").click()
+    wiki_page.wait_for_selector(".gsearch-filter-chip[aria-pressed='true']", timeout=5_000)
+    _filter_row(wiki_page).get_by_role("button", name="Clear filters").click()
+    wiki_page.wait_for_function(
+        "() => !document.querySelector('.gsearch-filter-chip[aria-pressed=\"true\"]')",
+        timeout=5_000,
+    )
+    assert wiki_page.locator(".gsearch-result").count() > 0
+
+
+def test_filter_chips_unread_only_excludes_completed(wiki_page):
+    wiki_page.evaluate(
+        "() => localStorage.setItem('wiki-completed-dsa', JSON.stringify(['content/dsa/data-structures/hash-table.md']))"
+    )
+    _open_search(wiki_page)
+    wiki_page.fill(".gsearch-input", "hash table")
+    wiki_page.wait_for_selector(".gsearch-result", timeout=8_000)
+    _chip(wiki_page, "Unread").click()
+    wiki_page.wait_for_function(
+        "() => document.querySelectorAll('.gsearch-result').length === 0",
+        timeout=5_000,
+    )
+    assert wiki_page.locator(".gsearch-result").count() == 0
+
+
+def test_filter_chips_active_state_announced(wiki_page):
+    _open_search(wiki_page)
+    chip = _chip(wiki_page, "Data Structures & Algorithms")
+    expect(chip).to_have_attribute("aria-pressed", "false")
+    chip.click()
+    expect(chip).to_have_attribute("aria-pressed", "true")
+
+
+def test_filter_chips_disabled_in_section_mode(wiki_page):
+    _open_search(wiki_page)
+    wiki_page.fill(".gsearch-input", ">")
+    wiki_page.wait_for_function(
+        "() => document.querySelector('.gsearch-dialog')?.classList.contains('section-mode')",
+        timeout=5_000,
+    )
+    expect(_filter_row(wiki_page)).to_be_hidden()

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { writeToClipboard } from "@/lib/clipboard";
 import { showToast } from "@/lib/toast";
-import { applyChange, type FieldValue } from "@/lib/visualizer/core/fields";
+import { allFields, applyChange, type FieldValue } from "@/lib/visualizer/core/fields";
 import { defaultAxis } from "@/lib/visualizer/core/shapes";
 import type { Experiment, VisualizerModule } from "@/lib/visualizer/core/types";
 import { encodeState, parseState, type ViewMode } from "@/lib/visualizer/core/url-state";
@@ -103,11 +103,35 @@ function VisualizerBody({
         switchVariant(value);
         return;
       }
-      setValues((v) => applyChange(mod.sections, v, key, value));
+      const field = allFields(mod.sections).find((f) => f.key === key);
+      setValues((v) =>
+        field?.kind === "sequence" && field.link && Array.isArray(value)
+          ? field.link(v, value)
+          : applyChange(mod.sections, v, key, value),
+      );
       restart();
     },
     [mod, variantKey, switchVariant, restart],
   );
+  // An action may land on a later step; the seek waits until the new run's frames have arrived.
+  const pendingSeek = useRef<number | null>(null);
+  const act = useCallback(
+    (key: string) => {
+      const field = allFields(mod.sections).find((f) => f.key === key);
+      if (field?.kind !== "action") return;
+      const out = field.apply(values);
+      pendingSeek.current = out.step ?? null;
+      setValues(out.values);
+      restart({ play: false });
+    },
+    [mod, values, restart],
+  );
+  useEffect(() => {
+    if (pendingSeek.current === null) return;
+    const at = pendingSeek.current;
+    pendingSeek.current = null;
+    seek(at);
+  }, [result, seek]);
   const runTry = useCallback(
     (e: Experiment) => {
       setValues((v) => ({ ...v, ...e.patch }));
@@ -186,7 +210,9 @@ function VisualizerBody({
               sections={mod.sections}
               values={values}
               sequence={result.sequence}
+              sequences={result.sequences}
               onChange={change}
+              onAction={act}
               availability={availability}
               variantNav={
                 variantKey && variantIds.length > 1

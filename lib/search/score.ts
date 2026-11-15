@@ -38,6 +38,27 @@ export function titleHighlightTerm(title: string, query: string): string {
   return expandQuery(query).find((t) => tl.includes(t.toLowerCase())) ?? query;
 }
 
+export interface SearchFilters {
+  verticalId: string | null; // null = all verticals
+  unreadOnly: boolean;
+}
+
+// Applies vertical + unread filters, then scores and sorts. Filtered-out entries never reach the scorer.
+export function searchEntries(
+  entries: SearchEntry[],
+  query: string,
+  filters: SearchFilters,
+  completed: Set<string>,
+): SearchEntry[] {
+  return entries
+    .filter((e) => !filters.verticalId || e.verticalId === filters.verticalId)
+    .filter((e) => !filters.unreadOnly || !completed.has(`${e.verticalId}:${e.path}`))
+    .map((e) => ({ e, score: scoreMatch(query, e) }))
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((s) => s.e);
+}
+
 export interface Fallback {
   fuzzy: SearchEntry[];
   didYouMean: string | null;

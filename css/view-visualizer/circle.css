@@ -1,0 +1,130 @@
+/* ═══════════════════════════════════════════════
+   VISUALIZER — CIRCLE SHAPE (a space of positions on a ring)
+   ═══════════════════════════════════════════════ */
+.viz-circle {
+  position: absolute;
+  inset: 0;
+}
+.viz-circle__fit .viz-fit__inner {
+  display: flex;
+  justify-content: center;
+}
+.viz-circle__svg {
+  flex: none;
+  overflow: visible;
+}
+.viz-circle__track {
+  fill: none;
+  stroke: var(--viz-slot-border);
+}
+.viz-circle__arc {
+  fill: none;
+  stroke: var(--hue);
+  opacity: 0.6;
+  transition: stroke var(--t);
+}
+.viz-circle__tick {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-circle__walk {
+  fill: none;
+  stroke: var(--viz-active);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 2 6;
+}
+.viz-circle__stem {
+  stroke: var(--hue);
+  stroke-width: 2;
+}
+.viz-circle__marker {
+  fill: var(--hue);
+  stroke: var(--surface-1);
+  stroke-width: 2;
+}
+.viz-circle__extra {
+  fill: var(--hue);
+  stroke: var(--surface-1);
+  stroke-width: 1;
+}
+.viz-circle__name {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-extrabold);
+  fill: var(--viz-on-accent);
+}
+.viz-circle__count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  fill: var(--text-heading);
+}
+.viz-circle__bar-track {
+  fill: var(--viz-slot-bg);
+  stroke: var(--viz-slot-border);
+}
+.viz-circle__bar-fill {
+  fill: var(--hue);
+  transition: width var(--t);
+}
+.viz-circle__ideal {
+  stroke: var(--text-muted);
+  stroke-width: 2;
+}
+.viz-circle__hot {
+  fill: none;
+  stroke: var(--text-heading);
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+}
+.viz-circle__anchor--new {
+  animation: viz-circle-enter var(--viz-move) both;
+}
+.viz-circle__anchor--removed {
+  opacity: 0.45;
+}
+.viz-circle__point {
+  transition:
+    transform var(--viz-move),
+    opacity var(--t);
+}
+.viz-circle__point circle {
+  fill: var(--hue);
+  stroke: var(--surface-1);
+  stroke-width: 2;
+  transition: fill var(--t);
+}
+.viz-circle__point text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  fill: var(--viz-on-accent);
+  pointer-events: none;
+}
+.viz-circle__point--pending {
+  opacity: 0.35;
+}
+.viz-circle__point--changed circle {
+  stroke: var(--viz-compare);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 1.5px var(--text-heading));
+}
+.viz-circle__point--active circle {
+  stroke: var(--viz-active);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px var(--viz-active));
+}
+@keyframes viz-circle-enter {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .viz-circle__point,
+  .viz-circle__anchor--new {
+    transition: none;
+    animation: none;
+  }
+}

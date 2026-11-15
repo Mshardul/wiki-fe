@@ -5,6 +5,7 @@ import { celeryPrefetchModule } from "./celery-prefetch/module";
 import { connectionCostModule } from "./connection-cost/module";
 import { connectionPoolModule } from "./connection-pool/module";
 import type { VisualizerModule } from "./core/types";
+import { partitionModule } from "./data-partitioning/module";
 import { dnsCachingModule } from "./dns-caching/module";
 import { evictionModule } from "./eviction/module";
 import { gilModule } from "./gil/module";
@@ -25,6 +26,7 @@ import { sortingModule } from "./sorting/module";
 
 export const MODULES: Record<string, VisualizerModule> = {
   [evictionModule.slug]: evictionModule,
+  [partitionModule.slug]: partitionModule,
   [cachingModule.slug]: cachingModule,
   [rateLimitingModule.slug]: rateLimitingModule,
   [gilModule.slug]: gilModule,

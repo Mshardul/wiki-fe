@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { MigrateDataModal } from "@/components/auth/MigrateDataModal";
 import { BookmarksModal } from "@/components/chrome/BookmarksModal";
 import { HealthPing } from "@/components/chrome/HealthPing";
 import { IconTooltip } from "@/components/chrome/IconTooltip";
@@ -67,6 +68,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {children}
         {/* AuthModal must register its opener before SessionInit: SessionInit calls openAuthModal() sync on mount, and effects run in mount order. */}
         <AuthModal />
+        <MigrateDataModal />
         <SessionInit />
         <SettingsInit />
         <HealthPing />

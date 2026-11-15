@@ -14,6 +14,7 @@ import {
 import { validatePassword } from "@/lib/auth/passwordRules";
 import { showToast } from "@/lib/toast";
 import { type AuthPanel, registerAuthModal } from "./authModalController";
+import { isMigratePending, openMigrateModal } from "./migrateDataController";
 import { PasswordChecklist } from "./PasswordChecklist";
 
 const RESEND_COOLDOWN_S = 30;
@@ -108,9 +109,7 @@ export function AuthModal() {
 
   const onLogin = () =>
     run(async () => {
-      const keep = anonDataExists()
-        ? confirm("Keep the bookmarks and history saved on this device?")
-        : true;
+      const keep = anonDataExists() ? (await openMigrateModal()) === "keep" : true;
       const r = await loginFlow(email.trim(), password, keep);
       if (r.ok) {
         if (r.code === "MIGRATION_FAILED") {
@@ -153,9 +152,7 @@ export function AuthModal() {
     run(async () => {
       if (!pwValid) return setError("Password does not meet all rules.");
       if (password !== passwordConfirm) return setError("Passwords do not match.");
-      const keep = anonDataExists()
-        ? confirm("Keep the bookmarks and history saved on this device?")
-        : true;
+      const keep = anonDataExists() ? (await openMigrateModal()) === "keep" : true;
       const r = await resetPasswordFlow(resetToken, password, keep);
       if (r.ok) {
         showToast("Password updated", { variant: "success" });
@@ -179,7 +176,10 @@ export function AuthModal() {
   return (
     <Modal
       open={open}
-      onClose={() => setOpen(false)}
+      onClose={() => {
+        if (isMigratePending()) return;
+        setOpen(false);
+      }}
       label="Account"
       className="auth-dialog"
       backdropClassName="auth-modal"

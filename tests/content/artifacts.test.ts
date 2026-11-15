@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { manifestSchema } from "../../lib/content/manifest.schema";
 import { STRATEGIES } from "../../lib/visualizer/caching/strategies";
+import { COPY as PARTITION_COPY } from "../../lib/visualizer/data-partitioning/copy";
 import { CACHING_ARTICLE, POLICIES } from "../../lib/visualizer/eviction/module";
 import { ALGORITHM_META, RATE_LIMITING_ARTICLE } from "../../lib/visualizer/rate-limiting/copy";
 import { MECHANISM_ARTICLE_HREF } from "../../lib/visualizer/mechanism/links";
@@ -79,6 +80,19 @@ describe("content build artifacts", () => {
     const ids = new Set(article?.headings.map((h) => h.id));
     for (const meta of Object.values(ALGORITHM_META)) {
       expect(ids.has(meta.anchor), meta.anchor).toBe(true);
+    }
+  });
+
+  it("data-partitioning visualizer deep links resolve to corpus headings", () => {
+    const manifest = manifestSchema.parse(readJson("manifest.json"));
+    for (const copy of Object.values(PARTITION_COPY)) {
+      const [pathRaw, anchor] = copy.articleHref.split("#");
+      const article = manifest.articles.find(
+        (a) => `/${a.verticalId}/${a.slug.join("/")}/` === pathRaw,
+      );
+      expect(article, copy.articleHref).toBeDefined();
+      const ids = new Set(article?.headings.map((h) => h.id));
+      expect(ids.has(anchor ?? ""), copy.articleHref).toBe(true);
     }
   });
 

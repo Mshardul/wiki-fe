@@ -210,3 +210,79 @@ describe("TableShape", () => {
     expect(px("meter-h")).toBe(TABLE_METER_H);
   });
 });
+
+describe("TableShape owner colours and badges", () => {
+  it("gives a row its owner's hue and a white ring when it changed", () => {
+    const m = model({
+      lists: [
+        list({
+          slots: [filled(12, "A", { hue: 0 }), filled(18, "D", { hue: 3, changed: true })],
+        }),
+      ],
+    });
+    const { container } = render(<TableShape model={m} subject="Directory" />);
+    const slots = all(container, ".viz-table__slot");
+    expect(slots[0]?.classList.contains("viz-hue-0")).toBe(true);
+    expect(slots[1]?.classList.contains("viz-hue-3")).toBe(true);
+    expect(slots[0]?.classList.contains("viz-table__slot--changed")).toBe(false);
+    expect(slots[1]?.classList.contains("viz-table__slot--changed")).toBe(true);
+  });
+
+  it("leaves a row without a hue on the plain colours", () => {
+    const { container } = render(<TableShape model={model()} subject="Table" />);
+    expect(container.querySelector(".viz-table__slot--hue")).toBeNull();
+  });
+
+  it("draws a badge per owner under the table", () => {
+    const m = model({
+      badges: [
+        { label: "A", value: "3", hue: 0 },
+        { label: "B", value: "1", hue: 1 },
+      ],
+    });
+    const { container } = render(<TableShape model={m} subject="Directory" />);
+    const badges = all(container, ".viz-table__badge");
+    expect(badges.map((b) => b.textContent)).toEqual(["A 3", "B 1"]);
+  });
+
+  it("makes the figure wide enough for six badges", () => {
+    const badges = Array.from({ length: 6 }, (_, i) => ({ label: "A", value: "1", hue: i }));
+    const { container } = render(<TableShape model={model({ badges })} subject="Directory" />);
+    const svg = container.querySelector("svg");
+    const widest = Math.max(
+      ...all(container, ".viz-table__badge").map((b) => {
+        const [x] = (b.getAttribute("transform") ?? "").match(/[\d.]+/g) ?? ["0"];
+        return Number(x) + 44;
+      }),
+    );
+    expect(Number(svg?.getAttribute("width"))).toBeGreaterThanOrEqual(widest);
+  });
+});
+
+describe("TableShape compact lists", () => {
+  it("starts a compact list at its index column, so it is narrower than one with a held-item column", () => {
+    const wide = render(<TableShape model={model()} subject="Table" />);
+    const narrow = render(
+      <TableShape model={model({ lists: [list({ compact: true })] })} subject="Table" />,
+    );
+    const w = (c: HTMLElement) => Number(c.querySelector("svg")?.getAttribute("width"));
+    expect(w(narrow.container)).toBeLessThan(w(wide.container));
+  });
+
+  it("widens a compact list for a title longer than its body", () => {
+    const long = render(
+      <TableShape
+        model={model({ lists: [list({ compact: true, title: "Scores for 29 here" })] })}
+        subject="Table"
+      />,
+    );
+    const short = render(
+      <TableShape
+        model={model({ lists: [list({ compact: true, title: "S" })] })}
+        subject="Table"
+      />,
+    );
+    const w = (c: HTMLElement) => Number(c.querySelector("svg")?.getAttribute("width"));
+    expect(w(long.container)).toBeGreaterThan(w(short.container));
+  });
+});

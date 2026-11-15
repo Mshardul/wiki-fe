@@ -16,9 +16,22 @@ const TITLE_H = 20;
 const INSET = 3;
 const METER_LABEL_W = 44;
 const METER_ROOM = 34;
+const BADGE_ROOM = 38;
+const BADGE_W = 44;
+const BADGE_GAP = 4;
 
-const listWidth = (l: TableList): number =>
-  TABLE_CHIP_W + TABLE_INDEX_W + TABLE_SLOT_W + l.room * TABLE_NODE_W + (l.lane ? TABLE_LANE_W : 0);
+const TITLE_CHAR_W = 9;
+const chipRoom = (l: TableList): number => (l.compact ? 0 : TABLE_CHIP_W);
+
+const listWidth = (l: TableList): number => {
+  const body =
+    chipRoom(l) +
+    TABLE_INDEX_W +
+    TABLE_SLOT_W +
+    l.room * TABLE_NODE_W +
+    (l.lane ? TABLE_LANE_W : 0);
+  return l.compact && l.title ? Math.max(body, l.title.length * TITLE_CHAR_W) : body;
+};
 
 function ListView({
   list,
@@ -31,7 +44,10 @@ function ListView({
   top: number;
   rows: number;
 }) {
-  const slotX = TABLE_CHIP_W + TABLE_INDEX_W;
+  const slotX = chipRoom(list) + TABLE_INDEX_W;
+  // A compact list centres its body under a title that may be wider than the body.
+  const bodyW = slotX + TABLE_SLOT_W + list.room * TABLE_NODE_W + (list.lane ? TABLE_LANE_W : 0);
+  const shift = list.compact ? (listWidth(list) - bodyW) / 2 : 0;
   const laneX = slotX + TABLE_SLOT_W + list.room * TABLE_NODE_W;
   const cy = (i: number) => top + i * TABLE_SLOT_H + TABLE_SLOT_H / 2;
   const h = TABLE_SLOT_H - 6;
@@ -41,10 +57,15 @@ function ListView({
   return (
     <g
       className={`viz-table__list${list.faded ? " viz-table__list--faded" : ""}`}
-      transform={`translate(${x0} 0)`}
+      transform={`translate(${x0 + shift} 0)`}
     >
       {list.title && (
-        <text className="viz-table__title" x={slotX} y={TITLE_H - 8}>
+        <text
+          className="viz-table__title"
+          x={list.compact ? bodyW / 2 : slotX}
+          y={TITLE_H - 8}
+          textAnchor={list.compact ? "middle" : "start"}
+        >
           {list.title}
         </text>
       )}
@@ -63,7 +84,7 @@ function ListView({
         // Slot position is the identity; contents change between frames.
         <g
           key={i}
-          className={`viz-table__slot viz-table__slot--${s.state} viz-table__slot--${s.tone}`}
+          className={`viz-table__slot viz-table__slot--${s.state} viz-table__slot--${s.tone}${s.hue !== undefined ? ` viz-hue-${s.hue} viz-table__slot--hue` : ""}${s.changed ? " viz-table__slot--changed" : ""}`}
         >
           <text className="viz-table__index" x={slotX - 6} y={cy(i)} textAnchor="end" dy="0.35em">
             {s.index}
@@ -192,10 +213,18 @@ export function TableShape({ model, subject }: { model: TableModel; subject: str
   const widths = model.lists.map(listWidth);
   const listsW =
     widths.reduce((a, b) => a + b, 0) + TABLE_LIST_GAP * Math.max(0, widths.length - 1);
-  const width = listsW + PAD;
+  const badges = model.badges ?? [];
+  const badgesW = badges.length * (BADGE_W + BADGE_GAP) - BADGE_GAP;
+  const width = Math.max(listsW + PAD, badgesW + PAD);
+  const dx = (width - listsW - PAD) / 2;
   const meter = model.meter;
   const listsH = top + rows * TABLE_SLOT_H;
-  const height = listsH + (meter ? METER_ROOM + TABLE_METER_H : 0);
+  const badgeTop = listsH + 10;
+  const meterTop = listsH + (badges.length > 0 ? BADGE_ROOM : 0);
+  const height =
+    meterTop +
+    (meter ? METER_ROOM + TABLE_METER_H : 0) +
+    (badges.length > 0 && !meter ? BADGE_ROOM : 0);
   const starts = widths.map((_, i) =>
     widths.slice(0, i).reduce((sum, w) => sum + w + TABLE_LIST_GAP, 0),
   );
@@ -213,17 +242,30 @@ export function TableShape({ model, subject }: { model: TableModel; subject: str
         >
           {model.lists.map((list, i) => (
             // Lists are positional: list 0 is the older table during a resize.
-            <ListView key={i} list={list} x0={starts[i] ?? 0} top={top} rows={rows} />
+            <ListView key={i} list={list} x0={dx + (starts[i] ?? 0)} top={top} rows={rows} />
+          ))}
+          {badges.map((b, i) => (
+            <g
+              // Badges are positional: one per owner, in order.
+              key={i}
+              className={`viz-table__badge viz-hue-${b.hue}`}
+              transform={`translate(${(width - badgesW) / 2 + i * (BADGE_W + BADGE_GAP)} ${badgeTop})`}
+            >
+              <rect width={BADGE_W} height={24} rx={6} />
+              <text x={BADGE_W / 2} y={12} textAnchor="middle" dy="0.35em">
+                {b.label} {b.value}
+              </text>
+            </g>
           ))}
           {meter && (
             <g className="viz-table__meter">
-              <text className="viz-table__meter-label" x={0} y={listsH + METER_ROOM - 3}>
+              <text className="viz-table__meter-label" x={0} y={meterTop + METER_ROOM - 3}>
                 {meter.label}
               </text>
               <rect
                 className="viz-table__meter-track"
                 x={trackX}
-                y={listsH + METER_ROOM - TABLE_METER_H}
+                y={meterTop + METER_ROOM - TABLE_METER_H}
                 width={trackW}
                 height={TABLE_METER_H}
                 rx={4}
@@ -231,7 +273,7 @@ export function TableShape({ model, subject }: { model: TableModel; subject: str
               <rect
                 className="viz-table__meter-fill"
                 x={trackX}
-                y={listsH + METER_ROOM - TABLE_METER_H}
+                y={meterTop + METER_ROOM - TABLE_METER_H}
                 width={trackW * Math.min(1, Math.max(0, meter.value / (meter.max || 1)))}
                 height={TABLE_METER_H}
                 rx={4}
@@ -241,13 +283,13 @@ export function TableShape({ model, subject }: { model: TableModel; subject: str
                   <line
                     x1={trackX + trackW * (meter.mark / (meter.max || 1))}
                     x2={trackX + trackW * (meter.mark / (meter.max || 1))}
-                    y1={listsH + METER_ROOM - TABLE_METER_H - 4}
-                    y2={listsH + METER_ROOM + 4}
+                    y1={meterTop + METER_ROOM - TABLE_METER_H - 4}
+                    y2={meterTop + METER_ROOM + 4}
                   />
                   {meter.markLabel && (
                     <text
                       x={trackX + trackW * (meter.mark / (meter.max || 1))}
-                      y={listsH + METER_ROOM - TABLE_METER_H - 8}
+                      y={meterTop + METER_ROOM - TABLE_METER_H - 8}
                       textAnchor="middle"
                     >
                       {meter.markLabel}

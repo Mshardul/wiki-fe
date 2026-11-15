@@ -2,7 +2,7 @@
 role: plan
 created: 2026-11-14
 last_updated: 2026-11-15
-status: in-progress
+status: done
 ---
 
 # Data Partitioning Implementation Plan
@@ -81,8 +81,8 @@ Step count per run is K + E × (1 + K): 17 for the default (8 + 1 + 8). Ring sha
 - `keys.ts`: `parseKeys` (numbers 0 to 99 separated by spaces, commas or underscores, once each, at most one `*` hot key of weight 5) and `parseEvents` (`+`, `-X`, Unicode minus accepted, value-aware so the node count stays 1 to 6), with the exact error strings from the old spec.
 - `trace.ts`: seeded workloads Random, Sequential (8 consecutive keys from a seeded start 60 to 92) and Hot key; the Remove pick, decided when the button is pressed and written into the token.
 
-- [ ] **Step 1: Tests.** `hash.test.ts`: `hashKey` of every default key (`55 77 84 68 16 53 34 0`); the table's 80 positions are distinct and `r = 0` equals `hashKey` of the node; shares spread shrinks across 1, 2, 4, 8 for starting sets of 2 to 6 nodes; a rendezvous tie goes to the earlier letter; a key exactly on a node position belongs to that node; wrap past 99. `keys.test.ts`: every error string; duplicates; the hot-key rule; URL form `12_18_29_61*_65` and `e=%2B_-B`. `trace.test.ts`: determinism per seed, independence from the variant, each workload's shape, a removed letter never reused.
-- [ ] **Step 2:** Implement.
+- [x] **Step 1: Tests.** `hash.test.ts`: `hashKey` of every default key (`55 77 84 68 16 53 34 0`); the table's 80 positions are distinct and `r = 0` equals `hashKey` of the node; shares spread shrinks across 1, 2, 4, 8 for starting sets of 2 to 6 nodes; a rendezvous tie goes to the earlier letter; a key exactly on a node position belongs to that node; wrap past 99. `keys.test.ts`: every error string; duplicates; the hot-key rule; URL form `12_18_29_61*_65` and `e=%2B_-B`. `trace.test.ts`: determinism per seed, independence from the variant, each workload's shape, a removed letter never reused.
+- [x] **Step 2:** Implement.
 
 ### Task 2: Variants and the engine
 
@@ -90,8 +90,8 @@ Step count per run is K + E × (1 + K): 17 for the default (8 + 1 + 8). Ring sha
 
 **Interfaces:** each scheme implements `init`, `place`, `add`, `remove`, `order` over the shared node-list world in `membership.ts`; `ring.ts` serves one or many virtual nodes. `engine.ts` turns keys and events into steps (place, event, re-check) with outcomes (`neutral` for place and event steps, `good` for a key that stays, `bad` for a key that moves), the moved count and the fewest possible per event.
 
-- [ ] **Step 1: Tests** on the Fixtures: the start and after-add table for each variant and for the Ring at 1 and 4 virtual nodes; Range's median split, the `m = lo` fallback, a one-value range that cannot split, merge into the lower neighbour and into the upper one if the removed range was first; Directory's load-based placement, the balancer's stop rule and the hot key staying put; ring wrap and exact-on-node; step count `K + E(1 + K)` and equal frame counts across variants for the same input; moved against fewest possible; letters never reused.
-- [ ] **Step 2:** Implement.
+- [x] **Step 1: Tests** on the Fixtures: the start and after-add table for each variant and for the Ring at 1 and 4 virtual nodes; Range's median split, the `m = lo` fallback, a one-value range that cannot split, merge into the lower neighbour and into the upper one if the removed range was first; Directory's load-based placement, the balancer's stop rule and the hot key staying put; ring wrap and exact-on-node; step count `K + E(1 + K)` and equal frame counts across variants for the same input; moved against fewest possible; letters never reused.
+- [x] **Step 2:** Implement.
 
 ## Part B: shared work
 
@@ -101,8 +101,8 @@ Step count per run is K + E × (1 + K): 17 for the default (8 + 1 + 8). Ring sha
 
 **Interfaces (from the old spec's Frame changes):** `Outcome` gains `"neutral"` (existing modules never emit it); `action` field kind `{ kind: "action"; key; label; apply: (values) => { values; step? } }` rendered as a button, replacing values wholesale without `resetBy`, rewriting the URL and seeking to `step` (a 0-based frame index) or the first frame; `SequenceField.parse` receives the current values; `SequenceField.resetEmpty`; `SequenceField.link`; `RunResult.sequences` per field; chips honour `availability.disabled`.
 
-- [ ] **Step 1: Tests** for each: neutral strip cell and log row, the action button including disabled and hint, URL round trip, `resetEmpty` round trip of `[]`, `link` runs for a direct edit but not for a `resetBy` clear or an action, per-field sequences, disabled chips.
-- [ ] **Step 2:** Implement. Existing visualizers must behave unchanged.
+- [x] **Step 1: Tests** for each: neutral strip cell and log row, the action button including disabled and hint, URL round trip, `resetEmpty` round trip of `[]`, `link` runs for a direct edit but not for a `resetBy` clear or an action, per-field sequences, disabled chips.
+- [x] **Step 2:** Implement. Existing visualizers must behave unchanged.
 
 ### Task 4: Shapes
 
@@ -114,8 +114,8 @@ Step count per run is K + E × (1 + K): 17 for the default (8 + 1 + 8). Ring sha
 - Runs: a sorted row of equal cells in the owner's colour, a brace under each owner's consecutive run carrying its range and count, a heavy cell double width, moved cells white-ringed, a cut shown by a new brace. Approved from the browser mockup (R2).
 - Table: add a per-row hue so rows can take an owner's colour, and a score row form (name, number, winner highlight), only as far as Directory and Rendezvous need.
 
-- [ ] **Step 1: Tests** (a component test per shape): rows and cells by identity, moved ring, pending order, heavy item, hue per owner, geometry for positions 0 and 99 and for two close points, empty bin and empty run, fit at 320px with no sideways scroll, positions unchanged between frames.
-- [ ] **Step 2:** Implement one inline SVG per shape, scaled by `FitBox`; check every theme preset.
+- [x] **Step 1: Tests** (a component test per shape): rows and cells by identity, moved ring, pending order, heavy item, hue per owner, geometry for positions 0 and 99 and for two close points, empty bin and empty run, fit at 320px with no sideways scroll, positions unchanged between frames.
+- [x] **Step 2:** Implement one inline SVG per shape, scaled by `FitBox`; check every theme preset.
 
 ## Part C: the module
 
@@ -125,8 +125,8 @@ Step count per run is K + E × (1 + K): 17 for the default (8 + 1 + 8). Ring sha
 
 **Interfaces:** `view.ts` turns an engine step into Bins, Circle, Runs or Table models for the active variant; the corner metric is "Keys moved" (moved / K for the latest event, "—" before the first); `vars` rows per variant from the old spec (Mod-N: `h(k)`, N, `h(k) mod N`; Range: key, owning range; Ring: `h(k)`, first node clockwise, shares, virtual node hit; Directory: directory entry, loads; Rendezvous: all scores, winner, runner-up) plus the common rows (phase, node now, node before, moved this event, fewest possible); step lines per variant from the old spec's Module content.
 
-- [ ] **Step 1: Tests** on the Fixtures: the model at the first, event and a re-check step for each variant; the white ring on exactly the moved keys; vars values hand-derived; no two adjacent frames identical.
-- [ ] **Step 2:** Implement.
+- [x] **Step 1: Tests** on the Fixtures: the model at the first, event and a re-check step for each variant; the white ring on exactly the moved keys; vars values hand-derived; no two adjacent frames identical.
+- [x] **Step 2:** Implement.
 
 ### Task 6: Module, input, registry
 
@@ -134,8 +134,8 @@ Step count per run is K + E × (1 + K): 17 for the default (8 + 1 + 8). Ring sha
 
 **Interfaces:** the fields of the old spec's Parameters table without Cap factor, with Virtual nodes (1, 2, 4, 8) enabled for the Ring only and the Add and Remove actions; slug `data-partitioning`, `variants: { key: "scheme" }`, `restartOnSwitch` off so switching keeps the step; defaults are the Fixtures keys, three starting nodes, one Add, Virtual nodes 4.
 
-- [ ] **Step 1: Tests** for the slider and events interplay (Add moves the slider and seeks to the event step; dragging the slider clears events; editing Events keeps the starting count; a running count outside 1 to 6 is rejected; Add and Remove disabled at their limits), the URL round trip, the Try presets each run after moving the inputs away from the defaults, and the default under every variant.
-- [ ] **Step 2:** Implement; write the five Try-preset pairs from the old spec for Mod-N, Range, Directory and Rendezvous, and for the Ring the presets "More positions, even shares" and "Add takes one arc".
+- [x] **Step 1: Tests** for the slider and events interplay (Add moves the slider and seeks to the event step; dragging the slider clears events; editing Events keeps the starting count; a running count outside 1 to 6 is rejected; Add and Remove disabled at their limits), the URL round trip, the Try presets each run after moving the inputs away from the defaults, and the default under every variant.
+- [x] **Step 2:** Implement; write the five Try-preset pairs from the old spec for Mod-N, Range, Directory and Rendezvous, and for the Ring the presets "More positions, even shares" and "Add takes one arc".
 
 ### Task 7: Revision cards
 
@@ -143,21 +143,21 @@ Step count per run is K + E × (1 + K): 17 for the default (8 + 1 + 8). Ring sha
 
 **Interfaces:** five cards in variant order, each playing the mini-run (keys `12 18 29 61 65 66`, three starting nodes, one Add, 13 steps) by drawing the Single model at each step; results Mod-N 5/6, Range 2/6, Ring 2/6, Directory 1/6, Rendezvous 1/6 (re-derive by hand before pinning); `summary` and `differs` from the old spec's card table; glossary terms added to `data/glossary.json`.
 
-- [ ] **Step 1: Tests:** five cards in order, 13 steps each, unique `stepsText`, the finished state held, every glossary term exists.
-- [ ] **Step 2:** Implement.
+- [x] **Step 1: Tests:** five cards in order, 13 steps each, unique `stepsText`, the finished state held, every glossary term exists.
+- [x] **Step 2:** Implement.
 
 ### Task 8: Article links and e2e
 
 **Files:** Modify the module's info; create a content test for the five deep links; add one browser e2e check for the page.
 
-- [ ] **Step 1:** Assert each article anchor exists; one e2e test loads the page, presses Add and sees the moved keys ringed.
+- [x] **Step 1:** Assert each article anchor exists; one e2e test loads the page, presses Add and sees the moved keys ringed.
 
 ### Task 9: Docs and one full verification
 
 **Files:** Modify `docs/_meta/visualizer/README.md` (shape table: Bins, Circle, Runs, Table reuse note; roadmap), `docs/_meta/visualizer/backlog.md` (remove the topic), the spec's shape names, and the CLAUDE.md FILE MAP.
 
-- [ ] **Step 1:** Update the docs.
-- [ ] **Step 2:** Run the full suite once (`pnpm typecheck`, `pnpm lint`, `pnpm test:all`) and one build; open the page in the browser at desktop and 320px, in every theme preset, with the side panels open and collapsed, and report what was seen.
+- [x] **Step 1:** Update the docs.
+- [x] **Step 2:** Run the full suite once (`pnpm typecheck`, `pnpm lint`, `pnpm test:all`) and one build; open the page in the browser at desktop and 320px, in every theme preset, with the side panels open and collapsed, and report what was seen.
 
 ## Review Focus
 

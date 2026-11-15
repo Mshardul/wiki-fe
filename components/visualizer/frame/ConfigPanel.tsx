@@ -10,7 +10,9 @@ interface ConfigPanelProps {
   sections: FieldSection[];
   values: InputValues;
   sequence: string[];
+  sequences?: Record<string, string[]>;
   onChange: (key: string, value: FieldValue) => void;
+  onAction?: (key: string) => void;
   variantNav?: { key: string; onStep: (delta: number) => void };
   availability?: Record<string, FieldAvailability>;
 }
@@ -19,7 +21,9 @@ export function ConfigPanel({
   sections,
   values,
   sequence,
+  sequences,
   onChange,
+  onAction,
   variantNav,
   availability,
 }: ConfigPanelProps) {
@@ -38,8 +42,10 @@ export function ConfigPanel({
               key={f.key}
               field={f}
               value={values[f.key] ?? null}
-              sequence={sequence}
+              values={values}
+              sequence={sequences?.[f.key] ?? sequence}
               onChange={(v) => onChange(f.key, v)}
+              onAction={() => onAction?.(f.key)}
               nav={variantNav && variantNav.key === f.key ? variantNav : undefined}
               availability={availability?.[f.key]}
             />

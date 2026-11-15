@@ -46,6 +46,30 @@ export function subscribeCompletions(wikiId: string, cb: () => void): () => void
   return subscribeKey(completionsKey(wikiId), cb);
 }
 
+// Snapshot over every vertical's completion key — referentially stable until any raw string changes.
+function _allRaw(): string {
+  return verticalRegistry()
+    .map((v) => getJSON<string[]>(completionsKey(v.id), []).join("\u0000"))
+    .join("\u0000");
+}
+
+let _cachedRaw = "";
+let _cachedValue: Array<{ wikiId: string; path: string }> = [];
+
+export function listAllCompletionsSnapshot(): Array<{ wikiId: string; path: string }> {
+  const raw = _allRaw();
+  if (raw !== _cachedRaw) {
+    _cachedRaw = raw;
+    _cachedValue = listAllCompletions();
+  }
+  return _cachedValue;
+}
+
+export function subscribeCompletionsAll(cb: () => void): () => void {
+  const unsubs = verticalRegistry().map((v) => subscribeCompletions(v.id, cb));
+  return () => unsubs.forEach((u) => u());
+}
+
 export async function pullCompletions(): Promise<void> {
   const rows = await api.completions.list().catch(() => null);
   if (!rows) return;

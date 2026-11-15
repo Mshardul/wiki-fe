@@ -25,6 +25,7 @@ export function encodeState(
 ): string {
   const q = new URLSearchParams();
   for (const f of allFields(sections)) {
+    if (f.kind === "action") continue;
     const v = values[f.key];
     if (v === null || v === undefined) continue;
     if (f.kind === "seed" && typeof v === "number") q.set(f.param, v.toString(16));
@@ -45,6 +46,7 @@ export function parseState(
   const q = new URLSearchParams(search);
   const values: InputValues = { ...defaults };
   for (const f of allFields(sections)) {
+    if (f.kind === "action") continue;
     const raw = q.get(f.param);
     if (raw === null) continue;
     if (f.kind === "chips") {
@@ -56,7 +58,7 @@ export function parseState(
       const n = Number.parseInt(raw, 16);
       if (Number.isFinite(n)) values[f.key] = clampInt(n, 0, SEED_MAX);
     } else {
-      const parsed = parseSequenceField(f, raw);
+      const parsed = parseSequenceField(f, raw, values);
       values[f.key] = parsed.ok ? parsed.tokens : null;
     }
   }

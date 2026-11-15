@@ -185,6 +185,14 @@ export const VISUALIZERS: VisualizerEntry[] = [
     kind: "compare",
   },
   {
+    slug: "data-partitioning",
+    title: "Data Partitioning",
+    description:
+      "Mod-N, range, the hash ring, a directory and rendezvous hashing — add or remove a node and see which keys move.",
+    icon: "🧩",
+    kind: "compare",
+  },
+  {
     slug: "graph-traversals",
     title: "Graph Traversals",
     description:

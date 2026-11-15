@@ -73,6 +73,11 @@
   background: var(--viz-bad-bg);
   color: var(--viz-bad);
 }
+.viz-strip__cell.is-neutral {
+  border-color: var(--viz-slot-border);
+  background: var(--viz-slot-bg);
+  color: var(--text-muted);
+}
 .viz-strip__cell.is-current {
   border-color: var(--accent);
   background: var(--accent);

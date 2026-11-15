@@ -37,6 +37,7 @@ describe("visualizer routes", () => {
       { slug: "sorting" },
       { slug: "heap" },
       { slug: "hash-table" },
+      { slug: "data-partitioning" },
       { slug: "graph-traversals" },
     ]);
   });
