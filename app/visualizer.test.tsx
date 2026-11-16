@@ -39,6 +39,7 @@ describe("visualizer routes", () => {
       { slug: "hash-table" },
       { slug: "data-partitioning" },
       { slug: "graph-traversals" },
+      { slug: "load-balancer-algorithms" },
     ]);
   });
 
@@ -83,6 +84,7 @@ describe("visualizer routes", () => {
     expect(html).toMatch(/href="\/visualizer\/inside-a-connection-pool\/?"/);
     expect(html).toMatch(/href="\/visualizer\/inside-a-cache-stampede\/?"/);
     expect(html).toMatch(/href="\/visualizer\/inside-celery-prefetch\/?"/);
+    expect(html).toMatch(/href="\/visualizer\/load-balancer-algorithms\/?"/);
   });
 
   it("the visualizer page ships the app shell without a baked-in run", async () => {

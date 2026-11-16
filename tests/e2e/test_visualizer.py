@@ -122,6 +122,7 @@ def test_sorting_fills_the_stage_steps_to_done_and_fits_a_phone(page, base_url):
     expect(page.locator(".viz-stage .viz-array")).to_be_visible()
     expect(page.locator(".viz-stage__aside")).to_have_count(0)
     expect(page.locator(".viz-stage__metric-label")).to_have_text("Comparisons")
+    page.goto(f"{base_url}{SORTING}?a=insertion&q=3,1,2,5,4,9,8,7,6,0,11,10")
     before = page.locator(".viz-stage .viz-fit__inner").bounding_box()["width"]
     page.get_by_role("button", name="Hide Configure").click()
     page.get_by_role("button", name="Hide Details").click()
@@ -129,6 +130,7 @@ def test_sorting_fills_the_stage_steps_to_done_and_fits_a_phone(page, base_url):
     assert page.locator(".viz-stage .viz-fit__inner").bounding_box()["width"] > before
     page.get_by_role("button", name="Show Configure").click()
     page.get_by_role("button", name="Show Details").click()
+    page.goto(f"{base_url}{SORTING}?a=insertion&q=3,1,2")
     _pause_if_playing(page)
     page.get_by_role("button", name="Last step").click()
     expect(page.get_by_text("step 7 / 7")).to_be_visible()
@@ -147,11 +149,11 @@ def test_heap_shows_tree_with_its_array_steps_to_done_and_fits_a_phone(page, bas
     page.goto(f"{base_url}{HEAP}?h=insert&q=3,1,2")
     expect(page.get_by_role("heading", level=1, name="Heap")).to_be_visible()
     expect(page.locator(".viz-stage .viz-heap")).to_be_visible()
-    expect(page.locator(".viz-stage .viz-heap .viz-array__bar").first).to_be_visible()
     expect(page.locator(".viz-stage__aside")).to_have_count(0)
     _pause_if_playing(page)
     page.get_by_role("button", name="Last step").click()
     expect(page.get_by_text("step 9 / 9")).to_be_visible()
+    expect(page.locator(".viz-stage .viz-heap .viz-array__bar").first).to_be_visible()
     page.get_by_role("button", name="Extract").click()
     expect(page.get_by_text("step 1 / 6")).to_be_visible()
     page.goto(f"{base_url}/visualizer/sorting/?a=heap&q=2,1,3")
@@ -171,6 +173,7 @@ def test_hash_table_draws_slots_steps_to_done_grows_on_resize_and_fits_a_phone(p
     expect(page.locator(".viz-stage .viz-table")).to_be_visible()
     expect(page.locator(".viz-stage__aside")).to_have_count(0)
     expect(page.locator(".viz-stage__metric-label")).to_have_text("Probes")
+    page.goto(f"{base_url}{HASH_TABLE}?a=chaining&q=16,8,24,5,32,40,48,56,64,72")
     before = page.locator(".viz-stage .viz-fit__inner").bounding_box()["width"]
     page.get_by_role("button", name="Hide Configure").click()
     page.get_by_role("button", name="Hide Details").click()
@@ -178,12 +181,13 @@ def test_hash_table_draws_slots_steps_to_done_grows_on_resize_and_fits_a_phone(p
     assert page.locator(".viz-stage .viz-fit__inner").bounding_box()["width"] > before
     page.get_by_role("button", name="Show Configure").click()
     page.get_by_role("button", name="Show Details").click()
+    page.goto(f"{base_url}{HASH_TABLE}?a=linear&q=16,8,24,5,32")
     _pause_if_playing(page)
     page.get_by_role("button", name="Last step").click()
     expect(page.get_by_text("step 29 / 29")).to_be_visible()
     page.get_by_role("button", name="Chaining").click()
     expect(page.get_by_text("step 1 / 18")).to_be_visible()
-    page.goto(f"{base_url}{HASH_TABLE}?a=resize&i=42")
+    page.goto(f"{base_url}{HASH_TABLE}?a=resize&q=16,8,24,5,32,13,21&i=42")
     _pause_if_playing(page)
     expect(page.locator(".viz-table__list")).to_have_count(2)
     page.set_viewport_size({"width": 320, "height": 700})
@@ -242,5 +246,27 @@ def test_data_partitioning_add_node_rings_the_moved_keys_and_fits_a_phone(page, 
     expect(page.get_by_text("step 17 / 17")).to_be_visible()
     expect(page.locator(".viz-stage .viz-circle")).to_be_visible()
     expect(page.locator(".viz-circle__point--changed")).to_have_count(2)
+    page.set_viewport_size({"width": 320, "height": 700})
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+
+
+BALANCER = "/visualizer/load-balancer-algorithms/"
+
+
+def test_load_balancer_routes_requests_and_re_routes_after_a_failure(page, base_url):
+    """load balancer draws server cards, a request is routed then lands, switching variant keeps the step, picking a failure restarts the run and its Down step hatches the server, and it fits at 320px."""
+    page.goto(f"{base_url}{BALANCER}?p=round-robin&i=16")
+    expect(page.get_by_role("heading", level=1, name="Load Balancer Algorithms")).to_be_visible()
+    expect(page.locator(".viz-stage .viz-flow")).to_be_visible()
+    expect(page.locator(".viz-flow__card")).to_have_count(3)
+    expect(page.locator(".viz-flow__chip--ghost")).to_have_count(1)
+    expect(page.get_by_text("step 16 / 21")).to_be_visible()
+    page.get_by_role("button", name="Least connections").click()
+    expect(page.get_by_text("step 16 / 21")).to_be_visible()
+    expect(page.locator(".viz-flow__row--mark")).to_have_count(1)
+    expect(page.locator(".viz-flow__card--down")).to_have_count(0)
+    page.get_by_role("button", name="S1", exact=True).click()
+    page.get_by_role("button", name=re.compile(r"^Step \d+: S1 down")).click()
+    expect(page.locator(".viz-flow__card--down")).to_have_count(1)
     page.set_viewport_size({"width": 320, "height": 700})
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")

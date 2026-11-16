@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { restoreScrollPosition, saveScrollPosition } from "@/lib/storage/scroll-collapse";
+import { saveScrollPosition } from "@/lib/storage/scroll-collapse";
 
 interface ScrollRestoreProps {
   wikiId: string;
@@ -10,12 +10,7 @@ interface ScrollRestoreProps {
 
 export function ScrollRestore({ wikiId, articlePath }: ScrollRestoreProps) {
   useEffect(() => {
-    // ?a= deep links (AnchorScroll) take priority — don't fight them
-    if (!new URL(location.href).searchParams.has("a")) {
-      const y = restoreScrollPosition(wikiId, articlePath);
-      if (y > 0) requestAnimationFrame(() => window.scrollTo({ top: y, behavior: "instant" }));
-    }
-
+    // No silent auto-scroll: the saved offset is surfaced by ResumeChip so the user chooses to jump.
     let timer: ReturnType<typeof setTimeout> | undefined;
     const onScroll = () => {
       clearTimeout(timer);

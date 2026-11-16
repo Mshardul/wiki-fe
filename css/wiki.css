@@ -35,6 +35,7 @@
 @import "./view-visualizer/graph.css";
 @import "./view-visualizer/table.css";
 @import "./view-visualizer/bins.css";
+@import "./view-visualizer/flow-cards.css";
 @import "./view-visualizer/circle.css";
 @import "./view-visualizer/runs.css";
 @import "./view-visualizer/panels.css";

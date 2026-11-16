@@ -10,6 +10,7 @@ import { CompositeShape } from "./CompositeShape";
 import { ConnectionPoolShape } from "./ConnectionPoolShape";
 import { ConnLadderShape } from "./ConnLadderShape";
 import { DnsCachingShape } from "./DnsCachingShape";
+import { FlowCardsShape } from "./FlowCardsShape";
 import { GraphShape } from "./GraphShape";
 import { HeapShape } from "./HeapShape";
 import { HistogramShape } from "./HistogramShape";
@@ -41,6 +42,7 @@ export function Shape({ model, rotated, size, subject, dense = isDense(size) }: 
   if (model.kind === "heap") return <HeapShape model={model} subject={subject} />;
   if (model.kind === "graph") return <GraphShape model={model} subject={subject} />;
   if (model.kind === "bins") return <BinsShape model={model} subject={subject} />;
+  if (model.kind === "flow-cards") return <FlowCardsShape model={model} subject={subject} />;
   if (model.kind === "circle") return <CircleShape model={model} subject={subject} />;
   if (model.kind === "runs") return <RunsShape model={model} subject={subject} />;
   if (model.kind === "table") return <TableShape model={model} subject={subject} />;

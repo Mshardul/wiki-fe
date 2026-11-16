@@ -16,6 +16,7 @@ import { heapModule } from "./heap/module";
 import { httpRequestPathModule } from "./http-request-path/module";
 import { kubectlApplyModule } from "./kubectl-apply/module";
 import { kubernetesServiceModule } from "./kubernetes-service/module";
+import { balancerModule } from "./load-balancer/module";
 import { podResourceLimitsModule } from "./pod-resource-limits/module";
 import { postgresBtreeModule } from "./postgres-btree/module";
 import { postgresMvccModule } from "./postgres-mvcc/module";
@@ -49,4 +50,5 @@ export const MODULES: Record<string, VisualizerModule> = {
   [heapModule.slug]: heapModule,
   [graphModule.slug]: graphModule,
   [hashTableModule.slug]: hashTableModule,
+  [balancerModule.slug]: balancerModule,
 };

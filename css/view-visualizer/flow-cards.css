@@ -1,0 +1,226 @@
+/* ═══════════════════════════════════════════════
+   FLOW CARDS SHAPE
+   ═══════════════════════════════════════════════ */
+.viz-flow {
+  position: absolute;
+  inset: 0;
+}
+.viz-flow__fit .viz-fit__inner {
+  display: flex;
+  justify-content: center;
+}
+.viz-flow__svg {
+  flex: none;
+  overflow: visible;
+  font-family: var(--font-mono);
+}
+.viz-flow__lab {
+  font-family: var(--font);
+  font-size: var(--text-xs);
+  letter-spacing: var(--viz-tracking);
+  text-transform: uppercase;
+  fill: var(--text-muted);
+}
+.viz-flow__hub rect {
+  fill: var(--viz-slot-bg);
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+}
+.viz-flow__hub text {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  fill: var(--text-body);
+}
+.viz-flow__line,
+.viz-flow__route {
+  stroke: var(--viz-slot-border);
+  stroke-width: 2;
+  fill: none;
+}
+.viz-flow__route--on {
+  stroke: var(--viz-active);
+  stroke-width: 3;
+}
+.viz-flow__route--down {
+  stroke-dasharray: 3 4;
+  opacity: 0.5;
+}
+.viz-flow__head {
+  fill: var(--viz-slot-border);
+}
+.viz-flow__head--on {
+  fill: var(--viz-active);
+}
+.viz-flow__move {
+  fill: none;
+  stroke: var(--viz-active);
+  stroke-width: 2;
+  stroke-dasharray: 2 5;
+  stroke-linecap: round;
+}
+.viz-flow__card-box {
+  fill: var(--viz-slot-bg);
+  stroke: var(--viz-slot-border);
+  transition: stroke var(--t);
+}
+.viz-flow__card--picked .viz-flow__card-box {
+  stroke: var(--viz-active);
+  stroke-width: 2;
+}
+.viz-flow__card--down .viz-flow__card-box {
+  stroke: var(--viz-bad);
+  stroke-dasharray: 4 3;
+}
+.viz-flow__card-hatch {
+  pointer-events: none;
+}
+.viz-flow__hatch {
+  stroke: var(--viz-bad);
+  stroke-width: 2;
+  opacity: 0.3;
+}
+.viz-flow__card--down .viz-flow__name,
+.viz-flow__card--down .viz-flow__count,
+.viz-flow__card--down .viz-flow__count-label {
+  opacity: 0.5;
+}
+.viz-flow__name {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  fill: var(--text-heading);
+}
+.viz-flow__badge,
+.viz-flow__count-label,
+.viz-flow__idle {
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-flow__count {
+  font-size: 1.15rem;
+  font-weight: var(--fw-bold);
+  fill: var(--hue);
+}
+.viz-flow__chip {
+  transition:
+    transform var(--viz-move),
+    opacity var(--t);
+}
+.viz-flow__chip-box {
+  fill: var(--viz-slot-bg);
+  stroke: var(--viz-slot-border);
+}
+.viz-flow__chip--heavy .viz-flow__chip-box {
+  stroke: var(--viz-exit);
+}
+.viz-flow__chip-id {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  fill: var(--text-heading);
+}
+.viz-flow__chip-left {
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-flow__track {
+  fill: var(--surface);
+}
+.viz-flow__fill {
+  fill: var(--text-muted);
+  transition: width var(--viz-move);
+}
+.viz-flow__chip--heavy .viz-flow__fill {
+  fill: var(--viz-exit);
+}
+.viz-flow__chip--ghost .viz-flow__chip-box {
+  fill: none;
+  stroke: var(--viz-compare);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.viz-flow__chip--ghost .viz-flow__fill {
+  fill: var(--viz-active);
+}
+.viz-flow__on-down {
+  opacity: 0.45;
+}
+.viz-flow__intake {
+  fill: var(--viz-active);
+  stroke: var(--viz-compare);
+  stroke-width: 2;
+}
+.viz-flow__intake-id,
+.viz-flow__intake-note {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  fill: var(--viz-on-accent);
+}
+.viz-flow__divider {
+  stroke: var(--viz-slot-border);
+}
+.viz-flow__token circle {
+  fill: var(--viz-slot-bg);
+  stroke: var(--viz-slot-border);
+  stroke-width: 1.5;
+}
+.viz-flow__token text {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  fill: var(--text-body);
+}
+.viz-flow__token--on circle {
+  fill: var(--viz-active);
+  stroke: var(--viz-compare);
+}
+.viz-flow__token--on text {
+  fill: var(--viz-on-accent);
+}
+.viz-flow__token--muted {
+  opacity: 0.4;
+}
+.viz-flow__token-note {
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-flow__row-name {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  fill: var(--text-body);
+}
+.viz-flow__row-bar {
+  fill: var(--text-muted);
+  transition: width var(--t);
+}
+.viz-flow__row--mark .viz-flow__row-bar {
+  fill: var(--viz-good);
+}
+.viz-flow__row--mark .viz-flow__row-note {
+  fill: var(--viz-good);
+}
+.viz-flow__row--muted {
+  opacity: 0.4;
+}
+.viz-flow__row-note {
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+.viz-flow__math {
+  font-size: var(--text-sm);
+  fill: var(--text-body);
+}
+.viz-flow__headline {
+  font-size: var(--text-base);
+  font-weight: var(--fw-bold);
+  fill: var(--text-heading);
+}
+.viz-flow__headline-note {
+  font-family: var(--font);
+  font-size: var(--text-xs);
+  fill: var(--text-muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .viz-flow__chip,
+  .viz-flow__fill,
+  .viz-flow__row-bar {
+    transition: none;
+  }
+}

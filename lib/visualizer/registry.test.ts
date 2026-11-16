@@ -34,6 +34,10 @@ describe("visualizer registry", () => {
       kind: "compare",
       title: "Data Partitioning",
     });
+    expect(getVisualizer("load-balancer-algorithms")).toMatchObject({
+      kind: "compare",
+      title: "Load Balancer Algorithms",
+    });
     expect(getVisualizer("inside-the-python-gil")).toMatchObject({
       kind: "mechanism",
       title: "Inside the Python GIL",

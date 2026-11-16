@@ -33,6 +33,10 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   max-width: min(420px, calc(100vw - var(--s8)));
 }
+/* Sits below the sticky section header so it never covers the title. */
+body.sticky-header-visible .resume-chip {
+  top: calc(var(--topbar-h) + var(--sticky-header-h, 44px) + var(--s3));
+}
 .resume-chip-jump {
   display: flex;
   flex-direction: column;
@@ -174,7 +178,9 @@ body.distraction-free .distraction-free-exit-btn {
   display: flex;
 }
 
-/* ─── In-article find bar ─── */
+/* ═══════════════════════════════════════════════
+   IN-ARTICLE FIND BAR
+   ═══════════════════════════════════════════════ */
 .article-find {
   position: fixed;
   top: calc(var(--topbar-h) + var(--s3));

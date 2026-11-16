@@ -29,7 +29,7 @@ function tableKeyFromPath(path: string): string {
   return path.replace(/^\.\/content\/dsa\//, "").replace(/\.md$/, "");
 }
 
-/** Only cache a non-empty list so a transient fetch failure can retry (WIKI-571). */
+/** Only cache a non-empty list so a transient fetch failure can retry. */
 async function loadDsStructures(): Promise<Structure[]> {
   if (structuresCache) return structuresCache;
   try {

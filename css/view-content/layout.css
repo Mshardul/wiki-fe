@@ -1,4 +1,10 @@
-/* ─── Sticky Section Header ─── */
+/* ═══════════════════════════════════════════════
+   STICKY SECTION HEADER
+   ═══════════════════════════════════════════════ */
+:root {
+  /* Lets the resume chip and find bar sit just under the visible sticky header. */
+  --sticky-header-h: 44px;
+}
 .sticky-section-header {
   position: fixed;
   top: var(--topbar-h);
@@ -19,6 +25,8 @@
   transform: translateY(-4px);
   pointer-events: none;
   transition: opacity var(--t-fast), transform var(--t-fast);
+  height: var(--sticky-header-h);
+  line-height: calc(var(--sticky-header-h) - 8px);
 }
 .sticky-section-header.visible {
   opacity: 1;
@@ -28,7 +36,9 @@ body.distraction-free .sticky-section-header {
   display: none;
 }
 
-/* ─── Article Hero ─── */
+/* ═══════════════════════════════════════════════
+   ARTICLE HERO
+   ═══════════════════════════════════════════════ */
 .article-hero {
   position: relative;
   width: 100%;
@@ -93,7 +103,9 @@ body.distraction-free .sticky-section-header {
   padding: var(--s8) var(--layout-padding, 10%) var(--s20);
 }
 
-/* ─── Markdown Body ─── */
+/* ═══════════════════════════════════════════════
+   MARKDOWN BODY
+   ═══════════════════════════════════════════════ */
 .content-main {
   flex: 1;
   min-width: 0;
@@ -108,7 +120,6 @@ body.distraction-free .sticky-section-header {
   line-height: var(--line-height);
 }
 
-/* Loading state */
 .markdown-body .loading {
   display: flex;
   align-items: center;
@@ -118,7 +129,6 @@ body.distraction-free .sticky-section-header {
   font-size: var(--text-sm);
 }
 
-/* Shape-matched loading skeleton */
 .skeleton {
   padding-top: var(--s2);
 }
@@ -181,7 +191,6 @@ body.distraction-free .sticky-section-header {
   border-radius: var(--r);
 }
 
-/* Headings */
 .markdown-body h1 {
   font-size: var(--text-3xl);
   font-weight: var(--fw-bold);
@@ -229,21 +238,18 @@ body.distraction-free .sticky-section-header {
   scroll-margin-top: calc(var(--topbar-h) + var(--s6));
 }
 
-/* Paragraphs */
 .markdown-body p {
   margin-bottom: var(--para-spacing);
 }
 .markdown-body p:last-child {
   margin-bottom: 0;
 }
-/* Horizontal rule */
 .markdown-body hr {
   border: none;
   border-top: 1px solid var(--border);
   margin: var(--s8) 0;
 }
 
-/* Links */
 .markdown-body a {
   color: var(--accent-light);
   text-decoration: underline;
@@ -274,7 +280,6 @@ body.distraction-free .sticky-section-header {
   font-style: normal;
 }
 
-/* Bold / Italic */
 .markdown-body strong {
   font-weight: var(--fw-bold);
   color: var(--text-heading);
@@ -284,7 +289,6 @@ body.distraction-free .sticky-section-header {
   color: var(--text-body);
 }
 
-/* Lists */
 .markdown-body ul,
 .markdown-body ol {
   padding-left: var(--s6);
@@ -307,7 +311,6 @@ body.distraction-free .sticky-section-header {
   font-weight: var(--fw-semibold);
 }
 
-/* Inline code */
 .markdown-body code {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
@@ -319,7 +322,9 @@ body.distraction-free .sticky-section-header {
   overflow-wrap: anywhere;
 }
 
-/* ─── Content Stub ─── */
+/* ═══════════════════════════════════════════════
+   CONTENT STUB
+   ═══════════════════════════════════════════════ */
 .content-stub {
   display: flex;
   flex-direction: column;
@@ -345,7 +350,9 @@ body.distraction-free .sticky-section-header {
   color: var(--text-muted);
 }
 
-/* ── Video embed ── */
+/* ═══════════════════════════════════════════════
+   VIDEO EMBED
+   ═══════════════════════════════════════════════ */
 .video-embed {
   position: relative;
   aspect-ratio: 16 / 9;
@@ -363,7 +370,9 @@ body.distraction-free .sticky-section-header {
   border: 0;
 }
 
-/* ─── Complete Button ─── */
+/* ═══════════════════════════════════════════════
+   COMPLETE BUTTON
+   ═══════════════════════════════════════════════ */
 .complete-bar {
   display: flex;
   justify-content: center;

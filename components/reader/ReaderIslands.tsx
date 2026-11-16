@@ -24,6 +24,7 @@ import { PracticeAnswerToggle } from "./PracticeAnswerToggle";
 import { PrereqStatus } from "./PrereqStatus";
 import { ProgressRing } from "./ProgressRing";
 import { ReadTracker } from "./ReadTracker";
+import { ResumeChip } from "./ResumeChip";
 import { ScrollRestore } from "./ScrollRestore";
 import { StickyHeader } from "./StickyHeader";
 import { TabbedCode } from "./TabbedCode";
@@ -97,6 +98,11 @@ export function ReaderIslands({ article }: ReaderIslandsProps) {
             slug={article.slug}
           />
           <ScrollRestore wikiId={article.verticalId} articlePath={articlePath} />
+          <ResumeChip
+            wikiId={article.verticalId}
+            articlePath={articlePath}
+            headings={article.headings}
+          />
           <HighlightsIsland wikiId={article.verticalId} articlePath={articlePath} />
         </>
       )}

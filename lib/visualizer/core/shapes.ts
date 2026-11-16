@@ -972,6 +972,59 @@ export interface BinsModel {
   active: string | null;
 }
 
+export interface FlowChip {
+  id: string;
+  label: string;
+  // Time still to run and the whole time; the bar shows left over total.
+  left: number;
+  total: number;
+  // A long item, drawn in the warning tone.
+  heavy?: boolean;
+  // Arriving: drawn dashed, not counted yet.
+  ghost?: boolean;
+}
+export interface FlowCard {
+  id: string;
+  label: string;
+  hue: number;
+  count: string;
+  countLabel: string;
+  badge?: string;
+  chips: FlowChip[];
+  down?: boolean;
+}
+export type FlowPanelBody =
+  | { kind: "tokens"; items: { label: string; on: boolean; muted?: boolean }[] }
+  | {
+      kind: "bars";
+      rows: {
+        label: string;
+        value: number;
+        of: number;
+        note: string;
+        mark?: boolean;
+        muted?: boolean;
+      }[];
+    }
+  | { kind: "lines"; lines: string[] };
+export interface FlowPanel {
+  title: string;
+  body: FlowPanelBody;
+  headline: { label: string; value: string; note: string };
+}
+// An incoming item, a hub, one card per target holding items with time left, and a side panel that explains the choice.
+export interface FlowCardsModel {
+  kind: "flow-cards";
+  hub: string;
+  intake: { label: string; note: string; caption: string } | null;
+  cards: FlowCard[];
+  // Most chips on one card over the whole run, so the figure keeps one width.
+  slots: number;
+  routeTo: string | null;
+  moves: { from: string; to: string }[];
+  panel: FlowPanel;
+}
+
 export interface CircleArc {
   // Owns the positions after `from` up to and including `to`, clockwise.
   from: number;
@@ -1049,6 +1102,7 @@ export type LeafModel =
   | GraphModel
   | TableModel
   | BinsModel
+  | FlowCardsModel
   | CircleModel
   | RunsModel
   | HistogramModel
@@ -1098,6 +1152,7 @@ export function modelKeys(model: ShapeModel): string[] {
       ...s.nodes.map((n) => n.label),
     ]);
   if (model.kind === "bins") return model.bins.flatMap((b) => b.items.map((i) => i.label));
+  if (model.kind === "flow-cards") return model.cards.flatMap((c) => c.chips.map((i) => i.label));
   if (model.kind === "circle") return model.points.map((p) => p.label);
   if (model.kind === "runs") return model.cells.map((c) => c.label);
   if (model.kind === "array")

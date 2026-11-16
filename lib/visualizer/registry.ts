@@ -200,6 +200,14 @@ export const VISUALIZERS: VisualizerEntry[] = [
     icon: "🕸️",
     kind: "compare",
   },
+  {
+    slug: "load-balancer-algorithms",
+    title: "Load Balancer Algorithms",
+    description:
+      "Round robin, weighted round robin, least connections and IP hash — send uneven requests to servers and watch where they pile up, even when a server fails.",
+    icon: "⚖️",
+    kind: "compare",
+  },
 ];
 
 export function getVisualizer(slug: string): VisualizerEntry | undefined {
